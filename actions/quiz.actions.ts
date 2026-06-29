@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type { Json } from "@/types/database.types";
 import type { QuizSession } from "@/types/quiz-session";
@@ -97,6 +98,7 @@ export async function createQuizSession(
       .schema("education")
       .from("quiz_sessions")
       .insert({
+        organization_id: await ensureOrgIdServer(supabase, undefined),
         user_id: user.id,
         title: title || null,
         category: category || null,

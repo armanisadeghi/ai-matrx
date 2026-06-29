@@ -1,5 +1,6 @@
 import { requireUserId } from '@/utils/auth/getUserId';
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { AppLayoutOptions, CustomAppConfig } from "@/types/customAppTypes";
 import { isSlugInUse } from "@/config/applets/apps/constants";
 
@@ -11,6 +12,7 @@ export type CustomAppConfigDB = {
   name: string;
   description?: string;
   slug: string;
+  organization_id: string;
   main_app_icon?: string;
   main_app_submit_icon?: string;
   creator?: string;
@@ -62,11 +64,13 @@ export const normalizeCustomAppConfig = (config: Partial<CustomAppConfig>): Cust
 export const customAppConfigToDBFormat = async (config: CustomAppConfig): Promise<Omit<CustomAppConfigDB, 'id' | 'created_at' | 'updated_at'>> => {
   // Get the current user ID from the session
   const userId = requireUserId();
-  
+  const organizationId = await ensureOrgId(undefined);
+
   return {
     name: config.name,
     description: config.description || null,
     slug: config.slug,
+    organization_id: organizationId,
     main_app_icon: config.mainAppIcon || null,
     main_app_submit_icon: config.mainAppSubmitIcon || null,
     creator: config.creator || null,

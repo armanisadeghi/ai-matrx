@@ -176,6 +176,9 @@ export async function POST(request: NextRequest) {
   // 5. Insert.
   const insert: CxMessageInsert = {
     conversation_id: parsed.conversationId,
+    // chat.message inherits org from its conversation via DB trigger; pass the
+    // parent's org explicitly since the regenerated type now requires it.
+    organization_id: conversation.organization_id,
     role: parsed.role,
     position,
     content: normalizeContent(parsed.content) as CxMessageInsert["content"],

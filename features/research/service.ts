@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import type {
   ResearchTopic,
@@ -529,7 +530,7 @@ export async function createTag(
 ): Promise<ResearchTag> {
   const { data, error } = await supabase
     .schema("research").from("rs_tag")
-    .insert({ ...tag, topic_id: topicId })
+    .insert({ ...tag, topic_id: topicId, organization_id: await ensureOrgId(undefined) })
     .select()
     .single();
   if (error) throw error;

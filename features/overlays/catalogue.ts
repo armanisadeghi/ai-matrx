@@ -321,7 +321,7 @@ export const OVERLAY_CATALOGUE = {
     isWindow: true,
   },
   errorInspectorWindow: {
-    label: "Supabase Error Inspector",
+    label: "Error Inspector",
     instanceMode: "singleton",
     isWindow: true,
   },

@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import type { Json } from "@/types/database.types";
 import { z } from "zod";
 
@@ -243,10 +244,22 @@ export async function POST(
       }
     }
 
+    // The message belongs to its parent conversation's org.
+    const { data: parentConversation } = await supabase
+      .schema("communication").from("dm_conversations")
+      .select("organization_id")
+      .eq("id", conversationId)
+      .single();
+    const organizationId = await ensureOrgIdServer(
+      supabase,
+      parentConversation?.organization_id,
+    );
+
     // Insert message
     const { data: newMessage, error: insertError } = await supabase
       .schema("communication").from("dm_messages")
       .insert({
+        organization_id: organizationId,
         conversation_id: conversationId,
         sender_id: userId,
         content: content.trim(),

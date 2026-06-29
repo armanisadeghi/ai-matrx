@@ -14,6 +14,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 
 export type UserMemoryRow = Database["users"]["Tables"]["user_memory"]["Row"];
@@ -47,7 +48,7 @@ export async function upsertMemory(
   const { error } = await supabase
     .schema("users").from("user_memory")
     .upsert(
-      { user_id: userId, path, content },
+      { user_id: userId, organization_id: await ensureOrgId(undefined), path, content },
       { onConflict: "user_id,path" },
     );
   if (error) throw error;

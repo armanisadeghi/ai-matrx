@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import type {
@@ -55,6 +56,7 @@ export function useCanvasScore(canvasId: string) {
         .insert({
           canvas_id: canvasId,
           user_id: userId,
+          organization_id: await ensureOrgId(undefined),
           username: displayName,
           display_name: displayName,
           score: request.score,

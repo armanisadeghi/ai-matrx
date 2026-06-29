@@ -4,6 +4,7 @@
 // since external agents authenticate via API key, not Supabase sessions.
 
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import type {
   UserFeedback,
   FeedbackComment,
@@ -59,6 +60,9 @@ export async function submitFeedback(
     const { data, error } = await supabase
       .schema("users").from("user_feedback")
       .insert({
+        // External agents have no personal org (no Supabase session); their
+        // feedback homes to the global system org.
+        organization_id: await resolveSystemOrgId(supabase),
         user_id: agentId,
         username: agentName,
         feedback_type: input.feedback_type,

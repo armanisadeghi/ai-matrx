@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   getProjectTasks,
   getTopLevelProjectTasks,
@@ -207,6 +208,7 @@ export const createTaskThunk = createAsyncThunk(
       .from("tasks")
       .insert({
         ...insertData,
+        organization_id: await ensureOrgId(organization_id),
         status: data.status ?? "not_started",
         priority: toTaskPriority(priority),
         created_by: userId,

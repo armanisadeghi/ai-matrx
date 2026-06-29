@@ -549,12 +549,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
-  // ── Supabase Error Inspector (admin) ──────────────────────────────────────
+  // ── Error Inspector (admin) ───────────────────────────────────────────────
   {
     slug: "error-inspector-window",
     overlayId: "errorInspectorWindow",
     kind: "window",
-    label: "Supabase Error Inspector",
+    label: "Error Inspector",
     defaultData: {},
     ephemeral: true,
     mobilePresentation: "fullscreen",

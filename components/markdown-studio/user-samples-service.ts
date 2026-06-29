@@ -5,6 +5,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 
 export type UserMarkdownSample = Database["users"]["Tables"]["user_markdown_samples"]["Row"];
@@ -42,6 +43,7 @@ export async function createUserSample(
       content: input.content,
       detected_blocks: input.detected_blocks ?? [],
       user_id: userId,
+      organization_id: await ensureOrgId(undefined),
     })
     .select()
     .single();

@@ -10,6 +10,7 @@
  */
 
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { resolveSystemOrgId } from '@/lib/organizations/systemOrg';
 
 export interface TranscriptionErrorLog {
   userId: string;
@@ -31,6 +32,7 @@ export async function logTranscriptionError(entry: TranscriptionErrorLog): Promi
     const supabase = createAdminClient();
 
     await supabase.from('system_error').insert({
+      organization_id: await resolveSystemOrgId(supabase),
       kind: 'audio_transcription',
       source_app: 'matrx-frontend',
       user_id: entry.userId,

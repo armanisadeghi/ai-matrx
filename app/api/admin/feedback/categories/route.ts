@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   FEEDBACK_CATEGORY_SELECT,
   platformCategoryToFeedbackRow,
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
       .schema("platform")
       .from("categories")
       .insert({
+        organization_id: await resolveSystemOrgId(supabase),
         dimension: "feedback",
         name,
         slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),

@@ -8,6 +8,7 @@
  */
 
 import { db } from "./supabase-typed";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   CxAgentPlanRow,
   CxPlanStatus,
@@ -66,6 +67,7 @@ export async function createPlan(
   const { data, error } = await db
     .schema("chat").from("agent_plan")
     .insert({
+      organization_id: await ensureOrgId(undefined),
       conversation_id: input.conversation_id,
       user_id: input.user_id,
       title: input.title,

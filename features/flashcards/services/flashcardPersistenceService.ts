@@ -7,6 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Json } from "@/types/database.types";
 import type {
@@ -56,6 +57,7 @@ export const flashcardPersistenceService = {
         .schema("users").from("user_flashcard_sets")
         .insert({
           user_id: userId,
+          organization_id: await ensureOrgId(undefined),
           conversation_id: input.conversation_id ?? null,
           message_id: input.message_id ?? null,
           title: input.title ?? "Flashcards",
@@ -207,6 +209,7 @@ export const flashcardPersistenceService = {
         .schema("users").from("user_flashcard_reviews")
         .insert({
           user_id: userId,
+          organization_id: await ensureOrgId(undefined),
           set_id: input.set_id,
           card_index: input.card_index,
           result: input.result,

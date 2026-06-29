@@ -7,6 +7,7 @@
 // tier, one row per (episode_id, kind), upsert-on-regenerate.
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { PcArticle, PcArticleKind } from "./types";
 
 export const articleService = {
@@ -72,7 +73,11 @@ export const articleService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_articles")
       .upsert(
-        { ...payload, user_id: payload.user_id ?? user?.id ?? null },
+        {
+          ...payload,
+          user_id: payload.user_id ?? user?.id ?? null,
+          organization_id: await ensureOrgId(undefined),
+        },
         { onConflict: "episode_id,kind" },
       )
       .select()

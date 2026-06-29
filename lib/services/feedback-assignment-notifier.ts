@@ -67,13 +67,15 @@ Open: ${url}`;
 
 /**
  * Find an existing direct-message conversation between two users, or create
- * one. Returns the conversation id. Uses the service-role client so it works
- * regardless of which side is the caller — both participants get the row.
+ * one. Returns the conversation id plus its owning org (so callers can stamp
+ * org-scoped child rows like messages without re-resolving it). Uses the
+ * service-role client so it works regardless of which side is the caller —
+ * both participants get the row.
  */
 async function findOrCreateDirectConversation(
   userA: string,
   userB: string,
-): Promise<string> {
+): Promise<{ conversationId: string; organizationId: string }> {
   const supabase = createAdminClient();
 
   const { data: existing, error: findError } = await supabase.rpc(
@@ -81,7 +83,20 @@ async function findOrCreateDirectConversation(
     { p_user1_id: userA, p_user2_id: userB },
   );
   if (findError) throw findError;
-  if (existing) return existing;
+  if (existing) {
+    const { data: existingConv, error: convError } = await supabase
+      .schema("communication").from("dm_conversations")
+      .select("organization_id")
+      .eq("id", existing)
+      .single();
+    if (convError || !existingConv) {
+      throw convError ?? new Error("DM conversation not found");
+    }
+    return {
+      conversationId: existing,
+      organizationId: existingConv.organization_id,
+    };
+  }
 
   const { data: organizationId, error: orgError } = await supabase.rpc(
     "ensure_personal_organization",
@@ -107,12 +122,22 @@ async function findOrCreateDirectConversation(
   const { error: partErr } = await supabase
     .schema("communication").from("dm_conversation_participants")
     .insert([
-      { conversation_id: newConv.id, user_id: userA, role: "owner" },
-      { conversation_id: newConv.id, user_id: userB, role: "member" },
+      {
+        conversation_id: newConv.id,
+        user_id: userA,
+        role: "owner",
+        organization_id: organizationId,
+      },
+      {
+        conversation_id: newConv.id,
+        user_id: userB,
+        role: "member",
+        organization_id: organizationId,
+      },
     ]);
   if (partErr) throw partErr;
 
-  return newConv.id;
+  return { conversationId: newConv.id, organizationId };
 }
 
 /**
@@ -124,15 +149,14 @@ async function sendAssignmentDm(
   content: string,
 ): Promise<{ ok: boolean; conversationId?: string; error?: string }> {
   try {
-    const conversationId = await findOrCreateDirectConversation(
-      assignerId,
-      assigneeId,
-    );
+    const { conversationId, organizationId } =
+      await findOrCreateDirectConversation(assignerId, assigneeId);
     const supabase = createAdminClient();
     const { error } = await supabase
       .schema("communication").from("dm_messages")
       .insert({
         conversation_id: conversationId,
+        organization_id: organizationId,
         sender_id: assignerId,
         content,
         message_type: "text",

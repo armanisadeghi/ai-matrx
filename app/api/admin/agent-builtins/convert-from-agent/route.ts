@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 /**
  * POST /api/admin/agent-builtins/convert-from-agent
@@ -168,9 +169,11 @@ export async function POST(request: Request) {
           is_archived: false,
           is_favorite: false,
           user_id: null,
-          // organization_id intentionally omitted — the DB guard forces it to the
-          // Matrx System org for every builtin (agent._enforce_builtin_system_org),
-          // so the row is globally visible via has_access's platform-global tier.
+          // Builtin rows home to the Matrx System org so they're globally visible
+          // via has_access's platform-global tier. The DB guard
+          // (agent._enforce_builtin_system_org) enforces this regardless; we set it
+          // explicitly because the regenerated types now require organization_id.
+          organization_id: await resolveSystemOrgId(adminClient),
           project_id: null,
           task_id: null,
           source_agent_id: agent_id,

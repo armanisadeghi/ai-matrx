@@ -34,6 +34,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type {
   ArtifactPersistenceAdapter,
@@ -195,6 +196,7 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
         // INSERT a new session. Embed artifactId in quiz_metadata for future lookup.
         const { error } = await supabase.schema("education").from("quiz_sessions").insert({
           user_id: userId,
+          organization_id: await ensureOrgId(undefined),
           state: quizState as unknown as import("@/types/database.types").Json,
           is_completed: isCompleted,
           ...(completedAt ? { completed_at: completedAt } : {}),

@@ -6,6 +6,7 @@
 
 import { getTwilioClient, getAppBaseUrl } from './client';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { PhoneNumberPurchaseOptions, PhoneNumberInfo } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -74,8 +75,11 @@ export async function purchasePhoneNumber(
       },
     };
 
-    // Store in database
+    // Store in database — owned by the assigned user's org, or the system org
+    // for a platform-owned (unassigned) number.
+    const organizationId = await resolveOrgIdForUserServer(supabase, userId);
     const { error: dbError } = await supabase.schema('communication').from('sms_phone_numbers').insert({
+      organization_id: organizationId,
       user_id: userId || null,
       phone_number: numberInfo.phoneNumber,
       twilio_sid: numberInfo.sid,

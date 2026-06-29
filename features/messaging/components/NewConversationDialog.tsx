@@ -126,11 +126,13 @@ export function NewConversationDialog({
             conversation_id: newConv.id,
             user_id: currentUserId,
             role: "owner",
+            organization_id: organizationId,
           },
           {
             conversation_id: newConv.id,
             user_id: participantId,
             role: "member",
+            organization_id: organizationId,
           },
         ]);
 

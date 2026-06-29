@@ -261,6 +261,7 @@ export async function POST(request: NextRequest) {
       conversation_id: newConversation.id,
       user_id: participantId,
       role: index === 0 ? "owner" : "member", // Creator is owner
+      organization_id: organizationId,
     }));
 
     const { error: participantsError } = await supabase

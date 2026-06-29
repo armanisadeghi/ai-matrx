@@ -76,6 +76,10 @@ interface SheetContentProps
     React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {
   hideCloseButton?: boolean;
+  /** Skip the dimming overlay — for non-modal side panels (e.g. chat canvas). */
+  hideOverlay?: boolean;
+  /** Optional className for the overlay when shown. */
+  overlayClassName?: string;
 }
 
 const SheetDescription = React.forwardRef<
@@ -96,7 +100,15 @@ const SheetContent = React.forwardRef<
     SheetContentProps
 >(
   (
-    { side = "right", className, children, hideCloseButton = false, ...props },
+    {
+      side = "right",
+      className,
+      children,
+      hideCloseButton = false,
+      hideOverlay = false,
+      overlayClassName,
+      ...props
+    },
     ref,
   ) => {
     const hasDescription =
@@ -104,7 +116,7 @@ const SheetContent = React.forwardRef<
       treeContainsComponent(children, SheetPrimitive.Description);
     return (
       <SheetPortal>
-        <SheetOverlay />
+        {!hideOverlay && <SheetOverlay className={overlayClassName} />}
         <SheetPrimitive.Content
           ref={ref}
           className={cn(sheetVariants({ side }), className)}

@@ -1155,9 +1155,14 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
     write: async ({ identity, signal, body }) => {
       if (identity.type !== "auth") return; // guests only live in client storage
       const { supabase } = await import("@/utils/supabase/client");
+      const { ensureOrgId } = await import("@/lib/organizations/personalOrg");
       await supabase
         .schema("users").from("user_preferences")
-        .upsert({ user_id: identity.userId, preferences: body })
+        .upsert({
+          organization_id: await ensureOrgId(undefined),
+          user_id: identity.userId,
+          preferences: body,
+        })
         .abortSignal(signal);
       void signal; // AbortSignal forwarded via query builder above
     },

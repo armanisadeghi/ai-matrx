@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   setNoteField,
@@ -309,6 +310,8 @@ export function useWorkspaceNotesRedux() {
           content: record.content,
           folder_name: record.folder_name,
           tags: record.tags,
+          // Keep the copy in the original's org; fall back to the personal org.
+          organization_id: await ensureOrgId(record.organization_id),
           // Private by default — the `notes.visibility` enum DB default is
           // 'internal' (org-visible), so set it explicitly on create.
           visibility: "private",
@@ -355,6 +358,8 @@ export function useWorkspaceNotesRedux() {
           label: "New Note",
           content: "",
           folder_name: folder || "Draft",
+          // Root-ish create (no folder_id) — resolve org explicitly.
+          organization_id: await ensureOrgId(undefined),
           // Private by default — the `notes.visibility` enum DB default is
           // 'internal' (org-visible), so set it explicitly on create.
           visibility: "private",

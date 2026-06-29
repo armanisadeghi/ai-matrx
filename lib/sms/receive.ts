@@ -6,6 +6,7 @@
  */
 
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { InboundSmsPayload, TwilioMediaAttachment } from './types';
 
 /**
@@ -32,13 +33,13 @@ export function extractMediaAttachments(payload: InboundSmsPayload): TwilioMedia
 export async function findOrCreateConversation(
   fromNumber: string,
   toNumber: string
-): Promise<{ id: string; userId: string | null; isNew: boolean }> {
+): Promise<{ id: string; userId: string | null; organizationId: string; isNew: boolean }> {
   const supabase = createAdminClient();
 
   // Look for existing active conversation
   const { data: existing } = await supabase
     .schema('communication').from('sms_conversations')
-    .select('id, user_id')
+    .select('id, user_id, organization_id')
     .eq('external_phone_number', fromNumber)
     .eq('our_phone_number', toNumber)
     .eq('status', 'active')
@@ -47,7 +48,12 @@ export async function findOrCreateConversation(
     .single();
 
   if (existing) {
-    return { id: existing.id, userId: existing.user_id, isNew: false };
+    return {
+      id: existing.id,
+      userId: existing.user_id,
+      organizationId: existing.organization_id,
+      isNew: false,
+    };
   }
 
   // Look up user by assigned phone number (our number -> user mapping)
@@ -70,10 +76,15 @@ export async function findOrCreateConversation(
 
   const userId = senderUser?.user_id || phoneOwner?.user_id || null;
 
+  // Resolve the org from the routed user (or the system org for an unrouted
+  // inbound number).
+  const organizationId = await resolveOrgIdForUserServer(supabase, userId);
+
   // Create new conversation
   const { data: newConv, error } = await supabase
     .schema('communication').from('sms_conversations')
     .insert({
+      organization_id: organizationId,
       user_id: userId,
       external_phone_number: fromNumber,
       our_phone_number: toNumber,
@@ -86,7 +97,7 @@ export async function findOrCreateConversation(
     throw new Error(`Failed to create conversation: ${error.message}`);
   }
 
-  return { id: newConv.id, userId: newConv.user_id, isNew: true };
+  return { id: newConv.id, userId: newConv.user_id, organizationId, isNew: true };
 }
 
 /**
@@ -122,6 +133,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
   const { data: message, error: msgError } = await supabase
     .schema('communication').from('sms_messages')
     .insert({
+      organization_id: conversation.organizationId,
       conversation_id: conversation.id,
       twilio_sid: payload.MessageSid,
       direction: 'inbound',
@@ -146,6 +158,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
   // Store media records
   if (media.length > 0) {
     const mediaRecords = media.map(m => ({
+      organization_id: conversation.organizationId,
       message_id: message.id,
       content_type: m.contentType,
       original_url: m.url,

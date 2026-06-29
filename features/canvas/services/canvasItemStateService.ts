@@ -9,6 +9,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 export const canvasItemStateService = {
   /** Current user's saved state for an artifact, or null if none. */
@@ -46,7 +47,12 @@ export const canvasItemStateService = {
       const existing = await this.getState(canvasId);
       const merged = { ...(existing ?? {}), ...patch };
       const { error } = await supabase.schema("canvas").from("canvas_item_state").upsert(
-        { canvas_id: canvasId, user_id: userId, state: merged },
+        {
+          canvas_id: canvasId,
+          user_id: userId,
+          organization_id: await ensureOrgId(undefined),
+          state: merged,
+        },
         { onConflict: "canvas_id,user_id" },
       );
       if (error) {

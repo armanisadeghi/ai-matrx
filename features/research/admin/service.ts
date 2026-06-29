@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/client';
+import { ensureOrgId } from '@/lib/organizations/personalOrg';
 import type { Json } from '@/types/database.types';
 import type { ResearchTemplate } from '../types';
 import type { PromptBuiltinRef, TemplateFormData, AgentConfigKey } from './types';
@@ -41,6 +42,7 @@ export async function createTemplate(input: TemplateFormData): Promise<ResearchT
             autonomy_level: input.autonomy_level,
             metadata: Object.keys(input.metadata).length > 0 ? input.metadata : null,
             is_system: false,
+            organization_id: await ensureOrgId(undefined),
         })
         .select()
         .single();

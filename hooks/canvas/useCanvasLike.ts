@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { requireUserId } from '@/utils/auth/getUserId';
+import { ensureOrgId } from '@/lib/organizations/personalOrg';
 import { useToast } from '@/components/ui/use-toast';
 
 export function useCanvasLike(canvasId: string) {
@@ -37,7 +38,8 @@ export function useCanvasLike(canvasId: string) {
                 .schema('canvas').from('canvas_likes')
                 .insert({
                     canvas_id: canvasId,
-                    user_id: userId
+                    user_id: userId,
+                    organization_id: await ensureOrgId(undefined)
                 });
 
             if (error) throw error;

@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   PcShow,
   PcEpisode,
@@ -36,7 +37,7 @@ export const podcastService = {
   ): Promise<PcShow> {
     const { data, error } = await supabase
       .schema("podcast").from("pc_shows")
-      .insert(payload)
+      .insert({ ...payload, organization_id: await ensureOrgId(undefined) })
       .select()
       .single();
     if (error) throw error;
@@ -137,6 +138,7 @@ export const podcastService = {
       .insert({
         ...payload,
         user_id: payload.user_id ?? user?.id ?? null,
+        organization_id: await ensureOrgId(undefined),
       })
       .select()
       .single();

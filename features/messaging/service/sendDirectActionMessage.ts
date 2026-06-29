@@ -43,8 +43,18 @@ export async function findOrCreateDirectConversation(
   const { error: partError } = await supabase
     .schema("communication").from("dm_conversation_participants")
     .insert([
-      { conversation_id: conv.id, user_id: currentUserId, role: "owner" },
-      { conversation_id: conv.id, user_id: recipientId, role: "member" },
+      {
+        conversation_id: conv.id,
+        user_id: currentUserId,
+        role: "owner",
+        organization_id: organizationId,
+      },
+      {
+        conversation_id: conv.id,
+        user_id: recipientId,
+        role: "member",
+        organization_id: organizationId,
+      },
     ]);
   if (partError) throw partError;
 

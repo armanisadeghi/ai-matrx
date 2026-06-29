@@ -765,15 +765,21 @@ export function useConversations(
 
       if (createError) throw createError;
 
-      // Add both participants
+      // Add both participants (same org as the conversation)
       const { error: participantError } = await supabase
         .schema("communication").from("dm_conversation_participants")
         .insert([
-          { conversation_id: newConv.id, user_id: userId, role: "owner" },
+          {
+            conversation_id: newConv.id,
+            user_id: userId,
+            role: "owner",
+            organization_id: organizationId,
+          },
           {
             conversation_id: newConv.id,
             user_id: participantId,
             role: "member",
+            organization_id: organizationId,
           },
         ]);
 

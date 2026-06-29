@@ -148,6 +148,11 @@ export async function persistTurns(
   if (opts.turns.length === 0) return { ok: true, persistedTurnIds: [] };
   const supabase = clientOrThrow();
 
+  // chat.message inherits org from its conversation via DB trigger, but the
+  // regenerated type requires it. Voice conversations are personal-org (see
+  // ensureConversation), so this matches the parent.
+  const orgId = await ensureOrgId(undefined);
+
   const rows: CxMessageInsert[] = opts.turns.map((turn, idx) => {
     const voiceMeta: Record<string, Json> = {
       turn_id: turn.id,
@@ -166,6 +171,7 @@ export async function persistTurns(
 
     return {
       conversation_id: opts.conversationId,
+      organization_id: orgId,
       role: turn.role,
       position: opts.startPosition + idx,
       // `cx_message.source` only allows 'user' | 'agent_template' | 'system'

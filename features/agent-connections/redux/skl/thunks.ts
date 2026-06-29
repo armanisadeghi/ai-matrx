@@ -228,7 +228,12 @@ export const fetchRenderBlockCategories = createAsyncThunk(
         .order("position", { ascending: true, nullsFirst: false })
         .order("name", { ascending: true });
       query = applyScopeFilter(query, args, userId);
-      const { data, error } = await query;
+      // The aliased select (json `->>` accessors) makes the inferred row type
+      // instantiate too deeply (TS2589) after the regen — pin it to the shape
+      // the mapper consumes via .returns<>().
+      const { data, error } = await query.returns<
+        Parameters<typeof rowToShortcutCategory>[0][]
+      >();
       if (error) throw error;
       const rows = (data ?? []).map(rowToShortcutCategory);
       dispatch(sklActions.renderBlockCategoriesReceived(rows));

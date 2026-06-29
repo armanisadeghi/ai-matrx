@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
 import type { Database } from "@/types/database.types";
 import {
@@ -68,6 +69,7 @@ export async function submitFeedback(
     const { data, error } = await supabase
       .schema("users").from("user_feedback")
       .insert({
+        organization_id: await ensureOrgIdServer(supabase, undefined),
         user_id: user.id,
         username,
         feedback_type: input.feedback_type,

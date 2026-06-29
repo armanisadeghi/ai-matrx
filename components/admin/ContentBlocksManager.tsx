@@ -72,6 +72,7 @@ import {
   CategoryWithSubcategories,
 } from "@/types/content-blocks-db";
 import { createClient } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
@@ -519,6 +520,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     try {
       const supabase = createClient();
 
+      const organizationId = await ensureOrgId(undefined);
       const { error } = await supabase.from("content_blocks").insert([
         {
           block_id: createFormData.block_id,
@@ -529,6 +531,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           template: createFormData.template,
           sort_order: createFormData.sort_order || 0,
           is_active: createFormData.is_active !== false,
+          organization_id: organizationId,
         },
       ]);
 
@@ -685,6 +688,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             color: finalColor,
             position: maxSortOrder + 1,
             metadata: { is_active: true, legacy_table: "shortcut_categories" },
+            organization_id: await ensureOrgId(undefined),
           },
         ])
         .select()

@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Json } from "@/types/database.types";
 import type { PanelState, WindowSessionRow } from "../registry/windowRegistryTypes";
 
@@ -50,6 +51,7 @@ export async function saveWindowSession(
   const row = {
     ...(sessionId ? { id: sessionId } : {}),
     user_id: userId,
+    organization_id: await ensureOrgId(undefined),
     window_type: windowType,
     label,
     panel_state: panelState as unknown as Json,

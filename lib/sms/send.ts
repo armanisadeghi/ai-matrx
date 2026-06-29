@@ -7,6 +7,7 @@
 
 import { getTwilioClient, getMessagingServiceSid, getAppBaseUrl } from './client';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { resolveOrgIdForUserServer } from '@/lib/organizations/personalOrg';
 import type { SendSmsOptions, SendSmsResult } from './types';
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -71,8 +72,21 @@ export async function sendAndLogSms(options: SendSmsOptions & {
   // Send via Twilio
   const result = await sendSms(sendOptions);
 
+  // Resolve org from the parent conversation (the message belongs to its org).
+  const { data: parentConversation } = await supabase
+    .schema('communication').from('sms_conversations')
+    .select('organization_id')
+    .eq('id', conversationId)
+    .single();
+  const organizationId = await resolveOrgIdForUserServer(
+    supabase,
+    sentByUserId,
+    parentConversation?.organization_id,
+  );
+
   // Log to database regardless of success/failure
   const { error: dbError } = await supabase.schema('communication').from('sms_messages').insert({
+    organization_id: organizationId,
     conversation_id: conversationId,
     twilio_sid: result.sid || null,
     direction: 'outbound',
@@ -110,6 +124,9 @@ export async function sendNotificationSms(options: {
   const { userId, body, notificationType, referenceType, referenceId, category = 'transactional', mediaUrl } = options;
   const supabase = createAdminClient();
 
+  // All rows written below belong to the notified user's org.
+  const organizationId = await resolveOrgIdForUserServer(supabase, userId);
+
   // Get user's SMS notification preferences
   const { data: prefs } = await supabase
     .schema('communication').from('sms_notification_preferences')
@@ -134,6 +151,7 @@ export async function sendNotificationSms(options: {
   if (!consent && category !== 'system') {
     // Log as blocked
     await supabase.schema('communication').from('sms_notifications').insert({
+      organization_id: organizationId,
       user_id: userId,
       notification_type: notificationType,
       category,
@@ -158,6 +176,7 @@ export async function sendNotificationSms(options: {
 
     if (inQuietHours && category !== 'system') {
       await supabase.schema('communication').from('sms_notifications').insert({
+        organization_id: organizationId,
         user_id: userId,
         notification_type: notificationType,
         category,
@@ -180,6 +199,7 @@ export async function sendNotificationSms(options: {
 
   if ((hourlyCount || 0) >= prefs.max_messages_per_hour) {
     await supabase.schema('communication').from('sms_notifications').insert({
+      organization_id: organizationId,
       user_id: userId,
       notification_type: notificationType,
       category,
@@ -215,6 +235,7 @@ export async function sendNotificationSms(options: {
     const { data: newConv, error: convError } = await supabase
       .schema('communication').from('sms_conversations')
       .insert({
+        organization_id: organizationId,
         user_id: userId,
         external_phone_number: prefs.phone_number,
         our_phone_number: ourNumber,
@@ -242,6 +263,7 @@ export async function sendNotificationSms(options: {
 
   // Log the notification
   const { data: notification } = await supabase.schema('communication').from('sms_notifications').insert({
+    organization_id: organizationId,
     user_id: userId,
     message_id: null,
     notification_type: notificationType,

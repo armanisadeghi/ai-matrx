@@ -49,7 +49,9 @@ export function useChatPersistence() {
         messages: ChatMessage[],
     ): Promise<boolean> => {
         try {
-            const cxMessages: CxMessageInsert[] = messages.map((msg, index) => {
+            // org is omitted here: these rows are POSTed to /api/cx-chat/messages
+            // and chat.message inherits org from its conversation via DB trigger.
+            const cxMessages: Omit<CxMessageInsert, "organization_id">[] = messages.map((msg, index) => {
                 // Store text content as a jsonb content array
                 const content: CxContentBlock[] = [{
                     type: 'text' as const,

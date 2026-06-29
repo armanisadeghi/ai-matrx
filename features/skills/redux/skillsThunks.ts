@@ -855,6 +855,8 @@ export const createSkillResourceThunk = createAsyncThunk<
     content: draft.content || null,
     mime_type: draft.mimeType || null,
     sort_order: nextSort,
+    // skill.resource org is NOT NULL with no inherit trigger — user's org.
+    organization_id: await ensureOrgId(undefined),
   };
 
   const { data, error } = await supabase

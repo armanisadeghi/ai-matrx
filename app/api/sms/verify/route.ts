@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
 import { sendVerification, checkVerification } from '@/lib/sms/verify';
 import { normalizePhoneNumber, isValidE164 } from '@/lib/sms/phoneUtils';
 
@@ -86,12 +87,14 @@ export async function POST(request: NextRequest) {
 
         // Phone verified — update user's notification preferences
         const adminSupabase = createAdminClient();
+        const organizationId = await ensureOrgIdServer(supabase, undefined);
 
         await adminSupabase
           .schema('communication').from('sms_notification_preferences')
           .upsert(
             {
               user_id: user.id,
+              organization_id: organizationId,
               phone_number: phoneNumber,
               sms_enabled: true,
             },
@@ -103,6 +106,7 @@ export async function POST(request: NextRequest) {
           {
             phone_number: phoneNumber,
             user_id: user.id,
+            organization_id: organizationId,
             consent_type: 'transactional',
             status: 'opted_in',
             opted_in_at: new Date().toISOString(),

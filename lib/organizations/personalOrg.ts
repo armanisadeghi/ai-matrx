@@ -26,6 +26,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 let cachedId: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -112,4 +113,37 @@ export async function ensureOrgIdServer(
     );
   }
   return data as string;
+}
+
+/**
+ * Resolve an org id for an org-scoped write made on behalf of an ARBITRARY user
+ * (not the calling session) — the case for admin/secret-key clients that have no
+ * `auth.uid()` of their own (e.g. SMS send/receive, Twilio webhooks). Returns
+ * the given org id when set; otherwise the named user's personal org via the
+ * `ensure_personal_organization(p_user_id)` RPC; otherwise — when there is no
+ * user at all (unassigned phone number, unrouted inbound SMS) — the global
+ * system org. Mirrors `lib/scheduler-client/claim.ts`, which resolves the org
+ * for an arbitrary task owner the same way.
+ */
+export async function resolveOrgIdForUserServer(
+  client: SupabaseClient,
+  userId: string | null | undefined,
+  orgId?: string | null | undefined,
+): Promise<string> {
+  if (orgId) return orgId;
+  if (userId) {
+    const { data, error } = await client.rpc("ensure_personal_organization", {
+      p_user_id: userId,
+    });
+    if (error || !data) {
+      throw (
+        error ??
+        new Error(
+          `ensure_personal_organization() returned no personal organization for user ${userId}`,
+        )
+      );
+    }
+    return data as string;
+  }
+  return resolveSystemOrgId(client);
 }

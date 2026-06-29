@@ -1,55 +1,85 @@
-# Supabase Error Inspector (admin)
+# Error Inspector (admin)
 
-Global, always-on capture of every Supabase / PostgREST error in the live
-browser session, surfaced in an admin-only WindowPanel with full raw detail and
-"Copy for AI". Built for the 2026 DB transition, where moved tables and renamed
-RPCs break queries scattered across the app and the priority is **total
-visibility** into the exact errors as they happen — on any page, without hunting.
+Global, always-on capture of **every runtime error** in the live browser
+session — Supabase/PostgREST, uncaught exceptions, unhandled rejections,
+`console.error`, Python-backend HTTP failures, and React render errors — surfaced
+in an admin-only WindowPanel with full raw detail, a visibility tier, a
+ready-to-paste downgrade rule, and "Copy for AI".
 
-Status: **shipped** (2026-06-26).
+Status: **shipped**. Originally the Supabase-only inspector (2026-06-26);
+generalized to systemwide + tiered (2026-06-28).
 
-## How it works
+## Architecture: one sink, many adapters
 
-1. **Capture layer (no React, no Redux).** `utils/supabase/client.ts` wraps the
-   browser client with `wrapClientForCapture` (`lib/diagnostics/supabaseErrorCapture.ts`).
-   A transparent Proxy intercepts only `from` / `rpc` / `schema`; every builder
-   chain stays wrapped so the terminal `await` (its `.then`) is instrumented.
-   When a call resolves with `{ error }` or its promise rejects, the error is
-   recorded with the raw PostgREST fields (`code`, `message`, `details`, `hint`,
-   `status`), the operation verb, schema, table/function, the route, and a
-   cleaned **call-site** (the component/hook/service that issued the query —
-   captured lazily so successful queries pay ~nothing).
-   - Browser-only by construction (wraps the browser client). Server client is
-     untouched.
-   - Every real method runs on the real client via `Reflect`/`apply`, so private
-     state, `instanceof`, and chaining behave exactly as before. Capture is
-     wrapped in try/catch — it can never break a caller.
+A single module store (`lib/diagnostics/errorCaptureStore.ts`) is the sink; each
+error class has its own capture adapter feeding it via `captureError(...)`. A
+module store (not Redux) is deliberate — the Supabase proxy is imported by the
+client that 1,000+ files depend on; Redux coupling there, or missing
+pre-hydration errors, would be wrong. React reads it via `useCapturedErrors` /
+`useCapturedErrorStats` (`useSyncExternalStore`). Max 300 distinct entries,
+newest-first, identical signatures deduped with an occurrence count.
 
-2. **Store.** `lib/diagnostics/errorCaptureStore.ts` — a module-level ring buffer
-   (max 300 distinct entries, newest-first, identical signatures deduped with an
-   occurrence count). React reads it via `useCapturedErrors` /
-   `useCapturedErrorStats` (`useSyncExternalStore`). A module store (not a Redux
-   slice) is deliberate: the capture proxy is imported by the supabase client
-   that 1,000+ files depend on — pulling Redux into that graph, or missing
-   pre-hydration errors, would be wrong.
+**Capture adapters (all → `captureError`):**
 
-3. **UI.** `ErrorInspectorWindow.tsx` (WindowPanel: filterable list + full detail
-   + per-error and whole-list Copy/Copy-for-AI + clear/dismiss) and
-   `ErrorInspectorBadge.tsx` (floating chip, bottom-left, pulses on unseen
-   errors). Both **self-gate on `selectIsAdmin`** (any admin level).
+- **Supabase** — `lib/diagnostics/supabaseErrorCapture.ts`, a transparent Proxy
+  on the browser client (`utils/supabase/client.ts`). Intercepts `from`/`rpc`/
+  `schema`; captures raw PostgREST `code`/`message`/`details`/`hint`/`status` +
+  operation + table/fn + a cleaned call-site.
+- **Global runtime** — `lib/diagnostics/globalErrorCapture.ts`,
+  `installGlobalErrorCapture()`: `window` 'error', `unhandledrejection`, and a
+  `console.error` wrapper (noise-filtered via `lib/console-noise.ts`). Installed
+  once for **every user** from `app/DeferredSingletons.tsx`. This is the single
+  owner of those listeners — the old `adminDebugSlice` listeners were retired.
+- **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the one
+  error chokepoint in `lib/api/call-api.ts`. Every non-2xx / network failure.
+- **React render** — `lib/diagnostics/captureReactError.ts`,
+  `captureReactRenderError()`. Boundaries swallow errors (the global listener
+  can't see them), so a boundary opts in from `componentDidCatch`. Wired into
+  `OverlayErrorBoundary`; other boundaries adopt the same one-liner.
 
-4. **Copy for AI.** `buildCapturedErrorPayload.ts` adapts a captured error (or
-   the whole set) into the canonical `AgentPayloadInput` consumed by the shared
-   `components/agent-copy` primitive — XML envelope naming the origin route,
-   call-site, operation, table/function, and the full raw error.
+Capture is in-memory, cheap, try/caught — it can never break a caller — and runs
+for **all** users. Only the UI is admin-gated, which is the seam for the future
+"surface certain errors to end users" feature.
+
+## Tiers + downgrade rules (`lib/diagnostics/errorTierRules.ts`)
+
+Every error is classified into a **visibility tier** (NOT a log level) at capture
+time. Default is `red` — nearly everything is loud until tuned.
+
+- **red** — Clear Error. Full badge/pill; pulses while unseen.
+- **orange** — Minor. Small dot only.
+- **yellow** — Silent. Listed only inside the inspector.
+
+**To quiet an error**, add a rule to `DOWNGRADE_RULES` in `errorTierRules.ts`
+pointing a match at `orange`/`yellow`. Rules are evaluated top-down, first match
+wins; specific (code+relation) above broad (whole source); an empty `match`
+matches nothing by design. `classifyTier()` is the engine; the colors are in
+`errorTiers.ts`.
+
+The canonical loop: admin sees a red error → **Copy for AI** (the payload embeds
+a `<suggested-downgrade-rule>` built by `buildDowngradeRuleStub`, matching that
+exact error) → an agent pastes it into `errorTierRules.ts` and sets the tier →
+reload reclassifies it. This is the ONLY way to downgrade — no per-error UI toggle.
+
+## Copy for AI
+
+`buildCapturedErrorPayload.ts` adapts a captured error (or the whole set) into
+the canonical `AgentPayloadInput` consumed by `components/agent-copy` — XML
+envelope naming the source, route, call-site, operation, table/fn/endpoint, the
+tier, the full raw error, and the suggested downgrade rule.
 
 ## Entry points
 
-- Avatar/admin menu → "Supabase Errors" (`ErrorInspectorMenuItem`, in
-  `UserMenuPanel`'s admin group).
-- Floating badge (admin-only, appears once ≥1 error captured), mounted in
-  `app/DeferredSingletons.tsx`.
-- Overlay id: `errorInspectorWindow` (singleton, ephemeral).
+- **Sidebar Administration section** (every route, any admin) —
+  `SidebarErrorInspectorToggle` in `AdminSidebarSection`; shows a red count or
+  orange dot inline. Mobile parity: a button in `AdminMobileMenu`.
+- Avatar/admin menu → "Error Inspector" (`ErrorInspectorMenuItem`).
+- Floating badge (`ErrorInspectorBadge`, `app/DeferredSingletons.tsx`): red pill,
+  else orange dot, else silent. Reflects the loudest tier.
+- Overlay id: `errorInspectorWindow` (singleton, ephemeral). Open via
+  `useOpenErrorInspector` / `useToggleErrorInspector`.
+
+UI self-gates on `selectIsAdmin` (any admin level), not super-admin.
 
 ## Registration sites (keep in sync)
 
@@ -59,25 +89,30 @@ Status: **shipped** (2026-06-26).
 `features/overlays/OverlayController.tsx` (lazy import + `isOpenById` +
 `dataById` + render block).
 
-## Scope / relationship to adminDebugSlice
+## Relationship to adminDebugSlice
 
-This owns the **Supabase-error** concern, which previously had no dedicated
-capture. It does NOT re-net generic `console.error` / window `error` /
-`unhandledrejection` — `components/admin/debug/AdminDebugContextCollector` +
-`adminDebugSlice` already do that. Failed Supabase network calls that reject are
-captured here via the builder's reject path (`supabase-exception`).
+`adminDebugSlice` keeps route context + namespaced `debugData` for the
+"Copy Context" panel (`LargeIndicator`). Its console/runtime-error capture was
+**removed** — that's now the single capture path above. `LargeIndicator` reads
+those errors from the module store via `useCapturedErrors`. There is no parallel
+listener set.
 
 ## Extending
 
-- New raw field to surface → add to `CapturedError` + `CaptureInput`
-  (`errorCaptureStore.ts`), populate in `supabaseErrorCapture.ts`, render in
-  `ErrorInspectorWindow` and include in `buildCapturedErrorPayload`.
-- Want non-Supabase nets (uncaught exceptions, raw `fetch`) in the same
-  inspector → add a global listener that calls `captureError(...)` with a new
-  `CapturedErrorSource`. The store and UI are source-agnostic.
+- New raw field → add to `CapturedError` + `CaptureInput`
+  (`errorCaptureStore.ts`), populate in the relevant adapter, render in
+  `ErrorInspectorWindow`, include in `buildCapturedErrorPayload`.
+- New error source → add to the `CapturedErrorSource` union, write a small
+  adapter that calls `captureError({ source, ... })`, add a label in
+  `SOURCE_LABELS`. Store + UI are source-agnostic.
+- New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
 
-- 2026-06-26 — Initial build: capture proxy + module store + admin window +
-  floating badge + Copy-for-AI, wired into the supabase client, overlay system,
-  admin menu, and DeferredSingletons.
+- 2026-06-28 — Generalized to **systemwide + tiered**: broadened the store/UI off
+  Supabase-only; added global-runtime / api-http / react-render adapters; added
+  the red/orange/yellow tier model + agent-editable `errorTierRules.ts` downgrade
+  system + Copy-for-AI rule stubs; retired the duplicate `adminDebugSlice`
+  listeners; added the sidebar Administration entry (desktop + mobile).
+- 2026-06-26 — Initial build: Supabase capture proxy + module store + admin
+  window + floating badge + Copy-for-AI.

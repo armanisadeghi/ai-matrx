@@ -140,10 +140,15 @@ export function CanvasSideSheetInner() {
   const showSplit = !!secondaryItem && !isMobile;
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Sheet
+      open={isOpen}
+      modal={isMobile}
+      onOpenChange={(open) => !open && handleClose()}
+    >
       <SheetContent
         side="right"
         hideCloseButton
+        hideOverlay={!isMobile}
         // Two-layer chrome:
         //   1. outer SheetContent: positions on the right, owns width, owns
         //      the z-index that puts the canvas above modals (10000).
@@ -217,8 +222,16 @@ export function CanvasSideSheetInner() {
                 onLayoutChanged={(layout) => {
                   const top = layout[CANVAS_TOP_PANEL_ID];
                   const bottom = layout[CANVAS_BOTTOM_PANEL_ID];
-                  if (Number.isFinite(top) && Number.isFinite(bottom) && top + bottom > 0) {
-                    dispatch(setCanvasSplitRatio(Math.round((top / (top + bottom)) * 100)));
+                  if (
+                    Number.isFinite(top) &&
+                    Number.isFinite(bottom) &&
+                    top + bottom > 0
+                  ) {
+                    dispatch(
+                      setCanvasSplitRatio(
+                        Math.round((top / (top + bottom)) * 100),
+                      ),
+                    );
                   }
                 }}
               >

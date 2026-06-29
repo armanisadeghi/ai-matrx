@@ -10,6 +10,7 @@ import type { NotesSliceState } from "./notes.types";
 // imports this middleware), breaking the type-level circular dependency.
 type StateWithNotes = { notes: NotesSliceState };
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import {
   markNoteSaving,
   markNoteSaved,
@@ -155,6 +156,9 @@ export const autoSaveMiddleware: Middleware =
               content: recordAfterLabel.content,
               folder_name: recordAfterLabel.folder_name,
               folder_id: folderId,
+              // folder_id may be null, so the org-inherit trigger may have no
+              // parent to read — resolve the org explicitly (never a null org).
+              organization_id: await ensureOrgId(recordAfterLabel.organization_id),
               tags: recordAfterLabel.tags,
               metadata: recordAfterLabel.metadata,
               position: recordAfterLabel.position ?? 0,

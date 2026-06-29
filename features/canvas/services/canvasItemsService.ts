@@ -4,6 +4,7 @@ import {
 } from "@/features/canvas/redux/canvasSlice";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 
@@ -193,6 +194,7 @@ export const canvasItemsService = {
         .schema("canvas").from("canvas_items")
         .insert({
           user_id: userId,
+          organization_id: await ensureOrgId(undefined),
           type: input.content.type,
           content: input.content as any,
           content_hash: contentHash,

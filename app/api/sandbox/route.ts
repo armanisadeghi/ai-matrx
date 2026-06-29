@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import {
   resolveOrchestratorByTier,
@@ -307,6 +308,7 @@ export async function POST(request: NextRequest) {
     // renamed/required column, this assignment fails at compile time. That's
     // the contract that catches the next `proxy_url`-style silent drop.
     const sandboxRecord: SandboxInstanceInsert = {
+      organization_id: await ensureOrgIdServer(supabase, undefined),
       user_id: user.id,
       project_id: project_id || null,
       sandbox_id: orchestratorData.sandbox_id,

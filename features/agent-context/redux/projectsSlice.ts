@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { NavProject, ProjectScopeTag } from "./hierarchySlice";
 import type { DataLevel, DataLevelMeta } from "./organizationsSlice";
 import { isStale } from "./organizationsSlice";
@@ -129,7 +130,11 @@ export const createProjectThunk = createAsyncThunk(
     const userId = requireUserId();
     const { data: proj, error } = await workspaceDb(supabase)
       .from("projects")
-      .insert({ ...data, created_by: userId })
+      .insert({
+        ...data,
+        organization_id: await ensureOrgId(data.organization_id),
+        created_by: userId,
+      })
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )

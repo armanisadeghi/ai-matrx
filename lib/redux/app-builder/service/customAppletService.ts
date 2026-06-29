@@ -8,6 +8,7 @@ import {
 } from "@/types/customAppTypes";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { graveyardDb } from "@/utils/supabase/graveyardDb";
 import {
   RuntimeCompiledRecipe,
@@ -147,12 +148,14 @@ export const appletConfigToDBFormat = async (
   config: CustomAppletConfig,
 ): Promise<CustomAppletConfigInsert> => {
   const userId = requireUserId();
+  const organizationId = await ensureOrgId(undefined);
 
   return {
     ...(config.id ? { id: config.id } : {}),
     name: config.name,
     description: config.description || null,
     slug: config.slug,
+    organization_id: organizationId,
     applet_icon: config.appletIcon || null,
     applet_submit_text: config.appletSubmitText || null,
     creator: config.creator || null,

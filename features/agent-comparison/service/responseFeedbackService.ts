@@ -19,6 +19,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 export type FeedbackRating = "up" | "down" | null;
 
@@ -90,6 +91,7 @@ export async function saveFeedback(
   input: SaveFeedbackInput,
 ): Promise<ResponseFeedbackRow> {
   const payload = {
+    organization_id: await ensureOrgId(undefined),
     user_id: input.userId,
     conversation_id: input.conversationId,
     request_id: input.requestId,

@@ -8,6 +8,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 /** A surface_key → state map for one (user, feature). '_default' is the global. */
 export type SurfaceStateRows = Record<string, Record<string, unknown>>;
@@ -39,7 +40,13 @@ export const surfaceUserStateService = {
     const { error } = await supabase
       .schema("users").from("user_surface_state")
       .upsert(
-        { user_id: userId, feature, surface_key: surfaceKey, state: state as never },
+        {
+          user_id: userId,
+          organization_id: await ensureOrgId(undefined),
+          feature,
+          surface_key: surfaceKey,
+          state: state as never,
+        },
         { onConflict: "user_id,feature,surface_key" },
       );
     if (error) throw new Error(`surfaceUserState.save(${feature}/${surfaceKey}): ${error.message}`);

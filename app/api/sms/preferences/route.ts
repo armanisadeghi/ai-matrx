@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
 import { normalizePhoneNumber } from '@/lib/sms/phoneUtils';
 
 /**
@@ -121,11 +122,12 @@ export async function PUT(request: NextRequest) {
       updateData.phone_number = normalizePhoneNumber(updateData.phone_number);
     }
 
-    // Upsert preferences
+    // Upsert preferences (scoped to the user's personal org)
+    const organizationId = await ensureOrgIdServer(supabase, undefined);
     const { data, error } = await adminSupabase
       .schema('communication').from('sms_notification_preferences')
       .upsert(
-        { user_id: user.id, ...updateData },
+        { user_id: user.id, organization_id: organizationId, ...updateData },
         { onConflict: 'user_id' }
       )
       .select()
@@ -144,6 +146,7 @@ export async function PUT(request: NextRequest) {
         {
           phone_number: updateData.phone_number as string,
           user_id: user.id,
+          organization_id: organizationId,
           consent_type: 'transactional',
           status: 'opted_in',
           opted_in_at: new Date().toISOString(),

@@ -3,6 +3,7 @@
  */
 
 import { db } from "./supabase-typed";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { CxUserTodoRow } from "../tools/types";
 
 export interface CreateUserTodoInput {
@@ -32,6 +33,7 @@ export async function addUserTodo(
   const { data, error } = await db
     .schema("chat").from("user_todo")
     .insert({
+      organization_id: await ensureOrgId(undefined),
       conversation_id: input.conversation_id,
       user_id: input.user_id,
       title: input.title,

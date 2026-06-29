@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { extractErrorMessage } from "@/utils/errors";
@@ -92,6 +93,7 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
             .schema("users").from("user_preferences")
             .insert({
               user_id: userId,
+              organization_id: await ensureOrgId(undefined),
               auto_rag_enabled: next,
               preferences: {},
             });

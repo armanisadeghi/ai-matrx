@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { getUserId } from '@/utils/auth/getUserId';
+import { ensureOrgId } from '@/lib/organizations/personalOrg';
 import type { SharedCanvasItem } from '@/types/canvas-social';
 
 export function useSharedCanvas(shareToken: string | null) {
@@ -56,6 +57,7 @@ async function trackView(shareToken: string) {
             .insert({
                 canvas_id: canvas.id,
                 user_id: userId,
+                organization_id: await ensureOrgId(undefined),
                 session_id: sessionId,
                 referrer: typeof document !== 'undefined' ? document.referrer : null,
                 viewed_at: new Date().toISOString()

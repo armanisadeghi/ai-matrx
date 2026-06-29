@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 
 /**
  * GET /api/user/email-preferences
@@ -139,11 +140,13 @@ export async function PATCH(request: Request) {
         );
       }
     } else {
-      // Create new preferences
+      // Create new preferences (scoped to the user's personal org)
+      const organizationId = await ensureOrgIdServer(supabase, undefined);
       const { error } = await supabase
         .schema("users").from("user_email_preferences")
         .insert({
           user_id: user.id,
+          organization_id: organizationId,
           ...preferences,
         });
 

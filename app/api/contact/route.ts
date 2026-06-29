@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { sendEmail } from "@/lib/email/client";
 import { emailTemplates } from "@/lib/email/client";
 import { getContactRatelimiter } from "@/lib/rate-limit/client";
@@ -49,9 +51,15 @@ export async function POST(request: NextRequest) {
 
     // Save submission to database
     const adminSupabase = createAdminClient();
+    // Signed-in submitters get their own org; anonymous submissions home to
+    // the global system org (no individual owner).
+    const organizationId = user
+      ? await ensureOrgIdServer(supabase, undefined)
+      : await resolveSystemOrgId(adminSupabase);
     const { data: submission, error: dbError } = await adminSupabase
       .from("contact_submissions")
       .insert({
+        organization_id: organizationId,
         user_id: user?.id || null,
         name,
         email,

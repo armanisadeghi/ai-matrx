@@ -78,14 +78,18 @@ export type CreateNoteInput = Pick<
     | "content"
     | "folder_name"
     | "folder_id"
-    | "organization_id"
     | "project_id"
     | "task_id"
     | "tags"
     | "metadata"
     | "position"
     | "visibility"
->;
+> & {
+    // org is resolved by the create path (ensureOrgId), so callers need not
+    // pass it — keep it optional even though NoteInsert.organization_id is now
+    // NOT NULL / required.
+    organization_id?: string | null;
+};
 
 export type UpdateNoteInput = Pick<
     NoteUpdate,

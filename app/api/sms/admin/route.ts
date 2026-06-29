@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
 import { sendAndLogSms } from '@/lib/sms/send';
 import { sendAdminMessageSms } from '@/lib/sms/notificationService';
 import { updateAllWebhookUrls } from '@/lib/sms/numbers';
@@ -90,9 +91,11 @@ export async function POST(request: NextRequest) {
           if (existingConv) {
             convId = existingConv.id;
           } else {
+            const organizationId = await ensureOrgIdServer(supabase, undefined);
             const { data: newConv } = await adminSupabase
               .schema('communication').from('sms_conversations')
               .insert({
+                organization_id: organizationId,
                 external_phone_number: phoneNumber,
                 our_phone_number: fromNum?.phone_number || '',
                 conversation_type: 'admin',

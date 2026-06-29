@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import type {
@@ -65,6 +66,7 @@ export function useCanvasShare() {
         creator_username: displayName,
         creator_display_name: displayName,
         published_at: new Date().toISOString(),
+        organization_id: await ensureOrgId(undefined),
       };
 
       console.log("💾 Inserting to database:", insertData);

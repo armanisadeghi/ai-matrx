@@ -438,6 +438,8 @@ export async function createFolder(name: string): Promise<string> {
       name,
       path: name,
       position: 0,
+      // Root entity (no org-inherit trigger) — org is NOT NULL; resolve it.
+      organization_id: await resolvePersonalOrgId(),
     })
     .select("id")
     .single();

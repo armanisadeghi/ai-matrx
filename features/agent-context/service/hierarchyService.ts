@@ -3,6 +3,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import type {
   NavTreeResponse,
@@ -431,6 +432,7 @@ export const hierarchyService = {
       .from("tasks")
       .insert({
         ...taskRest,
+        organization_id: await ensureOrgId(undefined),
         status: data.status ?? "not_started",
         priority: toTaskPriority(priority),
         created_by: userId,

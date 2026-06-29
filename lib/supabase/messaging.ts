@@ -15,6 +15,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   RealtimeChannel,
   RealtimePresenceState,
@@ -61,6 +62,7 @@ interface OnlineUser {
 }
 
 interface MessageInsert {
+  organization_id: string;
   conversation_id: string;
   sender_id: string;
   content: string;
@@ -334,7 +336,19 @@ export class MessagingService {
       options?.clientMessageId ||
       `${senderId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // The message belongs to its parent conversation's org.
+    const supabaseClient = this.getSupabase();
+    const { data: parentConversation } = await supabaseClient
+      .schema("communication").from("dm_conversations")
+      .select("organization_id")
+      .eq("id", conversationId)
+      .single();
+    const organizationId = await ensureOrgId(
+      parentConversation?.organization_id,
+    );
+
     const messageData: MessageInsert = {
+      organization_id: organizationId,
       conversation_id: conversationId,
       sender_id: senderId,
       content: content.trim(),
@@ -348,8 +362,7 @@ export class MessagingService {
     };
 
     // 1. INSERT to database
-    const supabase = this.getSupabase();
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .schema("communication").from("dm_messages")
       .insert(messageData)
       .select()

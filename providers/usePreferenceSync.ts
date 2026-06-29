@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from '@/utils/supabase/client';
+import { ensureOrgId } from '@/lib/organizations/personalOrg';
 
 export function usePreferenceSync() {
     const userId = useAppSelector((state) => state.userAuth.id);
@@ -13,10 +14,13 @@ export function usePreferenceSync() {
         if (!userId) return;
 
         return () => {
-            supabase.schema('users').from('user_preferences').upsert({
-                user_id: userId,
-                preferences,
-            });
+            void ensureOrgId(undefined).then((organizationId) =>
+                supabase.schema('users').from('user_preferences').upsert({
+                    organization_id: organizationId,
+                    user_id: userId,
+                    preferences,
+                }),
+            );
         };
     }, []);
 }
