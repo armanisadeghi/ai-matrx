@@ -586,52 +586,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai/v2/agent/{agent_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start Agent V2
-         * @description The SAME agent run, on the matrx-runtime spine (the new system owns the request
-         *     envelope; the proven loop streams + persists unchanged). Spine tracking is
-         *     best-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.
-         *     See aidream/services/runtime/FEATURE.md.
-         */
-        post: operations["start_agent_v2_ai_v2_agent__agent_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/v2/agents/{agent_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start Agent V2
-         * @description The SAME agent run, on the matrx-runtime spine (the new system owns the request
-         *     envelope; the proven loop streams + persists unchanged). Spine tracking is
-         *     best-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.
-         *     See aidream/services/runtime/FEATURE.md.
-         */
-        post: operations["start_agent_v2_ai_v2_agents__agent_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/ai/agents/{agent_id}/invalidate-cache": {
         parameters: {
             query?: never;
@@ -830,30 +784,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai/v2/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Chat V2
-         * @description The SAME chat, run on the matrx-runtime Request Management Layer — the new spine
-         *     owns the request envelope (identity / status / cost / lease, linked to the cx
-         *     conversation) while the proven loop streams + persists unchanged. Spine tracking is
-         *     best-effort and never breaks the chat. Public URL: POST /api/ai/v2/chat.
-         *     See aidream/services/runtime/FEATURE.md.
-         */
-        post: operations["chat_v2_ai_v2_chat_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/ai/conversation/{conversation_id}": {
         parameters: {
             query?: never;
@@ -882,52 +812,6 @@ export interface paths {
         put?: never;
         /** Continue Conversation */
         post: operations["continue_conversation_ai_conversations__conversation_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/v2/conversation/{conversation_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Continue Conversation V2
-         * @description The SAME conversation continuation, on the matrx-runtime spine (the new system
-         *     owns the request envelope; the proven loop streams + persists unchanged). Spine
-         *     tracking is best-effort and never breaks the turn. Public URL:
-         *     POST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.
-         */
-        post: operations["continue_conversation_v2_ai_v2_conversation__conversation_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/v2/conversations/{conversation_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Continue Conversation V2
-         * @description The SAME conversation continuation, on the matrx-runtime spine (the new system
-         *     owns the request envelope; the proven loop streams + persists unchanged). Spine
-         *     tracking is best-effort and never breaks the turn. Public URL:
-         *     POST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.
-         */
-        post: operations["continue_conversation_v2_ai_v2_conversations__conversation_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1561,6 +1445,130 @@ export interface paths {
          *     identical to a turn-based one except a ``tool_origin`` provenance marker.
          */
         post: operations["execute_realtime_tool_ai_tools_execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat V2
+         * @description Chat / manual on the spine — identical pipeline to `/api/ai/chat` + `/api/ai/manual`
+         *     (manual is keyed off the `/manual` path), wrapped in the runtime request envelope.
+         */
+        post: operations["chat_v2_v2_ai_manual_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat V2
+         * @description Chat / manual on the spine — identical pipeline to `/api/ai/chat` + `/api/ai/manual`
+         *     (manual is keyed off the `/manual` path), wrapped in the runtime request envelope.
+         */
+        post: operations["chat_v2_v2_ai_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/agent/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Agent V2
+         * @description Start an agent on the spine — identical pipeline to `/api/ai/agents/{agent_id}`.
+         */
+        post: operations["start_agent_v2_v2_ai_agent__agent_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/agents/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Agent V2
+         * @description Start an agent on the spine — identical pipeline to `/api/ai/agents/{agent_id}`.
+         */
+        post: operations["start_agent_v2_v2_ai_agents__agent_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/conversation/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Continue Conversation V2
+         * @description Continue a conversation on the spine — identical pipeline to
+         *     `/api/ai/conversations/{conversation_id}`.
+         */
+        post: operations["continue_conversation_v2_v2_ai_conversation__conversation_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Continue Conversation V2
+         * @description Continue a conversation on the spine — identical pipeline to
+         *     `/api/ai/conversations/{conversation_id}`.
+         */
+        post: operations["continue_conversation_v2_v2_ai_conversations__conversation_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -32066,80 +32074,6 @@ export interface operations {
             };
         };
     };
-    start_agent_v2_ai_v2_agent__agent_id__post: {
-        parameters: {
-            query?: {
-                is_version?: boolean;
-            };
-            header?: never;
-            path: {
-                agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgentStartRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    start_agent_v2_ai_v2_agents__agent_id__post: {
-        parameters: {
-            query?: {
-                is_version?: boolean;
-            };
-            header?: never;
-            path: {
-                agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgentStartRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post: {
         parameters: {
             query?: {
@@ -32432,39 +32366,6 @@ export interface operations {
             };
         };
     };
-    chat_v2_ai_v2_chat_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChatRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     continue_conversation_ai_conversation__conversation_id__post: {
         parameters: {
             query?: never;
@@ -32501,76 +32402,6 @@ export interface operations {
         };
     };
     continue_conversation_ai_conversations__conversation_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConversationContinueRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    continue_conversation_v2_ai_v2_conversation__conversation_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConversationContinueRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    continue_conversation_v2_ai_v2_conversations__conversation_id__post: {
         parameters: {
             query?: never;
             header?: never;
@@ -33608,6 +33439,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolExecuteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_v2_v2_ai_manual_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_v2_v2_ai_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_agent_v2_v2_ai_agent__agent_id__post: {
+        parameters: {
+            query?: {
+                is_version?: boolean;
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_agent_v2_v2_ai_agents__agent_id__post: {
+        parameters: {
+            query?: {
+                is_version?: boolean;
+            };
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    continue_conversation_v2_v2_ai_conversation__conversation_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    continue_conversation_v2_v2_ai_conversations__conversation_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationContinueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

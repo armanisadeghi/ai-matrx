@@ -35,6 +35,7 @@ import {
   markWorkingDocError,
   markWorkingDocMaterialized,
   NO_BINDING,
+  reservedWorkingDocumentId,
   setWorkingDocBinding,
   setWorkingDocContent,
   setWorkingDocEnabled,
@@ -47,6 +48,7 @@ import {
   selectWorkingDocContent,
   selectWorkingDocMaterialized,
   selectWorkingDocTitle,
+  selectWorkingDocVersion,
 } from "./instance-working-document.selectors";
 import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
@@ -119,7 +121,13 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
     }
     await Promise.all(
       DOC_KINDS.map(async (kind) => {
-        const link = links.find((l) => l.kind === kind && l.enabled);
+        // Prefer the conversation's OWN (born-here, deterministic-id) document as
+        // the primary slot; fall back to the first enabled attached doc. (True
+        // multi-attach beyond the primary is a DocumentsWorkspace concern.)
+        const deterministicId = reservedWorkingDocumentId(conversationId, kind);
+        const kindLinks = links.filter((l) => l.kind === kind && l.enabled);
+        const link =
+          kindLinks.find((l) => l.documentId === deterministicId) ?? kindLinks[0];
         if (!link) return; // never used / disabled → stays off
         try {
           const doc = await getCxWorkingDocumentById(link.documentId);
@@ -184,8 +192,10 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
     const binding = selectWorkingDocBinding(conversationId, kind)(getState());
 
     if (enabled) {
-      // Reserve a fresh id only if not already pointing at a working_document
-      // (a hydrated/linked doc keeps its id). NO durable write here.
+      // Reserve the DETERMINISTIC id only if not already pointing at a
+      // working_document (a hydrated/linked doc keeps its id). NO durable write
+      // here — the id is deterministic per (conversation, kind) so every tab
+      // agrees and materialize-on-write collapses to one row.
       if (binding.kind === "none" || !binding.id) {
         dispatch(
           setWorkingDocBinding({
@@ -193,7 +203,7 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
             kind,
             binding: {
               kind: "cx_working_document",
-              id: crypto.randomUUID(),
+              id: reservedWorkingDocumentId(conversationId, kind),
               label: null,
             },
           }),
@@ -283,6 +293,24 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
       dispatch(
         markWorkingDocMaterialized({ conversationId, kind, version: doc.version }),
       );
+      // CATCH-UP: the materialize captured a snapshot of `content`, but the user
+      // may have typed more while it (or a concurrent dedup'd materialize) was in
+      // flight. Push the latest slice content so the row never lags the editor.
+      const latest = selectWorkingDocContent(conversationId, kind)(getState());
+      if (latest !== content) {
+        try {
+          const updated = await updateCxWorkingDocumentContent(doc.id, latest);
+          dispatch(
+            setWorkingDocVersion({ conversationId, kind, version: updated.version }),
+          );
+        } catch (err) {
+          console.error("[working-document] materialize catch-up failed", {
+            conversationId,
+            kind,
+            err,
+          });
+        }
+      }
       // Persist the auto-title back into the slice when we derived one.
       if (title && !currentTitle) {
         dispatch(setWorkingDocTitle({ conversationId, kind, title }));
@@ -551,7 +579,8 @@ export const unbindWorkingDocumentThunk = createAsyncThunk<
         binding: { ...NO_BINDING },
       }),
     );
-    // Reserve a fresh working document (blank); the row is created on next edit.
+    // Revert to the conversation's own (deterministic) working document; the row
+    // is created on next edit (or already exists — same id either way).
     dispatch(setWorkingDocContent({ conversationId, kind, content: "" }));
     dispatch(setWorkingDocTitle({ conversationId, kind, title: "" }));
     dispatch(
@@ -560,7 +589,7 @@ export const unbindWorkingDocumentThunk = createAsyncThunk<
         kind,
         binding: {
           kind: "cx_working_document",
-          id: crypto.randomUUID(),
+          id: reservedWorkingDocumentId(conversationId, kind),
           label: null,
         },
       }),

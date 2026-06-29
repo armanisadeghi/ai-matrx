@@ -1101,128 +1101,6 @@
         }
       }
     },
-    "/ai/v2/agent/{agent_id}": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Start Agent V2",
-        "description": "The SAME agent run, on the matrx-runtime spine (the new system owns the request\nenvelope; the proven loop streams + persists unchanged). Spine tracking is\nbest-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.\nSee aidream/services/runtime/FEATURE.md.",
-        "operationId": "start_agent_v2_ai_v2_agent__agent_id__post",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
-            "name": "is_version",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Is Version"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentStartRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/v2/agents/{agent_id}": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Start Agent V2",
-        "description": "The SAME agent run, on the matrx-runtime spine (the new system owns the request\nenvelope; the proven loop streams + persists unchanged). Spine tracking is\nbest-effort and never breaks the run. Public URL: POST /api/ai/v2/agents/{agent_id}.\nSee aidream/services/runtime/FEATURE.md.",
-        "operationId": "start_agent_v2_ai_v2_agents__agent_id__post",
-        "parameters": [
-          {
-            "name": "agent_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Agent Id"
-            }
-          },
-          {
-            "name": "is_version",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Is Version"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AgentStartRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/ai/agents/{agent_id}/invalidate-cache": {
       "post": {
         "tags": [
@@ -1618,46 +1496,6 @@
         }
       }
     },
-    "/ai/v2/chat": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Chat V2",
-        "description": "The SAME chat, run on the matrx-runtime Request Management Layer — the new spine\nowns the request envelope (identity / status / cost / lease, linked to the cx\nconversation) while the proven loop streams + persists unchanged. Spine tracking is\nbest-effort and never breaks the chat. Public URL: POST /api/ai/v2/chat.\nSee aidream/services/runtime/FEATURE.md.",
-        "operationId": "chat_v2_ai_v2_chat_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/ai/conversation/{conversation_id}": {
       "post": {
         "tags": [
@@ -1715,108 +1553,6 @@
         ],
         "summary": "Continue Conversation",
         "operationId": "continue_conversation_ai_conversations__conversation_id__post",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConversationContinueRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/v2/conversation/{conversation_id}": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Continue Conversation V2",
-        "description": "The SAME conversation continuation, on the matrx-runtime spine (the new system\nowns the request envelope; the proven loop streams + persists unchanged). Spine\ntracking is best-effort and never breaks the turn. Public URL:\nPOST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.",
-        "operationId": "continue_conversation_v2_ai_v2_conversation__conversation_id__post",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ConversationContinueRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/v2/conversations/{conversation_id}": {
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Continue Conversation V2",
-        "description": "The SAME conversation continuation, on the matrx-runtime spine (the new system\nowns the request envelope; the proven loop streams + persists unchanged). Spine\ntracking is best-effort and never breaks the turn. Public URL:\nPOST /api/ai/v2/conversations/{conversation_id}. See aidream/services/runtime/.",
-        "operationId": "continue_conversation_v2_ai_v2_conversations__conversation_id__post",
         "parameters": [
           {
             "name": "conversation_id",
@@ -3323,6 +3059,310 @@
                 "schema": {
                   "$ref": "#/components/schemas/ToolExecuteResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ai/manual": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Chat V2",
+        "description": "Chat / manual on the spine — identical pipeline to `/api/ai/chat` + `/api/ai/manual`\n(manual is keyed off the `/manual` path), wrapped in the runtime request envelope.",
+        "operationId": "chat_v2_v2_ai_manual_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ai/chat": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Chat V2",
+        "description": "Chat / manual on the spine — identical pipeline to `/api/ai/chat` + `/api/ai/manual`\n(manual is keyed off the `/manual` path), wrapped in the runtime request envelope.",
+        "operationId": "chat_v2_v2_ai_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ai/agent/{agent_id}": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Start Agent V2",
+        "description": "Start an agent on the spine — identical pipeline to `/api/ai/agents/{agent_id}`.",
+        "operationId": "start_agent_v2_v2_ai_agent__agent_id__post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ai/agents/{agent_id}": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Start Agent V2",
+        "description": "Start an agent on the spine — identical pipeline to `/api/ai/agents/{agent_id}`.",
+        "operationId": "start_agent_v2_v2_ai_agents__agent_id__post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "is_version",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Is Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ai/conversation/{conversation_id}": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Continue Conversation V2",
+        "description": "Continue a conversation on the spine — identical pipeline to\n`/api/ai/conversations/{conversation_id}`.",
+        "operationId": "continue_conversation_v2_v2_ai_conversation__conversation_id__post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationContinueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/ai/conversations/{conversation_id}": {
+      "post": {
+        "tags": [
+          "v2 (runtime spine)"
+        ],
+        "summary": "Continue Conversation V2",
+        "description": "Continue a conversation on the spine — identical pipeline to\n`/api/ai/conversations/{conversation_id}`.",
+        "operationId": "continue_conversation_v2_v2_ai_conversations__conversation_id__post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationContinueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },

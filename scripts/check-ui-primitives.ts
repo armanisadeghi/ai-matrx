@@ -11,6 +11,9 @@
  *
  * What it flags (high signal, low noise):
  *   1. raw-input     <input type="checkbox|radio|range">  → use Checkbox / RadioGroup / Slider
+ *      Exception: hidden checkbox inputs that only drive pure-CSS state (:checked,
+ *      :has(), peer-checked) — sr-only, aria-hidden, or a dedicated *-toggle hook
+ *      class. These are layout switches, not user-visible form controls.
  *   2. fake-checkbox a Check/CheckIcon rendered inside a hand-built bordered,
  *                    rounded box                           → use <Checkbox>
  *   3. fake-switch   a rounded-full track with a translate-x thumb, in a file
@@ -95,15 +98,6 @@ const EXEMPT_RE = [
   /\.test\.tsx$/,
   /__tests__\//,
   /\/__mocks__\//,
-  // Pure-CSS toggle hacks — hidden inputs driving :has() / peer-checked layout,
-  // not user-visible form controls.
-  /^app\/\(core\)\/layout\.tsx$/,
-  /^app\/\(ssr\)\/layout\.tsx$/,
-  /^components\/icons\/SearchToolbar\.tsx$/,
-  /^features\/shell\/components\/header\/header-right-menu\/MenuGroup\.tsx$/,
-  /^features\/shell\/components\/header\/header-right-menu\/ShellUserMenu\.tsx$/,
-  /^features\/shell\/components\/AppShell\.tsx$/,
-  /^app\/\(dev\)\/layout\.dev\.tsx$/,
 ];
 
 function isExempt(file: string): boolean {
@@ -159,6 +153,31 @@ interface Finding {
 const lineAt = (text: string, index: number): number =>
   text.slice(0, index).split("\n").length;
 
+/** Full `<input …>` tag at `matchIndex` (handles multiline JSX). */
+function extractInputTag(text: string, matchIndex: number): string {
+  const start = text.lastIndexOf("<input", matchIndex);
+  if (start === -1) return "";
+  const selfClose = text.indexOf("/>", start);
+  const closeTag = text.indexOf(">", start);
+  if (selfClose !== -1 && (closeTag === -1 || selfClose < closeTag)) {
+    return text.slice(start, selfClose + 2);
+  }
+  if (closeTag !== -1) return text.slice(start, closeTag + 1);
+  return text.slice(start, start + 400);
+}
+
+/**
+ * Hidden native checkbox driving pure-CSS layout (menus, accordions, sidebars)
+ * via :checked / :has() / peer-checked — not a visible form control.
+ */
+function isCssToggleCheckbox(tag: string): boolean {
+  if (/aria-hidden\s*=\s*(?:["']true["']|\{true\})/i.test(tag)) return true;
+  if (/className=\{?["'`][^"'`}]*\bsr-only\b/i.test(tag)) return true;
+  // Dedicated CSS hook classes (e.g. stb-toggle) — never user-visible primitives.
+  if (/className=\{?["'`][^"'`}]*\b[\w-]*-toggle\b/i.test(tag)) return true;
+  return false;
+}
+
 // 1. Raw native form inputs that bypass the official components entirely.
 const RAW_INPUT_RE =
   /<input\b[^>]*\btype\s*=\s*["'](checkbox|radio|range)["']/gi;
@@ -199,9 +218,14 @@ function scanFile(file: string): Finding[] {
 
   // 1. raw inputs
   for (const m of text.matchAll(RAW_INPUT_RE)) {
+    const index = m.index ?? 0;
+    if (m[1] === "checkbox") {
+      const tag = extractInputTag(text, index);
+      if (tag && isCssToggleCheckbox(tag)) continue;
+    }
     findings.push({
       file,
-      line: lineAt(text, m.index ?? 0),
+      line: lineAt(text, index),
       kind: "raw-input",
       detail: `raw <input type="${m[1]}"> — use the official ${
         m[1] === "checkbox"

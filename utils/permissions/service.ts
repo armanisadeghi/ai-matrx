@@ -125,6 +125,12 @@ const VISIBILITY_ENUM_RESOURCE_TYPES = new Set<string>([
   "task",
   "agent",
   "agent_app",
+  // 2026 reorg: notes moved public→workbench AND onto the platform.visibility enum.
+  // Live workbench.notes has created_by + visibility only (no user_id / is_public),
+  // so ownership must read created_by and public toggles write `visibility` directly.
+  // The DB shareable_resource_registry row is still stale (user_id/is_public); this
+  // override is the canonical handling, matching task/file/folder/agent.
+  "note",
 ]);
 
 function usesVisibilityEnum(resourceType: ResourceType): boolean {

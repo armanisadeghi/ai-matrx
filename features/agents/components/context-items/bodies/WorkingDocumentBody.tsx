@@ -1,37 +1,29 @@
 "use client";
 
 /**
- * Working-document drawer body. The working document is a live, collaborative
- * context item re-sent every turn — editing it here reaches the agent
- * automatically (no re-attach).
+ * Working-document drawer adapter. ONE working-document component renders
+ * everywhere (panel, window, smart-input tab, this drawer) — `WorkingDocumentPanel`
+ * — varied only by its chrome props. The drawer reuses it with the header off
+ * (the drawer owns the title bar + footer), so there is no second editor/diff/
+ * history implementation and no divergent behaviour. The title bar's view
+ * controls + the binding footer are the only drawer-specific chrome.
  *
- * Parity with Notes in the context drawer:
- *   • Full editor modes via `NoteEditorCore` (Edit / Split / Rich / MD Split / Preview)
- *   • Version history panel (note-bound → `note_versions`; otherwise per-turn snapshots)
- *   • Agent-change diff via canonical `DiffViewer` + `useWorkingDocChanges`
- *
- * Only the Body mounts `useWorkingDocument`. Title actions + version history read
- * the shared per-conversation view store so the hook is never double-mounted.
+ * IMPORTANT: this adapter reads the title via a SELECTOR (not a second
+ * `useWorkingDocument` mount) — mounting the hook twice would fork the editor
+ * draft state. The single hook mount lives inside `WorkingDocumentPanel`.
  */
 
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { FileText, Link2 } from "lucide-react";
-import { DiffViewer } from "@/components/diff/DiffViewer";
-import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
-import { useWorkingDocChanges } from "@/features/transcript-studio/hooks/useWorkingDocChanges";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkingDocBinding } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
-import type { ContextDrawerItem, ContextItemBodyProps } from "../types";
-import { WorkingDocumentEditor } from "../../working-document/WorkingDocumentEditor";
-import { WorkingDocumentViewControls } from "../../working-document/WorkingDocumentViewControls";
-import { WorkingDocumentVersionHistory } from "../../working-document/WorkingDocumentVersionHistory";
 import {
-  patchWorkingDocViewState,
-  setWorkingDocHistoryOpen,
-  setWorkingDocMainView,
-  useWorkingDocViewState,
-} from "../../working-document/workingDocumentViewStore";
+  selectWorkingDocBinding,
+  selectWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import type { ContextDrawerItem, ContextItemBodyProps } from "../types";
+import { WorkingDocumentPanel } from "../../working-document/WorkingDocumentPanel";
+import { WorkingDocumentViewControls } from "../../working-document/WorkingDocumentViewControls";
 
 export function buildWorkingDocumentDrawerItem(
   conversationId: string,
@@ -54,73 +46,23 @@ export function buildWorkingDocumentDrawerItem(
 
 export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
   const conversationId = item.conversationId;
-  const { title, draft, content, onChange, flush, saving } =
-    useWorkingDocument(conversationId);
-  const { before, after, hasUnseenChange, markSeen } = useWorkingDocChanges(
-    content,
-    draft,
-  );
-  const { mainView, historyOpen } = useWorkingDocViewState(conversationId);
+  const title = useAppSelector(selectWorkingDocTitle(conversationId, "working"));
 
+  // Keep the drawer's title bar in sync with the (possibly auto-derived) name.
   useEffect(() => {
     setTitle?.(title?.trim() || "Working document");
   }, [title, setTitle]);
 
-  useEffect(() => {
-    patchWorkingDocViewState(conversationId, { hasUnseenChange, saving });
-  }, [conversationId, hasUnseenChange, saving]);
-
-  useEffect(() => {
-    if (mainView === "agent-diff") markSeen();
-  }, [mainView, markSeen]);
-
-  const handleApplySnapshot = useCallback(
-    (snapshotContent: string) => {
-      onChange(snapshotContent);
-      flush();
-      setWorkingDocHistoryOpen(conversationId, false);
-      setWorkingDocMainView(conversationId, "editor");
-    },
-    [conversationId, flush, onChange],
-  );
-
+  // The ONE working-document component, chrome off — the drawer supplies its own
+  // title bar (WorkingDocumentTitleActions) + footer (WorkingDocumentFooter).
   return (
-    <>
-      <div className="h-full min-h-0">
-        {mainView === "agent-diff" ? (
-          <DiffViewer
-            original={before}
-            modified={after}
-            engine="light"
-            language="markdown"
-            originalLabel="Before"
-            modifiedLabel="After (agent's edit)"
-            defaultView="highlight"
-            showToolbar
-            className="h-full min-h-0"
-          />
-        ) : (
-          <WorkingDocumentEditor
-            conversationId={conversationId}
-            kind="working"
-            draft={draft}
-            onChange={onChange}
-            onFlush={flush}
-            surfaceContext={{
-              conversationId,
-              sourceFeature: "working-document",
-            }}
-          />
-        )}
-      </div>
-      <WorkingDocumentVersionHistory
-        conversationId={conversationId}
-        currentContent={draft}
-        open={historyOpen}
-        onOpenChange={(open) => setWorkingDocHistoryOpen(conversationId, open)}
-        onApplySnapshot={handleApplySnapshot}
-      />
-    </>
+    <WorkingDocumentPanel
+      conversationId={conversationId}
+      kind="working"
+      showHeader={false}
+      showEnableToggle={false}
+      showOpenInWindow={false}
+    />
   );
 }
 

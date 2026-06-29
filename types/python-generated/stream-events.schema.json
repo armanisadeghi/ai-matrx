@@ -4183,6 +4183,11 @@
         ],
         "default": null,
         "title": "Source Id"
+      },
+      "materialized": {
+        "default": false,
+        "title": "Materialized",
+        "type": "boolean"
       }
     },
     "required": [

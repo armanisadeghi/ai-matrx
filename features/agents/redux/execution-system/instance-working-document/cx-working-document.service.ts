@@ -135,6 +135,52 @@ export async function updateCxWorkingDocumentContent(
   return rowToCxWorkingDocument(data as CxWorkingDocumentRow);
 }
 
+export interface ContentCommitResult {
+  /** "saved" — our write landed; "conflict" — a concurrent edit moved the row. */
+  status: "saved" | "conflict";
+  /** "saved": the new row (with bumped version). "conflict": the CURRENT row. */
+  document: CxWorkingDocument;
+}
+
+/**
+ * OPTIMISTIC-CONCURRENCY user content write. Updates only if the row is still at
+ * `baseVersion` (the version the editor's content was based on). If a concurrent
+ * edit — typically the agent's ctx_patch this turn — already advanced the row,
+ * the write is REFUSED (0 rows) and we return the CURRENT row as a `conflict`
+ * instead of blindly clobbering the other party's edit. The caller reflects the
+ * current version and surfaces a diff so the user reconciles; both versions are
+ * captured in `history.row_versions`, so nothing is ever lost.
+ */
+export async function commitWorkingDocumentContent(
+  id: string,
+  content: string,
+  baseVersion: number,
+): Promise<ContentCommitResult> {
+  const { data, error } = await WD()
+    .update({ content })
+    .eq("id", id)
+    .eq("version", baseVersion)
+    .select("*")
+    .maybeSingle();
+  if (error) {
+    throw new Error(`[working-document] commit failed: ${error.message}`);
+  }
+  if (data) {
+    return {
+      status: "saved",
+      document: rowToCxWorkingDocument(data as CxWorkingDocumentRow),
+    };
+  }
+  // 0 rows updated: the version moved (concurrent edit) OR the row is gone.
+  const current = await getCxWorkingDocumentById(id);
+  if (!current) {
+    // Row vanished — fall back to an unconditional write so we don't lose the
+    // user's content to a transient read.
+    return { status: "saved", document: await updateCxWorkingDocumentContent(id, content) };
+  }
+  return { status: "conflict", document: current };
+}
+
 /**
  * List the current user's documents of a given kind, newest-edited first.
  * Powers the "attach an existing document" picker (cross-conversation linking).

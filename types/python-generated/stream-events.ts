@@ -435,6 +435,7 @@ export interface ContextPersistedData {
   command: string;
   source_kind?: string;
   source_id?: string | null;
+  materialized?: boolean;
 }
 
 export interface ConversationIdData {

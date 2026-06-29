@@ -85,7 +85,6 @@ import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conv
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
 const AUTOSAVE_MS = 700;
-const CONTEXT_PUSH_MS = 300;
 
 /** The instanceContext key + label + value builder for a document kind. */
 function contextDescriptorFor(args: {
@@ -242,16 +241,17 @@ export function useWorkingDocumentContextSync(
       return;
     }
 
-    const timer = setTimeout(() => {
-      dispatch(
-        setContextEntries({
-          conversationId,
-          entries: [{ key, value, type: "text", label }],
-        }),
-      );
-    }, CONTEXT_PUSH_MS);
-
-    return () => clearTimeout(timer);
+    // Publish IMMEDIATELY (no debounce). The slice content updates on every
+    // keystroke (onChange), and the agent must receive the user's EXACT latest
+    // text on the next turn — a debounce here would drop the final keystrokes
+    // typed just before send (the request reads the published instanceContext
+    // entry, not the slice). The publish is a cheap Redux write.
+    dispatch(
+      setContextEntries({
+        conversationId,
+        entries: [{ key, value, type: "text", label }],
+      }),
+    );
   }, [
     dispatch,
     conversationId,

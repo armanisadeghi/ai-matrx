@@ -133,6 +133,11 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   note: {
     resourceType: "note",
     tableName: "notes",
+    // 2026 reorg: notes moved public→workbench. Reached via .schema('workbench').
+    // (FE-only; not part of the DB-registry parity comparison.) note is in
+    // VISIBILITY_ENUM_RESOURCE_TYPES so ownership reads created_by; the mirrored
+    // owner/public columns below stay DB-registry-aligned for the parity test.
+    schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -178,6 +183,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   canvas_items: {
     resourceType: "canvas_items",
     tableName: "canvas_items",
+    // 2026 reorg: moved public→canvas. Reached via .schema('canvas').
+    schemaName: "canvas",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -188,6 +195,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   udt_datasets: {
     resourceType: "udt_datasets",
     tableName: "udt_datasets",
+    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
+    schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -198,6 +207,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   udt_picklists: {
     resourceType: "udt_picklists",
     tableName: "udt_picklists",
+    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
+    schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -208,6 +219,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   udt_workbooks: {
     resourceType: "udt_workbooks",
     tableName: "udt_workbooks",
+    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
+    schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -218,6 +231,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   udt_documents: {
     resourceType: "udt_documents",
     tableName: "udt_documents",
+    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
+    schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -228,6 +243,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   transcript: {
     resourceType: "transcript",
     tableName: "transcripts",
+    // 2026 reorg: moved public→transcripts. Reached via .schema('transcripts').
+    schemaName: "transcripts",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -238,6 +255,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   quiz_sessions: {
     resourceType: "quiz_sessions",
     tableName: "quiz_sessions",
+    // 2026 reorg: moved public→education. Reached via .schema('education').
+    schemaName: "education",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
@@ -309,6 +328,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   flashcard_data: {
     resourceType: "flashcard_data",
     tableName: "flashcard_data",
+    // 2026 reorg: moved public→education. Reached via .schema('education').
+    schemaName: "education",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "public",
@@ -439,6 +460,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   scope_association_suggestions: {
     resourceType: "scope_association_suggestions",
     tableName: "scope_association_suggestions",
+    // 2026 reorg: moved public→rag. Reached via .schema('rag').
+    schemaName: "rag",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
@@ -449,6 +472,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   scope_item_value_suggestions: {
     resourceType: "scope_item_value_suggestions",
     tableName: "scope_item_value_suggestions",
+    // 2026 reorg: moved public→rag. Reached via .schema('rag').
+    schemaName: "rag",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: null,
@@ -514,6 +539,10 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   user_analysis_preferences: {
     resourceType: "user_analysis_preferences",
     tableName: "user_analysis_preferences",
+    // 2026 reorg: moved public→users. Reached via .schema('users'). (The DB
+    // registry row still says schema_name='public' — stale; the live table is
+    // users.user_analysis_preferences. schemaName is FE-only, not parity-checked.)
+    schemaName: "users",
     idColumn: "user_id",
     ownerColumn: "user_id",
     isPublicColumn: null,

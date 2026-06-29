@@ -15483,6 +15483,7 @@ export type Database = {
           organization_id: string
           resolved_at: string | null
           resolved_org_id: string | null
+          updated_by: string | null
           user_id: string
         }
         Insert: {
@@ -15495,6 +15496,7 @@ export type Database = {
           organization_id: string
           resolved_at?: string | null
           resolved_org_id?: string | null
+          updated_by?: string | null
           user_id: string
         }
         Update: {
@@ -15507,6 +15509,7 @@ export type Database = {
           organization_id?: string
           resolved_at?: string | null
           resolved_org_id?: string | null
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: []
@@ -16710,6 +16713,7 @@ export type Database = {
           regions_count: number
           status: string
           tier_used: string
+          updated_by: string | null
           user_id: string
         }
         Insert: {
@@ -16726,6 +16730,7 @@ export type Database = {
           regions_count?: number
           status?: string
           tier_used?: string
+          updated_by?: string | null
           user_id: string
         }
         Update: {
@@ -16742,6 +16747,7 @@ export type Database = {
           regions_count?: number
           status?: string
           tier_used?: string
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: []
@@ -18673,6 +18679,7 @@ export type Database = {
           metadata: Json
           organization_id: string
           source: string | null
+          updated_by: string | null
           user_id: string
         }
         Insert: {
@@ -18683,6 +18690,7 @@ export type Database = {
           metadata?: Json
           organization_id: string
           source?: string | null
+          updated_by?: string | null
           user_id: string
         }
         Update: {
@@ -18693,6 +18701,7 @@ export type Database = {
           metadata?: Json
           organization_id?: string
           source?: string | null
+          updated_by?: string | null
           user_id?: string
         }
         Relationships: []
@@ -19891,6 +19900,7 @@ export type Database = {
           request_id: string | null
           retry_count: number
           status_code: number | null
+          updated_by: string | null
           user_id: string | null
           was_recovered: boolean
         }
@@ -19910,6 +19920,7 @@ export type Database = {
           request_id?: string | null
           retry_count?: number
           status_code?: number | null
+          updated_by?: string | null
           user_id?: string | null
           was_recovered?: boolean
         }
@@ -19929,6 +19940,7 @@ export type Database = {
           request_id?: string | null
           retry_count?: number
           status_code?: number | null
+          updated_by?: string | null
           user_id?: string | null
           was_recovered?: boolean
         }
@@ -20202,6 +20214,7 @@ export type Database = {
           route: string | null
           source_app: string | null
           traceback: string | null
+          updated_by: string | null
           user_id: string | null
         }
         Insert: {
@@ -20223,6 +20236,7 @@ export type Database = {
           route?: string | null
           source_app?: string | null
           traceback?: string | null
+          updated_by?: string | null
           user_id?: string | null
         }
         Update: {
@@ -20244,6 +20258,7 @@ export type Database = {
           route?: string | null
           source_app?: string | null
           traceback?: string | null
+          updated_by?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -20268,6 +20283,7 @@ export type Database = {
           retry_count: number
           table_target: string
           traceback: string | null
+          updated_by: string | null
           user_id: string | null
         }
         Insert: {
@@ -20289,6 +20305,7 @@ export type Database = {
           retry_count?: number
           table_target: string
           traceback?: string | null
+          updated_by?: string | null
           user_id?: string | null
         }
         Update: {
@@ -20310,6 +20327,7 @@ export type Database = {
           retry_count?: number
           table_target?: string
           traceback?: string | null
+          updated_by?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -37383,7 +37401,7 @@ export type Database = {
       working_documents: {
         Row: {
           content: string
-          conversation_id: string
+          conversation_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -37394,12 +37412,12 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          user_id: string | null
           version: number
         }
         Insert: {
           content?: string
-          conversation_id: string
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -37410,12 +37428,12 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Update: {
           content?: string
-          conversation_id?: string
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -37426,7 +37444,7 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          user_id?: string | null
           version?: number
         }
         Relationships: []
