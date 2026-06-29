@@ -133,6 +133,72 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_docs: {
+        Row: {
+          area: string | null
+          content: string
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          path: string
+          slug: string | null
+          sync_base_commit: string | null
+          sync_base_hash: string | null
+          synced_at: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          area?: string | null
+          content?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          path: string
+          slug?: string | null
+          sync_base_commit?: string | null
+          sync_base_hash?: string | null
+          synced_at?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          area?: string | null
+          content?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          path?: string
+          slug?: string | null
+          sync_base_commit?: string | null
+          sync_base_hash?: string | null
+          synced_at?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -22737,6 +22803,8 @@ export type Database = {
           p_label?: string
           p_metadata?: Json
           p_org_id?: string
+          p_position?: number
+          p_role?: string
           p_source_id: string
           p_source_type: string
           p_target_id: string
@@ -22755,6 +22823,8 @@ export type Database = {
           organization_id: string
           other_id: string
           other_type: string
+          position: number
+          role: string
         }[]
       }
       assoc_for_sources: {
@@ -22769,6 +22839,8 @@ export type Database = {
           label: string
           metadata: Json
           organization_id: string
+          position: number
+          role: string
           source_id: string
           target_id: string
           target_type: string
@@ -22782,6 +22854,8 @@ export type Database = {
           label: string
           metadata: Json
           organization_id: string
+          position: number
+          role: string
           source_id: string
           source_type: string
           target_id: string
@@ -22789,6 +22863,7 @@ export type Database = {
       }
       assoc_remove: {
         Args: {
+          p_role?: string
           p_source_id: string
           p_source_type: string
           p_target_id: string
@@ -22803,6 +22878,7 @@ export type Database = {
       assoc_set_targets: {
         Args: {
           p_org_id?: string
+          p_role?: string
           p_source_id: string
           p_source_type: string
           p_target_ids: string[]
