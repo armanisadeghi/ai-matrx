@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { getAxisEntry } from "./data/registry";
 import { EDU_TOOL_BY_SLUG } from "./data/tools";
-import { EDU_AXIS_BY_ID } from "./constants";
+import { EDU_AXIS_BY_ID, eduHref } from "./constants";
 import type { EduAxisId } from "./types";
 
 /** Build per-entry metadata for an axis detail page, or a sensible fallback. */
@@ -25,6 +25,8 @@ export function axisDetailMetadata(axisId: EduAxisId, slug: string): Metadata {
     title: entry.name,
     description: entry.description,
     letter: entry.letter,
+    keywords: entry.keywords,
+    canonicalPath: eduHref(axis.segment, slug),
   });
 }
 
@@ -43,5 +45,6 @@ export function toolMetadata(slug: string): Metadata {
     title: tool.name,
     description: tool.description,
     letter: tool.letter,
+    canonicalPath: eduHref(slug),
   });
 }

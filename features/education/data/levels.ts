@@ -53,7 +53,7 @@ export const LEVELS: AxisEntry[] = [
     description:
       "Visual-heavy cards, read-aloud, story-based learning, and sticker-style rewards — with a parent dashboard. The AI keeps vocabulary simple and the tone encouraging for the youngest learners.",
     icon: Baby,
-    letter: "El",
+    letter: "Em", // distinct from the Levels index badge ("El")
     status: "coming-soon",
     accessTier: "free",
     featured: true,

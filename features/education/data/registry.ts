@@ -31,8 +31,3 @@ export function getAxisEntry(
 ): AxisEntry | undefined {
   return getAxisEntries(axisId).find((e) => e.slug === slug);
 }
-
-/** `generateStaticParams` payload — every slug in the axis. */
-export function getAxisParams(axisId: EduAxisId): { slug: string }[] {
-  return getAxisEntries(axisId).map((e) => ({ slug: e.slug }));
-}

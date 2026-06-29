@@ -20,6 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: doc.title,
     description: doc.summary,
     letter: doc.letter,
+    keywords: doc.keywords,
+    canonicalPath: `/education/learn/${slug.join("/")}`,
   });
 }
 

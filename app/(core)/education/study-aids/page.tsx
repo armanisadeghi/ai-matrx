@@ -8,6 +8,7 @@ export const metadata = createRouteMetadata("/education", {
   description:
     "Every way to study — flashcards, quizzes, practice tests, audio podcasts, mind maps, mnemonics, and smart notes, all generated from your own material.",
   letter: "Ea",
+  canonicalPath: "/education/study-aids",
 });
 
 export default function EducationStudyAidsPage() {

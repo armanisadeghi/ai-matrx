@@ -6,14 +6,19 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
 import { SectionRenderer } from "./sections/SectionRenderer";
+import { getAxisEntry } from "../data/registry";
+import { EDU_TOOL_BY_SLUG } from "../data/tools";
 import {
   EDU_BASE,
+  EDU_LEARN_SEGMENT,
   EDU_WORKSPACE_HREF,
   EDU_WORKSPACE_LABEL,
   eduHref,
 } from "../constants";
+import { siteConfig } from "@/config/extras/site";
 import type { LearnDoc, EduSection } from "../types";
 
+/** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
 function humanize(slug: string): string {
   return slug
     .split("-")
@@ -21,13 +26,20 @@ function humanize(slug: string): string {
     .join(" ");
 }
 
+const subjectName = (s: string) => getAxisEntry("subjects", s)?.name ?? humanize(s);
+const toolName = (s: string) => EDU_TOOL_BY_SLUG[s]?.name ?? humanize(s);
+
 export function LearnArticle({ doc }: { doc: LearnDoc }) {
+  const url = `${siteConfig.url}${eduHref(EDU_LEARN_SEGMENT, doc.slug)}`;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: doc.title,
     description: doc.summary,
+    datePublished: doc.updated,
     dateModified: doc.updated,
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
     author: { "@type": "Organization", name: "AI Matrx" },
     publisher: { "@type": "Organization", name: "AI Matrx" },
   };
@@ -39,17 +51,17 @@ export function LearnArticle({ doc }: { doc: LearnDoc }) {
     heading: `Study ${doc.title.replace(/:.*$/, "")} with AI Matrx`,
     body: "Turn this into flashcards, a quiz, an audio overview, or a tutoring session — generated from this guide and your own notes.",
     primary: {
-      label: bridgeTools[0] ? `Open ${humanize(bridgeTools[0])}` : "Start studying free",
+      label: bridgeTools[0] ? `Open ${toolName(bridgeTools[0])}` : "Start studying free",
       href: bridgeTools[0] ? eduHref(bridgeTools[0]) : EDU_BASE,
     },
     secondary: doc.subject
-      ? { label: `More ${humanize(doc.subject)}`, href: eduHref("subjects", doc.subject) }
+      ? { label: `More ${subjectName(doc.subject)}`, href: eduHref("subjects", doc.subject) }
       : undefined,
   };
 
   return (
     <MarketingPageShell>
-      {/* eslint-disable-next-line react/no-danger -- static, server-built JSON-LD */}
+      {/* Static, server-built JSON-LD from trusted registry data (no user input). */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -69,7 +81,7 @@ export function LearnArticle({ doc }: { doc: LearnDoc }) {
             <>
               <span aria-hidden>/</span>
               <Link href={eduHref("subjects", doc.subject)} className="hover:text-foreground transition-colors">
-                {humanize(doc.subject)}
+                {subjectName(doc.subject)}
               </Link>
             </>
           ) : null}

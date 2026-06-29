@@ -10,14 +10,25 @@ import { cn } from "@/lib/utils";
 import { EduHero } from "./sections/EduHero";
 import { SectionRenderer } from "./sections/SectionRenderer";
 import { ACCESS_TIER_META, EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_WORKSPACE_HREF, EDU_WORKSPACE_LABEL, eduHref } from "../constants";
+import { getAxisEntry } from "../data/registry";
+import { EDU_TOOL_BY_SLUG } from "../data/tools";
+import { LEARN_DOC_BY_SLUG } from "../data/learn-content";
 import type { AxisEntry, EduAxisId, EduSection } from "../types";
 
+/** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
 function humanize(slug: string): string {
   return slug
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 }
+
+// Name resolvers — always prefer the referenced entry's real display name
+// (e.g. "FastFire", "MCAT", "Mathematics") over a slug-derived guess.
+const toolName = (s: string) => EDU_TOOL_BY_SLUG[s]?.name ?? humanize(s);
+const examName = (s: string) => getAxisEntry("exam-prep", s)?.name ?? humanize(s);
+const subjectName = (s: string) => getAxisEntry("subjects", s)?.name ?? humanize(s);
+const contentName = (s: string) => LEARN_DOC_BY_SLUG[s]?.title ?? humanize(s);
 
 interface RelatedGroup {
   label: string;
@@ -31,23 +42,23 @@ function buildRelated(entry: AxisEntry): RelatedGroup[] {
   if (r.tools?.length)
     groups.push({
       label: "Study it now",
-      links: r.tools.map((s) => ({ label: humanize(s), href: eduHref(s) })),
+      links: r.tools.map((s) => ({ label: toolName(s), href: eduHref(s) })),
     });
   if (r.exams?.length)
     groups.push({
       label: "Exam prep",
-      links: r.exams.map((s) => ({ label: humanize(s), href: eduHref("exam-prep", s) })),
+      links: r.exams.map((s) => ({ label: examName(s), href: eduHref("exam-prep", s) })),
     });
   if (r.subjects?.length)
     groups.push({
       label: "Related subjects",
-      links: r.subjects.map((s) => ({ label: humanize(s), href: eduHref("subjects", s) })),
+      links: r.subjects.map((s) => ({ label: subjectName(s), href: eduHref("subjects", s) })),
     });
   if (r.content?.length)
     groups.push({
       label: "Read up",
       links: r.content.map((s) => ({
-        label: humanize(s),
+        label: contentName(s),
         href: eduHref(EDU_LEARN_SEGMENT, s),
       })),
     });
@@ -143,7 +154,8 @@ export function AxisDetail({ axisId, entry }: AxisDetailProps) {
                         key={l.href}
                         href={l.href}
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm",
+                          "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 text-sm",
+                          "min-h-[44px] sm:min-h-0", // ≥44px touch target on mobile
                           "hover:border-primary/40 hover:text-primary transition-colors",
                         )}
                       >

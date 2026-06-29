@@ -8,6 +8,7 @@ export const metadata = createRouteMetadata("/education", {
   description:
     "The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a context-aware tutor. Every subject, every grade, every way to learn.",
   letter: "Ed",
+  canonicalPath: "/education",
 });
 
 export default function EducationLayout({

@@ -39,8 +39,6 @@ export type EduAxisId =
 export interface EduLink {
   label: string;
   href: string;
-  /** Visual emphasis. Defaults to "primary" for the first CTA. */
-  variant?: "primary" | "outline";
 }
 
 export interface EduFeatureItem {

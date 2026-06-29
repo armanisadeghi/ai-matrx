@@ -18,6 +18,7 @@ export const metadata = createRouteMetadata("/education", {
   description:
     "Free, in-depth study guides and topic explainers — clear content on the subjects you're learning, with one-click paths to study them in the app.",
   letter: "Lr",
+  canonicalPath: "/education/learn",
 });
 
 export default function EducationLearnPage() {

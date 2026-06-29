@@ -3,6 +3,9 @@ import { Metadata } from "next"
 import { siteConfig } from "@/config/extras/site"
 
 export const metadata: Metadata = {
+    // Resolves relative OG images + canonical URLs (alternates.canonical) against
+    // the production origin instead of localhost at build time.
+    metadataBase: new URL(siteConfig.url),
     title: {
         default: "AI Matrx",
         template: `%s - AI Matrx`,

@@ -8,6 +8,7 @@ export const metadata = createRouteMetadata("/education", {
   description:
     "Built for your stage — kindergarten through high school, college, and professional boards. The AI adapts complexity, tone, and format to the learner.",
   letter: "El",
+  canonicalPath: "/education/levels",
 });
 
 export default function EducationLevelsPage() {

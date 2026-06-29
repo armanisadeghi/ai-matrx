@@ -51,7 +51,7 @@ export function AuthedWorkspaceCTA({
         "backdrop-blur",
       )}
     >
-      <div className="mx-auto max-w-6xl pl-4 sm:pl-6 pr-[var(--shell-marketing-pr)] py-2.5 flex items-center justify-between gap-3">
+      <div className="mx-auto max-w-6xl pl-14 sm:pl-6 pr-[var(--shell-marketing-pr)] py-2.5 flex items-center justify-between gap-3">
         <p className="text-sm text-foreground truncate">
           <span className="font-medium">Welcome back, {firstName}.</span>{" "}
           <span className="text-muted-foreground hidden sm:inline">

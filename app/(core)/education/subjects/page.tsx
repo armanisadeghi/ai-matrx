@@ -8,6 +8,7 @@ export const metadata = createRouteMetadata("/education", {
   description:
     "Study any subject with AI — math, science, history, languages, and more. Flashcards, quizzes, and a tutor grounded in your own materials.",
   letter: "Es",
+  canonicalPath: "/education/subjects",
 });
 
 export default function EducationSubjectsPage() {

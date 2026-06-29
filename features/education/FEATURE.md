@@ -44,7 +44,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 
 - **Marketing/content pages never `"use client"`.** Interactivity goes in leaf client components (e.g. `AuthedWorkspaceCTA`), never the page.
 - **`SectionRenderer` is the only home for page-body markup.** New block type → extend the `EduSection` union + add one branch. Never inline bespoke JSX in a registry entry.
-- **`quick-` prefix = stock/preview content in a non-permanent slot.** `subjects/quick-math` is static and coexists with the dynamic `subjects/[slug]` (static wins); `subjects/math` is reserved for the real, full-functionality build. `math` is NOT in the subjects registry.
+- **`quick-` prefix = stock/preview content in a non-permanent slot.** `subjects/quick-math` (static route) holds the relocated stock algebra lessons and coexists with the dynamic `subjects/[slug]` (static wins). `subjects/math` **is** a marketing subject entry like every subject; the full interactive math *experience* is a future tool build linked from it — the headroom the `quick-` split reserves. (Open question for the user: should `/subjects/math` instead be reserved as the interactive experience itself? Flagged at demo.)
 - **Funnel markers are display-only.** `AccessTierBadge` (free/trial/premium) signals; it does **not** enforce. Enforcement is the forked system — see [`docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md`](../../docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md).
 - **Taxonomy is evidence-backed** (Khan/IXL/Quizlet/Course Hero, June 2026): subject-first; Levels is a three-band model (per-grade K–5 → bands → professional); Exam Prep is its own flat cross-cutting axis. Don't restructure without re-checking the research + the user.
 - **Relocation wired:** old `(public)/education/*` deleted; `nav-data.ts` + `features/math` back-links repoint to `quick-math`; `Target` added to `shellIconMap.ts`.
@@ -55,8 +55,8 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 
 ## Doctrine compliance
 
-- **Reused, not rebuilt:** `MarketingPageShell`, `utils/route-metadata`, `AuthedWorkspaceCTA`, `features/pricing` nudges, the `components/coming-soon` family pattern, `features/math` service+components, `FeatureAdminPage`, `shellIconMap`.
-- **Introduced:** the data-driven section/registry page system (`EduSection` + `SectionRenderer` + registries). **Why:** the hub spans hundreds of marketing/content pages across five axes that parallel agents must fill; a generic, server-only block renderer fed by typed registries makes a new page a data edit, not a component. **Considered & rejected:** per-page bespoke components (doesn't scale to the breadth, can't be safely fanned out) and MDX (no MDX configured; content belongs in the DB).
+- **Reused, not rebuilt:** `MarketingPageShell`, `utils/route-metadata` (extended with optional `keywords`/`canonicalPath`), `AuthedWorkspaceCTA`, `features/pricing` nudges, `features/math` service+components, `FeatureAdminPage`, `shellIconMap`.
+- **Introduced:** the data-driven section/registry page system (`EduSection` + `SectionRenderer` + registries) and the `EduComingSoon` placeholder. **Why the section system:** the hub spans hundreds of marketing/content pages across five axes that parallel agents must fill; a generic, server-only block renderer fed by typed registries makes a new page a data edit, not a component. **Considered & rejected:** per-page bespoke components (doesn't scale to the breadth, can't be safely fanned out); MDX (none configured; content belongs in the DB); and the existing `components/coming-soon/*` family for the tool placeholders — `CominSoonTemplate` is a full-page marketing splash and `ComingSoonCard` is too thin (no status/tier/capabilities/vision-ref), so `EduComingSoon` is the hub's purpose-built placeholder.
 
 ## Current work / next
 
@@ -64,4 +64,5 @@ Structure + demos shipped (this pass). Pending: (1) fill all registries from the
 
 ## Change log
 
+- **2026-06-29** — Adversarial-review fixes: related-link/breadcrumb labels now resolve real entry names (not slug-humanized); `AuthedWorkspaceCTA` mobile left-clearance for the shell hamburger; 44px touch targets on related pills; favicon-letter collisions fixed (ap-chemistry, elementary); `keywords` + self-referential `canonical` wired through the metadata helpers + `metadataBase` set at root; dead `getAxisParams`/`EduLink.variant` removed; doc accuracy. MathProblem code-split spun off as a separate task.
 - **2026-06-29** — Initial scaffold: `(core)/education` structure (5 axes + `/learn` content engine + 9 tool placeholders + admin map), data-driven section/registry system, `EduComingSoon` template, relocated `(public)/education/math` → `subjects/quick-math`, nav-data + icon-map wiring, this doc + forked billing requirements. Source of truth: VISION-education-hub.md.

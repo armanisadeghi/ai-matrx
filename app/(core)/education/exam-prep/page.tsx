@@ -8,6 +8,7 @@ export const metadata = createRouteMetadata("/education", {
   description:
     "Prep for the test that matters — SAT, ACT, AP, MCAT, LSAT, GRE, bar, NCLEX, CPA. Adaptive practice, spoken recall, and full simulated exams.",
   letter: "Ex",
+  canonicalPath: "/education/exam-prep",
 });
 
 export default function EducationExamPrepPage() {

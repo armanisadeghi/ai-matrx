@@ -62,10 +62,15 @@ export function createRouteMetadata(
     description?: string;
     /** Favicon badge text (1–2 chars). Required for demo/tests/admin routes. */
     letter?: string;
+    /** SEO keywords for this route. */
+    keywords?: string[];
+    /** Self-referential canonical path, e.g. "/education/subjects". Resolves
+     *  against `metadataBase` (set in app/config/metadata.ts). */
+    canonicalPath?: string;
     additionalMetadata?: Partial<Metadata>;
   },
 ): Metadata {
-  const { title, titlePrefix, description, letter, additionalMetadata } =
+  const { title, titlePrefix, description, letter, keywords, canonicalPath, additionalMetadata } =
     options || {};
 
   // Compose the browser-tab title: "Prefix | Section" or just "Section"
@@ -87,6 +92,14 @@ export function createRouteMetadata(
 
   if (description) {
     baseMetadata.description = description;
+  }
+
+  if (keywords?.length) {
+    baseMetadata.keywords = keywords;
+  }
+
+  if (canonicalPath) {
+    baseMetadata.alternates = { canonical: canonicalPath };
   }
 
   if (!additionalMetadata?.openGraph && (composedTitle || description)) {
@@ -161,9 +174,13 @@ export function createDynamicRouteMetadata(
     /** Favicon badge text (1–2 chars). Required for demo/tests/admin routes. */
     letter?: string;
     ogImage?: string;
+    /** SEO keywords for this route. */
+    keywords?: string[];
+    /** Self-referential canonical path; resolves against `metadataBase`. */
+    canonicalPath?: string;
   },
 ): Metadata {
-  const { title, titlePrefix, description, letter, ogImage } = options;
+  const { title, titlePrefix, description, letter, ogImage, keywords, canonicalPath } = options;
 
   const composedTitle = titlePrefix ? `${titlePrefix} | ${title}` : title;
   const desc = description || siteConfig.description;
@@ -175,6 +192,8 @@ export function createDynamicRouteMetadata(
     {
       title: composedTitle,
       description: desc,
+      ...(keywords?.length ? { keywords } : {}),
+      ...(canonicalPath ? { alternates: { canonical: canonicalPath } } : {}),
       openGraph: {
         title: socialTitle,
         description: desc,
