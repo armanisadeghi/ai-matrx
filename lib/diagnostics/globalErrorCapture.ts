@@ -84,44 +84,55 @@ export function installGlobalErrorCapture(): void {
     },
   );
 
-  // ── console.error wrapper ────────────────────────────────────────────────
-  // We always call the original first (so devtools is untouched), then capture
-  // a filtered copy. Known third-party dev noise is dropped so the inspector
-  // stays signal-rich.
-  const originalError = console.error.bind(console);
-  console.error = (...args: unknown[]) => {
-    originalError(...args);
-    if (inConsoleCapture) return; // never recurse into our own capture
-    try {
-      if (isKnownThirdPartyNoise(args)) return;
-      inConsoleCapture = true;
-      const message = args
-        .map((a) =>
-          typeof a === "string"
-            ? a
-            : a instanceof Error
-              ? a.message
-              : (() => {
-                  try {
-                    return JSON.stringify(a);
-                  } catch {
-                    return String(a);
-                  }
-                })(),
-        )
-        .join(" ");
-      const errArg = args.find((a) => a instanceof Error) as Error | undefined;
-      captureError({
-        source: "console-error",
-        message: message || "console.error",
-        name: errArg?.name,
-        stack: errArg?.stack,
-        raw: errArg ? serializeThrown(errArg) : args,
-      });
-    } catch {
-      /* capture must never break the caller */
-    } finally {
-      inConsoleCapture = false;
-    }
-  };
+  // ── console.error wrapper (NON-DEV ONLY) ─────────────────────────────────
+  // Reassigning the global console.error inserts this wrapper's frame between
+  // the real caller and any downstream handler — which CORRUPTS the origin
+  // attribution of Next.js's dev error overlay (it would blame this file
+  // instead of the real call site). In `next dev` the overlay already surfaces
+  // every console.error anyway, so the wrapper there is pure downside.
+  //
+  // So we only wrap OUTSIDE development. In production/preview there is no Next
+  // overlay to corrupt, and the Error Inspector becomes the one surface for
+  // console.error diagnostics. The passive window listeners above run in every
+  // environment (they don't reassign anything, so they corrupt nothing).
+  if (process.env.NODE_ENV !== "development") {
+    const originalError = console.error.bind(console);
+    console.error = (...args: unknown[]) => {
+      originalError(...args);
+      if (inConsoleCapture) return; // never recurse into our own capture
+      try {
+        if (isKnownThirdPartyNoise(args)) return;
+        inConsoleCapture = true;
+        const message = args
+          .map((a) =>
+            typeof a === "string"
+              ? a
+              : a instanceof Error
+                ? a.message
+                : (() => {
+                    try {
+                      return JSON.stringify(a);
+                    } catch {
+                      return String(a);
+                    }
+                  })(),
+          )
+          .join(" ");
+        const errArg = args.find((a) => a instanceof Error) as
+          | Error
+          | undefined;
+        captureError({
+          source: "console-error",
+          message: message || "console.error",
+          name: errArg?.name,
+          stack: errArg?.stack,
+          raw: errArg ? serializeThrown(errArg) : args,
+        });
+      } catch {
+        /* capture must never break the caller */
+      } finally {
+        inConsoleCapture = false;
+      }
+    };
+  }
 }

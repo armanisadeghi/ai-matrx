@@ -26,10 +26,17 @@ newest-first, identical signatures deduped with an occurrence count.
   `schema`; captures raw PostgREST `code`/`message`/`details`/`hint`/`status` +
   operation + table/fn + a cleaned call-site.
 - **Global runtime** — `lib/diagnostics/globalErrorCapture.ts`,
-  `installGlobalErrorCapture()`: `window` 'error', `unhandledrejection`, and a
-  `console.error` wrapper (noise-filtered via `lib/console-noise.ts`). Installed
-  once for **every user** from `app/DeferredSingletons.tsx`. This is the single
-  owner of those listeners — the old `adminDebugSlice` listeners were retired.
+  `installGlobalErrorCapture()`: `window` 'error' + `unhandledrejection` (passive
+  listeners, every environment) and a `console.error` wrapper (noise-filtered via
+  `lib/console-noise.ts`). Installed once for **every user** from
+  `app/DeferredSingletons.tsx`. This is the single owner of those listeners — the
+  old `adminDebugSlice` listeners were retired.
+  - **The `console.error` wrapper runs only OUTSIDE development.** Reassigning
+    global `console.error` inserts our frame between the caller and Next.js's dev
+    error overlay, corrupting its origin attribution (it would blame this file).
+    In `next dev` the overlay already surfaces every `console.error`, so the
+    wrapper is pure downside there; in prod/preview there is no overlay and the
+    Inspector is the one surface. Never reinstate the dev wrap.
 - **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the one
   error chokepoint in `lib/api/call-api.ts`. Every non-2xx / network failure.
 - **React render** — `lib/diagnostics/captureReactError.ts`,
@@ -109,6 +116,10 @@ listener set.
 
 ## Change Log
 
+- 2026-06-28 — Gated the `console.error` wrapper to non-development. In `next dev`
+  it corrupted Next's error-overlay origin attribution (blamed
+  `globalErrorCapture.ts` instead of the real caller) and duplicated the overlay;
+  window/rejection listeners and all other sources are unaffected.
 - 2026-06-28 — Generalized to **systemwide + tiered**: broadened the store/UI off
   Supabase-only; added global-runtime / api-http / react-render adapters; added
   the red/orange/yellow tier model + agent-editable `errorTierRules.ts` downgrade
