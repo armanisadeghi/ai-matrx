@@ -1,12 +1,10 @@
-// NOTE: Most `prompt_app_*` tables (categories, errors, executions, rate_limits, prompt_apps itself)
-// have been moved to the graveyard schema and are no longer reachable via PostgREST.
-// Functions that hit those tables are stubbed to return empty/throw clearly.
-// `prompt_app_analytics` remains in the public schema and still works.
+// NOTE: All legacy `prompt_app_*` tables (categories, errors, executions, rate_limits,
+// prompt_apps, prompt_app_analytics) live in the graveyard schema and are decommissioned.
+// Stubbed functions return empty/throw clearly. Analytics reads `app.definition` instead.
 import { createClient } from "@/utils/supabase/client";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
-// Helper to get the right client based on context (used only by fetchAnalytics which hits
-// prompt_app_analytics, the one table still in the public schema)
+// Helper to get the right client based on context (fetchAnalytics → app.definition)
 function getClient() {
   if (typeof window !== "undefined") {
     return createClient();

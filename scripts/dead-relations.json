@@ -992,14 +992,6 @@
       "new": "graveyard.prompt_app_executions",
       "since": "2026-06-29",
       "reason": "retired to graveyard; live execution tracking is app.execution."
-    },
-    {
-      "relation": "prompt_app_analytics",
-      "old": "public.prompt_app_analytics",
-      "newSchema": "graveyard",
-      "new": "graveyard.prompt_app_analytics",
-      "since": "2026-06-29",
-      "reason": "retired; aggregate counters live on app.definition."
     }
   ]
 }
