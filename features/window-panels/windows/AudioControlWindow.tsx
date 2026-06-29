@@ -409,21 +409,65 @@ function HistoryList({
 // ─── Recording surface ─────────────────────────────────────────────────────────
 
 function RecordingSurface() {
-  const isRecording = useAppSelector((s) => s.recordings.isRecording);
-  const { recordingHistory } = useAudioSessions();
+  // The global transcription recorder mirrors rich live state (level, duration)
+  // into `state.recordings`; raw recorders (voice messages, …) only register a
+  // registry session. captureLock guarantees ONE active capture at a time, so
+  // `currentRecording` is that capture — show the rich view when it's the global
+  // one, a simple row otherwise.
+  const isGlobalRecording = useAppSelector((s) => s.recordings.isRecording);
+  const { currentRecording, recordingHistory } = useAudioSessions();
 
-  const isEmpty = !isRecording && recordingHistory.length === 0;
+  const hasActive = isGlobalRecording || !!currentRecording;
+  const isEmpty = !hasActive && recordingHistory.length === 0;
   if (isEmpty) {
     return <EmptyState icon={<Mic />} text="Not recording" />;
   }
 
   return (
     <div className="space-y-3">
-      {isRecording ? <ActiveRecording /> : <NotRecordingHint />}
+      {isGlobalRecording ? (
+        <ActiveRecording />
+      ) : currentRecording ? (
+        <SimpleActiveRecording session={currentRecording} />
+      ) : (
+        <NotRecordingHint />
+      )}
       {recordingHistory.length > 0 && (
         <HistoryList history={recordingHistory} label="Recordings" />
       )}
     </div>
+  );
+}
+
+/** Active-recording row for a raw recorder (no rich level/duration data). */
+function SimpleActiveRecording({ session }: { session: AudioSession }) {
+  const { control, can } = useAudioSessions();
+  return (
+    <section className="space-y-1.5">
+      <SectionLabel>Recording</SectionLabel>
+      <div className="rounded-lg border border-border bg-muted/40 px-2.5 py-2">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500/70" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+          </span>
+          <p className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+            {session.label}
+          </p>
+          {can(session.id, "stop") && (
+            <button
+              type="button"
+              onClick={() => control(session.id, "stop")}
+              title="Stop recording"
+              aria-label="Stop recording"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-red-500/30 bg-red-500/10 text-red-600 transition-colors hover:bg-red-500/20 dark:text-red-400 [&_svg]:h-3.5 [&_svg]:w-3.5"
+            >
+              <StopCircle />
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 

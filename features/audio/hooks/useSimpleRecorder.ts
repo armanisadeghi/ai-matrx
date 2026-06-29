@@ -15,15 +15,20 @@ import {
   resumeSharedAudioContext,
 } from '@/features/audio/audioContext';
 import { claimCapture, releaseCapture } from '@/features/audio/captureLock';
+import { beginRecordingSession } from '@/features/audio/session/audioSessionRegistry';
+import type { PlaybackSessionHandle } from '@/features/audio/session/types';
 
 export interface UseSimpleRecorderProps {
   onRecordingComplete?: (blob: Blob) => void;
   onError?: (error: string, errorCode?: string) => void;
+  /** Label for the Audio panel's recording row (e.g. "Voice message"). */
+  label?: string;
 }
 
 export function useSimpleRecorder({
   onRecordingComplete,
   onError,
+  label = 'Voice recording',
 }: UseSimpleRecorderProps = {}) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -51,6 +56,10 @@ export function useSimpleRecorder({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const analyserSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  // This recording's session in the unified audio registry (Audio panel
+  // visibility, live → history). Ended in cleanup (the single exit for every
+  // path: normal stop, takeover, error, reset, unmount).
+  const recordingSessionRef = useRef<PlaybackSessionHandle | null>(null);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -100,6 +109,11 @@ export function useSimpleRecorder({
 
     chunksRef.current = [];
     setAudioLevel(0);
+    // End the registry session (single exit point — no-op if already ended).
+    if (recordingSessionRef.current) {
+      recordingSessionRef.current.end('done');
+      recordingSessionRef.current = null;
+    }
     // Drop the capture lock (id-guarded — a no-op if we were already taken over).
     releaseCapture(captureId);
   }, [captureId]);
@@ -195,6 +209,10 @@ export function useSimpleRecorder({
 
       // Handle recording stop
       mediaRecorder.onstop = () => {
+        // Keep state in sync no matter how the stop was triggered (the panel's
+        // session control stops the MediaRecorder directly, not via stopRecording).
+        setIsRecording(false);
+        setIsPaused(false);
         // Discard on takeover — don't deliver a half-recorded blob the user
         // abandoned by starting another capture.
         if (takenOverRef.current) {
@@ -212,6 +230,17 @@ export function useSimpleRecorder({
       mediaRecorder.start(100); // Collect data every 100ms
       setIsRecording(true);
       setIsPaused(false);
+      // Surface in the unified Audio panel; stop control ends this recorder
+      // (the MediaRecorder's onstop drives state + cleanup).
+      recordingSessionRef.current = beginRecordingSession({
+        label,
+        controls: {
+          stop: () => {
+            const mr = mediaRecorderRef.current;
+            if (mr && mr.state !== 'inactive') mr.stop();
+          },
+        },
+      });
       startTimeRef.current = Date.now();
       pausedTimeRef.current = 0;
 
@@ -227,7 +256,7 @@ export function useSimpleRecorder({
       onError?.(errorSolution.message, errorSolution.code);
       cleanup();
     }
-  }, [cleanup, onRecordingComplete, onError, captureId]);
+  }, [cleanup, onRecordingComplete, onError, captureId, label]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {

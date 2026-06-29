@@ -39,6 +39,8 @@ import {
 } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
 import type { TranscriptionResult } from "@/features/audio/types";
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
+import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
+import type { PlaybackSessionHandle } from "@/features/audio/session/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   audioLevelChanged,
@@ -102,6 +104,21 @@ const GlobalRecordingContext = createContext<GlobalRecordingApi | null>(null);
  */
 const GLOBAL_CAPTURE_ID = "global-recording-session";
 
+/** Human label for the Audio panel's recording row, derived from context. */
+function recordingSessionLabel(ctx: RecordingContext): string {
+  if ("label" in ctx && ctx.label) return ctx.label;
+  switch (ctx.kind) {
+    case "studio":
+      return "Studio recording";
+    case "voice-pad":
+      return "Voice pad";
+    case "field":
+      return "Voice input";
+    default:
+      return "Recording";
+  }
+}
+
 interface GlobalRecordingProviderProps {
   children: ReactNode;
 }
@@ -112,6 +129,9 @@ export function GlobalRecordingProvider({
   const dispatch = useAppDispatch();
 
   const contextRef = useRef<RecordingContext | null>(null);
+  // The current recording's session in the unified audio registry (so the Audio
+  // panel sees every recording, live + in history). Ended on finalize/error.
+  const recordingSessionRef = useRef<PlaybackSessionHandle | null>(null);
   // True from stop() until the final transcript/finalize callback fires (or the
   // recorder errors). Gates `start()` so a back-to-back recording can't stomp
   // the single shared recorder while the prior recording is still finalizing.
@@ -156,6 +176,8 @@ export function GlobalRecordingProvider({
         completeSubRef.current?.(result, audioBlob);
       }
       dispatch(recordingFinalized());
+      recordingSessionRef.current?.end("done");
+      recordingSessionRef.current = null;
       contextRef.current = null;
       chunkSubRef.current = undefined;
       completeSubRef.current = undefined;
@@ -170,6 +192,8 @@ export function GlobalRecordingProvider({
     },
     onError: (message, code) => {
       dispatch(recordingErrored(message));
+      recordingSessionRef.current?.end("error", message);
+      recordingSessionRef.current = null;
       cancelledRef.current = false;
       errorSubRef.current?.(message, code);
       contextRef.current = null;
@@ -232,6 +256,11 @@ export function GlobalRecordingProvider({
           startedAtMs: Date.now(),
         }),
       );
+      // Surface this recording in the unified Audio panel (live → history).
+      recordingSessionRef.current = beginRecordingSession({
+        label: recordingSessionLabel(args.context),
+        controls: { stop: () => stopRef.current() },
+      });
       await recorder.startRecording();
     },
     [dispatch, recorder],
@@ -250,6 +279,10 @@ export function GlobalRecordingProvider({
       setIsFinalizing(false);
     }, 45_000);
     dispatch(recordingStopped());
+    // Capture is over → move the panel session to history now (transcription
+    // continues in the background; the mic is no longer live).
+    recordingSessionRef.current?.end("done");
+    recordingSessionRef.current = null;
     recorder.stopRecording();
   }, [dispatch, recorder]);
   // Keep the capture-lock takeover handle pointed at the latest stop().
@@ -331,6 +364,8 @@ export function GlobalRecordingProvider({
       setIsFinalizing(false);
     }, 45_000);
     dispatch(recordingStopped());
+    recordingSessionRef.current?.end("done");
+    recordingSessionRef.current = null;
     recorder.stopRecording();
   }, [dispatch, recorder]);
 

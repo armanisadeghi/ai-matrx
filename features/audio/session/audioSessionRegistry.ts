@@ -222,6 +222,32 @@ export function beginPlaybackSession(input: {
   };
 }
 
+// ─── Recording-session helper ────────────────────────────────────────────────
+
+/**
+ * Begin a recording (audio-IN) session. Unlike playback there is no lock claim
+ * here — the mic arbiter is `captureLock`, which the recorder already holds;
+ * this only makes the recording visible in the Audio panel (live + history).
+ */
+export function beginRecordingSession(input: {
+  source?: AudioSessionSource;
+  label: string;
+  controls?: AudioSessionControls;
+}): PlaybackSessionHandle {
+  const id = registerSession({
+    direction: "recording",
+    source: input.source ?? "recording",
+    label: input.label,
+    status: "active",
+  });
+  if (input.controls) setSessionControls(id, input.controls);
+  return {
+    id,
+    update: (patch) => updateSession(id, patch),
+    end: (finalStatus = "done", error) => endSession(id, finalStatus, error),
+  };
+}
+
 // ─── Reads / subscription ────────────────────────────────────────────────────
 
 export function getAudioSnapshot(): AudioSnapshot {
