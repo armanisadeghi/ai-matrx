@@ -12,6 +12,9 @@ import Link from "next/link";
 import IconResolver from "@/components/official/icons/IconResolver";
 import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
 import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { toggleOverlay } from "@/lib/redux/slices/overlaySlice";
+import { ERROR_INSPECTOR_OVERLAY_ID } from "@/features/admin/error-inspector/useOpenErrorInspector";
 
 function closeSheet() {
   const checkbox = document.getElementById(
@@ -21,6 +24,7 @@ function closeSheet() {
 }
 
 export default function AdminMobileMenu() {
+  const dispatch = useAppDispatch();
   return (
     <>
       <div className="shell-mobile-section-divider" />
@@ -37,6 +41,20 @@ export default function AdminMobileMenu() {
         </span>
         <span>Admin Dashboard</span>
       </Link>
+
+      <button
+        type="button"
+        className="shell-mobile-nav-item w-full"
+        onClick={() => {
+          dispatch(toggleOverlay({ overlayId: ERROR_INSPECTOR_OVERLAY_ID }));
+          closeSheet();
+        }}
+      >
+        <span className="shell-nav-icon text-amber-500">
+          <IconResolver iconName="AlertTriangle" className="h-5 w-5" />
+        </span>
+        <span>Error Inspector</span>
+      </button>
 
       <a
         href={ADMIN_APP_URL}

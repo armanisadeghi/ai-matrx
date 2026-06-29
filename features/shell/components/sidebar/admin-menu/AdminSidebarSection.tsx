@@ -20,6 +20,7 @@ import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 import SidebarAdminIndicatorToggle from "../../controls/SidebarAdminIndicatorToggle";
 import SidebarCreatorHubToggle from "../../controls/SidebarCreatorHubToggle";
 import SidebarEnvToggle from "../../controls/SidebarEnvToggle";
+import SidebarErrorInspectorToggle from "../../controls/SidebarErrorInspectorToggle";
 
 const AdminMenu = dynamic(() => import("./AdminMenu"), {
   ssr: false,
@@ -41,6 +42,7 @@ export default function AdminSidebarSection() {
   return (
     <div className="shell-admin-section">
       <AdminMenu />
+      <SidebarErrorInspectorToggle />
       <SidebarCreatorHubToggle />
       <SidebarAdminIndicatorToggle />
       <SidebarEnvToggle />

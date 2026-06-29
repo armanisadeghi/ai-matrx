@@ -1,30 +1,27 @@
 // components/admin/debug/AdminDebugContextCollector.tsx
 //
 // Layout-level client island. Place it once inside AdminIndicatorWrapper so it
-// only renders for admins. It auto-captures:
+// only renders for admins. It auto-captures route context:
 //
 //   - Current pathname + search params (on every navigation)
 //   - Browser viewport and user agent
-//   - console.error calls (intercepted while mounted)
-//   - window onerror / unhandledrejection events
 //
-// Nothing here is expensive — the console intercept is a simple wrapper and
-// the pathname effect only runs on navigation. Zero cost for non-admins because
-// this component is a child of AdminIndicatorWrapper which returns null for them.
+// Global runtime errors (console.error, window 'error', unhandledrejection) are
+// NO LONGER captured here — that moved to the single, all-users installer
+// `lib/diagnostics/globalErrorCapture.ts`, which feeds the systemwide
+// `errorCaptureStore` (read by the Error Inspector and by LargeIndicator's
+// "Copy Context"). Keeping listeners here too would be a parallel system.
+//
+// Nothing here is expensive — the pathname effect only runs on navigation.
+// Zero cost for non-admins because this component is a child of
+// AdminIndicatorWrapper which returns null for them.
 
 "use client";
 
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { extractErrorMessage } from "@/utils/errors";
-import {
-  setRouteContext,
-  appendConsoleError,
-  type ConsoleErrorEntry,
-} from "@/lib/redux/preferences/adminDebugSlice";
-import { isKnownThirdPartyNoise } from "@/lib/console-noise";
-import { v4 as uuidv4 } from "uuid";
+import { setRouteContext } from "@/lib/redux/preferences/adminDebugSlice";
 
 export function AdminDebugContextCollector() {
   const dispatch = useAppDispatch();
@@ -52,82 +49,6 @@ export function AdminDebugContextCollector() {
       }),
     );
   }, [pathname, searchParams, dispatch]);
-
-  // ── Console error capture ─────────────────────────────────────────────
-  useEffect(() => {
-    const originalError = console.error.bind(console);
-
-    // Defer dispatch off the current call stack. console.error can fire
-    // synchronously from inside React's render phase (e.g. the "setState
-    // during render" warning). Dispatching Redux actions synchronously in
-    // that context can cascade into additional warnings or subscriber work
-    // mid-render. queueMicrotask gets us out of the current frame safely.
-    const scheduleAppend = (entry: ConsoleErrorEntry) => {
-      queueMicrotask(() => {
-        dispatch(appendConsoleError(entry));
-      });
-    };
-
-    console.error = (...args: unknown[]) => {
-      originalError(...args);
-      // Drop documented third-party dev warnings (see lib/console-noise.ts)
-      // so the admin debug panel stays focused on signal. These warnings are
-      // intentionally left in the dev console itself (we no longer monkeypatch
-      // the global console.error — doing so corrupted the origin of real
-      // errors); we only filter them out of the Redux-backed debug panel here.
-      if (isKnownThirdPartyNoise(args)) return;
-      const message = args
-        .map((a) =>
-          typeof a === "string"
-            ? a
-            : a instanceof Error
-              ? a.message
-              : JSON.stringify(a),
-        )
-        .join(" ");
-      const errArg = args.find((a) => a instanceof Error) as Error | undefined;
-      scheduleAppend({
-        id: uuidv4(),
-        message,
-        source: "console.error",
-        stack: errArg?.stack,
-        capturedAt: Date.now(),
-      });
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const reason = event.reason;
-      scheduleAppend({
-        id: uuidv4(),
-        message: extractErrorMessage(reason),
-        source: "unhandledrejection",
-        stack: reason instanceof Error ? reason.stack : undefined,
-        capturedAt: Date.now(),
-      });
-    };
-
-    const handleErrorEvent = (event: ErrorEvent) => {
-      scheduleAppend({
-        id: uuidv4(),
-        message: event.message,
-        source: "error-event",
-        stack: event.error?.stack,
-        capturedAt: Date.now(),
-      });
-    };
-
-    window.addEventListener("unhandledrejection", handleUnhandledRejection);
-    window.addEventListener("error", handleErrorEvent);
-
-    return () => {
-      console.error = originalError;
-      window.removeEventListener(
-        "unhandledrejection",
-        handleUnhandledRejection,
-      );
-      window.removeEventListener("error", handleErrorEvent);
-    };
-  }, [dispatch]);
 
   return null;
 }

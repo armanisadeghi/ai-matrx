@@ -9,13 +9,22 @@
 //   immediately understand: what page, what state, what errors, which server,
 //   what API calls were made.
 
-import type { RouteContext, ConsoleErrorEntry } from '@/lib/redux/preferences/adminDebugSlice';
+import type { RouteContext } from '@/lib/redux/preferences/adminDebugSlice';
 import type { ApiCallLogEntry, ServerEnvironment } from '@/lib/redux/slices/apiConfigSlice';
+
+/** Minimal console/runtime error shape for the snapshot — sourced from the
+ * systemwide errorCaptureStore (mapped by the caller). */
+export interface DebugConsoleError {
+    source: string;
+    message: string;
+    stack?: string;
+    capturedAt: number;
+}
 
 interface AgentContextInput {
     routeContext: RouteContext | null;
     debugData: Record<string, unknown>;
-    consoleErrors: ConsoleErrorEntry[];
+    consoleErrors: DebugConsoleError[];
     activeServer: ServerEnvironment;
     resolvedUrl: string | undefined;
     serverHealthStatus: string;

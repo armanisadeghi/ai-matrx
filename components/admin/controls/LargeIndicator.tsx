@@ -1,5 +1,5 @@
 // components/admin/controls/LargeIndicator.tsx
-import React, { Suspense, lazy, useState, useCallback } from "react";
+import React, { Suspense, lazy, useState, useCallback, useMemo } from "react";
 import {
   ChevronRight,
   X,
@@ -21,8 +21,8 @@ import {
   selectIsDebugMode,
   selectDebugData,
   selectRouteContext,
-  selectConsoleErrors,
 } from "@/lib/redux/preferences/adminDebugSlice";
+import { useCapturedErrors } from "@/lib/diagnostics/useCapturedErrors";
 import {
   selectShowCreatorPanel,
   toggleShowCreatorPanel,
@@ -77,8 +77,30 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const debugData = useAppSelector(selectDebugData);
   const routeContext = useAppSelector(selectRouteContext);
-  const consoleErrors = useAppSelector(selectConsoleErrors);
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
+
+  // Console / runtime errors now come from the systemwide capture store. Pull
+  // the global-runtime sources (console + uncaught + rejections) and map them
+  // to the snapshot shape buildAgentContext + the panel below expect.
+  const capturedErrors = useCapturedErrors();
+  const consoleErrors = useMemo(
+    () =>
+      capturedErrors
+        .filter(
+          (e) =>
+            e.source === "console-error" ||
+            e.source === "runtime-exception" ||
+            e.source === "unhandled-rejection",
+        )
+        .map((e) => ({
+          id: e.id,
+          source: e.source,
+          message: e.message,
+          stack: e.stack,
+          capturedAt: e.lastAt,
+        })),
+    [capturedErrors],
+  );
 
   const handleCopyContext = useCallback(async () => {
     const context = buildAgentContext({

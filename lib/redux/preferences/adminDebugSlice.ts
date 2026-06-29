@@ -2,7 +2,7 @@
 //
 // Central Redux slice for the admin debug system.
 //
-// Three independent data stores:
+// Two independent data stores:
 //
 //   1. routeContext  — auto-captured by AdminDebugContextCollector (layout-level).
 //                     Never write here manually. Read to include in "Copy Context".
@@ -11,9 +11,10 @@
 //                     into. Keys are namespaced: "Chat:Session ID", "API:Last Request".
 //                     Read by LargeIndicator for the JSON debug panel.
 //
-//   3. consoleErrors — ring buffer (max 30) of captured console.error/unhandledrejection
-//                     calls. Captured by AdminDebugContextCollector. Read-only for
-//                     consumers.
+// Captured console / runtime errors live in the systemwide module store
+// (lib/diagnostics/errorCaptureStore) now — NOT here. LargeIndicator reads them
+// from that store via useCapturedErrors. The old `consoleErrors` ring buffer +
+// listeners were retired to avoid a parallel capture system.
 //
 // Indicators (promptDebug, resourceDebug, executionStateDebug) are unchanged from
 // the original design — they drive the floating debug panels in DebugIndicatorManager.
@@ -35,22 +36,11 @@ export interface RouteContext {
   renderCount: number; // increments each time pathname changes
 }
 
-export interface ConsoleErrorEntry {
-  id: string;
-  message: string;
-  source: "console.error" | "unhandledrejection" | "error-event";
-  stack?: string;
-  capturedAt: number; // epoch ms
-}
-
 export interface AdminDebugState {
   isDebugMode: boolean;
 
   // Auto-captured by AdminDebugContextCollector — never write manually
   routeContext: RouteContext | null;
-
-  // Ring buffer of captured console errors — max 30
-  consoleErrors: ConsoleErrorEntry[];
 
   // Namespaced key/value store — keys should be "Namespace:Label"
   // e.g. "Chat:Session ID", "API:Backend URL"
@@ -64,12 +54,9 @@ export interface AdminDebugState {
   };
 }
 
-const MAX_CONSOLE_ERRORS = 30;
-
 const initialState: AdminDebugState = {
   isDebugMode: false,
   routeContext: null,
-  consoleErrors: [],
   debugData: {},
   indicators: {},
 };
@@ -95,18 +82,6 @@ const adminDebugSlice = createSlice({
 
     setRouteContext: (state, action: PayloadAction<RouteContext>) => {
       state.routeContext = action.payload;
-    },
-
-    // ── Console errors ───────────────────────────────────────────────────
-
-    appendConsoleError: (state, action: PayloadAction<ConsoleErrorEntry>) => {
-      state.consoleErrors.unshift(action.payload);
-      if (state.consoleErrors.length > MAX_CONSOLE_ERRORS) {
-        state.consoleErrors.length = MAX_CONSOLE_ERRORS;
-      }
-    },
-    clearConsoleErrors: (state) => {
-      state.consoleErrors = [];
     },
 
     // ── Debug data (namespaced key/value) ────────────────────────────────
@@ -202,8 +177,6 @@ export const {
   toggleDebugMode,
   setDebugMode,
   setRouteContext,
-  appendConsoleError,
-  clearConsoleErrors,
   updateDebugData,
   setDebugData,
   setDebugKey,
@@ -231,8 +204,6 @@ export const selectIsDebugMode = (state: WithAdminDebug) =>
   state.adminDebug.isDebugMode;
 export const selectRouteContext = (state: WithAdminDebug) =>
   state.adminDebug.routeContext;
-export const selectConsoleErrors = (state: WithAdminDebug) =>
-  state.adminDebug.consoleErrors;
 export const selectDebugData = (state: WithAdminDebug) => state.adminDebug.debugData;
 export const selectDebugKey = (key: string) => (state: WithAdminDebug) =>
   state.adminDebug.debugData[key];

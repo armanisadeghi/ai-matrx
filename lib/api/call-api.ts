@@ -84,6 +84,7 @@ import { logApiTarget } from "@/lib/api/log-api-target";
 import { resilientFetch } from "@/lib/net/resilient-fetch";
 import { isNetError } from "@/lib/net/errors";
 import { extractErrorMessage } from "@/utils/errors";
+import { captureApiError } from "@/lib/diagnostics/captureApiError";
 
 // ─── Auto-generated types (source of truth for all request/response shapes) ──
 
@@ -922,25 +923,39 @@ export function callApi<
 
     // ── Step 7: Execute ───────────────────────────────────────────────────
     try {
-      if (config.stream) {
-        return await executeStreamingRequest(
+      const result = config.stream
+        ? await executeStreamingRequest(
+            url,
+            config.method,
+            headers,
+            body,
+            config,
+          )
+        : await executeJsonRequest(
+            url,
+            config.method,
+            headers,
+            body,
+            config.signal,
+          );
+      // Single capture chokepoint for backend failures that resolve with an
+      // `{ error }` body (non-2xx). Feeds the systemwide Error Inspector.
+      if (result.error) {
+        captureApiError(result.error, {
           url,
-          config.method,
-          headers,
-          body,
-          config,
-        );
-      } else {
-        return await executeJsonRequest(
-          url,
-          config.method,
-          headers,
-          body,
-          config.signal,
-        );
+          method: config.method,
+          path: config.path,
+        });
       }
+      return result;
     } catch (err) {
       const error = normalizeError(err);
+      // Network-layer / thrown failures (timeout, DNS, abort) capture here.
+      captureApiError(error, {
+        url,
+        method: config.method,
+        path: config.path,
+      });
       if (config.onStreamError) config.onStreamError(error);
       return { error };
     }

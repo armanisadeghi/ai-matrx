@@ -3,10 +3,10 @@
  *
  * A module-level, React-free ring buffer that captures runtime errors the
  * moment they happen — anywhere, on any page, even outside React render or
- * before the Redux store has hydrated. Built for the 2026 DB transition, where
- * the same broken query can fire from a hundred call sites and we need exact,
- * raw Supabase/PostgREST detail in one place an admin can read and hand to an
- * AI agent.
+ * before the Redux store has hydrated. It is the ONE sink for the systemwide
+ * Error Inspector: Supabase/PostgREST errors, uncaught runtime exceptions,
+ * unhandled promise rejections, console.error, Python-backend HTTP failures,
+ * and React render errors all land here through their own capture adapters.
  *
  * Why a module store and not a Redux slice:
  *   - The Supabase capture proxy (supabaseErrorCapture.ts) is imported by
@@ -17,19 +17,37 @@
  *   - `useSyncExternalStore` gives React components a first-class subscription
  *     to it with correct tearing semantics — see `useCapturedErrors.ts`.
  *
- * This is NOT a parallel to `adminDebugSlice` (which nets generic
- * console.error / window 'error' / unhandledrejection). This store owns the
- * Supabase-error concern, which previously had NO dedicated capture at all.
+ * Every entry is classified into a visibility TIER (red / orange / yellow) at
+ * capture time via `classifyTier` (lib/diagnostics/errorTierRules.ts). The
+ * default is `red`; admins quiet specific errors by adding downgrade rules.
+ *
+ * This is the single capture path for global runtime errors — the old
+ * `adminDebugSlice` listeners were retired in favor of `globalErrorCapture.ts`
+ * feeding this store, so there is no parallel system.
  */
 
 import { extractErrorMessage } from "@/utils/errors";
+import { classifyTier } from "@/lib/diagnostics/errorTierRules";
+import type { ErrorTier } from "@/lib/diagnostics/errorTiers";
 
 /** How a captured error reached us. */
 export type CapturedErrorSource =
   /** A Supabase call resolved with a populated `error` ({ data, error }). */
   | "supabase-postgrest"
   /** A Supabase call threw / its promise rejected (network, abort, etc.). */
-  | "supabase-exception";
+  | "supabase-exception"
+  /** An uncaught error reached `window` 'error' (runtime exception). */
+  | "runtime-exception"
+  /** An unhandled promise rejection reached `window`. */
+  | "unhandled-rejection"
+  /** A `console.error(...)` call (noise-filtered). */
+  | "console-error"
+  /** A Python-backend call returned a non-2xx HTTP status. */
+  | "api-http"
+  /** A Python-backend call failed at the network layer (timeout, DNS, abort). */
+  | "api-network"
+  /** A React component threw during render and an error boundary caught it. */
+  | "react-render";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =
@@ -90,6 +108,14 @@ export interface CapturedError {
 
   /** Full JSON-safe dump of the original error object — future-proof. */
   raw?: unknown;
+
+  // ── Visibility tier (assigned by the store via classifyTier) ─────────────
+  /** red (loud) · orange (dot) · yellow (silent). Default red. */
+  tier: ErrorTier;
+  /** The downgrade rule id that set this tier, if any. */
+  tierRuleId?: string;
+  /** The downgrade rule's reason, for display. */
+  tierReason?: string;
 }
 
 /** The minimal input a capture site provides; the store fills the rest. */
@@ -116,6 +142,18 @@ export interface CapturedErrorStats {
   occurrences: number;
   /** Occurrences since the inspector was last marked seen. */
   unseen: number;
+
+  // ── Per-tier distinct counts (drive the tiered badge) ────────────────────
+  /** Distinct red (Clear Error) entries. */
+  red: number;
+  /** Distinct orange (Minor) entries. */
+  orange: number;
+  /** Distinct yellow (Silent) entries. */
+  yellow: number;
+  /** Unseen occurrences at the red tier (pulses the red badge). */
+  unseenRed: number;
+  /** Unseen occurrences at the orange tier (pulses the orange dot). */
+  unseenOrange: number;
 }
 
 /** Max distinct entries retained. Oldest are evicted first. */
@@ -126,20 +164,53 @@ const MAX_ENTRIES = 300;
 let entries: CapturedError[] = [];
 let unseen = 0;
 let occurrences = 0;
+let unseenRed = 0;
+let unseenOrange = 0;
 
 const listeners = new Set<() => void>();
 
 // Cached, identity-stable stats snapshot — recomputed only when a field
 // actually changes, so `useSyncExternalStore` doesn't loop.
-let statsSnapshot: CapturedErrorStats = { total: 0, occurrences: 0, unseen: 0 };
+let statsSnapshot: CapturedErrorStats = {
+  total: 0,
+  occurrences: 0,
+  unseen: 0,
+  red: 0,
+  orange: 0,
+  yellow: 0,
+  unseenRed: 0,
+  unseenOrange: 0,
+};
 
 function refreshStats(): void {
+  let red = 0;
+  let orange = 0;
+  let yellow = 0;
+  for (const e of entries) {
+    if (e.tier === "red") red += 1;
+    else if (e.tier === "orange") orange += 1;
+    else yellow += 1;
+  }
   if (
     statsSnapshot.total !== entries.length ||
     statsSnapshot.occurrences !== occurrences ||
-    statsSnapshot.unseen !== unseen
+    statsSnapshot.unseen !== unseen ||
+    statsSnapshot.red !== red ||
+    statsSnapshot.orange !== orange ||
+    statsSnapshot.yellow !== yellow ||
+    statsSnapshot.unseenRed !== unseenRed ||
+    statsSnapshot.unseenOrange !== unseenOrange
   ) {
-    statsSnapshot = { total: entries.length, occurrences, unseen };
+    statsSnapshot = {
+      total: entries.length,
+      occurrences,
+      unseen,
+      red,
+      orange,
+      yellow,
+      unseenRed,
+      unseenOrange,
+    };
   }
 }
 
@@ -190,10 +261,16 @@ function currentRoute(): { route: string; url: string } {
  * instead of flooding the buffer — essential during a cutover where one broken
  * query fires on a loop.
  */
+/** Bump the unseen counters for a given tier (called once per occurrence). */
+function bumpUnseen(tier: ErrorTier): void {
+  unseen += 1;
+  if (tier === "red") unseenRed += 1;
+  else if (tier === "orange") unseenOrange += 1;
+}
+
 export function captureError(input: CaptureInput): void {
   const at = nowMs();
   occurrences += 1;
-  unseen += 1;
 
   const sig = signatureOf(input);
   const existingIdx = entries.findIndex((e) => signatureOf(e) === sig);
@@ -209,6 +286,7 @@ export function captureError(input: CaptureInput): void {
       status: input.status ?? existing.status,
       raw: input.raw ?? existing.raw,
     };
+    bumpUnseen(existing.tier);
     const next = entries.slice();
     next.splice(existingIdx, 1);
     next.unshift(updated);
@@ -238,7 +316,20 @@ export function captureError(input: CaptureInput): void {
     stack: input.stack,
     callSite: input.callSite,
     raw: input.raw,
+    // Classified below; seeded to the default so the object is well-typed.
+    tier: "red",
   };
+
+  // Classify into a visibility tier. Never let a bad rule break capture.
+  try {
+    const c = classifyTier(entry);
+    entry.tier = c.tier;
+    entry.tierRuleId = c.ruleId;
+    entry.tierReason = c.reason;
+  } catch {
+    entry.tier = "red";
+  }
+  bumpUnseen(entry.tier);
 
   const next = [entry, ...entries];
   if (next.length > MAX_ENTRIES) next.length = MAX_ENTRIES;
@@ -276,6 +367,8 @@ export function clearCapturedErrors(): void {
   entries = [];
   unseen = 0;
   occurrences = 0;
+  unseenRed = 0;
+  unseenOrange = 0;
   emit();
 }
 
@@ -287,9 +380,11 @@ export function dismissCapturedError(id: string): void {
   emit();
 }
 
-/** Reset the unseen counter — call when the inspector is opened/viewed. */
+/** Reset the unseen counters — call when the inspector is opened/viewed. */
 export function markAllSeen(): void {
-  if (unseen === 0) return;
+  if (unseen === 0 && unseenRed === 0 && unseenOrange === 0) return;
   unseen = 0;
+  unseenRed = 0;
+  unseenOrange = 0;
   emit();
 }

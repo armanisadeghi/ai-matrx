@@ -2,7 +2,7 @@
 /**
  * check-dead-relations — the fast, OFFLINE reference subset of the schema-truth
  * orchestrator (scripts/schema-check). Kept at this path/command because the
- * db-change skills and the pre-commit hook reference it.
+ * db-change skills and release gates reference it.
  *
  * It runs the code-scanning checks that need no live refresh (they read the
  * committed snapshot scripts/schema-check/current-schema.json):
@@ -15,8 +15,8 @@
  * The FULL check (adds types-freshness + api-types-freshness + schema-exposure,
  * and can re-pull the live snapshot) is `pnpm check:schema` — run in release.sh / CI.
  *
- *   pnpm check:dead-relations           # loud, non-blocking (exit 0) — pre-commit
- *   pnpm check:dead-relations:strict    # exit 1 on any error — CI
+ *   pnpm check:dead-relations           # loud, non-blocking (exit 0) — advisory / manual
+ *   pnpm check:dead-relations:strict    # exit 1 on any error — release gates + CI
  *
  * See scripts/schema-check/FEATURE.md.
  */

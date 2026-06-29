@@ -62,7 +62,7 @@ Fuller sweep when unsure (surface-drift + doctrine + types): `pnpm validate --no
 
 ### 5. Commit & push
 
-Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. The pre-commit hook re-runs `check:doctrine:staged` + `check:migrations` — if it blocks, fix and make a NEW commit.
+Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit.
 
 > `pnpm ship "msg"` is the **versioned-release** path (bumps version, notifies the ship API). Use it only when the user asks to cut a release — not for routine work.
 
@@ -83,5 +83,5 @@ Halt and ask the user instead of pushing through when:
 | Migration verify + apply/record | `pnpm check:migrations`; CLAUDE.md → "Database migrations" |
 | Type-fix rules | `type-fixing-agent` skill (+ `supabase-type-safety`) |
 | Doctrine (new primitives) | `pnpm check:doctrine`; `PRINCIPLES.md` |
-| Pre-commit hook | `check:doctrine:staged` + `check:migrations` (auto) |
+| Pre-release gates | `pnpm check:release-gates` or `./scripts/release.sh` (strict; spinner + step labels) |
 | Versioned release | `pnpm ship "msg"` |

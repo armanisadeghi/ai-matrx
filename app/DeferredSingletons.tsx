@@ -47,6 +47,7 @@ import { AudioRecoveryToast } from "@/features/audio/components/AudioRecoveryToa
 import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
+import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
 
 const LazyMessagingIsland = dynamic(
   () => import("@/features/shell/islands/LazyMessagingIsland"),
@@ -160,6 +161,15 @@ export default function DeferredSingletons() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+
+  // Install the global error listeners (window 'error', unhandledrejection,
+  // console.error) once, for EVERY user. Capture is in-memory and cheap; the
+  // Error Inspector UI is admin-gated. This runs on mount (before the idle
+  // gate below) so errors are captured as early as the client tree exists.
+  // Idempotent — repeat mounts are no-ops.
+  useEffect(() => {
+    installGlobalErrorCapture();
+  }, []);
 
   // Pre-warm the scope tree (features/scopes) on idle. This is the ONLY
   // boot-time fetch in the scope/context system. `ensureScopeTree` is

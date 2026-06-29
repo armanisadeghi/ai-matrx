@@ -18,8 +18,12 @@
 #   ./scripts/release.sh --minor      # minor bump
 #   ./scripts/release.sh --major      # major bump
 #   ./scripts/release.sh --message "feat: something"   # custom commit message
-#   ./scripts/release.sh --dry-run    # preview without changes
+#   ./scripts/release.sh --dry-run    # preview without changes (still runs release gates)
 #   ./scripts/release.sh --monitor    # poll Vercel deployment status after push
+#
+# Before bumping the version, runs release quality gates (doctrine, UI primitives,
+# migration ledger, dead-relations) via scripts/run-release-gates.sh — with a
+# spinner so the ~30–45s run never looks hung. Manual: pnpm check:release-gates
 #
 # --monitor requires either:
 #   - VERCEL_TOKEN env var (personal access token from vercel.com/account/tokens)
@@ -186,6 +190,11 @@ EOF
     fi
 fi
 
+# ── Release quality gates (doctrine, UI primitives, migrations, dead-relations) ─
+echo ""
+info "Running release quality gates..."
+bash "$SCRIPT_DIR/run-release-gates.sh"
+
 # ── Read current version ─────────────────────────────────────────────────────
 CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null) \
     || fail "Could not read version from $VERSION_FILE."
@@ -258,13 +267,10 @@ npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version >/dev/null 
 ok "$VERSION_FILE → $NEW_VERSION"
 
 # ── Commit ───────────────────────────────────────────────────────────────────
-# The release commit only bumps package.json — there is nothing for the doctrine
-# or migration gates to check. Skip the pre-commit hook so they don't run a second
-# time (your content commit already passed them).
 info "Committing..."
 git add package.json
 [[ -f package-lock.json ]] && git add package-lock.json
-SKIP_SIMPLE_GIT_HOOKS=1 git commit -m "$COMMIT_MSG"
+git commit -m "$COMMIT_MSG"
 echo ""
 ok "Committed: '$COMMIT_MSG'"
 

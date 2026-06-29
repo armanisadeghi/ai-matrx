@@ -7,7 +7,7 @@
     "build": "ts-node scripts/generate-manifest.ts && pnpm build:sw && pnpm build:pdfjs-worker && next build",
     "build:sw": "tsx features/files/cache/service-worker/build-sw.ts",
     "build:pdfjs-worker": "tsx scripts/copy-pdfjs-worker.ts",
-    "postinstall": "tsx scripts/copy-pdfjs-worker.ts && npx simple-git-hooks",
+    "postinstall": "tsx scripts/copy-pdfjs-worker.ts",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && bash scripts/fix-encoding.sh && next build",
     "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit -p tsconfig.typecheck.json",
@@ -55,6 +55,8 @@
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:dead-relations": "tsx scripts/check-dead-relations.ts",
     "check:dead-relations:strict": "tsx scripts/check-dead-relations.ts --strict",
+    "check:release-gates": "bash scripts/run-release-gates.sh",
+    "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
     "check:schema": "tsx scripts/schema-check/check-schema.ts",
     "check:schema:strict": "tsx scripts/schema-check/check-schema.ts --strict",
     "check:schema:warn": "tsx scripts/schema-check/check-schema.ts --warn",
@@ -313,7 +315,6 @@
     "process": "latest",
     "react-email": "^5.2.9",
     "script-loader": "latest",
-    "simple-git-hooks": "^2.11.1",
     "stream-browserify": "latest",
     "stream-http": "latest",
     "tailwind-scrollbar": "latest",
@@ -345,9 +346,6 @@
       "supabase",
       "utf-8-validate"
     ]
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm -s check:doctrine:staged && pnpm -s check:ui-primitives:staged && pnpm -s check:migrations && pnpm -s check:dead-relations"
   },
   "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

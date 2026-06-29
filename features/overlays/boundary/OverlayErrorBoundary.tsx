@@ -19,6 +19,7 @@
 import * as React from "react";
 import { OverlayErrorFallback } from "@/features/overlays/boundary/OverlayErrorFallback";
 import { normalizeError } from "@/features/overlays/boundary/overlayErrorReport";
+import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 interface OverlayErrorBoundaryProps {
   /** Module path of the wrapped dynamic import, for diagnostics. */
@@ -59,6 +60,14 @@ export class OverlayErrorBoundary extends React.Component<
   componentDidCatch(error: unknown, info: React.ErrorInfo): void {
     const e = normalizeError(error);
     this.setState({ componentStack: info.componentStack ?? null });
+    // Feed the systemwide Error Inspector with rich detail (react-render
+    // source + component stack) — boundaries swallow errors, so the global
+    // window listener never sees this.
+    captureReactRenderError(error, {
+      boundary: "OverlayErrorBoundary",
+      componentStack: info.componentStack ?? null,
+      modulePath: this.props.modulePath,
+    });
     // LOUD recovery: a caught overlay error means a real bug (or a broken
     // deploy/chunk graph) got past the proactive layer. Never swallow it.
     console.error(

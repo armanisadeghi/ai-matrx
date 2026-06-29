@@ -25,9 +25,14 @@ const EMPTY_STATS: CapturedErrorStats = {
   total: 0,
   occurrences: 0,
   unseen: 0,
+  red: 0,
+  orange: 0,
+  yellow: 0,
+  unseenRed: 0,
+  unseenOrange: 0,
 };
 
-/** Live counts for the badge: { total, occurrences, unseen }. */
+/** Live tiered counts for the badge. */
 export function useCapturedErrorStats(): CapturedErrorStats {
   return useSyncExternalStore(
     subscribe,

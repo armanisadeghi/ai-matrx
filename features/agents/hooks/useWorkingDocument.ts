@@ -156,7 +156,7 @@ export function useWorkingDocumentContextSync(
         "postgres_changes",
         {
           event: "*",
-          schema: "chat",
+          schema: "workbench",
           table: "working_documents",
           filter: `id=eq.${documentId}`,
         },

@@ -1,25 +1,18 @@
 "use client";
 
 /**
- * ErrorInspectorWindow — admin-only WindowPanel that lists every Supabase /
- * PostgREST error captured in the live session (from anywhere in the app) with
- * full raw detail and per-error / whole-list "Copy for AI". Built for the 2026
- * DB transition: when a moved table or renamed RPC breaks a query on some page,
- * the exact error, its code, the table/function, the route, and the issuing
- * call-site all land here.
+ * ErrorInspectorWindow — admin-only WindowPanel that lists every runtime error
+ * captured in the live session, from ANY source (Supabase/PostgREST, uncaught
+ * runtime exceptions, unhandled rejections, console.error, Python-backend HTTP
+ * failures, React render errors), with full raw detail, the visibility tier,
+ * a ready-to-paste downgrade rule, and per-error / whole-list "Copy for AI".
  *
  * Data comes from the module-level capture store (lib/diagnostics) via
- * `useCapturedErrors`. The store is fed by the wrapped Supabase browser client.
+ * `useCapturedErrors`, fed by the per-source capture adapters.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  Ban,
-  Database,
-  Trash2,
-  X,
-} from "lucide-react";
+import { AlertTriangle, Ban, Bug, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -36,17 +29,30 @@ import {
   type CapturedError,
 } from "@/lib/diagnostics/errorCaptureStore";
 import {
+  ERROR_TIERS,
+  TIERS_BY_RANK,
+  tierMeta,
+  type ErrorTier,
+} from "@/lib/diagnostics/errorTiers";
+import {
+  TIER_RULES_FILE,
+  buildDowngradeRuleStub,
+} from "@/lib/diagnostics/errorTierRules";
+import {
   capturedErrorLabel,
   capturedErrorToAgentInput,
   capturedErrorToHuman,
   capturedErrorsToAgentInput,
   capturedErrorsToHuman,
+  sourceLabel,
 } from "@/lib/diagnostics/buildCapturedErrorPayload";
 
 interface ErrorInspectorWindowProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type TierFilter = ErrorTier | "all";
 
 function relativeTime(ms: number): string {
   if (!ms) return "";
@@ -56,16 +62,6 @@ function relativeTime(ms: number): string {
   if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
   if (delta < 86_400_000) return `${Math.floor(delta / 3_600_000)}h ago`;
   return `${Math.floor(delta / 86_400_000)}d ago`;
-}
-
-function codeTone(e: CapturedError): string {
-  if (e.source === "supabase-exception")
-    return "bg-destructive/15 text-destructive border-destructive/30";
-  if (e.code === "PGRST116")
-    return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30";
-  if (e.code === "42501")
-    return "bg-destructive/15 text-destructive border-destructive/30";
-  return "bg-primary/10 text-primary border-primary/25";
 }
 
 function Field({ label, value }: { label: string; value?: string | number }) {
@@ -80,6 +76,20 @@ function Field({ label, value }: { label: string; value?: string | number }) {
   );
 }
 
+function TierChip({ tier }: { tier: ErrorTier }) {
+  const t = tierMeta(tier);
+  return (
+    <span
+      className={cn(
+        "rounded border px-1.5 text-[10px] font-semibold uppercase tracking-wide",
+        t.chipClass,
+      )}
+    >
+      {t.label}
+    </span>
+  );
+}
+
 export default function ErrorInspectorWindow({
   isOpen,
   onClose,
@@ -87,6 +97,7 @@ export default function ErrorInspectorWindow({
   const isAdmin = useAppSelector(selectIsAdmin);
   const errors = useCapturedErrors();
   const [query, setQuery] = useState("");
+  const [tierFilter, setTierFilter] = useState<TierFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Mark everything seen whenever the inspector is open (resets the badge).
@@ -94,24 +105,37 @@ export default function ErrorInspectorWindow({
     if (isOpen) markAllSeen();
   }, [isOpen, errors.length]);
 
+  const tierCounts = useMemo(() => {
+    const c: Record<TierFilter, number> = {
+      all: errors.length,
+      red: 0,
+      orange: 0,
+      yellow: 0,
+    };
+    for (const e of errors) c[e.tier] += 1;
+    return c;
+  }, [errors]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return errors;
-    return errors.filter((e) =>
-      [
+    return errors.filter((e) => {
+      if (tierFilter !== "all" && e.tier !== tierFilter) return false;
+      if (!q) return true;
+      return [
         e.message,
         e.code,
         e.relation,
         e.schema,
         e.operation,
+        e.source,
         e.route,
         e.details,
         e.hint,
       ]
         .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
-    );
-  }, [errors, query]);
+        .some((v) => String(v).toLowerCase().includes(q));
+    });
+  }, [errors, query, tierFilter]);
 
   const selected =
     filtered.find((e) => e.id === selectedId) ?? filtered[0] ?? null;
@@ -121,19 +145,49 @@ export default function ErrorInspectorWindow({
 
   const sidebar = (
     <div className="flex flex-col h-full min-h-0">
-      <div className="p-2 border-b border-border shrink-0">
+      <div className="p-2 border-b border-border shrink-0 space-y-2">
         <Input
-          placeholder="Filter by table, code, message…"
+          placeholder="Filter by source, table, code, message…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="h-8 text-xs"
         />
+        <div className="flex items-center gap-1">
+          {(["all", ...TIERS_BY_RANK] as TierFilter[]).map((t) => {
+            const active = tierFilter === t;
+            const dot =
+              t === "all" ? null : (
+                <span
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    ERROR_TIERS[t].dotClass,
+                  )}
+                />
+              );
+            return (
+              <button
+                key={t}
+                onClick={() => setTierFilter(t)}
+                className={cn(
+                  "flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                  active
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60",
+                )}
+              >
+                {dot}
+                <span className="capitalize">{t}</span>
+                <span className="tabular-nums opacity-70">{tierCounts[t]}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
       <ScrollArea className="flex-1 min-h-0">
         {filtered.length === 0 ? (
           <div className="p-4 text-xs text-muted-foreground text-center">
             {errors.length === 0
-              ? "No Supabase errors captured yet."
+              ? "No errors captured yet."
               : "No errors match the filter."}
           </div>
         ) : (
@@ -145,7 +199,8 @@ export default function ErrorInspectorWindow({
                   <button
                     onClick={() => setSelectedId(e.id)}
                     className={cn(
-                      "group w-full text-left rounded-md px-2 py-1.5 transition-colors",
+                      "group w-full text-left rounded-md border-l-2 px-2 py-1.5 transition-colors",
+                      tierMeta(e.tier).accentClass,
                       active
                         ? "bg-accent"
                         : "hover:bg-muted/60 text-muted-foreground hover:text-foreground",
@@ -155,7 +210,7 @@ export default function ErrorInspectorWindow({
                       <span
                         className={cn(
                           "shrink-0 rounded border px-1 text-[10px] font-mono leading-tight",
-                          codeTone(e),
+                          tierMeta(e.tier).chipClass,
                         )}
                       >
                         {e.code ?? e.operation}
@@ -173,6 +228,10 @@ export default function ErrorInspectorWindow({
                       {e.message}
                     </div>
                     <div className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground/80">
+                      <span className="shrink-0 font-medium">
+                        {sourceLabel(e.source)}
+                      </span>
+                      <span className="opacity-50">·</span>
                       <span className="truncate">{e.route || "—"}</span>
                       <span className="ml-auto shrink-0">
                         {relativeTime(e.lastAt)}
@@ -192,8 +251,8 @@ export default function ErrorInspectorWindow({
     <WindowPanel
       titleNode={
         <span className="flex items-center gap-1.5 min-w-0">
-          <Database className="h-4 w-4 text-primary shrink-0" />
-          <span className="shrink-0">Supabase Error Inspector</span>
+          <Bug className="h-4 w-4 text-primary shrink-0" />
+          <span className="shrink-0">Error Inspector</span>
           {errors.length > 0 && (
             <span className="rounded-full bg-destructive/20 text-destructive px-1.5 text-[11px] font-semibold shrink-0">
               {errors.length}
@@ -208,15 +267,15 @@ export default function ErrorInspectorWindow({
       overlayId="errorInspectorWindow"
       onClose={onClose}
       sidebar={sidebar}
-      sidebarDefaultSize={300}
-      sidebarMinSize={220}
+      sidebarDefaultSize={320}
+      sidebarMinSize={240}
       sidebarClassName="bg-muted/10"
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       actionsRight={
         errors.length > 0 ? (
           <CopyButtons
             size="sm"
-            label="All captured Supabase errors"
+            label="All captured errors"
             human={() => capturedErrorsToHuman(errors)}
             agent={() => capturedErrorsToAgentInput(errors)}
           />
@@ -250,30 +309,40 @@ export default function ErrorInspectorWindow({
           <div className="p-3">
             <div className="flex items-start gap-2">
               <div className="mt-0.5 shrink-0">
-                {selected.source === "supabase-exception" ? (
+                {selected.tier === "red" ? (
                   <Ban className="h-4 w-4 text-destructive" />
                 ) : (
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <AlertTriangle
+                    className={cn(
+                      "h-4 w-4",
+                      selected.tier === "orange"
+                        ? "text-amber-500"
+                        : "text-yellow-500",
+                    )}
+                  />
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <TierChip tier={selected.tier} />
                   <span
                     className={cn(
                       "rounded border px-1.5 text-[11px] font-mono",
-                      codeTone(selected),
+                      tierMeta(selected.tier).chipClass,
                     )}
                   >
-                    {selected.code ?? selected.source}
+                    {selected.code ?? sourceLabel(selected.source)}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {selected.operation}
+                    {selected.operation !== "unknown"
+                      ? selected.operation
+                      : sourceLabel(selected.source)}
                     {selected.relation ? ` · ${selected.relation}` : ""}
                   </span>
                   <div className="ml-auto">
                     <CopyButtons
                       size="icon"
-                      label={`Supabase error: ${capturedErrorLabel(selected)}`}
+                      label={`Error: ${capturedErrorLabel(selected)}`}
                       human={() => capturedErrorToHuman(selected)}
                       agent={() => capturedErrorToAgentInput(selected)}
                     />
@@ -286,10 +355,14 @@ export default function ErrorInspectorWindow({
             </div>
 
             <div className="mt-3 rounded-md border border-border bg-card/40 px-3 py-1">
-              <Field label="Source" value={selected.source} />
+              <Field label="Source" value={sourceLabel(selected.source)} />
+              <Field label="Tier" value={tierMeta(selected.tier).label} />
+              {selected.tierReason && (
+                <Field label="Tier reason" value={selected.tierReason} />
+              )}
               <Field label="Operation" value={selected.operation} />
               <Field label="Schema" value={selected.schema} />
-              <Field label="Table / fn" value={selected.relation} />
+              <Field label="Table / fn / route" value={selected.relation} />
               <Field label="Code" value={selected.code} />
               <Field label="HTTP status" value={selected.status} />
               <Field label="Details" value={selected.details} />
@@ -306,10 +379,36 @@ export default function ErrorInspectorWindow({
               />
             </div>
 
+            {/* Downgrade — the "this shouldn't be an error" workflow. */}
+            <div className="mt-3">
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Downgrade this error&apos;s tier
+              </div>
+              <p className="text-[11px] text-muted-foreground mb-1.5">
+                Not a real error? Use “Copy for AI” above and ask an agent to add
+                this rule to{" "}
+                <code className="rounded bg-muted/50 px-1 font-mono">
+                  {TIER_RULES_FILE}
+                </code>{" "}
+                (set <span className="font-mono">tier</span> to{" "}
+                <span className="text-amber-600 dark:text-amber-400">
+                  orange
+                </span>{" "}
+                for a dot or{" "}
+                <span className="text-yellow-600 dark:text-yellow-500">
+                  yellow
+                </span>{" "}
+                to silence).
+              </p>
+              <pre className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
+                {buildDowngradeRuleStub(selected)}
+              </pre>
+            </div>
+
             {selected.callSite && (
               <div className="mt-3">
                 <div className="text-xs font-medium text-muted-foreground mb-1">
-                  Call site (where the query was issued)
+                  Call site / component stack
                 </div>
                 <pre className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
                   {selected.callSite}
@@ -317,7 +416,7 @@ export default function ErrorInspectorWindow({
               </div>
             )}
 
-            {selected.stack && selected.source === "supabase-exception" && (
+            {selected.stack && (
               <div className="mt-3">
                 <div className="text-xs font-medium text-muted-foreground mb-1">
                   Stack
@@ -357,11 +456,13 @@ export default function ErrorInspectorWindow({
         </ScrollArea>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
-          <Database className="h-8 w-8 mb-2 opacity-40" />
-          <p className="text-sm font-medium">No Supabase errors captured</p>
+          <Bug className="h-8 w-8 mb-2 opacity-40" />
+          <p className="text-sm font-medium">No errors captured</p>
           <p className="text-xs mt-1 max-w-xs">
-            Every PostgREST error and failed Supabase call in this session will
-            appear here automatically, with full detail and Copy for AI.
+            Every runtime error in this session — Supabase, uncaught exceptions,
+            rejected promises, console.error, backend HTTP failures, and React
+            render errors — appears here automatically, with full detail and Copy
+            for AI.
           </p>
         </div>
       )}

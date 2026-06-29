@@ -109,7 +109,7 @@ export async function getCxWorkingDocumentById(
   documentId: string,
 ): Promise<CxWorkingDocument | null> {
   const { data, error } = await supabase
-    .schema("chat").from("working_documents")
+    .schema("workbench").from("working_documents")
     .select("*")
     .eq("id", documentId)
     .maybeSingle();
@@ -127,7 +127,7 @@ export async function updateCxWorkingDocumentTitle(
   title: string,
 ): Promise<CxWorkingDocument> {
   const { data, error } = await supabase
-    .schema("chat").from("working_documents")
+    .schema("workbench").from("working_documents")
     .update({ title })
     .eq("id", id)
     .select("*")
@@ -150,7 +150,7 @@ export async function updateCxWorkingDocumentContent(
   content: string,
 ): Promise<CxWorkingDocument> {
   const { data, error } = await supabase
-    .schema("chat").from("working_documents")
+    .schema("workbench").from("working_documents")
     .update({ content })
     .eq("id", id)
     .select("*")
@@ -172,7 +172,7 @@ export async function listUserDocuments(
   limit = 50,
 ): Promise<CxWorkingDocument[]> {
   const { data, error } = await supabase
-    .schema("chat").from("working_documents")
+    .schema("workbench").from("working_documents")
     .select("*")
     .eq("kind", kind)
     .order("updated_at", { ascending: false })
@@ -204,7 +204,7 @@ export async function listRecentUserDocuments(
   limit = 100,
 ): Promise<CxWorkingDocumentSummary[]> {
   const { data, error } = await supabase
-    .schema("chat").from("working_documents")
+    .schema("workbench").from("working_documents")
     .select("id, conversation_id, kind, title, content, updated_at")
     .order("updated_at", { ascending: false })
     .limit(limit);
@@ -337,9 +337,29 @@ async function getOrCreateConversationDocumentImpl(
   // UNIQUE on cx_working_documents is gone (sharing), concurrent provisioning
   // could create two docs — so we claim the junction (which DOES carry
   // UNIQUE(conversation_id, kind)) as the race arbiter and clean up the loser.
+  //
+  // organization_id is NOT NULL (canonical base entity) — stamp it from the
+  // conversation this doc originates in. (This whole junction path is being
+  // replaced by the materialize-on-write + platform.associations model; see
+  // the working-document rebuild plan.)
+  const convRes = await supabase
+    .schema("chat").from("conversation")
+    .select("organization_id")
+    .eq("id", conversationId)
+    .maybeSingle();
+  const organizationId =
+    (convRes.data as { organization_id: string | null } | null)?.organization_id ??
+    null;
   const { data: docData, error: docError } = await supabase
-    .schema("chat").from("working_documents")
-    .insert({ conversation_id: conversationId, kind, title: "" })
+    .schema("workbench").from("working_documents")
+    .insert({
+      conversation_id: conversationId,
+      kind,
+      title: "",
+      // All conversations are org-stamped; a missing org is a real defect and
+      // should fail loudly at the NOT NULL constraint rather than be hidden.
+      organization_id: organizationId as string,
+    })
     .select("*")
     .single();
   if (docError || !docData) {
@@ -389,7 +409,7 @@ async function getOrCreateConversationDocumentImpl(
 
   if (winner.documentId !== candidate.id) {
     // We lost the race — delete the orphan candidate and adopt the winner.
-    await supabase.schema("chat").from("working_documents").delete().eq("id", candidate.id);
+    await supabase.schema("workbench").from("working_documents").delete().eq("id", candidate.id);
     const doc = await getCxWorkingDocumentById(winner.documentId);
     return { document: doc ?? candidate, link: winner };
   }
