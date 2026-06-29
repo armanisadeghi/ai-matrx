@@ -8,6 +8,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import { useMediaElementPlaybackSession } from '@/features/audio/session/useMediaElementPlaybackSession';
 import type { TTSOptions, EnglishVoice } from '../types';
 
 export interface UseTextToSpeechProps {
@@ -34,9 +35,26 @@ export function useTextToSpeech({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  // Last spoken text — labels this utterance's row in the Audio panel.
+  const [lastText, setLastText] = useState('');
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentVoiceRef = useRef<EnglishVoice>(defaultVoice);
+
+  // Join the single audio system: claim the playback lock + register a session
+  // while the generated <audio> plays, so AudioPlayerButton (and any other
+  // consumer) is visible in the Audio panel and can't overlap another voice.
+  useMediaElementPlaybackSession({
+    elementRef: audioRef,
+    isPlaying,
+    source: 'other',
+    label: lastText.trim()
+      ? lastText.trim().length > 60
+        ? `${lastText.trim().slice(0, 60)}…`
+        : lastText.trim()
+      : 'Speech',
+    trackKey: audioUrl ?? undefined,
+  });
 
   // Cleanup audio resources
   const cleanup = useCallback(() => {
@@ -59,6 +77,7 @@ export function useTextToSpeech({
     text: string,
     options?: TTSOptions
   ): Promise<string | null> => {
+    setLastText(text);
     setIsGenerating(true);
     setError(null);
 

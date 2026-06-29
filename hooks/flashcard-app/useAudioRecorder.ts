@@ -6,6 +6,8 @@ import {
   resumeSharedAudioContext,
 } from "@/features/audio/audioContext";
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
+import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
+import type { PlaybackSessionHandle } from "@/features/audio/session/types";
 
 /**
  * Multi-stream flashcard recorder, keyed by `key` so several cards can record
@@ -36,6 +38,10 @@ export function useAudioRecorder() {
   // multiplexes several keys onto ONE shared mic, so it presents to the lock as
   // a SINGLE holder: claimed while any key is active, released when all stop.
   const captureId = useId();
+  // ONE coarse registry session for the whole practice run (this hook
+  // multiplexes many cards onto one capture-lock holder, so per-card sessions
+  // would flood the panel). Opened on the first active key, ended when all stop.
+  const recordingSessionRef = useRef<PlaybackSessionHandle | null>(null);
 
   /** Stop every active MediaRecorder now — the app-wide capture lock calls this
    *  when another recorder (dictation, voice message) takes over the mic. Each
@@ -71,6 +77,10 @@ export function useAudioRecorder() {
       // Once no key is recording, the hook no longer owns capture.
       if (heldKeysRef.current.size === 0) {
         releaseCapture(captureId);
+        if (recordingSessionRef.current) {
+          recordingSessionRef.current.end("done");
+          recordingSessionRef.current = null;
+        }
       }
     },
     [captureId],
@@ -109,6 +119,13 @@ export function useAudioRecorder() {
           label: "Flashcard recorder",
           stop: () => stopAllRef.current(),
         });
+        // Surface the practice run in the Audio panel (one session for all keys).
+        if (!recordingSessionRef.current) {
+          recordingSessionRef.current = beginRecordingSession({
+            label: "Flashcard practice",
+            controls: { stop: () => stopAllRef.current() },
+          });
+        }
         // Shared mic stream (chosen device + warm grant). Never stopped here.
         const stream = await acquireMicStream({ channelCount: 1 });
         heldKeysRef.current.add(key);

@@ -23,6 +23,7 @@ import {
   type VoicePurpose,
 } from '@/lib/cartesia/config';
 import { toast } from 'sonner';
+import { usePlaybackSessionController } from '@/features/audio/session/usePlaybackSessionController';
 
 export type SpeakerPhase =
   | 'idle'
@@ -51,6 +52,8 @@ export function useCartesiaSpeaker({
   dictionarySurfaceKey,
 }: UseCartesiaSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>('idle');
+  // Last spoken text — labels this utterance's row in the Audio panel.
+  const [lastText, setLastText] = useState('');
 
   const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
   const playerRef = useRef<WebPlayer | null>(null);
@@ -120,6 +123,7 @@ export function useCartesiaSpeaker({
   }, []);
 
   const speak = useCallback(async (inputText: string) => {
+    setLastText(inputText);
     let pronunciations: Awaited<ReturnType<typeof import('@/features/dictionary/ttsBridge').resolveDictionaryTtsAliases>> = [];
     if (dictionarySurfaceKey) {
       const { resolveDictionaryTtsAliases } = await import('@/features/dictionary/ttsBridge');
@@ -205,6 +209,18 @@ export function useCartesiaSpeaker({
   const isPlaying = phase === 'playing';
   const isPaused = phase === 'paused';
 
+  // Join the single audio system: register a session + claim the playback lock
+  // while busy, so every consumer of this hook (cx-chat, Scribe, …) is visible
+  // in the Audio panel and can't overlap another voice. No consumer changes.
+  usePlaybackSessionController({
+    source: 'chat-tts',
+    label: previewSpeechLabel(lastText),
+    active: isLoading || isPlaying || isPaused,
+    status: isPlaying ? 'active' : isPaused ? 'paused' : 'loading',
+    errored: phase === 'error',
+    controls: { pause, resume, stop },
+  });
+
   return {
     phase,
     isLoading,
@@ -215,4 +231,11 @@ export function useCartesiaSpeaker({
     resume,
     stop,
   };
+}
+
+/** Short, human label for the Audio panel row. */
+function previewSpeechLabel(text: string): string {
+  const t = text.trim();
+  if (!t) return 'Read-aloud';
+  return t.length > 60 ? `${t.slice(0, 60)}…` : t;
 }

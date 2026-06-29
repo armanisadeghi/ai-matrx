@@ -8,6 +8,8 @@ import {getAssistant} from "@/constants/voice-assistants";
 import {acquireMicStream, releaseMicStream} from "@/features/audio/micStream";
 import {getSharedAudioContext, resumeSharedAudioContext} from "@/features/audio/audioContext";
 import {claimCapture, releaseCapture} from "@/features/audio/captureLock";
+import {beginRecordingSession} from "@/features/audio/session/audioSessionRegistry";
+import type {PlaybackSessionHandle} from "@/features/audio/session/types";
 
 interface SessionState {
     isActive: boolean;
@@ -130,6 +132,8 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
     // Whether we hold a ref on the shared mic singleton — keeps acquire/release
     // balanced exactly once across stop / pause / cleanup / takeover.
     const micHeldRef = useRef(false);
+    // One registry session for the practice run (Audio panel visibility).
+    const recordingSessionRef = useRef<PlaybackSessionHandle | null>(null);
     // Stable id for the app-wide capture lock (one live capture, anywhere).
     const captureId = useId();
     // Latest stopSession — the capture lock ends the whole fast-fire session
@@ -197,6 +201,10 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
             // Release our singleton hold + the capture lock.
             releaseMic();
             releaseCapture(captureId);
+            if (recordingSessionRef.current) {
+                recordingSessionRef.current.end("done");
+                recordingSessionRef.current = null;
+            }
 
             // Reset refs and state
             audioChunks.current = [];
@@ -357,6 +365,13 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
                 label: "Flashcard practice",
                 stop: () => { void stopSessionRef.current(true); },
             });
+            // Surface the practice run in the Audio panel.
+            if (!recordingSessionRef.current) {
+                recordingSessionRef.current = beginRecordingSession({
+                    label: "Flashcard practice",
+                    controls: { stop: () => { void stopSessionRef.current(true); } },
+                });
+            }
 
             // Shared mic singleton (chosen device + warm grant; never stopped here).
             const stream = await acquireMicStream({
