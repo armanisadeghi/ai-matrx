@@ -61,7 +61,7 @@ export const normalizeCustomAppConfig = (config: Partial<CustomAppConfig>): Cust
 /**
  * Converts a CustomAppConfig to the database format
  */
-export const customAppConfigToDBFormat = async (config: CustomAppConfig): Promise<Omit<CustomAppConfigDB, 'id' | 'created_at' | 'updated_at'>> => {
+export const customAppConfigToDBFormat = async (config: CustomAppConfig): Promise<Omit<CustomAppConfigDB, 'id' | 'created_at' | 'updated_at' | 'authenticated_read'>> => {
   // Get the current user ID from the session
   const userId = requireUserId();
   const organizationId = await ensureOrgId(undefined);
@@ -81,7 +81,10 @@ export const customAppConfigToDBFormat = async (config: CustomAppConfig): Promis
     layout_type: config.layoutType || null,
     user_id: userId,
     is_public: false,
-    authenticated_read: true,
+    // `authenticated_read` is not a column on custom_app_configs (the table has
+    // is_public / public_read / visibility instead). Writing it was a no-op at
+    // best and a PostgREST error at worst — omitted so the payload matches the
+    // generated Insert/Update type.
     public_read: false,
     image_url: config.imageUrl || null,
     image_file_id: config.imageFileId || null

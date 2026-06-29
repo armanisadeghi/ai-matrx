@@ -16,6 +16,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import type { TablesUpdate } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { scopesService } from "@/features/scopes/service/scopesService";
@@ -245,7 +246,7 @@ export const saveNote = createAsyncThunk<void, string>(
 
     const { data, error } = await supabase
       .schema("workbench").from("notes")
-      .update(updates)
+      .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
       .eq("id", noteId)
       .select("updated_at")
       .single();

@@ -8,6 +8,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
+import type { TablesUpdate } from "@/types/database.types";
 import { isUuid } from "@/features/scope-system/utils/slugify";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type {
@@ -104,7 +105,7 @@ export const updateContextItem = createAsyncThunk(
     review_interval_days?: number | null;
     sort_order?: number;
   }) => {
-    const patch: Record<string, unknown> = {};
+    const patch: TablesUpdate<{ schema: "context" }, "context_items"> = {};
     if (params.display_name !== undefined)
       patch.display_name = params.display_name;
     if (params.slug !== undefined) patch.slug = params.slug;

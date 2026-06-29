@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateTwilioWebhook } from '@/lib/sms/validate';
 import { createAdminClient } from '@/utils/supabase/adminClient';
 import type { StatusCallbackPayload } from '@/lib/sms/types';
+import type { TablesUpdate } from '@/types/database.types';
 
 const WEBHOOK_PATH = '/api/webhooks/twilio/status';
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const newOrder = STATUS_ORDER[payload.MessageStatus] ?? -1;
 
     if (newOrder > currentOrder) {
-      const updateData: Record<string, unknown> = {
+      const updateData: TablesUpdate<{ schema: 'communication' }, 'sms_messages'> = {
         status: payload.MessageStatus,
       };
 

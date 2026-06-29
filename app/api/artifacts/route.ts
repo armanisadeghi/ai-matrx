@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import type { TablesUpdate } from "@/types/database.types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
           // Apply a lightweight update with the caller-provided fields so
           // the returned row reflects the latest publish (external_id can
           // change when the underlying html_page row is re-created).
-          const updates: Record<string, unknown> = {};
+          const updates: TablesUpdate<{ schema: "chat" }, "artifact"> = {};
           if (externalId !== undefined) updates.external_id = externalId;
           if (externalUrl !== undefined) updates.external_url = externalUrl;
           if (title !== undefined) updates.title = title;
@@ -177,7 +178,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const updates: Record<string, unknown> = {
+        const updates: TablesUpdate<{ schema: "chat" }, "artifact"> = {
           updated_at: new Date().toISOString(),
         };
         if (status !== undefined) updates.status = status;

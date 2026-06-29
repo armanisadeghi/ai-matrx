@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import type { TablesUpdate } from "@/types/database.types";
 
 /**
  * GET /api/user/email-preferences
@@ -81,7 +82,7 @@ export async function PATCH(request: Request) {
     } = body;
 
     // Validate boolean values
-    const preferences: Record<string, boolean> = {};
+    const preferences: TablesUpdate<{ schema: "users" }, "user_email_preferences"> = {};
     
     if (typeof sharing_notifications === "boolean") {
       preferences.sharing_notifications = sharing_notifications;

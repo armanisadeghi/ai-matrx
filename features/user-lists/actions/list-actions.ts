@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { TablesUpdate } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/server";
 import type { CreateListItemInput } from "../types";
 
@@ -143,7 +144,7 @@ export async function updateItemAction(params: {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const patch: Record<string, string | null | undefined> = {
+  const patch: TablesUpdate<{ schema: "workbench" }, "udt_picklist_items"> = {
     updated_at: new Date().toISOString(),
   };
   if (params.label !== undefined) patch.label = params.label;

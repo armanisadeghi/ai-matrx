@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/client';
 import { ensureOrgId } from '@/lib/organizations/personalOrg';
-import type { Json } from '@/types/database.types';
+import type { Json, TablesUpdate } from '@/types/database.types';
 import type { ResearchTemplate } from '../types';
 import type { PromptBuiltinRef, TemplateFormData, AgentConfigKey } from './types';
 
@@ -52,7 +52,7 @@ export async function createTemplate(input: TemplateFormData): Promise<ResearchT
 }
 
 export async function updateTemplate(id: string, input: Partial<TemplateFormData>): Promise<ResearchTemplate> {
-    const updates: Record<string, unknown> = {};
+    const updates: TablesUpdate<{ schema: 'research' }, 'rs_template'> = {};
     if (input.name !== undefined) updates.name = input.name;
     if (input.description !== undefined) updates.description = input.description || null;
     if (input.keyword_templates !== undefined)

@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import type { Database } from "@/types/database.types";
 import type {
   AiModel,
   AiModelInsert,
@@ -204,7 +205,9 @@ export const aiModelService = {
         : typeof row.settings === "object" && row.settings !== null
           ? { ...(row.settings as Record<string, unknown>), model_id: newId }
           : { model_id: newId };
-      const payload: Record<string, unknown> = { settings };
+      const payload: Database["agent"]["Tables"]["definition"]["Update"] = {
+        settings,
+      };
       if (hasColumn) payload.model_id = newId;
       return supabase.schema("agent").from("definition").update(payload).eq("id", row.id);
     });
@@ -236,7 +239,9 @@ export const aiModelService = {
         : typeof row.settings === "object" && row.settings !== null
           ? { ...(row.settings as Record<string, unknown>), model_id: newId }
           : { model_id: newId };
-      const payload: Record<string, unknown> = { settings };
+      const payload: Database["agent"]["Tables"]["definition"]["Update"] = {
+        settings,
+      };
       if (hasColumn) payload.model_id = newId;
       return supabase
         .schema("agent")
@@ -272,7 +277,9 @@ export const aiModelService = {
         : typeof row.settings === "object" && row.settings !== null
           ? { ...(row.settings as Record<string, unknown>), model_id: newId }
           : { model_id: newId };
-      const payload: Record<string, unknown> = { settings };
+      const payload: Database["agent"]["Tables"]["template"]["Update"] = {
+        settings,
+      };
       if (hasColumn) payload.model_id = newId;
       return supabase
         .schema("agent")
@@ -301,7 +308,9 @@ export const aiModelService = {
         supabase
           .schema("ai")
           .from("model")
-          .update({ [field]: value })
+          .update({
+            [field]: value,
+          } as Database["ai"]["Tables"]["model"]["Update"])
           .eq("id", id),
       ),
     );

@@ -632,7 +632,7 @@ export const updateCategoryThunk = createAsyncThunk<
   // Top-level renames: category_key→slug, label→name, icon_name→icon,
   // parent_category_id→parent_id, sort_order→position.
   // Metadata fields (description, is_active) merge into the metadata jsonb.
-  const topLevel: Record<string, unknown> = {};
+  const topLevel: Database["platform"]["Tables"]["categories"]["Update"] = {};
   const metadataPatch: Record<string, unknown> = {};
 
   if (patch.categoryKey !== undefined) {
@@ -655,7 +655,9 @@ export const updateCategoryThunk = createAsyncThunk<
   // base; we merge the changed fields on top. Falls back to {} if the row wasn't
   // in the slice cache yet (first write after a page load won't wipe anything
   // because the DB still holds the real metadata — the worst case is a race).
-  const updateBody: Record<string, unknown> = { ...topLevel };
+  const updateBody: Database["platform"]["Tables"]["categories"]["Update"] = {
+    ...topLevel,
+  };
   if (Object.keys(metadataPatch).length > 0) {
     const existingMeta: Record<string, unknown> = cached?.metadata ?? {};
     updateBody.metadata = { ...existingMeta, ...metadataPatch };
@@ -886,7 +888,7 @@ export const updateSkillResourceThunk = createAsyncThunk<
   { resourceId: string; patch: ResourcePatchInput },
   { state: RootState }
 >("skills/updateResource", async ({ resourceId, patch }, { dispatch }) => {
-  const updateBody: Record<string, unknown> = {};
+  const updateBody: Database["skill"]["Tables"]["resource"]["Update"] = {};
   if (patch.resourceType !== undefined)
     updateBody.resource_type = patch.resourceType;
   if (patch.filename !== undefined) updateBody.filename = patch.filename;

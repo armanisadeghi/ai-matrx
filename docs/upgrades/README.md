@@ -45,9 +45,9 @@ These govern *every* step of this initiative. Read before touching anything.
 |-------|-------|------|--------|
 | **0** | Lockfile sync + Node 24 (`engines.node`) | low | ✅ Shipped (Arman pushed) |
 | **A** | Safe patch/minor sweep — everything within its current major | low | ✅ Ready for Arman to push (0 type errors) |
-| **B1** | TypeScript 6 bump — **version only, no strictness** (apples-to-apples) | low | 🟡 Verifying build → push |
+| **B1** | TypeScript 6 bump — **version only, no strictness** (apples-to-apples) | low | ✅ Shipped (commit `7faeafff8`) |
 | **B2** | TypeScript strictness pass (staged, one flag per PR) | high | ⬜ LAST — after all core bumps land |
-| **C** | Supabase (`@supabase/supabase-js`, `@supabase/ssr`) | med-high | ⬜ Not started |
+| **C** | Supabase (`@supabase/supabase-js` 2.108.2, `@supabase/ssr` 0.12.0) | med-high | 🟡 Verifying build → push |
 | **D** | Groq SDK 0.37 → 1.x | med | ⬜ Not started |
 | **E** | lucide-react 0.x → 1.x (+ document advantages) | med | ⬜ Not started |
 | **F** | Long-tail majors — only the ones Arman flags, gated by R8 | varies | ⬜ Backlog |
@@ -137,8 +137,8 @@ all `@radix-ui/react-*` to latest 1.x/2.x within current major.
 
 | Pri | Package | Cares? | Research doc | Route(s) to review (R8) | Status |
 |----|---------|--------|--------------|--------------------------|--------|
-| 1 | **TypeScript 6** | ✅ yes | `research/typescript-6.md` ✅ | whole repo `pnpm type-check` | ⬜ ready — tiny bump (3 config lines) + staged strict plan |
-| 2 | **Supabase** (`supabase-js`, `ssr`) | ✅ yes | `research/supabase.md` ✅ | login/logout, multi-tab refresh, RLS reads/writes | ⬜ ready — fix 34 errors via `TablesInsert`/`TablesUpdate`; co-bump ssr |
+| 1 | **TypeScript 6** | ✅ yes | `research/typescript-6.md` ✅ | whole repo `pnpm type-check` | ✅ **B1 shipped** (`7faeafff8`) — version-only; strictness deferred to B2 |
+| 2 | **Supabase** (`supabase-js`, `ssr`) | ✅ yes | `research/supabase.md` ✅ | login/logout, multi-tab refresh, RLS reads/writes | ✅ **Phase C done** — 34 errors fixed via generated `TablesInsert`/`TablesUpdate`; ssr co-bumped. Manual auth QA pending (matrix below) |
 | 3 | **Groq SDK** | ✅ yes (only LLM SDK we use) | `research/groq.md` ✅ | `/transcripts/new` + studio audio import, `/transcripts/admin` (transcribe), TTS read-aloud (`/api/audio/text-to-speech`), `/demos/general/voice/voice-assistant*`, `/demos/general/voice/debate-assistant` | ⬜ ready — low risk (~15-30 min), 8 server files |
 | 4 | **lucide-react 1.0** | ✅ wants the advantages | `research/lucide-react.md` ✅ | app-wide icons; ~25 brand-icon files | ⬜ ready — only breakage = removed brand icons |
 | — | `ai`, `@ai-sdk/*`, `@anthropic-ai/sdk`, `openai` | ❌ unused | — | — | skip |
@@ -160,6 +160,28 @@ TS 6.0 (GA 2026-03-23) is the final JS-based release / bridge to the Go-native 7
 2. **Only then**, tighten toward standard strict, **one flag per PR**, lowest→highest blast radius:
    `forceConsistentCasingInFileNames` → `alwaysStrict` → `noImplicitThis` → `strictBindCallApply` → `strictFunctionTypes` → `noImplicitAny` (split by directory) → **`strictNullChecks`** (the big one — its own multi-PR effort) → `strictPropertyInitialization` → `useUnknownInCatchVariables` → flip umbrella `strict:true`.
    Measure each: `tsc --noEmit --<flag> 2>&1 | grep -c "error TS"`.
+
+**Supabase special handling (Phase C) — informed by `research/supabase.md`:**
+
+`supabase-js` 2.102+ added `RejectExcessProperties` on `.insert()/.update()/.upsert()` — a deliberate, correct tightening that catches non-existent columns at compile time. We **adopted it properly** (no shortcuts):
+- All 34 sites: typed each mutation accumulator to the generated, schema-qualified `TablesInsert<{schema},"t">` / `TablesUpdate<{schema},"t">` (Pattern 1). Column names are now compile-validated.
+- Loop builders with `allowed`-key arrays got `as const satisfies readonly (keyof TablesUpdate<…>)[]` (validates the allow-list) + a localized `(acc as Record<string,unknown>)[key]=…` write (union-key indexed writes otherwise resolve to `never`).
+- Truly-dynamic `_dirtyFields` builders (notes thunks/middleware) assert the payload to the generated type at the `.update()` call (honest boundary cast — NOT `as never`).
+- **Latent bug caught & fixed:** `customAppService.customAppConfigToDBFormat` wrote `authenticated_read: true`, but `custom_app_configs` has no such column (it has `is_public`/`public_read`/`visibility`). Removed from the write payload + return type; the read-side type field is harmless.
+
+**Behavioral changes to QA (runtime, can't be type-checked) — `supabase-js` 2.107 removed the `navigator.locks` auth mutex; 2.108.2 changed refresh-failure handling; `ssr` 0.12 adds cache headers to `setAll`:**
+
+| Area | Test |
+|---|---|
+| Login / logout | Form login `admin@admin.com`; sign out clears cookies |
+| Multi-tab refresh | 2 tabs, let token near-expire → seamless refresh, no deadlock |
+| Session on refresh failure | Offline blip → valid session preserved, not nuked |
+| RLS reads/writes | Owner can read/write RLS tables; non-owner blocked |
+| Custom-schema mutations | A `.schema("agent"/"chat"/…).insert/update` round-trip |
+
+**Optional follow-ups (not blockers, no behavior change in this phase):**
+- ssr 0.12 `setAll` cache-headers ([#176]) — our `utils/supabase/middleware.ts` matches the canonical Supabase pattern; applying the new cache headers to the proxy response is an optional hardening, deferred.
+- Pre-existing `getSession()` callsites are token-forwarding/hydration, not authorization gates (the proxy gates on `getUser()`); the bump doesn't change `getSession()` semantics, so no regression.
 
 ---
 
@@ -204,3 +226,4 @@ Per-package deep-dives produced by research agents. Each doc must contain: exact
 | 2026-06-29 | All 5 research docs delivered under `research/`. | agent |
 | 2026-06-29 | Agreed: TS in two waves (version first, strictness last); execution order TS→Supabase→Groq→lucide→strictness. | Arman + agent |
 | 2026-06-29 | **Phase B1**: TypeScript 5.9.3 → 6.0.3 (pinned exact). Removed `baseUrl` (paths now tsconfig-relative; `/*`→`./public/*`) + `alwaysStrict:false`; scoped `ignoreDeprecations:"6.0"` + `rootDir:"."` to the `ts-node` block (CJS runtime needs `baseUrl`/`node` resolution). `type-check` = 0 errors; `ts-node` generate-manifest OK. No strictness change. | agent |
+| 2026-06-29 | **Phase C**: `@supabase/supabase-js` 2.99.2→^2.108.2, `@supabase/ssr` 0.9.0→^0.12.0. Fixed all 34 `RejectExcessProperties` errors **properly** — typed each accumulator to the generated `TablesInsert/Update` (schema-qualified) per research Pattern 1; no `as never`/`as any`. Caught a real latent bug: `customAppService` wrote a phantom `authenticated_read` column (not on `custom_app_configs`) — removed from the write payload. `type-check` = 0. See QA matrix below. | agent |

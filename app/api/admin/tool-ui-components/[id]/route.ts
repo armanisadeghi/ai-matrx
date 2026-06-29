@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import type { TablesUpdate } from "@/types/database.types";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -77,12 +78,12 @@ export async function PUT(
       "version",
       "notes",
       "contract_version",
-    ];
+    ] as const satisfies readonly (keyof TablesUpdate<{ schema: "tool" }, "ui">)[];
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<{ schema: "tool" }, "ui"> = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        updateData[field] = body[field];
+        (updateData as Record<string, unknown>)[field] = body[field];
       }
     }
 

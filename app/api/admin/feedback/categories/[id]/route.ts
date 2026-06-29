@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import type { TablesUpdate } from "@/types/database.types";
 import { metadataAsObject } from "@/utils/json/metadataObject";
 import {
   FEEDBACK_CATEGORY_SELECT,
@@ -79,7 +80,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const supabase = createAdminClient();
 
     const body = await request.json();
-    const updates: Record<string, unknown> = {};
+    const updates: TablesUpdate<{ schema: "platform" }, "categories"> = {};
     const metadataUpdates: Record<string, unknown> = {};
 
     if (body.name !== undefined) updates.name = body.name;

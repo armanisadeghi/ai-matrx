@@ -11,6 +11,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { TablesUpdate } from "@/types/database.types";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId } from "@/utils/auth/getUserId";
@@ -151,7 +152,7 @@ export async function updateProject(
   updates: UpdateProjectOptions,
 ): Promise<ProjectResult> {
   try {
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<{ schema: "workspace" }, "projects"> = {};
 
     if (updates.name !== undefined) {
       const validation = validateProjectName(updates.name);

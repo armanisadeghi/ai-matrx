@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import type { TablesUpdate } from "@/types/database.types";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -34,10 +35,10 @@ export async function PATCH(
       "is_active",
       "metadata",
       "lister_tool_id",
-    ] as const;
-    const patch: Record<string, unknown> = {};
+    ] as const satisfies readonly (keyof TablesUpdate<{ schema: "tool" }, "bundle">)[];
+    const patch: TablesUpdate<{ schema: "tool" }, "bundle"> = {};
     for (const key of allowed) {
-      if (body[key] !== undefined) patch[key] = body[key];
+      if (body[key] !== undefined) (patch as Record<string, unknown>)[key] = body[key];
     }
 
     if (Object.keys(patch).length === 0) {

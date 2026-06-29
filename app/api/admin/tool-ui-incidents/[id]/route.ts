@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import type { TablesUpdate } from "@/types/database.types";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -26,7 +27,7 @@ export async function PUT(
     const supabase = createAdminClient();
     const body = await request.json();
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<{ schema: "tool" }, "ui_incident"> = {};
 
     if (body.resolved !== undefined) {
       updateData.resolved = body.resolved;

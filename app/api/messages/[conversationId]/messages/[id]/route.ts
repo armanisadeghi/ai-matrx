@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import type { TablesUpdate } from '@/types/database.types';
 import { z } from 'zod';
 
 // ============================================
@@ -164,7 +165,7 @@ export async function PATCH(
     }
 
     // Build update object
-    const updateData: Record<string, unknown> = {};
+    const updateData: TablesUpdate<{ schema: 'communication' }, 'dm_messages'> = {};
 
     if (content !== undefined) {
       updateData.content = content.trim();

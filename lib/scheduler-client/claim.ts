@@ -239,7 +239,7 @@ export async function markRunRunning(
   supabase: SupabaseClient,
   opts: MarkRunRunningOptions,
 ): Promise<boolean> {
-  const patch: Record<string, Json | null | string> = {
+  const patch: Database["scheduler"]["Tables"]["sch_run"]["Update"] = {
     status: "running" satisfies RunStatus,
     started_at: new Date().toISOString(),
   };

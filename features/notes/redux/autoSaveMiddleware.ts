@@ -4,6 +4,7 @@
 // For auto-generated notes, materializes them (first DB insert) on first edit.
 
 import type { Middleware } from "@reduxjs/toolkit";
+import type { TablesUpdate } from "@/types/database.types";
 import type { NotesSliceState } from "./notes.types";
 
 // Minimal local state type — avoids importing RootState from store.ts (which
@@ -198,7 +199,7 @@ export const autoSaveMiddleware: Middleware =
 
           const { data, error } = await supabase
             .schema("workbench").from("notes")
-            .update(updates)
+            .update(updates as TablesUpdate<{ schema: "workbench" }, "notes">)
             .eq("id", noteId)
             .select("updated_at")
             .single();

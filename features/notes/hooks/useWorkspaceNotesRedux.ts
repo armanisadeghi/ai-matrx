@@ -12,6 +12,7 @@
 // - Conflict detection via analyzeDiff
 
 import { useCallback, useEffect, useRef } from "react";
+import type { TablesUpdate } from "@/types/database.types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -155,7 +156,7 @@ export function useWorkspaceNotesRedux() {
           const record = notesMap[noteId];
           if (!record) return;
 
-          const updates: Record<string, unknown> = {};
+          const updates: TablesUpdate<{ schema: "workbench" }, "notes"> = {};
           // Compare against the original (non-dirty) baseline
           const baseline = record._fieldHistory;
           if (content !== (baseline.content ?? record.content))

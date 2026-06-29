@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import type { TablesUpdate } from "@/types/database.types";
 
 /**
  * POST /api/agent-apps/[id]/track
@@ -124,7 +125,7 @@ export async function POST(
         );
       }
 
-      const patch: Record<string, unknown> = {
+      const patch: TablesUpdate<{ schema: "app" }, "execution"> = {
         success: body.event === "run_complete",
       };
       if (typeof body.executionTimeMs === "number") {

@@ -483,7 +483,7 @@ export const hierarchyService = {
     },
   ): Promise<void> {
     const { priority, ...rest } = data;
-    const patch: Record<string, unknown> = { ...rest };
+    const patch: Database["workspace"]["Tables"]["tasks"]["Update"] = { ...rest };
     if (priority !== undefined) {
       patch.priority = toTaskPriority(priority);
     }

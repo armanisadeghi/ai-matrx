@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import type { TablesUpdate } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -725,7 +726,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     try {
       const supabase = createClient();
       // Remap old column names to platform.categories columns
-      const remapped: Record<string, unknown> = {};
+      const remapped: TablesUpdate<{ schema: "platform" }, "categories"> = {};
       const metaUpdates: Record<string, unknown> = {};
       if ("label" in updates) remapped.name = updates.label;
       if ("icon_name" in updates) remapped.icon = updates.icon_name;

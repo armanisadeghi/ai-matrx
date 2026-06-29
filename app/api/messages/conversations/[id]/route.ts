@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { z } from 'zod';
+import type { TablesUpdate } from '@/types/database.types';
 import { isDurableMediaUrl } from '@/lib/media/durability';
 
 // ============================================
@@ -194,7 +195,7 @@ export async function PUT(
 
     // Update participant settings (mute, archive)
     if (is_muted !== undefined || is_archived !== undefined) {
-      const participantUpdate: Record<string, boolean> = {};
+      const participantUpdate: TablesUpdate<{ schema: 'communication' }, 'dm_conversation_participants'> = {};
       if (is_muted !== undefined) participantUpdate.is_muted = is_muted;
       if (is_archived !== undefined) participantUpdate.is_archived = is_archived;
 
@@ -229,7 +230,7 @@ export async function PUT(
         );
       }
 
-      const convUpdate: Record<string, string> = {};
+      const convUpdate: TablesUpdate<{ schema: 'communication' }, 'dm_conversations'> = {};
       if (group_name !== undefined) convUpdate.group_name = group_name;
       if (group_image_url !== undefined) convUpdate.group_image_url = group_image_url;
 

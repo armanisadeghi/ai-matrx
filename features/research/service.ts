@@ -375,7 +375,7 @@ export async function bulkUpdateSources(
   action: SourceBulkAction,
 ): Promise<void> {
   const sourceIds = action.source_ids;
-  const updates: Record<string, unknown> = {};
+  const updates: Database["research"]["Tables"]["rs_source"]["Update"] = {};
 
   if (action.action === "include") updates.is_included = true;
   else if (action.action === "exclude") updates.is_included = false;
@@ -816,7 +816,7 @@ export async function updateContentCurated(
   content: ResearchContent,
   newText: string,
 ): Promise<void> {
-  const updates: Record<string, unknown> = {
+  const updates: Database["research"]["Tables"]["rs_content"]["Update"] = {
     content: newText,
     char_count: newText.length,
   };
