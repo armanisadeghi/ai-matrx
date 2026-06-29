@@ -299,6 +299,10 @@ export interface UseWorkingDocumentResult {
   binding: WorkingDocumentBinding;
   saving: boolean;
   error: string | null;
+  /** A pending concurrent-edit conflict to reconcile (the agent's version), or null. */
+  conflict: { agentVersion: number; agentContent: string } | null;
+  /** Resolve a conflict: keep the user's draft, or adopt the agent's version. */
+  resolveConflict: (choice: "keep-mine" | "take-agent") => void;
   /** Local editor value (merges remote edits when not typing). */
   draft: string;
   onChange: (value: string) => void;
@@ -566,6 +570,74 @@ export function useWorkingDocument(
     maxLength: 60,
   });
 
+  // CONFLICT RESOLUTION: the user picks which version wins after a concurrent
+  // edit. "take-agent" adopts the agent's version; "keep-mine" re-saves the
+  // user's preserved draft over it (the agent's version stays in history).
+  const resolveConflict = useCallback(
+    (choice: "keep-mine" | "take-agent") => {
+      const c = conflictRef.current;
+      if (!c || binding.kind !== "cx_working_document" || !binding.id) {
+        dispatch(clearWorkingDocConflict({ conversationId, kind }));
+        return;
+      }
+      if (choice === "take-agent") {
+        dispatch(
+          applyAgentWorkingDocContent({
+            conversationId,
+            kind,
+            content: c.agentContent,
+          }),
+        );
+        dispatch(
+          setWorkingDocVersion({ conversationId, kind, version: c.agentVersion }),
+        );
+        setDraft(c.agentContent);
+        editingRef.current = false;
+        dispatch(clearWorkingDocConflict({ conversationId, kind }));
+        return;
+      }
+      // keep-mine: write the user's current draft, based on the agent's version
+      // so it lands. If another edit raced in the meantime, re-surface.
+      const docId = binding.id;
+      const mine = draftRef.current;
+      dispatch(markWorkingDocSaving({ conversationId, kind, saving: true }));
+      void commitWorkingDocumentContent(docId, mine, c.agentVersion)
+        .then((res) => {
+          if (res.status === "saved") {
+            dispatch(setWorkingDocContent({ conversationId, kind, content: mine }));
+            dispatch(
+              setWorkingDocVersion({
+                conversationId,
+                kind,
+                version: res.document.version,
+              }),
+            );
+            dispatch(clearWorkingDocConflict({ conversationId, kind }));
+            dispatch(markWorkingDocSaving({ conversationId, kind, saving: false }));
+          } else {
+            dispatch(
+              markWorkingDocConflict({
+                conversationId,
+                kind,
+                agentVersion: res.document.version,
+                agentContent: res.document.content ?? "",
+              }),
+            );
+          }
+        })
+        .catch(() =>
+          dispatch(
+            markWorkingDocError({
+              conversationId,
+              kind,
+              error: "Could not save your version.",
+            }),
+          ),
+        );
+    },
+    [dispatch, conversationId, kind, binding.kind, binding.id],
+  );
+
   const openInCanvas = useCallback(() => {
     canvas.open({
       type: kind === "scratch" ? "scratchpad" : "working_document",
@@ -589,6 +661,8 @@ export function useWorkingDocument(
     binding,
     saving,
     error,
+    conflict,
+    resolveConflict,
     draft,
     onChange,
     flush,

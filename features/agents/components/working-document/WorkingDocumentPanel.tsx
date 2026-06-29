@@ -86,6 +86,8 @@ export function WorkingDocumentPanel({
     binding,
     saving,
     error,
+    conflict,
+    resolveConflict,
     draft,
     content,
     onChange,
