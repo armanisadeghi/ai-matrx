@@ -17,6 +17,13 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D26 — Working-document rebuild: aidream redeploy + legacy-litter cleanup pending
+**Severity: medium — created 2026-06-29 by the working-document end-to-end rebuild (FEATURE.md `features/agents/FEATURE.md` Change Log 2026-06-29; [[project_working_document_rebuild]]). The feature is functionally complete and type-clean; these are deploy + canonicalization-hygiene follow-ups.**
+
+- **aidream REDEPLOY required (functional, not litter).** STEP 1 moved `chat.working_documents` → `workbench.working_documents`. The *deployed* aidream writeback (`_writeback_working_document`) is updated in the repo (commit `285eb3f18`) to target `workbench` + materialize-on-write, but until aidream is **redeployed**, the running handler still points at the moved `chat` table → **agent edits to working docs won't persist server-side** (FE logs `context_persist_failed`; user content is safe — kept in Redux + realtime). Fix: deploy aidream. Verify: agent edits a working doc, the row updates in `workbench.working_documents`.
+- **STEP 3 deferred (legacy litter, harmless).** `workbench.working_documents` still carries the unused `conversation_id` + `user_id` columns (provenance now lives in `metadata.origin_conversation_id`; owner is `created_by`), and the bespoke `chat.conversation_documents` junction still exists (retired — FE/aidream read `platform.associations`; verified no runtime callers). Dropping `user_id` couples to the aidream writeback's `select("created_by, user_id, …")` + a redeploy, so it was deferred off the chaotic shared aidream tree. Fix when convenient: stop selecting `user_id` in the handler → drop `conversation_id`/`user_id` → `ALTER TABLE chat.conversation_documents SET SCHEMA graveyard` → `python db/generate.py` (aidream model regen).
+- **Multi-attach beyond the primary slot.** The `instanceWorkingDocument` slice holds ONE doc per `(conversation, kind)` (the primary). A conversation *can* hold multiple `working_document`→`conversation` edges (true M2M), but hydrate restores only the primary (born-here deterministic id, else first enabled); additional attached docs surface via `DocumentsWorkspace`, not the slice. Full multi-attach in the primary slot needs a slice redesign (`byKey[...]` → array). Not a bug today; flagged so no one assumes it works.
+
 ### D25 — Prompts-system deletion: applet execution gated "under construction" + a few surfaces degraded
 **Severity: medium — known, intentional, temporary. Created 2026-06-28 when the legacy prompts system + dead socket schema system were deleted (commits `3eef0cab1`, `35d8214bc`). The prompts system was replaced by the agents system (same UUIDs, agent execution path).**
 
