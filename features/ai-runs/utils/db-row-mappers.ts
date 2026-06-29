@@ -1,79 +1,17 @@
 import type { Database, Json } from "@/types/database.types";
-import type {
-  AiRun,
-  AiTask,
-  Attachment,
-  RunMessage,
-  RunStatus,
-  SourceType,
-  TaskStatus,
-} from "@/features/ai-runs/types/aiRunTypes";
+import type { AiTask, TaskStatus } from "@/features/ai-runs/types/aiRunTypes";
 
-type AiRunRow = Database["graveyard"]["Tables"]["ai_runs"]["Row"];
 type AiTaskRow = Database["graveyard"]["Tables"]["ai_tasks"]["Row"];
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-/** `AiRun` / `AiTask` use `Record<string, any>` for flexible metadata; coerce validated objects only. */
+/** `AiTask` uses `Record<string, any>` for flexible metadata; coerce validated objects only. */
 function jsonToLooseMetadata(value: Json | null): Record<string, any> {
   if (value === null || value === undefined) return {};
   if (isPlainRecord(value)) return value as Record<string, any>;
   return {};
-}
-
-function jsonToStringRecord(value: Json | null): Record<string, string> {
-  if (value === null || value === undefined || !isPlainRecord(value)) return {};
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(value)) {
-    if (typeof v === "string") out[k] = v;
-    else if (typeof v === "number" || typeof v === "boolean")
-      out[k] = String(v);
-  }
-  return out;
-}
-
-function jsonToRunMessages(value: Json | null): RunMessage[] {
-  if (value === null || !Array.isArray(value)) return [];
-  return value as RunMessage[];
-}
-
-function jsonToAttachments(value: Json | null): Attachment[] {
-  if (value === null || !Array.isArray(value)) return [];
-  return value as Attachment[];
-}
-
-/** Read `messages` JSON column when only that field is selected. */
-export function runMessagesFromJson(value: Json | null): RunMessage[] {
-  return jsonToRunMessages(value);
-}
-
-export function mapAiRunRow(row: AiRunRow): AiRun {
-  return {
-    id: row.id,
-    user_id: row.user_id,
-    source_type: row.source_type as SourceType,
-    source_id: row.source_id,
-    name: row.name,
-    description: row.description,
-    tags: row.tags ?? [],
-    messages: jsonToRunMessages(row.messages),
-    settings: jsonToLooseMetadata(row.settings),
-    variable_values: jsonToStringRecord(row.variable_values ?? null),
-    broker_values: jsonToStringRecord(row.broker_values ?? null),
-    attachments: jsonToAttachments(row.attachments ?? null),
-    metadata: jsonToLooseMetadata(row.metadata ?? null),
-    status: (row.status ?? "active") as RunStatus,
-    is_starred: row.is_starred ?? false,
-    total_tokens: row.total_tokens ?? 0,
-    total_cost: Number(row.total_cost ?? 0),
-    message_count: row.message_count ?? 0,
-    task_count: row.task_count ?? 0,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    last_message_at: row.last_message_at,
-  };
 }
 
 export function mapAiTaskRow(row: AiTaskRow): AiTask {
