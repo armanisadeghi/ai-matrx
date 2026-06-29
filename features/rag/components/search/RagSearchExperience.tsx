@@ -249,25 +249,28 @@ function citationHrefFor(
   chunk_id: string,
 ): string | null {
   // Mirrors the module-level citationHrefFor in features/rag/api/search.ts —
-  // keep the two in sync. Every kind gets a destination (no dead nulls), and
+  // keep the two in sync. Every kind gets a destination (no dead nulls),
   // library_doc carries the page so a result opens on the hit's page (the
-  // /rag/viewer route forwards ?page).
+  // /rag/viewer route forwards ?page), and every interpolated id is
+  // URL-encoded so ids containing ? & # don't break the link.
+  const sid = encodeURIComponent(source_id);
+  const cid = encodeURIComponent(chunk_id);
   const pageQs = page ? `&page=${page}` : "";
   switch (source_kind) {
     case "cld_file":
-      return `/files/f/${source_id}?tab=document&chunk=${chunk_id}${pageQs}`;
+      return `/files/f/${sid}?tab=document&chunk=${cid}${pageQs}`;
     case "note":
-      return `/notes/${source_id}`;
+      return `/notes/${sid}`;
     case "code_file":
-      return `/code/${source_id}`;
+      return `/code/${sid}`;
     case "library_doc":
-      return `/rag/viewer/${source_id}?chunk=${chunk_id}${pageQs}`;
+      return `/rag/viewer/${sid}?chunk=${cid}${pageQs}`;
     case "transcript":
-      return `/transcription/studio?session=${source_id}`;
+      return `/transcription/studio?session=${sid}`;
     case "scraped":
-      return `/scraper?url=${encodeURIComponent(source_id)}`;
+      return `/scraper?url=${sid}`;
     default:
-      return `/rag/viewer/${source_id}?chunk=${chunk_id}${pageQs}`;
+      return `/rag/viewer/${sid}?chunk=${cid}${pageQs}`;
   }
 }
 
@@ -348,7 +351,7 @@ function RichHitCard({
             pageNumber === null && "ml-auto",
           )}
         >
-          score {hit.score.toFixed(3)}
+          score {typeof hit.score === "number" ? hit.score.toFixed(3) : "—"}
         </Badge>
         {entityOnly && (
           <Badge
@@ -1402,10 +1405,13 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
   const [running, setRunning] = useState(false);
   const [resp, setResp] = useState<AgentToolSearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Drop a stale response if a newer run started while this one was in flight.
+  const seqRef = useRef(0);
 
   const run = useCallback(async () => {
     const qs = queries.map((q) => q.trim()).filter(Boolean);
     if (qs.length === 0) return;
+    const seq = ++seqRef.current;
     setRunning(true);
     setError(null);
     setResp(null);
@@ -1422,11 +1428,13 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         scope_ids: scopeIds,
         organization_id: orgOverride,
       });
+      if (seq !== seqRef.current) return;
       setResp(r);
     } catch (e) {
+      if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Agent tool search failed");
     } finally {
-      setRunning(false);
+      if (seq === seqRef.current) setRunning(false);
     }
   }, [queries, scope, orgOverride, scopeIds]);
 
@@ -1547,6 +1555,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
   const [diag, setDiag] = useState<DiagnoseResponse | null>(null);
   const [expand, setExpand] = useState<ExpandResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A diagnose run streams events into a shared `partial` accumulator; without
+  // this guard a second run started mid-stream would interleave its events into
+  // the first run's accumulator and corrupt the displayed pipeline trace.
+  const seqRef = useRef(0);
 
   // Working-context org/scope — the SAME payload the Search tab sends. Without
   // it the pipeline trace ran in the caller's personal org and reported 0
@@ -1574,6 +1586,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
   const runAll = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
+    const seq = ++seqRef.current;
     setRunning(true);
     setError(null);
     setDiag(null);
@@ -1610,6 +1623,9 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
     };
     try {
       for await (const evt of ragDiagnoseStream(requestPayload)) {
+        // Superseded by a newer run — stop consuming and updating state.
+        // Returning closes the async iterator (aborts the stale stream).
+        if (seq !== seqRef.current) return;
         switch (evt.kind) {
           case "rag.diagnose.started":
             partial.query = evt.query;
@@ -1655,9 +1671,10 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
         setDiag({ ...partial });
       }
     } catch (e) {
+      if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Diagnose failed");
     } finally {
-      setRunning(false);
+      if (seq === seqRef.current) setRunning(false);
     }
   }, [query, requestPayload]);
 
