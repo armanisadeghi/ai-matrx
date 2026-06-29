@@ -129,6 +129,14 @@ export interface InstanceWorkingDocumentState {
    * mismatch (a concurrent user edit) surfaces as a `context_conflict`.
    */
   version: number;
+  /**
+   * Set when the user's save was REFUSED because a concurrent edit (typically the
+   * agent this turn) advanced the row. Holds the other party's version so the UI
+   * can diff it against the user's preserved draft and let them reconcile. While
+   * set, the user's draft is kept (never silently clobbered) and auto-save is
+   * blocked until resolved. Both versions also live in `history.row_versions`.
+   */
+  conflict: { agentVersion: number; agentContent: string } | null;
 }
 
 export interface InstanceWorkingDocumentSliceState {
@@ -172,6 +180,7 @@ function ensureEntry(
       agentRevision: 0,
       materialized: false,
       version: 0,
+      conflict: null,
     };
     state.byKey[key] = entry;
   }
@@ -323,6 +332,39 @@ const instanceWorkingDocumentSlice = createSlice({
       entry.version = action.payload.version;
     },
 
+    /**
+     * The user's save was refused by a concurrent edit. Record the other party's
+     * version so the UI can diff + reconcile. Does NOT touch content/draft — the
+     * user's text is preserved as-is until they resolve.
+     */
+    markWorkingDocConflict(
+      state,
+      action: PayloadAction<
+        KeyedPayload & { agentVersion: number; agentContent: string }
+      >,
+    ) {
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
+      entry.conflict = {
+        agentVersion: action.payload.agentVersion,
+        agentContent: action.payload.agentContent,
+      };
+      entry.saving = false;
+    },
+
+    /** Clear the conflict (after the user reconciled). */
+    clearWorkingDocConflict(state, action: PayloadAction<KeyedPayload>) {
+      const entry = ensureEntry(
+        state,
+        action.payload.conversationId,
+        action.payload.kind,
+      );
+      entry.conflict = null;
+    },
+
     markWorkingDocSaving(
       state,
       action: PayloadAction<KeyedPayload & { saving: boolean }>,
@@ -370,6 +412,8 @@ export const {
   setWorkingDocBinding,
   markWorkingDocMaterialized,
   setWorkingDocVersion,
+  markWorkingDocConflict,
+  clearWorkingDocConflict,
   markWorkingDocSaving,
   markWorkingDocError,
   removeInstanceWorkingDocument,

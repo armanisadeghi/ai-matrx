@@ -53,6 +53,7 @@ import {
   markWorkingDocSaving,
   setWorkingDocContent,
   setWorkingDocTitle,
+  setWorkingDocVersion,
   type WorkingDocumentBinding,
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
@@ -76,8 +77,8 @@ import {
   type BindNoteMode,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import {
+  commitWorkingDocumentContent,
   rowToCxWorkingDocument,
-  updateCxWorkingDocumentContent,
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
@@ -325,6 +326,11 @@ export function useWorkingDocument(
   const materialized = useAppSelector(
     selectWorkingDocMaterialized(conversationId, kind),
   );
+  const version = useAppSelector(selectWorkingDocVersion(conversationId, kind));
+  // Latched in a ref so the debounced commit reads the LATEST known base version
+  // at fire time (not the value captured when the callback was created).
+  const versionRef = useRef(version);
+  versionRef.current = version;
 
   // Keep the instanceContext entry current for every mount of this hook (the
   // dedicated SmartInput bridge guarantees the always-on case).

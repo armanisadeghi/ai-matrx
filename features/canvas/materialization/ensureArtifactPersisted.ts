@@ -95,7 +95,7 @@ async function linkDomainRecord(
       sourceMessageId: input.messageId,
       conversationId: input.conversationId ?? undefined,
     });
-    if (link?.externalSystem || link?.externalId) {
+    if (link && (link.externalSystem || link.externalId)) {
       await canvasArtifactService.setExternalLink(row.id, link);
       steps.push(
         `domain linked: ${link.externalSystem ?? "?"} → ${link.externalId ?? "?"}`,
