@@ -17,6 +17,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
@@ -308,6 +309,9 @@ async function resolveFolderId(
       name: folderName,
       path: folderName,
       position: 0,
+      // note_folders is a root entity (no parent → no org-inherit trigger), so
+      // organization_id is NOT NULL with nothing to fill it. Resolve it here.
+      organization_id: await ensureOrgId(undefined),
     })
     .select("id")
     .single();
@@ -347,7 +351,9 @@ export const createNewNote = createAsyncThunk<
       // Private by default — the `notes.visibility` enum DB default is
       // 'internal' (org-visible), so set it explicitly on create.
       visibility: input.visibility ?? "private",
-      ...(input.organization_id && { organization_id: input.organization_id }),
+      // folder_id can be null here, so the org-inherit trigger may have no
+      // parent to read — resolve the org explicitly (never insert a null org).
+      organization_id: await ensureOrgId(input.organization_id),
       ...(input.project_id && { project_id: input.project_id }),
       ...(input.task_id && { task_id: input.task_id }),
     })
@@ -431,6 +437,8 @@ export const copyNote = createAsyncThunk<Note, string>(
         // A duplicate is private by default — don't inherit a shared
         // visibility, and don't fall through to the DB 'internal' default.
         visibility: "private",
+        // Keep the copy in the original's org; fall back to the personal org.
+        organization_id: await ensureOrgId(record.organization_id),
       })
       .select()
       .single();

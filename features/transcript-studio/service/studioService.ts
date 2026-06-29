@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
   AssistantConversationRef,
@@ -148,7 +149,9 @@ export async function createSession(
 ): Promise<StudioSession> {
   const insert = {
     user_id: userId,
-    organization_id: input.organizationId ?? null,
+    // transcript_id can be null, so the org-inherit trigger may have no parent
+    // to read from — resolve the org explicitly (never insert a null org).
+    organization_id: await ensureOrgId(input.organizationId),
     project_id: input.projectId ?? null,
     transcript_id: input.transcriptId ?? null,
     title: input.title?.trim() || NEW_SESSION_DEFAULT_TITLE,

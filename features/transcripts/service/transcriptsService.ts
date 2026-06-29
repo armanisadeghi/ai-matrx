@@ -3,6 +3,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database, Json } from "@/types/database.types";
 import type {
   Transcript,
@@ -194,6 +195,8 @@ export async function createTranscript(
       source_type: input.source_type || "other",
       tags: input.tags || [],
       folder_name: input.folder_name || "Transcripts",
+      // Root entity (no org-inherit trigger) — org is NOT NULL; resolve it.
+      organization_id: await ensureOrgId(undefined),
     })
     .select()
     .single();
@@ -321,6 +324,7 @@ export async function saveDraftTranscript(
       source_type: input.source_type || "audio",
       tags: input.tags || [],
       folder_name: input.folder_name || "Recordings",
+      organization_id: await ensureOrgId(undefined),
       is_draft: true,
       draft_saved_at: new Date().toISOString(),
     })
@@ -441,6 +445,8 @@ export async function copyTranscript(id: string): Promise<Transcript> {
       source_type: original.source_type,
       tags: original.tags,
       folder_name: original.folder_name,
+      // Keep the copy in the original's org; fall back to the personal org.
+      organization_id: await ensureOrgId(original.organization_id),
     })
     .select()
     .single();

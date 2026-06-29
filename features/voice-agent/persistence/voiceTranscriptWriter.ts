@@ -14,6 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database, Json } from "@/types/database.types";
 import {
   PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,
@@ -108,6 +109,8 @@ export async function ensureConversation(
     // Canonical ownership column (replaces the dropped `user_id`). The
     // `_stamp_actor` trigger also defaults this from auth.uid() on insert.
     created_by: user.id,
+    // Root entity (no org-inherit trigger) — org is NOT NULL; resolve it.
+    organization_id: await ensureOrgId(undefined),
     is_ephemeral: false,
     status: "active",
     source_app: PERSISTENCE_SOURCE_APP,
