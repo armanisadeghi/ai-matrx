@@ -41,6 +41,10 @@ import {
   isCompactEvent,
 } from "./types";
 import { BackendApiError } from "./errors";
+import {
+  captureStreamEvent,
+  captureStreamTransportError,
+} from "@/lib/diagnostics/captureStreamError";
 
 // ============================================================================
 // COMPACT EVENT NORMALIZATION (wire format → TypedStreamEvent)
@@ -84,7 +88,7 @@ export function parseNdjsonStream(
   const requestId = response.headers.get("X-Request-ID");
   const conversationId = response.headers.get("X-Conversation-ID");
   return {
-    events: _parseNdjsonStream(response, signal),
+    events: _parseNdjsonStream(response, signal, { requestId, conversationId }),
     requestId,
     conversationId,
   };
@@ -93,6 +97,7 @@ export function parseNdjsonStream(
 async function* _parseNdjsonStream(
   response: Response,
   signal?: AbortSignal,
+  ctx?: { requestId: string | null; conversationId: string | null },
 ): AsyncGenerator<TypedStreamEvent, void, undefined> {
   if (!response.body) {
     throw new BackendApiError({
@@ -221,8 +226,16 @@ async function* _parseNdjsonStream(
       if (item === null || item === undefined) break; // null = done sentinel
 
       if (item instanceof BackendApiError) {
+        // Transport-level stream failure → Error Inspector, then propagate.
+        captureStreamTransportError(item, ctx ?? {});
         throw item;
       }
+
+      // Universal stream-error capture: every consumer (agent processStream,
+      // consumeStream, podcast, research) pulls events through here, so this
+      // single call feeds the Inspector with every server-emitted typed error
+      // / warning / failure. Non-error events are ignored inside the adapter.
+      captureStreamEvent(item, ctx ?? {});
 
       yield item;
     }

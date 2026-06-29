@@ -351,6 +351,13 @@ export default function ErrorInspectorWindow({
                 <p className="mt-1.5 text-sm font-medium text-foreground break-words">
                   {selected.message}
                 </p>
+                {selected.userMessage &&
+                  selected.userMessage !== selected.message && (
+                    <p className="mt-1 text-xs text-muted-foreground break-words">
+                      <span className="font-medium">Shown to user:</span>{" "}
+                      {selected.userMessage}
+                    </p>
+                  )}
               </div>
             </div>
 
@@ -367,6 +374,8 @@ export default function ErrorInspectorWindow({
               <Field label="HTTP status" value={selected.status} />
               <Field label="Details" value={selected.details} />
               <Field label="Hint" value={selected.hint} />
+              <Field label="Request id" value={selected.requestId} />
+              <Field label="Conversation" value={selected.conversationId} />
               <Field label="Route" value={selected.route} />
               <Field label="Occurrences" value={selected.count} />
               <Field

@@ -47,7 +47,24 @@ export type CapturedErrorSource =
   /** A Python-backend call failed at the network layer (timeout, DNS, abort). */
   | "api-network"
   /** A React component threw during render and an error boundary caught it. */
-  | "react-render";
+  | "react-render"
+  // ── Server-origin structured stream events (the agent execution stream) ───
+  /** A typed `error` event from the stream (ErrorPayload — fatal). */
+  | "agent-stream-error"
+  /** A typed `warning` event from the stream (WarningPayload). */
+  | "agent-stream-warning"
+  /** A `tool_event` with `event: "tool_error"` (a tool failed). */
+  | "agent-stream-tool-error"
+  /** A `provider_retry` event that reached a terminal/paused state. */
+  | "agent-stream-provider-retry"
+  /** A `record_update` with `status: "failed"` (a reservation failed to persist). */
+  | "agent-stream-record-failed"
+  /** A typed `data` event carrying an error (search_error, memory_error, …). */
+  | "agent-stream-data-error"
+  /** Stream transport failure surfaced by the NDJSON parser (BackendApiError). */
+  | "agent-stream-transport"
+  /** Client-side stream death (heartbeat loss, total-timeout, fetch failure). */
+  | "agent-stream-client-error";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =
@@ -94,6 +111,18 @@ export interface CapturedError {
   /** HTTP status when available. */
   status?: number;
 
+  // ── Structured server-origin fields (stream / Python backend) ────────────
+  /**
+   * The human-friendly message the server intends for end users (stream
+   * `user_message`, API `user_message`) — distinct from the technical
+   * `message`. This is the field a future user-facing surface would show.
+   */
+  userMessage?: string;
+  /** Backend request id (X-Request-ID / serverDetail.request_id) for log correlation. */
+  requestId?: string;
+  /** Conversation id when the error belongs to an agent run. */
+  conversationId?: string;
+
   // ── Generic exception fields ─────────────────────────────────────────────
   /** Error.name for thrown exceptions. */
   name?: string;
@@ -129,6 +158,9 @@ export interface CaptureInput {
   details?: string;
   hint?: string;
   status?: number;
+  userMessage?: string;
+  requestId?: string;
+  conversationId?: string;
   name?: string;
   stack?: string;
   callSite?: string;
@@ -312,6 +344,9 @@ export function captureError(input: CaptureInput): void {
     details: input.details,
     hint: input.hint,
     status: input.status,
+    userMessage: input.userMessage,
+    requestId: input.requestId,
+    conversationId: input.conversationId,
     name: input.name,
     stack: input.stack,
     callSite: input.callSite,

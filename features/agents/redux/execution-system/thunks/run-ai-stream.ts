@@ -45,6 +45,7 @@ import { toast } from "sonner";
 export type StreamDispatch = (action: unknown) => unknown;
 
 import { processStream } from "./process-stream";
+import { captureStreamClientError } from "@/lib/diagnostics/captureStreamError";
 import type { JsonExtractionConfig } from "./process-stream";
 import { logApiTarget } from "@/lib/api/log-api-target";
 import {
@@ -421,6 +422,20 @@ export async function runAiStream(
           ? "total_timeout"
           : "client_error";
     const message = error instanceof Error ? error.message : "Unknown error";
+
+    // Feed the systemwide Error Inspector — a dead stream (heartbeat loss,
+    // total-timeout, fetch failure) is a server-origin failure the admin wants
+    // to see, but it arrives as a thrown exception, not a stream event.
+    captureStreamClientError({
+      errorType,
+      message,
+      userMessage: isHeartbeat
+        ? "Connection to the stream was lost. The server is still finishing the response — recovering it automatically."
+        : undefined,
+      name: error instanceof Error ? error.name : undefined,
+      conversationId,
+      requestId,
+    });
 
     dispatch(
       setRequestStatus({

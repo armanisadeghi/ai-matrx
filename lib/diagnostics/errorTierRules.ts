@@ -115,6 +115,17 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       messageIncludes: "ResizeObserver loop",
     },
   },
+  {
+    id: "stream-total-timeout",
+    tier: "yellow",
+    reason:
+      "The 24h stream-lifetime ceiling — by-design, effectively never a real failure.",
+    addedAt: "2026-06-29",
+    match: {
+      source: "agent-stream-client-error",
+      code: "total_timeout",
+    },
+  },
 ];
 
 // ── Matching engine ──────────────────────────────────────────────────────

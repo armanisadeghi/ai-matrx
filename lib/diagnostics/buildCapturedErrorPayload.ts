@@ -35,6 +35,14 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "api-http": "Backend HTTP error",
   "api-network": "Backend network error",
   "react-render": "React render error",
+  "agent-stream-error": "Server stream error",
+  "agent-stream-warning": "Server stream warning",
+  "agent-stream-tool-error": "Tool error",
+  "agent-stream-provider-retry": "Provider retry failure",
+  "agent-stream-record-failed": "Record persistence failure",
+  "agent-stream-data-error": "Server data error",
+  "agent-stream-transport": "Stream transport error",
+  "agent-stream-client-error": "Stream connection failure",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {
@@ -79,8 +87,11 @@ export function capturedErrorToHuman(e: CapturedError): string {
   }
   if (e.code) lines.push(`Code: ${e.code}`);
   if (typeof e.status === "number") lines.push(`HTTP status: ${e.status}`);
+  if (e.userMessage) lines.push(`User message: ${e.userMessage}`);
   if (e.details) lines.push(`Details: ${e.details}`);
   if (e.hint) lines.push(`Hint: ${e.hint}`);
+  if (e.requestId) lines.push(`Request id: ${e.requestId}`);
+  if (e.conversationId) lines.push(`Conversation id: ${e.conversationId}`);
   lines.push(`Route: ${e.route || "(unknown)"}`);
   lines.push(downgradeHint(e));
   if (e.count > 1) lines.push(`Occurrences: ${e.count}`);
@@ -119,6 +130,8 @@ export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
     context: {
       "origin-route": e.route,
       "origin-url": e.url,
+      "request-id": e.requestId,
+      "conversation-id": e.conversationId,
       "first-seen": isoOrEmpty(e.firstAt),
       "last-seen": isoOrEmpty(e.lastAt),
       "call-site": e.callSite,
@@ -131,10 +144,13 @@ export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
       tierRuleId: e.tierRuleId,
       tierReason: e.tierReason,
       message: e.message,
+      userMessage: e.userMessage,
       code: e.code,
       details: e.details,
       hint: e.hint,
       status: e.status,
+      requestId: e.requestId,
+      conversationId: e.conversationId,
       operation: e.operation,
       schema: e.schema,
       relation: e.relation,
@@ -179,9 +195,12 @@ export function capturedErrorsToAgentInput(
       relation: e.relation,
       code: e.code,
       message: e.message,
+      userMessage: e.userMessage,
       details: e.details,
       hint: e.hint,
       status: e.status,
+      requestId: e.requestId,
+      conversationId: e.conversationId,
       route: e.route,
       url: e.url,
       callSite: e.callSite,
