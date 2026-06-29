@@ -85,18 +85,25 @@ export interface LibraryPreviewPageProps {
    *  h-[calc(100dvh-3rem)] so the viewer can be embedded inside other
    *  surfaces (e.g. the /files Document tab). */
   embedded?: boolean;
+  /** Deep-link landing page (1-based), e.g. from a search citation
+   *  `/rag/viewer/<id>?page=12`. The viewer opens on this page instead of
+   *  page 1 so clicking a hit lands the user on the passage. */
+  initialPageNumber?: number;
 }
 
 export function LibraryPreviewPage({
   documentId,
   embedded = false,
+  initialPageNumber,
 }: LibraryPreviewPageProps) {
   const {
     doc,
     loading: docLoading,
     error: docError,
   } = useLibraryDoc(documentId);
-  const [activePageIndex, setActivePageIndex] = useState(0);
+  const [activePageIndex, setActivePageIndex] = useState(
+    initialPageNumber && initialPageNumber > 0 ? initialPageNumber - 1 : 0,
+  );
   const router = useRouter();
   const [forking, setForking] = useState(false);
   // Knowledge Assets drawer — opens the builder alongside (not over) the doc,

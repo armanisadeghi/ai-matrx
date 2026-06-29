@@ -104,7 +104,8 @@ export interface BuildRagSearchContextDataArgs {
   sourceKinds?: string[];
   /** Admin "bypass ACL" toggle state. */
   adminBypass?: boolean;
-  /** Cohere rerank toggle (defaults to true on the page). */
+  /** Cross-encoder rerank toggle (defaults to true on the page; only takes
+   *  effect when a reranker is configured on the server). */
   rerank?: boolean;
   /** Multi-query expansion count (1-5; 1 = no expansion). */
   multiQuery?: number;

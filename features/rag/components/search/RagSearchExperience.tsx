@@ -614,12 +614,15 @@ function ScopeSidebar({
           <span className="font-semibold">Pipeline</span>
         </div>
         <KindToggle value={scope.kindFilter} onChange={scope.setKindFilter} />
-        <label className="flex items-center gap-2 text-xs cursor-pointer">
+        <label
+          className="flex items-center gap-2 text-xs cursor-pointer"
+          title="Re-orders the fused results with a cross-encoder when a reranker is configured on the server. Retrieval itself runs on OpenAI embeddings."
+        >
           <Checkbox
             checked={scope.rerank}
             onCheckedChange={(v) => scope.setRerank(v === true)}
           />
-          <span>Rerank with Cohere</span>
+          <span>Rerank results</span>
         </label>
         <label className="flex items-center gap-2 text-xs cursor-pointer">
           <Checkbox
@@ -1049,8 +1052,8 @@ function SearchTab({ scope }: { scope: Scope }) {
             </p>
             <p className="mb-2">
               Hybrid retrieval over your PDFs, notes, and code. Results are
-              ranked by vector similarity + lexical match, fused with RRF,
-              optionally reranked by Cohere, and de-duplicated with MMR.
+              ranked by vector similarity (OpenAI embeddings) + lexical match,
+              fused with RRF, optionally reranked, and de-duplicated with MMR.
             </p>
             <p>
               Each card shows the full hit snippet with the source, page, and a

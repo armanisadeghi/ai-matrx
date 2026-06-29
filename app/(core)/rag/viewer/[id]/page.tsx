@@ -14,10 +14,10 @@
  *   same here so this standalone route never breaks for documents that
  *   render perfectly inside the file preview.
  *
- *   `?page` and `?chunk` are accepted for URL backwards-compat. The
- *   library preview surface owns its own internal navigation (page
- *   list + chunks + search), so deep-link forwarding is best-effort
- *   today and lives on the LibraryPreviewPage roadmap.
+ *   `?page` is forwarded to the preview so a citation deep link lands the
+ *   user on the right page instead of page 1. `?chunk` is accepted for URL
+ *   backwards-compat; chunk-level landing lives on the LibraryPreviewPage
+ *   roadmap (the page list + chunks panel own internal navigation).
  */
 
 import { notFound } from "next/navigation";
@@ -25,12 +25,20 @@ import { LibraryPreviewPage } from "@/features/rag/components/library/LibraryPre
 
 interface RagViewerPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string; chunk?: string }>;
 }
 
 export default async function DocumentViewerPage({
   params,
+  searchParams,
 }: RagViewerPageProps) {
   const { id } = await params;
   if (!id) notFound();
-  return <LibraryPreviewPage documentId={id} />;
+  const { page } = await searchParams;
+  const parsedPage = page ? Number.parseInt(page, 10) : NaN;
+  const initialPageNumber =
+    Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : undefined;
+  return (
+    <LibraryPreviewPage documentId={id} initialPageNumber={initialPageNumber} />
+  );
 }
