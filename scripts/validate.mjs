@@ -117,6 +117,20 @@ step({
         : false,
 });
 
+// Schema truth-check: diff the (freshly regenerated) types + every direct
+// `.from()/.schema()` against the LIVE DB. Advisory — loud, never fails the run
+// (mirrors the doctrine + aidream's check_schema.py). Refreshes the live snapshot
+// when the network is available, else uses the committed snapshot.
+step({
+  id: "schema-truth",
+  title: "Schema truth-check (code vs live DB)",
+  command:
+    noSync || fastMode
+      ? ["pnpm", "check:schema", "--warn"]
+      : ["pnpm", "check:schema:refresh"],
+  advisory: true,
+});
+
 // ── Slow checks ───────────────────────────────────────────────────────────
 step({
   id: "lint",

@@ -1,5 +1,5 @@
 {
-  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table \u2014 BEFORE repointing \u2014 so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
+  "_comment": "Registry of relations that were MOVED or RETIRED during the 2026 DB transition. The clean-cut doctrine: the old name no longer exists, so every stale reference MUST error. check-dead-relations.ts scans the codebase for references to the OLD name and lights the terminal RED until they are gone. Add an entry the moment you move/retire a table — BEFORE repointing — so the guard drives the repoint. Mirror of platform.deprecated_relations in the DB.",
   "relations": [
     {
       "relation": "pc_shows",
@@ -215,15 +215,15 @@
       "newSchema": "history",
       "new": "history.row_versions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
+      "reason": "retired (graveyard) — note versions live in history.row_versions. Use the RPCs get_note_versions / get_note_version / restore_note_version / delete_note_version / create_note_version_manual. Never .from('note_versions')."
     },
     {
       "relation": "note_shares",
       "old": "public.note_shares",
-      "newSchema": "permissions",
-      "new": "public.permissions",
+      "newSchema": "iam",
+      "new": "iam.permissions",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 note sharing is canonical public.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
+      "reason": "retired (graveyard) — note sharing is canonical iam.permissions (resource_type='note'). Public notes = workbench.notes.visibility='public'."
     },
     {
       "relation": "org_module_settings",
@@ -231,7 +231,7 @@
       "newSchema": "platform",
       "new": "platform.org_module_config",
       "since": "2026-06-27",
-      "reason": "retired (graveyard) \u2014 org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
+      "reason": "retired (graveyard) — org module config unified onto platform.org_module_config (entity-token keyed). Read via platform.module_config() / OrgModuleConfig."
     },
     {
       "relation": "user_achievements",
@@ -532,90 +532,90 @@
     {
       "relation": "kg_alerts",
       "old": "public.kg_alerts",
-      "newSchema": "reg",
-      "new": "reg.kg_alerts",
+      "newSchema": "rag",
+      "new": "rag.kg_alerts",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG/suggestion domain, clean cut). Use .schema('reg').from('kg_alerts')."
+      "reason": "moved to rag schema (KG/suggestion domain, clean cut). Use .schema('rag').from('kg_alerts')."
     },
     {
       "relation": "kg_suggestion_ack",
       "old": "public.kg_suggestion_ack",
-      "newSchema": "reg",
-      "new": "reg.kg_suggestion_ack",
+      "newSchema": "rag",
+      "new": "rag.kg_suggestion_ack",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG/suggestion domain, clean cut). Use .schema('reg').from('kg_suggestion_ack')."
+      "reason": "moved to rag schema (KG/suggestion domain, clean cut). Use .schema('rag').from('kg_suggestion_ack')."
     },
     {
       "relation": "kg_value_matches",
       "old": "public.kg_value_matches",
-      "newSchema": "reg",
-      "new": "reg.kg_value_matches",
+      "newSchema": "rag",
+      "new": "rag.kg_value_matches",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG/suggestion domain, clean cut). Use .schema('reg').from('kg_value_matches')."
+      "reason": "moved to rag schema (KG/suggestion domain, clean cut). Use .schema('rag').from('kg_value_matches')."
     },
     {
       "relation": "ner_canonicalizer_shadow",
       "old": "public.ner_canonicalizer_shadow",
-      "newSchema": "reg",
-      "new": "reg.ner_canonicalizer_shadow",
+      "newSchema": "rag",
+      "new": "rag.ner_canonicalizer_shadow",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG/NER pipeline, clean cut). Use .schema('reg').from('ner_canonicalizer_shadow')."
+      "reason": "moved to rag schema (KG/NER pipeline, clean cut). Use .schema('rag').from('ner_canonicalizer_shadow')."
     },
     {
       "relation": "kg_sweep_queue",
       "old": "public.kg_sweep_queue",
-      "newSchema": "reg",
-      "new": "reg.kg_sweep_queue",
+      "newSchema": "rag",
+      "new": "rag.kg_sweep_queue",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG sweep pipeline, clean cut). Use .schema('reg').from('kg_sweep_queue')."
+      "reason": "moved to rag schema (KG sweep pipeline, clean cut). Use .schema('rag').from('kg_sweep_queue')."
     },
     {
       "relation": "kg_sweep_run",
       "old": "public.kg_sweep_run",
-      "newSchema": "reg",
-      "new": "reg.kg_sweep_run",
+      "newSchema": "rag",
+      "new": "rag.kg_sweep_run",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG sweep pipeline, clean cut). Use .schema('reg').from('kg_sweep_run')."
+      "reason": "moved to rag schema (KG sweep pipeline, clean cut). Use .schema('rag').from('kg_sweep_run')."
     },
     {
       "relation": "kg_sweep_state",
       "old": "public.kg_sweep_state",
-      "newSchema": "reg",
-      "new": "reg.kg_sweep_state",
+      "newSchema": "rag",
+      "new": "rag.kg_sweep_state",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (KG sweep state tracker, clean cut). Use .schema('reg').from('kg_sweep_state')."
+      "reason": "moved to rag schema (KG sweep state tracker, clean cut). Use .schema('rag').from('kg_sweep_state')."
     },
     {
       "relation": "scope_suggestions",
       "old": "public.scope_suggestions",
-      "newSchema": "reg",
-      "new": "reg.scope_suggestions",
+      "newSchema": "rag",
+      "new": "rag.scope_suggestions",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('scope_suggestions')."
+      "reason": "moved to rag schema (scope suggestion pipeline, clean cut). Use .schema('rag').from('scope_suggestions')."
     },
     {
       "relation": "scope_association_suggestions",
       "old": "public.scope_association_suggestions",
-      "newSchema": "reg",
-      "new": "reg.scope_association_suggestions",
+      "newSchema": "rag",
+      "new": "rag.scope_association_suggestions",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('scope_association_suggestions')."
+      "reason": "moved to rag schema (scope suggestion pipeline, clean cut). Use .schema('rag').from('scope_association_suggestions')."
     },
     {
       "relation": "scope_item_value_suggestions",
       "old": "public.scope_item_value_suggestions",
-      "newSchema": "reg",
-      "new": "reg.scope_item_value_suggestions",
+      "newSchema": "rag",
+      "new": "rag.scope_item_value_suggestions",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('scope_item_value_suggestions')."
+      "reason": "moved to rag schema (scope suggestion pipeline, clean cut). Use .schema('rag').from('scope_item_value_suggestions')."
     },
     {
       "relation": "context_item_suggestions",
       "old": "public.context_item_suggestions",
-      "newSchema": "reg",
-      "new": "reg.context_item_suggestions",
+      "newSchema": "rag",
+      "new": "rag.context_item_suggestions",
       "since": "2026-06-27",
-      "reason": "moved to reg schema (scope suggestion pipeline, clean cut). Use .schema('reg').from('context_item_suggestions')."
+      "reason": "moved to rag schema (scope suggestion pipeline, clean cut). Use .schema('rag').from('context_item_suggestions')."
     },
     {
       "relation": "sch_task",
@@ -807,7 +807,7 @@
       "newSchema": "agent",
       "new": "agent.context_menu_view",
       "since": "2026-06-28",
-      "reason": "context-menu shim dropped \u2014 read agent.context_menu_view via .schema('agent').from('context_menu_view')."
+      "reason": "context-menu shim dropped — read agent.context_menu_view via .schema('agent').from('context_menu_view')."
     },
     {
       "relation": "ui_surface",
