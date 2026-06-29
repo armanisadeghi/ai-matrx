@@ -51,9 +51,9 @@ const CodeEditErrorCanvas = dynamic(
 // strip + list + editor.
 const DocumentsWorkspace = dynamic(
   () =>
-    import(
-      "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace"
-    ).then((m) => ({ default: m.DocumentsWorkspace })),
+    import("@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
+      (m) => ({ default: m.DocumentsWorkspace }),
+    ),
   { ssr: false },
 );
 
@@ -141,8 +141,20 @@ function renderContent(content: CanvasContent): React.ReactNode {
   const _def = getArtifactDef(type);
   if (_def && hasArtifactRenderer(_def.canvasType)) {
     const meta = content.metadata as
-      | { conversationId?: string; messageId?: string }
+      | {
+          conversationId?: string;
+          messageId?: string;
+          canvasItemId?: string;
+        }
       | undefined;
+    const artifactId =
+      meta?.canvasItemId ??
+      (typeof data === "object" &&
+      data !== null &&
+      "artifactId" in data &&
+      typeof (data as { artifactId?: string }).artifactId === "string"
+        ? (data as { artifactId: string }).artifactId
+        : undefined);
     return (
       <div className="h-full">
         <ArtifactRender
@@ -150,6 +162,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
           mode="canvas"
           data={data}
           metadata={content.metadata as Record<string, unknown> | undefined}
+          artifactId={artifactId}
           conversationId={meta?.conversationId}
           messageId={meta?.messageId}
         />

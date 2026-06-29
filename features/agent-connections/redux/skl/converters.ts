@@ -22,21 +22,10 @@ type ResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
  * project_id / task_id are no longer top-level columns on platform.categories
  * (they moved into metadata) and are not selected.
  */
-type PlatformCategoryAliasedRow = {
-  id: string;
-  placement_type: string;
-  label: string | null;            // aliased from: name
-  description: string | null;      // aliased from: metadata->>description
-  icon_name: string | null;        // aliased from: icon
-  color: string | null;
-  sort_order: number | null;        // aliased from: position
-  is_active: string | null;         // aliased from: metadata->>is_active (text from jsonb ->>)
-  metadata: Record<string, unknown> | null;
-  parent_category_id: string | null; // aliased from: parent_id
-  organization_id: string | null;
-  created_at: string;
-  updated_at: string;
-};
+// Raw platform.categories row — fetched via select("*") and aliased in the
+// mapper below (the equivalent PostgREST `->>` aliased select triggered TS2589
+// after the schema regen).
+type PlatformCategoryRow = Database["platform"]["Tables"]["categories"]["Row"];
 
 export function rowToSklRenderDefinition(
   row: RenderDefRow,
@@ -137,23 +126,28 @@ export function rowToSklResource(row: ResourceRow): SklResource {
 }
 
 export function rowToShortcutCategory(
-  row: PlatformCategoryAliasedRow,
+  row: PlatformCategoryRow,
 ): ShortcutCategoryRow {
-  // is_active is extracted via metadata->>is_active which returns a text string;
-  // coerce to boolean. Absent/null means true (default active).
+  // description / is_active live in metadata on platform.categories. is_active
+  // may be a boolean or a "true"/"false" text; absent/null means true (active).
+  const meta = (row.metadata ?? {}) as {
+    description?: string | null;
+    is_active?: string | boolean | null;
+  };
+  const rawIsActive = meta.is_active;
   const isActive =
-    row.is_active === null || row.is_active === undefined
+    rawIsActive === null || rawIsActive === undefined
       ? true
-      : row.is_active !== "false";
+      : rawIsActive !== false && rawIsActive !== "false";
 
   return {
     id: row.id,
-    label: row.label ?? "",
-    description: row.description,
-    iconName: row.icon_name ?? "",
+    label: row.name ?? "",
+    description: meta.description ?? null,
+    iconName: row.icon ?? "",
     color: row.color,
-    parentCategoryId: row.parent_category_id,
-    sortOrder: row.sort_order ?? 0,
+    parentCategoryId: row.parent_id,
+    sortOrder: row.position ?? 0,
     isActive,
     placementType: row.placement_type,
     // user_id / project_id / task_id no longer exist as top-level columns on

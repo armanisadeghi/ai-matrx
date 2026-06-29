@@ -1737,6 +1737,83 @@ details[open] > summary .shell-mobile-admin-caret {
     visibility 0s linear 0s;
 }
 
+/* Canvas side sheet (z-index 10000) — mirror header user menu above the panel */
+.canvas-shell-user-menu-wrapper {
+  position: relative;
+  z-index: 10001;
+}
+
+.canvas-shell-user-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  cursor: default;
+}
+
+.canvas-shell-user-menu-panel {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.375rem;
+  z-index: 10002;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear var(--shell-duration-fast);
+}
+
+.canvas-shell-user-menu-root:has(#canvas-shell-user-menu:checked)
+  .canvas-shell-user-menu-backdrop {
+  display: block;
+}
+
+.canvas-shell-user-menu-root:has(#canvas-shell-user-menu:checked)
+  .canvas-shell-user-menu-panel {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth),
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    visibility 0s linear 0s;
+}
+
+@media (max-width: 1023px) {
+  .canvas-shell-user-menu-panel {
+    position: fixed;
+    right: 0.375rem;
+    left: 0.375rem;
+    top: auto;
+    bottom: calc(
+      var(--shell-dock-h) + var(--shell-dock-bottom) +
+        env(safe-area-inset-bottom, 0px) + 0.5rem
+    );
+    margin-top: 0;
+    transform: translateY(0.5rem);
+  }
+
+  body:not(:has(.shell-show-dock)) .canvas-shell-user-menu-panel {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+
+  .canvas-shell-user-menu-root:has(#canvas-shell-user-menu:checked)
+    .canvas-shell-user-menu-panel {
+    transform: translateY(0);
+  }
+}
+
+/* When canvas is open, hide the shell header avatar — canvas top bar replaces it */
+:root[data-canvas-open="true"] .shell-header .shell-user-menu-wrapper {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ---------------------------------------------------------------------------
    16. Dashboard Specific Styles
    --------------------------------------------------------------------------- */

@@ -70,3 +70,5 @@ export function useCanvas() {
     content,
   };
 }
+
+export { useOpenArtifactInCanvas } from "./useOpenArtifactInCanvas";

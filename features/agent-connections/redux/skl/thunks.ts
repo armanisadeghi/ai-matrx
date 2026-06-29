@@ -223,17 +223,16 @@ export const fetchRenderBlockCategories = createAsyncThunk(
         // organization_id (the only surviving top-level scope column). The metadata
         // equivalents are not used for scoping at query time — RLS + dimension filter
         // is sufficient for this read.
-        .select("id, placement_type, label:name, description:metadata->>description, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, metadata, parent_category_id:parent_id, organization_id, created_at, updated_at")
+        // Plain select("*") — the aliased json (`->>`) select triggered a
+        // TS2589 (excessively-deep inference) after the schema regen. The raw
+        // platform.categories row is mapped by rowToShortcutCategory instead
+        // (name→label, metadata.description, position→sort_order, …).
+        .select("*")
         .eq("dimension", "shortcut")
         .order("position", { ascending: true, nullsFirst: false })
         .order("name", { ascending: true });
       query = applyScopeFilter(query, args, userId);
-      // The aliased select (json `->>` accessors) makes the inferred row type
-      // instantiate too deeply (TS2589) after the regen — pin it to the shape
-      // the mapper consumes via .returns<>().
-      const { data, error } = await query.returns<
-        Parameters<typeof rowToShortcutCategory>[0][]
-      >();
+      const { data, error } = await query;
       if (error) throw error;
       const rows = (data ?? []).map(rowToShortcutCategory);
       dispatch(sklActions.renderBlockCategoriesReceived(rows));

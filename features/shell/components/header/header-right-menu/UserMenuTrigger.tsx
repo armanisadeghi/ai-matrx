@@ -8,9 +8,14 @@ import { selectShouldPromptForOrganization } from "@/lib/redux/slices/appContext
 
 interface UserMenuTriggerProps {
   userData: UserData;
+  /** Checkbox id for the menu toggle. Defaults to AppShell's `#shell-user-menu`. */
+  menuCheckboxId?: string;
 }
 
-export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
+export default function UserMenuTrigger({
+  userData,
+  menuCheckboxId = "shell-user-menu",
+}: UserMenuTriggerProps) {
   // Soft org enforcement: ring the avatar red when no org is selected, nudging
   // the user to choose one (alongside the drop-down HeaderOrgReminder). Gated on
   // the bootstrap-resolved flag so it never flashes red during boot before the
@@ -19,7 +24,7 @@ export default function UserMenuTrigger({ userData }: UserMenuTriggerProps) {
 
   return (
     <label
-      htmlFor="shell-user-menu"
+      htmlFor={menuCheckboxId}
       aria-label="User menu"
       className="flex h-11 w-11 items-center justify-center bg-transparent transition-transform active:scale-95 cursor-pointer outline-none"
     >

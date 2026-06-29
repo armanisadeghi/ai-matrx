@@ -1,7 +1,6 @@
 import React from "react";
 import { PublicProviders } from "./PublicProviders";
 import { PublicHeader } from "@/components/matrx/PublicHeader";
-import { CanvasReopenChip } from "@/features/canvas/core/CanvasReopenChip";
 import { CanvasSideSheetInner } from "@/features/canvas/core/CanvasSideSheetInner";
 
 export default function PublicLayout({
@@ -18,7 +17,6 @@ export default function PublicLayout({
       {/* Canvas surface mounted at layout root so it sits above all page
           content (z-10000) and is available from every public route. */}
       <CanvasSideSheetInner />
-      <CanvasReopenChip />
     </PublicProviders>
   );
 }

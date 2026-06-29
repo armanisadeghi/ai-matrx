@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
 import { getUserId } from '@/utils/auth/getUserId';
-import { ensureOrgId } from '@/lib/organizations/personalOrg';
 import type { SharedCanvasItem } from '@/types/canvas-social';
 
 export function useSharedCanvas(shareToken: string | null) {
@@ -42,22 +41,23 @@ async function trackView(shareToken: string) {
             sessionStorage.setItem('canvas_session_id', sessionId);
         }
 
-        // Get canvas ID first
+        // Get canvas id + org first
         const { data: canvas } = await supabase
             .schema('canvas').from('shared_canvas_items')
-            .select('id')
+            .select('id, organization_id')
             .eq('share_token', shareToken)
             .single();
 
         if (!canvas) return;
 
-        // Insert view
+        // Insert view. The view belongs to the canvas's org (not the viewer's) —
+        // this works for anonymous public-share viewers who have no session/org.
         await supabase
             .schema('canvas').from('canvas_views')
             .insert({
                 canvas_id: canvas.id,
                 user_id: userId,
-                organization_id: await ensureOrgId(undefined),
+                organization_id: canvas.organization_id,
                 session_id: sessionId,
                 referrer: typeof document !== 'undefined' ? document.referrer : null,
                 viewed_at: new Date().toISOString()

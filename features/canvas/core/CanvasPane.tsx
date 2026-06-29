@@ -20,6 +20,7 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowDownUp,
+  ChevronDown,
   Cloud,
   CloudOff,
   Code,
@@ -49,9 +50,14 @@ import {
 } from "@/features/canvas/redux/canvasSlice";
 import { toast } from "sonner";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
-import { XTapButton } from "@/components/icons/tap-buttons";
 import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
 import { CanvasNavigation } from "./CanvasNavigation";
+import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";
+import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
+import { ensureArtifactPersisted } from "@/features/canvas/materialization/ensureArtifactPersisted";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
+import { CanvasArtifactDebugPanel } from "@/features/canvas/components/CanvasArtifactDebugPanel";
 
 // CanvasShareSheet pulls in markdown utilities and image picker — keep it
 // lazy so the canvas itself stays small on first paint.
@@ -104,7 +110,10 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
     typeof content.metadata?.subtitle === "string"
       ? content.metadata.subtitle
       : undefined;
-  const isSynced = !!item.isSynced;
+  const isSynced =
+    isMaterializedArtifactId(
+      content.metadata?.canvasItemId ?? item.savedItemId,
+    ) || !!item.isSynced;
   // Ephemeral editor surfaces (code_preview / code_edit_error) carry live
   // callbacks that can't be serialized — saving or sharing them writes a
   // corrupt, dead row. Hide both affordances for those types.
@@ -156,29 +165,59 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
     }
     setIsSyncing(true);
     try {
-      const { canvasItemsService } =
-        await import("@/features/canvas/services/canvasItemsService");
-      const result = await canvasItemsService.save({
-        content,
-        source_message_id: content.metadata?.sourceMessageId,
-        task_id: content.metadata?.sourceTaskId,
+      let rawContent = typeof content.data === "string" ? content.data : "";
+      const existingArtifactId =
+        content.metadata?.canvasItemId ?? item.savedItemId;
+
+      if (!rawContent && isMaterializedArtifactId(existingArtifactId)) {
+        const row = await canvasArtifactService.getById(existingArtifactId!);
+        if (
+          row?.content &&
+          typeof row.content === "object" &&
+          "data" in row.content
+        ) {
+          const d = (row.content as { data?: unknown }).data;
+          rawContent = typeof d === "string" ? d : JSON.stringify(d ?? "");
+        }
+      }
+
+      if (!rawContent) {
+        toast.error(
+          "Nothing to persist — no card content on this session item.",
+        );
+        return;
+      }
+
+      const result = await ensureArtifactPersisted({
+        canvasType: content.type,
+        title:
+          titleToString(content.metadata?.title) ||
+          getDefaultTitle(content.type),
+        content: rawContent,
+        messageId:
+          content.metadata?.messageId ?? content.metadata?.sourceMessageId,
+        conversationId: content.metadata?.conversationId,
+        artifactId: existingArtifactId,
       });
-      if (result.data && !result.error) {
+
+      if (result.ok && result.artifactId) {
         dispatch(
           markItemSynced({
-            canvasItemId: item.id,
-            savedItemId: result.data.id,
+            sessionItemId: item.id,
+            artifactId: result.artifactId,
+            artifactDebug: {
+              steps: result.steps,
+              errors: result.errors,
+              ensuredAt: Date.now(),
+              wasCreated: result.wasCreated,
+            },
           }),
         );
+        toast.success(
+          result.wasCreated ? "Artifact created in cloud" : "Artifact verified",
+        );
       } else {
-        // Loud failure: a save that silently no-ops looks identical to success.
-        const msg =
-          result.error instanceof Error
-            ? result.error.message
-            : typeof result.error === "string"
-              ? result.error
-              : "Couldn't save to your library.";
-        toast.error(msg);
+        toast.error(result.errors[0] ?? "Cloud sync failed");
       }
     } finally {
       setIsSyncing(false);
@@ -191,16 +230,10 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const showNavigation =
     paneRole !== "bottom" && allItems.length > 1 && !isSplit;
 
-  // "Close" semantics:
-  //   single → close entire canvas (Esc-equivalent)
-  //   top    → close ENTIRE canvas (closes both panes)
-  //   bottom → close only this pane (collapses split)
-  // In top-split mode we also surface an additional pane-close button to
-  // mirror the bottom's affordance.
-  const closeAriaLabel =
-    paneRole === "bottom" ? "Close this pane" : "Close canvas";
-  const closeTooltip =
-    paneRole === "bottom" ? "Close this pane" : "Close canvas (Esc)";
+  // Primary pane header (single or top in split): put-away + avatar live here
+  // beside preview/source and the other actions — not a separate shell row.
+  const showShellChrome = paneRole === "single" || paneRole === "top";
+  const showCollapseSplit = paneRole === "bottom";
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-card">
@@ -289,57 +322,70 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
 
           {/* Sync — hidden for render-only types that can't be persisted */}
           {canPersist && (
-          <TapTargetButton
-            icon={
-              isSynced && !isSyncing ? (
-                <Cloud
-                  className={cn(
-                    "h-4 w-4",
-                    isSynced
-                      ? "text-green-600 dark:text-green-500"
-                      : "text-muted-foreground",
-                  )}
-                />
-              ) : (
-                <CloudOff
-                  className={cn(
-                    "h-4 w-4 text-muted-foreground",
-                    isSyncing && "animate-pulse text-primary",
-                  )}
-                />
-              )
-            }
-            ariaLabel={isSynced ? "Synced to cloud" : "Sync to cloud"}
-            tooltip={
-              isSyncing
-                ? "Syncing…"
-                : isSynced
-                  ? "Synced to cloud"
-                  : "Sync to cloud"
-            }
-            onClick={handleSync}
-            disabled={isSyncing}
-          />
+            <TapTargetButton
+              icon={
+                isSynced && !isSyncing ? (
+                  <Cloud
+                    className={cn(
+                      "h-4 w-4",
+                      isSynced
+                        ? "text-green-600 dark:text-green-500"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                ) : (
+                  <CloudOff
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground",
+                      isSyncing && "animate-pulse text-primary",
+                    )}
+                  />
+                )
+              }
+              ariaLabel={isSynced ? "Synced to cloud" : "Sync to cloud"}
+              tooltip={
+                isSyncing
+                  ? "Syncing…"
+                  : isSynced
+                    ? "Synced to cloud"
+                    : "Sync to cloud"
+              }
+              onClick={handleSync}
+              disabled={isSyncing}
+            />
           )}
 
           {/* Share — hidden for render-only types that can't be persisted */}
           {canPersist && (
-          <TapTargetButton
-            icon={<Share2 className="h-4 w-4" />}
-            ariaLabel="Share canvas"
-            tooltip="Share"
-            onClick={() => setIsShareOpen(true)}
-          />
+            <TapTargetButton
+              icon={<Share2 className="h-4 w-4" />}
+              ariaLabel="Share canvas"
+              tooltip="Share"
+              onClick={() => setIsShareOpen(true)}
+            />
           )}
 
-          {/* Close — semantics depend on paneRole */}
-          <XTapButton
-            ariaLabel={closeAriaLabel}
-            tooltip={closeTooltip}
-            onClick={handleClosePane}
-          />
+          {/* Put away (primary pane) + user menu — far right of this header row */}
+          {showShellChrome && (
+            <>
+              <CanvasPanePutAwayToggle onPutAway={handleCloseAll} />
+              <CanvasPaneUserMenu />
+            </>
+          )}
+
+          {/* Bottom split pane: collapse only */}
+          {showCollapseSplit && (
+            <TapTargetButton
+              icon={<ChevronDown className="h-4 w-4" />}
+              ariaLabel="Collapse split"
+              tooltip="Collapse split"
+              onClick={handleClosePane}
+            />
+          )}
         </div>
       </header>
+
+      <CanvasArtifactDebugPanel item={item} />
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">

@@ -25,14 +25,6 @@ const CanvasSideSheetInner = dynamic(
   { ssr: false, loading: () => null },
 );
 
-const CanvasReopenChip = dynamic(
-  () =>
-    import("@/features/canvas/core/CanvasReopenChip").then(
-      (m) => m.CanvasReopenChip,
-    ),
-  { ssr: false, loading: () => null },
-);
-
 const WindowTraySync = dynamic(
   () => import("@/features/window-panels/WindowTraySync"),
   { ssr: false, loading: () => null },
@@ -46,7 +38,6 @@ export default function DeferredIslands() {
   return (
     <>
       <CanvasSideSheetInner />
-      <CanvasReopenChip />
       <WindowTraySync />
     </>
   );

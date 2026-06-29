@@ -74,9 +74,7 @@ export function ArtifactResultBar({
   onTogglePeek,
 }: ArtifactResultBarProps) {
   // Hooks run unconditionally; the working-doc title is "" for non-doc kinds.
-  const liveTitle = useAppSelector(
-    selectWorkingDocTitle(conversationId ?? ""),
-  );
+  const liveTitle = useAppSelector(selectWorkingDocTitle(conversationId ?? ""));
   const canvas = useCanvas();
   const openNotes = useOpenNotesWindow();
 

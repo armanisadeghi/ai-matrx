@@ -5,40 +5,44 @@ import { Maximize2 } from "lucide-react";
 import { ArtifactVersionHistory } from "@/features/canvas/components/ArtifactVersionHistory";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
 import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
-    ArtifactRender,
-    hasArtifactRenderer,
+  ArtifactRender,
+  hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
 // Lazy load block renderers — only the ones that accept raw content strings
-const CodeBlock = lazy(() => import("@/features/code-editor/components/code-block/CodeBlock"));
+const CodeBlock = lazy(
+  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
 
 interface ArtifactBlockProps {
-    content: string;
-    metadata?: {
-        isComplete?: boolean;
-        artifactId?: string;
-        artifactIndex?: number;
-        artifactType?: string;
-        artifactTitle?: string;
-        rawXml?: string;
-    };
-    serverData?: {
-        artifactId?: string;
-        artifactIndex?: number;
-        artifactType?: string;
-        title?: string;
-        content?: string;
-    } | null;
-    isStreamActive?: boolean;
-    messageId?: string;
-    taskId?: string;
+  content: string;
+  metadata?: {
+    isComplete?: boolean;
+    artifactId?: string;
+    artifactIndex?: number;
+    artifactType?: string;
+    artifactTitle?: string;
+    rawXml?: string;
+  };
+  serverData?: {
+    artifactId?: string;
+    artifactIndex?: number;
+    artifactType?: string;
+    title?: string;
+    content?: string;
+  } | null;
+  isStreamActive?: boolean;
+  messageId?: string;
+  taskId?: string;
 }
 
 /**
@@ -53,173 +57,210 @@ interface ArtifactBlockProps {
  * content before handing it to the renderer — exactly like BlockRenderer does.
  */
 const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
-    content,
-    metadata,
-    serverData,
-    isStreamActive,
-    messageId,
-    taskId,
+  content,
+  metadata,
+  serverData,
+  isStreamActive,
+  messageId,
+  taskId,
 }) => {
-    const { open } = useCanvas();
-    const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
+  const { open } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+  const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
 
-    const artifactTitle = serverData?.title || metadata?.artifactTitle || "Artifact";
-    const artifactType = serverData?.artifactType || metadata?.artifactType || "text";
-    const artifactIndex = serverData?.artifactIndex ?? metadata?.artifactIndex ?? 0;
-    const artifactId = serverData?.artifactId || metadata?.artifactId || `artifact-${artifactIndex}`;
-    const isComplete = metadata?.isComplete !== false;
+  const artifactTitle =
+    serverData?.title || metadata?.artifactTitle || "Artifact";
+  const artifactType =
+    serverData?.artifactType || metadata?.artifactType || "text";
+  const artifactIndex =
+    serverData?.artifactIndex ?? metadata?.artifactIndex ?? 0;
+  const artifactId =
+    serverData?.artifactId ||
+    metadata?.artifactId ||
+    `artifact-${artifactIndex}`;
+  const isComplete = metadata?.isComplete !== false;
 
-    const canvasType: CanvasContentType =
-        resolveCanvasType("artifact", artifactType) || "html";
-    const dedupKey = taskId || `artifact:${artifactId}`;
+  const canvasType: CanvasContentType =
+    resolveCanvasType("artifact", artifactType) || "html";
+  const dedupKey = taskId || `artifact:${artifactId}`;
 
-    /** Build the canvas data shape. JSON types get parsed, strings pass through. */
-    const canvasData = useMemo(() => {
-        switch (artifactType) {
-            case "quiz":
-            case "presentation":
-            case "diagram":
-            case "comparison":
-            case "decision-tree":
-            case "decision_tree":
-            case "math_problem": {
-                const parsed = safeJsonParse(content);
-                return parsed || content;
-            }
-            default:
-                return content;
-        }
-    }, [content, artifactType]);
+  /** Build the canvas data shape. JSON types get parsed, strings pass through. */
+  const canvasData = useMemo(() => {
+    switch (artifactType) {
+      case "quiz":
+      case "presentation":
+      case "diagram":
+      case "comparison":
+      case "decision-tree":
+      case "decision_tree":
+      case "math_problem": {
+        const parsed = safeJsonParse(content);
+        return parsed || content;
+      }
+      default:
+        return content;
+    }
+  }, [content, artifactType]);
 
-    const handleOpenCanvas = () => {
-        open({
-            type: canvasType,
-            data: canvasData,
-            metadata: {
-                title: artifactTitle,
-                sourceMessageId: messageId,
-                sourceTaskId: dedupKey,
-            },
-        });
-    };
+  const handleOpenCanvas = () => {
+    const rawPayload =
+      typeof canvasData === "string" ? canvasData : JSON.stringify(canvasData);
+    const def = getArtifactDef(canvasType);
+    const useArtifactPath =
+      def?.materializable &&
+      (canvasType === "flashcards" || isMaterializedArtifactId(artifactId));
 
-    /** Render the actual content using the correct component for this type. */
-    const renderContent = () => {
-        // Mermaid renders progressively during streaming (last-good-render
-        // semantics live inside the renderer) — never fall back to a markdown
-        // preview for it. Routed through the unified renderer (MermaidBlock).
-        if (canvasType === "mermaid" && hasArtifactRenderer("mermaid")) {
-            return (
-                <ArtifactRender
-                    canvasType="mermaid"
-                    mode="artifact"
-                    raw={content}
-                    serverData={serverData}
-                    metadata={metadata as Record<string, unknown> | undefined}
-                    artifactId={serverData?.artifactId ?? metadata?.artifactId}
-                    isStreamActive={isStreamActive}
-                    taskId={taskId}
-                    messageId={messageId}
-                />
-            );
-        }
+    if (useArtifactPath) {
+      void openArtifact({
+        canvasType,
+        title: artifactTitle,
+        content: rawPayload,
+        messageId,
+        artifactId: isMaterializedArtifactId(artifactId)
+          ? artifactId
+          : undefined,
+        artifactIndex: artifactIndex > 0 ? artifactIndex : 1,
+      });
+      return;
+    }
 
-        // Still streaming — show progressive markdown preview
-        if (!isComplete && isStreamActive) {
-            return (
-                <div className="p-3 text-sm">
-                    <BasicMarkdownContent content={content} isStreamActive={isStreamActive} />
-                </div>
-            );
-        }
+    open({
+      type: canvasType,
+      data: canvasData,
+      metadata: {
+        title: artifactTitle,
+        sourceMessageId: messageId,
+        sourceTaskId: dedupKey,
+        canvasItemId: isMaterializedArtifactId(artifactId)
+          ? artifactId
+          : undefined,
+      },
+    });
+  };
 
-        // ── Unified artifact renderer (Wave B) ───────────────────────────
-        // Types with a unified renderer registered render through the single
-        // shared path; the rest fall through to the legacy switch below.
-        if (hasArtifactRenderer(canvasType)) {
-            return (
-                <ArtifactRender
-                    canvasType={canvasType}
-                    mode="artifact"
-                    raw={content}
-                    serverData={serverData}
-                    metadata={metadata as Record<string, unknown> | undefined}
-                    artifactId={artifactId}
-                    messageId={messageId}
-                    taskId={dedupKey}
-                    isStreamActive={isStreamActive}
-                />
-            );
-        }
+  /** Render the actual content using the correct component for this type. */
+  const renderContent = () => {
+    // Mermaid renders progressively during streaming (last-good-render
+    // semantics live inside the renderer) — never fall back to a markdown
+    // preview for it. Routed through the unified renderer (MermaidBlock).
+    if (canvasType === "mermaid" && hasArtifactRenderer("mermaid")) {
+      return (
+        <ArtifactRender
+          canvasType="mermaid"
+          mode="artifact"
+          raw={content}
+          serverData={serverData}
+          metadata={metadata as Record<string, unknown> | undefined}
+          artifactId={serverData?.artifactId ?? metadata?.artifactId}
+          isStreamActive={isStreamActive}
+          taskId={taskId}
+          messageId={messageId}
+        />
+      );
+    }
 
-        // All unified types (iframe, html, code, image, flashcards, timeline,
-        // research, resources, progress/progress_tracker, troubleshooting,
-        // recipe/cooking_recipe, quiz, presentation, mermaid, diagram,
-        // decision_tree/decision-tree, math_problem) are handled by the
-        // hasArtifactRenderer early-branch above (Wave F removal).
-        // Fallback: render as markdown for any unregistered type.
-        return (
-            <div className="p-3 text-sm">
-                <BasicMarkdownContent content={content} isStreamActive={isStreamActive} />
-            </div>
-        );
-    };
+    // Still streaming — show progressive markdown preview
+    if (!isComplete && isStreamActive) {
+      return (
+        <div className="p-3 text-sm">
+          <BasicMarkdownContent
+            content={content}
+            isStreamActive={isStreamActive}
+          />
+        </div>
+      );
+    }
 
+    // ── Unified artifact renderer (Wave B) ───────────────────────────
+    // Types with a unified renderer registered render through the single
+    // shared path; the rest fall through to the legacy switch below.
+    if (hasArtifactRenderer(canvasType)) {
+      return (
+        <ArtifactRender
+          canvasType={canvasType}
+          mode="artifact"
+          raw={content}
+          serverData={serverData}
+          metadata={metadata as Record<string, unknown> | undefined}
+          artifactId={artifactId}
+          messageId={messageId}
+          taskId={dedupKey}
+          isStreamActive={isStreamActive}
+        />
+      );
+    }
+
+    // All unified types (iframe, html, code, image, flashcards, timeline,
+    // research, resources, progress/progress_tracker, troubleshooting,
+    // recipe/cooking_recipe, quiz, presentation, mermaid, diagram,
+    // decision_tree/decision-tree, math_problem) are handled by the
+    // hasArtifactRenderer early-branch above (Wave F removal).
+    // Fallback: render as markdown for any unregistered type.
     return (
-        <div className="group/artifact relative my-2">
-            {/* Whisper-quiet affordance row: a muted label + a hover-reveal
+      <div className="p-3 text-sm">
+        <BasicMarkdownContent
+          content={content}
+          isStreamActive={isStreamActive}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div className="group/artifact relative my-2">
+      {/* Whisper-quiet affordance row: a muted label + a hover-reveal
                 "open in canvas" icon. No background, no border, no x-padding — the
                 artifact blends into the message and uses the full content width
                 (the content provides its own structure). */}
-            <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="truncate text-xs font-medium text-muted-foreground">
-                        {artifactTitle}
-                    </span>
-                    {!isComplete && isStreamActive && (
-                        <span className="shrink-0 animate-pulse text-xs text-muted-foreground">
-                            streaming…
-                        </span>
-                    )}
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
-                    {isMaterializedArtifactId(artifactId) && (
-                        <ArtifactVersionHistory
-                            canvasItemId={artifactId}
-                            triggerClassName="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 data-[state=open]:opacity-100"
-                        />
-                    )}
-                    {isCanvasAvailable && (
-                        <button
-                            onClick={handleOpenCanvas}
-                            className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
-                            title="Open in canvas"
-                            aria-label="Open in canvas"
-                        >
-                            <Maximize2 className="h-3.5 w-3.5" />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Content — routes to the real renderer by type. Full width, no chrome. */}
-            <div className="overflow-hidden">{renderContent()}</div>
+      <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-xs font-medium text-muted-foreground">
+            {artifactTitle}
+          </span>
+          {!isComplete && isStreamActive && (
+            <span className="shrink-0 animate-pulse text-xs text-muted-foreground">
+              streaming…
+            </span>
+          )}
         </div>
-    );
+        <div className="flex shrink-0 items-center gap-0.5">
+          {isMaterializedArtifactId(artifactId) && (
+            <ArtifactVersionHistory
+              canvasItemId={artifactId}
+              triggerClassName="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 data-[state=open]:opacity-100"
+            />
+          )}
+          {isCanvasAvailable && (
+            <button
+              onClick={handleOpenCanvas}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
+              title="Open in canvas"
+              aria-label="Open in canvas"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content — routes to the real renderer by type. Full width, no chrome. */}
+      <div className="overflow-hidden">{renderContent()}</div>
+    </div>
+  );
 };
 
 /** Fallback: render markdown preview while parser is loading */
 const MarkdownPreview: React.FC<{ content: string }> = ({ content }) => (
-    <div className="p-3 text-sm">
-        <BasicMarkdownContent content={content} />
-    </div>
+  <div className="p-3 text-sm">
+    <BasicMarkdownContent content={content} />
+  </div>
 );
 
 /** Fallback: render JSON as syntax-highlighted code */
 const JsonFallback: React.FC<{ content: string }> = ({ content }) => (
-    <Suspense fallback={<MatrxMiniLoader />}>
-        <CodeBlock code={content} language="json" fontSize={14} />
-    </Suspense>
+  <Suspense fallback={<MatrxMiniLoader />}>
+    <CodeBlock code={content} language="json" fontSize={14} />
+  </Suspense>
 );
 
 export default ArtifactBlock;

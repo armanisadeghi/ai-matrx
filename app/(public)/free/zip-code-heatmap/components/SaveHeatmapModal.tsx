@@ -16,6 +16,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { supabase } from '@/utils/supabase/client';
+import { ensureOrgId } from '@/lib/organizations/personalOrg';
+import { resolveSystemOrgId } from '@/lib/organizations/systemOrg';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ZipCodeData } from '../page';
 import type { ColorScaleOptions } from './ColorScaleSelector';
@@ -65,11 +67,19 @@ export default function SaveHeatmapModal({
         data: { user },
       } = await supabase.auth.getUser();
 
+      // Public tool: a signed-in user's save lives in their org; an anonymous
+      // save (no session) has no personal org, so it lands in the global system
+      // org (heatmap_saves.organization_id is NOT NULL).
+      const organizationId = user?.id
+        ? await ensureOrgId(undefined)
+        : await resolveSystemOrgId();
+
       // Insert heatmap save
       const { data: savedHeatmap, error: insertError } = await supabase
         .from('heatmap_saves')
         .insert({
           user_id: user?.id || null,
+          organization_id: organizationId,
           title: title.trim(),
           description: description.trim() || null,
           data: data,

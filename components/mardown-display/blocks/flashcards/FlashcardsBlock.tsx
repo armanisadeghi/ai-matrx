@@ -17,7 +17,9 @@ import FlashcardMobileView from "./FlashcardMobileView";
 import { parseFlashcards } from "./flashcard-parser";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/styles/themes/utils";
-import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { InlineArtifactDebugStrip } from "@/features/canvas/components/CanvasArtifactDebugPanel";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { flashcardsPrinter } from "./flashcards-printer";
 import {
@@ -29,10 +31,23 @@ import { useSearchParams } from "next/navigation";
 
 interface FlashcardsBlockProps {
   content?: string;
-  /** Server-parsed structured data (from content_block serverData). When present, skips client-side parsing. */
   serverData?: FlashcardsBlockData;
   taskId?: string;
   className?: string;
+  /** Persisted canvas_items UUID when materialized. */
+  artifactId?: string;
+  messageId?: string;
+  conversationId?: string;
+  blockIndex?: number;
+}
+
+function cardsToMarkdown(
+  cards: Array<{ front?: string | null; back?: string | null }>,
+): string {
+  return cards
+    .filter((c) => c.front && c.back)
+    .map((c) => `Front: ${c.front}\nBack: ${c.back}\n---`)
+    .join("\n");
 }
 
 type LayoutMode = "grid" | "list";
@@ -99,13 +114,21 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
   serverData,
   taskId,
   className,
+  artifactId,
+  messageId,
+  conversationId,
+  blockIndex,
 }) => {
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [mobileStartIndex, setMobileStartIndex] = useState(0);
   const [showMobilePrompt, setShowMobilePrompt] = useState(false);
-  const { open: openCanvas } = useCanvas();
+  const {
+    openArtifact,
+    busy: openingCanvas,
+    lastResult,
+  } = useOpenArtifactInCanvas();
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const stabilityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -127,6 +150,23 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
   }, [content, serverData]);
 
   const completeCount = flashcards.length;
+
+  const rawPayload =
+    content?.trim() ||
+    (flashcards.length > 0 ? cardsToMarkdown(flashcards) : "");
+
+  const handleOpenInCanvas = () => {
+    if (!rawPayload) return;
+    void openArtifact({
+      canvasType: "flashcards",
+      title: "Flashcards",
+      content: rawPayload,
+      messageId,
+      conversationId,
+      artifactId: isMaterializedArtifactId(artifactId) ? artifactId : undefined,
+      artifactIndex: blockIndex != null ? blockIndex + 1 : 1,
+    });
+  };
 
   // Print integration
   const printData = useMemo(
@@ -291,14 +331,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
                   className="h-8 w-8 p-0 bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
                   onClick={() => {
                     setIsFullscreen(false);
-                    openCanvas({
-                      type: "flashcards",
-                      data: content,
-                      metadata: {
-                        title: "Flashcards",
-                        sourceTaskId: taskId,
-                      },
-                    });
+                    handleOpenInCanvas();
                   }}
                   title="Open in side panel"
                 >
@@ -355,11 +388,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
                   className="h-7 px-2 text-xs bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
                   onClick={() => {
                     setIsFullscreen(false);
-                    openCanvas({
-                      type: "flashcards",
-                      data: content,
-                      metadata: { title: "Flashcards", sourceTaskId: taskId },
-                    });
+                    handleOpenInCanvas();
                   }}
                 >
                   <ExternalLink className="h-3 w-3" />
@@ -427,6 +456,15 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
   // Normal embedded view
   return (
     <>
+      <InlineArtifactDebugStrip
+        label="flashcards block"
+        artifactId={artifactId ?? lastResult?.artifactId}
+        messageId={messageId}
+        conversationId={conversationId}
+        lastSteps={lastResult?.steps}
+        lastErrors={lastResult?.errors}
+        busy={openingCanvas}
+      />
       <ChatCollapsibleWrapper
         className={className}
         icon={<BookOpen className="h-4 w-4 text-primary" />}
@@ -459,15 +497,9 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
               className="h-7 w-7 p-0 bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
               onClick={(e) => {
                 e.stopPropagation();
-                openCanvas({
-                  type: "flashcards",
-                  data: content,
-                  metadata: {
-                    title: "Flashcards",
-                    sourceTaskId: taskId,
-                  },
-                });
+                handleOpenInCanvas();
               }}
+              disabled={openingCanvas}
               title="Open in side panel"
             >
               <ExternalLink className="h-3.5 w-3.5" />
@@ -524,16 +556,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
               variant="ghost"
               size="sm"
               className="h-7 px-2 text-xs bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
-              onClick={() =>
-                openCanvas({
-                  type: "flashcards",
-                  data: content,
-                  metadata: {
-                    title: "Flashcards",
-                    sourceTaskId: taskId,
-                  },
-                })
-              }
+              onClick={() => handleOpenInCanvas()}
             >
               <ExternalLink className="h-3 w-3" />
               Side

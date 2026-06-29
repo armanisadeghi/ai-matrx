@@ -359,9 +359,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       const { data: allCategoriesData, error: categoryError } = await supabase
         .schema("platform")
         .from("categories")
-        .select(
-          "id, label:name, icon_name:icon, color, sort_order:position, is_active:metadata->>is_active, parent_category_id:parent_id, placement_type",
-        )
+        // select("*") avoids a TS2589 deep-instantiation that the json (`->>`)
+        // aliased select triggered post-regen; fields are remapped below.
+        .select("*")
         .eq("dimension", "shortcut")
         .eq("placement_type", "content-block")
         .eq("metadata->>is_active", "true")
@@ -375,14 +375,15 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       // First pass: create all category objects
       allCategoriesData.forEach((cat) => {
+        const meta = (cat.metadata ?? {}) as { is_active?: string | boolean | null };
         categoriesMap.set(cat.id, {
           id: cat.id,
-          parent_category_id: cat.parent_category_id,
-          label: cat.label,
-          icon_name: cat.icon_name,
+          parent_category_id: cat.parent_id,
+          label: cat.name ?? "",
+          icon_name: cat.icon ?? "",
           color: cat.color,
-          sort_order: cat.sort_order,
-          is_active: cat.is_active,
+          sort_order: cat.position ?? 0,
+          is_active: meta.is_active !== false && meta.is_active !== "false",
           children: [],
         });
       });

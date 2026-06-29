@@ -62,6 +62,14 @@ export function isPersistableCanvasType(type: string): boolean {
   return !NON_PERSISTABLE_CANVAS_TYPES.has(type);
 }
 
+/** Admin-visible trace from ensureArtifactPersisted / cloud sync. */
+export interface ArtifactDebugTrace {
+  steps: string[];
+  errors: string[];
+  ensuredAt: number;
+  wasCreated: boolean;
+}
+
 export interface CanvasContent {
   type: CanvasContentType;
   data: any; // Flexible data structure - each block handles its own data
@@ -84,13 +92,28 @@ export interface CanvasContent {
 }
 
 interface CanvasItem {
-  id: string; // Unique ID for each canvas item
+  /** Ephemeral session id (NOT the artifact UUID). */
+  id: string;
   content: CanvasContent;
-  timestamp: number; // When it was created
-  sourceMessageId?: string; // Link to the message that created it
-  sourceTaskId?: string; // Link to the task that created it (for deduplication)
-  savedItemId?: string; // Database ID if saved to Supabase
-  isSynced?: boolean; // Whether this item is saved to the database
+  timestamp: number;
+  sourceMessageId?: string;
+  sourceTaskId?: string;
+  /** Real canvas_items.id when persisted. */
+  savedItemId?: string;
+  isSynced?: boolean;
+  /** Last ensure/sync trace — admin debug only. */
+  artifactDebug?: ArtifactDebugTrace;
+}
+
+function findItemByArtifactId(
+  items: CanvasItem[],
+  artifactId: string,
+): CanvasItem | undefined {
+  return items.find(
+    (item) =>
+      item.content.metadata?.canvasItemId === artifactId ||
+      item.savedItemId === artifactId,
+  );
 }
 
 export type CanvasRenderMode = "inline" | "global" | "auto";
@@ -132,22 +155,85 @@ export const canvasSlice = createSlice({
   name: "canvas",
   initialState,
   reducers: {
-    // Add a new canvas item and make it active (with deduplication)
+    /**
+     * Open canvas bound to a persisted artifact UUID. Preferred path for all
+     * materializable types — Redux stores a pointer, not a content snapshot.
+     */
+    openArtifactInCanvas: (
+      state,
+      action: PayloadAction<{
+        artifactId: string;
+        type: CanvasContentType;
+        metadata?: CanvasContent["metadata"];
+        artifactDebug?: ArtifactDebugTrace;
+      }>,
+    ) => {
+      const { artifactId, type, metadata, artifactDebug } = action.payload;
+      const content: CanvasContent = {
+        type,
+        data: { artifactId },
+        metadata: {
+          ...metadata,
+          canvasItemId: artifactId,
+        },
+      };
+
+      const existingItem = findItemByArtifactId(state.items, artifactId);
+      if (existingItem) {
+        existingItem.content = content;
+        existingItem.isSynced = true;
+        existingItem.savedItemId = artifactId;
+        existingItem.artifactDebug =
+          artifactDebug ?? existingItem.artifactDebug;
+        existingItem.timestamp = Date.now();
+        existingItem.sourceMessageId =
+          metadata?.messageId ?? metadata?.sourceMessageId;
+        state.currentItemId = existingItem.id;
+        state.isOpen = true;
+        return;
+      }
+
+      const newItem: CanvasItem = {
+        id: `sess-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        content,
+        timestamp: Date.now(),
+        sourceMessageId: metadata?.messageId ?? metadata?.sourceMessageId,
+        savedItemId: artifactId,
+        isSynced: true,
+        artifactDebug,
+      };
+      state.items.push(newItem);
+      state.currentItemId = newItem.id;
+      state.isOpen = true;
+    },
+
+    // Legacy open — prefer openArtifactInCanvas for materializable types.
     openCanvas: (state, action: PayloadAction<CanvasContent>) => {
+      const artifactId = action.payload.metadata?.canvasItemId;
+      if (artifactId) {
+        const existingByArtifact = findItemByArtifactId(
+          state.items,
+          artifactId,
+        );
+        if (existingByArtifact) {
+          existingByArtifact.content = action.payload;
+          existingByArtifact.timestamp = Date.now();
+          state.currentItemId = existingByArtifact.id;
+          state.isOpen = true;
+          return;
+        }
+      }
+
       const sourceTaskId = action.payload.metadata?.sourceTaskId;
       const sourceMessageId = action.payload.metadata?.sourceMessageId;
 
-      // DEDUPLICATION: Check if an item from this source already exists
-      // Priority: taskId > messageId (taskId is more specific)
       let existingItem: CanvasItem | undefined;
 
       if (sourceTaskId) {
-        // Check by taskId first (most specific identifier)
         existingItem = state.items.find(
           (item) => item.sourceTaskId === sourceTaskId,
         );
       } else if (sourceMessageId) {
-        // Fallback to messageId if no taskId
         existingItem = state.items.find(
           (item) =>
             item.sourceMessageId === sourceMessageId && !item.sourceTaskId,
@@ -331,13 +417,26 @@ export const canvasSlice = createSlice({
     // Mark an item as synced to database
     markItemSynced: (
       state,
-      action: PayloadAction<{ canvasItemId: string; savedItemId: string }>,
+      action: PayloadAction<{
+        sessionItemId: string;
+        artifactId: string;
+        artifactDebug?: ArtifactDebugTrace;
+      }>,
     ) => {
-      const { canvasItemId, savedItemId } = action.payload;
-      const item = state.items.find((item) => item.id === canvasItemId);
+      const { sessionItemId, artifactId, artifactDebug } = action.payload;
+      const item = state.items.find((item) => item.id === sessionItemId);
       if (item) {
-        item.savedItemId = savedItemId;
+        item.savedItemId = artifactId;
         item.isSynced = true;
+        item.content = {
+          ...item.content,
+          data: { artifactId },
+          metadata: {
+            ...item.content.metadata,
+            canvasItemId: artifactId,
+          },
+        };
+        if (artifactDebug) item.artifactDebug = artifactDebug;
       }
     },
 
@@ -369,6 +468,7 @@ export const canvasSlice = createSlice({
 // Actions
 export const {
   openCanvas,
+  openArtifactInCanvas,
   closeCanvas,
   toggleCanvas,
   clearCanvas,

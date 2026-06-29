@@ -17,7 +17,11 @@ import { cn } from "@/lib/utils";
  * Footprint matches `UserMenuTrigger` (h-11 wrapper, 32 × 32 inner) so
  * the header layout stays pixel-stable across auth states.
  */
-export default function GuestUserMenuTrigger() {
+export default function GuestUserMenuTrigger({
+  menuCheckboxId = "shell-user-menu",
+}: {
+  menuCheckboxId?: string;
+}) {
   return (
     <div className="flex items-center gap-1.5 h-11 pr-1">
       <Link
@@ -32,7 +36,7 @@ export default function GuestUserMenuTrigger() {
       </Link>
 
       <label
-        htmlFor="shell-user-menu"
+        htmlFor={menuCheckboxId}
         aria-label="Sign up menu"
         className={cn(
           "inline-flex items-center gap-1.5 h-8 px-3 rounded-full cursor-pointer outline-none transition-all",

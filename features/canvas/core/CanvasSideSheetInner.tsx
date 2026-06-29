@@ -126,6 +126,18 @@ export function CanvasSideSheetInner() {
     return () => window.removeEventListener("keydown", onKey);
   }, [dispatch]);
 
+  // Hide the shell-header avatar while open — CanvasPane header replaces it.
+  useEffect(() => {
+    if (isOpen) {
+      document.documentElement.dataset.canvasOpen = "true";
+    } else {
+      delete document.documentElement.dataset.canvasOpen;
+    }
+    return () => {
+      delete document.documentElement.dataset.canvasOpen;
+    };
+  }, [isOpen]);
+
   if (!currentItem) return null;
 
   const canvasTitle =
@@ -202,14 +214,14 @@ export function CanvasSideSheetInner() {
         {/* Visual card. Padding outside the card so the rounded corners feel
             inset from the viewport edge — matches the floating chat header
             language. Mobile: edge-to-edge (no padding, no rounding). */}
-        <div className={cn("h-full", isMobile ? "" : "p-1.5 pl-1")}>
+        <div className={cn("h-full")}>
           <div
             className={cn(
               "h-full w-full flex flex-col overflow-hidden",
               "bg-card text-card-foreground",
               isMobile
                 ? "border-l border-border"
-                : "rounded-xl border border-border shadow-[0_8px_32px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]",
+                : "rounded-l-xl border-l border-border shadow-[0_8px_32px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]",
             )}
           >
             {showSplit ? (
@@ -250,7 +262,7 @@ export function CanvasSideSheetInner() {
                 <ResizablePanel
                   id={CANVAS_BOTTOM_PANEL_ID}
                   defaultSize={100 - splitRatio}
-                  minSize={20}
+                  minSize={15}
                   style={{ overflow: "hidden", height: "100%" }}
                 >
                   <CanvasPane paneRole="bottom" />

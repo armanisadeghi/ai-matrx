@@ -7,28 +7,19 @@ import {
   type ArtifactRendererProps,
   artifactDedupKey,
 } from "../artifact-renderers";
+import { isMaterializedArtifactId } from "../artifactId";
 
 const FlashcardsBlock = lazy(
-  () => import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"),
+  () =>
+    import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"),
 );
 
-// Canvas mode = the full STUDY experience, which persists per-card reviews via
-// useFlashcardStudy → user_flashcard_reviews (the set is created on materialize
-// by the flashcards adapter). The inline/artifact mode is the lightweight viewer.
 const CanvasFlashcardsView = lazy(() =>
   import("@/features/flashcards/components/CanvasFlashcardsView").then((m) => ({
     default: m.CanvasFlashcardsView,
   })),
 );
 
-/**
- * Unified renderer for `flashcards`. FlashcardsBlock / CanvasFlashcardsView parse
- * their own raw markdown content, so this adapter forwards `serverData` when
- * present, otherwise the raw string.
- *
- * - mode === "canvas" → CanvasFlashcardsView (study mode, persists progress)
- * - else             → FlashcardsBlock (inline viewer)
- */
 export default function FlashcardsArtifact({
   raw,
   data,
@@ -38,21 +29,37 @@ export default function FlashcardsArtifact({
   mode,
   conversationId,
   messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
+  const pointerArtifactId =
+    data &&
+    typeof data === "object" &&
+    data !== null &&
+    "artifactId" in data &&
+    typeof (data as { artifactId?: string }).artifactId === "string"
+      ? (data as { artifactId: string }).artifactId
+      : undefined;
+
+  const resolvedArtifactId = isMaterializedArtifactId(artifactId)
+    ? artifactId
+    : isMaterializedArtifactId(pointerArtifactId)
+      ? pointerArtifactId
+      : artifactId;
+
   const content = typeof data === "string" ? data : raw;
+
   const sd =
     (serverData as FlashcardsBlockData | undefined) ??
-    (data && typeof data !== "string"
+    (data && typeof data !== "string" && !("artifactId" in (data as object))
       ? (data as FlashcardsBlockData)
       : undefined);
-
-  if (!content && !sd) return null;
 
   if (mode === "canvas") {
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
         <CanvasFlashcardsView
-          content={content}
+          artifactId={resolvedArtifactId}
+          content={typeof content === "string" ? content : undefined}
           serverData={sd}
           conversationId={conversationId}
           messageId={messageId}
@@ -61,12 +68,18 @@ export default function FlashcardsArtifact({
     );
   }
 
+  if (!content && !sd) return null;
+
   return (
     <Suspense fallback={<MatrxMiniLoader />}>
       <FlashcardsBlock
-        content={content}
+        content={typeof content === "string" ? content : undefined}
         serverData={sd}
-        taskId={artifactDedupKey(taskId, artifactId)}
+        taskId={artifactDedupKey(taskId, resolvedArtifactId)}
+        artifactId={resolvedArtifactId}
+        messageId={messageId}
+        conversationId={conversationId}
+        blockIndex={blockIndex}
       />
     </Suspense>
   );
