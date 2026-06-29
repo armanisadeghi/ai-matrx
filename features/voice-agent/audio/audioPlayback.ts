@@ -23,6 +23,8 @@
 import { SAMPLE_RATE_HZ } from "../constants";
 import { base64ToFloat32 } from "./pcmEncoding";
 import { writeAmplitude } from "./amplitudeBus";
+import { beginPlaybackSession } from "@/features/audio/session/audioSessionRegistry";
+import type { PlaybackSessionHandle } from "@/features/audio/session/types";
 
 export interface AudioPlaybackHandle {
   warmupSync: () => void;
@@ -61,6 +63,36 @@ export function createAudioPlayback(): AudioPlaybackHandle {
   let rmsRafId: number | null = null;
 
   const idleCallbacks = new Set<() => void>();
+
+  // Unified audio system: one session per contiguous speaking burst. Claiming
+  // `playbackLock` (inside beginPlaybackSession) makes the voice agent obey the
+  // app-wide "one voice at a time" rule, and the session surfaces in the Audio
+  // panel. The burst spans back-to-back turns and ends when playback drains.
+  let burst: PlaybackSessionHandle | null = null;
+
+  function startBurst(): void {
+    if (burst) return;
+    burst = beginPlaybackSession({
+      source: "voice-agent",
+      label: "Voice agent",
+      controls: {
+        // A takeover (e.g. a read-aloud claims the lock) stops the agent's audio.
+        stop: () => {
+          interrupt();
+        },
+        pause: () => {
+          interrupt();
+        },
+      },
+    });
+    burst.update({ status: "active" });
+  }
+
+  function endBurst(status: "done" | "error" = "done"): void {
+    if (!burst) return;
+    burst.end(status);
+    burst = null;
+  }
 
   function warmupSync(): void {
     if (typeof window === "undefined") return;
@@ -105,6 +137,8 @@ export function createAudioPlayback(): AudioPlaybackHandle {
         // Drain the visualizer to 0 once playback truly ends.
         writeAmplitude("assistant", 0);
         rmsRafId = null;
+        // Playback truly ended → close the panel session + release the lock.
+        endBurst();
         return;
       }
       rmsRafId = requestAnimationFrame(tick);
@@ -132,6 +166,9 @@ export function createAudioPlayback(): AudioPlaybackHandle {
 
     const float32 = base64ToFloat32(b64);
     if (float32.length === 0) return;
+
+    // Real audio is about to play — claim the lock + open a panel session.
+    startBurst();
 
     const buf = ctx.createBuffer(1, float32.length, SAMPLE_RATE_HZ);
     buf.getChannelData(0).set(float32);
@@ -187,6 +224,7 @@ export function createAudioPlayback(): AudioPlaybackHandle {
       cancelAnimationFrame(rmsRafId);
       rmsRafId = null;
     }
+    endBurst();
     notifyIdleIfDrained();
     return playedMs;
   }

@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { InlineMediaRef } from "@/features/files";
+import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 
 interface PodcastAudioPlayerProps {
   audioUrl: string;
@@ -201,12 +202,14 @@ export function PodcastAudioPlayer({
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    // Don't flip `isPlaying` here — the element's real play/pause events are the
+    // single source of truth (so a playback-lock takeover that pauses the
+    // element stays in sync). See the play/pause listener effect below.
     if (isPlaying) {
       audio.pause();
     } else {
       audio.play().catch(() => setAudioError(true));
     }
-    setIsPlaying((p) => !p);
   }, [isPlaying]);
 
   const handleSeek = useCallback((value: number) => {
@@ -333,6 +336,34 @@ export function PodcastAudioPlayer({
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [isPlaying, skipBackward, skipForward]);
+
+  // Single source of truth for `isPlaying`: the element's real play/pause
+  // events. This keeps the UI correct when the playback lock pauses us from the
+  // outside (another audio path took over). Re-bind when the element swaps
+  // (source change / error⇄normal render).
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
+    return () => {
+      audio.removeEventListener("play", onPlay);
+      audio.removeEventListener("pause", onPause);
+    };
+  }, [audioUrl, audioError]);
+
+  // Join the single app-wide audio system: claim the playback lock + register a
+  // session while playing, so this player can't overlap another voice and the
+  // avatar-menu Audio panel can see/control it.
+  useMediaElementPlaybackSession({
+    elementRef: audioRef,
+    isPlaying,
+    source: "podcast",
+    label: title || "Podcast episode",
+    trackKey: audioUrl,
+  });
 
   if (audioError) {
     return (
