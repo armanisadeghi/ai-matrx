@@ -215,15 +215,22 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     },
     open: { kind: "note" },
     enrich: (s, id) =>
-      fetchRow(s, "notes", id, "label, content, folder_name", (r) => ({
-        name: clip(r.label, 80),
-        about: clip(r.content),
-        details: [
-          r.folder_name
-            ? { label: "Folder", value: String(r.folder_name) }
-            : null,
-        ].filter(Boolean) as EnrichedItem["details"],
-      })),
+      fetchRow(
+        s,
+        "notes",
+        id,
+        "label, content, folder_name",
+        (r) => ({
+          name: clip(r.label, 80),
+          about: clip(r.content),
+          details: [
+            r.folder_name
+              ? { label: "Folder", value: String(r.folder_name) }
+              : null,
+          ].filter(Boolean) as EnrichedItem["details"],
+        }),
+        "workbench",
+      ),
   },
   task: {
     type: "task",
@@ -450,12 +457,19 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-cyan-500/20",
     },
     open: { kind: "table" },
-    detailSource: { table: "udt_datasets", titleField: "table_name" },
+    detailSource: { table: "udt_datasets", schemaName: "workbench", titleField: "table_name" },
     enrich: (s, id) =>
-      fetchRow(s, "udt_datasets", id, "table_name, description", (r) => ({
-        name: clip(r.table_name, 80),
-        about: clip(r.description),
-      })),
+      fetchRow(
+        s,
+        "udt_datasets",
+        id,
+        "table_name, description",
+        (r) => ({
+          name: clip(r.table_name, 80),
+          about: clip(r.description),
+        }),
+        "workbench",
+      ),
   },
   picklist: {
     type: "picklist",
@@ -468,10 +482,17 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     },
     open: { kind: "picklist" },
     enrich: (s, id) =>
-      fetchRow(s, "udt_picklists", id, "list_name, description", (r) => ({
-        name: clip(r.list_name, 80),
-        about: clip(r.description),
-      })),
+      fetchRow(
+        s,
+        "udt_picklists",
+        id,
+        "list_name, description",
+        (r) => ({
+          name: clip(r.list_name, 80),
+          about: clip(r.description),
+        }),
+        "workbench",
+      ),
   },
   workbook: {
     type: "workbook",
@@ -483,12 +504,19 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-green-500/20",
     },
     open: { kind: "workbook" },
-    detailSource: { table: "udt_workbooks", titleField: "workbook_name" },
+    detailSource: { table: "udt_workbooks", schemaName: "workbench", titleField: "workbook_name" },
     enrich: (s, id) =>
-      fetchRow(s, "udt_workbooks", id, "workbook_name, description", (r) => ({
-        name: clip(r.workbook_name, 80),
-        about: clip(r.description),
-      })),
+      fetchRow(
+        s,
+        "udt_workbooks",
+        id,
+        "workbook_name, description",
+        (r) => ({
+          name: clip(r.workbook_name, 80),
+          about: clip(r.description),
+        }),
+        "workbench",
+      ),
   },
   document: {
     type: "document",
@@ -500,12 +528,19 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-stone-500/20",
     },
     open: { kind: "document" },
-    detailSource: { table: "udt_documents", titleField: "document_name" },
+    detailSource: { table: "udt_documents", schemaName: "workbench", titleField: "document_name" },
     enrich: (s, id) =>
-      fetchRow(s, "udt_documents", id, "document_name, description", (r) => ({
-        name: clip(r.document_name, 80),
-        about: clip(r.description),
-      })),
+      fetchRow(
+        s,
+        "udt_documents",
+        id,
+        "document_name, description",
+        (r) => ({
+          name: clip(r.document_name, 80),
+          about: clip(r.description),
+        }),
+        "workbench",
+      ),
   },
   message: {
     type: "message",
@@ -516,9 +551,10 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       bg: "bg-purple-500/10",
       ring: "ring-purple-500/20",
     },
-    // Multiple message tables exist (cx_message, messages, dm_messages, …) —
-    // opens seed-only until a canonical one is chosen. See KNOWN_DEFECTS D8.
     open: { kind: "message" },
+    // 'message' = a chat/conversation message; chat.message is canonical
+    // (dm_messages/sms_messages are distinct comms entities). See KNOWN_DEFECTS D8.
+    detailSource: { table: "message", schemaName: "chat", titleField: "role" },
   },
   email: {
     type: "email",
@@ -530,15 +566,22 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-blue-500/20",
     },
     open: { kind: "email" },
-    detailSource: { table: "emails", titleField: "subject" },
+    detailSource: { table: "emails", schemaName: "communication", titleField: "subject" },
     enrich: (s, id) =>
-      fetchRow(s, "emails", id, "subject, sender, recipient", (r) => ({
-        name: clip(r.subject, 80),
-        about: r.sender ? `From ${String(r.sender)}` : undefined,
-        details: [
-          r.recipient ? { label: "To", value: String(r.recipient) } : null,
-        ].filter(Boolean) as EnrichedItem["details"],
-      })),
+      fetchRow(
+        s,
+        "emails",
+        id,
+        "subject, sender, recipient",
+        (r) => ({
+          name: clip(r.subject, 80),
+          about: r.sender ? `From ${String(r.sender)}` : undefined,
+          details: [
+            r.recipient ? { label: "To", value: String(r.recipient) } : null,
+          ].filter(Boolean) as EnrichedItem["details"],
+        }),
+        "communication",
+      ),
   },
 };
 
