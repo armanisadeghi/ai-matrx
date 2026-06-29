@@ -187,7 +187,7 @@ export function CropPreview({
             imgRef.current = null;
             setImgLoaded(false);
             setImgError(null);
-            return;
+            return undefined;
         }
         const img = new Image();
         img.crossOrigin = "anonymous";

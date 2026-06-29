@@ -22,7 +22,7 @@ export const ShadowWrapper = (
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        if (!hostRef.current) return;
+        if (!hostRef.current) return undefined;
 
         // Only create shadow root if it doesn't exist
         if (!shadowRootRef.current) {

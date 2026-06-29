@@ -301,7 +301,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
   // Close on outside click (desktop only — Drawer handles its own backdrop)
   useEffect(() => {
-    if (!isOpen || isMobile) return;
+    if (!isOpen || isMobile) return undefined;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -315,7 +315,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
   // Close on Escape
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return undefined;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -328,7 +328,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
   // Track whether there is hidden content below the scroll area
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) return undefined;
 
     const check = () => {
       setHasScrollBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 4);

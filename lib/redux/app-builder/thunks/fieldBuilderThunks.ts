@@ -154,6 +154,7 @@ export const deleteFieldThunk = createAsyncThunk<void, string>(
   async (id, { rejectWithValue }) => {
     try {
       await deleteFieldComponent(id);
+      return undefined;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -194,6 +195,7 @@ export const setFieldPublicThunk = createAsyncThunk<
   async ({ id, isPublic }, { rejectWithValue }) => {
     try {
       await setFieldComponentPublic(id, isPublic);
+      return undefined;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -288,6 +290,7 @@ export const setActiveFieldWithFetchThunk = createAsyncThunk<
           return rejectWithValue(error.message || "Failed to fetch field");
         }
       }
+      return undefined;
     } catch (error: any) {
       console.error(`Error in setActiveFieldWithFetchThunk: ${error.message}`);
       return rejectWithValue(error.message || "Failed to set active field");

@@ -52,6 +52,7 @@ export default function SystemAnnouncementModal({ announcement }: SystemAnnounce
 
             return () => clearInterval(timer);
         }
+        return undefined;
     }, [announcement.id, viewedAnnouncements]);
 
     const handleClose = async (dontShowAgain: boolean = false) => {

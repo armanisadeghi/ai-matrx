@@ -39,7 +39,7 @@ export function useStudioRuns() {
   useEffect(() => {
     if (!isAuthenticated) {
       setLoading(false);
-      return;
+      return undefined;
     }
     const ctrl = new AbortController();
     setLoading(true);

@@ -74,7 +74,7 @@ export function useDiagnosticHoverActions({
 
   useEffect(() => {
     const editor = editorRef.current;
-    if (!editor) return;
+    if (!editor) return undefined;
 
     // Lazy import to keep monaco out of SSR bundles.
     let disposed = false;

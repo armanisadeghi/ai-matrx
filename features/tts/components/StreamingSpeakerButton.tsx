@@ -92,7 +92,7 @@ export function StreamingSpeakerButton({
   >(() => cachedModule?.StreamingSpeakerLive ?? null);
 
   useEffect(() => {
-    if (!engaged || Live) return;
+    if (!engaged || Live) return undefined;
     let cancelled = false;
     loadLiveModule().then((m) => {
       if (!cancelled) setLive(() => m.StreamingSpeakerLive);

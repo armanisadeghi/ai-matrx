@@ -87,7 +87,7 @@ export function useSimulatedToolEntry(
 
     if (!recording) {
       setEntry(buildInitialEntry(null));
-      return;
+      return undefined;
     }
 
     // Reset to the pre-stream state for this run. A fresh callId/startedAt per

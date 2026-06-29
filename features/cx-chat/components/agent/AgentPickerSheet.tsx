@@ -460,7 +460,7 @@ function DesktopAgentPicker({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onOpenChange(false);
     };

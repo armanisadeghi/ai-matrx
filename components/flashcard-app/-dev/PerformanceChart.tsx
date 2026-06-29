@@ -133,6 +133,7 @@ const PerformanceChart: React.FC = () => {
                                             </text>
                                         )
                                     }
+                                    return null;
                                 }}
                             />
                         </Pie>

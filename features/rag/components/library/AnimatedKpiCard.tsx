@@ -147,7 +147,7 @@ function CountUp({ value }: { value: number }) {
   useEffect(() => {
     const start = prev.current;
     const end = value;
-    if (start === end) return;
+    if (start === end) return undefined;
 
     if (end > start) {
       setPulse(true);
@@ -173,6 +173,7 @@ function CountUp({ value }: { value: number }) {
     // Decrease — snap to new value (rare, e.g. after deletion).
     setDisplay(end);
     prev.current = end;
+    return undefined;
   }, [value]);
 
   // motion.js can't animate to/from `currentColor` (it isn't an

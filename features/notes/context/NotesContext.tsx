@@ -184,7 +184,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   // the `realtime` schema must have all migrations applied (including `list_changes` function).
   // See README "Supabase Realtime Setup" section.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
 
     let channel: ReturnType<typeof supabase.channel> | null = null;
 

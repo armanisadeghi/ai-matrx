@@ -38,7 +38,7 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
 
   useEffect(() => {
     if (!value || value.trim().length === 0) {
-      return;
+      return undefined;
     }
 
     void runAnalysis({

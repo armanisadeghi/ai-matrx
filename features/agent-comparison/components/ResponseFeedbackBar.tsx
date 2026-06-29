@@ -168,7 +168,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
 
   // Hydrate from server when the request id changes (a new response landed).
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     fetchLatestFeedback(userId, conversationId)
       .then((rows) => {
@@ -223,7 +223,7 @@ function ResponseFeedbackBarInner({ conversationId, requestId }: InnerProps) {
   // Refresh local state when a sibling save event lands (e.g. someone
   // grabbed our rank → our row's rank was cleared in the DB).
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     const handler = () => {
       fetchLatestFeedback(userId, conversationId)
         .then((rows) => {

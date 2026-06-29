@@ -53,7 +53,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
 
   useEffect(() => {
     if (!pageText || pageText.trim().length === 0) {
-      return;
+      return undefined;
     }
 
     void runAnalysis({

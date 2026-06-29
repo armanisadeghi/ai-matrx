@@ -245,7 +245,7 @@ export function useActionSurfaceProvider(
   // updateProviderSpecs (no re-register, just a metadata refresh).
   const lastSpecsKey = React.useRef<string>("");
   React.useEffect(() => {
-    if (actionsVariant !== "remote" || !actionsSurfaceId) return;
+    if (actionsVariant !== "remote" || !actionsSurfaceId) return undefined;
     dispatch(
       registerProvider({
         surfaceId: actionsSurfaceId,

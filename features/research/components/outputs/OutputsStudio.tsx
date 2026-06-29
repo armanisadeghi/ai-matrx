@@ -124,7 +124,7 @@ export default function OutputsStudio() {
   const [reportLoading, setReportLoading] = useState(true);
 
   useEffect(() => {
-    if (!topicId) return;
+    if (!topicId) return undefined;
     let cancelled = false;
     setReportLoading(true);
     void (async () => {

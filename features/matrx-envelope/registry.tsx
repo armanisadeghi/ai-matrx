@@ -174,10 +174,10 @@ function ReferenceChip({ item, type }: { item: ReferenceItem; type: string }) {
   useEffect(() => {
     if (!resolver) {
       setStatus("fallback");
-      return;
+      return undefined;
     }
     const key = `${type}:${refKey}`;
-    if (lastKey.current === key) return;
+    if (lastKey.current === key) return undefined;
     lastKey.current = key;
 
     let cancelled = false;

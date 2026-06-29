@@ -115,7 +115,7 @@ export const CameraProvider = ({ children }: CameraProviderProps) => {
             !containerRef.current?.offsetWidth ||
             !containerRef.current?.offsetHeight
         )
-            return;
+            return undefined;
 
         const playerWidth = playerRef.current.videoWidth ?? 1280;
         const playerHeight = playerRef.current.videoHeight ?? 720;

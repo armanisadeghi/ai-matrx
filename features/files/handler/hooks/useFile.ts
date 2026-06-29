@@ -33,7 +33,7 @@ export function useFile(source: FileSource | null | undefined): UseFileResult {
       setFile(null);
       setStatus("idle");
       setError(null);
-      return;
+      return undefined;
     }
 
     let cancelled = false;

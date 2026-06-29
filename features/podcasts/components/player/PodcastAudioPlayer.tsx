@@ -313,7 +313,7 @@ export function PodcastAudioPlayer({
   // never have arrows hijack a non-active instance, and inputs aren't affected
   // because we bail when focus is in a form field.
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) return undefined;
 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -343,7 +343,7 @@ export function PodcastAudioPlayer({
   // (source change / error⇄normal render).
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) return undefined;
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
     audio.addEventListener("play", onPlay);

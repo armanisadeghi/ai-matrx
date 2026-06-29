@@ -56,7 +56,7 @@ export function usePersistedRunHydration(opts: {
   const hydratedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!fileId || !effectiveJobId || hasActiveRun) return;
+    if (!fileId || !effectiveJobId || hasActiveRun) return undefined;
     let cancelled = false;
 
     void (async () => {

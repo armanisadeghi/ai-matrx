@@ -146,7 +146,7 @@ const MultiSelectDropdown = React.forwardRef<HTMLDivElement, MultiSelectDropdown
         React.useEffect(() => {
             if (!isOpen) {
                 setPosition(null);
-                return;
+                return undefined;
             }
 
             // Initial position calculation with a small delay to ensure DOM is ready

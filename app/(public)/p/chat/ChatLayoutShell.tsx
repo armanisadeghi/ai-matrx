@@ -145,18 +145,18 @@ function ChatLayoutInner({ children }: { children: React.ReactNode }) {
     if (!urlConversationId) {
       loadedConversationRef.current = null;
       setIsLoadingConversation(false);
-      return;
+      return undefined;
     }
 
     // Already in context — Python server persisted it, messages are live.
     if (state.dbConversationId === urlConversationId) {
       loadedConversationRef.current = urlConversationId;
-      return;
+      return undefined;
     }
 
     // Already loaded this conversation — skip
     if (loadedConversationRef.current === urlConversationId) {
-      return;
+      return undefined;
     }
 
     let cancelled = false;

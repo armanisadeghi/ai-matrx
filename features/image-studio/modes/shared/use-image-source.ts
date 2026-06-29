@@ -27,7 +27,7 @@ export function useImageSource(source: ImageSource | null): {
   useEffect(() => {
     if (!source) {
       setUrl(null);
-      return;
+      return undefined;
     }
     if (source.kind === "file") {
       const objectUrl = URL.createObjectURL(source.file);
@@ -38,11 +38,12 @@ export function useImageSource(source: ImageSource | null): {
     }
     if (source.kind === "url") {
       setUrl(source.url);
-      return;
+      return undefined;
     }
     // cloudFileId — the caller is expected to convert to a `url` source
     // before passing in. If we ever receive one here, leave url null.
     setUrl(null);
+    return undefined;
   }, [source]);
 
   const filename =

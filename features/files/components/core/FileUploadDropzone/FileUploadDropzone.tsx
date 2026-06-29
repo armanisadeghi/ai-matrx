@@ -117,7 +117,7 @@ export function FileUploadDropzone({
   });
 
   useEffect(() => {
-    if (!pickerEventName || typeof window === "undefined") return;
+    if (!pickerEventName || typeof window === "undefined") return undefined;
     const handler = () => openPicker();
     window.addEventListener(pickerEventName, handler);
     return () => window.removeEventListener(pickerEventName, handler);
@@ -125,7 +125,7 @@ export function FileUploadDropzone({
 
   // Clipboard paste — images only.
   useEffect(() => {
-    if (!enablePaste || typeof window === "undefined") return;
+    if (!enablePaste || typeof window === "undefined") return undefined;
     const handler = (event: ClipboardEvent) => {
       if (!event.clipboardData?.items) return;
       const images: File[] = [];

@@ -1173,7 +1173,7 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
   useEffect(() => {
     const ta = textareaRef.current;
     const preview = previewScrollRef.current;
-    if (!syncScroll || !ta || !preview) return;
+    if (!syncScroll || !ta || !preview) return undefined;
 
     ta.addEventListener("scroll", handleTextareaScroll, { passive: true });
     preview.addEventListener("scroll", handlePreviewScroll, { passive: true });

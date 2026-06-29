@@ -46,7 +46,7 @@ export function useAutoScrollOnStream<T extends HTMLElement = HTMLDivElement>(
     // user can't fight it. Released the instant streaming ends.
     useEffect(() => {
         const el = ref.current;
-        if (!el || !streaming) return;
+        if (!el || !streaming) return undefined;
 
         const prevent = (e: Event) => {
             e.preventDefault();

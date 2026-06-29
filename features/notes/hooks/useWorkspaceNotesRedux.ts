@@ -356,7 +356,7 @@ export function useWorkspaceNotesRedux() {
 
   const createNoteInActiveFolder = useCallback(
     async (folder: string) => {
-      if (!userId) return;
+      if (!userId) return undefined;
       const { data, error } = await supabase
         .schema("workbench")
         .from("notes")
@@ -375,7 +375,7 @@ export function useWorkspaceNotesRedux() {
         .select()
         .single();
 
-      if (error || !data) return;
+      if (error || !data) return undefined;
 
       dispatch(
         upsertNoteFromServer({ note: data as Note, fetchStatus: "full" }),

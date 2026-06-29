@@ -23,7 +23,7 @@ export function useSandboxHeartbeat(
     const lastErrorRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!enabled || !sandboxRowId) return;
+        if (!enabled || !sandboxRowId) return undefined;
 
         const controller = new AbortController();
         let timer: ReturnType<typeof setInterval> | null = null;

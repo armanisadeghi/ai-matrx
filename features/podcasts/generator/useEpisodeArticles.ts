@@ -77,7 +77,7 @@ export function useEpisodeArticles(
     let cancelled = false;
     if (!episodeId) {
       setLoading(false);
-      return;
+      return undefined;
     }
     setLoading(true);
     void articleService

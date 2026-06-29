@@ -275,7 +275,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
 
   // Fetch the admin-only dropdown data once when the window opens for an admin.
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) return undefined;
     let cancelled = false;
     setIsLoadingAdminOptions(true);
     Promise.all([

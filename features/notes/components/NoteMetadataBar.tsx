@@ -111,7 +111,7 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   // *reposition* the menu (the trigger lives in a fixed bottom bar, so it
   // doesn't move with content scroll — closing on every scroll was wrong).
   useEffect(() => {
-    if (!folderOpen) return;
+    if (!folderOpen) return undefined;
     const onPointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
       if (

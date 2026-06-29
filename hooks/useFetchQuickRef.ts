@@ -25,7 +25,7 @@ export function useFetchQuickRef(entityKey: string) {
     if (entityKey !== "recipe" && entityKey !== "ai-agent") {
       setQuickReferenceRecords([]);
       setLoadingState("loaded");
-      return;
+      return undefined;
     }
 
     let cancelled = false;

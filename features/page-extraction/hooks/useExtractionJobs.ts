@@ -108,7 +108,7 @@ export function useExtractionJobs(
   const { data, loading, error, refetch } = useSharedStore(store, fileId);
 
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId) return undefined;
     attachRealtime(fileId);
     return () => detachRealtime(fileId);
   }, [fileId]);

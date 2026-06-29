@@ -509,10 +509,10 @@ export function WindowPanel({
   saveRef.current = handleSaveWindowState;
 
   useEffect(() => {
-    if (!overlayId) return;
+    if (!overlayId) return undefined;
     const entry = getStaticEntryByOverlayId(overlayId);
-    if (!entry || (!entry.autosave && !entry.heavySnapshot)) return;
-    if (entry.ephemeral) return;
+    if (!entry || (!entry.autosave && !entry.heavySnapshot)) return undefined;
+    if (entry.ephemeral) return undefined;
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const scheduleSave = () => {
@@ -558,9 +558,9 @@ export function WindowPanel({
   const fitContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!fitContent || isMobile) return;
+    if (!fitContent || isMobile) return undefined;
     const el = fitContentRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
@@ -638,7 +638,7 @@ export function WindowPanel({
   // overlay, so it can verify the panel became visible (and never false-flag a
   // window whose `id` differs from its registry slug). See overlayRenderWatchdog.
   useEffect(() => {
-    if (!overlayId) return;
+    if (!overlayId) return undefined;
     ackOverlayRender(overlayId, id);
     return () => clearOverlayRender(overlayId, id);
   }, [overlayId, id]);
@@ -1587,7 +1587,7 @@ function GreenTrafficLight({
 
   // Close dropdown when tapping outside — skip Radix portal targets
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!dropdownOpen) return undefined;
     const onPointerOutside = (e: PointerEvent) => {
       const target = e.target as Element;
       if (containerRef.current && !containerRef.current.contains(target)) {

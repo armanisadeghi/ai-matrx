@@ -45,7 +45,7 @@ function useServiceQuery<T>(
   useEffect(() => {
     if (!enabled) {
       setIsLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setIsLoading(true);

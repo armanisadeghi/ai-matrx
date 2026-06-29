@@ -177,7 +177,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
 
   // Reset everything shortly after close so reopening starts fresh.
   useEffect(() => {
-    if (isOpen) return;
+    if (isOpen) return undefined;
     const timeout = setTimeout(() => {
       if (!isMountedRef.current) return;
       setStage("form");
@@ -199,7 +199,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
 
   // Load the user's tables the first time the "existing" section is opened.
   useEffect(() => {
-    if (!useExisting || tables.length > 0 || tablesLoading) return;
+    if (!useExisting || tables.length > 0 || tablesLoading) return undefined;
     let cancelled = false;
     (async () => {
       setTablesLoading(true);
@@ -235,7 +235,7 @@ const SaveTableModal: React.FC<SaveTableModalProps> = ({
   useEffect(() => {
     if (!selectedTableId) {
       setFields(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

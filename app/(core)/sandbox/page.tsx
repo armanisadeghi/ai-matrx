@@ -121,7 +121,7 @@ export default function SandboxListPage() {
   useEffect(() => {
     if (creating || createSuccess) {
       console.log("[SandboxListPage] Auto-refresh paused during creation");
-      return;
+      return undefined;
     }
 
     const interval = setInterval(() => {
@@ -133,7 +133,7 @@ export default function SandboxListPage() {
 
   // Auto-dismiss create error after 8 seconds
   useEffect(() => {
-    if (!createError) return;
+    if (!createError) return undefined;
     const timer = setTimeout(() => setCreateError(null), 8000);
     return () => clearTimeout(timer);
   }, [createError]);

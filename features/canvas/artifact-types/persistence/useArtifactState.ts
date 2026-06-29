@@ -52,7 +52,7 @@ export function useArtifactState<
     if (!liveId) {
       setState(null);
       setLoaded(true);
-      return;
+      return undefined;
     }
     setLoaded(false);
     getAdapter(adapterKey)

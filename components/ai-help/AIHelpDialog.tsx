@@ -74,6 +74,7 @@ export function AIHelpDialog(
                 removeHighlights();
             };
         }
+        return undefined;
     }, [isOpen, relevantElements]);
 
     const getAIReadyFormat = () => {

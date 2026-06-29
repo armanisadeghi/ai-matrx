@@ -29,7 +29,7 @@ export function useWorkbookRealtime(
   const enabled = options?.enabled ?? true;
 
   useEffect(() => {
-    if (!enabled || !workbookId) return;
+    if (!enabled || !workbookId) return undefined;
 
     const channel = supabase
       .channel(`udt_workbook_snapshots:${workbookId}`)

@@ -199,7 +199,7 @@ function SourceView({ fileId }: { fileId: string }) {
   useEffect(() => {
     if (!blob) {
       setText(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     blob.text().then((value) => {

@@ -84,7 +84,7 @@ export function MermaidRenderer({
     if (!trimmed) {
       // Don't clear state here (setState-in-effect) — the empty source is
       // handled by deriving `hasSource` below, which hides any stale render.
-      return;
+      return undefined;
     }
     const epoch = ++epochRef.current;
     const timer = setTimeout(

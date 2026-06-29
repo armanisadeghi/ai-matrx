@@ -70,7 +70,7 @@ export function useGraduatedReveal<T>(
             clearInterval(timerRef.current);
             timerRef.current = null;
         }
-        if (!active) return;
+        if (!active) return undefined;
 
         timerRef.current = setInterval(() => {
             setCount((c) => c + step);

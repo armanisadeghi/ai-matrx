@@ -80,7 +80,7 @@ export function UsageLimitDialog({
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const tick = () =>
       setCountdown(formatCountdown(reset.getTime() - Date.now()));
     tick();

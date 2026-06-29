@@ -180,7 +180,7 @@ export function NotePreview({
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || !collapsible) return;
+    if (!el || !collapsible) return undefined;
     // Measure in callbacks (rAF + ResizeObserver), never synchronously in the
     // effect body, so we don't trigger a cascading render on mount.
     const check = () => setOverflowing(el.scrollHeight > collapsedMaxPx + 12);

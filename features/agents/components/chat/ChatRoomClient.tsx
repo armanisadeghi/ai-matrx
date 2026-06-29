@@ -174,8 +174,8 @@ export function ChatRoomClient({
   const loadAbortRef = useRef<AbortController | null>(null);
   const loadedKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationIdProp || isInitializing || !authReady) return;
-    if (loadedKeyRef.current === conversationIdProp) return;
+    if (!conversationIdProp || isInitializing || !authReady) return undefined;
+    if (loadedKeyRef.current === conversationIdProp) return undefined;
 
     // Cancel any in-flight load before starting a new one.
     loadAbortRef.current?.abort();

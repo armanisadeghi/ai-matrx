@@ -64,7 +64,7 @@ export function PicklistBindingEditor({
   }, []);
 
   useEffect(() => {
-    if (!binding?.listId) return;
+    if (!binding?.listId) return undefined;
     let cancelled = false;
     getAccessibleLists()
       .then((rows) => {
@@ -80,7 +80,7 @@ export function PicklistBindingEditor({
 
   // Load group names for the bound list (label-only RPC — never touches description).
   useEffect(() => {
-    if (!binding?.listId) return;
+    if (!binding?.listId) return undefined;
     let cancelled = false;
     getPicklistForSelection(binding.listId)
       .then((data) => {

@@ -22,7 +22,7 @@ export default function ShellSidebarCookieSync() {
     const toggle = document.getElementById(
       "shell-sidebar-toggle",
     ) as HTMLInputElement | null;
-    if (!toggle) return;
+    if (!toggle) return undefined;
 
     const write = () => {
       document.cookie =

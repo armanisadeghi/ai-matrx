@@ -70,7 +70,7 @@ export function RepositoriesPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

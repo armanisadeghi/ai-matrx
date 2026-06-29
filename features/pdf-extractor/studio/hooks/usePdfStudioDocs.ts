@@ -77,7 +77,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
   );
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

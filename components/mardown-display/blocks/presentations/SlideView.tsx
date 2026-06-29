@@ -115,7 +115,7 @@ function useSlideImage(slide: SlideData): { url?: string; credit?: string; credi
   const [state, setState] = useState<{ img: ResolvedImage | null; done: boolean }>({ img: null, done: false });
 
   useEffect(() => {
-    if (explicit || !prompt) return;
+    if (explicit || !prompt) return undefined;
     let cancelled = false;
     resolveUnsplashImage(prompt).then((img) => {
       if (!cancelled) setState({ img, done: true });

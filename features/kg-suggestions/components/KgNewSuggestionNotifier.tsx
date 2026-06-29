@@ -48,7 +48,7 @@ export default function KgNewSuggestionNotifier() {
   const shownRef = useRef(false);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     fetchAckedSuggestionIds(userId)
       .then((set) => {
@@ -63,13 +63,13 @@ export default function KgNewSuggestionNotifier() {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId || acked == null || shownRef.current) return;
+    if (!userId || acked == null || shownRef.current) return undefined;
     // Never interrupt the user for low-quality (<50%) proposals — they're mostly
     // noise and live quietly in the manager's low-quality section instead.
     const unseen = items.filter(
       (i) => !acked.has(i.id) && !isLowConfidence(i),
     );
-    if (unseen.length === 0) return;
+    if (unseen.length === 0) return undefined;
     const unseenIds = unseen.map((i) => i.id);
     const count = unseen.length;
 

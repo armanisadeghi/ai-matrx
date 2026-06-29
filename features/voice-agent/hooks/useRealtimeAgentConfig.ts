@@ -132,7 +132,7 @@ export function useRealtimeAgentConfig(
     if (!agentId) {
       // Nothing to resolve (playground / ad-hoc). The slice keeps its seed.
       setState({ ready: true, error: null });
-      return;
+      return undefined;
     }
 
     let cancelled = false;

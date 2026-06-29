@@ -190,7 +190,7 @@ export function useProcessedDocumentPages({
   }, [processedDocumentId]);
 
   useEffect(() => {
-    if (!enabled || !processedDocumentId) return;
+    if (!enabled || !processedDocumentId) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

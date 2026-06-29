@@ -83,7 +83,7 @@ export function useSandboxCreate({ enabled }: UseSandboxCreateOptions) {
   // user flips between tiers. Mirrors the behavior previously duplicated in
   // both `CreateSandboxModal` and the `/sandbox` page.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
     let cancelled = false;
     setLoadingTemplates(true);
     setTemplateError(null);

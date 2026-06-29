@@ -113,7 +113,7 @@ export function useCanvasItem(
       setRow(null);
       setLoading(false);
       setError(null);
-      return;
+      return undefined;
     }
     setLoading(true);
     setError(null);
@@ -148,7 +148,7 @@ export function useCanvasItem(
   // Editors broadcast CANVAS_ITEM_UPDATED_EVENT after persisting; any mounted
   // view of the same chain refreshes so chat refs show new versions live.
   useEffect(() => {
-    if (!artifactId) return;
+    if (!artifactId) return undefined;
     const onUpdated = (event: Event) => {
       const detail = (event as CustomEvent<{ rootId?: string; latestId?: string }>).detail;
       if (detail?.rootId === artifactId || detail?.latestId === artifactId) {

@@ -93,7 +93,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
       setMapping({});
       setFieldsError(null);
       setError(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {
@@ -131,7 +131,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
     if (!selectedTableId) {
       setFields(null);
       setMapping({});
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

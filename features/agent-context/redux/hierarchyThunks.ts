@@ -164,7 +164,7 @@ export function fetchFullContext() {
     getState: () => { hierarchy: { fullContextStatus: string } },
   ) => {
     const status = getState().hierarchy.fullContextStatus;
-    if (status === "loading" || status === "success") return;
+    if (status === "loading" || status === "success") return undefined;
     return doFetchFullContext(dispatch);
   };
 }

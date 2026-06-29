@@ -142,7 +142,7 @@ function ItemDetailWindowInner({
   useEffect(() => {
     if (!detailSource || !itemId) {
       setStatus("none");
-      return;
+      return undefined;
     }
     let cancelled = false;
     setStatus("loading");

@@ -78,7 +78,7 @@ const UniformHeightWrapper: React.FC<UniformHeightWrapperProps> = ({
   
   // Measure the natural height of the content
   useEffect(() => {
-    if (!contentRef.current || !enabled) return;
+    if (!contentRef.current || !enabled) return undefined;
     
     // Use ResizeObserver to detect height changes
     const resizeObserver = new ResizeObserver(entries => {

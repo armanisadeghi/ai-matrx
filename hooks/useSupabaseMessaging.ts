@@ -62,7 +62,7 @@ export function useMessages(
     if (!conversationId) {
       setMessages([]);
       setIsLoading(false);
-      return;
+      return undefined;
     }
 
     mountedRef.current = true;
@@ -405,7 +405,7 @@ export function useTypingIndicator(
   useEffect(() => {
     if (!conversationId || !userId) {
       setTypingUsers([]);
-      return;
+      return undefined;
     }
 
     const { setTyping, unsubscribe } = messagingService.subscribeToTyping(
@@ -474,7 +474,7 @@ export function useOnlinePresence(
   useEffect(() => {
     if (!conversationId || !userId) {
       setOnlineUsers([]);
-      return;
+      return undefined;
     }
 
     const unsubscribe = messagingService.subscribeToPresence(
@@ -688,7 +688,7 @@ export function useConversations(
 
   // Subscribe to real-time updates for conversation list
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
 
     const channel = supabase.channel(`dm_conversations:${userId}`);
 

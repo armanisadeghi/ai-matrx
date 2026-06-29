@@ -93,7 +93,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
 
   useEffect(() => {
     let cancelled = false;
-    if (!isDir || !expanded) return;
+    if (!isDir || !expanded) return undefined;
     adapter
       .listChildren(node.path)
       .then((list) => {

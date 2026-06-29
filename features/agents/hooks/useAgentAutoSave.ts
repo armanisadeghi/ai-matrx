@@ -49,7 +49,7 @@ export function useAgentAutoSave(agentId: string) {
 
   // Debounced backup when dirty
   useEffect(() => {
-    if (!record?._dirty) return;
+    if (!record?._dirty) return undefined;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       const storageKey = `${STORAGE_PREFIX}${agentId}`;

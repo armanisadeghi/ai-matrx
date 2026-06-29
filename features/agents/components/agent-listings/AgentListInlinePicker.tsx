@@ -60,7 +60,7 @@ export function AgentListInlinePicker({
 
   useEffect(() => {
     ensureLoaded();
-    if (!autoFocusSearch) return;
+    if (!autoFocusSearch) return undefined;
     const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);
   }, [ensureLoaded, autoFocusSearch]);

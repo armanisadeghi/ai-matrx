@@ -61,7 +61,7 @@ export function usePageRunsRealtime(opts: {
   const activeRunId = activeRun?.runId ?? null;
 
   useEffect(() => {
-    if (!fileId || !effectiveJobId || !activeRunId) return;
+    if (!fileId || !effectiveJobId || !activeRunId) return undefined;
     const supabase = createClient();
     const channel = supabase
       .channel(`page-runs-rt:${activeRunId}`)

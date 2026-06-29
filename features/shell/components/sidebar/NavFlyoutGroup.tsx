@@ -179,7 +179,7 @@ export default function NavFlyoutGroup({
 
   // Dismiss the pinned flyout on outside click / Escape.
   useEffect(() => {
-    if (!pinned) return;
+    if (!pinned) return undefined;
     const onPointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
       if (triggerRef.current?.contains(target)) return;

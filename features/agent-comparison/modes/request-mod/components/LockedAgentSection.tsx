@@ -50,7 +50,7 @@ export function LockedAgentSection() {
   useEffect(() => {
     if (!agentId) {
       setVersionHistory([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setVersionsLoading(true);

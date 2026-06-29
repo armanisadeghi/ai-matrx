@@ -13,7 +13,7 @@ export function useSidebarExpanded(): boolean {
     const toggle = document.getElementById(
       "shell-sidebar-toggle",
     ) as HTMLInputElement | null;
-    if (!toggle) return;
+    if (!toggle) return undefined;
 
     const sync = () => setExpanded(toggle.checked);
     sync();

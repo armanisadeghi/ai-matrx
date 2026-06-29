@@ -23,7 +23,7 @@ export function useStagesStatus(processedDocumentId: string | null) {
   useEffect(() => {
     if (!processedDocumentId) {
       setStatus(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     const ctrl = new AbortController();

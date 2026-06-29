@@ -159,6 +159,7 @@ export function ImageManager(props: ImageManagerProps) {
       }, 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isOpen, clearImages]);
 
   const resolvedUploadPath = useMemo(

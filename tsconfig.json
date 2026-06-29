@@ -45,7 +45,8 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "noImplicitReturns": true
   },
   "include": [
     "**/*.ts",

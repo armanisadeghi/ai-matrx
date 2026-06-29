@@ -212,7 +212,7 @@ export function AdaptiveLayout({
 
     // Handle mouse drag for resizing canvas panel
     useEffect(() => {
-        if (!isResizing) return;
+        if (!isResizing) return undefined;
 
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);

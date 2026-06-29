@@ -412,7 +412,7 @@ function CanvasResourceRow({
 
   const [docTitle, setDocTitle] = useState<string | null>(null);
   useEffect(() => {
-    if (entityType !== "document") return;
+    if (entityType !== "document") return undefined;
     let cancelled = false;
     void getDocument(row.entity_id).then((res) => {
       if (!cancelled && res.success) {
@@ -545,7 +545,7 @@ function DocumentPickerDialog({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
     setLoading(true);
     void listAccessibleDocuments()

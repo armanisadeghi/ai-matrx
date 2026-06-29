@@ -113,7 +113,7 @@ export function ChunkingConfigForm({
     let cancelled = false;
     if (!selectedJobId) {
       setLoadedJob(null);
-      return;
+      return undefined;
     }
     void getJob(selectedJobId).then((job) => {
       if (cancelled || !job) return;

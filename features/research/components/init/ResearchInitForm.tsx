@@ -1665,7 +1665,7 @@ export default function ResearchInitForm() {
   // Keywords the backend dropped due to max_keywords stay visible (red styling)
   // until the user raises the cap or removes them — we do not silently backfill.
   useEffect(() => {
-    if (aiPhase.status !== "reviewing" || aiPhase.keywordRows !== null) return;
+    if (aiPhase.status !== "reviewing" || aiPhase.keywordRows !== null) return undefined;
     let cancelled = false;
     const topicId = aiPhase.topicId;
     const aiOrder = aiPhase.suggestedKeywords;

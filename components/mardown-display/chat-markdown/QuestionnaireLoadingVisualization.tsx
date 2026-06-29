@@ -24,7 +24,7 @@ const QuestionnaireLoadingVisualization: React.FC<QuestionnaireLoadingVisualizat
     useEffect(() => {
         // Don't change the final message
         if (currentMessageIndex >= messages.length - 1) {
-            return;
+            return undefined;
         }
 
         const interval = setInterval(() => {

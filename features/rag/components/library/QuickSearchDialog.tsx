@@ -67,6 +67,7 @@ export function QuickSearchDialog({
       const t = setTimeout(() => inputRef.current?.focus(), 50);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [open, processedDocumentId]);
 
   const run = async () => {

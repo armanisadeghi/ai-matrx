@@ -44,7 +44,7 @@ export function useOrgSharedItems(
     if (!orgId || !entry) {
       setItems([]);
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
 

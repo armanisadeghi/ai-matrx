@@ -100,7 +100,7 @@ export function KgGraphCard({
   // Lazy: fetch only when the card scrolls into view (after the page settles).
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) return undefined;
     started.current = false;
     const controller = new AbortController();
     const io = new IntersectionObserver(

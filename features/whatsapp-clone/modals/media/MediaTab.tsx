@@ -149,9 +149,9 @@ function MediaTile({ item }: { item: WAMediaItem }) {
   // 60 simultaneous requests; the first ~15-20 succeed and the rest
   // queue or stall. With it, requests follow the user's scroll.
   useEffect(() => {
-    if (isVisible) return;
+    if (isVisible) return undefined;
     const el = tileRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!el || typeof IntersectionObserver === "undefined") return undefined;
     const io = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {

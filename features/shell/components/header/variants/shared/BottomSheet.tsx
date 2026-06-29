@@ -36,11 +36,12 @@ export default function BottomSheet({ open, onClose, actions, title }: BottomShe
         document.body.style.overflow = "";
       };
     }
+    return undefined;
   }, [open]);
 
   // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

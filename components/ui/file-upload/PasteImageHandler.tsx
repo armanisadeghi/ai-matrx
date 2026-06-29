@@ -161,7 +161,7 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
 
   useEffect(() => {
     const element = targetRef.current;
-    if (!element || disabled) return;
+    if (!element || disabled) return undefined;
     element.addEventListener("paste", handlePaste as EventListener);
     return () => {
       element.removeEventListener("paste", handlePaste as EventListener);

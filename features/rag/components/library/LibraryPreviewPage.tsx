@@ -445,7 +445,7 @@ function PageContent({
   useEffect(() => {
     // When there are no persisted pages, the empty-state render below owns the
     // output and `page` is never read — so no synchronous reset is needed here.
-    if (totalPages === 0) return;
+    if (totalPages === 0) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

@@ -53,7 +53,7 @@ export function useLibraryCatalog() {
   const refresh = useCallback(() => setBumper((b) => b + 1), []);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

@@ -102,7 +102,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       setError(null);
       setBytesLoaded(0);
       setBytesTotal(null);
-      return;
+      return undefined;
     }
 
     // Synthetic ids belong to virtual sources (Notes / Agent Apps / etc.).
@@ -120,7 +120,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       );
       setBytesLoaded(0);
       setBytesTotal(null);
-      return;
+      return undefined;
     }
 
     // 1. In-memory cache hit — show the cached blob immediately, no fetch.
@@ -132,7 +132,7 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
       setError(null);
       setBytesLoaded(cached.blob.size);
       setBytesTotal(cached.blob.size);
-      return;
+      return undefined;
     }
 
     // 2. Miss — try IDB before going to network. Async; show loading state

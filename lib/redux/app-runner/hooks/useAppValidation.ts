@@ -42,7 +42,7 @@ export function useAppValidation(
           severity: 'error' as const
         }]
       });
-      return;
+      return undefined;
     }
     
     // Check if we have cached validation results
@@ -51,6 +51,7 @@ export function useAppValidation(
     if (storedResults) {
       // Use stored results if available
       setValidationResult(storedResults);
+      return undefined;
     } else if (options.runValidations) {
       // If we need to run validations but don't have stored results yet,
       // set up a polling interval to check for results
@@ -65,6 +66,7 @@ export function useAppValidation(
       // Clear interval on cleanup
       return () => clearInterval(checkInterval);
     }
+    return undefined;
   }, [appConfig, options.runValidations]);
   
   return validationResult;

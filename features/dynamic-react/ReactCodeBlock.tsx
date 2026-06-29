@@ -92,8 +92,8 @@ const ReactCodeBlock: React.FC<ReactCodeBlockProps> = ({
   }, []);
 
   useEffect(() => {
-    if (!isComplete) return;
-    if (compiledForRef.current === code) return;
+    if (!isComplete) return undefined;
+    if (compiledForRef.current === code) return undefined;
 
     compiledForRef.current = code;
     let cancelled = false;

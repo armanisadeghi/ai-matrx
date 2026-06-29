@@ -597,7 +597,7 @@ export function useSlugAvailability(slug: string, debounceMs: number = 500) {
   useEffect(() => {
     if (!slug || slug.trim().length === 0) {
       setAvailable(null);
-      return;
+      return undefined;
     }
 
     setChecking(true);

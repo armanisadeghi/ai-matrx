@@ -173,6 +173,7 @@ export function useDynamicMeasurements(options: UseDynamicMeasurementsOptions = 
                 }
             };
         }
+        return undefined;
     }, [initialPauseMs, debouncedUpdate]);
 
     // Set up observers and event listeners

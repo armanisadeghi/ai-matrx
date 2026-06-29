@@ -624,7 +624,7 @@ export function AgentVariablesGuided({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     const check = () => setIsScrollable(el.scrollHeight > el.clientHeight);
     check();
     const ro = new ResizeObserver(check);

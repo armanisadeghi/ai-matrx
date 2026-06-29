@@ -173,7 +173,7 @@ export function useConversationSession(
 
   // ── Initialize session on mount ──────────────────────────────────────────
   useEffect(() => {
-    if (initializedRef.current) return;
+    if (initializedRef.current) return undefined;
     initializedRef.current = true;
 
     dispatch(

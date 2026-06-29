@@ -1182,13 +1182,26 @@ function AddItemDialog({
   const keyValid = key === "" || /^[a-z0-9_]+$/.test(key);
 
   async function save() {
-    if (!scopeTypeId) return toast.error("Pick a category.");
-    if (!key.trim()) return toast.error("A key is required.");
-    if (!keyValid)
-      return toast.error("Key may only use lowercase letters, numbers, underscores.");
-    if (!displayName.trim()) return toast.error("A display name is required.");
-    if (feedType === "dataset" && !feedConfig.data_store_id)
-      return toast.error("Pick a knowledge resource for the dataset feed.");
+    if (!scopeTypeId) {
+      toast.error("Pick a category.");
+      return;
+    }
+    if (!key.trim()) {
+      toast.error("A key is required.");
+      return;
+    }
+    if (!keyValid) {
+      toast.error("Key may only use lowercase letters, numbers, underscores.");
+      return;
+    }
+    if (!displayName.trim()) {
+      toast.error("A display name is required.");
+      return;
+    }
+    if (feedType === "dataset" && !feedConfig.data_store_id) {
+      toast.error("Pick a knowledge resource for the dataset feed.");
+      return;
+    }
 
     const hasValue =
       isManual && value != null && !(typeof value === "string" && value.trim() === "");
@@ -1220,6 +1233,7 @@ function AddItemDialog({
       }
       toast.success(`Created item "${key.trim().toLowerCase()}".`);
       await onSaved();
+      return;
     } finally {
       setSaving(false);
     }

@@ -72,6 +72,7 @@ const Window: React.FC<WindowProps> = (
             }, 5000);
             return () => clearInterval(interval);
         }
+        return undefined;
     }, [isFullScreen, validImages]);
 
     const handleClick = () => {

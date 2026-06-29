@@ -310,6 +310,7 @@ function useStreamPulse(phase: AiProcessPhase): {
       const t = setTimeout(() => setDoneFlash(false), 750);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [phase]);
   return { running: STREAM_BUSY_PHASES.includes(phase), doneFlash };
 }

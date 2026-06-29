@@ -37,6 +37,7 @@ export const AnimatedTestimonials = ({
       const interval = setInterval(handleNext, 5000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [autoplay]);
 
   const randomRotateY = () => {

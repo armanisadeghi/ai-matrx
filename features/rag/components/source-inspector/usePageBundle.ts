@@ -53,7 +53,7 @@ export function usePageBundle({
       // "Loading page…" spinner forever (review P2).
       setLoading(false);
       setError(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

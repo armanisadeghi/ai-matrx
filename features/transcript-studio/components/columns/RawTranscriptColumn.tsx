@@ -126,7 +126,7 @@ export function RawTranscriptColumn({
   const sync = useScrollSyncOptional();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!sync) return;
+    if (!sync) return undefined;
     sync.registerColumn(COLUMN_IDS.raw, scrollRef.current);
     return () => sync.registerColumn(COLUMN_IDS.raw, null);
   }, [sync]);

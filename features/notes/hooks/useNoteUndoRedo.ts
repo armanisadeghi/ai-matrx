@@ -60,7 +60,7 @@ export function useNoteUndoRedo({
   // Keyboard shortcuts — Cmd+Z / Shift+Cmd+Z (Mac), Ctrl+Z / Ctrl+Y (Win/Linux)
   // Intercept at capture phase to suppress native textarea undo
   useEffect(() => {
-    if (!enabled || !noteId) return;
+    if (!enabled || !noteId) return undefined;
 
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMacLike() ? e.metaKey : e.ctrlKey;

@@ -40,7 +40,7 @@ export function StudioDropZone({
 
     // Paste support at the document level
     useEffect(() => {
-        if (!listenForPaste) return;
+        if (!listenForPaste) return undefined;
         const handler = (e: ClipboardEvent) => {
             const items = e.clipboardData?.items;
             if (!items) return;

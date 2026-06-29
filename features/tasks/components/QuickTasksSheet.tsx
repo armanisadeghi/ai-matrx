@@ -192,8 +192,8 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   // only on the list view (not while a task's details are open).
   const hasAutoFocusedRef = useRef(false);
   useEffect(() => {
-    if (hasAutoFocusedRef.current) return;
-    if (!selectedProjectForTask || selectedTaskId) return;
+    if (hasAutoFocusedRef.current) return undefined;
+    if (!selectedProjectForTask || selectedTaskId) return undefined;
     hasAutoFocusedRef.current = true;
     const t = window.setTimeout(() => newTaskInputRef.current?.focus(), 60);
     return () => window.clearTimeout(t);

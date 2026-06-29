@@ -517,8 +517,8 @@ const SequentialQueryPlayer: React.FC<{
             clearTimeout(advanceTimer.current);
             advanceTimer.current = null;
         }
-        if (isLastIndex) return; // final query stays expanded — never advances.
-        if (!fullyRevealed) return;
+        if (isLastIndex) return undefined; // final query stays expanded — never advances.
+        if (!fullyRevealed) return undefined;
         advanceTimer.current = setTimeout(() => {
             setCurrentIndex((i) => Math.min(i + 1, groups.length - 1));
         }, HOLD_AFTER_REVEAL_MS);

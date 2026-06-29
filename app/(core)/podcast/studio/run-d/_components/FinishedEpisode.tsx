@@ -164,7 +164,7 @@ function AudioPlayer({ src }: { src: string }) {
 
   useEffect(() => {
     const a = ref.current;
-    if (!a) return;
+    if (!a) return undefined;
     const onTime = () => {
       setCurrent(a.currentTime);
       setProgress(a.duration ? (a.currentTime / a.duration) * 100 : 0);

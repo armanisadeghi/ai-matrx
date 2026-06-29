@@ -116,15 +116,16 @@ export const ToolCallBatch: React.FC<ToolCallBatchProps> = ({
 
   // Auto: keep expanded while streaming; collapse 3s after the run finishes.
   useEffect(() => {
-    if (effectiveMode !== "auto" || userToggled) return;
+    if (effectiveMode !== "auto" || userToggled) return undefined;
     if (streamingNow) {
       setIsExpanded(true);
-      return;
+      return undefined;
     }
     if (allTerminal && isExpanded) {
       const t = setTimeout(() => setIsExpanded(false), 3000);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [effectiveMode, userToggled, streamingNow, allTerminal, isExpanded]);
 
   if (count === 0) return null;

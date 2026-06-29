@@ -209,12 +209,12 @@ const ToolCallVisualizationInner: React.FC<{
   // stay-open / never-open never auto-collapse; an error already derives
   // collapsed; a persisted/reloaded tool gets no grace.
   useEffect(() => {
-    if (userChoice !== null) return; // user took control — their choice sticks
-    if (effectiveMode !== "auto") return;
-    if (phase === "error") return;
-    if (!allTerminal) return;
-    if (isPersisted) return;
-    if (autoCollapsed) return;
+    if (userChoice !== null) return undefined; // user took control — their choice sticks
+    if (effectiveMode !== "auto") return undefined;
+    if (phase === "error") return undefined;
+    if (!allTerminal) return undefined;
+    if (isPersisted) return undefined;
+    if (autoCollapsed) return undefined;
     const t = setTimeout(() => setAutoCollapsed(true), 3000);
     return () => clearTimeout(t);
   }, [userChoice, effectiveMode, phase, allTerminal, isPersisted, autoCollapsed]);

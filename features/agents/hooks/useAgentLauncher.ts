@@ -287,7 +287,7 @@ export function useAgentLauncher(
   } = options ?? {};
 
   useEffect(() => {
-    if (!isManaged || !ready || !surfaceKey) return;
+    if (!isManaged || !ready || !surfaceKey) return undefined;
 
     // The id resolved synchronously during render — the instance is created
     // (or reused) under THIS id, so the surface never re-keys.
@@ -304,7 +304,7 @@ export function useAgentLauncher(
       ) {
         dispatch(setFocus({ surfaceKey, conversationId: targetId }));
       }
-      return;
+      return undefined;
     }
 
     // Create branch: launch with the known id threaded through. We deliberately

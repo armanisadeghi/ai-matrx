@@ -224,7 +224,7 @@ function SingleJobResultsTable({
     let cancelled = false;
     if (!jobId) {
       setJob(null);
-      return;
+      return undefined;
     }
     void getJob(jobId).then((j) => {
       if (!cancelled) setJob(j);

@@ -45,7 +45,7 @@ export function ExtensionBridgeSubscriber(): null {
 
   useEffect(() => {
     // Hook short-circuits when no user is signed in; nothing to wire up.
-    if (!isAuthenticated || !userId) return;
+    if (!isAuthenticated || !userId) return undefined;
 
     const messagingService = getMessagingService();
 

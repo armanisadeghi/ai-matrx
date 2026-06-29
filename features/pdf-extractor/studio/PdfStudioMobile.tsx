@@ -600,9 +600,9 @@ function MobileTextScroller({
   // IO observer so the bottom pager reflects the most-visible page. Skip
   // when we're showing the aggregate / streaming block (no anchors).
   React.useEffect(() => {
-    if (streaming || allEmpty) return;
+    if (streaming || allEmpty) return undefined;
     const root = containerRef.current;
-    if (!root) return;
+    if (!root) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries

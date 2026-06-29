@@ -102,7 +102,7 @@ export function PdfAnnotationLayer({
 
   useLayoutEffect(() => {
     const node = wrapRef.current;
-    if (!node) return;
+    if (!node) return undefined;
     const measure = () => {
       const rect = node.getBoundingClientRect();
       setBox((prev) =>

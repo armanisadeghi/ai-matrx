@@ -27,7 +27,7 @@ export function useThreadProject(threadId: string) {
     if (!projectId) {
       setProject(null);
       setLoading(false);
-      return;
+      return undefined;
     }
 
     let cancelled = false;

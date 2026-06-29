@@ -33,7 +33,7 @@ export function useWarmAgent(
   );
 
   useEffect(() => {
-    if (!enabled || !agentId || !baseUrl) return;
+    if (!enabled || !agentId || !baseUrl) return undefined;
 
     const fire = () => warmAgent(agentId, { baseUrl, isVersion });
 

@@ -210,7 +210,7 @@ export function ProcessingProgressDialog({
 
   // Block body scroll while the full overlay is shown.
   useEffect(() => {
-    if (!open || minimized) return;
+    if (!open || minimized) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {

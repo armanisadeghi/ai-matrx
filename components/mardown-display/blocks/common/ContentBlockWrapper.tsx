@@ -103,7 +103,7 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
     
     // ESC key handler
     useEffect(() => {
-        if (!closeOnEscape) return;
+        if (!closeOnEscape) return undefined;
         
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === "Escape" && isFullScreen) {

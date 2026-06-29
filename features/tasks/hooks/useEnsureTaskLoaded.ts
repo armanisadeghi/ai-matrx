@@ -27,7 +27,7 @@ export function useEnsureTaskLoaded(taskId: string) {
       setLoading(false);
       setMissing(false);
       setMetadataAttempted(true);
-      return;
+      return undefined;
     }
 
     let cancelled = false;

@@ -114,7 +114,7 @@ export function useCountUp(
     const safeTarget = Number.isFinite(target) ? target : 0;
     if (prefersReduced.current || safeTarget === 0) {
       setValue(safeTarget);
-      return;
+      return undefined;
     }
     const factor = 10 ** decimals;
     const controls = animate(0, safeTarget, {

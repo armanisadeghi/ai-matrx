@@ -76,7 +76,7 @@ export function CodeWorkspaceContextMenu({
   // shortcuts (or hide them when nothing is selected).
   useEffect(() => {
     const ed = editorRef.current;
-    if (!ed) return;
+    if (!ed) return undefined;
 
     const sync = () => {
       const sel = ed.getSelection();

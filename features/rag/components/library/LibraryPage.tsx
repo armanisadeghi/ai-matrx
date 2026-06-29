@@ -247,7 +247,7 @@ export function LibraryPage() {
       if (prev && prev !== d.status) transitioned.push(d.id);
       prevStatusRef.current.set(d.id, d.status);
     }
-    if (transitioned.length === 0) return;
+    if (transitioned.length === 0) return undefined;
     setPulsedRows((prev) => {
       const next = new Set(prev);
       for (const id of transitioned) next.add(id);

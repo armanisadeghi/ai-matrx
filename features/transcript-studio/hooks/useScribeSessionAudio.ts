@@ -243,7 +243,7 @@ export function useScribeSessionAudio(
   // Wire element events → state, including cross-segment auto-advance.
   useEffect(() => {
     const el = ensureEl();
-    if (!el) return;
+    if (!el) return undefined;
 
     const onPlay = () => setIsPlaying(true);
     const onPause = () => setIsPlaying(false);
@@ -299,7 +299,7 @@ export function useScribeSessionAudio(
 
   // Obey seek requests addressed to this session from anywhere in the app.
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId) return undefined;
     return subscribeScribeAudio((req: ScribeAudioSeekRequest) => {
       if (req.sessionId !== sessionId) return;
       seekTo(req.sessionSeconds, {

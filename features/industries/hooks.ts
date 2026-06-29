@@ -55,7 +55,7 @@ export function useOrgIndustries(orgId: string | null) {
   useEffect(() => {
     if (!orgId) {
       setOrgIndustries([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

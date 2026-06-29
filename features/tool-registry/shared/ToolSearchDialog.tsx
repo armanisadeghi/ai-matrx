@@ -85,7 +85,7 @@ export function ToolSearchDialog({
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

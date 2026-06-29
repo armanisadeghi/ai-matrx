@@ -183,7 +183,7 @@ function useFlowAnimation(playing: boolean, speed: number) {
         offsetRef.current = (performance.now() - startRef.current) * speed;
       }
       startRef.current = null;
-      return;
+      return undefined;
     }
 
     let raf = 0;

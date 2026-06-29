@@ -123,7 +123,7 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
   const [pasteFlash, setPasteFlash] = useState(false);
 
   useEffect(() => {
-    if (disabled || typeof window === "undefined") return;
+    if (disabled || typeof window === "undefined") return undefined;
     const handler = (e: ClipboardEvent) => {
       if (!e.clipboardData?.items) return;
       for (const item of Array.from(e.clipboardData.items)) {

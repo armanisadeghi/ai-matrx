@@ -206,7 +206,7 @@ export default function WorkbookEditor({
   // from refs (above) so toggling them never tears the instance down — the
   // lifecycle Univer's docs assume (create once, dispose on unmount).
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) return undefined;
     let cancelled = false;
 
     (async () => {

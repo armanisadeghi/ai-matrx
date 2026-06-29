@@ -89,7 +89,7 @@ export function usePreviewFindHighlight({
 }: Options) {
   useEffect(() => {
     const highlights = getHighlights();
-    if (!highlights) return;
+    if (!highlights) return undefined;
 
     const clearHighlights = () => {
       const h = getHighlights();

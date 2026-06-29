@@ -123,6 +123,7 @@ const AutoResizeTextarea = React.forwardRef<
       window.addEventListener("resize", adjustHeight);
       return () => window.removeEventListener("resize", adjustHeight);
     }
+    return undefined;
   }, [adjustHeight]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

@@ -349,6 +349,7 @@ export const RecipeSelectionList: React.FC<RecipeSelectionListProps> = ({
             }, 500); // Debounce
             return () => clearTimeout(timeoutId);
         }
+        return undefined;
     }, [specificVersion, selectedRecipe, versionSelection]);
 
     // Confirm recipe selection

@@ -46,13 +46,13 @@ export function useLiveRating(draft: RatingDraft): LiveRatingState {
         if (prev.status === "incomplete" && prev.reason === reason) return prev;
         return { result: null, status: "incomplete", reason };
       });
-      return;
+      return undefined;
     }
 
-    if (lastFiredHash.current === draftHash) return;
+    if (lastFiredHash.current === draftHash) return undefined;
 
     const payload = buildStatelessPayload(draftRef.current);
-    if (!payload) return;
+    if (!payload) return undefined;
 
     const requestId = ++inFlightRequestId.current;
     lastFiredHash.current = draftHash;

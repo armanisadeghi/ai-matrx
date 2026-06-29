@@ -188,7 +188,7 @@ export default function DocumentEditor({
   // recreating on a prop change is what crashed Univer's ParagraphMenu popup
   // mid-render and made loaded content disappear.
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) return undefined;
     let cancelled = false;
 
     (async () => {

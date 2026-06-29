@@ -187,9 +187,9 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
   // yet (fresh mount, URL hydration) — in that case we leave the order
   // alone so the persisted layout is preserved.
   useEffect(() => {
-    if (tabInteractionAt === null) return;
-    if (!activeTabId || !openTabs || openTabs.length < 2) return;
-    if (openTabs[0] === activeTabId) return;
+    if (tabInteractionAt === null) return undefined;
+    if (!activeTabId || !openTabs || openTabs.length < 2) return undefined;
+    if (openTabs[0] === activeTabId) return undefined;
 
     const elapsed = Date.now() - tabInteractionAt;
     const remaining = Math.max(0, TAB_AUTO_MOVE_IDLE_MS - elapsed);

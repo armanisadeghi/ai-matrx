@@ -31,7 +31,7 @@ export function useKeyFindings(fileId: string | null): UseKeyFindingsResult {
     if (!fileId) {
       setData(null);
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

@@ -82,8 +82,8 @@ export function AgentGateBody({
   const autoAdvancedRef = useRef(false);
 
   useEffect(() => {
-    if (bypassGateSeconds <= 0) return;
-    if (autoAdvancedRef.current) return;
+    if (bypassGateSeconds <= 0) return undefined;
+    if (autoAdvancedRef.current) return undefined;
 
     const tick = window.setInterval(() => {
       setSecondsLeft((prev) => {

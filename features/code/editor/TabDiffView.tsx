@@ -359,7 +359,7 @@ export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
   // original-side line position — which holds for the SEARCH/REPLACE
   // format the agent emits because each block is a contiguous edit.
   useEffect(() => {
-    if (!diffEditor) return;
+    if (!diffEditor) return undefined;
     const modifiedEditor = diffEditor.getModifiedEditor();
     const ownedZoneIds: string[] = [];
 

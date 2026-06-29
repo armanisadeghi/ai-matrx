@@ -32,11 +32,11 @@ export function useEnrichItem(
     const { config, recognized } = getItemConfig(type);
     // Only fetch for recognized, enrichable types with a real UUID id.
     if (!recognized || !config.enrich || !id || !UUID_RE.test(id)) {
-      return;
+      return undefined;
     }
 
     const key = `${type}:${id}`;
-    if (lastKey.current === key) return;
+    if (lastKey.current === key) return undefined;
     lastKey.current = key;
 
     let cancelled = false;

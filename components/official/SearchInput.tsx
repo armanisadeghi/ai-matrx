@@ -59,10 +59,10 @@ export function SearchInput({
   }, [onSearch]);
 
   useEffect(() => {
-    if (!onSearchRef.current) return;
+    if (!onSearchRef.current) return undefined;
     if (!didMountRef.current) {
       didMountRef.current = true;
-      return;
+      return undefined;
     }
     const timer = window.setTimeout(() => {
       onSearchRef.current?.(currentValue);

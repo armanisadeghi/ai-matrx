@@ -43,7 +43,7 @@ export function useAutoRagPreference(): UseAutoRagPreferenceResult {
   useEffect(() => {
     if (!userId) {
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

@@ -147,7 +147,7 @@ export function ContentEditor({
 
   // Auto-save logic
   useEffect(() => {
-    if (!autoSave || !onSave) return;
+    if (!autoSave || !onSave) return undefined;
 
     // Clear existing timeout
     if (saveTimeoutRef.current) {

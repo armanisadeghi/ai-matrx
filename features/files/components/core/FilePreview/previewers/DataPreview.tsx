@@ -167,7 +167,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
   // ── Effect: initial load ─────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!blob) return;
+    if (!blob) return undefined;
     let cancelled = false;
     setParsing(true);
     setParseError(null);

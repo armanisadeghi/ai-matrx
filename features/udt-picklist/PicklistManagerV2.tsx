@@ -352,7 +352,7 @@ function ListSwitcher({
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onDoc = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -469,7 +469,7 @@ function VisibilityChip({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onDoc = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -1000,7 +1000,7 @@ function GroupCombobox({
   }, [matches.length]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onDoc = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) {
         setOpen(false);

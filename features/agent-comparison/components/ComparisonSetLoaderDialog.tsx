@@ -75,7 +75,7 @@ export function ComparisonSetLoaderDialog({
   }, [sets, modeFilter]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
     setLoading(true);
     dispatch(listMyBattleSets())

@@ -86,7 +86,7 @@ export function BattleColumnHeader({
   useEffect(() => {
     if (!column.agentId) {
       setVersionHistory([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setVersionsLoading(true);

@@ -64,7 +64,7 @@ export function ClipboardFallbackDialog({
   React.useEffect(() => {
     if (!open) {
       setCopied(false);
-      return;
+      return undefined;
     }
     const id = window.setTimeout(() => {
       inputRef.current?.focus();

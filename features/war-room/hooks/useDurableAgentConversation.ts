@@ -249,7 +249,7 @@ export function useDurableAgentConversation(
   // ── Arm the tier's inline tools on the active conversation ───────────────
   const toolKey = toolNames.join("|");
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) return undefined;
     dispatch(setClientTools({ conversationId, tools: [...toolNames] }));
     return () => {
       dispatch(setClientTools({ conversationId, tools: [] }));

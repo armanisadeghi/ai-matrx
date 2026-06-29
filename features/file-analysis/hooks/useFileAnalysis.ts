@@ -119,7 +119,7 @@ export function useFileAnalysis(fileId: string | null): UseFileAnalysisResult {
   const result = useSharedStore(store, fileId);
 
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId) return undefined;
     attachRealtime(fileId);
     return () => detachRealtime(fileId);
   }, [fileId]);

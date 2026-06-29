@@ -79,7 +79,7 @@ export function useActionCatalog(pollMs = 0): UseActionCatalogResult {
 
   // Light polling — independent of the fetch effect so it only schedules ticks.
   useEffect(() => {
-    if (pollMs <= 0) return;
+    if (pollMs <= 0) return undefined;
     const id = setInterval(() => setNonce((n) => n + 1), pollMs);
     return () => clearInterval(id);
   }, [pollMs]);

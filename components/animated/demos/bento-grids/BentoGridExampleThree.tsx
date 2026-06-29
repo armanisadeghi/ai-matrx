@@ -374,7 +374,7 @@ export const Globe = ({ className }: { className?: string }) => {
     useEffect(() => {
         let phi = 0;
 
-        if (!canvasRef.current) return;
+        if (!canvasRef.current) return undefined;
 
         const globe = createGlobe(canvasRef.current, {
             devicePixelRatio: 2,

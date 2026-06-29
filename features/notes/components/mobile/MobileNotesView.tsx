@@ -92,7 +92,7 @@ export default function MobileNotesView() {
 
   // Poll editor dirty state every 500ms when in editor view
   React.useEffect(() => {
-    if (currentView !== "editor") return;
+    if (currentView !== "editor") return undefined;
     const id = setInterval(() => {
       const editorState = (window as any).__mobileNoteEditorState;
       if (editorState) setIsDirty(editorState.isDirty ?? false);

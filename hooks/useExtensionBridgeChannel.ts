@@ -164,7 +164,7 @@ export function useExtensionBridgeChannel(): UseExtensionBridgeChannelReturn {
   useEffect(() => {
     if (!userId) {
       setIsReady(false);
-      return;
+      return undefined;
     }
 
     let cancelled = false;

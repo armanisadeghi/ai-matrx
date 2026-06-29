@@ -105,7 +105,7 @@ function RegionCard({
   const samplePage = region.bbox_per_page?.[0];
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) return undefined;
     const obs = new IntersectionObserver(
       (e) => {
         if (e[0]?.isIntersecting) setVisible(true);

@@ -166,7 +166,7 @@ export function useDiffReveal(
     }
     // No timer when inactive or there's nothing to fill — the reset effect has
     // already placed `step` at the settled position.
-    if (!active || region.newMiddle.length === 0) return;
+    if (!active || region.newMiddle.length === 0) return undefined;
 
     timerRef.current = setInterval(() => {
       setStep((s) => {

@@ -625,7 +625,7 @@ export function useProjectSlugAvailability(
   const trimmedSlug = slug.trim();
 
   useEffect(() => {
-    if (!trimmedSlug) return;
+    if (!trimmedSlug) return undefined;
 
     let cancelled = false;
 

@@ -23,7 +23,7 @@ export function useOpenCodeFileFromUrl(): void {
   const open = params?.get("open") ?? null;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
     openLibraryFile(open)
       .then(() => {

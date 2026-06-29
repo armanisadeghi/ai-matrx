@@ -96,7 +96,7 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
   // textarea is the capture surface; focus it once the editor mounts.
   const editorWrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!editorNote) return;
+    if (!editorNote) return undefined;
     const t = window.setTimeout(() => {
       const el = editorWrapRef.current?.querySelector<
         HTMLTextAreaElement | HTMLElement

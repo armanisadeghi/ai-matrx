@@ -47,6 +47,7 @@ const Window = ({id, title, content, images, onClose, onMinimize, onMaximize, on
             }, 5000);
             return () => clearInterval(interval);
         }
+        return undefined;
     }, [isFullScreen, validImages]);
 
     const handleClick = () => {

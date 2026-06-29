@@ -278,7 +278,7 @@ export function MultiFileSmartCodeEditorWindow({
   variablesRef.current = variables;
 
   useEffect(() => {
-    if (launchedIdRef.current) return;
+    if (launchedIdRef.current) return undefined;
 
     let cancelled = false;
     (async () => {

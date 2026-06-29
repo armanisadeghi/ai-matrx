@@ -28,7 +28,7 @@ export function CopyDropdownButton({
 
   // Position the portaled menu relative to the trigger and keep it inside the viewport.
   useLayoutEffect(() => {
-    if (!showOptions || !buttonRef.current) return;
+    if (!showOptions || !buttonRef.current) return undefined;
 
     const updatePosition = () => {
       const btn = buttonRef.current;

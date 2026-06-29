@@ -121,7 +121,7 @@ export default function DocumentViewer() {
       document ||
       !reportReady
     ) {
-      return;
+      return undefined;
     }
     autoGenAttempted.current = true;
     // Defer out of the effect body so generation's initial setState doesn't run

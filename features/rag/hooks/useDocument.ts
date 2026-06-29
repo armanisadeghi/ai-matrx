@@ -44,7 +44,7 @@ function useFetch<T>(
       setData(null);
       setLoading(false);
       setError(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

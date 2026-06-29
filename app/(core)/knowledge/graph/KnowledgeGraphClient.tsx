@@ -43,12 +43,12 @@ export function KnowledgeGraphClient({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setResolvedOrgId(null);
       setResolving(false);
-      return;
+      return undefined;
     }
     if (UUID_RE.test(orgParam)) {
       setResolvedOrgId(orgParam);
       setResolving(false);
-      return;
+      return undefined;
     }
     setResolving(true);
     (async () => {

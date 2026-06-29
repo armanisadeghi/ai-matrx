@@ -49,7 +49,7 @@ export function useLabelCatalog(): UseLabelCatalogResult {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (cached) return;
+    if (cached) return undefined;
     let cancelled = false;
     setLoading(true);
     fetchCatalog()

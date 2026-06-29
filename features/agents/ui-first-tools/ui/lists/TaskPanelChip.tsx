@@ -48,7 +48,7 @@ export function TaskPanelChip({
   // that mounts the chip automatically gets the live mirror — no manual
   // wire-up in each page.
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) return undefined;
     void dispatch(hydrateAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {

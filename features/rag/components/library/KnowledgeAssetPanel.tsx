@@ -840,7 +840,7 @@ function useDerivationsEstimate(docId: string | null): EstimateState {
   useEffect(() => {
     if (!docId) {
       setState({ data: null, loading: false, error: null });
-      return;
+      return undefined;
     }
     let cancelled = false;
     const ac = new AbortController();
@@ -924,6 +924,7 @@ function CountUpInline({ value, muted }: { value: number; muted?: boolean }) {
       return () => window.clearTimeout(t);
     }
     setDisplay(value);
+    return undefined;
   }, [value, display]);
   return (
     <span
@@ -961,7 +962,7 @@ function RollupSkeleton() {
 function useElapsed(startedAt: number | null, running: boolean): string {
   const [, force] = useState(0);
   useEffect(() => {
-    if (!running) return;
+    if (!running) return undefined;
     const t = window.setInterval(() => force((n) => n + 1), 1000);
     return () => window.clearInterval(t);
   }, [running]);

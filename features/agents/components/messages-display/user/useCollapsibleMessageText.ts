@@ -38,7 +38,7 @@ export function useCollapsibleMessageText(contentKey: string) {
 
   useLayoutEffect(() => {
     const node = measureRef.current;
-    if (!node) return;
+    if (!node) return undefined;
 
     const measure = () => {
       const contentHeight = node.scrollHeight;
@@ -63,7 +63,7 @@ export function useCollapsibleMessageText(contentKey: string) {
 
     measure();
 
-    if (typeof ResizeObserver === "undefined") return;
+    if (typeof ResizeObserver === "undefined") return undefined;
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();

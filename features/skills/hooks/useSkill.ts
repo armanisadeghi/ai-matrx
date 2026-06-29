@@ -56,10 +56,10 @@ export function useSkill({ skillRef }: UseSkillArgs): UseSkillResult {
   const skill = direct ?? (skillRef ? findInCacheBySkillId(byId, skillRef) : null);
 
   useEffect(() => {
-    if (!skillRef) return;
+    if (!skillRef) return undefined;
     // Skip if we already have the row in the cache; consumers can call
     // reload() if they need fresh data.
-    if (skill) return;
+    if (skill) return undefined;
     let cancelled = false;
     (async () => {
       setLoading(true);

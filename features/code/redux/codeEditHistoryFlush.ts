@@ -233,7 +233,7 @@ export function useFlushAIEditHistory(opts: UseFlushOptions = {}): void {
   // Debounced subscriber. Fires `debounceMs` after the latest write
   // mutation lands. Cheap to subscribe — selects a single ref.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
     let lastWrites = selectCodeEditHistory(store.getState()).pendingWrites;
     const unsubscribe = store.subscribe(() => {
       const writes = selectCodeEditHistory(store.getState()).pendingWrites;
@@ -258,7 +258,7 @@ export function useFlushAIEditHistory(opts: UseFlushOptions = {}): void {
   // finished and the user is back at idle — perfect time to ship the
   // batch even if the debounce window hasn't elapsed yet.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
     let lastCompleteCount = 0;
     const computeCompleteCount = (state: RootState): number => {
       const byId = state.activeRequests?.byRequestId ?? {};
@@ -291,8 +291,8 @@ export function useFlushAIEditHistory(opts: UseFlushOptions = {}): void {
   // dispatch with `force: true` so an in-flight flush doesn't block
   // the rescue dispatch.
   useEffect(() => {
-    if (!enabled) return;
-    if (typeof window === "undefined") return;
+    if (!enabled) return undefined;
+    if (typeof window === "undefined") return undefined;
 
     const flushNow = () => {
       const writes = selectCodeEditHistory(store.getState()).pendingWrites;

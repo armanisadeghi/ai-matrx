@@ -89,7 +89,7 @@ function ThumbnailItem({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];

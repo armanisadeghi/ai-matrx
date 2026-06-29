@@ -62,7 +62,7 @@ export default function MemoryManager() {
   // explicit owner filter as well.
   useEffect(() => {
     const userId = getUserId();
-    if (!userId) return;
+    if (!userId) return undefined;
     const channel = supabase
       .channel(`user-memory:${userId}`)
       .on(

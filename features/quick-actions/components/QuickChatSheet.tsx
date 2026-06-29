@@ -130,7 +130,7 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
   // poll briefly for the textarea instead of focusing once and missing it.
   const bodyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) return undefined;
     let tries = 0;
     const id = window.setInterval(() => {
       const ta =

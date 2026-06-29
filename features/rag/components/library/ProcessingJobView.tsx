@@ -442,7 +442,7 @@ function MetricsRail({
   // Re-render every second so elapsed / ETA stay current.
   const [, force] = useState(0);
   useEffect(() => {
-    if (job.status !== "running") return;
+    if (job.status !== "running") return undefined;
     const t = window.setInterval(() => force((n) => n + 1), 1000);
     return () => window.clearInterval(t);
   }, [job.status]);

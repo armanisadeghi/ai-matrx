@@ -1193,7 +1193,7 @@ function TextPane({
   // actively scrolling this pane (not during a code-driven animation).
   useEffect(() => {
     const root = containerRef.current;
-    if (!root) return;
+    if (!root) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
         // Only fire when the user is scrolling THIS pane.
@@ -1233,11 +1233,11 @@ function TextPane({
   // not whenever we were the last scrolled pane (old logic was too broad and
   // caused this pane to stop syncing with the PDF after the user touched it).
   useEffect(() => {
-    if (activePage == null) return;
+    if (activePage == null) return undefined;
     if (selfEmittedPageRef.current === activePage) {
       // We caused this — clear the flag and do nothing to avoid a loop.
       selfEmittedPageRef.current = null;
-      return;
+      return undefined;
     }
     isProgrammaticRef.current = true;
     pinPageToTop(activePage);

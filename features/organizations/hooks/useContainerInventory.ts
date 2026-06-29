@@ -58,7 +58,7 @@ export function useContainerInventory({
     if (!value) {
       setCounts({});
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
 

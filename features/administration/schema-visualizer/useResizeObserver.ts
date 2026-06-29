@@ -7,7 +7,7 @@ export function useResizeObserver() {
 
     useEffect(() => {
         const element = ref.current;
-        if (!element) return;
+        if (!element) return undefined;
 
         const observer = new ResizeObserver((entries) => {
             if (entries[0]) {

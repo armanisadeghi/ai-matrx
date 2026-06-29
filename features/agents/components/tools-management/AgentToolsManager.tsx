@@ -403,7 +403,7 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
 
   useEffect(() => {
     // Return early if externalTools is already available or if Redux is currently actively fetching it
-    if (externalTools || reduxToolsStatus === "loading") return;
+    if (externalTools || reduxToolsStatus === "loading") return undefined;
 
     let active = true;
     setIsFetchingMetadata(true);
@@ -760,7 +760,7 @@ function ServerToolsTab({
   }, [bundleOptions, activeSet]);
 
   useEffect(() => {
-    if (isEnabledTab || isBundlesTab) return;
+    if (isEnabledTab || isBundlesTab) return undefined;
 
     if (externalTools) {
       // Local mode
@@ -784,7 +784,7 @@ function ServerToolsTab({
         page_size: filtered.length,
         page_count: 1,
       });
-      return;
+      return undefined;
     }
 
     let active = true;
@@ -1504,7 +1504,7 @@ function OrphanedToolsBanner({
     if (orphanedTools.length === 0) {
       setResolved({});
       setLookupStatus("idle");
-      return;
+      return undefined;
     }
 
     let active = true;

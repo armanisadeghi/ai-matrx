@@ -204,9 +204,9 @@ export function AgentsGrid() {
   const ownedSentinelRef = useRef<HTMLDivElement>(null);
   const sharedSentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile) return undefined;
     const el = ownedSentinelRef.current;
-    if (!el || !hasMoreOwned) return;
+    if (!el || !hasMoreOwned) return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreList();
@@ -218,9 +218,9 @@ export function AgentsGrid() {
   }, [isMobile, hasMoreOwned, loadMoreList]);
 
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile) return undefined;
     const el = sharedSentinelRef.current;
-    if (!el || !hasMoreShared) return;
+    if (!el || !hasMoreShared) return undefined;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreShared();

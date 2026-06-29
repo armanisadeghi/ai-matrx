@@ -32,7 +32,7 @@ export default function DebugModulePanel({ moduleId, onClose }: DebugModulePanel
 
   // Close on Escape key
   useEffect(() => {
-    if (!moduleId) return;
+    if (!moduleId) return undefined;
     
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {

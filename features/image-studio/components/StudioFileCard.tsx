@@ -88,7 +88,7 @@ export function StudioFileCard({
     // `autoFocus` attached so we just flip into renaming mode and the next
     // microtask lands focus + selection on the input.
     React.useEffect(() => {
-        if (!registerRenameAction) return;
+        if (!registerRenameAction) return undefined;
         const action = () => {
             setRawBase(file.filenameBase);
             setRenaming(true);

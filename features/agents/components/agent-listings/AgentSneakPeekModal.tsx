@@ -247,7 +247,7 @@ export function AgentSneakPeekContent({
   // When the user opens Advanced, scroll the newly-revealed content into view
   // so they get visual feedback that something expanded below the fold.
   useEffect(() => {
-    if (!advancedOpen) return;
+    if (!advancedOpen) return undefined;
     const raf = requestAnimationFrame(() => {
       advancedContentRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -663,7 +663,7 @@ export function AgentSneakPeekModal({
 
   // Keyboard shortcuts — only when modal is open and nav is available.
   useEffect(() => {
-    if (!isOpen || !hasNav) return;
+    if (!isOpen || !hasNav) return undefined;
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;

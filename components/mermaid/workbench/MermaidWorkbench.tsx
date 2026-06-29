@@ -121,7 +121,7 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
   // ── Artifact identity: explicit id, or resolve via the source message ────
   const [canvasItemId, setCanvasItemId] = useState<string | undefined>(metadata?.canvasItemId);
   useEffect(() => {
-    if (canvasItemId || !metadata?.sourceMessageId) return;
+    if (canvasItemId || !metadata?.sourceMessageId) return undefined;
     let cancelled = false;
     canvasArtifactService.getByMessage(metadata.sourceMessageId).then((rows) => {
       if (cancelled) return;

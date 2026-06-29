@@ -175,7 +175,7 @@ const ExportDropdownMenu: React.FC<ExportDropdownMenuProps> = ({
         clearTimeout(stabilityTimerRef.current);
         stabilityTimerRef.current = null;
       }
-      return;
+      return undefined;
     }
 
     // Clear any existing timer

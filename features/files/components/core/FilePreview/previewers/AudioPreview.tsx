@@ -88,7 +88,7 @@ export function AudioPreview({
   // Keep playback state in sync with the underlying <audio>.
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) return undefined;
     const onLoadedMeta = () => {
       setDuration(audio.duration);
       setLoading(false);

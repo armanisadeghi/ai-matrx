@@ -122,7 +122,7 @@ export function useSharedStore<T>(
   const rerender = useCallback(() => force((n) => n + 1), []);
 
   useEffect(() => {
-    if (!key) return;
+    if (!key) return undefined;
     const entry = ensureEntry(store, key);
     entry.subscribers.add(rerender);
     // Kick off fetch if we don't have data + nothing is in flight.

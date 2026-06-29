@@ -110,10 +110,10 @@ export function RecordActionSheet({
   // Countdown → auto-send. Only runs once the transcript is ready and the user
   // hasn't chosen — picking during "preparing" cancels it before it starts.
   useEffect(() => {
-    if (!open || preparing || chosen) return;
+    if (!open || preparing || chosen) return undefined;
     if (secondsLeft <= 0) {
       choose(AUTO_RECORD_ACTION);
-      return;
+      return undefined;
     }
     const id = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearTimeout(id);

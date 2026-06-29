@@ -602,7 +602,7 @@ export function UniversalContextMenuV2({
   }, [enableFloatingIcon, selectedText, selectionRect, menuOpen, dropdownOpen]);
 
   React.useEffect(() => {
-    if (!showFloatingIcon) return;
+    if (!showFloatingIcon) return undefined;
     const handleScroll = () => {
       setShowFloatingIcon(false);
       setSelectionRect(null);

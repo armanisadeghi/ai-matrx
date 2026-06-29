@@ -75,7 +75,7 @@ export function ChatCollapsible({
   // content reflow, etc.) so the handle never animates off-screen.
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => clampCurrentPosition());
     ro.observe(el);
     return () => ro.disconnect();
@@ -83,7 +83,7 @@ export function ChatCollapsible({
 
   // Re-clamp on window resize.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return undefined;
     window.addEventListener("resize", clampCurrentPosition);
     return () => window.removeEventListener("resize", clampCurrentPosition);
   }, [clampCurrentPosition]);

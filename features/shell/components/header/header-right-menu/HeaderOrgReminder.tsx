@@ -57,7 +57,7 @@ export default function HeaderOrgReminder() {
   // Auto-hide countdown — runs only while shown, un-engaged, and picker closed.
   // setState happens in the timer callback (not synchronously), so no cascade.
   useEffect(() => {
-    if (!show || engaged || pickerOpen) return;
+    if (!show || engaged || pickerOpen) return undefined;
     const timer = setTimeout(() => {
       dismissedThisSession = true;
       setDismissed(true);

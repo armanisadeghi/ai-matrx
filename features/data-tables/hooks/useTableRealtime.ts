@@ -39,7 +39,7 @@ export function useTableRealtime(
   const enabled = options?.enabled ?? true;
 
   useEffect(() => {
-    if (!enabled || !tableId) return;
+    if (!enabled || !tableId) return undefined;
 
     const channel = supabase
       .channel(`udt_rows:${tableId}`)

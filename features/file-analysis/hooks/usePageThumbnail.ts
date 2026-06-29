@@ -85,7 +85,7 @@ export function usePageThumbnail(
   const [error, setError] = useState<string | null>(initial?.error ?? null);
 
   useEffect(() => {
-    if (!key || !enabled) return;
+    if (!key || !enabled) return undefined;
     let cancelled = false;
     let entry = cacheGet(key);
     if (!entry) {
@@ -96,12 +96,12 @@ export function usePageThumbnail(
       setPng(entry.png);
       setLoading(false);
       setError(null);
-      return;
+      return undefined;
     }
     if (entry.error && !entry.inflight) {
       setError(entry.error);
       setLoading(false);
-      return;
+      return undefined;
     }
 
     setLoading(true);

@@ -574,7 +574,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({
 
   // ── Resize observer ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) return undefined;
     const ro = new ResizeObserver(() => {
       const s = sessionRef.current;
       if (!s) return;

@@ -137,6 +137,7 @@ export function CreateTranscriptModal({
       }, 300);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isOpen, resetTranscription]);
 
   const handleUploadComplete = (results: UploadedFileResult[]) => {

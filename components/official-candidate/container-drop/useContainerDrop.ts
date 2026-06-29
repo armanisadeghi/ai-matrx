@@ -126,7 +126,7 @@ export function useContainerDrop(
   // Pointer event listeners (drag move + drag end)
   // -----------------------------------------------------------------------
   useEffect(() => {
-    if (!dragState) return;
+    if (!dragState) return undefined;
 
     const handleMove = (e: PointerEvent) => {
       const ref = dragRef.current;

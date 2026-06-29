@@ -66,8 +66,8 @@ export function useActiveThreadRestore(sessionId: string) {
   // the value we just read.
   const resolvedStagedId = resolveStagedId(chosenStageId, visibleIds);
   useEffect(() => {
-    if (!seededRef.current) return;
-    if (!session) return;
+    if (!seededRef.current) return undefined;
+    if (!session) return undefined;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       void dispatch(persistActiveThread(sessionId, resolvedStagedId));

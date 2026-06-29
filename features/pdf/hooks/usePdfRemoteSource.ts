@@ -78,7 +78,7 @@ export function usePdfRemoteSource(
   // Lightweight, PDF-scoped console visibility (the user asked to SEE what's
   // happening on every load). One line per resolution, with timing.
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId) return undefined;
     const startedAt =
       typeof performance !== "undefined" ? performance.now() : Date.now();
     // eslint-disable-next-line no-console

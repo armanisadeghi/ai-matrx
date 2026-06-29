@@ -46,7 +46,7 @@ export default function MobileCardSurface({
 
   // Escape to close
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

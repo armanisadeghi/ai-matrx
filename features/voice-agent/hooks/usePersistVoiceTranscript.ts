@@ -141,7 +141,7 @@ export function usePersistVoiceTranscript(
 
   // Finalize on unmount — non-blocking, best-effort.
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) return undefined;
     return () => {
       const s = store.getState();
       const convoId = selectVoiceConversationId(s, instanceId);

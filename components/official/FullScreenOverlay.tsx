@@ -191,7 +191,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
   // Using visualViewport.height instead of dvh/vh ensures the overlay
   // never extends behind the keyboard or beyond reachable screen area.
   useEffect(() => {
-    if (!isMobile || typeof window === "undefined") return;
+    if (!isMobile || typeof window === "undefined") return undefined;
 
     const updateHeight = () => {
       if (window.visualViewport) {
@@ -220,7 +220,7 @@ const FullScreenOverlay: React.FC<FullScreenOverlayProps> = ({
 
   // When keyboard opens, scroll the focused input into view within the overlay
   useEffect(() => {
-    if (!isMobile || !isOpen) return;
+    if (!isMobile || !isOpen) return undefined;
 
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement;

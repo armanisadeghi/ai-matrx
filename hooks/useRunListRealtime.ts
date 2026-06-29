@@ -49,7 +49,7 @@ export function useRunListRealtime({
   useEffect(() => {
     // Guard hard against a missing/empty id — an empty filter (`user_id=eq.`)
     // is malformed and would silently never match.
-    if (!enabled || typeof userId !== "string" || userId.length === 0) return;
+    if (!enabled || typeof userId !== "string" || userId.length === 0) return undefined;
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const fire = () => {

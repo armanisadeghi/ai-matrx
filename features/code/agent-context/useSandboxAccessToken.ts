@@ -76,7 +76,7 @@ export function useSandboxAccessToken({
       setTokenState(null);
       lastBoundRef.current = null;
       setError(null);
-      return;
+      return undefined;
     }
 
     const cached = tokenState;
@@ -87,7 +87,7 @@ export function useSandboxAccessToken({
       lastBoundRef.current?.scopesKey === scopesKey &&
       cached.exp - now > REFRESH_LEAD_SECONDS;
 
-    if (stillValid) return;
+    if (stillValid) return undefined;
 
     let cancelled = false;
     setIsMinting(true);
@@ -169,7 +169,7 @@ export function useSandboxAccessToken({
   // Auto-refresh slightly before `exp`. Separate effect so it doesn't
   // re-run the whole mint flow on every render.
   useEffect(() => {
-    if (!tokenState) return;
+    if (!tokenState) return undefined;
     const now = Math.floor(Date.now() / 1000);
     const secondsToRefresh = Math.max(
       tokenState.exp - now - REFRESH_LEAD_SECONDS,

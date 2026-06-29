@@ -37,7 +37,7 @@ export function useExtractionResultsForFile(
   useEffect(() => {
     if (!fileId) {
       setResults([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);
@@ -60,7 +60,7 @@ export function useExtractionResultsForFile(
   }, [fileId, refetchTick]);
 
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId) return undefined;
     const supabase = createClient();
     const channel = supabase
       .channel(`page-extraction-results:file:${fileId}`)

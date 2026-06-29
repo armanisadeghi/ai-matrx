@@ -85,7 +85,7 @@ const FloatingSheet: React.FC<FloatingSheetProps> = ({
     
     // Handle body scroll locking when sheet is open
     useEffect(() => {
-        if (!lockScroll) return;
+        if (!lockScroll) return undefined;
         if (isOpen) {
             // Store current scroll position before locking
             const scrollY = window.scrollY;

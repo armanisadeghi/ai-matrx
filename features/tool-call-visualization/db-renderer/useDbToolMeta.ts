@@ -30,7 +30,7 @@ export function useDbToolMeta(
   );
 
   useEffect(() => {
-    if (!toolName) return;
+    if (!toolName) return undefined;
     let cancelled = false;
     // `loadToolRenderer` is the SHARED, deduped fetch the body renderer already
     // fires; it populates the metadata cache the moment the row lands (before

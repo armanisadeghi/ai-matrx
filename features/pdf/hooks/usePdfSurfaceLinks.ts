@@ -105,13 +105,13 @@ export function usePdfSurfaceLinks(opts: {
   useEffect(() => {
     if (!opts.fileId && !opts.processedDocumentId) {
       setLoading(false);
-      return;
+      return undefined;
     }
     const hit = cache.get(key);
     if (hit && Date.now() - hit.at < TTL_MS) {
       setIds(hit.ids);
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     let p = inflight.get(key);

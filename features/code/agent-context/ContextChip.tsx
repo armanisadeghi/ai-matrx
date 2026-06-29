@@ -57,7 +57,7 @@ export const ContextChip: React.FC<ContextChipProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const handler = (e: MouseEvent) => {
       if (
         containerRef.current &&

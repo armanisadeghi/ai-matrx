@@ -40,7 +40,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     const checkOverflow = () => {
       setHasOverflow(el.scrollHeight > el.clientHeight + 2);
       setIsScrolledToBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 4);

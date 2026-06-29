@@ -144,7 +144,7 @@ export function useAgentUndoRedo({
   // would desync (it tracks DOM changes, not Redux). By calling
   // preventDefault() we suppress the browser's undo and dispatch our own.
   useEffect(() => {
-    if (!enabled || !agentId) return;
+    if (!enabled || !agentId) return undefined;
 
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMacLike() ? e.metaKey : e.ctrlKey;

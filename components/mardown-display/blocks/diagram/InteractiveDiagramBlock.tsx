@@ -799,8 +799,8 @@ const DiagramFlow: React.FC<{
 
   // Wait for ReactFlow to measure nodes, then force the same auto layout as the toolbar button.
   useEffect(() => {
-    if (!nodesInitialized || hasAutoLayoutApplied.current) return;
-    if (getNodes().length <= 1) return;
+    if (!nodesInitialized || hasAutoLayoutApplied.current) return undefined;
+    if (getNodes().length <= 1) return undefined;
 
     autoLayoutFrameRef.current = requestAnimationFrame(() => {
       autoLayoutFrameRef.current = requestAnimationFrame(() => {

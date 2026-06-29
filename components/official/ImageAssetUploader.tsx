@@ -948,7 +948,7 @@ export function ImageAssetUploader({
   });
 
   useEffect(() => {
-    if (!enablePaste || typeof window === "undefined") return;
+    if (!enablePaste || typeof window === "undefined") return undefined;
     const handler = (event: ClipboardEvent) => {
       if (!event.clipboardData?.items) return;
       for (const item of Array.from(event.clipboardData.items)) {

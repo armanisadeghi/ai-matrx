@@ -54,10 +54,10 @@ export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
   useEffect(() => {
     if (!active || !sourceDims) {
       setBox(null);
-      return;
+      return undefined;
     }
     const area = canvasAreaRef.current;
-    if (!area) return;
+    if (!area) return undefined;
 
     const findTargetCanvas = (): HTMLCanvasElement | null => {
       const canvases = area.querySelectorAll<HTMLCanvasElement>(

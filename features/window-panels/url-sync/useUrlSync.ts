@@ -19,7 +19,7 @@ export function useUrlSync(typeKey?: string, instanceId?: string, args?: Record<
     const argsKey = args ? Object.keys(args).sort().map(k => `${k}=${args[k]}`).join('&') : '';
 
     useEffect(() => {
-        if (!typeKey || !instanceId) return;
+        if (!typeKey || !instanceId) return undefined;
 
         dispatch(registerSyncEntry({ typeKey, instanceId, args }));
         

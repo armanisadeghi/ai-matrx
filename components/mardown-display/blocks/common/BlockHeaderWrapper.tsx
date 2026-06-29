@@ -110,7 +110,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
 
   // Close fullscreen on ESC (desktop & mobile)
   useEffect(() => {
-    if (!isFullScreen) return;
+    if (!isFullScreen) return undefined;
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsFullScreen(false);
     };

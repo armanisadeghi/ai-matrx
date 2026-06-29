@@ -114,8 +114,8 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
   const shouldConvert = isComplete && analysis.previewable && !!user?.id;
 
   useEffect(() => {
-    if (!shouldConvert) return;
-    if (convertedForRef.current === code) return;
+    if (!shouldConvert) return undefined;
+    if (convertedForRef.current === code) return undefined;
 
     convertedForRef.current = code;
     let cancelled = false;

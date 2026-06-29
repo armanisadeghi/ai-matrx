@@ -214,7 +214,7 @@ export function WindowPersistenceManager({
 
     if (!userId) {
       setHydrated(true);
-      return;
+      return undefined;
     }
 
     let cancelled = false;

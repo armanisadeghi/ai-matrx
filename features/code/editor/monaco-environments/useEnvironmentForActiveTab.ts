@@ -54,7 +54,7 @@ export function useEnvironmentForActiveTab(opts: {
           setActive(null);
         });
       }
-      return;
+      return undefined;
     }
 
     const env = resolveEnvironmentForTab(activeTab);
@@ -64,7 +64,7 @@ export function useEnvironmentForActiveTab(opts: {
     if (prevId === nextId) {
       // Active env unchanged; nothing to do (libs already mounted, options
       // already applied).
-      return;
+      return undefined;
     }
 
     let cancelled = false;

@@ -56,7 +56,7 @@ export const useClipboardPaste = ({ textareaRef, onPasteImage, disabled = false 
     // Add and remove the paste event listener
     useEffect(() => {
         const textarea = textareaRef.current;
-        if (!textarea) return;
+        if (!textarea) return undefined;
 
         textarea.addEventListener("paste", handlePaste as EventListener);
 

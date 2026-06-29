@@ -295,7 +295,7 @@ export function NoteSidebar({
 
   // ── Auto-scroll active note into view ──────────────────────────────
   useEffect(() => {
-    if (!activeTabId || !folderTreeRef.current) return;
+    if (!activeTabId || !folderTreeRef.current) return undefined;
     const el = folderTreeRef.current.querySelector(
       `[data-note-id="${activeTabId}"]`,
     );
@@ -304,7 +304,7 @@ export function NoteSidebar({
 
   // ── Auto-scroll first search result into view ─────────────────────
   useEffect(() => {
-    if (!searchQuery || !folderTreeRef.current) return;
+    if (!searchQuery || !folderTreeRef.current) return undefined;
     // Small delay to let the filtered list render
     const timer = setTimeout(() => {
       const firstNote = folderTreeRef.current?.querySelector("[data-note-id]");
@@ -317,7 +317,7 @@ export function NoteSidebar({
 
   // ── Close context menus on outside click ──────────────────────────
   useEffect(() => {
-    if (!folderCtx && !noteCtx) return;
+    if (!folderCtx && !noteCtx) return undefined;
     const handler = (e: MouseEvent) => {
       if (
         ctxMenuRef.current &&

@@ -324,10 +324,10 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   // 750ms matches the user's "perceptible but not intrusive" threshold.
   const lastPersistedRef = useRef<string>("");
   useEffect(() => {
-    if (!conversationId || !messageId || !quizState) return;
+    if (!conversationId || !messageId || !quizState) return undefined;
     // Serialize for cheap identity check — avoids a write when nothing changed.
     const snapshot = JSON.stringify({ quizState, showResults });
-    if (snapshot === lastPersistedRef.current) return;
+    if (snapshot === lastPersistedRef.current) return undefined;
     const timer = setTimeout(() => {
       lastPersistedRef.current = snapshot;
       void patchBlock({

@@ -99,7 +99,7 @@ const FileTreeBody: React.FC<{ rootPath: string; refreshKey: number }> = ({
     if (!searchActive) {
       setSearchResults(null);
       setSearching(false);
-      return;
+      return undefined;
     }
     if (!filesystem.searchPaths) {
       // Client-side fallback: walk currently-loaded root names. Limited but
@@ -110,7 +110,7 @@ const FileTreeBody: React.FC<{ rootPath: string; refreshKey: number }> = ({
         .filter((p) => p.toLowerCase().includes(q));
       setSearchResults(hits);
       setSearching(false);
-      return;
+      return undefined;
     }
 
     setSearching(true);

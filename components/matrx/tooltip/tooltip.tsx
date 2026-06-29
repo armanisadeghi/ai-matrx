@@ -41,6 +41,8 @@ const Tooltip = ({ children, arrowDirection, offset }) => {
                 return { left: '-4px', top: arrowPosition };
             case 'right':
                 return { right: '-4px', top: arrowPosition };
+            default:
+                return { top: '-3px', left: arrowPosition };
         }
     };
 

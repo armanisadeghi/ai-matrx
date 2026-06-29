@@ -296,7 +296,7 @@ export default function PdfDocumentRenderer({
   // Catches the initial measurement on the same frame as mount.
   useLayoutEffect(() => {
     const node = containerRef.current;
-    if (!node) return;
+    if (!node) return undefined;
     const w = node.clientWidth;
     const h = node.clientHeight;
     setContainerSize((prev) =>
@@ -323,14 +323,14 @@ export default function PdfDocumentRenderer({
   // was hidden during initial mount" case where the ResizeObserver
   // didn't fire on the display:none → block transition.
   useEffect(() => {
-    if (containerSize.width > 0 && containerSize.height > 0) return;
+    if (containerSize.width > 0 && containerSize.height > 0) return undefined;
     const node = containerRef.current;
-    if (!node) return;
+    if (!node) return undefined;
     const w = node.clientWidth;
     const h = node.clientHeight;
     if (w > 0 && h > 0) {
       setContainerSize({ width: w, height: h });
-      return;
+      return undefined;
     }
     // Schedule another check on the next frame in case the layout is
     // mid-resolution. Animation frame batches naturally so this
@@ -567,7 +567,7 @@ export default function PdfDocumentRenderer({
 
   useEffect(() => {
     const node = containerRef.current;
-    if (!node) return;
+    if (!node) return undefined;
 
     const handleWheel = (e: WheelEvent) => {
       const numPages = numPagesRef.current;

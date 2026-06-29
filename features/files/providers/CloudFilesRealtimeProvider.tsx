@@ -58,7 +58,7 @@ export function CloudFilesRealtimeProvider({
   useEffect(() => {
     if (!userId) {
       dispatch(detachCloudFilesRealtime());
-      return;
+      return undefined;
     }
 
     dispatch(attachCloudFilesRealtime(userId));

@@ -21,7 +21,7 @@ export function PdfBinaryResult({ result }: Props) {
   useEffect(() => {
     if (!result) {
       setObjectUrl(null);
-      return;
+      return undefined;
     }
     const url = URL.createObjectURL(result.blob);
     setObjectUrl(url);

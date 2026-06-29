@@ -620,7 +620,7 @@ export function useStudioRun(runId: string): UseStudioRun {
   // Heartbeat watchdog: while a stream is open but silent past STALL_MS, mark
   // the run stalled and settle lingering "queued" assets to failed.
   useEffect(() => {
-    if (!streaming) return;
+    if (!streaming) return undefined;
     const id = setInterval(() => {
       if (
         lastHeartbeatRef.current &&

@@ -212,7 +212,7 @@ export function EditModeShell({
   useEffect(() => {
     if (!activeUrl) {
       setSourceDims(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     const img = new Image();

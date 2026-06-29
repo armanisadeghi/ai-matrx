@@ -84,6 +84,7 @@ export default function ZipCodeMap({
       darkModeQuery.addEventListener("change", handleChange);
       return () => darkModeQuery.removeEventListener("change", handleChange);
     }
+    return undefined;
   }, []);
 
   // Gate map render until after client mount (react-leaflet is ssr:false).
@@ -96,7 +97,7 @@ export default function ZipCodeMap({
   useEffect(() => {
     if (data.length === 0) {
       setZipLocations([]);
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -210,6 +211,7 @@ export default function ZipCodeMap({
       }, 100);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isFullscreen]);
 
   // Color scale with selected method and scheme

@@ -118,7 +118,7 @@ export default function ThreadAgentPanel({
     .join(",");
   useEffect(() => {
     const ids = userFileIds ? userFileIds.split(",") : [];
-    if (ids.length === 0) return;
+    if (ids.length === 0) return undefined;
     const ac = new AbortController();
     void prefetchThreadFileSignals({
       fileIds: ids,
@@ -194,7 +194,7 @@ export default function ThreadAgentPanel({
   // and emits `tool_delegated` when one is called (routed to the war-room
   // dispatcher, which gates the write behind the user's approval).
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) return undefined;
     registerWarRoomToolBinding(conversationId, threadId);
     dispatch(
       setClientTools({

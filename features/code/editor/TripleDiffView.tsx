@@ -90,10 +90,10 @@ export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
   const lastReadKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!snapshot || matchingTab) return;
+    if (!snapshot || matchingTab) return undefined;
     // Only re-read when the snapshot or filesystem identity changes.
     const readKey = `${snapshot.fileAdapter}:${snapshot.filePath}@${filesystem.id}`;
-    if (lastReadKeyRef.current === readKey) return;
+    if (lastReadKeyRef.current === readKey) return undefined;
     lastReadKeyRef.current = readKey;
 
     setDiskContent(null);
@@ -103,7 +103,7 @@ export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
     // current workspace filesystem; otherwise we'd be reading the
     // wrong bytes.
     if (snapshot.fileAdapter !== filesystem.id) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     filesystem

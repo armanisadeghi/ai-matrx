@@ -81,7 +81,7 @@ export function WorkbookCursorOverlay({
   useEffect(() => {
     const api = univerAPI as FUniverLike | null | undefined;
     const container = containerRef.current;
-    if (!api) return;
+    if (!api) return undefined;
     let scrollDisposer: { dispose(): void } | null | undefined;
 
     const subscribeActive = () => {

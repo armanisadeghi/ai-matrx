@@ -46,7 +46,7 @@ export function useTranscriptsHubGrouping(
       setRecordings([]);
       setHydratedParents([]);
       setLoadingRecordings(false);
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -80,7 +80,7 @@ export function useTranscriptsHubGrouping(
   const missingParentIdsKey = missingParentIds.join(",");
 
   useEffect(() => {
-    if (!groupByParent || missingParentIds.length === 0) return;
+    if (!groupByParent || missingParentIds.length === 0) return undefined;
 
     let cancelled = false;
     void fetchHubSessionItemsByIds(missingParentIds).then((parents) => {

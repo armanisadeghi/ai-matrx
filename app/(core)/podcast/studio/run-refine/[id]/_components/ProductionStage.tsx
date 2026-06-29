@@ -43,7 +43,7 @@ export function ProductionStage({
   // Rotate the cover showcase among the covers that have ACTUALLY landed.
   const [coverTick, setCoverTick] = useState(0);
   useEffect(() => {
-    if (readyImages.length <= 1) return;
+    if (readyImages.length <= 1) return undefined;
     const id = setInterval(() => setCoverTick((t) => t + 1), COVER_ROTATE_MS);
     return () => clearInterval(id);
   }, [readyImages.length]);

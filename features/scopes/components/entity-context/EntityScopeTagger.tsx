@@ -169,9 +169,9 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
     {},
   );
   useEffect(() => {
-    if (!gateKey || !orgId || !uncontrolledEntityType) return;
+    if (!gateKey || !orgId || !uncontrolledEntityType) return undefined;
     const entry = getEntry(uncontrolledEntityType);
-    if (!entry) return;
+    if (!entry) return undefined;
     let cancelled = false;
     (async () => {
       const setting = await getOrgModuleSetting(orgId, moduleKey(entry));

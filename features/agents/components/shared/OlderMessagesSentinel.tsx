@@ -89,7 +89,7 @@ export function OlderMessagesSentinel({
   useEffect(() => {
     const sentinel = sentinelRef.current;
     const scrollEl = scrollRef.current;
-    if (!sentinel || !scrollEl) return;
+    if (!sentinel || !scrollEl) return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {

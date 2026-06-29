@@ -150,7 +150,7 @@ export function CodePreview({
   const language = useMemo(() => detectLanguage(fileName), [fileName]);
 
   useEffect(() => {
-    if (!blob) return;
+    if (!blob) return undefined;
     let cancelled = false;
     setError(null);
     setText(null);

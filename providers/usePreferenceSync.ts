@@ -11,7 +11,7 @@ export function usePreferenceSync() {
     const preferences = useAppSelector((state) => state.userPreferences);
 
     useEffect(() => {
-        if (!userId) return;
+        if (!userId) return undefined;
 
         return () => {
             void ensureOrgId(undefined).then((organizationId) =>

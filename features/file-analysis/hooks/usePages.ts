@@ -83,7 +83,7 @@ export function usePages(fileId: string | null): UsePagesResult {
   const { data, loading, error, refetch } = useSharedStore(store, fileId);
 
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId) return undefined;
     attachRealtime(fileId);
     return () => detachRealtime(fileId);
   }, [fileId]);

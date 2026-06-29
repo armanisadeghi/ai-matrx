@@ -30,7 +30,7 @@ export function useEnsureCloudFile(fileId: string | null | undefined): void {
   );
 
   useEffect(() => {
-    if (!fileId || existing || isSyntheticId(fileId)) return;
+    if (!fileId || existing || isSyntheticId(fileId)) return undefined;
     let cancelled = false;
     (async () => {
       try {

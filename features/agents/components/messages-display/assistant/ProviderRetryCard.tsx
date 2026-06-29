@@ -105,7 +105,7 @@ export function ProviderRetryCard({
       : `Retry ${nextAttempt}`;
 
   useEffect(() => {
-    if (!scheduled || retryTime == null) return;
+    if (!scheduled || retryTime == null) return undefined;
     const timer = window.setInterval(() => setNow(Date.now()), 500);
     return () => window.clearInterval(timer);
   }, [scheduled, retryTime]);

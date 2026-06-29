@@ -361,7 +361,7 @@ export const ProTextarea = React.forwardRef<
     // Resolve the chosen agent's display name for the picker label — only once
     // an agent-action view is actually open.
     useEffect(() => {
-      if (menuMode === "menu" || !selectedAgent) return;
+      if (menuMode === "menu" || !selectedAgent) return undefined;
       let cancelled = false;
       void (async () => {
         const { data } = await supabase

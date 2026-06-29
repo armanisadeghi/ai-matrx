@@ -37,7 +37,7 @@ export function useFileAs<T extends FileTarget>(
     if (!source) {
       setResult(null);
       setStatus("idle");
-      return;
+      return undefined;
     }
     let cancelled = false;
     setStatus("resolving");

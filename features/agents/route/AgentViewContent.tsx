@@ -232,17 +232,17 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
   useEffect(() => {
     if (!agent) {
       setCurrentVersionId(null);
-      return;
+      return undefined;
     }
 
     if (agent.isVersion) {
       setCurrentVersionId(agent.id);
-      return;
+      return undefined;
     }
 
     if (agent.version == null) {
       setCurrentVersionId(null);
-      return;
+      return undefined;
     }
 
     let cancelled = false;
@@ -267,17 +267,17 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
   useEffect(() => {
     if (!category) {
       setCategoryLabel(null);
-      return;
+      return undefined;
     }
 
     if (!isUuid(category)) {
       setCategoryLabel(category);
-      return;
+      return undefined;
     }
 
     if (categoryRecord?.label) {
       setCategoryLabel(categoryRecord.label);
-      return;
+      return undefined;
     }
 
     let cancelled = false;

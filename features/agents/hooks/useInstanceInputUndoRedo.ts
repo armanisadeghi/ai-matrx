@@ -104,7 +104,7 @@ export function useInstanceInputUndoRedo({
   }, [dispatch, conversationId, canRedo, redoUserValues]);
 
   useEffect(() => {
-    if (!enabled || !conversationId) return;
+    if (!enabled || !conversationId) return undefined;
 
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMacLike() ? e.metaKey : e.ctrlKey;

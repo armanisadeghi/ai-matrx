@@ -53,7 +53,7 @@ export function useFileSearch(
   const foldersById = useAppSelector(selectAllFoldersMap);
 
   useEffect(() => {
-    if (query === debounced) return;
+    if (query === debounced) return undefined;
     const t = setTimeout(() => setDebounced(query), debounceMs);
     return () => clearTimeout(t);
   }, [query, debounced, debounceMs]);

@@ -48,7 +48,7 @@ export function CompactVersionPicker({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!agentId) return;
+    if (!agentId) return undefined;
     let cancelled = false;
     setLoading(true);
     dispatch(fetchAgentVersionHistory({ agentId, limit: 50, offset: 0 }))

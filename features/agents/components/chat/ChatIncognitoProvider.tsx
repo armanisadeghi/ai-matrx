@@ -52,7 +52,7 @@ export function ChatIncognitoProvider({
 
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".shell-root");
-    if (!root) return;
+    if (!root) return undefined;
 
     if (canUseIncognito && isIncognito) {
       root.dataset.chatIncognito = "true";

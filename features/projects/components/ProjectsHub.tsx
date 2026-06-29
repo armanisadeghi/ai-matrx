@@ -212,7 +212,7 @@ export function ProjectsHub({
     const ids = projects.map((p) => p.id);
     if (ids.length === 0) {
       setStats(new Map());
-      return;
+      return undefined;
     }
     (async () => {
       const { data } = await workspaceDb(supabase)
@@ -252,11 +252,11 @@ export function ProjectsHub({
     let cancelled = false;
     if (!orgParam) {
       setOrgFilterId(null);
-      return;
+      return undefined;
     }
     if (UUID_RE.test(orgParam)) {
       setOrgFilterId(orgParam);
-      return;
+      return undefined;
     }
     getOrganizationBySlugOrId(orgParam).then((o) => {
       if (!cancelled) setOrgFilterId(o?.id ?? null);
@@ -273,7 +273,7 @@ export function ProjectsHub({
     let cancelled = false;
     if (!scopeParam) {
       setScopeProjectIds(null);
-      return;
+      return undefined;
     }
     (async () => {
       const res = await scopesService.listEntitiesByScopes({

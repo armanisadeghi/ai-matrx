@@ -45,7 +45,7 @@ export default function GlassDropdown<T extends string = string>(props: GlassDro
 
   // Close on click-outside
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         onClose();
@@ -61,7 +61,7 @@ export default function GlassDropdown<T extends string = string>(props: GlassDro
 
   // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

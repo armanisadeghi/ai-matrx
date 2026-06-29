@@ -80,7 +80,7 @@ export function CanvasSideSheetInner() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (!isResizing) return;
+    if (!isResizing) return undefined;
     const onMove = (e: MouseEvent) => {
       const next = window.innerWidth - e.clientX;
       const clamped = Math.min(Math.max(next, MIN_WIDTH), MAX_WIDTH);

@@ -26,7 +26,7 @@ const StickyButtons: React.FC<StickyButtonsProps> = ({
   const canCollapse = linesCount > 5;
   
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) return undefined;
     
     const updatePosition = () => {
       const containerRect = containerRef.current?.getBoundingClientRect();

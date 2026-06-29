@@ -192,7 +192,7 @@ export function useTriggerScheduler({
 
   // ── Tick loop: cleanup with silence-detection window.
   useEffect(() => {
-    if (!sessionId || !isOwnedRecording) return;
+    if (!sessionId || !isOwnedRecording) return undefined;
     const id = setInterval(() => {
       if (isPausedRef.current) return;
       const r = cleaningRef.current;
@@ -213,7 +213,7 @@ export function useTriggerScheduler({
   //    `conceptIntervalMs` past the last flush. The thunk itself short-
   //    circuits when there's no new raw text since the last successful pass.
   useEffect(() => {
-    if (!sessionId || !isOwnedRecording) return;
+    if (!sessionId || !isOwnedRecording) return undefined;
     const id = setInterval(() => {
       if (isPausedRef.current) return;
       const r = conceptRef.current;
@@ -228,7 +228,7 @@ export function useTriggerScheduler({
   // ── Tick loop: Column 4 module. Same shape as the concept ticker.
   //    The module's default interval can be overridden via session settings.
   useEffect(() => {
-    if (!sessionId || !isOwnedRecording) return;
+    if (!sessionId || !isOwnedRecording) return undefined;
     const id = setInterval(() => {
       if (isPausedRef.current) return;
       const r = moduleRef.current;

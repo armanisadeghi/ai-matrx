@@ -84,7 +84,7 @@ export function CodeEditorContextMenu({
     // Track selection live so the menu can surface "selection-only" shortcuts.
     useEffect(() => {
         const ed = editorRef.current;
-        if (!ed) return;
+        if (!ed) return undefined;
 
         const sync = () => {
             const selection = ed.getSelection();

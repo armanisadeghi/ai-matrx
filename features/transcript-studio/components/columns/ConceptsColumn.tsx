@@ -109,7 +109,7 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
   const sync = useScrollSyncOptional();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!sync) return;
+    if (!sync) return undefined;
     sync.registerColumn(COLUMN_IDS.concepts, scrollRef.current);
     return () => sync.registerColumn(COLUMN_IDS.concepts, null);
   }, [sync]);

@@ -54,7 +54,7 @@ export function useDataStoreGrants(storeId: string | null) {
   useEffect(() => {
     if (!storeId) {
       setGrants([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

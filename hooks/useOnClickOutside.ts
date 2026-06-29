@@ -20,7 +20,7 @@ function useOnClickOutside<T extends HTMLElement = HTMLElement>(
   const ref = useRef<T>(null);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) return undefined;
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Element;

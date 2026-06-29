@@ -119,9 +119,9 @@ export function CloudFileEditor({
       setText(null);
       setOriginal(null);
       setSaveError(null);
-      return;
+      return undefined;
     }
-    if (!blob) return;
+    if (!blob) return undefined;
     let cancelled = false;
     blob.text().then((value) => {
       if (cancelled) return;

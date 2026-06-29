@@ -71,7 +71,7 @@ export function ResizableCanvas({
 
   // Setup mouse event listeners for resizing
   useEffect(() => {
-    if (!isResizing || disableResize) return;
+    if (!isResizing || disableResize) return undefined;
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);

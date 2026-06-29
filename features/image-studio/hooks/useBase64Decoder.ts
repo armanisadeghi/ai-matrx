@@ -133,7 +133,7 @@ export function useBase64Decoder(
       revokeCurrentPreview();
       setDecoded(null);
       setDecodeError(null);
-      return;
+      return undefined;
     }
 
     const result: DecodeResult = decodeBase64Image(input);
@@ -142,7 +142,7 @@ export function useBase64Decoder(
       revokeCurrentPreview();
       setDecoded(null);
       setDecodeError(decodeErr);
-      return;
+      return undefined;
     }
 
     revokeCurrentPreview();

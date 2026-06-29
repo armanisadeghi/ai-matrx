@@ -87,13 +87,13 @@ export function usePicklists() {
 
   // ── Items load on active change ─────────────────────────────────────────
   useEffect(() => {
-    if (!activeListId) return;
+    if (!activeListId) return undefined;
     if (itemsCache.current[activeListId]) {
       setItemsByList((m) => ({
         ...m,
         [activeListId]: itemsCache.current[activeListId]!,
       }));
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

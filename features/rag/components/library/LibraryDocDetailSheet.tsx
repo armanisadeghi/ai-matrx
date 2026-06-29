@@ -1075,7 +1075,7 @@ function SheetChunksPanel({
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (fallbackSamples.length === 0) return;
+    if (fallbackSamples.length === 0) return undefined;
     let cancelled = false;
     setLoading(true);
     setFetchError(null);

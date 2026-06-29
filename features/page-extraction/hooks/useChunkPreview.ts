@@ -80,7 +80,7 @@ export function useChunkPreview(opts: {
   useEffect(() => {
     if (!processedDocumentId) {
       setPages([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

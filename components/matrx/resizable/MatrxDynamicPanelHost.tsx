@@ -49,7 +49,7 @@ export function MatrxDynamicPanelHost({
   contentClassName = "px-3 pb-4",
 }: MatrxDynamicPanelHostProps) {
   useEffect(() => {
-    if (!open || dismissDisabled) return;
+    if (!open || dismissDisabled) return undefined;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();

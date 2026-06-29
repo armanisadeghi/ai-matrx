@@ -29,7 +29,7 @@ export default function FeedbackHighlight({
   // unmounts this component permanently. Engine debounces the Supabase
   // write automatically (≤250ms).
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) return undefined;
     const timer = setTimeout(() => {
       dispatch(
         setModulePreferences({

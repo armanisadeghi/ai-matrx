@@ -131,7 +131,7 @@ export function useDataStores(): {
   const refresh = useCallback(() => setBumper((b) => b + 1), []);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -219,7 +219,7 @@ export function useDataStoreDetail(storeId: string | null) {
     if (!storeId) {
       setStore(null);
       setMembers([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);
@@ -415,7 +415,7 @@ export function useDataStoreMembersRich(storeId: string | null) {
   useEffect(() => {
     if (!storeId) {
       setMembers([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);
@@ -479,7 +479,7 @@ export function useDocumentDataStores(processedDocumentId: string | null) {
   useEffect(() => {
     if (!processedDocumentId || list.stores.length === 0) {
       setMemberOf(new Set());
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

@@ -92,7 +92,7 @@ export function RecentChangeOverlay({
   useLayoutEffect(() => {
     const ta = textareaRef.current;
     const overlay = overlayRef.current;
-    if (!ta || !overlay) return;
+    if (!ta || !overlay) return undefined;
     syncStyles(overlay, ta);
     const ro = new ResizeObserver(() => syncStyles(overlay, ta));
     ro.observe(ta);
@@ -102,7 +102,7 @@ export function RecentChangeOverlay({
   useEffect(() => {
     const ta = textareaRef.current;
     const overlay = overlayRef.current;
-    if (!ta || !overlay) return;
+    if (!ta || !overlay) return undefined;
     const onScroll = () => {
       overlay.scrollTop = ta.scrollTop;
       overlay.scrollLeft = ta.scrollLeft;

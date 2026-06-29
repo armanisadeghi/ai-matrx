@@ -66,7 +66,7 @@ export const DbEmitRendererImpl: React.FC<DbEmitRendererImplProps> = ({
   // cached yet. The shared in-flight promise in the cache dedups across sibling
   // emissions; the `cancelled` guard avoids a state update after unmount.
   useEffect(() => {
-    if (!componentRef || component || resolved || fetchedRef.current) return;
+    if (!componentRef || component || resolved || fetchedRef.current) return undefined;
     fetchedRef.current = true;
 
     let cancelled = false;

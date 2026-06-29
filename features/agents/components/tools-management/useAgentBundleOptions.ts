@@ -50,7 +50,7 @@ export function useAgentBundleOptions(): UseAgentBundleOptions {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (cached) return;
+    if (cached) return undefined;
     let active = true;
     load()
       .then((opts) => {

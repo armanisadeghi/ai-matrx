@@ -30,6 +30,7 @@ export function useSidebarState() {
         resizeObserver.disconnect();
       };
     }
+    return undefined;
   }, []);
 
   return { isCollapsed };

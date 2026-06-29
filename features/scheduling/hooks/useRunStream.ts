@@ -31,7 +31,7 @@ export function useRunStream(taskId: string | null | undefined) {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!taskId) return;
+    if (!taskId) return undefined;
 
     const channel = supabase
       .channel(`sch_run-${taskId}`)

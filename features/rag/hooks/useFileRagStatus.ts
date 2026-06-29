@@ -75,7 +75,7 @@ export function useFileRagStatus(
   // `cld_file_rag_jobs` row invalidates the query, which re-reads the merged
   // `/files/{id}/rag-status` contract exactly once per real transition.
   useEffect(() => {
-    if (!enabled || !fileId) return;
+    if (!enabled || !fileId) return undefined;
     return subscribeToFileRagJob(fileId, () => {
       void qc.invalidateQueries({ queryKey: ragJobKeys.fileStatus(fileId) });
     });

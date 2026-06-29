@@ -131,7 +131,7 @@ function SvgSourceView({ fileId }: SvgSourceViewProps) {
   useEffect(() => {
     setSource(null);
     setReadError(null);
-    if (!blob) return;
+    if (!blob) return undefined;
     let cancelled = false;
     blob
       .text()

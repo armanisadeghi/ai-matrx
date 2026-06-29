@@ -530,7 +530,7 @@ function OrgDetailDialog({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId) return undefined;
     setLoading(true);
     setError(null);
     setDetail(null);
@@ -717,7 +717,7 @@ function BatchDetailDialog({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!batchRowId) return;
+    if (!batchRowId) return undefined;
     setLoading(true);
     setError(null);
     setDetail(null);

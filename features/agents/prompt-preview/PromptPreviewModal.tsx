@@ -41,7 +41,7 @@ export function PromptPreviewModal({
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

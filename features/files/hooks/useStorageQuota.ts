@@ -158,7 +158,7 @@ export function useStorageQuota(
     if (!active) {
       setData(null);
       setError(null);
-      return;
+      return undefined;
     }
     void fetchOnce(false);
     return () => {

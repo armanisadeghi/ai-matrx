@@ -350,7 +350,7 @@ export function MessagingInitializer() {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
 
     const channel = supabase.channel(`dm_global:${userId}`);
 

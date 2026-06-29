@@ -125,7 +125,7 @@ export function FindMatchOverlay({
   useLayoutEffect(() => {
     const ta = textareaRef.current;
     const overlay = overlayRef.current;
-    if (!ta || !overlay) return;
+    if (!ta || !overlay) return undefined;
 
     syncStyles(overlay, ta);
 
@@ -143,7 +143,7 @@ export function FindMatchOverlay({
   useEffect(() => {
     const ta = textareaRef.current;
     const overlay = overlayRef.current;
-    if (!ta || !overlay) return;
+    if (!ta || !overlay) return undefined;
 
     const onScroll = () => {
       overlay.scrollTop = ta.scrollTop;

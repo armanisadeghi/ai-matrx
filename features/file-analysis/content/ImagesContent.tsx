@@ -72,7 +72,7 @@ function ImageCard({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) return undefined;
     const obs = new IntersectionObserver(
       (e) => {
         if (e[0]?.isIntersecting) setVisible(true);

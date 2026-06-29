@@ -76,7 +76,7 @@ export function usePageVerificationSummary(
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
-    if (!processedDocumentId) return;
+    if (!processedDocumentId) return undefined;
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: null }));
 

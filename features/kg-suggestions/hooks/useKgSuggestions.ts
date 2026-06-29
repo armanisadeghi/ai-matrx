@@ -120,13 +120,13 @@ export function useKgSuggestions(
   }, [dispatch, key]);
 
   useEffect(() => {
-    if (!autoFetch) return;
+    if (!autoFetch) return undefined;
     // Cross-instance dedupe: many surfaces mount the SAME filter key at once.
     // Read FRESH status from the store so the second mounting instance sees the
     // first's `loading`/`success` and skips. `refresh()` still force-refetches.
     const entry = store.getState().kgSuggestions.lists[key];
     const liveStatus: KgListStatus = entry?.status ?? "idle";
-    if (liveStatus === "loading" || liveStatus === "success") return;
+    if (liveStatus === "loading" || liveStatus === "success") return undefined;
     refresh();
     return () => abortRef.current?.abort();
   }, [autoFetch, refresh, key, store]);

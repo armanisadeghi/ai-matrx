@@ -64,7 +64,7 @@ export function ListManagerFloatingWorkspace() {
   // Optionally listen for changes in the active list items (when users edit them using Server Actions)
   // Usually the list will be updated because server actions revalidate, but here we can poll it.
   useEffect(() => {
-    if (!activeListId) return;
+    if (!activeListId) return undefined;
     const interval = setInterval(() => {
       getListWithItems(activeListId).then(data => setActiveListData(data));
       fetchLists(); // grab lists too so count updates

@@ -53,7 +53,7 @@ export function useKgCytoscape(args: UseKgCytoscapeArgs): KgController {
     registerKgCytoscapeExtensions();
 
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) return undefined;
 
     // Defensive: tear down any instance still bound to this container.
     if (cyRef.current) {

@@ -32,7 +32,7 @@ export function usePublicAuthSync() {
 
     useEffect(() => {
         // Only run once
-        if (hasRun.current) return;
+        if (hasRun.current) return undefined;
         hasRun.current = true;
 
         const syncAuth = async () => {

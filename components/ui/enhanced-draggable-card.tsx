@@ -424,6 +424,7 @@ export const DropContainer: React.FC<DropContainerProps> = ({
       // Clean up on unmount
       return () => unregisterContainer(id);
     }
+    return undefined;
   }, [id, label, registerContainer, unregisterContainer, updateBounds]);
   
   // Update bounds more aggressively to ensure accurate positioning

@@ -135,7 +135,7 @@ export function useQuizPersistence(
    * Auto-save effect - only save when state actually changes
    */
   useEffect(() => {
-    if (!autoSave) return;
+    if (!autoSave) return undefined;
 
     // Serialize state to detect actual changes (ignore functions/refs)
     const currentStateSerialized = JSON.stringify({
@@ -146,7 +146,7 @@ export function useQuizPersistence(
 
     // Skip if state hasn't actually changed
     if (previousStateRef.current === currentStateSerialized) {
-      return;
+      return undefined;
     }
 
     previousStateRef.current = currentStateSerialized;

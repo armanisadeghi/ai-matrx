@@ -461,7 +461,7 @@ function SharedChatsSection({
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || hasFetched) return;
+    if (!isOpen || hasFetched) return undefined;
     let cancelled = false;
     setIsLoading(true);
     (async () => {
@@ -628,7 +628,7 @@ export function SsrSidebarChats({
   // ── Load-more on scroll ─────────────────────────────────────────────────────
   const bottomRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!hasMore || isLoading || !bottomRef.current) return;
+    if (!hasMore || isLoading || !bottomRef.current) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {

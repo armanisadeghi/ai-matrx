@@ -17,7 +17,7 @@ export function useMonacoTheme(): boolean {
   });
 
   useEffect(() => {
-    if (typeof document === "undefined") return;
+    if (typeof document === "undefined") return undefined;
     const update = () =>
       setIsDark(document.documentElement.classList.contains("dark"));
     update();

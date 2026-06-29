@@ -162,7 +162,7 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
   const shortcutReady = generatorShortcut !== null;
 
   useEffect(() => {
-    if (shortcutReady) return;
+    if (shortcutReady) return undefined;
     let cancelled = false;
     setShortcutLoadError(null);
     dispatch(ensureShortcutLoaded(GENERATOR_SHORTCUT.id))

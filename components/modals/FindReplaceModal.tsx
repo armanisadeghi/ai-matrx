@@ -85,7 +85,7 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
 
   // Track changes to textarea content to re-trigger search
   useEffect(() => {
-    if (!isOpen || !targetElement || searchScope === 'page') return;
+    if (!isOpen || !targetElement || searchScope === 'page') return undefined;
     
     // Set initial content
     setTargetContent(targetElement.value);
@@ -113,7 +113,7 @@ export function FindReplaceModal({ isOpen, onClose, targetElement, onReplace }: 
     if (!findText) {
       setMatches([]);
       setCurrentIndex(-1);
-      return;
+      return undefined;
     }
     
     // Debounce search to allow user to finish typing

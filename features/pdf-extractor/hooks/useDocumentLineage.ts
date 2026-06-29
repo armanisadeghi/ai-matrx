@@ -202,7 +202,7 @@ export function useDocumentLineage({
   const refresh = useCallback(() => setBumper((b) => b + 1), []);
 
   useEffect(() => {
-    if (!enabled || !docId) return;
+    if (!enabled || !docId) return undefined;
     let cancelled = false;
     setLoading(true);
     setError(null);

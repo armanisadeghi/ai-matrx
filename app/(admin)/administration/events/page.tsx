@@ -70,7 +70,7 @@ export default function AdminEventsPage() {
   }, [load]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh) return undefined;
     timerRef.current = setInterval(() => void load(), 5000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);

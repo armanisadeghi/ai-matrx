@@ -31,7 +31,7 @@ export function useSetGlobalBasics() {
     // Browser-specific code wrapped in useEffect to ensure client-side only execution
     useEffect(() => {
         // Only run in browser environment
-        if (typeof window === 'undefined') return;
+        if (typeof window === 'undefined') return undefined;
         
         // Now safe to use browser APIs
         const nav = navigator as NavigatorExtended;

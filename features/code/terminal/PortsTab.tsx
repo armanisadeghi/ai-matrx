@@ -71,7 +71,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
   useEffect(() => {
     if (!activeSandboxId) {
       setPorts(null);
-      return;
+      return undefined;
     }
     void fetchPorts();
     const tick = () => {

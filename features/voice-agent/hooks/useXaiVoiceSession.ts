@@ -1116,7 +1116,7 @@ export function useXaiVoiceSession(
   // whether the OS will re-prompt ("prompt") or not ("granted"). This is the
   // single most useful signal for the "asked to verify every time" report.
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.permissions) return;
+    if (typeof navigator === "undefined" || !navigator.permissions) return undefined;
     let live: PermissionStatus | null = null;
     let cancelled = false;
     navigator.permissions

@@ -181,7 +181,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
 
   // Mobile "Flash Mode" prompt — fires once when stable (no count change for 1s) and not streaming
   useEffect(() => {
-    if (!isMobile || promptedRef.current || flashcards.length === 0) return;
+    if (!isMobile || promptedRef.current || flashcards.length === 0) return undefined;
     if (stabilityTimer.current) clearTimeout(stabilityTimer.current);
     stabilityTimer.current = setTimeout(() => {
       // Double-check still stable and complete enough (isComplete OR at least 3 cards settled)

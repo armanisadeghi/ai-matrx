@@ -285,7 +285,7 @@ export default function ProviderReferenceModal({ providers, onClose }: Props) {
   );
 
   useEffect(() => {
-    if (!isDragging) return;
+    if (!isDragging) return undefined;
 
     const onMove = (e: MouseEvent) => {
       if (!dragStart.current) return;

@@ -160,7 +160,7 @@ function DetectorPrefsSection({ knownKinds }: { knownKinds: string[] }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || prefs) return;
+    if (!open || prefs) return undefined;
     let cancelled = false;
     Api.getAnalysisPreferences()
       .then(({ data }) => {

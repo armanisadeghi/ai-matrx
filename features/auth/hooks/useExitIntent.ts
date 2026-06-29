@@ -21,12 +21,12 @@ export function useExitIntent(options?: { enabled?: boolean }): boolean {
   const [fired, setFired] = useState(false);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (typeof window === "undefined") return;
+    if (!enabled) return undefined;
+    if (typeof window === "undefined") return undefined;
 
     if (window.sessionStorage.getItem(FIRED_SESSION_KEY) === "1") {
       // Already shown in this session — don't fire again, don't even bind.
-      return;
+      return undefined;
     }
 
     const handler = (e: MouseEvent) => {

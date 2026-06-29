@@ -431,7 +431,7 @@ function SharedChatsSection({
 
   // Only fetch when the section is opened for the first time
   useEffect(() => {
-    if (!isOpen || hasFetched) return;
+    if (!isOpen || hasFetched) return undefined;
 
     let cancelled = false;
     setIsLoading(true);
@@ -568,7 +568,7 @@ export function SidebarChats({
     // Skip history loading and realtime subscription for guests —
     // they have no saved conversations and the Supabase channel would
     // trigger an AuthSessionMissingError.
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) return undefined;
 
     // Initial load
     fetchHistory();

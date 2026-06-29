@@ -416,7 +416,7 @@ export function PicklistManagerV1({
   React.useEffect(() => {
     if (!activeId) {
       setItems([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

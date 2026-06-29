@@ -243,7 +243,7 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
   useEffect(() => {
     if (groups.length === 0) {
       setSourceNames(new Map());
-      return;
+      return undefined;
     }
     let cancelled = false;
     fetchSourceNames(

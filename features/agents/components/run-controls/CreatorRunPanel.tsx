@@ -90,7 +90,7 @@ export function CreatorRunPanel({
   // listen for `matrx:openCreatorTab` and switch tabs / expand. Gated on
   // conversationId so unrelated panels in a multi-pane layout ignore it.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return undefined;
     type Detail = { tab?: RunTabId; conversationId?: string };
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<Detail>).detail ?? {};

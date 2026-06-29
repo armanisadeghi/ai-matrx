@@ -57,6 +57,7 @@ export const deleteAppThunk = createAsyncThunk<void, string>(
     async (id, { rejectWithValue }) => {
         try {
             await deleteCustomAppConfig(id);
+            return undefined;
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -69,6 +70,7 @@ export const addAppletThunk = createAsyncThunk<void, { appId: string; appletId: 
         try {
             // Update applet to set app_id
             await updateCustomAppletConfig(appletId, { id: appletId, appId });
+            return undefined;
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -81,6 +83,7 @@ export const removeAppletThunk = createAsyncThunk<void, { appId: string; appletI
         try {
             // Update applet to clear app_id
             await updateCustomAppletConfig(appletId, { id: appletId, appId: null });
+            return undefined;
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -197,6 +200,7 @@ export const setActiveAppWithFetchThunk = createAsyncThunk<
                     return rejectWithValue(error.message || "Failed to fetch app");
                 }
             }
+            return undefined;
         } catch (error: any) {
             console.error(`Error in setActiveAppWithFetchThunk: ${error.message}`);
             return rejectWithValue(error.message || "Failed to set active app");
@@ -280,7 +284,7 @@ export const createTemplateAppThunk = createAsyncThunk<
                 // TODO: Implement the complex template structure
 
             }
-
+            return undefined;
         } catch (error: any) {
             return rejectWithValue(error.message || "Failed to create template app");
         }

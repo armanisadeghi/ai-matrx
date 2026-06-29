@@ -14,7 +14,7 @@ export function useUnsavedChangesGuard(sessionId: string) {
   );
 
   useEffect(() => {
-    if (!hasUnsavedChanges) return;
+    if (!hasUnsavedChanges) return undefined;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();

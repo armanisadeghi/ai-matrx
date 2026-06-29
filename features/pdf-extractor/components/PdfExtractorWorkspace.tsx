@@ -113,7 +113,7 @@ export function PdfExtractorFloatingWorkspace({
   // Open `initialDocumentId` once on mount. Goes through the lazy-fetch
   // path so the per-tab loading spinner shows correctly.
   React.useEffect(() => {
-    if (!initialDocumentId) return;
+    if (!initialDocumentId) return undefined;
     let cancelled = false;
     (async () => {
       const full = await extractor.fetchDocument(initialDocumentId);

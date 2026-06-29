@@ -117,7 +117,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
 
   // Close context menu on outside click
   useEffect(() => {
-    if (!ctxMenu) return;
+    if (!ctxMenu) return undefined;
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setCtxMenu(null);
@@ -179,7 +179,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const anyTabUiOpen =
     !!ctxMenu || shareOpen || deleteConfirmOpen || titleFocused;
   useEffect(() => {
-    if (!anyTabUiOpen) return;
+    if (!anyTabUiOpen) return undefined;
     dispatch(markTabInteraction({ instanceId }));
     const id = setInterval(() => {
       dispatch(markTabInteraction({ instanceId }));

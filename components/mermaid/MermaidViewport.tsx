@@ -161,7 +161,7 @@ export function MermaidViewport({
   // `svg` changes — progressive streaming re-renders swap the markup in place.
   useEffect(() => {
     const host = hostRef.current;
-    if (!host) return;
+    if (!host) return undefined;
     host.innerHTML = svg;
     const el = host.querySelector("svg") as SVGSVGElement | null;
     svgRef.current = el;
@@ -210,7 +210,7 @@ export function MermaidViewport({
   useEffect(() => {
     const frame = frameRef.current;
     const host = hostRef.current;
-    if (!frame || !host || typeof ResizeObserver === "undefined") return;
+    if (!frame || !host || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => {
       setCanPan(
         frame.scrollWidth > frame.clientWidth + 1 ||
@@ -226,7 +226,7 @@ export function MermaidViewport({
   // fitting changes the content height which changes the frame height.
   useEffect(() => {
     const frame = frameRef.current;
-    if (!frame || typeof ResizeObserver === "undefined") return;
+    if (!frame || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => {
       const w = frame.clientWidth;
       if (w === lastFrameWidthRef.current) return;

@@ -103,7 +103,7 @@ export function ActiveJobsStrip({
     const hasLinger = visibleJobs.some(
       (j) => j.status === "succeeded" && j.endedAt,
     );
-    if (!hasLinger) return;
+    if (!hasLinger) return undefined;
     const t = window.setInterval(() => force((n) => n + 1), 1000);
     return () => window.clearInterval(t);
   }, [visibleJobs]);

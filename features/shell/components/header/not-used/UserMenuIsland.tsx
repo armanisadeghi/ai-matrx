@@ -51,7 +51,7 @@ export default function UserMenuIsland({ userData }: UserMenuIslandProps) {
 
   // Close on click outside
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -63,7 +63,7 @@ export default function UserMenuIsland({ userData }: UserMenuIslandProps) {
 
   // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };

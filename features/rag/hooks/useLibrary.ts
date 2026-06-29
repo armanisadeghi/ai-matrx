@@ -255,7 +255,7 @@ export function useLibrary(opts: UseLibraryOptions = {}) {
   } = opts;
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -347,7 +347,7 @@ export function useLibrarySummary(
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
     let firstFetch = true;
@@ -418,7 +418,7 @@ export function useLibraryDoc(processedDocumentId: string | null) {
       setLoading(false);
       setError(null);
       prevIdRef.current = null;
-      return;
+      return undefined;
     }
 
     const switchingDoc = prevIdRef.current !== processedDocumentId;

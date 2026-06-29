@@ -217,6 +217,7 @@ export const deleteAppletThunk = createAsyncThunk<void, string>(
   async (id, { rejectWithValue }) => {
     try {
       await deleteCustomAppletConfig(id);
+      return undefined;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to delete applet");
     }
@@ -280,6 +281,7 @@ export const removeContainerThunk = createAsyncThunk<
         ...applet,
         containers: updatedContainers,
       });
+      return undefined;
     } catch (error: any) {
       return rejectWithValue(error.message || "Failed to remove container");
     }

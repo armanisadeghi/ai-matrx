@@ -59,7 +59,7 @@ export function SettingsTree({
   // Keyboard: "/" focuses search from anywhere inside the tree panel
   useEffect(() => {
     const el = treeRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "/" && document.activeElement !== searchRef.current) {
         e.preventDefault();

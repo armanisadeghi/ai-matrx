@@ -63,7 +63,7 @@ export function LockedInputSection() {
   useEffect(() => {
     if (!sourceAgentId) {
       setVersionHistory([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setVersionsLoading(true);

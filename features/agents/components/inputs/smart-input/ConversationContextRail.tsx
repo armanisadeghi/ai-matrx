@@ -128,7 +128,7 @@ export function ConversationContextRail({
   const todoCounts = useAppSelector(selectUserTodoCounts(conversationId));
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) return undefined;
     void dispatch(hydrateAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {

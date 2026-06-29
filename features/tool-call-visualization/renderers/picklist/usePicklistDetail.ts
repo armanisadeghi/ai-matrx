@@ -85,7 +85,7 @@ export function usePicklistDetail(
   } | null>(null);
 
   useEffect(() => {
-    if (!listId || _cache.has(listId)) return;
+    if (!listId || _cache.has(listId)) return undefined;
     let cancelled = false;
     loadList(listId).then((res) => {
       if (cancelled) return;

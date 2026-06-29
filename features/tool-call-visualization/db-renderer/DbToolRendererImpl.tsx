@@ -53,7 +53,7 @@ export const DbToolRendererImpl: React.FC<DbToolRendererImplProps> = ({
   // shared in-flight promise in the cache dedups across sibling cards; the
   // `cancelled` guard avoids a state update after unmount.
   useEffect(() => {
-    if (component || resolved || fetchedRef.current) return;
+    if (component || resolved || fetchedRef.current) return undefined;
     fetchedRef.current = true;
 
     let cancelled = false;

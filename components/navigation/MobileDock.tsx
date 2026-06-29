@@ -127,7 +127,7 @@ export function MobileDock({ items, className }: MobileDockProps) {
 
   useEffect(() => {
     measureLabels();
-    if (!navRef.current) return;
+    if (!navRef.current) return undefined;
     const ro = new ResizeObserver(measureLabels);
     ro.observe(navRef.current);
     return () => ro.disconnect();

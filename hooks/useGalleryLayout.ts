@@ -28,7 +28,7 @@ export function useGalleryLayout(
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) return undefined;
 
     const measure = (w: number, h: number) => {
       setViewport((prev) =>

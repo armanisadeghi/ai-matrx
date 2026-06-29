@@ -61,7 +61,7 @@ export function useOrgContributableItems(
     if (!orgId || !entry || !userId || !contributable) {
       setItems([]);
       setAlreadyShared(new Set());
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

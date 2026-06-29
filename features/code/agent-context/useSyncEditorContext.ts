@@ -54,7 +54,7 @@ export function useSyncEditorContext(
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!enabled || !conversationId) return;
+    if (!enabled || !conversationId) return undefined;
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }

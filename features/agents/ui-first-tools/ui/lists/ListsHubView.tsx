@@ -49,7 +49,7 @@ export function ListsHubView() {
   // The chip auto-hydrates per-conversation, but the hub needs them all at
   // once even for conversations that haven't been visited yet this session.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
     let cancelled = false;
     void (async () => {
       const [plansR, tasksR, todosR] = await Promise.all([

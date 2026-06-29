@@ -34,7 +34,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
     })();
 
     useEffect(() => {
-        if (effectiveMode !== 'with_video' || !episode.video_url) return;
+        if (effectiveMode !== 'with_video' || !episode.video_url) return undefined;
         const id = setTimeout(() => setVideoSrc(episode.video_url!), 300);
         return () => clearTimeout(id);
     }, [effectiveMode, episode.video_url]);

@@ -34,7 +34,7 @@ export function useMicrophonePermission() {
 
     // Read browser permission state without prompting
     const checkPermission = useCallback(async () => {
-        if (typeof navigator === 'undefined') return;
+        if (typeof navigator === 'undefined') return 'unknown';
 
         // Check the cookie — if we've asked before, note that
         const cookieVal = getCookie(COOKIE_KEY);

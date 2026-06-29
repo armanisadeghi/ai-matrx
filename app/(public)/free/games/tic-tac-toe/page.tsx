@@ -128,6 +128,7 @@ const TicTacToe = () => {
       }, 500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [board, isXNext, gameStatus, gameMode]);
 
   const handleClick = (index, isAI = false) => {

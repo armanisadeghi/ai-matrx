@@ -66,12 +66,12 @@ export function usePicklistForSelection(
     if (!listId) {
       setData(null);
       setErrored(false);
-      return;
+      return undefined;
     }
     if (_cache.has(listId)) {
       setData(_cache.get(listId));
       setErrored(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

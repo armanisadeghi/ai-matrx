@@ -86,7 +86,7 @@ export function useRagSearch(opts: UseRagSearchOptions): UseRagSearchState {
       if (trimmed.length === 0 && state.hits.length > 0) {
         setState(INITIAL);
       }
-      return;
+      return undefined;
     }
 
     const myReqId = ++reqIdRef.current;

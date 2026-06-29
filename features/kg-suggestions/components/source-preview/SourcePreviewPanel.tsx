@@ -42,7 +42,7 @@ export function SourcePreviewPanel({
   // Escape closes the preview first (and stops the event so the host inbox
   // doesn't also close).
   useEffect(() => {
-    if (!target) return;
+    if (!target) return undefined;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();

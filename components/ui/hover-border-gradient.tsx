@@ -54,6 +54,7 @@ export function HoverBorderGradient({
       }, duration * 1000);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [hovered, duration]);
   
   return React.createElement(

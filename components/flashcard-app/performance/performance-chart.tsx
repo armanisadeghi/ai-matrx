@@ -193,6 +193,7 @@ const DesktopPerformanceChart = ({
                                             </text>
                                         );
                                     }
+                                    return null;
                                 }}
                             />
                         </Pie>

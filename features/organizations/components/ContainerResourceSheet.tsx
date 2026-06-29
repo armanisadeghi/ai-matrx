@@ -45,7 +45,7 @@ export function ContainerResourceSheet({
   React.useEffect(() => {
     if (!open || !entry || !entry.table) {
       setItems([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

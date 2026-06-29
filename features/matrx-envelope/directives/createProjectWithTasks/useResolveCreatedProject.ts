@@ -23,7 +23,7 @@ export function useResolveCreatedProject(
     if (!item || !lookupKey) {
       setStatus("idle");
       setData(null);
-      return;
+      return undefined;
     }
 
     setStatus("polling");

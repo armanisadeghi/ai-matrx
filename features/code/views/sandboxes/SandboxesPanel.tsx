@@ -165,9 +165,9 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       clearTimeout(pollTimer.current);
       pollTimer.current = null;
     }
-    if (!instances) return;
+    if (!instances) return undefined;
     const needsPoll = instances.some((i) => POLL_STATUSES.has(i.status));
-    if (!needsPoll) return;
+    if (!needsPoll) return undefined;
     pollTimer.current = setTimeout(() => void refresh(), POLL_INTERVAL_MS);
     return () => {
       if (pollTimer.current) clearTimeout(pollTimer.current);

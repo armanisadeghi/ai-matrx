@@ -205,7 +205,7 @@ export function ContextMenuV3({
   }, [enableFloatingIcon, selectedText, selectionRect, menuOpen, dropdownOpen]);
 
   useEffect(() => {
-    if (!showFloatingIcon) return;
+    if (!showFloatingIcon) return undefined;
     const handleScroll = () => {
       setShowFloatingIcon(false);
       setSelectionRect(null);

@@ -188,7 +188,7 @@ export function useSuggestionsQuery(
     heavyAbortRef.current?.abort();
     if (!showHeavy) {
       setHeavyHitters([]);
-      return;
+      return undefined;
     }
     const controller = new AbortController();
     heavyAbortRef.current = controller;
@@ -224,7 +224,7 @@ export function useSuggestionsQuery(
     if (!splitLow) {
       setLowQuality([]);
       setLowQualityTotal(0);
-      return;
+      return undefined;
     }
     const controller = new AbortController();
     lowAbortRef.current = controller;
@@ -256,13 +256,13 @@ export function useSuggestionsQuery(
   // titles persist across pages (the map only ever grows).
   useEffect(() => {
     const all = [...rows, ...heavyHitters, ...lowQuality];
-    if (!all.length) return;
+    if (!all.length) return undefined;
     const missing = all.filter(
       (r) =>
         r.source_id &&
         !sourceTitles.has(sourceRefKey(r.source_kind, r.source_id)),
     );
-    if (!missing.length) return;
+    if (!missing.length) return undefined;
     let active = true;
     void resolveSourceTitles(
       missing.map((r) => ({ kind: r.source_kind, id: r.source_id })),

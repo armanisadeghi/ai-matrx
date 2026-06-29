@@ -224,7 +224,7 @@ export function OverflowToolbar({
   useLayoutEffect(() => {
     const container = containerRef.current;
     const ghost = ghostRef.current;
-    if (!container || !ghost) return;
+    if (!container || !ghost) return undefined;
 
     const compute = () => {
       const available = container.clientWidth;

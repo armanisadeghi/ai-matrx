@@ -54,14 +54,14 @@ export function useFileDocument(
   useEffect(() => {
     if (!fileId) {
       setState({ status: "idle" });
-      return;
+      return undefined;
     }
     // Virtual sources have no processed_document by definition (they
     // are Postgres-row "fake files", not S3 bytes the RAG pipeline
     // ingests). Skip the network probe entirely.
     if (isSyntheticId(fileId)) {
       setState({ status: "absent" });
-      return;
+      return undefined;
     }
 
     let cancelled = false;

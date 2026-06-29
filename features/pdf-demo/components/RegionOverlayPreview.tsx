@@ -93,7 +93,7 @@ export function RegionOverlayPreview({
   useEffect(() => {
     let cancelled = false;
     setPages({});
-    if (!sourcePayload || !wantedPages.length) return;
+    if (!sourcePayload || !wantedPages.length) return undefined;
 
     (async () => {
       for (const page of wantedPages) {

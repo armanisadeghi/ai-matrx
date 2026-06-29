@@ -619,7 +619,7 @@ export const useFastFireSession = (): UseFastFireSessionReturn => {
 
         // Only run timer if session is active and not paused
         if (!sessionState.isActive || sessionState.isPaused) {
-            return;
+            return undefined;
         }
 
         // Phase 1: Initial countdown (before showing any cards)

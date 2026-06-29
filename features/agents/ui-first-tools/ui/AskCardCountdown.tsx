@@ -24,7 +24,7 @@ export function AskCardCountdown({
   const pct = Math.max(0, Math.min(100, (total / span) * 100));
 
   useEffect(() => {
-    if (Date.now() >= expiresAtMs) return;
+    if (Date.now() >= expiresAtMs) return undefined;
     const id = setInterval(() => setNow(Date.now()), 100);
     return () => clearInterval(id);
   }, [expiresAtMs]);

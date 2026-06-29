@@ -108,7 +108,7 @@ export default function SidebarWindowToggle() {
 
   // Re-measure on viewport resize while menu is open so the cap stays accurate.
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onResize = () => measure();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -116,7 +116,7 @@ export default function SidebarWindowToggle() {
 
   // Close on outside click
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onDown = (e: PointerEvent) => {
       if (
         triggerRef.current?.contains(e.target as Node) ||
@@ -131,7 +131,7 @@ export default function SidebarWindowToggle() {
 
   // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };

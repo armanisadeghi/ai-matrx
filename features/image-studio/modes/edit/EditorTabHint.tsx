@@ -33,7 +33,7 @@ export function EditorTabHint({ canvasAreaRef }: Props) {
 
   useEffect(() => {
     const area = canvasAreaRef.current;
-    if (!area) return;
+    if (!area) return undefined;
 
     const clearTimer = () => {
       if (timerRef.current) {

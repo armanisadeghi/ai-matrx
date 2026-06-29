@@ -95,7 +95,7 @@ export function useAnnotations(fileId: string | null): UseAnnotationsResult {
   const { data, loading, error, refetch, mutate } = useSharedStore(store, fileId);
 
   useEffect(() => {
-    if (!fileId) return;
+    if (!fileId) return undefined;
     attachRealtime(fileId);
     return () => detachRealtime(fileId);
   }, [fileId]);

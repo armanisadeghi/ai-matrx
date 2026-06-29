@@ -245,7 +245,7 @@ export function useWorkingDocumentContextSync(
   // conversation_id, so linked conversations resolve correctly.
   useEffect(() => {
     if (!enabled || binding.kind !== "cx_working_document" || !binding.id) {
-      return;
+      return undefined;
     }
     // Shared, ref-counted channel (see subscribeWorkingDocRow) — one connection
     // per document, one dispatch per (conversation, kind), regardless of how many

@@ -112,8 +112,8 @@ export function useStudioAssistant(
   // sessionId, so the two mounts of this hook (ScribeScreen + AssistantScreen)
   // can never create two conversations.
   useEffect(() => {
-    if (!sessionId) return;
-    if (conversationId) return;
+    if (!sessionId) return undefined;
+    if (conversationId) return undefined;
     let cancelled = false;
     void (async () => {
       try {

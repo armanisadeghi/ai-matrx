@@ -223,7 +223,7 @@ function VideoPosterThumb({
   // first frame is decoded and displayed.
   useEffect(() => {
     const v = ref.current;
-    if (!v) return;
+    if (!v) return undefined;
     const onMeta = () => {
       try {
         v.currentTime = 0;

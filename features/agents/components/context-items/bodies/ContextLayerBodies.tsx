@@ -161,7 +161,7 @@ export function ScopeLayerBody({ item, setTitle }: ContextItemBodyProps) {
   const typeId = found.type?.id ?? null;
   const [itemNames, setItemNames] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (!typeId) return;
+    if (!typeId) return undefined;
     let cancelled = false;
     void scopesService.listContextItems(typeId).then((res) => {
       if (cancelled || isScopesRpcErr(res)) return;

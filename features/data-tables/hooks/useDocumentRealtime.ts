@@ -29,7 +29,7 @@ export function useDocumentRealtime(
   const enabled = options?.enabled ?? true;
 
   useEffect(() => {
-    if (!enabled || !documentId) return;
+    if (!enabled || !documentId) return undefined;
 
     const channel = supabase
       .channel(`udt_document_snapshots:${documentId}`)

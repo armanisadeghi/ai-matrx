@@ -98,7 +98,7 @@ export function TaskPanel({
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     void dispatch(hydrateAgentLists(conversationId));
     dispatch(subscribeAgentLists(conversationId));
     return () => {

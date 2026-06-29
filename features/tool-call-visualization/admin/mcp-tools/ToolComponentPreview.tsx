@@ -202,7 +202,7 @@ function LivePreviewRenderer({
   useEffect(() => {
     if (!simulateStream) {
       setVisibleEventCount(totalEvents);
-      return;
+      return undefined;
     }
     setVisibleEventCount(1);
     const intervalMs = totalEvents > 1 ? 5000 / (totalEvents - 1) : 1000;

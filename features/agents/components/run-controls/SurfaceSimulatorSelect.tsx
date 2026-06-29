@@ -69,7 +69,7 @@ export function SurfaceSimulatorSelect({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (surfaceCache) return;
+    if (surfaceCache) return undefined;
     // `loading` already initializes to `!surfaceCache` (true here), so no
     // synchronous setState in the effect body (react-hooks/set-state-in-effect).
     let active = true;

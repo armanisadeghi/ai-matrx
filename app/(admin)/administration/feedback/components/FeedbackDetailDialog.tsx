@@ -290,7 +290,7 @@ export default function FeedbackDetailDialog({
   // Attach paste listeners to both textareas when they mount
   useEffect(() => {
     const el = replyTextareaRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     const handler = (e: ClipboardEvent) =>
       handleImagePaste(e, setReplyImages, setIsUploadingReply);
     el.addEventListener("paste", handler);
@@ -299,7 +299,7 @@ export default function FeedbackDetailDialog({
 
   useEffect(() => {
     const el = composeTextareaRef.current;
-    if (!el || !showUserReviewCompose) return;
+    if (!el || !showUserReviewCompose) return undefined;
     const handler = (e: ClipboardEvent) =>
       handleImagePaste(e, setComposeImages, setIsUploadingCompose);
     el.addEventListener("paste", handler);

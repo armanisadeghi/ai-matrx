@@ -204,7 +204,7 @@ function PaneList({
   // the page number so the PDF iframe (and the sibling pane) can sync.
   useEffect(() => {
     const root = containerRef.current;
-    if (!root) return;
+    if (!root) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries

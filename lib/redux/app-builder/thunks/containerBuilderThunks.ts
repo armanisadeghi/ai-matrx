@@ -187,6 +187,7 @@ export const deleteContainerThunk = createAsyncThunk<
   async (containerId, { rejectWithValue }) => {
     try {
       await deleteComponentGroup(containerId);
+      return undefined;
     } catch (error: any) {
       console.error("Error deleting container:", error);
       return rejectWithValue(error.message || "Failed to delete container");
@@ -235,6 +236,7 @@ export const removeFieldThunk = createAsyncThunk<
   async ({ containerId, fieldId }, { rejectWithValue }) => {
     try {
       await removeFieldFromGroup(containerId, fieldId);
+      return undefined;
     } catch (error: any) {
       console.error("Error removing field from container:", error);
       return rejectWithValue(
@@ -592,6 +594,7 @@ export const setActiveContainerWithFetchThunk = createAsyncThunk<
           return rejectWithValue(error.message || "Failed to fetch container");
         }
       }
+      return undefined;
     } catch (error: any) {
       console.error(
         `Error in setActiveContainerWithFetchThunk: ${error.message}`,

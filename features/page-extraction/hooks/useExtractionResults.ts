@@ -56,7 +56,7 @@ export function useExtractionResults(
   useEffect(() => {
     if (!jobId) {
       setResults([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);
@@ -82,7 +82,7 @@ export function useExtractionResults(
   // (a validation pass writing is_duplicate / canonical_entry / other
   // validation columns back onto existing rows). Scope to the job.
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId) return undefined;
     const supabase = createClient();
     const filter = opts.runId
       ? `run_id=eq.${opts.runId}`

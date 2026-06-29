@@ -737,7 +737,7 @@ export function ContextAssignmentField({
   const [allProjects, setAllProjects] = useState<AssignableProject[]>([]);
   const [allTasks, setAllTasks] = useState<AssignableTask[]>([]);
   useEffect(() => {
-    if (!dims.projects && !dims.tasks) return;
+    if (!dims.projects && !dims.tasks) return undefined;
     let alive = true;
     if (dims.projects) {
       void fetchAssignableProjects().then((p) => {

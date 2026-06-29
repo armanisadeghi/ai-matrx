@@ -146,10 +146,10 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
   // Focus the first available input on agent change or after load.
   // Skipped on mobile — auto-focus opens the keyboard and obscures the viewport.
   useEffect(() => {
-    if (isLoadingConversation) return;
+    if (isLoadingConversation) return undefined;
 
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
-    if (isMobile) return;
+    if (isMobile) return undefined;
 
     let cancelled = false;
     let attempts = 0;

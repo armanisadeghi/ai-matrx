@@ -296,7 +296,7 @@ function EntitiesTab({
     if (organizationIds.length === 0) {
       setOrgNames({});
       setOrgNamesLoading(false);
-      return;
+      return undefined;
     }
 
     let active = true;
@@ -629,7 +629,7 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
     if (!entity) {
       setRows([]);
       setTotal(0);
-      return;
+      return undefined;
     }
     const controller = new AbortController();
     setLoading(true);

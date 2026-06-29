@@ -881,6 +881,7 @@ export const deleteRecordingSegmentThunk = createAsyncThunk<
         dispatch(rawSegmentRemoved({ sessionId, segmentId: rawId }));
       }
       await deleteRecordingSegment(recordingSegmentId);
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete recording";
@@ -906,6 +907,7 @@ export const archiveRecordingThunk = createAsyncThunk<
         archivedAt: archived ? new Date().toISOString() : null,
       });
       if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to archive recording";
@@ -927,6 +929,7 @@ export const detachRecordingThunk = createAsyncThunk<
         detachedAt: new Date().toISOString(),
       });
       if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to remove recording";
@@ -947,12 +950,13 @@ export const restoreRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         detachedAt: null,
       });
-      if (!segment) return; // row gone — nothing to restore
+      if (!segment) return undefined; // row gone — nothing to restore
       dispatch(
         recordingSegmentUpserted({ sessionId: segment.sessionId, segment }),
       );
       // Refresh the Unsorted pool so the restored row drops out of it.
       await dispatch(fetchUnsortedRecordingsThunk());
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to restore recording";
@@ -1064,6 +1068,7 @@ export const updateWorkingDocumentContentThunk = createAsyncThunk<
     try {
       const document = await updateStudioDocumentContent(documentId, content);
       dispatch(studioDocumentUpserted({ sessionId, document }));
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to save document";
@@ -1107,6 +1112,7 @@ export const deleteRawSegmentThunk = createAsyncThunk<
     try {
       dispatch(rawSegmentRemoved({ sessionId, segmentId }));
       await deleteRawSegment(segmentId);
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete raw segment";
@@ -1144,6 +1150,7 @@ export const deleteCleanedSegmentThunk = createAsyncThunk<
     try {
       dispatch(cleanedSegmentRemoved({ sessionId, segmentId }));
       await deleteCleanedSegment(segmentId);
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete cleaned segment";
@@ -1181,6 +1188,7 @@ export const deleteConceptItemThunk = createAsyncThunk<
     try {
       dispatch(conceptItemRemoved({ sessionId, itemId }));
       await deleteConceptItem(itemId);
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete concept";
@@ -1218,6 +1226,7 @@ export const deleteModuleSegmentThunk = createAsyncThunk<
     try {
       dispatch(moduleSegmentRemoved({ sessionId, segmentId }));
       await deleteModuleSegment(segmentId);
+      return undefined;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to delete module segment";

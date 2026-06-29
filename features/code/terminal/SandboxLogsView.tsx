@@ -85,7 +85,7 @@ export const SandboxLogsView: React.FC<SandboxLogsViewProps> = ({
   // effect and (unless the user has paused) refetches immediately, so the
   // buffer is current on return.
   useEffect(() => {
-    if (paused || !visible) return;
+    if (paused || !visible) return undefined;
     void fetchOnce();
     const handle = window.setInterval(() => {
       void fetchOnce();

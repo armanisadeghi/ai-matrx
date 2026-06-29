@@ -525,7 +525,7 @@ export function SandboxDiagnosticsPanel({
 
   // Poll diagnostics
   useEffect(() => {
-    if (!sandboxId) return;
+    if (!sandboxId) return undefined;
     let cancelled = false;
     const tick = async () => {
       if (cancelled) return;
@@ -550,7 +550,7 @@ export function SandboxDiagnosticsPanel({
 
   // Poll logs
   useEffect(() => {
-    if (!sandboxId || !showLogs) return;
+    if (!sandboxId || !showLogs) return undefined;
     let cancelled = false;
     const tick = async () => {
       if (cancelled) return;

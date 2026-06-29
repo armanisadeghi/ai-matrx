@@ -66,7 +66,7 @@ export function useOrgAutoRagPreference(
   useEffect(() => {
     if (!organizationId) {
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

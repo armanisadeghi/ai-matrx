@@ -37,7 +37,7 @@ export function useTimeRemaining(
 
   useEffect(() => {
     setValue(compute(expiresAt, granularity));
-    if (!expiresAt) return;
+    if (!expiresAt) return undefined;
     const intervalMs = granularity === "second" ? 1000 : 30000;
     const interval = setInterval(() => {
       setValue(compute(expiresAt, granularity));

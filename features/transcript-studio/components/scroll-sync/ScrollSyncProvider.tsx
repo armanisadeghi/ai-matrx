@@ -149,7 +149,7 @@ export function ScrollSyncProvider({
   useEffect(() => {
     if (!leaderColumn) {
       tearDownObserver();
-      return;
+      return undefined;
     }
     installObserverFor(leaderColumn);
     return tearDownObserver;

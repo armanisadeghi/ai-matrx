@@ -65,7 +65,7 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
   // Load the agent list once per open. Reuses the canonical full-list thunk so
   // pickers, dropdowns, and this dialog all share one source of truth.
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
     let cancelled = false;
     setLoading(true);
     void dispatch(fetchAgentsListFull())

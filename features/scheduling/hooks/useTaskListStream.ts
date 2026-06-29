@@ -34,7 +34,7 @@ export function useTaskListStream() {
   const userId = useAppSelector(selectUserId);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) return undefined;
 
     const channel = supabase
       .channel(`sch_task-list-${userId}`)

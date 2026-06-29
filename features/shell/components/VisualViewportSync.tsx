@@ -45,9 +45,9 @@ function clearViewportVars() {
 export default function VisualViewportSync() {
   useEffect(() => {
     const isMobile = window.matchMedia("(max-width: 1023px)").matches;
-    if (!window.visualViewport) return;
+    if (!window.visualViewport) return undefined;
 
-    if (!isMobile) return;
+    if (!isMobile) return undefined;
 
     // Initial value
     updateViewportVars();

@@ -156,7 +156,7 @@ export function useKnowledgeAssetRunner(
     runIdMap.current.clear();
     if (!processedDocumentId) {
       setLoading(false);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setLoading(true);

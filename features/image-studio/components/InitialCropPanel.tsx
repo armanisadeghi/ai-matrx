@@ -370,7 +370,7 @@ export function useInitialCropController({
       setNaturalSize(null);
       setCrop(null);
       setAspect(undefined);
-      return;
+      return undefined;
     }
     const url = URL.createObjectURL(activeFile);
     setImageUrl(url);

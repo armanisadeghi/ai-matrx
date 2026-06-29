@@ -63,7 +63,7 @@ export function ChunksTab({
   useEffect(() => {
     if (inAllView || !viewedJobId) {
       setJob(null);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setJobLoading(true);

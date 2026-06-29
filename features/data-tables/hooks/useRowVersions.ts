@@ -38,7 +38,7 @@ export function useRowVersions(
   useEffect(() => {
     if (!rowId) {
       setState({ versions: [], loading: false, error: null });
-      return;
+      return undefined;
     }
 
     let cancelled = false;

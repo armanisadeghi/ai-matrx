@@ -89,8 +89,8 @@ export function useStageDisplay(state: PodcastRunState): StageDisplay {
   // Advance one sub-step on a randomized 4–11s timer; hold the LAST one until
   // the real stage finishes. setState lives in an async callback (allowed).
   useEffect(() => {
-    if (!plan || prepareSettled) return;
-    if (doneCount >= plan.steps.length - 1) return;
+    if (!plan || prepareSettled) return undefined;
+    if (doneCount >= plan.steps.length - 1) return undefined;
     // Snappy: ~2.2–5.5s per sub-step (the first ones especially shouldn't dwell)
     // so the phase feels brisk, while the LAST step still holds for the real
     // stage to finish.

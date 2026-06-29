@@ -145,7 +145,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image" }) 
   };
 
   useEffect(() => {
-    if (!showExpandedView) return;
+    if (!showExpandedView) return undefined;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleCloseExpanded();
     };

@@ -58,7 +58,7 @@ export function useEditorContextMenuActions({
 
   useEffect(() => {
     const editor = editorRef.current;
-    if (!editor || !activeTab) return;
+    if (!editor || !activeTab) return undefined;
 
     const disposables: Array<{ dispose: () => void }> = [];
 

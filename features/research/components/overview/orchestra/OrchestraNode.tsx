@@ -164,10 +164,10 @@ export function OrchestraNode({
   const countWrapRef = useRef<HTMLSpanElement>(null);
   const lastCountRef = useRef<ReactNode>(count);
   useEffect(() => {
-    if (lastCountRef.current === count) return;
+    if (lastCountRef.current === count) return undefined;
     lastCountRef.current = count;
     const el = countWrapRef.current;
-    if (!el) return;
+    if (!el) return undefined;
     el.dataset.bumped = "true";
     const t = window.setTimeout(() => {
       if (el.dataset.bumped) delete el.dataset.bumped;

@@ -102,7 +102,7 @@ export function SystemPromptOptimizer({
   const shortcutReady = optimizerShortcut !== null;
 
   useEffect(() => {
-    if (!isOpen || shortcutReady) return;
+    if (!isOpen || shortcutReady) return undefined;
     let cancelled = false;
     setShortcutLoadError(null);
     dispatch(ensureShortcutLoaded(OPTIMIZER_SHORTCUT.id))

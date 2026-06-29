@@ -16,7 +16,7 @@ export function Elapsed({
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (stopped) return;
+    if (stopped) return undefined;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [stopped]);

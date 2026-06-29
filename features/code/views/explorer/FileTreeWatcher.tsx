@@ -76,7 +76,7 @@ export const FileTreeWatcherProvider: React.FC<{
 
   // ── live watcher ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!filesystem.watch) return;
+    if (!filesystem.watch) return undefined;
     const handler = (ev: FilesystemWatchEvent) => {
       // Invalidate the parent directory of the affected path so the
       // matching <FileTreeNode> reloads its children. For renames we
@@ -109,7 +109,7 @@ export function useDirectoryVersion(path: string): number {
   const ctx = useContext(Ctx);
   const [version, setVersion] = useState(() => ctx?.getVersion(path) ?? 0);
   useEffect(() => {
-    if (!ctx) return;
+    if (!ctx) return undefined;
     setVersion(ctx.getVersion(path));
     return ctx.subscribe(path, () => {
       setVersion(ctx.getVersion(path));

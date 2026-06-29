@@ -378,7 +378,7 @@ export function PicklistManager({ supabase, userId }: PicklistManagerProps) {
   React.useEffect(() => {
     if (!activeId) {
       setItems([]);
-      return;
+      return undefined;
     }
     let cancelled = false;
     (async () => {

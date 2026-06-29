@@ -99,10 +99,10 @@ export function CloudUploadTab({
 
   // Resolve the default folder path → folder id on mount when not pre-provided.
   useEffect(() => {
-    if (folderId || resolving || hideFolderControls === true) return;
+    if (folderId || resolving || hideFolderControls === true) return undefined;
     if (defaultUploadFolderId) {
       setFolderId(defaultUploadFolderId);
-      return;
+      return undefined;
     }
     let cancelled = false;
     setResolving(true);

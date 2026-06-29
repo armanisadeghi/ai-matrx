@@ -825,9 +825,9 @@ const QuestionnaireRenderer = ({
 
   // Emit answers (debounced) to the artifact-state channel on every change.
   useEffect(() => {
-    if (!formState || Object.keys(formState).length === 0) return;
+    if (!formState || Object.keys(formState).length === 0) return undefined;
     const stateString = JSON.stringify(formState);
-    if (stateString === lastPersistedRef.current) return;
+    if (stateString === lastPersistedRef.current) return undefined;
     const timeoutId = setTimeout(() => {
       lastPersistedRef.current = stateString;
       onStateChangeRef.current?.({ formState });
