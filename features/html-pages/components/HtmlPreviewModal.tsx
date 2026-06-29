@@ -3,6 +3,7 @@
 // TODO: Fix loading inefficiency.
 
 import React, { useState, useRef, useEffect } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   X,
   Copy,
@@ -470,7 +471,7 @@ ${wordPressCSS}
       console.log("Page saved successfully:", result);
     } catch (err) {
       console.error("Save failed:", err);
-      alert(`Save failed: ${err.message}`);
+      alert(`Save failed: ${extractErrorMessage(err)}`);
     }
   };
 

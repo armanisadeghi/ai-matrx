@@ -50,14 +50,14 @@ class ReactRenderBoundary extends React.Component<
   BoundaryProps,
   BoundaryState
 > {
-  state: BoundaryState = { hasError: false };
+  override state: BoundaryState = { hasError: false };
   static getDerivedStateFromError(): BoundaryState {
     return { hasError: true };
   }
-  componentDidCatch(error: Error) {
+  override componentDidCatch(error: Error) {
     this.props.onError(error.message || "Component threw while rendering");
   }
-  render() {
+  override render() {
     if (this.state.hasError) return null;
     return this.props.children;
   }

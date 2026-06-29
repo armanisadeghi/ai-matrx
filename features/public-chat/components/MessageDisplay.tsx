@@ -71,7 +71,7 @@ class MessageErrorBoundary extends React.Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(
       "[MessageErrorBoundary] Render error in message",
       this.props.messageId,
@@ -80,7 +80,7 @@ class MessageErrorBoundary extends React.Component<
     );
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">

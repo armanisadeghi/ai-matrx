@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import { useMeasure } from "@uidotdev/usehooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -266,7 +267,7 @@ export function useCodeEditorBasics({
       });
     } catch (error) {
       console.error("Failed to create HTML page:", error);
-      alert(`Failed to create HTML page: ${error.message}`);
+      alert(`Failed to create HTML page: ${extractErrorMessage(error)}`);
     } finally {
       setIsCreatingPage(false);
     }

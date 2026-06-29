@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import Editor, { useMonaco } from "@monaco-editor/react";
 import { useMeasure } from "@uidotdev/usehooks";
 import { Card } from "@/components/ui/card";
@@ -121,7 +122,7 @@ const AdvancedCodeEditor = () => {
         } catch (error) {
             logs.push({
                 type: "error",
-                content: `Error: ${error.message}`,
+                content: `Error: ${extractErrorMessage(error)}`,
             });
         }
 

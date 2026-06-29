@@ -1,6 +1,7 @@
 // utils/fileSystemUtil.ts
 // This file uses Node.js fs APIs and should only run on the server
 import 'server-only';
+import { extractErrorMessage } from '@/utils/errors';
 import path from 'path';
 import fs from 'fs/promises';
 import type { Dirent } from 'fs';
@@ -253,7 +254,7 @@ export async function saveFile(
         console.error("Error saving file:", error);
         return {
             success: false,
-            error: error.message
+            error: extractErrorMessage(error)
         };
     }
 }
@@ -290,7 +291,7 @@ export async function readFile(
         }
     } catch (error) {
         console.error('Error reading file:', error);
-        return {content: null, error: error.message};
+        return {content: null, error: extractErrorMessage(error)};
     }
 }
 

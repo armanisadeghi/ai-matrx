@@ -1,6 +1,7 @@
 'use client';
 
 import { registerFunction, FunctionDependencies } from './function-registry';
+import { extractErrorMessage } from '@/utils/errors';
 
 /**
  * Register utility functions that don't need external dependencies
@@ -189,7 +190,7 @@ export function registerUtilityFunctions() {
           
           return csv;
         } catch (err) {
-          return `Error converting data: ${err.message}`;
+          return `Error converting data: ${extractErrorMessage(err)}`;
         }
       }
       
@@ -235,7 +236,7 @@ export function registerUtilityFunctions() {
           
           return JSON.stringify(result, null, 2);
         } catch (err) {
-          return `Error converting data: ${err.message}`;
+          return `Error converting data: ${extractErrorMessage(err)}`;
         }
       }
       
@@ -506,7 +507,7 @@ export function registerUtilityFunctions() {
         };
       } catch (err) {
         return {
-          error: err.message
+          error: extractErrorMessage(err)
         };
       }
     },
@@ -563,7 +564,7 @@ export function registerUtilityFunctions() {
               return storedValue;
             }
           } catch (e) {
-            return { error: e.message };
+            return { error: extractErrorMessage(e) };
           }
         case 'set':
           try {
@@ -571,21 +572,21 @@ export function registerUtilityFunctions() {
             storage.setItem(key, valueToStore);
             return { success: true, key, value };
           } catch (e) {
-            return { error: e.message };
+            return { error: extractErrorMessage(e) };
           }
         case 'remove':
           try {
             storage.removeItem(key);
             return { success: true, key };
           } catch (e) {
-            return { error: e.message };
+            return { error: extractErrorMessage(e) };
           }
         case 'clear':
           try {
             storage.clear();
             return { success: true };
           } catch (e) {
-            return { error: e.message };
+            return { error: extractErrorMessage(e) };
           }
         case 'keys':
           try {
@@ -596,7 +597,7 @@ export function registerUtilityFunctions() {
             }
             return keys;
           } catch (e) {
-            return { error: e.message };
+            return { error: extractErrorMessage(e) };
           }
         default:
           return { error: 'Invalid operation', validOperations: ['get', 'set', 'remove', 'clear', 'keys'] };

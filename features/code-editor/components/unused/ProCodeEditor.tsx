@@ -1,6 +1,7 @@
 'use client';
 
 import {useState, useEffect} from 'react';
+import { extractErrorMessage } from '@/utils/errors';
 import Editor, {useMonaco, DiffEditor} from '@monaco-editor/react';
 import {useMeasure} from "@uidotdev/usehooks";
 import {Card} from '@/components/ui/card';
@@ -175,7 +176,7 @@ const ProCodeEditor = () => {
                 addLogEntry('result', `Returned: ${typeof result === 'object' ? JSON.stringify(result, null, 2) : result}`);
             }
         } catch (error) {
-            addLogEntry('error', `Runtime Error: ${error.message}`);
+            addLogEntry('error', `Runtime Error: ${extractErrorMessage(error)}`);
         }
 
         const executionTime = (performance.now() - startTime).toFixed(2);

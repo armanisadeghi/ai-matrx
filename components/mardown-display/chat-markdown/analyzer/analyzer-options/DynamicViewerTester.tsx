@@ -34,18 +34,18 @@ class ViewerErrorBoundary extends React.Component<
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error("Viewer component error:", error, errorInfo);
         this.props.onError?.(error);
     }
 
-    componentDidUpdate(prevProps: React.PropsWithChildren<{ onError?: (error: Error) => void; resetKey?: string | number }>) {
+    override componentDidUpdate(prevProps: React.PropsWithChildren<{ onError?: (error: Error) => void; resetKey?: string | number }>) {
         if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
             this.setState({ hasError: false, error: undefined });
         }
     }
 
-    render() {
+    override render() {
         if (this.state.hasError) {
             return (
                 <div className="h-full flex items-center justify-center text-red-500 p-6">

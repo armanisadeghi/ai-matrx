@@ -74,13 +74,13 @@ class GeneratorErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  state: ErrorBoundaryState = { hasError: false, error: null };
+  override state: ErrorBoundaryState = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(
       "[AgentGenerator] Render error caught by boundary:",
       error,
@@ -89,7 +89,7 @@ class GeneratorErrorBoundary extends Component<
     this.props.onError?.(error);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col h-full">

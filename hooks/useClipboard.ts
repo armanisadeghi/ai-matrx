@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { extractErrorMessage } from '@/utils/errors';
 import { useToast } from '@/components/ui/use-toast';
 
 interface UseClipboardResult {
@@ -102,7 +103,7 @@ export function useClipboard(): UseClipboardResult {
             setError(null);
             return text;
         } catch (err) {
-            setError(err);
+            setError(err instanceof Error ? err : new Error(extractErrorMessage(err)));
             console.error('Failed to paste text: ', err);
             return '';
         }
@@ -122,7 +123,7 @@ export function useClipboard(): UseClipboardResult {
             }
             return null;
         } catch (err) {
-            setError(err);
+            setError(err instanceof Error ? err : new Error(extractErrorMessage(err)));
             console.error('Failed to paste image: ', err);
             return null;
         }

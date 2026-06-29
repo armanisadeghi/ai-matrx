@@ -66,17 +66,17 @@ class AgentJsonErrorBoundary extends Component<
   { children: ReactNode },
   { hasError: boolean; error: Error | null }
 > {
-  state = { hasError: false, error: null as Error | null };
+  override state = { hasError: false, error: null as Error | null };
 
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[AgentJsonDisplay] render error:", error, info);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 flex items-start gap-2">

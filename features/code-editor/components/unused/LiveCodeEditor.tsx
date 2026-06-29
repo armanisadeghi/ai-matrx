@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import Editor from "@monaco-editor/react";
 import { useMeasure } from "@uidotdev/usehooks";
 import { Card } from "@/components/ui/card";
@@ -52,7 +53,7 @@ const LiveCodeEditor = () => {
             );
             func(customConsole);
         } catch (error) {
-            setOutput([`Error: ${error.message}`]);
+            setOutput([`Error: ${extractErrorMessage(error)}`]);
         }
     };
 

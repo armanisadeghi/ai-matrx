@@ -22,11 +22,11 @@ class LinkErrorBoundary extends React.Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("LinkComponent Error:", error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // Graceful fallback to a simple link
       const { href, fallbackChildren } = this.props;

@@ -19,7 +19,7 @@ export type NetErrorCode =
 
 export class NetError extends Error {
   readonly code: NetErrorCode;
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
   readonly status?: number;
   readonly retryable: boolean;
 

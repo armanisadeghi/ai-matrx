@@ -42,7 +42,7 @@ export class PreviewErrorBoundary extends React.Component<
   PreviewErrorBoundaryProps,
   State
 > {
-  state: State = { errorMessage: null, resetCount: 0 };
+  override state: State = { errorMessage: null, resetCount: 0 };
 
   static getDerivedStateFromError(error: unknown): Partial<State> {
     const errorMessage =
@@ -54,13 +54,13 @@ export class PreviewErrorBoundary extends React.Component<
     return { errorMessage };
   }
 
-  componentDidCatch(error: unknown, info: unknown): void {
+  override componentDidCatch(error: unknown, info: unknown): void {
     // Surface to console so it's still discoverable in dev / Sentry.
     // eslint-disable-next-line no-console
     console.error("[PreviewErrorBoundary]", error, info);
   }
 
-  componentDidUpdate(prev: PreviewErrorBoundaryProps): void {
+  override componentDidUpdate(prev: PreviewErrorBoundaryProps): void {
     // If the parent swaps to a different file, clear the error so the new
     // file gets a fresh render.
     if (prev.fileId !== this.props.fileId && this.state.errorMessage) {
@@ -98,7 +98,7 @@ export class PreviewErrorBoundary extends React.Component<
     getStore()?.dispatch(setActiveFileId(null));
   };
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     if (!this.state.errorMessage) {
       // Re-mounting via key={resetCount} forces previewers to redo any
       // useEffect setup (e.g. re-fetch signed URLs) on retry.

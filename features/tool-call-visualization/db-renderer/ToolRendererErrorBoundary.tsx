@@ -31,7 +31,7 @@ export class ToolRendererErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error(
       `[ToolRendererErrorBoundary] DB renderer for "${this.props.toolName}" threw at render:`,
       error,
@@ -44,7 +44,7 @@ export class ToolRendererErrorBoundary extends React.Component<Props, State> {
     });
   }
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     if (this.state.hasError) return this.props.fallback;
     return this.props.children;
   }

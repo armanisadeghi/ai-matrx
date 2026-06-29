@@ -38,12 +38,12 @@ class RenderErrorBoundary extends Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ResponseViewer render error:", error, errorInfo);
     this.props.onError?.(error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return this.props.fallback;
     }

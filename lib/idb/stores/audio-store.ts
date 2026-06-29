@@ -9,7 +9,7 @@ import {
 } from '@/types/audioRecording.types';
 
 class AudioStore extends DBStoreManager<Recording> {
-    protected static _instance: AudioStore;
+    protected static override _instance: AudioStore;
     private initialized: boolean = false;
     private initPromise: Promise<void> | null = null;
 

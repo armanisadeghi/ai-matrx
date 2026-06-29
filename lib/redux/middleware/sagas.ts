@@ -1,4 +1,5 @@
 import { call, put, takeEvery, all } from "redux-saga/effects";
+import { extractErrorMessage } from "@/utils/errors";
 import type {
   FetchOneThunkArgs,
   PaginatedResponse,
@@ -32,7 +33,7 @@ function* fetchWithSaga(
       throw new Error("Failed to fetch data");
     }
   } catch (error) {
-    yield put(rejectedAction(error.message));
+    yield put(rejectedAction(extractErrorMessage(error)));
   }
 }
 

@@ -1,5 +1,6 @@
 "use client";
 import React, { useMemo, useState } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { convertOrganizedDataToString } from "../../utils/scraper-utils";
@@ -141,7 +142,7 @@ const PageContent: React.FC<PageContentProps> = ({
       console.error("[PAGE CONTENT] Error extracting data:", error);
       return {
         isError: true,
-        error: `Error extracting data: ${error.message}`,
+        error: `Error extracting data: ${extractErrorMessage(error)}`,
       };
     }
   }, [pageData, dataUtils]);

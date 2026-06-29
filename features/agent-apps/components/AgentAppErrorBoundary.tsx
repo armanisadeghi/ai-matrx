@@ -44,7 +44,7 @@ export class AgentAppErrorBoundary extends Component<AgentAppErrorBoundaryProps,
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
         console.error('[AgentApp ErrorBoundary] Component error:', error);
         console.error('[AgentApp ErrorBoundary] Component stack:', errorInfo.componentStack);
         
@@ -114,7 +114,7 @@ export class AgentAppErrorBoundary extends Component<AgentAppErrorBoundaryProps,
         };
     }
 
-    render(): ReactNode {
+    override render(): ReactNode {
         if (!this.state.hasError) {
             return this.props.children;
         }

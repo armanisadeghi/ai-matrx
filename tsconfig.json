@@ -43,7 +43,9 @@
     "strictBindCallApply": true,
     "alwaysStrict": true,
     "noFallthroughCasesInSwitch": true,
-    "noImplicitThis": true
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "noImplicitOverride": true
   },
   "include": [
     "**/*.ts",

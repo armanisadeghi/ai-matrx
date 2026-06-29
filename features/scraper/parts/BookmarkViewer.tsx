@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   Card,
   CardContent,
@@ -70,7 +71,7 @@ const BookmarkViewer = ({ pageData }) => {
         );
       }
     } catch (e) {
-      return <div className="text-red-500">Error: {e.message}</div>;
+      return <div className="text-red-500">Error: {extractErrorMessage(e)}</div>;
     }
   };
 

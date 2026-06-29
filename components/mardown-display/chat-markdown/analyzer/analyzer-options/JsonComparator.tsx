@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 
 export default function JsonComparator() {
   const [leftJson, setLeftJson] = useState("");
@@ -25,7 +26,7 @@ export default function JsonComparator() {
 
       return { parsed, error: "", cleaned: formatted };
     } catch (error) {
-      return { parsed: null, error: error.message, cleaned: text };
+      return { parsed: null, error: extractErrorMessage(error), cleaned: text };
     }
   };
 

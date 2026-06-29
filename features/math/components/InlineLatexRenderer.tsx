@@ -35,14 +35,14 @@ class LaTeXErrorBoundary extends React.Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.warn('[InlineLatexRenderer] LaTeX rendering failed, showing plain text:', {
       error: error.message,
       content: this.props.fallback.substring(0, 100)
     });
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return <span>{this.props.fallback}</span>;
     }

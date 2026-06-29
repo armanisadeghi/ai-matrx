@@ -32,7 +32,7 @@ export class EmitRendererErrorBoundary extends React.Component<Props, State> {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error(
       `[EmitRendererErrorBoundary] emit renderer for "${this.props.componentRef}" threw at render:`,
       error,
@@ -40,7 +40,7 @@ export class EmitRendererErrorBoundary extends React.Component<Props, State> {
     );
   }
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     if (this.state.hasError) return this.props.fallback;
     return this.props.children;
   }

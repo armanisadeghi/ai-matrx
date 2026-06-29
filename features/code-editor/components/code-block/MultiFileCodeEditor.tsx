@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import SmallCodeEditor from "./SmallCodeEditor";
 import CodeBlockHeader from "@/features/code-editor/components/code-block/CodeBlockHeader";
 import { languageMap } from "@/features/code-editor/components/code-block/LanguageDisplay";
@@ -323,7 +324,7 @@ export default function MultiFileCodeEditor({
       });
     } catch (error) {
       console.error("Failed to create HTML page:", error);
-      alert(`Failed to create HTML page: ${error.message}`);
+      alert(`Failed to create HTML page: ${extractErrorMessage(error)}`);
     } finally {
       setIsCreatingPage(false);
     }

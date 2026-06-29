@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { extractErrorMessage } from '@/utils/errors';
 
 const MarkdownFlowDiagramConverter = () => {
   const [markdownInput, setMarkdownInput] = useState(`+-------------------+
@@ -163,7 +164,7 @@ const MarkdownFlowDiagramConverter = () => {
       setDebug(JSON.stringify({ nodes: parsedNodes, connections: parsedConnections }, null, 2));
     } catch (error) {
       console.error("Error parsing diagram:", error);
-      setDebug("Error: " + error.message);
+      setDebug("Error: " + extractErrorMessage(error));
     }
   }, [markdownInput]);
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { extractErrorMessage } from '@/utils/errors';
 import { cache } from 'react';
 
 // Define types for app data
@@ -47,7 +48,7 @@ export const getAppData = cache(async (slug: string | null = null, id: string | 
       supabase = await createClient();
     } catch (clientError) {
       console.error(`[CACHE-DEBUG ${requestId}] Failed to create Supabase client:`, clientError);
-      throw new Error(`Failed to initialize database client: ${clientError.message}`);
+      throw new Error(`Failed to initialize database client: ${extractErrorMessage(clientError)}`);
     }
     
     

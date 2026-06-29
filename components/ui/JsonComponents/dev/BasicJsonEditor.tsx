@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { extractErrorMessage } from '@/utils/errors';
 import { AlertCircle, Check } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -34,7 +35,7 @@ const JsonEditor = () => {
 
       return { success: true, data: parsed };
     } catch (err) {
-      return { success: false, error: err.message };
+      return { success: false, error: extractErrorMessage(err) };
     }
   };
 

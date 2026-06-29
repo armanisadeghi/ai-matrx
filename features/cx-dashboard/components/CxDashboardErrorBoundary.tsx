@@ -17,11 +17,11 @@ export class CxDashboardErrorBoundary extends React.Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: React.ErrorInfo) {
+  override componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("[CX Dashboard Error]", error, info.componentStack);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center gap-3 p-6 rounded-lg border border-destructive/30 bg-destructive/5">

@@ -87,7 +87,7 @@ export class SchemaLogger extends BaseLogger {
         });
     }
 
-    protected async processLog(log: SchemaResolutionLog): Promise<void> {
+    protected override async processLog(log: SchemaResolutionLog): Promise<void> {
         await super.processLog(log);
     }
 }

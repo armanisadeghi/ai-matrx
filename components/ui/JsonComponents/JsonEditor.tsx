@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -113,7 +114,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
           {
             line: 1,
             column: 1,
-            message: `Invalid JSON: ${error.message}`,
+            message: `Invalid JSON: ${extractErrorMessage(error)}`,
           },
         ]);
       }
@@ -135,7 +136,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
         {
           line: 1,
           column: 1,
-          message: `Change error: ${error.message}`,
+          message: `Change error: ${extractErrorMessage(error)}`,
         },
       ]);
     }

@@ -3,7 +3,7 @@ import { IDBPDatabase } from "idb";
 import { PublicStoreManager } from "./store-interface";
 
 export abstract class FeatureStore<T> extends PublicStoreManager<T> {
-    protected static _instance: any;
+    protected static override _instance: any;
     protected storeName: string;
 
     protected constructor(dbName: string, version: number, storeName: string) {
@@ -12,7 +12,7 @@ export abstract class FeatureStore<T> extends PublicStoreManager<T> {
         this.initDB();
     }
 
-    protected abstract setupStores(db: IDBPDatabase): void;
+    protected abstract override setupStores(db: IDBPDatabase): void;
 
     public getStoreName(): string {
         return this.storeName;

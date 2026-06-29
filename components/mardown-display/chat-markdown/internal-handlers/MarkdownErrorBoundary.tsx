@@ -19,7 +19,7 @@ export class MarkdownErrorBoundary extends React.Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error(
       "[MarkdownStream] Error caught by boundary:",
       error,
@@ -32,7 +32,7 @@ export class MarkdownErrorBoundary extends React.Component<
     this.props.onError?.(error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return this.props.fallback;
     }

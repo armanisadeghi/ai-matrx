@@ -49,7 +49,7 @@ export class OverlayErrorBoundary extends React.Component<
   OverlayErrorBoundaryProps,
   OverlayErrorBoundaryState
 > {
-  state: OverlayErrorBoundaryState = { error: null, componentStack: null };
+  override state: OverlayErrorBoundaryState = { error: null, componentStack: null };
 
   static getDerivedStateFromError(
     error: unknown,
@@ -57,7 +57,7 @@ export class OverlayErrorBoundary extends React.Component<
     return { error };
   }
 
-  componentDidCatch(error: unknown, info: React.ErrorInfo): void {
+  override componentDidCatch(error: unknown, info: React.ErrorInfo): void {
     const e = normalizeError(error);
     this.setState({ componentStack: info.componentStack ?? null });
     // Feed the systemwide Error Inspector with rich detail (react-render
@@ -89,7 +89,7 @@ export class OverlayErrorBoundary extends React.Component<
     this.setState({ error: null, componentStack: null });
   };
 
-  render(): React.ReactNode {
+  override render(): React.ReactNode {
     if (this.state.error !== null) {
       return (
         <OverlayErrorFallback

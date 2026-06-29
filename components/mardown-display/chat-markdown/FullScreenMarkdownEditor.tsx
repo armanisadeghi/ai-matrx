@@ -228,7 +228,7 @@ class TabErrorBoundary extends Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
     console.error(
       `[FullScreenMarkdownEditor] Tab "${this.props.tabId}" crashed:`,
@@ -237,7 +237,7 @@ class TabErrorBoundary extends Component<
     );
   }
 
-  render() {
+  override render() {
     if (!this.state.hasError) return this.props.children;
 
     const { tabLabel, tabId, isAdmin, context } = this.props;

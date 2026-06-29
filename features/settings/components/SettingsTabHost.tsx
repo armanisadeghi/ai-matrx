@@ -88,17 +88,17 @@ class TabErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  state: ErrorBoundaryState = { error: null };
+  override state: ErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
-  componentDidCatch(error: Error) {
+  override componentDidCatch(error: Error) {
     console.error("[SettingsTabHost] tab render failure:", error);
   }
 
-  render() {
+  override render() {
     if (this.state.error) {
       return (
         <div className="p-4">

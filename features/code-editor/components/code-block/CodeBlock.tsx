@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/styles/themes/utils";
 import SmallCodeEditor from "./SmallCodeEditor";
 import CodeBlockHeader, {
@@ -163,7 +164,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
       });
     } catch (error) {
       console.error("Failed to create HTML page:", error);
-      toast.error(`Failed to create HTML page: ${error.message}`);
+      toast.error(`Failed to create HTML page: ${extractErrorMessage(error)}`);
     } finally {
       setIsCreatingPage(false);
     }

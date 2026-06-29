@@ -118,7 +118,7 @@ class ClientLogger extends BaseLogger {
         this.flush();
     }
 
-    protected async processLog(log: LogEntry): Promise<void> {
+    protected override async processLog(log: LogEntry): Promise<void> {
         // Client logger handles its own sending via flush()
         // but we'll still use base DataDog integration if enabled
         await super.processLog(log);

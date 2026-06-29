@@ -31,7 +31,7 @@ export type FileHandlerErrorCode =
 export class FileHandlerError extends Error {
   readonly code: FileHandlerErrorCode;
   readonly fileId?: string;
-  readonly cause?: unknown;
+  override readonly cause?: unknown;
 
   constructor(
     code: FileHandlerErrorCode,
