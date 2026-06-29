@@ -138,9 +138,11 @@ const RAG_AGENT_TOOL_IDS = [
 
 type SourceKindFilter = "all" | "cld_file" | "note" | "code_file";
 
-function useScopeControls() {
+function useScopeControls(initialStoreId: string | null = null) {
   const stores = useDataStores();
-  const [storeId, setStoreId] = useState<string | null>(null);
+  // Seed from the deep-link `?store_id=` synchronously so a shared search URL
+  // restores its data-store scope (and the auto-run uses it) without a race.
+  const [storeId, setStoreId] = useState<string | null>(initialStoreId);
   const [kindFilter, setKindFilter] = useState<SourceKindFilter>("all");
   const [adminBypass, setAdminBypass] = useState(false);
   const [rerank, setRerank] = useState(true);
@@ -246,19 +248,26 @@ function citationHrefFor(
   page: number | null,
   chunk_id: string,
 ): string | null {
+  // Mirrors the module-level citationHrefFor in features/rag/api/search.ts —
+  // keep the two in sync. Every kind gets a destination (no dead nulls), and
+  // library_doc carries the page so a result opens on the hit's page (the
+  // /rag/viewer route forwards ?page).
+  const pageQs = page ? `&page=${page}` : "";
   switch (source_kind) {
     case "cld_file":
-      return `/files/f/${source_id}?tab=document&chunk=${chunk_id}${
-        page ? `&page=${page}` : ""
-      }`;
+      return `/files/f/${source_id}?tab=document&chunk=${chunk_id}${pageQs}`;
     case "note":
       return `/notes/${source_id}`;
     case "code_file":
       return `/code/${source_id}`;
     case "library_doc":
-      return `/rag/viewer/${source_id}?chunk=${chunk_id}`;
+      return `/rag/viewer/${source_id}?chunk=${chunk_id}${pageQs}`;
+    case "transcript":
+      return `/transcription/studio?session=${source_id}`;
+    case "scraped":
+      return `/scraper?url=${encodeURIComponent(source_id)}`;
     default:
-      return null;
+      return `/rag/viewer/${source_id}?chunk=${chunk_id}${pageQs}`;
   }
 }
 
@@ -757,7 +766,11 @@ function SearchScopeSummary({
         Searching
       </span>
       <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
-        {storeName ? `store · ${storeName}` : "all accessible content"}
+        {storeName
+          ? `store · ${storeName}`
+          : scope.storeId
+            ? "store · …" // selected (e.g. from a deep link) but list still loading
+            : "all accessible content"}
       </Badge>
       <span aria-hidden>·</span>
       <Badge
@@ -816,7 +829,7 @@ function QueryTermCoverage({
   hits,
 }: {
   query: string;
-  hits: { snippet: string }[];
+  hits: { snippet: string | null }[];
 }) {
   const terms = Array.from(
     new Set(
@@ -873,6 +886,9 @@ function SearchTab({ scope }: { scope: Scope }) {
   const [running, setRunning] = useState(false);
   const [response, setResponse] = useState<RagSearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Guards against a slow earlier search resolving after a newer one and
+  // overwriting it (the `disabled={running}` button guard isn't synchronous).
+  const seqRef = useRef(0);
 
   const sourceKindFilters = useMemo(
     () =>
@@ -892,6 +908,7 @@ function SearchTab({ scope }: { scope: Scope }) {
   const runSearch = useCallback(async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
+    const seq = ++seqRef.current;
     setRunning(true);
     setError(null);
     setResponse(null);
@@ -911,6 +928,7 @@ function SearchTab({ scope }: { scope: Scope }) {
         admin_bypass_acl: scope.adminBypass || undefined,
         ...searchContext,
       });
+      if (seq !== seqRef.current) return; // superseded by a newer search
       setResponse(r);
 
       const next = new URLSearchParams();
@@ -918,9 +936,10 @@ function SearchTab({ scope }: { scope: Scope }) {
       if (scope.storeId) next.set("store_id", scope.storeId);
       router.replace(`/rag/search${next.toString() ? `?${next}` : ""}`);
     } catch (e) {
+      if (seq !== seqRef.current) return;
       setError(e instanceof Error ? e.message : "Search failed");
     } finally {
-      setRunning(false);
+      if (seq === seqRef.current) setRunning(false);
     }
   }, [query, scope, router, searchContext]);
 
@@ -1620,6 +1639,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
             partial.candidates_after_fusion = evt.candidates_after_fusion;
             partial.candidates_vector = evt.candidates_vector;
             partial.candidates_lexical = evt.candidates_lexical;
+            partial.candidates_entity = evt.candidates_entity;
             break;
           case "rag.diagnose.hits":
             partial.hits = evt.hits;
@@ -1656,7 +1676,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
           h.file_name ? ` ${h.file_name}` : ""
         }${h.page_number ? ` p.${h.page_number}` : ""}  score=${h.score.toFixed(3)} ---`,
       );
-      lines.push(h.snippet.slice(0, 1500));
+      lines.push((h.snippet ?? "").slice(0, 1500));
       lines.push("");
     });
     lines.push("USER QUESTION:");
@@ -2355,10 +2375,22 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
  * they have icons, and a one-tap switch beats two-tap drawer + select.
  * If we add a fifth tab, revisit and consider the drawer picker.
  */
+const RAG_SEARCH_TABS = [
+  "search",
+  "agent-sim",
+  "agent-chat",
+  "diagnostics",
+] as const;
+
 export function RagSearchExperience() {
-  const scope = useScopeControls();
   const params = useSearchParams();
-  const initialTab = (params?.get("tab") as string | null) ?? "search";
+  const scope = useScopeControls(params?.get("store_id") ?? null);
+  // Validate the deep-linked tab — an unknown ?tab= value would otherwise leave
+  // every TabsContent inactive and render a blank panel.
+  const rawTab = params?.get("tab") ?? "";
+  const initialTab = (RAG_SEARCH_TABS as readonly string[]).includes(rawTab)
+    ? rawTab
+    : "search";
   const isMobile = useIsMobile();
   const [scopeOpen, setScopeOpen] = useState(false);
 

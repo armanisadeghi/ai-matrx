@@ -125,6 +125,10 @@ export interface DiagnoseHit {
   metadata: Record<string, unknown>;
   file_name: string | null;
   page_number: number | null;
+  // Entity-lane provenance — present when the diagnose stream reports it, so the
+  // shared RichHitCard can flag an "entity match only" hit here too.
+  entity_rank?: number | null;
+  entities?: string[];
 }
 
 export interface DiagnoseResponse {
