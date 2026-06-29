@@ -1,9 +1,36 @@
-import { 
-  Search, Moon, Sun, Filter, Check, X, Mail, MessageSquare, Calendar, Trello, 
-  Github, Gitlab, Slack, FileText, HardDrive, Database, PieChart, BarChart, 
-  Linkedin, Twitter, Facebook, Figma, Chrome, Coffee, Code, BookOpen,
-  MessageCircle, Users, Cloud, Briefcase, LucideIcon
-} from 'lucide-react';
+import {
+  Search,
+  Moon,
+  Sun,
+  Filter,
+  Check,
+  X,
+  Mail,
+  MessageSquare,
+  Calendar,
+  Slack,
+  FileText,
+  HardDrive,
+  Database,
+  PieChart,
+  BarChart,
+  Coffee,
+  Code,
+  BookOpen,
+  MessageCircle,
+  Users,
+  Cloud,
+  Briefcase,
+} from "lucide-react";
+import {
+  Github,
+  Gitlab,
+  Linkedin,
+  Twitter,
+  Facebook,
+  Figma,
+  Trello,
+} from "@/components/icons/brand-icons";
 
 export type Category =
 | "Email & Communication"

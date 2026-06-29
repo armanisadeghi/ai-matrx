@@ -9,11 +9,15 @@ import {
     FaLinkedin,
     FaInstagram,
     FaChrome,
+    FaTrello,
+    FaGitlab,
 } from "react-icons/fa6";
+import { SiFigma } from "react-icons/si";
 
 /**
- * lucide-react 1.0 removed every trademarked brand logo (Youtube, Github, Twitter/X,
- * Facebook, Linkedin, Instagram, Chrome, ...). These shims re-expose the brand glyphs
+ * lucide-react 1.0+ removed every trademarked brand logo (Youtube, Github, Gitlab,
+ * Twitter/X, Facebook, Linkedin, Instagram, Chrome, Trello, Figma, ...). These shims
+ * re-expose the brand glyphs
  * we still use as drop-in, `LucideIcon`-compatible components (identical `LucideProps`
  * surface + svg ref), so any former `lucide-react` brand import only swaps its source
  * to this module — registries/maps typed `LucideIcon` keep compiling untouched.
@@ -41,3 +45,6 @@ export const Facebook = asLucideIcon(FaFacebook, "Facebook");
 export const Linkedin = asLucideIcon(FaLinkedin, "Linkedin");
 export const Instagram = asLucideIcon(FaInstagram, "Instagram");
 export const Chrome = asLucideIcon(FaChrome, "Chrome");
+export const Trello = asLucideIcon(FaTrello, "Trello");
+export const Gitlab = asLucideIcon(FaGitlab, "Gitlab");
+export const Figma = asLucideIcon(SiFigma, "Figma");
