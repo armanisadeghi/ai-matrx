@@ -126,7 +126,13 @@ export type SourceFeature =
   /** "Agent Chat" tab of the RAG Search Lab (`/rag/search`, `RagSearchExperience`). */
   | "rag-search"
   /** Flashcards + FastFire study tools (`/education/flashcards`, `/education/fastfire`). */
-  | "flashcards";
+  | "flashcards"
+  /** Fast Fire background AI runs — kept out of normal chats via the source
+   *  registry. Persistent stopgap until ephemeral runs are rebuilt
+   *  (docs/EPHEMERAL_AGENT_RUNS_SPEC.md). */
+  | "fastfire-grade"
+  | "fastfire-help"
+  | "fastfire-review";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

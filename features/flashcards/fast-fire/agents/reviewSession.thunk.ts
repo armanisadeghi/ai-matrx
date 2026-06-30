@@ -92,8 +92,10 @@ export function reviewSession(args: ReviewSessionArgs) {
         launchAgentExecution({
           agentId: config.reviewAgentId,
           surfaceKey: "fastfire-review-session",
-          sourceFeature: "flashcards",
-          isEphemeral: true,
+          // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
+          // normal chats via a distinct system source_feature (source-registry.ts).
+          sourceFeature: "fastfire-review",
+          isEphemeral: false,
           runtime: {
             variables: {
               transcript: attempts

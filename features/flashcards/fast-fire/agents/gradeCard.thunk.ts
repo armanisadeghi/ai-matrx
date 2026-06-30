@@ -178,8 +178,12 @@ export function gradeCard(args: GradeCardArgs) {
         launchAgentExecution({
           agentId: config.graderAgentId,
           surfaceKey: `fastfire-grade-${cardId}`,
-          sourceFeature: "flashcards",
-          isEphemeral: true,
+          // NOT ephemeral: the platform's ephemeral path is half-built and
+          // 404s against the v2 conversation gate (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md).
+          // We persist instead, and keep these out of the user's normal chats
+          // via a distinct, system-marked source_feature (source-registry.ts).
+          sourceFeature: "fastfire-grade",
+          isEphemeral: false,
           runtime: {
             variables: {
               front,

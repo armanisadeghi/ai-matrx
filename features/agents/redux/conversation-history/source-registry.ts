@@ -28,6 +28,7 @@ import {
   Code2,
   FileText,
   Globe,
+  GraduationCap,
   Hammer,
   Image,
   MessageSquare,
@@ -110,6 +111,13 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "transcript-studio": { label: "Transcript Studio", icon: FileText },
   transcripts: { label: "Transcripts", icon: FileText },
 
+  // Fast Fire background AI runs (grading / tutor / session review). These are
+  // automation-like one-shot runs, NOT user chats — system-marked so they group
+  // as automations and stay out of the /chat sidebar (not in its allow-list).
+  "fastfire-grade": { label: "Fast Fire Grading", icon: GraduationCap, system: true },
+  "fastfire-help": { label: "Fast Fire Tutor", icon: GraduationCap, system: true },
+  "fastfire-review": { label: "Fast Fire Review", icon: GraduationCap, system: true },
+
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
   research: { label: "Research", icon: Globe },
@@ -171,6 +179,12 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
       "prompt-app",
       "agent-comparison",
     ],
+  },
+  {
+    id: "fastfire",
+    label: "Fast Fire",
+    icon: GraduationCap,
+    features: ["fastfire-grade", "fastfire-help", "fastfire-review"],
   },
 ];
 

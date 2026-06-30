@@ -68,8 +68,10 @@ export function helpLive(args: HelpLiveArgs) {
         launchAgentExecution({
           agentId: config.helpAgentId,
           surfaceKey: "fastfire-help-live",
-          sourceFeature: "flashcards",
-          isEphemeral: true,
+          // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
+          // normal chats via a distinct system source_feature (source-registry.ts).
+          sourceFeature: "fastfire-help",
+          isEphemeral: false,
           runtime: {
             userInput: args.question?.trim() || "I'm confused — help me with this card.",
             variables: {
