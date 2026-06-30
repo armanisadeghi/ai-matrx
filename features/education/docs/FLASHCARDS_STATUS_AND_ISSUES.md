@@ -159,6 +159,21 @@ before implementing. **This is the thing that actually needs careful engineering
     `SessionDetailView`/`SessionAudio` + 3 routes); cleaned up the 14 leaked `active` sessions.
   - **Capture test:** added an auto-cut mode (seconds/card + count → auto-segments). Kept as a permanent
     admin debug tool. Step 6 audio debug panel (live buffer/clock) shipped earlier.
+  - **Adversarial review (2 independent reviewers) — fixes applied:** the platform-wide `file_id`
+    content-part fix verified clean (matches the Python MediaRef contract; safe for chat/public).
+    Hardened the capture core + grading: **no-audio guard** (gradeCard skips the grader + records
+    result-less when no audio uploaded — kills grade-with-no-audio hallucination AND abort-mid-pad
+    grading), worklet module keyed per-AudioContext + ScriptProcessor fallback (iOS context recreation),
+    beep-offset clamping (last-card stop beep), PCM 30-min safety cap, stop clears per-card windows.
+  - **KNOWN FOLLOW-UPS (deferred, documented):**
+    - Persisted grade/help/review conversations appear in the **AI-Results "browse-everything" history
+      window** (`surfaceId='history-window'` has an empty allow-list = shows all; `system:true` only mutes
+      in the tree, doesn't exclude). `/chat` correctly excludes them (allow-list). Fix = exclude
+      `system:true` source_features from empty-filter surfaces (a shared-UX decision — owner's call).
+    - `get_user_dashboard_metrics` counts `public.cx_conversation` which **no longer exists** (moved to
+      the `chat` schema in the DB transition) — the conversations metric is already stale/broken,
+      independent of FastFire. Repoint it to `chat.cx_conversation` (+ optionally exclude system features)
+      as part of DB-transition cleanup.
   - **REMAINING:** Step 6 live agent-stream window panel (lower priority); FE leak-hardening backstop
     (reaper) is deferred — the abort path + the one-time cleanup cover today; a hard tab-kill mid-drill
     could still leak until a reaper exists. Re-verify grading live once the aidream Definition cache
