@@ -82,6 +82,24 @@ export const fcService = {
     }
   },
 
+  async updateSet(
+    setId: string,
+    patch: Partial<Pick<FcSetRow, "name" | "description" | "topic" | "lesson" | "difficulty">>,
+  ): Promise<FcResult<FcSetRow>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .update(patch)
+        .eq("id", setId)
+        .select("*")
+        .single();
+      if (error) return fail("updateSet", error);
+      return { data: data as FcSetRow, error: null };
+    } catch (e) {
+      return fail("updateSet", e);
+    }
+  },
+
   async getSet(setId: string): Promise<FcResult<FcSetRow>> {
     try {
       // maybeSingle (not single): an RLS-hidden or missing row returns no row

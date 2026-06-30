@@ -20,7 +20,11 @@ import {
   Lightbulb,
   Sparkles,
   Volume2,
+  Zap,
+  Pencil,
+  Wand2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -107,9 +111,18 @@ export function SetDetailView({ setId }: { setId: string }) {
     };
   }, [setId]);
 
-  const goStudy = () => {
+  const [pendingAction, setPendingAction] = useState<
+    "study" | "fastfire" | "edit" | null
+  >(null);
+
+  // Single navigation helper: marks which action is in flight (so only that
+  // button shows the busy state) and routes via a transition. Guards against
+  // duplicate clicks while a transition is pending. (UI standards.)
+  const navigate = (action: "study" | "fastfire" | "edit", path: string) => {
+    if (isPending) return;
+    setPendingAction(action);
     startTransition(() => {
-      router.push(`${EDU_BASE}/${setId}/study`);
+      router.push(path);
     });
   };
 
@@ -191,14 +204,51 @@ export function SetDetailView({ setId }: { setId: string }) {
                   ) : null}
                 </div>
               </div>
-              <Button
-                onClick={goStudy}
-                disabled={isPending || data.cards.length === 0}
-                className={cn(isPending && "opacity-70")}
-              >
-                <Play className="mr-1.5 h-4 w-4" />
-                Study
-              </Button>
+              {/* Action row — the hub: every path you can take with this set.
+                  Study / Fast Fire are live; Edit graduates the view→edit split
+                  (ROUTING.md); Enhance is the agentic-expansion placeholder. */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  onClick={() => navigate("study", `${EDU_BASE}/${setId}/study`)}
+                  disabled={isPending || data.cards.length === 0}
+                  className={cn(pendingAction === "study" && "opacity-70")}
+                >
+                  <Play className="mr-1.5 h-4 w-4" />
+                  Study
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() =>
+                    navigate("fastfire", `/education/fastfire?set=${setId}`)
+                  }
+                  disabled={isPending || data.cards.length === 0}
+                  className={cn(pendingAction === "fastfire" && "opacity-70")}
+                >
+                  <Zap className="mr-1.5 h-4 w-4" />
+                  Fast Fire
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("edit", `${EDU_BASE}/${setId}/edit`)}
+                  disabled={isPending}
+                  className={cn(pendingAction === "edit" && "opacity-70")}
+                >
+                  <Pencil className="mr-1.5 h-4 w-4" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    toast.info("Enhance & expand", {
+                      description:
+                        "Agentic card enrichment, sub-card expansion, and audio generation are coming soon.",
+                    })
+                  }
+                >
+                  <Wand2 className="mr-1.5 h-4 w-4" />
+                  Enhance
+                </Button>
+              </div>
             </div>
 
             {/* Cards */}

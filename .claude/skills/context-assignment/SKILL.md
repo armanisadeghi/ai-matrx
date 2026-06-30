@@ -65,8 +65,12 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
 ## Hard rules
 
 - **Fetch discipline.** The org/type/scope tree is fetched ONCE at boot into
-  Redux and refreshed only by `scopeTreeInvalidationMiddleware` on structural
-  mutations. Components NEVER refetch it. Projects/tasks/items go through
+  Redux (`ensureScopeTree` → `state.scopesTree`) and refreshed only by
+  `scopeTreeInvalidationMiddleware` on structural mutations. Components NEVER
+  refetch it. It is **durably warm-cached across hard reload** by the sync
+  engine (`scopesTreePolicy` in `features/scopes/redux/scopesSlice.ts`): a warm
+  boot rehydrates the tree before paint and `ensureScopeTree()` skips the
+  network entirely (no `staleAfter`/`remote.fetch` — the tree changes rarely). Projects/tasks/items go through
   `context-assignment/data.ts` (60s TTL + in-flight dedup). List surfaces use
   `getEntityScopesBulk`/`primeEntityScopes` — N rows must never mean N
   requests. Add new reads to `data.ts`, never to a component.

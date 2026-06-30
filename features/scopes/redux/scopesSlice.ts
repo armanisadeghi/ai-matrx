@@ -15,6 +15,11 @@
 // No selectors live here — selectors are in ./selectors/.
 
 import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { definePolicy } from "@/lib/sync/policies/define";
+import {
+  REHYDRATE_ACTION_TYPE,
+  type RehydrateAction,
+} from "@/lib/sync/engine/rehydrate";
 import type {
   AssociationEdge,
   AssociationsEntry,
@@ -489,6 +494,27 @@ const scopesSlice = createSlice({
     scopesReset: () => initialState,
   },
   extraReducers: (builder) => {
+    // ── Warm-cache rehydrate (scopesTreePolicy) ──────────────────────
+    // On a WARM reload the sync engine restores the persisted tree BEFORE
+    // paint and dispatches REHYDRATE. We adopt it only if no live fetch has
+    // already won the race (deep-link / refresh). Setting treeStatus="ready"
+    // is what makes `ensureScopeTree()` skip the network on warm boots — the
+    // whole point: the tree changes rarely, so don't refetch every launch.
+    builder.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
+      if (action.payload.sliceName !== "scopesTree") return;
+      if (state.treeStatus === "ready" || state.treeStatus === "loading")
+        return;
+      const loaded = action.payload.state as Partial<ScopesState> | undefined;
+      const orgs = loaded?.organizations;
+      if (!orgs) return;
+      const ids = Object.keys(orgs);
+      if (ids.length === 0) return;
+      state.organizations = orgs;
+      state.organizationIds = loaded?.organizationIds ?? ids;
+      state.treeStatus = "ready";
+      state.treeError = null;
+      state.treeFetchedAt = loaded?.treeFetchedAt ?? Date.now();
+    });
     // Mirror legacy editor mutations into this tree (see header block).
     builder
       .addCase(legacyScopeCreated, (state, action) =>
@@ -584,3 +610,65 @@ function upsertScopeTypeFromLegacy(
 
 export const scopesActions = scopesSlice.actions;
 export default scopesSlice.reducer;
+
+// ---- Sync engine policy --------------------------------------------------
+//
+// `scopesTreePolicy` makes the org → scope-type → scope → project tree a
+// durable, warm-cached citizen of the unified sync engine (same machinery as
+// appContext / userPreferences). It persists ONLY the tree (organizations +
+// order + fetched-at) to IDB→localStorage, keyed by identity, so on a hard
+// refresh the tree rehydrates BEFORE paint and `ensureScopeTree()` returns the
+// cached tree without a network round-trip.
+//
+// Layer B of the three-layer context model (docs/knowledge/scope-model.md):
+// the REFERENCE tree — "what scopes/types/orgs/projects exist". It changes
+// rarely, so:
+//   - NO `staleAfter` / `remote.fetch` here. Refresh is explicit only:
+//     `scopeTreeInvalidationMiddleware` re-fetches on structural mutations, and
+//     a true cold boot (no cache) is covered by the existing ensureScopeTree
+//     boot fetch. We add durability so a WARM reload skips the fetch entirely.
+//   - broadcast `treeFetchFulfilled` + `scopesReset` so a refresh (or sign-out)
+//     in one tab propagates the fresh tree to sibling tabs without each one
+//     refetching.
+//
+// `partialize`/`serialize` persist ONLY the tree. The lazily-loaded per-entity
+// caches (tasksByKey, orphanProjectsByOrg, entityScopesByKey, associationsByKey,
+// categoriesByDimension) are session-scoped with their own TTLs — deliberately
+// NOT persisted. `serialize` keeps writing the last-known tree even while a
+// refresh is in flight (treeFetchPending leaves `organizations` intact), so the
+// cache stays warm across a crash mid-refresh; `scopesReset` empties it.
+
+export const scopesTreePolicy = definePolicy<ScopesState>({
+  sliceName: "scopesTree",
+  preset: "warm-cache",
+  version: 1, // Bump destroys client caches (no migration hooks yet).
+  broadcast: {
+    actions: ["scopesTree/treeFetchFulfilled", "scopesTree/scopesReset"],
+  },
+  storageKey: "matrx:scopesTree",
+  partialize: ["organizations", "organizationIds", "treeFetchedAt"],
+  serialize: (state) => {
+    if (state.organizationIds.length === 0) return {};
+    return {
+      organizations: state.organizations,
+      organizationIds: state.organizationIds,
+      treeFetchedAt: state.treeFetchedAt,
+    };
+  },
+  deserialize: (raw) => {
+    if (!raw || typeof raw !== "object") return {};
+    const r = raw as Record<string, unknown>;
+    const orgs = r.organizations;
+    if (!orgs || typeof orgs !== "object") return {};
+    const ids = Object.keys(orgs as Record<string, unknown>);
+    if (ids.length === 0) return {};
+    return {
+      organizations: orgs as ScopesState["organizations"],
+      organizationIds: Array.isArray(r.organizationIds)
+        ? (r.organizationIds as string[])
+        : ids,
+      treeFetchedAt:
+        typeof r.treeFetchedAt === "number" ? r.treeFetchedAt : null,
+    };
+  },
+});
