@@ -53,6 +53,7 @@ import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import pageExtractionReducer from "@/features/page-extraction/redux/pageExtractionSlice";
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
+import fastFireReducer from "@/features/flashcards/fast-fire/redux/fastFireSlice";
 import warRoomReducer from "@/features/war-room/redux/slice";
 import warRoomWatchReducer from "@/features/war-room/redux/watchSlice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
@@ -91,6 +92,7 @@ import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice"
 import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
 import agentUsagesReducer from "@/features/agents/redux/usages/usages.slice";
 import agentContentBlockReducer from "@/features/agents/redux/agent-content-blocks/slice";
+import agentSetsReducer from "@/features/agents/agent-sets/redux/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
@@ -230,6 +232,9 @@ export const slimReducerMap = {
   noteVersions: noteVersionsReducer,
   notes: notesReducer,
   transcriptStudio: transcriptStudioReducer,
+  // FastFire — the voice-graded flashcard drill state machine
+  // (features/flashcards/fast-fire). ONE slice owns the whole drill lifecycle.
+  fastFire: fastFireReducer,
   // War Room — session-based multitasking command center (features/war-room)
   warRoom: warRoomReducer,
   // War Room master-agent live-watch layer (ephemeral UI; features/war-room)
@@ -294,6 +299,9 @@ export const slimReducerMap = {
   agentShortcutCategory: agentShortcutCategoryReducer,
   agentUsages: agentUsagesReducer,
   agentContentBlock: agentContentBlockReducer,
+  // Agent Sets (Orchestrators) — set list + per-set member/config cache.
+  // Membership truth lives in platform.associations; see features/agents/agent-sets.
+  agentSets: agentSetsReducer,
   skl: sklReducer,
   // New skills slice — canonical source going forward. Backed by /api/skills
   // (the Python backend), not Supabase. The old `skl` key is retained for

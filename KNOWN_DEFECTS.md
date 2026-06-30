@@ -17,6 +17,17 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D28 — `study_record_attempt` RPC rejects a NULL `result` (NOT-NULL `item_mastery.struggle_flag`)
+**Severity: medium — found 2026-06-30 building FastFire ([`features/flashcards/fast-fire/`](features/flashcards/fast-fire/)).** A DB-side defect in the committed study spine, NOT in FastFire code; the DDL fix was correctly **denied** by the auto-mode classifier (DB is locked during the transition), so it is logged here for the DB owner to apply.
+
+**What.** `public.study_record_attempt(...)` computes `item_mastery.struggle_flag` as `(not v_correct and not v_partial)`. When `p_result IS NULL` — a fully valid case (FastFire records attempts *before/without* a grade: grader-optional + fire-and-forget, exactly as REQUIREMENTS asks: "records attempts (result null / pending)") — `v_correct`/`v_partial` are NULL, so the expression is NULL (3-valued logic), and the INSERT/UPDATE violates `item_mastery.struggle_flag`'s NOT NULL constraint → PostgREST `23502` / 400. Every result-less FastFire attempt fails the spine write (loudly: `[fastfire.gradeCard] recordAttempt failed`). The session row + `session_audio_file_id` still persist (session create + finalize update use a different path); only the per-card `study_attempt`/`item_mastery` upsert fails.
+
+**Why it happened.** The RPC was authored against the existing flashcard self-review path, which ALWAYS passes a concrete `result`, so the NULL branch was never exercised. FastFire is the first legitimate consumer of an ungraded attempt.
+
+**The fix (one-line, idempotent, ready to apply).** Wrap both `struggle_flag` expressions in the RPC body in `coalesce(..., false)` — a result-less (ungraded) attempt is simply "not a struggle yet". `CREATE OR REPLACE FUNCTION public.study_record_attempt` with the two lines changed; nothing else in the contract moves. (The full corrected body was drafted during the FastFire build.)
+
+**Also fixed here (client, in scope):** `study_session.source_kind` CHECK allows `set`/`dynamic_batch`/`adaptive` only — the FastFire launcher (and the existing `useFlashcardStudy`) were passing `'fc_set'`. FastFire now passes `'set'` (`features/flashcards/fast-fire/hooks/useFastFireLauncher.ts`). **Still open (same class, NOT touched):** `features/flashcards/data/useFlashcardStudy.ts` also passes `sourceKind: 'fc_set'` → its `withSession` study runs hit the same `23514` CHECK violation; flip it to `'set'`.
+
 ### D27 — Phantom association tokens: `agent_app`, `cx_message`, `cx_conversation`, `user_file`, `chat_block`
 **Severity: medium — created 2026-06-29 during the association-system type-safety hardening ([`features/scopes/FEATURE.md`](features/scopes/FEATURE.md) Change Log 2026-06-29).**
 

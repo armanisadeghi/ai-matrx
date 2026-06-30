@@ -124,7 +124,9 @@ export type SourceFeature =
   /** "Use AI" tab of the create-task panel (`TaskCreatePanel`). */
   | "task-create"
   /** "Agent Chat" tab of the RAG Search Lab (`/rag/search`, `RagSearchExperience`). */
-  | "rag-search";
+  | "rag-search"
+  /** Flashcards + FastFire study tools (`/education/flashcards`, `/education/fastfire`). */
+  | "flashcards";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

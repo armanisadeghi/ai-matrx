@@ -38,7 +38,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "The signature mode: configure pace, fire cards, answer aloud, get parallel AI grading and live session adaptation.",
     icon: Flame,
     letter: "FF",
-    status: "coming-soon",
+    status: "live",
     accessTier: "trial",
     visionRef: "VISION §3 FastFire",
     capabilities: [
