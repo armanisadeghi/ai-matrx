@@ -85,6 +85,25 @@ export interface RecordAttemptInput {
   gradedBy?: string | null;
 }
 
+// ─── Session browsing (history / results UI) ──────────────────────────────────
+/** Filters for `listSessions` — all optional; the RLS layer scopes to the user. */
+export interface ListSessionsFilter {
+  /** Restrict to one source set (study_session.source_set_id). */
+  setId?: string;
+  /** Restrict to one mode (e.g. 'fast_fire', 'classic_review'). */
+  mode?: string;
+  /** Restrict to one status ('active' | 'completed' | 'abandoned'). */
+  status?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/** A session plus its ordered attempt ledger — what the session-detail view reads. */
+export interface SessionWithAttempts {
+  session: StudySessionRow;
+  attempts: StudyAttemptRow[];
+}
+
 // ─── Session patch (what updateSession accepts) ───────────────────────────────
 export type SessionPatch = Partial<
   Pick<

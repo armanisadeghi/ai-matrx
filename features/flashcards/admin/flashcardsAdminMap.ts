@@ -72,6 +72,27 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       notes: ["Gated by selectIsAdmin", "Temporary dev aid for the audio core"],
     },
     {
+      url: "/education/flashcards/sessions",
+      label: "Study history (all sets)",
+      description: "The learner's study/Fast Fire session history across all sets (mode-agnostic SessionsBrowser over the study spine).",
+      filePath: "app/(core)/education/flashcards/sessions/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/flashcards/sessions/[sessionId]",
+      label: "Session detail",
+      description: "One session: header + aggregate, full recording, holistic review, and the per-attempt ledger (result/score/transcript/audio).",
+      filePath: "app/(core)/education/flashcards/sessions/[sessionId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/flashcards/[setId]/sessions",
+      label: "Sessions for a set",
+      description: "Study/Fast Fire sessions scoped to one set; rows open the shared session detail.",
+      filePath: "app/(core)/education/flashcards/[setId]/sessions/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/flashcards/admin",
       label: "This admin map",
       description: "Per-feature resource index (admin-gated).",

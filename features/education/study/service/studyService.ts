@@ -23,6 +23,8 @@ import type {
   NewSessionInput,
   RecordAttemptInput,
   SessionPatch,
+  ListSessionsFilter,
+  SessionWithAttempts,
 } from "../types";
 
 const EDU = () => supabase.schema("education");
@@ -164,6 +166,82 @@ export const studyService = {
     }
     // Unreachable (the loop always returns), but satisfies the type checker.
     return fail("createSession", "exhausted retries");
+  },
+
+  /**
+   * The current user's study sessions (RLS-scoped), newest-first. Optional
+   * filters narrow by source set, mode, and status. This is the read path the
+   * sessions-history / results UI consumes — the mode-agnostic spine means the
+   * same browser serves flashcards, quizzes, and every future mode.
+   */
+  async listSessions(
+    filter: ListSessionsFilter = {},
+  ): Promise<StudyResult<StudySessionRow[]>> {
+    try {
+      let q = EDU()
+        .from("study_session")
+        .select("*")
+        .is("deleted_at", null);
+      if (filter.setId) q = q.eq("source_set_id", filter.setId);
+      if (filter.mode) q = q.eq("mode", filter.mode);
+      if (filter.status) q = q.eq("status", filter.status);
+      q = q.order("created_at", { ascending: false });
+      if (filter.limit != null) {
+        const offset = filter.offset ?? 0;
+        q = q.range(offset, offset + filter.limit - 1);
+      }
+      const { data, error } = await q;
+      if (error) return fail("listSessions", error);
+      return { data: (data ?? []) as StudySessionRow[], error: null };
+    } catch (e) {
+      return fail("listSessions", e);
+    }
+  },
+
+  /** One session + its ordered attempt ledger (RLS-gated). null session = not found/hidden. */
+  async getSession(sessionId: string): Promise<StudyResult<SessionWithAttempts | null>> {
+    try {
+      const { data: session, error: sErr } = await EDU()
+        .from("study_session")
+        .select("*")
+        .eq("id", sessionId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (sErr) return fail("getSession", sErr);
+      if (!session) return { data: null, error: null };
+      const { data: attempts, error: aErr } = await EDU()
+        .from("study_attempt")
+        .select("*")
+        .eq("session_id", sessionId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true });
+      if (aErr) return fail("getSession", aErr);
+      return {
+        data: {
+          session: session as StudySessionRow,
+          attempts: (attempts ?? []) as StudyAttemptRow[],
+        },
+        error: null,
+      };
+    } catch (e) {
+      return fail("getSession", e);
+    }
+  },
+
+  /** Soft-delete a session (sets deleted_at; attempts/mastery are untouched). */
+  async deleteSession(sessionId: string): Promise<StudyResult<{ id: string }>> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_session")
+        .update({ deleted_at: new Date().toISOString() } as never)
+        .eq("id", sessionId)
+        .select("id")
+        .single();
+      if (error) return fail("deleteSession", error);
+      return { data: { id: (data as { id: string }).id }, error: null };
+    } catch (e) {
+      return fail("deleteSession", e);
+    }
   },
 
   /** Patch a session — status / ended_at / aggregate_score / audio / transcript / review / settings. */

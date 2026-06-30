@@ -23,6 +23,7 @@ import {
   Zap,
   Pencil,
   Expand,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -112,13 +113,16 @@ export function SetDetailView({ setId }: { setId: string }) {
   }, [setId]);
 
   const [pendingAction, setPendingAction] = useState<
-    "study" | "fastfire" | "edit" | null
+    "study" | "fastfire" | "edit" | "sessions" | null
   >(null);
 
   // Single navigation helper: marks which action is in flight (so only that
   // button shows the busy state) and routes via a transition. Guards against
   // duplicate clicks while a transition is pending. (UI standards.)
-  const navigate = (action: "study" | "fastfire" | "edit", path: string) => {
+  const navigate = (
+    action: "study" | "fastfire" | "edit" | "sessions",
+    path: string,
+  ) => {
     if (isPending) return;
     setPendingAction(action);
     startTransition(() => {
@@ -235,6 +239,15 @@ export function SetDetailView({ setId }: { setId: string }) {
                 >
                   <Pencil className="mr-1.5 h-4 w-4" />
                   Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("sessions", `${EDU_BASE}/${setId}/sessions`)}
+                  disabled={isPending}
+                  className={cn(pendingAction === "sessions" && "opacity-70")}
+                >
+                  <History className="mr-1.5 h-4 w-4" />
+                  History
                 </Button>
                 <Button
                   variant="outline"

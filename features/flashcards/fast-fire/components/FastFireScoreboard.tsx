@@ -13,6 +13,7 @@
 
 "use client";
 
+import Link from "next/link";
 import {
   Trophy,
   CheckCircle2,
@@ -24,6 +25,7 @@ import {
   Layers,
   GraduationCap,
   MicOff,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -249,6 +251,22 @@ export function FastFireScoreboard({
             <Layers className="h-4 w-4" />
             Back to flashcards
           </Button>
+        </div>
+
+        {/* Previous results — the session is persisted to the study spine, so
+            past drills are browsable in the history. */}
+        <div className="mt-3 text-center">
+          <Link
+            href={
+              config.setId
+                ? `/education/flashcards/${config.setId}/sessions`
+                : "/education/flashcards/sessions"
+            }
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <History className="h-3.5 w-3.5" />
+            View past sessions
+          </Link>
         </div>
       </div>
     </div>
