@@ -123,6 +123,12 @@ tier, the full raw error, and the suggested downgrade rule.
   else orange dot, else silent. Reflects the loudest tier.
 - Overlay id: `errorInspectorWindow` (singleton, ephemeral). Open via
   `useOpenErrorInspector` / `useToggleErrorInspector`.
+- **Minimized preview** (`ErrorInspectorTrayChip` → shared `TrayStatusChip`): the
+  minimized window shell shows a bug icon coloured by the **loudest** captured
+  tier (blue when clear → yellow → amber → red), the total distinct count, and a
+  per-tier breakdown — live from the module store via `useCapturedErrorStats`, so
+  re-renders are isolated to that leaf (zero page impact). Registered in
+  `features/window-panels/registry/trayPreviewRegistry.ts`.
 
 UI self-gates on `selectIsAdmin` (any admin level), not super-admin.
 
@@ -154,6 +160,12 @@ listener set.
 
 ## Change Log
 
+- 2026-06-29 — **Minimized preview.** The inspector's minimized window shell now
+  shows `ErrorInspectorTrayChip` (a bug icon coloured by the loudest tier + total
+  + per-tier breakdown) instead of an empty card, built on the new reusable
+  `features/window-panels/.../TrayStatusChip` primitive. Live from the module
+  store; isolated re-renders. First consumer of the canonical minimized-preview
+  system (see `features/window-panels/FEATURE.md`).
 - 2026-06-29 — **Tiering + remaining arteries.** Tool errors default **yellow**
   (normal agent operation). Added the global Redux `*/rejected` middleware
   (`redux-rejected`, orange) — the last systemic gap. Built the shared

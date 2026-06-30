@@ -18,6 +18,7 @@
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import {
   cloudFilesTrayPreview,
+  errorInspectorTrayPreview,
   notesTrayPreview,
   quickTasksTrayPreview,
   scraperTrayPreview,
@@ -36,6 +37,7 @@ const TRAY_PREVIEW_REGISTRY: Record<string, TrayPreviewEntry> = {
   cloudFilesWindow: { renderTrayPreview: cloudFilesTrayPreview },
   scraperWindow: { renderTrayPreview: scraperTrayPreview },
   smartCodeEditorWindow: { renderTrayPreview: smartCodeEditorTrayPreview },
+  errorInspectorWindow: { renderTrayPreview: errorInspectorTrayPreview },
 };
 
 export function getTrayPreviewEntry(

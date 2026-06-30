@@ -15,6 +15,7 @@
 
 import type { ReactNode } from "react";
 import type { TrayPreviewContext } from "./windowRegistryTypes";
+import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspectorTrayChip";
 
 // ─── Notes ────────────────────────────────────────────────────────────────────
 
@@ -150,4 +151,14 @@ export function smartCodeEditorTrayPreview({
       )}
     </div>
   );
+}
+
+// ─── Error Inspector ──────────────────────────────────────────────────────────
+// Unlike the previews above (pure functions of persisted `data`), the Error
+// Inspector reflects LIVE state, so it delegates to a subscribing component.
+// `ErrorInspectorTrayChip` reads the module-level capture store, keeping its
+// re-renders isolated to this leaf (see that file for the isolation contract).
+
+export function errorInspectorTrayPreview(): ReactNode {
+  return <ErrorInspectorTrayChip />;
 }

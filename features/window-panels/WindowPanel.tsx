@@ -89,6 +89,7 @@ import {
   setTraySnapshot,
   clearTraySnapshot,
 } from "./WindowTray/traySnapshotMap";
+import { MinimizedWindowContent } from "./WindowTray/MinimizedWindowContent";
 
 // ─── Resize handle descriptors ───────────────────────────────────────────────
 
@@ -1208,6 +1209,17 @@ export function WindowPanel({
           {bodyContent}
         </div>
       )}
+
+      {/* Minimized: fill the empty shell body with the canonical tray preview
+          (registry custom / snapshot / default). Click anywhere to restore. */}
+      {isMinimized && (
+        <MinimizedWindowContent
+          windowId={overlayId ?? id}
+          title={typeof title === "string" ? title : undefined}
+          onRestore={handleRestoreClearingSnapshot}
+        />
+      )}
+
       {!isMinimized && footerBar}
 
       {/* Drag-out ghost label — overlays the body during the candidate dwell.
