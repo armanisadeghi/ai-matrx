@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Ban, Bug, Trash2, X } from "lucide-react";
+import { AlertTriangle, Ban, Bug, ChevronRight, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -388,32 +388,6 @@ export default function ErrorInspectorWindow({
               />
             </div>
 
-            {/* Downgrade — the "this shouldn't be an error" workflow. */}
-            <div className="mt-3">
-              <div className="text-xs font-medium text-muted-foreground mb-1">
-                Downgrade this error&apos;s tier
-              </div>
-              <p className="text-[11px] text-muted-foreground mb-1.5">
-                Not a real error? Use “Copy for AI” above and ask an agent to add
-                this rule to{" "}
-                <code className="rounded bg-muted/50 px-1 font-mono">
-                  {TIER_RULES_FILE}
-                </code>{" "}
-                (set <span className="font-mono">tier</span> to{" "}
-                <span className="text-amber-600 dark:text-amber-400">
-                  orange
-                </span>{" "}
-                for a dot or{" "}
-                <span className="text-yellow-600 dark:text-yellow-500">
-                  yellow
-                </span>{" "}
-                to silence).
-              </p>
-              <pre className="rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
-                {buildDowngradeRuleStub(selected)}
-              </pre>
-            </div>
-
             {selected.callSite && (
               <div className="mt-3">
                 <div className="text-xs font-medium text-muted-foreground mb-1">
@@ -446,6 +420,26 @@ export default function ErrorInspectorWindow({
                 </pre>
               </div>
             )}
+
+            {/* Downgrade rule — tucked into a collapsed disclosure so it never
+                competes with the actual error. The Copy-for-AI payload already
+                embeds it with full instructions; this is the quick in-window grab. */}
+            <details className="group mt-4">
+              <summary className="flex cursor-pointer list-none select-none items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground">
+                <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                Downgrade rule
+              </summary>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Paste into{" "}
+                <code className="rounded bg-muted/50 px-1 font-mono">
+                  {TIER_RULES_FILE}
+                </code>{" "}
+                to retier this error.
+              </p>
+              <pre className="mt-1 rounded-md border border-border bg-muted/30 p-2 text-[11px] font-mono text-foreground whitespace-pre-wrap break-words overflow-x-auto">
+                {buildDowngradeRuleStub(selected)}
+              </pre>
+            </details>
 
             <div className="mt-3 flex justify-end">
               <Button

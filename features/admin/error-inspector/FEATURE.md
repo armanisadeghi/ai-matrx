@@ -160,6 +160,9 @@ listener set.
 
 ## Change Log
 
+- 2026-06-29 — Detail pane focuses on the error: the downgrade-rule block moved
+  out of the middle into a collapsed "Downgrade rule" disclosure at the bottom
+  (the Copy-for-AI payload still embeds it with instructions).
 - 2026-06-29 — **Minimized preview.** The inspector's minimized window shell now
   shows `ErrorInspectorTrayChip` (a bug icon coloured by the loudest tier + total
   + per-tier breakdown) instead of an empty card, built on the new reusable
