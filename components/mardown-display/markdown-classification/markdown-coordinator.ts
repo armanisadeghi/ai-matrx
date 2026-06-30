@@ -262,7 +262,7 @@ export const getProcessorConfig = (coordinatorId: string) => {
     if (!coordinator) return null;
 
     const configId = coordinator.config;
-    if (!hasConfig(configId)) return null;
+    if (configId === null || !hasConfig(configId)) return null;
 
     return getConfigEntry(configId);
 };

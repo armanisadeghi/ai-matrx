@@ -62,10 +62,10 @@ export async function resolveBrokersForContext(
     // Call the database function
     const { data, error } = await supabase.rpc('get_broker_values_for_context', {
       p_broker_ids: brokerIds,
-      p_user_id: context.userId || null,
-      p_organization_id: context.organizationId || null,
-      p_project_id: context.projectId || null,
-      p_task_id: context.taskId || null,
+      p_user_id: context.userId ?? undefined,
+      p_organization_id: context.organizationId ?? undefined,
+      p_project_id: context.projectId ?? undefined,
+      p_task_id: context.taskId ?? undefined,
       p_ai_run_id: context.aiRunId || null,
       p_ai_task_id: context.aiTaskId || null,
     });

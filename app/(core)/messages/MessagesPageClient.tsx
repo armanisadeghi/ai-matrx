@@ -17,7 +17,7 @@ import { MessageSquare } from "lucide-react";
 export default function MessagesPageClient() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
-  const userId = user?.id;
+  const userId = user?.id ?? undefined;
 
   useEffect(() => {
     dispatch(closeMessaging());

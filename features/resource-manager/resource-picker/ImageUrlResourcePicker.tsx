@@ -188,8 +188,10 @@ export function ImageUrlResourcePicker({
       folder: `${CloudFolders.CHAT_ATTACHMENTS}/resources`,
       currentUrl: url || null,
       onUploaded: (e) => {
-        setUrl(e.result.primary_url);
-        void handleValidate(e.result.primary_url);
+        const uploadedUrl = e.result.primary_url;
+        if (!uploadedUrl) return;
+        setUrl(uploadedUrl);
+        void handleValidate(uploadedUrl);
       },
     });
   };

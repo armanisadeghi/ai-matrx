@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
  */
 const ContentTabs = ({ activeTab, setActiveTab }) => {
   const [scrollPosition, setScrollPosition] = useState(0);
-  const tabsRef = React.useRef(null);
+  const tabsRef = React.useRef<React.ComponentRef<typeof TabsList>>(null);
 
   const scrollTabs = (direction) => {
     if (tabsRef.current) {

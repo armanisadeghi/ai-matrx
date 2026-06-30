@@ -80,9 +80,9 @@ export default function ExportTableModal({
         p_table_id: tableId,
         p_limit: 10000, // Large limit to get all search results
         p_offset: 0,
-        p_sort_field: sortField || null,
+        p_sort_field: sortField ?? undefined,
         p_sort_direction: sortDirection,
-        p_search_term: searchTerm || null,
+        p_search_term: searchTerm ?? undefined,
       },
     );
 
@@ -107,7 +107,7 @@ export default function ExportTableModal({
     // Full table export
     const { data, error } = await supabase.rpc("get_user_table_complete", {
       p_table_id: tableId,
-      p_sort_field: sortField || null,
+      p_sort_field: sortField ?? undefined,
       p_sort_direction: sortDirection,
     });
     if (error) throw error;

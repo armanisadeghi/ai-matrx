@@ -1,4 +1,4 @@
-export const getKeysAtPath = (data, path = []) => {
+export const getKeysAtPath = (data, path: string[] = []) => {
     try {
         let currentData = data;
 
@@ -46,7 +46,7 @@ export const getKeysAtPath = (data, path = []) => {
     }
 };
 
-export const getDataAtPath = (data, path = []) => {
+export const getDataAtPath = (data, path: string[] = []) => {
     try {
         let currentData = data;
 
@@ -93,7 +93,7 @@ export const getNextLevelOptions = (data) => {
 export const generatePathDescription = (currentPath) => {
     if (currentPath.length === 0) return "Root object";
 
-    const pathElements = [];
+    const pathElements: string[] = [];
 
     // Iterate through all path elements
     for (let i = 0; i < currentPath.length; i++) {
@@ -202,7 +202,7 @@ export const parseAccessPathToArray = (accessPath) => {
     
     // Handle paths like: data[0]["result"]["section_texts"] or data[*]["result"]
     // Split by brackets and quotes, then clean up
-    const parts = [];
+    const parts: (string | number)[] = [];
     
     // Remove 'data' prefix if it exists
     let path = accessPath;

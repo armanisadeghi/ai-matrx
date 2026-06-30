@@ -355,25 +355,25 @@ export interface AgentDefinition {
 export interface AgentListRow {
   id: string;
   name: string;
-  description: string | null;
-  category: string | null;
+  description: string;
+  category: string;
   tags: string[];
   agent_type: AgentType;
-  model_id: string | null;
+  model_id: string;
   is_active: boolean;
   is_archived: boolean;
   is_favorite: boolean;
-  user_id: string | null;
-  organization_id: string | null;
-  project_id: string | null;
-  task_id: string | null;
-  source_agent_id: string | null;
+  user_id: string;
+  organization_id: string;
+  project_id: string;
+  task_id: string;
+  source_agent_id: string;
   created_at: string;
   updated_at: string;
   // Access metadata
   is_owner: boolean;
   access_level: AccessLevel;
-  shared_by_email: string | null;
+  shared_by_email: string;
 }
 
 /** Input for `agx_duplicate_agent(agent_id)`. Returns the new agent's UUID. */
@@ -405,7 +405,7 @@ export interface AgentExecutionMinimal {
 export interface AgentExecutionFull {
   id: string;
   variable_definitions: VariableDefinition[] | null;
-  model_id: string | null;
+  model_id: string;
   settings: LLMParams;
   tools: string[];
   custom_tools: CustomToolDefinition[];
@@ -470,21 +470,21 @@ export interface AgentVersionSnapshot {
   version_number: number;
   agent_type: string;
   name: string;
-  description: string | null;
+  description: string;
   messages: AgentDefinition["messages"];
   variable_definitions: AgentDefinition["variableDefinitions"];
-  model_id: string | null;
+  model_id: string;
   model_tiers: AgentDefinition["modelTiers"];
   settings: AgentDefinition["settings"];
   output_schema: AgentDefinition["outputSchema"];
   tools: string[];
   custom_tools: AgentDefinition["customTools"];
   context_slots: AgentDefinition["contextSlots"];
-  category: string | null;
+  category: string;
   tags: string[];
   is_active: boolean;
   changed_at: string;
-  change_note: string | null;
+  change_note: string;
   mcp_servers: string[];
   // Versioned config columns (projected by agx_get_version_snapshot since the
   // 2026-06 config-normalization migration; tool_config/skill_config were

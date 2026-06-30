@@ -126,7 +126,14 @@ export default function AiModelFilterBar({
 
   // Derive unique values from actual data
   const providers = useMemo(
-    () => [...new Set(models.map((m) => m.provider).filter(Boolean))].sort(),
+    () =>
+      [
+        ...new Set(
+          models
+            .map((m) => m.provider)
+            .filter((p): p is string => p != null && p !== ""),
+        ),
+      ].sort(),
     [models],
   );
 
@@ -136,7 +143,14 @@ export default function AiModelFilterBar({
   );
 
   const apiClasses = useMemo(
-    () => [...new Set(models.map((m) => m.api_class).filter(Boolean))].sort(),
+    () =>
+      [
+        ...new Set(
+          models
+            .map((m) => m.api_class)
+            .filter((c): c is string => c != null && c !== ""),
+        ),
+      ].sort(),
     [models],
   );
 

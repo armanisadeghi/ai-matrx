@@ -36,11 +36,16 @@ const convertUiPathToExtractorPath = (uiPath: PathArray): string => {
 };
 
 const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) => {
-    const [originalData, setOriginalData] = useState(null);
+    const [originalData, setOriginalData] = useState<unknown>(null);
     const [currentPath, setCurrentPath] = useState<PathArray>([[0, "All"]]); // [[rowIndex, selectedKey], ...]
-    const [displayData, setDisplayData] = useState(null);
+    const [displayData, setDisplayData] = useState<unknown>(null);
     const [hiddenPaths, setHiddenPaths] = useState<string[]>([]);
-    const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0, path: null });
+    const [contextMenu, setContextMenu] = useState<{
+        open: boolean;
+        x: number;
+        y: number;
+        path: string | null;
+    }>({ open: false, x: 0, y: 0, path: null });
     const [hasWildcard, setHasWildcard] = useState(false);
     const [wildcardPath, setWildcardPath] = useState("");
 
@@ -144,12 +149,13 @@ const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) =>
     };
 
     const handleHideToggle = () => {
-        if (!contextMenu.path) return;
+        const menuPath = contextMenu.path;
+        if (!menuPath) return;
 
-        const isCurrentlyHidden = hiddenPaths.includes(contextMenu.path);
+        const isCurrentlyHidden = hiddenPaths.includes(menuPath);
 
         setHiddenPaths((prev) => {
-            const newPaths = isCurrentlyHidden ? prev.filter((p) => p !== contextMenu.path) : [...prev, contextMenu.path];
+            const newPaths = isCurrentlyHidden ? prev.filter((p) => p !== menuPath) : [...prev, menuPath];
             return newPaths;
         });
 

@@ -128,7 +128,7 @@ export const canvasArtifactService = {
                     type: input.type,
                     metadata: input.metadata ?? {},
                 },
-                p_conversation_id: input.conversationId ?? null,
+                p_conversation_id: input.conversationId ?? undefined,
                 p_source_type: input.sourceType ?? "model_direct",
             });
 
@@ -292,7 +292,7 @@ export const canvasArtifactService = {
             const { data, error } = await supabase.rpc("cx_canvas_save_user_version", {
                 p_user_id: userId,
                 p_canvas_id: input.canvasId,
-                p_title: input.title ?? null,
+                p_title: input.title ?? "",
                 p_content: {
                     data: input.content,
                     type: input.type,
@@ -332,7 +332,7 @@ export const canvasArtifactService = {
                     type: input.type,
                     metadata: input.metadata ?? {},
                 },
-                p_conversation_id: input.conversationId ?? null,
+                p_conversation_id: input.conversationId ?? undefined,
             });
 
             if (error) {
@@ -390,6 +390,20 @@ export const canvasArtifactService = {
             }
             if (existing) return { id: existing.id };
 
+            const { data: conversation, error: conversationErr } = await supabase
+                .schema("chat").from("conversation")
+                .select("organization_id, project_id, task_id")
+                .eq("id", input.conversationId)
+                .maybeSingle();
+
+            if (conversationErr || !conversation) {
+                console.error(
+                    "[canvasArtifactService.upsertDiscoveryIndex] conversation lookup error:",
+                    conversationErr ?? "conversation not found",
+                );
+                return null;
+            }
+
             // Insert a new discovery-index row.
             const { data, error } = await supabase
                 .schema("chat").from("artifact")
@@ -401,9 +415,9 @@ export const canvasArtifactService = {
                     artifact_type: artifactType,
                     status: "published",
                     title: input.title ?? null,
-                    organization_id: null,
-                    project_id: null,
-                    task_id: null,
+                    organization_id: conversation.organization_id,
+                    project_id: conversation.project_id,
+                    task_id: conversation.task_id,
                     external_system: null,
                     external_id: null,
                     external_url: null,

@@ -59,20 +59,20 @@ export const dbToFieldDefinition = (
 ): FieldBuilder => {
   const fieldBuilder: FieldBuilderInput = {
     id: dbRecord.id,
-    label: dbRecord.label,
-    description: dbRecord.description,
-    helpText: dbRecord.help_text,
-    group: dbRecord.component_group,
-    iconName: dbRecord.icon_name,
+    label: dbRecord.label ?? undefined,
+    description: dbRecord.description ?? undefined,
+    helpText: dbRecord.help_text ?? undefined,
+    group: dbRecord.component_group ?? undefined,
+    iconName: dbRecord.icon_name ?? undefined,
     component: (dbRecord.component ?? "textarea") as ComponentType,
-    required: dbRecord.required,
-    placeholder: dbRecord.placeholder,
+    required: dbRecord.required ?? undefined,
+    placeholder: dbRecord.placeholder ?? undefined,
     defaultValue: dbRecord.default_value,
-    includeOther: dbRecord.include_other,
+    includeOther: dbRecord.include_other ?? undefined,
     options: (dbRecord.options ?? undefined) as FieldOption[] | undefined,
     componentProps: (dbRecord.component_props ?? {}) as ComponentProps,
-    isPublic: dbRecord.is_public,
-    publicRead: dbRecord.public_read,
+    isPublic: dbRecord.is_public ?? undefined,
+    publicRead: dbRecord.public_read ?? undefined,
   };
 
   // Apply normalization after mapping from DB

@@ -582,13 +582,13 @@ function HistoryTab({ data }: { data: MessagesEntry | undefined }) {
                         <JsonTreeViewer data={record.content} />
                       </div>
                     </Section>
-                    {record.metadata && (
+                    {record.metadata != null ? (
                       <Section title="Metadata" defaultOpen={false}>
                         <div className="text-sm">
                           <JsonTreeViewer data={record.metadata} />
                         </div>
                       </Section>
-                    )}
+                    ) : null}
                   </div>
                 )}
               </div>

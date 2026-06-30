@@ -272,11 +272,11 @@ export const associationsService = {
         p_source_id: args.sourceId,
         p_target_type: args.targetType,
         p_target_id: args.targetId,
-        p_org_id: args.orgId ?? null,
-        p_label: args.label ?? null,
+        p_org_id: args.orgId,
+        p_label: args.label,
         p_metadata: args.metadata ?? {},
-        p_role: args.role ?? null,
-        p_position: args.position ?? null,
+        p_role: args.role,
+        p_position: args.position,
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {
@@ -318,7 +318,7 @@ export const associationsService = {
         p_source_id: args.sourceId,
         p_target_type: args.targetType,
         p_target_id: args.targetId,
-        p_role: args.role ?? null,
+        p_role: args.role,
       });
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);
@@ -360,8 +360,8 @@ export const associationsService = {
         p_source_id: args.sourceId,
         p_target_type: args.targetType,
         p_target_ids: target,
-        p_org_id: args.orgId ?? null,
-        p_role: args.role ?? null,
+        p_org_id: args.orgId,
+        p_role: args.role,
       });
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);

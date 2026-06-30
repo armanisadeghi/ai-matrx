@@ -17,7 +17,7 @@ const LAYOUT_OPTIONS = {
 
 const Window = ({ id, title, content, images, onClose, onMinimize, onMaximize, onClick, isFullScreen, isMinimized, href, windowSize }) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [validImages, setValidImages] = useState([]);
+    const [validImages, setValidImages] = useState<string[]>([]);
     const scale = useMotionValue(1);
     const boxShadow = useTransform(
         scale,
@@ -40,7 +40,7 @@ const Window = ({ id, title, content, images, onClose, onMinimize, onMaximize, o
                     }
                 })
             );
-            setValidImages(checkedImages.filter(Boolean));
+            setValidImages(checkedImages.filter((src): src is string => src != null));
         };
 
         checkImages();
@@ -136,12 +136,12 @@ const Window = ({ id, title, content, images, onClose, onMinimize, onMaximize, o
 
 const LayoutControl = ({ currentLayout, onLayoutChange }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const controlRef = useRef(null);
-    const timeoutRef = useRef(null);
+    const controlRef = useRef<HTMLDivElement | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (controlRef.current && !controlRef.current.contains(event.target)) {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (controlRef.current && event.target instanceof Node && !controlRef.current.contains(event.target)) {
                 setIsOpen(false);
             }
         };
@@ -153,7 +153,9 @@ const LayoutControl = ({ currentLayout, onLayoutChange }) => {
     }, []);
 
     const handleMouseEnter = () => {
-        clearTimeout(timeoutRef.current);
+        if (timeoutRef.current != null) {
+            clearTimeout(timeoutRef.current);
+        }
         setIsOpen(true);
     };
 
@@ -231,7 +233,7 @@ const NextWindowManager = ({
     const [fullScreenWindow, setFullScreenWindow] = useState(null);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [backgroundPosition, setBackgroundPosition] = useState({ x: 0, y: 0 });
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     const [currentLayout, setCurrentLayout] = useState(initialLayout);
 
@@ -257,7 +259,10 @@ const NextWindowManager = ({
 
         handleResize();
         const resizeObserver = new ResizeObserver(handleResize);
-        resizeObserver.observe(containerRef.current);
+        const containerElement = containerRef.current;
+        if (containerElement) {
+            resizeObserver.observe(containerElement);
+        }
         return () => resizeObserver.disconnect();
     }, [currentLayout]);
 

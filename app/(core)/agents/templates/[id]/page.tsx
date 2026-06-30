@@ -81,16 +81,16 @@ export default async function AgentTemplateDetailPage({
                 Template Details
               </h2>
 
-              {template.messages && (
+              {template.messages != null ? (
                 <div className="mb-4">
                   <h3 className="font-medium text-foreground mb-2">Messages</h3>
                   <pre className="bg-textured p-4 rounded-lg text-sm overflow-auto max-h-96">
                     {JSON.stringify(template.messages, null, 2)}
                   </pre>
                 </div>
-              )}
+              ) : null}
 
-              {template.variable_definitions && (
+              {template.variable_definitions != null ? (
                 <div className="mb-4">
                   <h3 className="font-medium text-foreground mb-2">
                     Variable Definitions
@@ -99,7 +99,7 @@ export default async function AgentTemplateDetailPage({
                     {JSON.stringify(template.variable_definitions, null, 2)}
                   </pre>
                 </div>
-              )}
+              ) : null}
 
               {template.tools && template.tools.length > 0 && (
                 <div className="mb-4">
@@ -110,8 +110,9 @@ export default async function AgentTemplateDetailPage({
                 </div>
               )}
 
-              {template.settings &&
-                Object.keys(template.settings).length > 0 && (
+              {template.settings != null &&
+              typeof template.settings === "object" &&
+              Object.keys(template.settings).length > 0 ? (
                   <div>
                     <h3 className="font-medium text-foreground mb-2">
                       Settings
@@ -120,7 +121,7 @@ export default async function AgentTemplateDetailPage({
                       {JSON.stringify(template.settings, null, 2)}
                     </pre>
                   </div>
-                )}
+                ) : null}
             </Card>
           </div>
 

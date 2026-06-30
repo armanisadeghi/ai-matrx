@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { pickGridLayout } from "./grid-layout";
+import type { CloudFile } from "@/features/files/types";
 
 export interface ViewerFile {
   id: string;
@@ -35,6 +36,29 @@ export interface ViewerFile {
   thumbnailUrl: string | null;
   publicUrl: string | null;
   metadata: Record<string, unknown> | null;
+}
+
+function toMediaThumbnailFile(
+  file: ViewerFile,
+): Pick<
+  CloudFile,
+  | "id"
+  | "fileName"
+  | "mimeType"
+  | "fileSize"
+  | "metadata"
+  | "publicUrl"
+  | "thumbnailUrl"
+> {
+  return {
+    id: file.id,
+    fileName: file.fileName,
+    mimeType: file.mimeType,
+    fileSize: file.fileSize,
+    metadata: file.metadata ?? {},
+    publicUrl: file.publicUrl,
+    thumbnailUrl: file.thumbnailUrl,
+  };
 }
 
 interface Props {
@@ -216,7 +240,7 @@ function GridTile({
         )
       ) : (
         <MediaThumbnail
-          file={file}
+          file={toMediaThumbnailFile(file)}
           className="absolute inset-0 h-full w-full"
         />
       )}
@@ -256,7 +280,7 @@ function FocusView({
         )
       ) : (
         <MediaThumbnail
-          file={file}
+          file={toMediaThumbnailFile(file)}
           className="h-full max-h-[80dvh] aspect-square"
         />
       )}

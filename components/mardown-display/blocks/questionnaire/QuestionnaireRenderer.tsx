@@ -719,7 +719,7 @@ const QuestionComponent = ({
     }
   };
 
-  const description = intro.startsWith("Type:") ? "" : intro;
+  const description = (intro ?? "").startsWith("Type:") ? "" : (intro ?? "");
 
   return (
     <Card className={`w-full mb-4 ${theme.card.background}`}>
@@ -960,17 +960,18 @@ const QuestionnaireRenderer = ({
   }, [formState]);
 
   useEffect(() => {
-    if (data?.sections) {
+    const sections = data?.sections;
+    if (sections) {
       // Initialize all questions with default values in context
-      initializeQuestions(uniqueId, data.sections);
+      initializeQuestions(uniqueId, sections);
 
       // Initialize question data for reference
-      const questions = data.sections.reduce((acc, section, index) => {
+      const questions = sections.reduce((acc, section, index) => {
         if (section.intro?.includes("Type:")) {
           // Use the same numbering logic as in context
           let questionIndex = 0;
           for (let i = 0; i <= index; i++) {
-            if (data.sections[i].intro?.includes("Type:")) {
+            if (sections[i].intro?.includes("Type:")) {
               if (i === index) break;
               questionIndex++;
             }
@@ -981,7 +982,7 @@ const QuestionnaireRenderer = ({
             questionIndex,
           );
           const rawOptions = findOptionsForQuestion(
-            data.sections,
+            sections,
             section.title,
           );
           const normalizedOptions = normalizeOptions(rawOptions, section.intro);
@@ -1019,6 +1020,8 @@ const QuestionnaireRenderer = ({
     );
   }
 
+  const sections = data.sections;
+
   const handleChange = (
     questionTitle: string,
     value: unknown,
@@ -1053,7 +1056,7 @@ const QuestionnaireRenderer = ({
         />
 
         {/* Questions */}
-        {data.sections.map((section, index) => {
+        {sections.map((section, index) => {
           // Skip the Introduction section (it's displayed in the header)
           if (
             section.title === "Introduction" ||
@@ -1066,13 +1069,13 @@ const QuestionnaireRenderer = ({
           // Calculate question index (only count sections with Type:)
           let questionIndex = 0;
           for (let i = 0; i < index; i++) {
-            if (data.sections[i].intro?.includes("Type:")) {
+            if (sections[i].intro?.includes("Type:")) {
               questionIndex++;
             }
           }
 
           const rawOptions = findOptionsForQuestion(
-            data.sections,
+            sections,
             section.title,
           );
           const normalizedOptions = normalizeOptions(rawOptions, section.intro);

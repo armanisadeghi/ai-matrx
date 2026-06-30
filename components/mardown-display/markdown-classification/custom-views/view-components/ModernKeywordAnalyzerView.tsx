@@ -21,7 +21,7 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
   const [newKeyword, setNewKeyword] = useState('');
   const [keywordData, setKeywordData] = useState({
     primaryKeyword: '',
@@ -121,7 +121,15 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
     childLSIs: 'Child LSIs', 
     longTailVariations: 'Long-Tail Variations',
     naturalLSIs: 'Natural LSIs'
-  };
+  } as const;
+
+  type KeywordSection = keyof typeof sectionLabels;
+  const keywordSections: KeywordSection[] = [
+    'parentLSIs',
+    'childLSIs',
+    'longTailVariations',
+    'naturalLSIs',
+  ];
 
   const sectionDescriptions = {
     parentLSIs: 'Broader category keywords',
@@ -186,7 +194,7 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
         
         {/* Keyword Sections - Single column for better expanded view */}
         <div className="space-y-4">
-          {['parentLSIs', 'childLSIs', 'longTailVariations', 'naturalLSIs'].map((section) => {
+          {keywordSections.map((section) => {
             const sectionData = keywordData[section];
             const hasData = sectionData && Array.isArray(sectionData) && sectionData.length > 0;
             

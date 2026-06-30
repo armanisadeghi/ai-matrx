@@ -54,7 +54,7 @@ const MatrxSelect: React.FC<MatrxSelectProps> = ({
       className={cn(densityStyles.spacing, className)}
       {...animationProps}
     >
-      {!hideLabel && field.label && (
+      {!hideLabel && field && field.label ? (
         <Label
           className={cn(
             densityStyles.fontSize,
@@ -67,7 +67,7 @@ const MatrxSelect: React.FC<MatrxSelectProps> = ({
         >
           {field.label}
         </Label>
-      )}
+      ) : null}
 
       <SelectPrimitive.Root
         value={value as string}
@@ -94,18 +94,18 @@ const MatrxSelect: React.FC<MatrxSelectProps> = ({
             )}
           </div>
           <div className="flex items-center gap-1">
-            {allowClear && value && (
+            {allowClear && Boolean(value) ? (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onChange("");
+                  onChange?.("");
                 }}
                 className="p-1 hover:bg-accent rounded-full"
               >
                 <X className="h-3 w-3" />
               </button>
-            )}
+            ) : null}
             <SelectPrimitive.Icon>
               <ChevronDown className="h-4 w-4" />
             </SelectPrimitive.Icon>

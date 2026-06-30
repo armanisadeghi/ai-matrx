@@ -152,20 +152,20 @@ export async function GET(req: NextRequest) {
 
     const expiresAt = tokens.expires_in
       ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-      : null;
+      : undefined;
 
     const { error: rpcError } = await supabase.rpc("upsert_mcp_connection", {
       p_server_id: session.serverId,
       p_access_token: tokens.access_token,
-      p_refresh_token: tokens.refresh_token ?? null,
+      p_refresh_token: tokens.refresh_token,
       p_token_expires_at: expiresAt,
-      p_credentials_json: null,
-      p_config_id: null,
+      p_credentials_json: undefined,
+      p_config_id: undefined,
       p_transport: "http",
       p_oauth_token_endpoint: session.tokenEndpoint,
       p_oauth_client_id: session.clientId,
-      p_oauth_scopes: tokens.scope ? tokens.scope.split(" ") : null,
-      p_endpoint_override: null,
+      p_oauth_scopes: tokens.scope ? tokens.scope.split(" ") : undefined,
+      p_endpoint_override: undefined,
     });
 
     if (rpcError) {

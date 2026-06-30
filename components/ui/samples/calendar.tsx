@@ -136,7 +136,7 @@ const MatrxCalendar = React.forwardRef<HTMLDivElement, CalendarProps>(
         }, [currentMonth, onMonthChange])
 
         const calendarDays = useMemo(() => {
-            const days = []
+            const days: Date[] = []
             const monthStart = startOfMonth(currentMonth)
             const monthEnd = endOfMonth(currentMonth)
             const startDate = startOfWeek(monthStart, { weekStartsOn })

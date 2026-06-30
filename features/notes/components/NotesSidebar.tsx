@@ -117,7 +117,7 @@ export function NotesSidebar({
 
     // Get all unique folder names for move dialog
     const allFolders = useMemo(() => {
-        return Array.from(new Set(notes.map(n => n.folder_name))).sort();
+        return Array.from(new Set(notes.map(n => n.folder_name || 'Draft'))).sort();
     }, [notes]);
 
     // Initialize all folders as collapsed on first render
@@ -131,10 +131,11 @@ export function NotesSidebar({
 
     // Auto-expand folder containing active note
     useEffect(() => {
-        if (activeNote) {
+        const activeFolderName = activeNote?.folder_name;
+        if (activeFolderName) {
             setCollapsedFolders(prev => {
                 const next = new Set(prev);
-                next.delete(activeNote.folder_name);
+                next.delete(activeFolderName);
                 return next;
             });
         }
@@ -301,7 +302,7 @@ export function NotesSidebar({
             label: 'Export Note',
             description: 'Download as markdown',
             action: async () => {
-                const blob = new Blob([note.content], { type: 'text/markdown' });
+                const blob = new Blob([note.content ?? ''], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -557,7 +558,7 @@ export function NotesSidebar({
                     open={moveNoteOpen}
                     onOpenChange={setMoveNoteOpen}
                     noteName={moveNoteData.label}
-                    currentFolder={moveNoteData.folder_name}
+                    currentFolder={moveNoteData.folder_name ?? 'Draft'}
                     availableFolders={allFolders}
                     onConfirm={(targetFolder) => {
                         onMoveNote?.(moveNoteData.id, targetFolder);

@@ -22,13 +22,16 @@ const flashcardChatSlice = createSlice({
         initializeFlashcards: (state, action: PayloadAction<Flashcard[]>) => {
             state.flashcards = {}; // Clear existing flashcards
             action.payload.forEach(flashcard => {
-                state.flashcards[flashcard.id] = { ...flashcard, chat: [] };
+                const id = flashcard.id;
+                if (id) {
+                    state.flashcards[id] = { ...flashcard, chat: [] };
+                }
             });
         },
 
         initializeFlashcard: (state, action: PayloadAction<Flashcard>) => {
-            const { id } = action.payload;
-            if (!state.flashcards[id]) {
+            const id = action.payload.id;
+            if (id && !state.flashcards[id]) {
                 state.flashcards[id] = { ...action.payload, chat: [] };
             }
         },
@@ -77,12 +80,17 @@ const flashcardChatSlice = createSlice({
             }
         },
         addFlashcard: (state, action: PayloadAction<Flashcard>) => {
-            state.flashcards[action.payload.id] = { ...action.payload, chat: [] };
+            const id = action.payload.id;
+            if (id) {
+                state.flashcards[id] = { ...action.payload, chat: [] };
+            }
         },
         updateFlashcard: (state, action: PayloadAction<Flashcard>) => {
-            if (state.flashcards[action.payload.id]) {
-                state.flashcards[action.payload.id] = {
-                    ...state.flashcards[action.payload.id],
+            const id = action.payload.id;
+            const existing = id ? state.flashcards[id] : undefined;
+            if (id && existing) {
+                state.flashcards[id] = {
+                    ...existing,
                     ...action.payload,
                 };
             }

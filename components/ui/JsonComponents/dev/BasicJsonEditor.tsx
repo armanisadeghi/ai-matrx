@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 const JsonEditor = () => {
   const [jsonInput, setJsonInput] = useState('');
   const [parsedData, setParsedData] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
 
   // Helper function to safely stringify JSON with formatting
@@ -49,7 +49,7 @@ const JsonEditor = () => {
       setError(null);
       setIsValid(true);
     } else {
-      setError(result.error);
+      setError(result.error ?? null);
       setIsValid(false);
     }
   }, [jsonInput]);
@@ -62,7 +62,7 @@ const JsonEditor = () => {
     // Basic validation on each change
     const result = safeParse(newValue);
     setIsValid(result.success);
-    setError(result.success ? null : result.error);
+    setError(result.success ? null : (result.error ?? null));
     if (result.success) {
       setParsedData(result.data);
     }

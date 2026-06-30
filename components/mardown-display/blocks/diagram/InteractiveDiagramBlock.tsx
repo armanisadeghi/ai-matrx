@@ -147,6 +147,8 @@ const PedigreeNode = ({
   const proband = data.proband as boolean | undefined;
   const birthYear = data.birthYear as string | undefined;
   const deathYear = data.deathYear as string | undefined;
+  const description =
+    typeof data.description === "string" ? data.description : undefined;
 
   const isCircle = gender === "female";
   const isUnknown = !gender || gender === "unknown";
@@ -204,11 +206,11 @@ const PedigreeNode = ({
       </div>
 
       {/* Name and dates below the shape */}
-      {(data.description || birthYear) && (
+      {(description || birthYear) && (
         <div className="text-center max-w-[120px]">
-          {data.description && (
+          {description && (
             <div className="text-xs text-gray-700 dark:text-gray-300 font-medium truncate">
-              {data.description as string}
+              {description}
             </div>
           )}
           {(birthYear || deathYear) && (
@@ -245,6 +247,11 @@ const TimelineNode = ({
   data: Record<string, unknown>;
   selected: boolean;
 }) => {
+  const details =
+    typeof data.details === "string" ? data.details : undefined;
+  const description =
+    typeof data.description === "string" ? data.description : undefined;
+
   return (
     <div
       className={`px-4 py-3 min-w-[140px] max-w-[200px] rounded-xl border-2 shadow-md transition-all bg-blue-50 dark:bg-blue-950/30 border-blue-400 dark:border-blue-600 text-blue-900 dark:text-blue-100 ${
@@ -259,16 +266,14 @@ const TimelineNode = ({
         id="input"
         className="w-2 h-2 border border-blue-400 bg-white dark:bg-gray-800"
       />
-      {data.details && (
+      {details && (
         <div className="text-xs font-bold text-blue-500 dark:text-blue-400 mb-1">
-          {data.details as string}
+          {details}
         </div>
       )}
       <div className="font-semibold text-sm">{data.label as string}</div>
-      {data.description && (
-        <div className="text-xs opacity-75 mt-1">
-          {data.description as string}
-        </div>
+      {description && (
+        <div className="text-xs opacity-75 mt-1">{description}</div>
       )}
       <Handle
         type="source"
@@ -340,6 +345,10 @@ const CustomNode = ({
   data: Record<string, unknown>;
   selected: boolean;
 }) => {
+  const description =
+    typeof data.description === "string" ? data.description : undefined;
+  const details = typeof data.details === "string" ? data.details : undefined;
+
   const getNodeIcon = () => {
     if (data.diagramType === "orgchart") {
       return getOrgChartRoleIcon(
@@ -453,15 +462,13 @@ const CustomNode = ({
             {getNodeIcon()}
             <div className="font-bold text-base">{data.label as string}</div>
           </div>
-          {data.description && (
+          {description && (
             <div className="text-sm font-medium opacity-90 mb-1">
-              {data.description as string}
+              {description}
             </div>
           )}
-          {data.details && (
-            <div className="text-xs opacity-70 italic">
-              {data.details as string}
-            </div>
+          {details && (
+            <div className="text-xs opacity-70 italic">{details}</div>
           )}
         </div>
       ) : (
@@ -470,15 +477,11 @@ const CustomNode = ({
             {getNodeIcon()}
             <div className="font-semibold text-sm">{data.label as string}</div>
           </div>
-          {data.description && (
-            <div className="text-xs opacity-80 mt-1">
-              {data.description as string}
-            </div>
+          {description && (
+            <div className="text-xs opacity-80 mt-1">{description}</div>
           )}
-          {data.details && (
-            <div className="text-xs opacity-70 mt-1 italic">
-              {data.details as string}
-            </div>
+          {details && (
+            <div className="text-xs opacity-70 mt-1 italic">{details}</div>
           )}
         </div>
       )}

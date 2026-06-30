@@ -122,8 +122,9 @@ export function GeneratePromptForSystemModal({
   // Fetch functionality config from database
   useEffect(() => {
     if (isOpen && systemPrompt?.functionality_id) {
+      const functionalityId = systemPrompt.functionality_id;
       async function fetchFunctionality() {
-        const data = await getFunctionalityById(systemPrompt.functionality_id);
+        const data = await getFunctionalityById(functionalityId);
         setFunctionalityConfig(data);
       }
       fetchFunctionality();

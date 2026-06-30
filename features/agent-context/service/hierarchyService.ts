@@ -468,9 +468,15 @@ export const hierarchyService = {
       organization_id?: string | null;
     },
   ): Promise<void> {
+    const patch: Database["workspace"]["Tables"]["projects"]["Update"] = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.description !== undefined) patch.description = data.description;
+    if (data.organization_id !== undefined) {
+      patch.organization_id = data.organization_id ?? undefined;
+    }
     const { error } = await workspaceDb(supabase)
       .from("projects")
-      .update(data)
+      .update(patch)
       .eq("id", id);
     if (error) throw error;
   },
@@ -555,9 +561,13 @@ export const hierarchyService = {
     projectId: string,
     target: { organization_id?: string | null },
   ): Promise<void> {
+    const patch: Database["workspace"]["Tables"]["projects"]["Update"] = {};
+    if (target.organization_id !== undefined) {
+      patch.organization_id = target.organization_id ?? undefined;
+    }
     const { error } = await workspaceDb(supabase)
       .from("projects")
-      .update(target)
+      .update(patch)
       .eq("id", projectId);
     if (error) throw error;
   },

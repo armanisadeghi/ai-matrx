@@ -22,7 +22,7 @@ export default function MessagesLayoutClient({
 }) {
   // Get user from Redux - use auth.users.id (UUID)
   const user = useAppSelector(selectUser);
-  const userId = user?.id;
+  const userId = user?.id ?? undefined;
 
   return (
     <div className="h-[calc(100dvh-var(--shell-header-h))] flex overflow-hidden bg-background">

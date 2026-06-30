@@ -331,8 +331,8 @@ export async function shareWithOrg(
       p_resource_type: resourceType,
       p_resource_id: resourceId,
       p_target_org_id: organizationId,
-      // null → server applies the org module's default_permission.
-      p_permission_level: permissionLevel ?? null,
+      // omit → server applies the org module's default_permission.
+      p_permission_level: permissionLevel,
     });
 
     if (error) throw error;
@@ -564,8 +564,8 @@ export async function updatePermissionLevel(
     const { data, error } = await supabase.rpc("update_permission_level", {
       p_resource_type: resourceType,
       p_resource_id: resourceId,
-      p_target_user_id: userId ?? null,
-      p_target_org_id: organizationId ?? null,
+      p_target_user_id: userId,
+      p_target_org_id: organizationId,
       p_new_level: newLevel,
     });
 
@@ -821,11 +821,16 @@ function parseNestedOrg(
   )
     return undefined;
   const o = j as Record<string, unknown>;
-  if (typeof o.id !== "string" || typeof o.name !== "string") return undefined;
+  if (
+    typeof o.id !== "string" ||
+    typeof o.name !== "string" ||
+    typeof o.slug !== "string"
+  )
+    return undefined;
   return {
     id: o.id,
     name: o.name,
-    slug: typeof o.slug === "string" ? o.slug : undefined,
+    slug: o.slug,
     logoUrl: typeof o.logoUrl === "string" ? o.logoUrl : undefined,
   };
 }

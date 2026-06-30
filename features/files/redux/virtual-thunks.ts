@@ -29,7 +29,7 @@ import { supabase } from "@/utils/supabase/client";
 
 type StateWithCloudFiles = {
   cloudFiles: CloudFilesState;
-  userAuth?: { id?: string };
+  userAuth?: { id?: string | null };
 };
 import {
   getVirtualSource,
@@ -48,9 +48,7 @@ import type {
 } from "@/features/files/virtual-sources/types";
 import type {
   CloudFile,
-  CloudFileRecord,
   CloudFolder,
-  CloudFolderRecord,
 } from "@/features/files/types";
 import {
   attachChildToFolder,
@@ -303,13 +301,14 @@ export const moveAny = createAsyncThunk<void, MoveAnyArg, ThunkApi>(
     });
     // Tree relinking: detach from old parent, attach under new.
     const state = getState().cloudFiles;
-    const record = state.filesById[id] ?? state.foldersById[id];
+    const fileRecord = state.filesById[id];
+    const folderRecord = state.foldersById[id];
+    const record = fileRecord ?? folderRecord;
     if (!record) return;
-    const kind = state.filesById[id] ? "file" : "folder";
-    const oldParent =
-      kind === "file"
-        ? (record as CloudFileRecord).parentFolderId
-        : (record as CloudFolderRecord).parentId;
+    const kind = fileRecord ? "file" : "folder";
+    const oldParent = fileRecord
+      ? fileRecord.parentFolderId
+      : (folderRecord?.parentId ?? null);
     if (oldParent !== null && oldParent !== newParentId) {
       dispatch(detachChildFromFolder({ parentFolderId: oldParent, kind, id }));
     }
@@ -364,13 +363,14 @@ export const deleteAny = createAsyncThunk<void, DeleteAnyArg, ThunkApi>(
     const userId = getState().userAuth?.id ?? "";
     await adapter.delete(supabase, userId, virtualId, hard ?? false);
     const state = getState().cloudFiles;
-    const record = state.filesById[id] ?? state.foldersById[id];
+    const fileRecord = state.filesById[id];
+    const folderRecord = state.foldersById[id];
+    const record = fileRecord ?? folderRecord;
     if (!record) return;
-    const kind = state.filesById[id] ? "file" : "folder";
-    const parent =
-      kind === "file"
-        ? (record as CloudFileRecord).parentFolderId
-        : (record as CloudFolderRecord).parentId;
+    const kind = fileRecord ? "file" : "folder";
+    const parent = fileRecord
+      ? fileRecord.parentFolderId
+      : (folderRecord?.parentId ?? null);
     if (parent !== null) {
       dispatch(detachChildFromFolder({ parentFolderId: parent, kind, id }));
     }

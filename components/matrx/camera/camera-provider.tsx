@@ -13,9 +13,9 @@ interface CameraContextType {
     activeDeviceId: string | undefined;
     images: string[];
     devices: MediaDeviceInfo[];
-    playerRef: React.RefObject<HTMLVideoElement>;
-    canvasRef: React.RefObject<HTMLCanvasElement>;
-    containerRef: React.RefObject<HTMLDivElement>;
+    playerRef: React.RefObject<HTMLVideoElement | null>;
+    canvasRef: React.RefObject<HTMLCanvasElement | null>;
+    containerRef: React.RefObject<HTMLDivElement | null>;
     notSupported: boolean;
     permissionDenied: boolean;
 

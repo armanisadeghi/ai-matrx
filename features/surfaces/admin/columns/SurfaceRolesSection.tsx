@@ -61,7 +61,7 @@ export function SurfaceRolesSection({
   const [busyRole, setBusyRole] = useState<string | null>(null);
 
   const roleList = Object.values(roles).sort(
-    (a, b) => a.role.sortOrder - b.role.sortOrder,
+    (a, b) => (a.role.sortOrder ?? 0) - (b.role.sortOrder ?? 0),
   );
 
   useEffect(() => {

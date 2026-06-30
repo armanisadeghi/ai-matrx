@@ -103,7 +103,10 @@ export function ContextVersionHistory({ itemId, scope }: Props) {
           {versions.map((v, i) => {
             const isSelected = v.id === active.id;
             const prevVersion = versions[i + 1];
-            const charDelta = prevVersion ? v.char_count - prevVersion.char_count : v.char_count;
+            const currentCharCount = v.char_count ?? 0;
+            const charDelta = prevVersion
+              ? currentCharCount - (prevVersion.char_count ?? 0)
+              : currentCharCount;
 
             return (
               <button

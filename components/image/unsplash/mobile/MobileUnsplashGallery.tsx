@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useUnsplashGallery } from '@/hooks/images/useUnsplashGallery';
+import { useUnsplashGallery, type UnsplashPhoto } from '@/hooks/images/useUnsplashGallery';
 import { MobileImageCard } from '@/components/image/shared/MobileImageCard';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -10,6 +10,42 @@ import { MobileUnsplashSearch } from './MobileUnsplashSearch';
 
 interface MobileUnsplashGalleryProps {
     initialSearchTerm?: string;
+}
+
+type UnsplashDisplayPhoto = UnsplashPhoto & {
+    urls: { regular: string; full?: string };
+    alt_description?: string | null;
+    user: { name: string };
+};
+
+function isDisplayPhoto(photo: UnsplashPhoto): photo is UnsplashDisplayPhoto {
+    return (
+        'urls' in photo &&
+        typeof photo.urls === 'object' &&
+        photo.urls !== null &&
+        'regular' in photo.urls &&
+        typeof photo.urls.regular === 'string' &&
+        'user' in photo &&
+        typeof photo.user === 'object' &&
+        photo.user !== null &&
+        'name' in photo.user &&
+        typeof photo.user.name === 'string'
+    );
+}
+
+function getPhotoCardProps(photo: UnsplashPhoto): {
+    id: string;
+    url: string;
+    description: string;
+} {
+    if (!isDisplayPhoto(photo)) {
+        return { id: photo.id, url: '', description: 'Photo' };
+    }
+    return {
+        id: photo.id,
+        url: photo.urls.regular,
+        description: photo.alt_description ?? `Photo by ${photo.user.name}`,
+    };
 }
 
 export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalleryProps) {
@@ -132,11 +168,7 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
                         ref={index === photos.length - 1 ? lastPhotoElementRef : undefined}
                     >
                         <MobileImageCard 
-                            photo={{
-                                id: photo.id,
-                                url: photo.urls.regular,
-                                description: photo.alt_description || `Photo by ${photo.user.name}`
-                            }}
+                            photo={getPhotoCardProps(photo)}
                             onClick={() => handlePhotoClick(photo)}
                         />
                     </div>

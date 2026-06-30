@@ -121,8 +121,9 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
 
     // Add notes to their folders (deduplicate by ID)
     notes.forEach((note) => {
-      if (!seenIds.has(note.id) && grouped[note.folder_name]) {
-        grouped[note.folder_name].push(note);
+      const folder = note.folder_name ?? "Draft";
+      if (!seenIds.has(note.id) && grouped[folder]) {
+        grouped[folder].push(note);
         seenIds.add(note.id);
       }
     });

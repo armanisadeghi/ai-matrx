@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
+type LoaderDot = {
+  id: number;
+  x: number;
+  y: number;
+  delay: number;
+  duration: number;
+};
+
 export default function MatrxLoader() {
-  const [dots, setDots] = useState([]);
+  const [dots, setDots] = useState<LoaderDot[]>([]);
 
   useEffect(() => {
     // Generate random grid dots

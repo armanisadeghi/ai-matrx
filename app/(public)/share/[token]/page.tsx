@@ -156,7 +156,7 @@ export default async function PublicSharePage({ params }: PageProps) {
         <div className="mt-5 flex flex-col gap-2">
           <PublicDownloadButton
             token={token}
-            url={url}
+            url={url ?? null}
             filename={file.file_name}
             mimeType={file.mime_type}
           />

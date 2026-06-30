@@ -5,7 +5,7 @@ import { APPLET_THEMES } from '@/components/applet/reusable-sections/applet-them
  */
 const ThemeClassesPreloader = () => {
   // Extract all classes from themes object
-  const allClasses = [];
+  const allClasses: string[] = [];
   
   // Recursively find all string values (classes) in the themes object
   const extractClasses = (obj) => {

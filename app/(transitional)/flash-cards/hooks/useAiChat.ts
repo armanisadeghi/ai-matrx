@@ -23,6 +23,7 @@ export const useAiChat = () => {
         firstName: string
     ) => {
         if (isLoading || currentChat.length > 0) return;
+        if (!flashcard.id) return;
 
         setIsLoading(true);
         setStreamingMessage('');

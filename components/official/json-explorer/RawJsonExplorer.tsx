@@ -60,7 +60,12 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
 
   // Hidden paths feature
   const [hiddenPaths, setHiddenPaths] = useState<string[]>([]);
-  const [contextMenu, setContextMenu] = useState({
+  const [contextMenu, setContextMenu] = useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    path: string | null;
+  }>({
     open: false,
     x: 0,
     y: 0,
@@ -190,14 +195,15 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
   };
 
   const handleHideToggle = () => {
-    if (!contextMenu.path) return;
+    const targetPath = contextMenu.path;
+    if (!targetPath) return;
 
-    const isCurrentlyHidden = hiddenPaths.includes(contextMenu.path);
+    const isCurrentlyHidden = hiddenPaths.includes(targetPath);
 
     setHiddenPaths((prev) => {
       const newPaths = isCurrentlyHidden
-        ? prev.filter((p) => p !== contextMenu.path)
-        : [...prev, contextMenu.path];
+        ? prev.filter((p) => p !== targetPath)
+        : [...prev, targetPath];
       return newPaths;
     });
 

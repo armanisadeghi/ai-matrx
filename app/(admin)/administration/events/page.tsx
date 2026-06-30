@@ -54,7 +54,7 @@ export default function AdminEventsPage() {
       const supabase = createClient();
       const { data, error: rpcError } = await supabase.rpc("admin_recent_activity", {
         p_limit: 200,
-        p_action_prefix: prefix,
+        p_action_prefix: prefix ?? undefined,
       });
       if (rpcError) throw new Error(rpcError.message);
       setRows((data as ActivityRow[]) ?? []);

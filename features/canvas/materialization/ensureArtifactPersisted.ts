@@ -85,6 +85,11 @@ async function linkDomainRecord(
     return row;
   }
 
+  if (!input.conversationId) {
+    steps.push("skipped domain link — no conversationId");
+    return row;
+  }
+
   try {
     steps.push(`running ${def?.adapter ?? "unknown"} adapter.onMaterialize…`);
     const link = await adapter.onMaterialize({
@@ -93,7 +98,7 @@ async function linkDomainRecord(
       title: input.title,
       rawContent: input.content || extractRowPayload(row),
       sourceMessageId: input.messageId,
-      conversationId: input.conversationId ?? undefined,
+      conversationId: input.conversationId,
     });
     if (link && (link.externalSystem || link.externalId)) {
       await canvasArtifactService.setExternalLink(row.id, link);
@@ -252,17 +257,21 @@ export async function ensureArtifactPersisted(
   );
   const linked = await linkDomainRecord(saved, input, steps, errors);
 
-  try {
-    await canvasArtifactService.upsertDiscoveryIndex({
-      canvasId: linked.id,
-      canvasType: input.canvasType,
-      title: input.title ?? null,
-      messageId: input.messageId,
-      conversationId: input.conversationId ?? null,
-    });
-    steps.push("cx_artifact discovery index upserted");
-  } catch (err) {
-    errors.push(`discovery index failed: ${String(err)}`);
+  if (input.conversationId) {
+    try {
+      await canvasArtifactService.upsertDiscoveryIndex({
+        canvasId: linked.id,
+        canvasType: input.canvasType,
+        title: input.title ?? null,
+        messageId: input.messageId,
+        conversationId: input.conversationId,
+      });
+      steps.push("cx_artifact discovery index upserted");
+    } catch (err) {
+      errors.push(`discovery index failed: ${String(err)}`);
+    }
+  } else {
+    steps.push("skipped discovery index — no conversationId");
   }
 
   return {

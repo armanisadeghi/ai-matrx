@@ -75,7 +75,14 @@ export async function POST(request: Request) {
     console.log("Response Content:", completion.choices[0].message.content);
 
     const response = completion.choices[0].message.content;
+    if (!response) {
+        return new Response("No completion response", { status: 500 });
+    }
     console.timeEnd("text completion " + request.headers.get("x-vercel-id") || "local");
+
+    if (!CARTESIA_API_KEY) {
+        return new Response("Voice synthesis unavailable", { status: 500 });
+    }
 
     console.time("cartesia request " + request.headers.get("x-vercel-id") || "local");
 

@@ -155,7 +155,7 @@ export default function DocumentViewer() {
           URL.revokeObjectURL(url);
         } else {
           // For other formats, download as text for now
-          const blob = new Blob([document.content], { type: "text/plain" });
+          const blob = new Blob([document.content ?? ""], { type: "text/plain" });
           const url = URL.createObjectURL(blob);
           const a = window.document.createElement("a");
           a.href = url;
@@ -348,7 +348,9 @@ export default function DocumentViewer() {
             v{document.version}
           </Badge>
           <span className="text-[10px] text-muted-foreground">
-            {new Date(document.created_at).toLocaleDateString()}
+            {document.created_at
+              ? new Date(document.created_at).toLocaleDateString()
+              : ""}
           </span>
           <div className="flex-1" />
           <div className="flex items-center gap-1">
@@ -495,7 +497,7 @@ export default function DocumentViewer() {
         open={showHistory}
         onOpenChange={setShowHistory}
         topicId={topicId}
-        currentVersion={document.version}
+        currentVersion={document.version ?? 0}
         onCompare={(old, current) => {
           setDiffDocs([old, current]);
           setShowHistory(false);

@@ -171,6 +171,12 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
     }
   }
 
+  if (!organizationId) {
+    throw new Error(
+      "Cannot create note: no organization could be resolved for the current user.",
+    );
+  }
+
   // No existing empty note found, create a new one
   const { data, error } = await supabase
     .schema("workbench").from("notes")
@@ -387,7 +393,13 @@ export async function fetchFolderNames(): Promise<string[]> {
     return [];
   }
 
-  const uniqueFolders = Array.from(new Set(data.map((n) => n.folder_name)));
+  const uniqueFolders = Array.from(
+    new Set(
+      data
+        .map((n) => n.folder_name)
+        .filter((name): name is string => name != null),
+    ),
+  );
   return uniqueFolders.sort();
 }
 

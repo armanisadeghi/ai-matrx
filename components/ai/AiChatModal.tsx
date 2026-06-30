@@ -74,13 +74,14 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName })
 
     const handleSubmit = (customMessage?: string) => {
         const messageToSend = customMessage || message.trim();
-        if (messageToSend && !isLoading && currentFlashcard) {
+        const flashcardId = currentFlashcard?.id;
+        if (messageToSend && !isLoading && flashcardId) {
             dispatch(addMessage({
-                flashcardId: currentFlashcard.id,
+                flashcardId,
                 message: { role: 'user', content: messageToSend }
             }));
             const chatHistory = activeTab === 'current' ? currentChat : allChatHistory;
-            sendMessage(messageToSend, currentFlashcard.id, chatHistory);
+            sendMessage(messageToSend, flashcardId, chatHistory);
             setMessage('');
         }
     };

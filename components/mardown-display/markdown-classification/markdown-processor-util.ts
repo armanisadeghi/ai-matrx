@@ -77,6 +77,17 @@ export const processMarkdownForRenderingWithCoordinator = async ({ markdown, coo
     }
     
     const coordinatorDefinition = getCoordinatorConfig(coordinatorId);
-    const processedData = await processMarkdownForRendering({ markdown, processorId: coordinatorDefinition.processor, processorConfigId: coordinatorDefinition.config });
+    if (!coordinatorDefinition) {
+        const emptyAst: AstNode = { type: "root", children: [] };
+        return {
+            ast: emptyAst,
+            processedData: { content: emptyAst, metadata: {} },
+        };
+    }
+    const processedData = await processMarkdownForRendering({
+        markdown,
+        processorId: coordinatorDefinition.processor,
+        processorConfigId: coordinatorDefinition.config ?? undefined,
+    });
     return processedData;
 };

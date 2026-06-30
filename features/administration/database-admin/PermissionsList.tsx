@@ -6,8 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Key, RefreshCw, Search, Plus, Settings } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
+import type { DatabasePermission } from "./types";
 
-const PermissionsList = ({ permissions = [], loading = false, isRefreshing = false, onRefresh = () => {} }) => {
+interface PermissionsListProps {
+    permissions?: DatabasePermission[];
+    loading?: boolean;
+    isRefreshing?: boolean;
+    onRefresh?: () => void;
+}
+
+const PermissionsList = ({ permissions = [], loading = false, isRefreshing = false, onRefresh = () => {} }: PermissionsListProps) => {
     const [filter, setFilter] = useState("");
     const [selectedType, setSelectedType] = useState("all");
 

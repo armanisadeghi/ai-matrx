@@ -232,6 +232,13 @@ export function mapQuizSessionRow(row: QuizSessionRow): QuizSession | null {
   if (state === null) return null;
   const quiz_metadata = parseQuizMetadataJson(row.quiz_metadata);
   if (row.quiz_metadata !== null && quiz_metadata === null) return null;
+  if (
+    row.user_id === null ||
+    row.created_at === null ||
+    row.updated_at === null
+  ) {
+    return null;
+  }
 
   return {
     id: row.id,

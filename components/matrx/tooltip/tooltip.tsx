@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 
 const Tooltip = ({ children, arrowDirection, offset }) => {
-    const tooltipRef = useRef(null);
+    const tooltipRef = useRef<HTMLDivElement>(null);
     const [arrowPosition, setArrowPosition] = useState('0px');
     const tooltipClass = 'bg-gray-800 text-white text-sm py-1 px-2 rounded shadow-lg';
     const arrowClass = 'absolute w-2 h-2 bg-gray-800 transform rotate-45';

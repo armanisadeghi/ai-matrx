@@ -24,7 +24,9 @@ const useImageDimensions = (src: string, sizeKey: keyof typeof DEFAULT_IMAGE_SIZ
         const img = new Image();
         img.onload = () => {
             const aspectRatio = img.width / img.height;
-            const { width, height } = customDimensions || DEFAULT_IMAGE_SIZES[sizeKey];
+            const defaults = DEFAULT_IMAGE_SIZES[sizeKey];
+            const width = customDimensions?.width ?? defaults.width;
+            const height = customDimensions?.height ?? defaults.height;
 
             if (sizeKey === 'fullscreen') {
                 const screenWidth = window.innerWidth;

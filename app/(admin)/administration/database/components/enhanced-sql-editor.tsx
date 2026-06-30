@@ -586,7 +586,7 @@ export const EnhancedSQLEditor = ({
         categoryName="SQL Templates"
         selectButtonLabel="Use Template"
         onSelectNote={(note: Note) => {
-          setSqlQuery(note.content);
+          setSqlQuery(note.content ?? "");
           setTemplatesModalOpen(false);
           toast.success(`Template loaded: ${note.label}`);
         }}

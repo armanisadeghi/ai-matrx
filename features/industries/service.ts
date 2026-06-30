@@ -68,9 +68,9 @@ export async function upsertIndustry(input: {
     p_slug: input.slug,
     p_name: input.name,
     p_facet: input.facet ?? "domain",
-    p_parent_id: input.parentId ?? null,
-    p_default_template_id: input.defaultTemplateId ?? null,
-    p_description: input.description ?? null,
+    p_parent_id: input.parentId ?? undefined,
+    p_default_template_id: input.defaultTemplateId ?? undefined,
+    p_description: input.description ?? undefined,
     p_sort_order: input.sortOrder ?? 0,
   });
   if (error) throw new Error(error.message);

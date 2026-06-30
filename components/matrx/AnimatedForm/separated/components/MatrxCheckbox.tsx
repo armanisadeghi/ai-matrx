@@ -47,6 +47,10 @@ const MatrxCheckbox: React.FC<AnimatedCheckboxProps> = (
         xl: 20
     }[size];
 
+    if (!field) {
+        return null;
+    }
+
     return (
         <motion.div
             className={cn(

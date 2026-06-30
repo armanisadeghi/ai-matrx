@@ -190,7 +190,7 @@ export interface ResolvedBrokerValue {
   broker_id: string;
   value: any;
   scope_level: ScopeLevel;
-  scope_id: string | null;
+  scope_id: string;
 }
 type _CheckResolvedBrokerValue =
   ResolvedBrokerValue extends DbRpcRow<"get_broker_values_for_context">
@@ -205,10 +205,10 @@ export interface CompleteBrokerData {
   data_type: string;
   value: any | null;
   has_value: boolean;
-  scope_level: ScopeLevel | null;
-  scope_id: string | null;
-  default_value: string | null;
-  description: string | null;
+  scope_level: ScopeLevel;
+  scope_id: string;
+  default_value: string;
+  description: string;
 }
 type _CheckCompleteBrokerData =
   CompleteBrokerData extends DbRpcRow<"get_complete_broker_data_for_context">

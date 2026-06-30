@@ -25,7 +25,7 @@ const NavigationRows: React.FC<NavigationRowsProps> = ({
   if (!originalData) return null;
 
   // Generate the rows to render for navigation
-  const rowsToRender = [];
+  const rowsToRender: React.ReactElement[] = [];
   
   // For each row in the path
   currentPath.forEach(([rowIndex, selectedKey], idx) => {

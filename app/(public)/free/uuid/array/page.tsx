@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 
 const UUIDArrayField = () => {
     const [inputValue, setInputValue] = useState('');
-    const [uuids, setUuids] = useState([]);
-    const [copiedId, setCopiedId] = useState(null);
+    const [uuids, setUuids] = useState<string[]>([]);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showExternal, setShowExternal] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 

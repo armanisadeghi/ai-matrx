@@ -24,16 +24,20 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   card,
 }) => {
   const dispatch = useDispatch();
+  const flashcardId = card.id;
   const chatMessages = useSelector(
-    (state: RootState) => state.flashcardChat[card.id]?.chat || [],
+    (state: RootState) =>
+      flashcardId
+        ? state.flashcardChat[flashcardId]?.chat || []
+        : [],
   );
   const [chatInput, setChatInput] = useState("");
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || !flashcardId) return;
 
     const newMessage: ChatMessage = { role: "user", content: chatInput };
-    dispatch(addMessage({ flashcardId: card.id, message: newMessage }));
+    dispatch(addMessage({ flashcardId, message: newMessage }));
     setChatInput("");
 
     try {
@@ -56,7 +60,7 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
         assistantMessage += content;
         dispatch(
           addMessage({
-            flashcardId: card.id,
+            flashcardId,
             message: { role: "assistant", content: assistantMessage },
           }),
         );

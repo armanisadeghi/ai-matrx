@@ -14,7 +14,7 @@ const NavigationRows: React.FC<NavigationRowsProps> = ({
   if (!originalData) return null;
 
   // Create array of rows to render (including placeholders)
-  const rowsToRender = [];
+  const rowsToRender: React.ReactNode[] = [];
 
   // Add actual navigation rows
   currentPath.forEach(([rowIndex, selectedKey], idx) => {

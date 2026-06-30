@@ -7,7 +7,7 @@ import {
 
 // Terminal component for the "Fire Arman" option
 const TerminalOutput = () => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<string[]>([]);
   const terminalMessages = [
     "...",
     "User account deleted...",

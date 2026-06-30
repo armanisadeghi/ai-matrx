@@ -66,24 +66,25 @@ const getFieldDifferences = (
     hasOtherDifferences: false,
   };
 
-  // Check for other differences not explicitly tracked
-  const coreFieldCopy = { ...coreField };
-  const appletFieldCopy = { ...appletField };
-
-  // Remove properties we've already compared
-  delete coreFieldCopy.id;
-  delete coreFieldCopy.component;
-  delete coreFieldCopy.label;
-  delete coreFieldCopy.description;
-  delete coreFieldCopy.options;
-  delete coreFieldCopy.componentProps;
-
-  delete appletFieldCopy.id;
-  delete appletFieldCopy.component;
-  delete appletFieldCopy.label;
-  delete appletFieldCopy.description;
-  delete appletFieldCopy.options;
-  delete appletFieldCopy.componentProps;
+  // Check for other differences not explicitly tracked — omit compared keys via rest
+  const {
+    id: _coreId,
+    component: _coreComponent,
+    label: _coreLabel,
+    description: _coreDescription,
+    options: _coreOptions,
+    componentProps: _coreComponentProps,
+    ...coreFieldCopy
+  } = coreField;
+  const {
+    id: _appletId,
+    component: _appletComponent,
+    label: _appletLabel,
+    description: _appletDescription,
+    options: _appletOptions,
+    componentProps: _appletComponentProps,
+    ...appletFieldCopy
+  } = appletField;
 
   // Check if there are other differences
   differences.hasOtherDifferences =
@@ -185,8 +186,8 @@ export const selectContainerComparisonResult = createSelector(
     const appletContainer = applet.containers?.find(
       (c) => c.id === containerId,
     );
-    result.containerExistsInApplet = !!appletContainer;
-    if (!result.containerExistsInApplet) return result;
+    if (!appletContainer) return result;
+    result.containerExistsInApplet = true;
 
     // Note: We intentionally ignore container-specific properties like isPublic, isDirty, etc.
     // We only compare the core properties that should match between applet and source containers

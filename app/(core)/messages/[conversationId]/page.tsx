@@ -23,7 +23,7 @@ export default function ConversationPage() {
 
   // Get user from Redux - use auth.users.id (UUID)
   const user = useAppSelector(selectUser);
-  const userId = user?.id;
+  const userId = user?.id ?? undefined;
   const displayName = useMemo(() =>
     user?.userMetadata?.fullName ||
     user?.userMetadata?.name ||

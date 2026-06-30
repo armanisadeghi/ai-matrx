@@ -105,6 +105,13 @@ export async function POST(request: NextRequest) {
       expiresAt,
     );
 
+    if (!invitation.email) {
+      return NextResponse.json(
+        { success: false, error: "Invitation has no email address" },
+        { status: 400 },
+      );
+    }
+
     // Send invitation email
     const emailResult = await sendEmail({
       to: invitation.email,

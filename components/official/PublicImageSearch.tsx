@@ -584,7 +584,7 @@ interface SearchDialogProps {
   handleSearch: (query: string) => void;
   handlePhotoSelect: (photo: Photo) => void;
   lastPhotoElementRef: (node: HTMLDivElement | null) => void;
-  searchInputRef: React.RefObject<HTMLInputElement>;
+  searchInputRef: React.RefObject<HTMLInputElement | null>;
   multiSelect: boolean;
   resetSelection: () => void;
   applySelection: () => void;

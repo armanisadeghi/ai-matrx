@@ -243,12 +243,12 @@ export async function triageFeedbackItem(
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("triage_feedback_item", {
       p_id: feedbackId,
-      p_ai_solution_proposal: triage.ai_solution_proposal || null,
-      p_ai_suggested_priority: triage.ai_suggested_priority || null,
-      p_ai_complexity: triage.ai_complexity || null,
-      p_ai_estimated_files: triage.ai_estimated_files || null,
-      p_autonomy_score: triage.autonomy_score || null,
-      p_ai_assessment: triage.ai_assessment || null,
+      p_ai_solution_proposal: triage.ai_solution_proposal ?? undefined,
+      p_ai_suggested_priority: triage.ai_suggested_priority ?? undefined,
+      p_ai_complexity: triage.ai_complexity ?? undefined,
+      p_ai_estimated_files: triage.ai_estimated_files ?? undefined,
+      p_autonomy_score: triage.autonomy_score ?? undefined,
+      p_ai_assessment: triage.ai_assessment ?? undefined,
     });
     if (error) return { success: false, error: error.message };
     return { success: true, data: mapUserFeedbackRow(data) };
@@ -334,8 +334,8 @@ export async function setAdminDecision(
     const { data, error } = await supabase.rpc("set_admin_decision", {
       p_id: feedbackId,
       p_decision: decision,
-      p_direction: direction || null,
-      p_work_priority: workPriority || null,
+      p_direction: direction ?? undefined,
+      p_work_priority: workPriority ?? undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {
@@ -433,8 +433,8 @@ export async function resolveWithTesting(
     const { data, error } = await supabase.rpc("resolve_with_testing", {
       p_id: feedbackId,
       p_resolution_notes: resolutionNotes,
-      p_testing_instructions: testingInstructions || null,
-      p_testing_url: testingUrl || null,
+      p_testing_instructions: testingInstructions ?? undefined,
+      p_testing_url: testingUrl ?? undefined,
     });
     if (error) return { success: false, error: error.message };
     if (data === null) {

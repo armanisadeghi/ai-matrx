@@ -903,7 +903,7 @@ export const uploadFiles = createAsyncThunk<
           requestId,
           fileName: targetName,
           fileSize: file.size,
-          parentFolderId: arg.parentFolderId,
+          parentFolderId: arg.parentFolderId ?? null,
         }),
       );
       registerRequest({
@@ -976,7 +976,7 @@ export const uploadFiles = createAsyncThunk<
         invalidateBlobCache(data.file_id);
         dispatch(
           attachChildToFolder({
-            parentFolderId: arg.parentFolderId,
+            parentFolderId: arg.parentFolderId ?? null,
             kind: "file",
             id: data.file_id,
           }),

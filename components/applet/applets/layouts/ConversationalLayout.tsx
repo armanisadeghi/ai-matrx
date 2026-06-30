@@ -29,10 +29,10 @@ export function ConversationalLayout({ config }: ConversationalLayoutProps) {
                     {/* Side Navigation */}
                     <div className="col-span-3">
                         <div className="space-y-4 sticky top-24">
-                            {config.sections.map((section) => (
+                            {(config.sections ?? []).map((section) => (
                                 <Link
                                     key={section.id}
-                                    href={section.link}
+                                    href={section.link ?? '#'}
                                     onClick={() => setSelectedSection(section.id)}
                                 >
                                     <Card

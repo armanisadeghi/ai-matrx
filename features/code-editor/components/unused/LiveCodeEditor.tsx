@@ -67,8 +67,8 @@ const LiveCodeEditor = () => {
                 <div className="grid grid-cols-2 flex-grow">
                     <div className="border-r dark:border-slate-700 relative">
                         <Editor
-                            height={`${height - 60}px`}
-                            width={`${width / 2}px`}
+                            height={`${(height ?? 0) - 60}px`}
+                            width={`${(width ?? 0) / 2}px`}
                             defaultLanguage="javascript"
                             value={editorContent}
                             onChange={(value) => setEditorContent(value || "")}

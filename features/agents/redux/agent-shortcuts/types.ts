@@ -146,20 +146,20 @@ export interface AgentShortcutInitialRow {
   shortcut_id: string;
   category_id: string;
   label: string;
-  description: string | null;
-  icon_name: string | null;
-  keyboard_shortcut: string | null;
+  description: string;
+  icon_name: string;
+  keyboard_shortcut: string;
   sort_order: number;
 
   // Resolved version reference
-  resolved_id: string | null; // single uuid for execution
+  resolved_id: string; // single uuid for execution
   is_version: boolean; // false = agx_agent row, true = agx_version row
   is_behind: boolean; // true = newer version exists
 
   // Raw reference data (for drift UI and editing the shortcut itself)
-  agent_id: string | null;
-  agent_version_id: string | null;
-  current_version: number | null;
+  agent_id: string;
+  agent_version_id: string;
+  current_version: number;
   use_latest: boolean;
 
   // Bindings — where the shortcut appears + UI-scope → agent key routing
@@ -180,19 +180,19 @@ export interface AgentShortcutInitialRow {
   hide_reasoning: boolean;
   hide_tool_results: boolean;
   show_pre_execution_gate: boolean;
-  pre_execution_message: string | null;
+  pre_execution_message: string;
   bypass_gate_seconds: number;
-  default_user_input: string | null;
+  default_user_input: string;
   default_variables: Record<string, unknown> | null;
   context_overrides: Record<string, unknown> | null;
   llm_overrides: Record<string, unknown> | null;
 
   // Ownership
-  shortcut_user_id: string | null; // null = system shortcut
-  shortcut_org_id: string | null; // null = not org-scoped
+  shortcut_user_id: string; // empty = system shortcut (RPC returns '' not SQL null)
+  shortcut_org_id: string; // empty = not org-scoped (RPC returns '' not SQL null)
 
   // Agent data from the RESOLVED version (ready for execution — no second fetch needed)
-  agent_name: string | null;
+  agent_name: string;
   agent_variable_definitions: VariableDefinition[] | null;
   agent_context_slots: ContextSlot[] | null;
 }
@@ -208,8 +208,8 @@ true satisfies typeof _agentShortcutInitialRow;
  * Extends initial with hierarchy ids. Overlapping shortcut ids overwrite phase-1 data.
  */
 export interface AgentShortcutContextRow extends AgentShortcutInitialRow {
-  shortcut_project_id: string | null;
-  shortcut_task_id: string | null;
+  shortcut_project_id: string;
+  shortcut_task_id: string;
 }
 type _CheckAgentShortcutContextRow =
   AgentShortcutContextRow extends Database["public"]["Functions"]["agx_get_shortcuts_for_context"]["Returns"][number]

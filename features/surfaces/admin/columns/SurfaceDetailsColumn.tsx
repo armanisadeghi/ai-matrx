@@ -100,7 +100,9 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
   }
 
   const sortedValues = [...values].sort((a, b) => {
-    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    const orderA = a.sortOrder ?? 0;
+    const orderB = b.sortOrder ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
     return a.name.localeCompare(b.name);
   });
 

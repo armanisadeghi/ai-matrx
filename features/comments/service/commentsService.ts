@@ -115,8 +115,8 @@ export const commentsService = {
         p_entity_type: args.entityType,
         p_entity_id: args.entityId,
         p_body: args.body,
-        p_parent_id: args.parentId ?? null,
-        p_org_id: args.orgId ?? null,
+        p_parent_id: args.parentId ?? undefined,
+        p_org_id: args.orgId ?? undefined,
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {

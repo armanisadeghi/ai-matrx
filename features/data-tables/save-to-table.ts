@@ -52,9 +52,9 @@ export async function fetchExistingRows(
       p_table_id: tableId,
       p_limit: EXISTING_ROW_FETCH_CAP,
       p_offset: 0,
-      p_sort_field: null,
+      p_sort_field: undefined,
       p_sort_direction: "asc",
-      p_search_term: null,
+      p_search_term: undefined,
     },
   );
   if (error) throw error;

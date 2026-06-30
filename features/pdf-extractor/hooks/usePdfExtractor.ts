@@ -736,6 +736,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // the tab on "cleaning" forever with no recovery short of a reload.
       const watchdog = createInactivityWatchdog(90_000);
       try {
+        if (!backendUrl) {
+          throw new Error("Backend URL is not configured");
+        }
         const headers = await getAuthHeaders();
         const { cleanContent: streamedClean } = await streamPdfClean({
           docId,
@@ -946,6 +949,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // Same stall protection as cleanContent — see createInactivityWatchdog.
       const watchdog = createInactivityWatchdog(90_000);
       try {
+        if (!backendUrl) {
+          throw new Error("Backend URL is not configured");
+        }
         const headers = await getAuthHeaders();
         // Canonical source wire — media.file_id / media.url / media.file_uri.
         // The server's PdfRequest reads `options.force_ocr` (NOT top-level)

@@ -12,10 +12,11 @@ interface ToolsLayoutProps {
 export const ToolsLayout = ({ config }) => {
     // Group entities by category
     const groupedEntities = toolEntities.reduce((acc, entityConfig) => {
-        if (!acc[entityConfig.category]) {
-            acc[entityConfig.category] = [];
+        const category = entityConfig.category ?? 'other';
+        if (!acc[category]) {
+            acc[category] = [];
         }
-        acc[entityConfig.category].push(entityConfig);
+        acc[category].push(entityConfig);
         return acc;
     }, {} as Record<string, typeof toolEntities>);
 

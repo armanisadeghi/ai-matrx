@@ -345,7 +345,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     };
  
     // Only include plugins that are successfully loaded
-    const editorPlugins = [];
+    const editorPlugins: NonNullable<typeof colorSyntaxPlugin>[] = [];
     if (isClient && colorSyntaxPlugin) {
         editorPlugins.push(colorSyntaxPlugin);
     }
@@ -434,7 +434,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     React.useImperativeHandle(ref, () => ({
         getCurrentMarkdown,
         getInstance: () => editorRef.current?.getInstance(),
-        getRootElement: () => editorRef.current?.getRootElement(),
+        getRootElement: () => editorRef.current?.getRootElement() ?? null,
     }));
  
     // Don't render editor until client is ready and content is converted

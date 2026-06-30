@@ -76,6 +76,10 @@ const MatrxTextarea: React.FC<MatrxTextareaProps> = ({
     }
   }, [value, autoResize]);
 
+  if (!field) {
+    return null;
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
 
@@ -83,7 +87,7 @@ const MatrxTextarea: React.FC<MatrxTextareaProps> = ({
     if (wordLimit && newValue.split(/\s+/).filter(Boolean).length > wordLimit)
       return;
 
-    onChange(newValue);
+    onChange?.(newValue);
   };
 
   const stringValue = (value ?? "") as string;

@@ -65,7 +65,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
   // Active variable definitions shown in the UI. Cleared after first submit.
   const [activeVariables, setActiveVariables] = useState<PromptVariable[]>([]);
   const [streamEvents, setStreamEvents] = useState<TypedStreamEvent[]>([]);
-  const latestAssistantRef = useRef<HTMLDivElement>(null);
+  const messageScrollRef = useRef<HTMLDivElement | null>(null);
   const prevAssistantCountRef = useRef(0);
   const textInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -191,14 +191,16 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
     const assistantCount = messages.filter(
       (m) => m.role === "assistant",
     ).length;
-    if (
-      assistantCount > prevAssistantCountRef.current &&
-      latestAssistantRef.current
-    ) {
-      latestAssistantRef.current.scrollIntoView({
-        behavior: "instant",
-        block: "start",
-      });
+    if (assistantCount > prevAssistantCountRef.current) {
+      const scrollTarget = messageScrollRef.current?.querySelector(
+        ".min-h-\\[50dvh\\]",
+      );
+      if (scrollTarget) {
+        scrollTarget.scrollIntoView({
+          behavior: "instant",
+          block: "start",
+        });
+      }
     }
     prevAssistantCountRef.current = assistantCount;
   }, [messages]);
@@ -391,7 +393,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
                   onSubmit={handleSubmit}
                   disabled={isExecuting}
                   placeholder="Additional instructions (optional)…"
-                  conversationId={conversationId}
+                  conversationId={conversationId ?? undefined}
                   onOpenAgentPicker={openAgentPicker}
                   hasVariables={hasVariables}
                   selectedAgent={state.currentAgent}
@@ -478,7 +480,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
                       ? "Additional instructions (optional)…"
                       : "What do you want to know?"
                   }
-                  conversationId={conversationId}
+                  conversationId={conversationId ?? undefined}
                   onOpenAgentPicker={openAgentPicker}
                   hasVariables={hasVariables}
                   selectedAgent={state.currentAgent}
@@ -528,7 +530,10 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
       <div className="flex-1 min-h-0 relative">
         <div className="absolute top-0 left-0 right-0 h-10 bg-gradient-to-b from-background/80 to-transparent z-10 pointer-events-none" />
 
-        <div className="h-full overflow-y-auto scrollbar-hide">
+        <div
+          ref={messageScrollRef}
+          className="h-full overflow-y-auto scrollbar-hide"
+        >
           <div className="w-full max-w-[800px] mx-auto px-3 pt-12 pb-2 md:px-3 md:pt-12 md:pb-4 relative">
             {isAuthenticated && shareConversationId && (
               <div className="absolute top-1 right-3 z-10 hidden md:block">
@@ -558,7 +563,6 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
               streamEvents={streamEvents.length > 0 ? streamEvents : undefined}
               isStreaming={isStreaming}
               onMessageContentChange={handleMessageContentChange}
-              latestAssistantRef={latestAssistantRef}
             />
           </div>
         </div>
@@ -607,7 +611,7 @@ export function ChatContainer({ className = "" }: ChatContainerProps) {
             <ChatInputWithControls
               onSubmit={handleSubmit}
               disabled={isExecuting}
-              conversationId={conversationId}
+              conversationId={conversationId ?? undefined}
               onOpenAgentPicker={openAgentPicker}
               hasVariables={hasVariables}
               selectedAgent={state.currentAgent}

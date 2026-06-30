@@ -116,9 +116,9 @@ export function TablesResourcePicker({ onBack, onSelect }: TablesResourcePickerP
                     p_table_id: table.id,
                     p_limit: 100,
                     p_offset: 0,
-                    p_sort_field: null,
+                    p_sort_field: undefined,
                     p_sort_direction: 'asc',
-                    p_search_term: null
+                    p_search_term: undefined
                 });
                 
             if (rowsError) throw rowsError;

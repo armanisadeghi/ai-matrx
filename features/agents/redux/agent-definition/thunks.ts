@@ -350,7 +350,7 @@ export interface AgentVersionHistoryItem {
   version_number: number;
   name: string;
   changed_at: string;
-  change_note: string | null;
+  change_note: string;
 }
 type _Check_AgentVersionHistoryItem =
   AgentVersionHistoryItem extends DbRpcRow<"agx_get_version_history">
@@ -917,8 +917,8 @@ export const fetchSharedAgentsForChat = createAsyncThunk<
 export interface AgentAccessLevel {
   agent_id: string;
   agent_name: string;
-  owner_id: string | null;
-  owner_email: string | null;
+  owner_id: string;
+  owner_email: string;
   access_level: "owner" | "admin" | "editor" | "viewer" | "public" | "none";
   is_owner: boolean;
 }

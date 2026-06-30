@@ -74,10 +74,11 @@ export async function processAiRequest(
   let transcript: string | undefined;
 
   if (inputType === "audio") {
-    transcript = await getTranscript(input);
-    if (!transcript) {
+    const audioTranscript = await getTranscript(input);
+    if (!audioTranscript) {
       throw new Error("Failed to process audio input into transcript.");
     }
+    transcript = audioTranscript;
   } else if (typeof input === "string") {
     transcript = input;
   } else {
@@ -284,7 +285,11 @@ async function callGroqAPI(
     messages,
     ...restParams,
   });
-  return completion.choices[0].message.content;
+  const content = completion.choices[0]?.message.content;
+  if (content == null) {
+    throw new Error("Groq API returned no message content");
+  }
+  return content;
 }
 
 /**
@@ -300,7 +305,11 @@ async function callOpenAI(
     messages,
     ...restParams,
   });
-  return completion.choices[0].message.content;
+  const content = completion.choices[0]?.message.content;
+  if (content == null) {
+    throw new Error("OpenAI API returned no message content");
+  }
+  return content;
 }
 
 /**
@@ -387,7 +396,11 @@ async function generateVoice(
     throw new Error("Voice synthesis failed");
   }
 
-  return response.body;
+  const body = response.body;
+  if (!body) {
+    throw new Error("Voice synthesis response had no body");
+  }
+  return body;
 }
 
 /**

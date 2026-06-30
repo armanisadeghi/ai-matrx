@@ -178,7 +178,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
             <div className="text-xs text-slate-400">Admin</div>
             <div
               className="text-sm font-semibold text-blue-400 truncate"
-              title={reduxUser?.id}
+              title={reduxUser?.id ?? undefined}
             >
               {reduxUser?.userMetadata?.fullName ||
                 reduxUser?.userMetadata?.name ||

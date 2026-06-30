@@ -91,7 +91,9 @@ export const appBuilderSlice = createSlice({
         },
         // Existing actions - preserve these
         setApp: (state, action: PayloadAction<AppBuilder>) => {
-            state.apps[action.payload.id] = { ...action.payload, isDirty: action.payload.isDirty || true, isLocal: action.payload.isLocal || true, slugStatus: action.payload.slugStatus || 'unchecked' };
+            const id = action.payload.id;
+            if (!id) return;
+            state.apps[id] = { ...action.payload, isDirty: action.payload.isDirty || true, isLocal: action.payload.isLocal || true, slugStatus: action.payload.slugStatus || 'unchecked' };
         },
         updateApp: (state, action: PayloadAction<{ id: string; changes: Partial<AppBuilder> }>) => {
             const { id, changes } = action.payload;
@@ -140,7 +142,7 @@ export const appBuilderSlice = createSlice({
             const { id, description } = action.payload;
             if (!checkAppExists(state, id)) return;
             
-            state.apps[id] = { ...state.apps[id], description, isDirty: true };
+            state.apps[id] = { ...state.apps[id], description: description ?? state.apps[id].description, isDirty: true };
         },
         setSlug: (state, action: PayloadAction<{ id: string; slug: string }>) => {
             const { id, slug } = action.payload;
@@ -262,12 +264,17 @@ export const appBuilderSlice = createSlice({
             state.error = null;
         });
         builder.addCase(createAppThunk.fulfilled, (state, action) => {
-            state.apps[action.payload.id] = { ...action.payload, isDirty: false, isLocal: false, slugStatus: 'unique' };
+            const id = action.payload.id;
+            if (!id) {
+                state.isLoading = false;
+                return;
+            }
+            state.apps[id] = { ...action.payload, isDirty: false, isLocal: false, slugStatus: 'unique' };
             if (state.newAppId) {
                 delete state.apps[state.newAppId];
                 state.newAppId = null;
             }
-            state.activeAppId = action.payload.id;
+            state.activeAppId = id;
             state.isLoading = false;
         });
         builder.addCase(createAppThunk.rejected, (state, action) => {
@@ -281,7 +288,10 @@ export const appBuilderSlice = createSlice({
             state.error = null;
         });
         builder.addCase(updateAppThunk.fulfilled, (state, action) => {
-            state.apps[action.payload.id] = { ...action.payload, isDirty: false, isLocal: false, slugStatus: 'unique' };
+            const id = action.payload.id;
+            if (id) {
+                state.apps[id] = { ...action.payload, isDirty: false, isLocal: false, slugStatus: 'unique' };
+            }
             state.isLoading = false;
         });
         builder.addCase(updateAppThunk.rejected, (state, action) => {
@@ -296,12 +306,17 @@ export const appBuilderSlice = createSlice({
         });
         builder.addCase(saveAppThunk.fulfilled, (state, action) => {
             const app = action.payload;
-            state.apps[app.id] = { ...app, isDirty: false, isLocal: false, slugStatus: 'unique' };
-            if (state.newAppId && app.id !== state.newAppId) {
+            const id = app.id;
+            if (!id) {
+                state.isLoading = false;
+                return;
+            }
+            state.apps[id] = { ...app, isDirty: false, isLocal: false, slugStatus: 'unique' };
+            if (state.newAppId && id !== state.newAppId) {
                 delete state.apps[state.newAppId];
                 state.newAppId = null;
             }
-            state.activeAppId = app.id;
+            state.activeAppId = id;
             state.isLoading = false;
         });
         builder.addCase(saveAppThunk.rejected, (state, action) => {
@@ -388,12 +403,15 @@ export const appBuilderSlice = createSlice({
         builder.addCase(fetchAppsThunk.fulfilled, (state, action) => {
             // Create a new apps object that explicitly sets isLocal=false for fetched apps
             const newApps = action.payload.reduce((acc, app) => {
-                acc[app.id] = {
-                    ...app,
-                    isDirty: false,
-                    isLocal: false,
-                    slugStatus: 'unique'
-                };
+                const id = app.id;
+                if (id) {
+                    acc[id] = {
+                        ...app,
+                        isDirty: false,
+                        isLocal: false,
+                        slugStatus: 'unique'
+                    };
+                }
                 return acc;
             }, {} as Record<string, AppBuilder>);
             

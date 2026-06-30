@@ -161,7 +161,7 @@ export default function EnumsContainer({
   const currentEnums = enums.slice(startIndex, endIndex);
 
   // Generate page numbers for pagination
-  const pageNumbers = [];
+  const pageNumbers: number[] = [];
   const maxVisiblePages = 5;
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
   let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);

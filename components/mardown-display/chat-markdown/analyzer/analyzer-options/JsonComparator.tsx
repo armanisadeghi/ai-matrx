@@ -1,16 +1,35 @@
 import React, { useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 
+type JsonDifference = {
+  path: string;
+  type: string;
+  left?: unknown;
+  right?: unknown;
+  leftValue?: unknown;
+  rightValue?: unknown;
+};
+
+type ComparisonResult = {
+  identical: boolean;
+  error?: string;
+  differences?: JsonDifference[];
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export default function JsonComparator() {
   const [leftJson, setLeftJson] = useState("");
   const [rightJson, setRightJson] = useState("");
-  const [leftParsed, setLeftParsed] = useState(null);
-  const [rightParsed, setRightParsed] = useState(null);
+  const [leftParsed, setLeftParsed] = useState<unknown | null>(null);
+  const [rightParsed, setRightParsed] = useState<unknown | null>(null);
   const [leftError, setLeftError] = useState("");
   const [rightError, setRightError] = useState("");
-  const [comparison, setComparison] = useState(null);
+  const [comparison, setComparison] = useState<ComparisonResult | null>(null);
 
-  const cleanAndParseJson = (text) => {
+  const cleanAndParseJson = (text: string) => {
     if (!text.trim()) return { parsed: null, error: "", cleaned: "" };
 
     try {
@@ -46,8 +65,12 @@ export default function JsonComparator() {
     setComparison(null);
   };
 
-  const deepCompare = (obj1, obj2, path = "") => {
-    const differences = [];
+  const deepCompare = (
+    obj1: unknown,
+    obj2: unknown,
+    path = "",
+  ): JsonDifference[] => {
+    const differences: JsonDifference[] = [];
 
     if (obj1 === obj2) return differences;
 
@@ -83,7 +106,7 @@ export default function JsonComparator() {
       return differences;
     }
 
-    if (Array.isArray(obj1)) {
+    if (Array.isArray(obj1) && Array.isArray(obj2)) {
       if (obj1.length !== obj2.length) {
         differences.push({
           path: path || "root",
@@ -112,7 +135,7 @@ export default function JsonComparator() {
           differences.push(...deepCompare(obj1[i], obj2[i], newPath));
         }
       }
-    } else if (typeof obj1 === "object") {
+    } else if (isPlainObject(obj1) && isPlainObject(obj2)) {
       const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
 
       for (const key of allKeys) {
@@ -163,8 +186,8 @@ export default function JsonComparator() {
     });
   };
 
-  const renderDifference = (diff, index) => {
-    const typeLabels = {
+  const renderDifference = (diff: JsonDifference, index: number) => {
+    const typeLabels: Record<string, string> = {
       type_mismatch: "Type Mismatch",
       null_mismatch: "Null Mismatch",
       array_object_mismatch: "Array/Object Mismatch",
@@ -195,7 +218,7 @@ export default function JsonComparator() {
         )}
         {diff.left !== undefined && diff.right !== undefined && (
           <div className="text-sm">
-            Left: {diff.left}, Right: {diff.right}
+            Left: {JSON.stringify(diff.left)}, Right: {JSON.stringify(diff.right)}
           </div>
         )}
       </div>
@@ -256,11 +279,11 @@ export default function JsonComparator() {
             ) : (
               <div>
                 <div className="text-red-600 font-medium mb-3">
-                  ✗ JSON objects are different ({comparison.differences.length}{" "}
-                  differences found)
+                  ✗ JSON objects are different (
+                  {comparison.differences?.length ?? 0} differences found)
                 </div>
                 <div className="max-h-40 overflow-y-auto">
-                  {comparison.differences.map(renderDifference)}
+                  {(comparison.differences ?? []).map(renderDifference)}
                 </div>
               </div>
             )}

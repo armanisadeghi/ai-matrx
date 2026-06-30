@@ -75,7 +75,6 @@ import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { ResourceChips } from "@/features/agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
-import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
 import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLoader";
@@ -368,12 +367,31 @@ export function ConversationInput({
   );
 
   // ── Clipboard paste ────────────────────────────────────────────────────────
-  useClipboardPaste({
-    textareaRef,
-    onPasteImage: async (file) => {
-      await handleFilesSelected([file]);
+  const handleClipboardPaste = useCallback(
+    async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!event.clipboardData?.items) return;
+
+      const items = event.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          event.preventDefault();
+          const blob = items[i].getAsFile();
+          if (!blob) continue;
+
+          const timestamp = Date.now();
+          const filename = `pasted-image-${timestamp}.png`;
+          const imageFile = new File([blob], filename, { type: blob.type });
+          try {
+            await handleFilesSelected([imageFile]);
+          } catch (error) {
+            console.error("Error processing pasted image:", error);
+          }
+          break;
+        }
+      }
     },
-  });
+    [handleFilesSelected],
+  );
 
   // ── Voice / transcribe ─────────────────────────────────────────────────────
   const { isRecording, isTranscribing, startRecording, stopRecording } =
@@ -475,6 +493,14 @@ export function ConversationInput({
     ],
   );
 
+  const handleVariableSubmit = useCallback(
+    async (submitContent: string, _submitResources?: unknown[]) => {
+      if (!onSubmitOverride) return false;
+      return onSubmitOverride(submitContent, resources);
+    },
+    [onSubmitOverride, resources],
+  );
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (submitOnEnter && e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -565,7 +591,7 @@ export function ConversationInput({
           onChange={handleVariableChange}
           disabled={isExecuting}
           submitOnEnter
-          onSubmit={onSubmitOverride}
+          onSubmit={onSubmitOverride ? handleVariableSubmit : undefined}
           seamless
         />
       )}
@@ -577,7 +603,7 @@ export function ConversationInput({
             onChange={handleVariableChange}
             disabled={isExecuting}
             minimal
-            onSubmit={onSubmitOverride}
+            onSubmit={onSubmitOverride ? handleVariableSubmit : undefined}
             submitOnEnter
           />
         </div>
@@ -691,6 +717,7 @@ export function ConversationInput({
               )
             }
             onKeyDown={handleKeyDown}
+            onPaste={handleClipboardPaste}
             placeholder={isRecording ? "Recording..." : placeholder}
             disabled={isDisabled || isRecording}
             className={[

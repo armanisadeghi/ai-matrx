@@ -45,7 +45,7 @@ export function ContextAssignmentDialog({
       <ContextSheet
         open={open}
         onOpenChange={onOpenChange}
-        title={fieldProps.subject.title}
+        title={fieldProps.subject?.title ?? "Context"}
       >
         {open && (
           <ContextAssignmentField
@@ -67,7 +67,7 @@ export function ContextAssignmentDialog({
       >
         {/* Title for a11y; the field's subject header is the visible title. */}
         <DialogTitle className="sr-only">
-          Organize {fieldProps.subject.title}
+          Organize {fieldProps.subject?.title ?? "context"}
         </DialogTitle>
         {open && (
           <ContextAssignmentField

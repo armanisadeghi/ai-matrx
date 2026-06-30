@@ -225,7 +225,7 @@ function ActionsTab({
             <br />
             Inspector
           </span>
-          {isMemoryEnabled && (
+          {isMemoryEnabled && memoryCounters != null && (
             <span className="absolute top-1 right-1 flex items-center gap-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
               {memoryCounters.totalEvents > 0 && (

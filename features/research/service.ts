@@ -376,10 +376,21 @@ export async function updateSource(
   sourceId: string,
   updates: SourceUpdate,
 ): Promise<ResearchSource> {
+  const dbUpdates: Database["research"]["Tables"]["rs_source"]["Update"] = {};
+  if (updates.is_included !== undefined) {
+    dbUpdates.is_included = updates.is_included;
+  }
+  if (updates.is_stale !== undefined) {
+    dbUpdates.is_stale = updates.is_stale;
+  }
+  if (updates.scrape_status != null) {
+    dbUpdates.scrape_status = updates.scrape_status;
+  }
+
   const { data, error } = await supabase
     .schema("research")
     .from("rs_source")
-    .update(updates)
+    .update(dbUpdates)
     .eq("id", sourceId)
     .select()
     .single();
@@ -572,10 +583,21 @@ export async function updateTag(
   tagId: string,
   updates: TagUpdate,
 ): Promise<ResearchTag> {
+  const dbUpdates: Database["research"]["Tables"]["rs_tag"]["Update"] = {};
+  if (updates.name != null) {
+    dbUpdates.name = updates.name;
+  }
+  if (updates.description !== undefined) {
+    dbUpdates.description = updates.description;
+  }
+  if (updates.sort_order !== undefined) {
+    dbUpdates.sort_order = updates.sort_order;
+  }
+
   const { data, error } = await supabase
     .schema("research")
     .from("rs_tag")
-    .update(updates)
+    .update(dbUpdates)
     .eq("id", tagId)
     .select()
     .single();

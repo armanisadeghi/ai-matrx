@@ -208,8 +208,8 @@ export const invitationsService = {
         p_target_id: args.targetId,
         p_email: args.email,
         p_role: args.role ?? "member",
-        p_org_id: args.orgId ?? null,
-        p_invited_user_id: args.invitedUserId ?? null,
+        p_org_id: args.orgId ?? undefined,
+        p_invited_user_id: args.invitedUserId ?? undefined,
         ...(args.expiresAt ? { p_expires_at: args.expiresAt } : {}),
       });
       if (error) return err(...mapPgErrorPair(error));

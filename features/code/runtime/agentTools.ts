@@ -6,6 +6,7 @@ import {
   setExecuting,
   setActiveTab as setTerminalActiveTab,
   setOpen as setTerminalOpen,
+  type TerminalLine,
 } from "../redux/terminalSlice";
 import { openTab } from "../redux/tabsSlice";
 import { languageFromFilename } from "../styles/file-icon";
@@ -75,7 +76,7 @@ export async function runShellCommand({
 
   try {
     const result = await ws.process.exec(command, { cwd, timeoutSec });
-    const lines = [];
+    const lines: Omit<TerminalLine, "id">[] = [];
     if (result.stdout) {
       lines.push({
         type: "stdout" as const,

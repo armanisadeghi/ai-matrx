@@ -144,7 +144,9 @@ export function AnalysisCard({
                   {humanizeAgentType(analysis.agent_type)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {new Date(analysis.created_at).toLocaleDateString()}
+                  {analysis.created_at
+                    ? new Date(analysis.created_at).toLocaleDateString()
+                    : ""}
                 </span>
               </div>
               {analysis.error && (
@@ -192,7 +194,9 @@ export function AnalysisCard({
                   {humanizeAgentType(analysis.agent_type)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {new Date(analysis.created_at).toLocaleDateString()}
+                  {analysis.created_at
+                    ? new Date(analysis.created_at).toLocaleDateString()
+                    : ""}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -218,16 +222,18 @@ export function AnalysisCard({
   }
 
   // Successful analysis
-  const createdAt = new Date(analysis.created_at);
-  const formattedDate = createdAt.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const formattedTime = createdAt.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const createdAt = analysis.created_at ? new Date(analysis.created_at) : null;
+  const formattedDate =
+    createdAt?.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }) ?? "";
+  const formattedTime =
+    createdAt?.toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }) ?? "";
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">

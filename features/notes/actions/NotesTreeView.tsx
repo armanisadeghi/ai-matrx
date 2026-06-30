@@ -55,10 +55,11 @@ export function NotesTreeView({
       (grouped[folder] ??= []).push(note);
     }
     for (const folder of Object.keys(grouped)) {
-      grouped[folder].sort(
-        (a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-      );
+      grouped[folder].sort((a, b) => {
+        const bTime = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+        const aTime = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+        return bTime - aTime;
+      });
     }
     return grouped;
   }, [notes, allFolders]);

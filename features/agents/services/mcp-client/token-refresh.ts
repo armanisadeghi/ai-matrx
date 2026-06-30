@@ -134,14 +134,14 @@ export async function refreshAccessToken(
         p_server_id: serverId,
         p_access_token: typedCred.access_token,
         p_refresh_token: typedCred.refresh_token,
-        p_token_expires_at: typedCred.token_expires_at,
-        p_credentials_json: null,
-        p_config_id: null,
+        p_token_expires_at: typedCred.token_expires_at ?? undefined,
+        p_credentials_json: undefined,
+        p_config_id: undefined,
         p_transport: "http",
         p_oauth_token_endpoint: typedCred.oauth_token_endpoint,
-        p_oauth_client_id: typedCred.oauth_client_id,
-        p_oauth_scopes: null,
-        p_endpoint_override: null,
+        p_oauth_client_id: typedCred.oauth_client_id ?? undefined,
+        p_oauth_scopes: undefined,
+        p_endpoint_override: undefined,
       });
 
       return null;
@@ -158,14 +158,14 @@ export async function refreshAccessToken(
       p_server_id: serverId,
       p_access_token: tokens.access_token,
       p_refresh_token: tokens.refresh_token ?? typedCred.refresh_token,
-      p_token_expires_at: expiresAt,
-      p_credentials_json: null,
-      p_config_id: null,
+      p_token_expires_at: expiresAt ?? undefined,
+      p_credentials_json: undefined,
+      p_config_id: undefined,
       p_transport: "http",
       p_oauth_token_endpoint: typedCred.oauth_token_endpoint,
-      p_oauth_client_id: typedCred.oauth_client_id,
-      p_oauth_scopes: null,
-      p_endpoint_override: null,
+      p_oauth_client_id: typedCred.oauth_client_id ?? undefined,
+      p_oauth_scopes: undefined,
+      p_endpoint_override: undefined,
     });
 
     console.log(

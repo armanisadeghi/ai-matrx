@@ -656,7 +656,7 @@ export function TemplatesManager() {
                             </div>
                           </div>
                         )}
-                        {template.agent_config && (
+                        {template.agent_config != null && (
                           <div>
                             <span className="text-[10px] font-semibold uppercase text-muted-foreground">
                               Agent Wiring
@@ -702,7 +702,7 @@ export function TemplatesManager() {
                             </div>
                           </div>
                         )}
-                        {template.metadata &&
+                        {template.metadata != null &&
                           Object.keys(template.metadata).length > 0 && (
                             <div>
                               <span className="text-[10px] font-semibold uppercase text-muted-foreground">

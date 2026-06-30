@@ -4,12 +4,16 @@
  * This module provides utilities for navigating complex JSON structures using path strings.
  */
 
+type PathSegment =
+  | { type: 'key'; value: string }
+  | { type: 'index'; value: number };
+
 /**
  * Converts a path string into a structured path object
  * @param {string} pathString - Path string like 'data["key1"][0]["key2"]'
  * @returns {Array} - Array of path segments with type and value
  */
-export const parsePathString = (pathString) => {
+export const parsePathString = (pathString: string): PathSegment[] => {
   if (!pathString || typeof pathString !== 'string') {
     return [];
   }
@@ -19,7 +23,7 @@ export const parsePathString = (pathString) => {
     ? pathString.substring(4) 
     : pathString;
   
-  const pathSegments = [];
+  const pathSegments: PathSegment[] = [];
   const regex = /\["([^"]+)"\]|\[(\d+)\]/g;
   let match;
   

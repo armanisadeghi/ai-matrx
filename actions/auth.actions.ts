@@ -207,7 +207,7 @@ export async function signInAction(formData: FormData) {
 
 export async function signInWithGoogleAction(formData: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const origin = (await headers()).get("origin") ?? undefined;
   // NOTE: `redirectTo` is intentionally NOT validated here — it never reaches a
   // bare redirect() in this function. It is carried as a query param into the
   // trusted /auth/callback route, which re-validates it via safeRelativePath
@@ -243,7 +243,7 @@ export async function signInWithGoogleAction(formData: FormData) {
 
 export async function signInWithGithubAction(formData: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const origin = (await headers()).get("origin") ?? undefined;
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
 
   const callbackUrl = new URL("/auth/callback", origin);
@@ -345,7 +345,7 @@ export async function signOutAction() {
 
 export async function signUpWithGoogleAction(formData: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const origin = (await headers()).get("origin") ?? undefined;
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
 
   const callbackUrl = new URL("/auth/callback", origin);
@@ -375,7 +375,7 @@ export async function signUpWithGoogleAction(formData: FormData) {
 
 export const signUpWithGithubAction = async (formData: FormData) => {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const origin = (await headers()).get("origin") ?? undefined;
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
 
   const callbackUrl = new URL("/auth/callback", origin);
@@ -405,7 +405,7 @@ export const signUpWithGithubAction = async (formData: FormData) => {
 
 export async function signInWithAppleAction(formData: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const origin = (await headers()).get("origin") ?? undefined;
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
 
   const callbackUrl = new URL("/auth/callback", origin);
@@ -431,7 +431,7 @@ export async function signInWithAppleAction(formData: FormData) {
 
 export const signUpWithAppleAction = async (formData: FormData) => {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const origin = (await headers()).get("origin") ?? undefined;
   const redirectTo = (formData.get("redirectTo") as string) || "/dashboard";
 
   const callbackUrl = new URL("/auth/callback", origin);

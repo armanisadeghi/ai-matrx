@@ -98,10 +98,10 @@ export async function createList(input: CreateListInput) {
 export async function updateList(input: UpdateListInput) {
   const { data, error } = await supabase.rpc("update_user_list", {
     p_list_id: input.p_list_id,
-    p_list_name: input.p_list_name ?? null,
-    p_description: input.p_description ?? null,
-    p_is_public: input.p_is_public ?? null,
-    p_public_read: input.p_public_read ?? null,
+    p_list_name: input.p_list_name,
+    p_description: input.p_description,
+    p_is_public: input.p_is_public,
+    p_public_read: input.p_public_read,
     p_items: input.p_items !== undefined ? input.p_items : null,
   });
   if (error) throw new Error(`Failed to update list: ${error.message}`);

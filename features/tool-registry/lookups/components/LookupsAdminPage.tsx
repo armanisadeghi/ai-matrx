@@ -316,7 +316,7 @@ function UiClientDialog({
     try {
       await upsertUiClient({
         name,
-        description: description || null,
+        description: description || undefined,
         sort_order: sortOrder,
         is_active: isActive,
       });
@@ -590,7 +590,7 @@ function UiSurfaceDialog({
       await upsertUiSurface({
         name: fullName,
         client_name: clientName,
-        description: description || null,
+        description: description || undefined,
         sort_order: sortOrder,
         is_active: isActive,
       });

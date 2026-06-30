@@ -4,13 +4,22 @@ import { Checkbox } from "@/features/scraper/reusable/checkbox";
 import { Button } from "@/components/ui/button";
 import React, { useState, useMemo } from "react";
 
+type FilterColumn = "type" | "details" | "remover";
+
+type RemovalItem = {
+  text: string;
+  type: string;
+  details: string;
+  remover: string;
+};
+
 const RemovalDetails = ({ allRemovals }) => {
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState<RemovalItem | null>(null);
   const [sortColumn, setSortColumn] = useState("text");
   const [sortDirection, setSortDirection] = useState("asc");
   const [filterBlankText, setFilterBlankText] = useState(true);
   const [textFilter, setTextFilter] = useState("");
-  const [filterModal, setFilterModal] = useState(null);
+  const [filterModal, setFilterModal] = useState<FilterColumn | null>(null);
   const [filters, setFilters] = useState({
     type: new Set(),
     details: new Set(),

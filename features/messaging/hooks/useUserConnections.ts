@@ -52,11 +52,6 @@ type _CheckLookupRow =
 declare const _lookupRow: _CheckLookupRow;
 true satisfies typeof _lookupRow;
 
-type _CheckDmUserInfo =
-  UserBasicInfo extends DbRpcRow<"get_dm_user_info"> ? true : false;
-declare const _dmUserInfo: _CheckDmUserInfo;
-true satisfies typeof _dmUserInfo;
-
 interface UseUserConnectionsReturn {
   connections: ConnectionUser[];
   isLoading: boolean;
@@ -176,6 +171,8 @@ export function useUserConnections(): UseUserConnectionsReturn {
 
         // For invitations, we can try to look up if these emails belong to existing users
         for (const invite of invitations || []) {
+          if (!invite.email) continue;
+
           // Try to find user by email using lookup
           const { data: lookupResult } = await supabase.rpc(
             "lookup_user_by_email",

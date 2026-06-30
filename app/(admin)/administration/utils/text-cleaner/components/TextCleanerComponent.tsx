@@ -191,39 +191,42 @@ export const TextCleanerComponent: React.FC = () => {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="essential" className="space-y-4">
-          {parsedErrors.map((error, index) => (
-            <Card key={index} className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                {error.parsed?.error.severity === "error" && (
-                  <AlertCircle className="w-4 h-4 text-destructive" />
-                )}
-                {error.parsed?.error.severity === "warning" && (
-                  <AlertTriangle className="w-4 h-4 text-warning" />
-                )}
-                <span className="font-medium">
-                  {error.parsed?.error.errorCode}
-                </span>
-              </div>
-              <pre className="whitespace-pre-wrap text-sm">
-                {error.parsed?.essential}
-              </pre>
-              {error.parsed?.error.suggestions?.length > 0 && (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  <div className="font-medium">Quick Fix:</div>
-                  <div>{error.parsed.error.suggestions[0]}</div>
+          {parsedErrors.map((error, index) => {
+            const suggestions = error.parsed?.error.suggestions;
+            return (
+              <Card key={index} className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  {error.parsed?.error.severity === "error" && (
+                    <AlertCircle className="w-4 h-4 text-destructive" />
+                  )}
+                  {error.parsed?.error.severity === "warning" && (
+                    <AlertTriangle className="w-4 h-4 text-warning" />
+                  )}
+                  <span className="font-medium">
+                    {error.parsed?.error.errorCode}
+                  </span>
                 </div>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="mt-2"
-                onClick={() => copyText(error.parsed?.essential || "")}
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy
-              </Button>
-            </Card>
-          ))}
+                <pre className="whitespace-pre-wrap text-sm">
+                  {error.parsed?.essential}
+                </pre>
+                {suggestions && suggestions.length > 0 && (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    <div className="font-medium">Quick Fix:</div>
+                    <div>{suggestions[0]}</div>
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="mt-2"
+                  onClick={() => copyText(error.parsed?.essential || "")}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy
+                </Button>
+              </Card>
+            );
+          })}
         </TabsContent>
 
         <TabsContent value="basic" className="space-y-4">

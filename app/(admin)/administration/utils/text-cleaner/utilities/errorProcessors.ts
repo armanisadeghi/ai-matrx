@@ -144,7 +144,7 @@ export function parseTS2322Error(error: string): Record<string, any> {
             : isUnknownType
               ? 'Type needs to be specified explicitly'
               : 'Incorrect type provided',
-            isUnknownType && unknownTypeExplanation,
+            isUnknownType ? unknownTypeExplanation : '',
             `Must be ${expectedTypesList}`
         ]),
         basic: formatOutput([
@@ -160,7 +160,7 @@ export function parseTS2322Error(error: string): Record<string, any> {
             'Must be:',
             expectedTypesList,
             '',
-            isUnknownType && 'Note: You need to explicitly declare the type.'
+            isUnknownType ? 'Note: You need to explicitly declare the type.' : ''
         ]),
         verbose: formatOutput([
             'Error: TS2322',
@@ -176,7 +176,7 @@ export function parseTS2322Error(error: string): Record<string, any> {
             'Acceptable Types:',
             expectedTypesList,
             '',
-            isUnknownType && [
+            isUnknownType ? [
                 'Why this happens:',
                 '1. Variable type is not explicitly declared',
                 '2. TypeScript cannot infer the type from context',
@@ -186,7 +186,7 @@ export function parseTS2322Error(error: string): Record<string, any> {
                 '1. Explicitly declare the type',
                 '2. Use type assertion if you know the type',
                 '3. Ensure the value source is properly typed'
-            ].join('\n')
+            ].join('\n') : ''
         ])
     };
 }
@@ -330,15 +330,19 @@ export function parseTS2345Error(error: string): ParsedError {
         basic: extractTypeScriptError.formatOutput([
             'Error: TS2345',
             'Type Mismatch Error',
-            property && `Property: ${property}`,
+            ...(property ? [`Property: ${property}`] : []),
             '',
             'Types:',
             `Provided: ${providedType}`,
             `Expected: ${expectedType}`,
-            specificMatch && 'Specific Issue:',
-            specificMatch && `Provided: ${specificProvided}`,
-            specificMatch && `Expected: ${specificExpected}`
-        ].filter(Boolean)),
+            ...(specificMatch
+                ? [
+                    'Specific Issue:',
+                    `Provided: ${specificProvided}`,
+                    `Expected: ${specificExpected}`,
+                ]
+                : []),
+        ]),
 
         verbose: extractTypeScriptError.formatOutput([
             'Error: TS2345',
@@ -348,14 +352,18 @@ export function parseTS2345Error(error: string): ParsedError {
             `Provided: ${providedType}`,
             `Expected: ${expectedType}`,
             '',
-            property && `Property with Issue: ${property}`,
-            specificMatch && 'Specific Type Mismatch:',
-            specificMatch && `Provided: ${specificProvided}`,
-            specificMatch && `Expected: ${specificExpected}`,
+            ...(property ? [`Property with Issue: ${property}`] : []),
+            ...(specificMatch
+                ? [
+                    'Specific Type Mismatch:',
+                    `Provided: ${specificProvided}`,
+                    `Expected: ${specificExpected}`,
+                ]
+                : []),
             '',
             'Full Error:',
             cleanError
-        ].filter(Boolean))
+        ])
     };
 
     return {

@@ -26,6 +26,10 @@ import { toast } from 'sonner';
 import { getFolderIconAndColor } from '../utils/folderUtils';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
+function noteUpdatedAtMs(updatedAt: string | null): number {
+    return updatedAt ? new Date(updatedAt).getTime() : 0;
+}
+
 export interface CategoryNotesModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -87,7 +91,7 @@ export function CategoryNotesModal({
         const query = searchQuery.toLowerCase();
         return categoryNotes.filter(note =>
             note.label.toLowerCase().includes(query) ||
-            note.content.toLowerCase().includes(query) ||
+            (note.content ?? '').toLowerCase().includes(query) ||
             idMatchesQuery(note, query)
         );
     }, [categoryNotes, searchQuery]);
@@ -99,22 +103,22 @@ export function CategoryNotesModal({
         const query = importSearchQuery.toLowerCase();
         return otherNotes.filter(note =>
             note.label.toLowerCase().includes(query) ||
-            note.content.toLowerCase().includes(query) ||
-            note.folder_name.toLowerCase().includes(query) ||
+            (note.content ?? '').toLowerCase().includes(query) ||
+            (note.folder_name ?? '').toLowerCase().includes(query) ||
             idMatchesQuery(note, query)
         );
     }, [otherNotes, importSearchQuery]);
 
     // Sort by updated_at descending
     const sortedNotes = useMemo(() => {
-        return [...filteredNotes].sort((a, b) => 
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        return [...filteredNotes].sort((a, b) =>
+            noteUpdatedAtMs(b.updated_at) - noteUpdatedAtMs(a.updated_at)
         );
     }, [filteredNotes]);
 
     const sortedImportNotes = useMemo(() => {
-        return [...filteredImportNotes].sort((a, b) => 
-            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        return [...filteredImportNotes].sort((a, b) =>
+            noteUpdatedAtMs(b.updated_at) - noteUpdatedAtMs(a.updated_at)
         );
     }, [filteredImportNotes]);
 
@@ -154,7 +158,7 @@ export function CategoryNotesModal({
     const handleStartEdit = (note: Note) => {
         setEditingNote(note);
         setEditNoteLabel(note.label);
-        setEditNoteContent(note.content);
+        setEditNoteContent(note.content ?? '');
         setViewMode('edit');
     };
 
@@ -339,7 +343,7 @@ export function CategoryNotesModal({
                                                                 {note.label}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                                                {new Date(note.updated_at).toLocaleDateString()}
+                                                                {note.updated_at ? new Date(note.updated_at).toLocaleDateString() : ''}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -365,7 +369,7 @@ export function CategoryNotesModal({
                                                         {selectedNote.label}
                                                     </h3>
                                                     <p className="text-xs text-muted-foreground mt-1">
-                                                        {new Date(selectedNote.updated_at).toLocaleString()}
+                                                        {selectedNote.updated_at ? new Date(selectedNote.updated_at).toLocaleString() : ''}
                                                     </p>
                                                 </div>
                                                 <div className="flex gap-1">
@@ -505,7 +509,7 @@ export function CategoryNotesModal({
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <Badge variant="outline" className="text-xs">{note.folder_name}</Badge>
                                                             <span className="text-xs text-muted-foreground">
-                                                                {new Date(note.updated_at).toLocaleDateString()}
+                                                                {note.updated_at ? new Date(note.updated_at).toLocaleDateString() : ''}
                                                             </span>
                                                         </div>
                                                     </div>

@@ -45,7 +45,8 @@ export default function LSIKeywordGenerator({
     };
 
     const lines = text.split("\n");
-    let currentSection = null;
+    type SectionKey = keyof typeof sections;
+    let currentSection: SectionKey | null = null;
 
     for (const line of lines) {
       const trimmed = line.trim();

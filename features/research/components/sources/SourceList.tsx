@@ -478,7 +478,7 @@ function SourceRow({
               disabled={anyNavigating}
             />
             <Switch
-              checked={source.is_included}
+              checked={source.is_included ?? false}
               onCheckedChange={() => onToggleInclude(source)}
               className="scale-[0.6]"
               disabled={anyNavigating}
@@ -1540,7 +1540,7 @@ export default function SourceList() {
                       </div>
                     </div>
                     <Switch
-                      checked={source.is_included}
+                      checked={source.is_included ?? false}
                       onCheckedChange={() => handleToggleInclude(source)}
                       onClick={(e) => e.stopPropagation()}
                       className="scale-75 shrink-0 mt-0.5"

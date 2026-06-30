@@ -273,7 +273,7 @@ export function NoteTabs({
                 label: 'Export Note',
                 description: 'Download as markdown',
                 action: async () => {
-                    const blob = new Blob([note.content], { type: 'text/markdown' });
+                    const blob = new Blob([note.content ?? ""], { type: 'text/markdown' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -520,7 +520,7 @@ export function NoteTabs({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <div
-                                    onClick={() => onCreateNote(activeNote?.folder_name)}
+                                    onClick={() => onCreateNote(activeNote?.folder_name ?? undefined)}
                                     className="flex items-center justify-center h-7 w-7 ml-0.5 rounded hover:bg-accent transition-colors cursor-pointer flex-shrink-0 self-center"
                                 >
                                     <Plus className="h-3.5 w-3.5 text-muted-foreground" />

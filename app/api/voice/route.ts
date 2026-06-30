@@ -59,6 +59,9 @@ export async function POST(request: Request) {
 	});
 
 	const response = completion.choices[0].message.content;
+	if (!response) {
+		return new Response("No completion content", { status: 500 });
+	}
 
 	const voice = await fetch("https://api.cartesia.ai/tts/bytes", {
 		method: "POST",

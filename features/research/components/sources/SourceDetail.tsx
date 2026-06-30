@@ -765,7 +765,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   // Content versions from DB, newest first
   const contentVersions = useMemo(() => {
     const db = (contentData ?? []) as ResearchContent[];
-    return [...db].sort((a, b) => b.version - a.version);
+    return [...db].sort((a, b) => (b.version ?? 0) - (a.version ?? 0));
   }, [contentData]);
 
   const [selectedVersion, setSelectedVersion] = useState(0);
@@ -1157,18 +1157,22 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   icon={<Clock className="h-3 w-3" />}
                 >
                   <span>
-                    {new Date(typedSource.discovered_at).toLocaleDateString(
-                      undefined,
-                      { year: "numeric", month: "short", day: "numeric" },
-                    )}
+                    {typedSource.discovered_at
+                      ? new Date(typedSource.discovered_at).toLocaleDateString(
+                          undefined,
+                          { year: "numeric", month: "short", day: "numeric" },
+                        )
+                      : "—"}
                   </span>
                 </MetaRow>
                 <MetaRow label="Last Seen" icon={<Clock className="h-3 w-3" />}>
                   <span>
-                    {new Date(typedSource.last_seen_at).toLocaleDateString(
-                      undefined,
-                      { year: "numeric", month: "short", day: "numeric" },
-                    )}
+                    {typedSource.last_seen_at
+                      ? new Date(typedSource.last_seen_at).toLocaleDateString(
+                          undefined,
+                          { year: "numeric", month: "short", day: "numeric" },
+                        )
+                      : "—"}
                   </span>
                 </MetaRow>
                 {typedSource.is_stale && (
@@ -1240,7 +1244,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       <div className="flex justify-between py-1 border-b border-border/50">
                         <span className="text-muted-foreground">Chars</span>
                         <span className="font-mono">
-                          {currentContent.char_count.toLocaleString()}
+                          {(currentContent.char_count ?? 0).toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-border/50">
@@ -1292,9 +1296,11 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       <div className="flex justify-between py-1">
                         <span className="text-muted-foreground">Scraped</span>
                         <span>
-                          {new Date(
-                            currentContent.scraped_at,
-                          ).toLocaleDateString()}
+                          {currentContent.scraped_at
+                            ? new Date(
+                                currentContent.scraped_at,
+                              ).toLocaleDateString()
+                            : "—"}
                         </span>
                       </div>
                     </div>

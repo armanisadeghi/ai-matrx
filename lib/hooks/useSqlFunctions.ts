@@ -210,9 +210,9 @@ export function useSqlFunctions({
     setFilteredFunctions(result);
   }, [functions, filter, sort]);
 
-  // Select function
+  // Select function — always store a fresh object so detail panel updates on every click
   const selectFunction = useCallback((func: SqlFunction | null) => {
-    setSelectedFunction(func);
+    setSelectedFunction(func ? { ...func } : null);
   }, []);
 
   // Update filter

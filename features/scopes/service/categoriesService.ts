@@ -82,7 +82,7 @@ export const categoriesService = {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("cat_list", {
-        p_dimension: dimension ?? null,
+        p_dimension: dimension,
       });
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as CatListRow[];
@@ -119,10 +119,10 @@ export const categoriesService = {
         p_dimension: args.dimension,
         p_name: args.name,
         p_org_id: args.orgId,
-        p_parent_id: args.parentId ?? null,
-        p_color: args.color ?? null,
-        p_icon: args.icon ?? null,
-        p_slug: args.slug ?? null,
+        p_parent_id: args.parentId ?? undefined,
+        p_color: args.color ?? undefined,
+        p_icon: args.icon ?? undefined,
+        p_slug: args.slug ?? undefined,
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data || typeof data !== "string") {

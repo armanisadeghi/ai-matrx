@@ -4,6 +4,13 @@ import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/styles/themes/utils";
 
+type PixelParticle = {
+  x: number;
+  y: number;
+  r: number;
+  color: string;
+};
+
 export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
@@ -47,7 +54,7 @@ export function PlaceholdersAndVanishInput({
   }, [placeholders]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const newDataRef = useRef<any[]>([]);
+  const newDataRef = useRef<PixelParticle[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(initialValue ?? "");
   const [animating, setAnimating] = useState(false);
@@ -113,7 +120,7 @@ export function PlaceholdersAndVanishInput({
   const animate = (start: number) => {
     const animateFrame = (pos: number = 0) => {
       requestAnimationFrame(() => {
-        const newArr = [];
+        const newArr: PixelParticle[] = [];
         for (let i = 0; i < newDataRef.current.length; i++) {
           const current = newDataRef.current[i];
           if (current.x < pos) {

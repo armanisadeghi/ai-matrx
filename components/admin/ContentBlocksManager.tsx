@@ -385,7 +385,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           parent_category_id: cat.parent_id,
           label: cat.name ?? "",
           icon_name: cat.icon ?? "",
-          color: cat.color,
+          color: cat.color ?? "#3b82f6",
           sort_order: cat.position ?? 0,
           is_active: meta.is_active !== false && meta.is_active !== "false",
           children: [],
@@ -414,7 +414,21 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       if (blockError) throw blockError;
 
-      setContentBlocks(blockData);
+      setContentBlocks(
+        (blockData ?? []).map((block) => ({
+          id: block.id,
+          block_id: block.block_id,
+          label: block.label,
+          description: block.description,
+          icon_name: block.icon_name,
+          category_id: block.category_id,
+          template: block.template,
+          sort_order: block.sort_order ?? 0,
+          is_active: block.is_active ?? true,
+          created_at: block.created_at ?? "",
+          updated_at: block.updated_at ?? "",
+        })),
+      );
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -528,12 +542,12 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       const organizationId = await ensureOrgId(undefined);
       const { error } = await supabase.from("content_blocks").insert([
         {
-          block_id: createFormData.block_id,
-          label: createFormData.label,
+          block_id: createFormData.block_id ?? "",
+          label: createFormData.label ?? "",
           description: createFormData.description,
-          icon_name: createFormData.icon_name,
+          icon_name: createFormData.icon_name ?? "FileText",
           category_id: createFormData.category_id, // UUID FK to shortcut_categories
-          template: createFormData.template,
+          template: createFormData.template ?? "",
           sort_order: createFormData.sort_order || 0,
           is_active: createFormData.is_active !== false,
           organization_id: organizationId,

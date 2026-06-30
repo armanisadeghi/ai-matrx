@@ -14,8 +14,8 @@ import PermissionsList from "./PermissionsList";
 
 const DatabaseAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("functions");
-  const [functions, setFunctions] = useState([]);
-  const [permissions, setPermissions] = useState([]);
+  const [functions, setFunctions] = useState<unknown[]>([]);
+  const [permissions, setPermissions] = useState<unknown[]>([]);
   const [selectedFunction, setSelectedFunction] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);

@@ -27,6 +27,12 @@ type ResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
 // after the schema regen).
 type PlatformCategoryRow = Database["platform"]["Tables"]["categories"]["Row"];
 
+/** Insert payload before scope stamping — organization_id is filled by stampScopeForWrite. */
+type SklRenderDefinitionInsertPayload = Omit<
+  Database["skill"]["Tables"]["render_definition"]["Insert"],
+  "organization_id"
+> & { organization_id?: string };
+
 export function rowToSklRenderDefinition(
   row: RenderDefRow,
 ): SklRenderDefinition {
@@ -71,7 +77,7 @@ export function sklRenderDefinitionToUpdate(
 export function sklRenderDefinitionToInsert(
   def: Partial<SklRenderDefinition> &
     Pick<SklRenderDefinition, "blockId" | "label" | "iconName" | "template">,
-): Database["skill"]["Tables"]["render_definition"]["Insert"] {
+): SklRenderDefinitionInsertPayload {
   return {
     block_id: def.blockId,
     label: def.label,
@@ -84,7 +90,9 @@ export function sklRenderDefinitionToInsert(
     is_public: def.isPublic ?? false,
     sort_order: def.sortOrder ?? 0,
     user_id: def.userId ?? null,
-    organization_id: def.organizationId ?? null,
+    ...(def.organizationId != null
+      ? { organization_id: def.organizationId }
+      : {}),
     project_id: def.projectId ?? null,
     task_id: def.taskId ?? null,
   };
@@ -149,7 +157,7 @@ export function rowToShortcutCategory(
     parentCategoryId: row.parent_id,
     sortOrder: row.position ?? 0,
     isActive,
-    placementType: row.placement_type,
+    placementType: row.placement_type ?? "",
     // user_id / project_id / task_id no longer exist as top-level columns on
     // platform.categories (moved into metadata). Default to null.
     userId: null,

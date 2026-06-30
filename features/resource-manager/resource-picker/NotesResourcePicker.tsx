@@ -37,7 +37,9 @@ export function NotesResourcePicker({
   const folderCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     notes.forEach((note) => {
-      counts[note.folder_name] = (counts[note.folder_name] || 0) + 1;
+      const folderName = note.folder_name;
+      if (folderName == null) return;
+      counts[folderName] = (counts[folderName] || 0) + 1;
     });
     return counts;
   }, [notes]);
@@ -58,7 +60,7 @@ export function NotesResourcePicker({
 
   const noteMatchesQuery = (note: Note, query: string) =>
     note.label.toLowerCase().includes(query) ||
-    note.content.toLowerCase().includes(query) ||
+    (note.content ?? "").toLowerCase().includes(query) ||
     idMatchesQuery(note, query);
 
   // Filter notes/folders by search

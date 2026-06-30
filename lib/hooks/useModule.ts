@@ -11,7 +11,12 @@ export const createUseModuleHook = <T extends ModuleSchema>(
   moduleName: ModuleName,
   moduleInitialState: T,
 ) => {
-  const selectors = createModuleSelectors<T>(moduleName);
+  const selectors = createModuleSelectors<
+    T["configs"],
+    T["userPreferences"],
+    T["data"],
+    T
+  >(moduleName);
   const { actions } = createModuleSlice(moduleName, moduleInitialState);
 
   return () => {

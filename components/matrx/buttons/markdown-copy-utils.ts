@@ -6,6 +6,17 @@
 // Import WordPress utility function
 import { markdownToWordPressHTML } from '@/features/html-pages/utils/markdown-wordpress-utils';
 
+interface LinkPlaceholder {
+  placeholder: string;
+  html: string;
+}
+
+interface ListStackEntry {
+  type: 'ul' | 'ol';
+  indent: number;
+  hasContent: boolean;
+}
+
 // Define interface for copyToClipboard options
 interface CopyOptions {
   isMarkdown?: boolean;
@@ -79,7 +90,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
     html = html.replace(/^[\-]{3,}$/gm, '<hr style="border: none; border-top: 1px solid #cccccc; margin: 15px 0;">');
     
     // Handle links FIRST with improved regex and placeholder system to prevent interference
-    const linkPlaceholders = [];
+    const linkPlaceholders: LinkPlaceholder[] = [];
     let linkIndex = 0;
     
     // Use a more robust regex that handles URLs with underscores and other special characters
@@ -110,7 +121,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
     // Handle nested lists with proper indentation and nesting structure
     const lines = html.split('\n');
     let processedHtml = '';
-    let listStack = []; // Stack to track nested lists: {type: 'ul'|'ol', indent: number, hasContent: boolean}
+    let listStack: ListStackEntry[] = [];
     let lastListItem = ''; // Track the last list item for proper nesting
     
     for (let i = 0; i < lines.length; i++) {
@@ -126,6 +137,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
         // Close nested lists that are at deeper indentation levels
         while (listStack.length > 0 && listStack[listStack.length - 1].indent > indent) {
           const closingList = listStack.pop();
+          if (!closingList) break;
           processedHtml += closingList.type === 'ol' ? '</ol>' : '</ul>';
           if (lastListItem) {
             processedHtml += '</li>\n';
@@ -165,6 +177,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
           // Close deeper nested lists
           while (listStack.length > 0 && listStack[listStack.length - 1].indent > indent) {
             const closingList = listStack.pop();
+            if (!closingList) break;
             processedHtml += closingList.type === 'ol' ? '</ol>' : '</ul>';
             if (lastListItem) {
               processedHtml += '</li>\n';
@@ -200,6 +213,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
         // Close all open lists
         while (listStack.length > 0) {
           const closingList = listStack.pop();
+          if (!closingList) break;
           processedHtml += closingList.type === 'ol' ? '</ol>\n' : '</ul>\n';
         }
       }
@@ -213,6 +227,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
     }
     while (listStack.length > 0) {
       const closingList = listStack.pop();
+      if (!closingList) break;
       processedHtml += closingList.type === 'ol' ? '</ol>\n' : '</ul>\n';
     }
     

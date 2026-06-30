@@ -21,7 +21,7 @@ export const DEFAULT_IMAGE_SIZES = {
 interface UseImageResult {
     isFullscreen: boolean;
     setIsFullscreen: (state: boolean) => void;
-    imageRef: React.RefObject<HTMLImageElement>;
+    imageRef: React.RefObject<HTMLImageElement | null>;
     handleClickOutside: (e: React.MouseEvent) => void;
     zoom: number;
     handleZoomIn: (e: React.MouseEvent) => void;
@@ -49,7 +49,9 @@ export const useImage = (src: string, alt: string, sizeKey: keyof typeof DEFAULT
         const img = new Image();
         img.onload = () => {
             const aspectRatio = img.width / img.height;
-            const { width, height } = customDimensions || DEFAULT_IMAGE_SIZES[sizeKey];
+            const defaultSize = DEFAULT_IMAGE_SIZES[sizeKey];
+            const width = customDimensions?.width ?? defaultSize.width;
+            const height = customDimensions?.height ?? defaultSize.height;
 
             if (sizeKey === 'fullscreen') {
                 // Access window only on the client side

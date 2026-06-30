@@ -55,8 +55,8 @@ const formatDisplayValue = (value) => {
 
 const FancyJsonExplorer = ({ pageData }) => {
   const [currentData, setCurrentData] = useState(pageData);
-  const [navigationPath, setNavigationPath] = useState([]);
-  const [currentKeys, setCurrentKeys] = useState([]);
+  const [navigationPath, setNavigationPath] = useState<string[]>([]);
+  const [currentKeys, setCurrentKeys] = useState<string[]>([]);
   
   useEffect(() => {
     // Initialize with the cleaned data
@@ -72,7 +72,7 @@ const FancyJsonExplorer = ({ pageData }) => {
     setCurrentKeys(getObjectKeys(initialData));
   };
   
-  const handleKeyClick = (key) => {
+  const handleKeyClick = (key: string) => {
     if (currentData && currentData[key] !== undefined) {
       const newValue = currentData[key];
       setNavigationPath([...navigationPath, key]);

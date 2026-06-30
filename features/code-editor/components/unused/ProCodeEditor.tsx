@@ -198,8 +198,9 @@ const ProCodeEditor = () => {
     const formatCode = () => {
         if (monaco) {
             const editor = monaco.editor.getModels()[0];
-            if (editor) {
-                monaco.editor.getEditors()[0].getAction('editor.action.formatDocument').run();
+            const activeEditor = monaco.editor.getEditors()[0];
+            if (editor && activeEditor) {
+                activeEditor.getAction('editor.action.formatDocument')?.run();
             }
         }
     };
@@ -366,7 +367,7 @@ const ProCodeEditor = () => {
 
                     <div className="flex-grow bg-background">
                         <EditorComponent
-                            height={`${height - (showOutput ? 200 : 50)}px`}
+                            height={`${(height ?? 0) - (showOutput ? 200 : 50)}px`}
                             defaultLanguage={getCurrentFile()?.language}
                             {...editorProps}
                             theme={isDark ? 'customDark' : 'customLight'}

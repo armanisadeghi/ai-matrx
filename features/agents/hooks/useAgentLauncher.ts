@@ -149,7 +149,7 @@ export function useAgentLauncher(
   const store = useAppStore();
   const surfaceKey = options?.surfaceKey;
   const focusedConversationId = useAppSelector(
-    selectFocusedConversation(surfaceKey),
+    selectFocusedConversation(surfaceKey ?? ""),
   );
   const displayConversationId = useAppSelector(
     selectDisplayConversation(surfaceKey ?? ""),
@@ -193,8 +193,8 @@ export function useAgentLauncher(
       const payload: ManagedAgentOptions = {
         agentId: id,
         conversationId: opts?.conversationId,
-        surfaceKey: opts?.surfaceKey,
-        sourceFeature: opts?.sourceFeature,
+        surfaceKey: opts?.surfaceKey ?? `agent:${id}`,
+        sourceFeature: opts?.sourceFeature ?? "agent-runner",
         config: opts?.config,
         runtime: opts?.runtime,
         apiEndpointMode: opts?.apiEndpointMode,
@@ -246,10 +246,10 @@ export function useAgentLauncher(
       const payload: ManagedAgentOptions = {
         manual: {
           label: "Chat",
-          baseSettings: opts?.config?.llmOverrides,
+          baseSettings: opts?.config?.llmOverrides ?? undefined,
         },
-        surfaceKey: opts?.surfaceKey,
-        sourceFeature: opts?.sourceFeature,
+        surfaceKey: opts?.surfaceKey ?? "chat-interface",
+        sourceFeature: opts?.sourceFeature ?? "chat-interface",
         // allowChat defaults to true for chat mode; caller's config wins.
         config: { allowChat: true, ...opts?.config },
         runtime: opts?.runtime,
@@ -287,7 +287,8 @@ export function useAgentLauncher(
   } = options ?? {};
 
   useEffect(() => {
-    if (!isManaged || !ready || !surfaceKey) return undefined;
+    if (!isManaged || !ready || !surfaceKey || !sourceFeature || !agentId)
+      return undefined;
 
     // The id resolved synchronously during render — the instance is created
     // (or reused) under THIS id, so the surface never re-keys.
@@ -328,7 +329,7 @@ export function useAgentLauncher(
       );
     }
 
-    launchAgent(agentId!, {
+    launchAgent(agentId, {
       surfaceKey,
       conversationId: targetId,
       sourceFeature,

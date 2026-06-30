@@ -81,7 +81,7 @@ const MatrxJsonItem: React.FC<MatrxJsonItemProps> = (
                             path={`${itemPath}.${k}`}
                             keyName={k}
                             value={v}
-                            isExpanded={isKeyExpanded(`${itemPath}.${k}`)}
+                            isExpanded={isKeyExpanded ? isKeyExpanded(`${itemPath}.${k}`) : false}
                             onToggle={onToggle}
                             isKeyExpanded={isKeyExpanded}
                             disabled={disabled}
@@ -178,7 +178,7 @@ const MatrxJsonItem: React.FC<MatrxJsonItemProps> = (
                 variant === 'secondary' && 'hover:bg-secondary/10',
                 variant === 'destructive' && 'hover:bg-destructive/10'
                 )}
-                onClick={hasContent && !isSmallArray && !disabled ? () => onToggle(path) : undefined}
+                onClick={hasContent && !isSmallArray && !disabled && onToggle && path ? () => onToggle(path) : undefined}
             >
             {/* Icon Column */}
             <div className={cn("flex items-center justify-center", config.itemPadding)}>
@@ -288,7 +288,7 @@ const MatrxJsonItem: React.FC<MatrxJsonItemProps> = (
                                      path={`${path}.${k}`}
                                      keyName={k}
                                      value={v}
-                                     isExpanded={isKeyExpanded(`${path}.${k}`)}
+                                     isExpanded={isKeyExpanded ? isKeyExpanded(`${path}.${k}`) : false}
                                      onToggle={onToggle}
                                      isKeyExpanded={isKeyExpanded}
                                      disabled={disabled}

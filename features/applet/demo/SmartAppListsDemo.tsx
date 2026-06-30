@@ -33,10 +33,14 @@ import {
   FormInput,
 } from "lucide-react";
 
-import SmartAppList from "@/features/applet/builder/modules/smart-parts/apps/SmartAppList";
+import SmartAppList, {
+  type SmartAppListRefType,
+} from "@/features/applet/builder/modules/smart-parts/apps/SmartAppList";
 import SmartAppListWrapper from "@/features/applet/builder/modules/smart-parts/apps/SmartAppListWrapper";
 import AppSelectorOverlay from "@/features/applet/builder/modules/smart-parts/apps/AppSelectorOverlay";
-import SmartAppletList from "@/features/applet/builder/modules/smart-parts/applets/SmartAppletList";
+import SmartAppletList, {
+  type SmartAppletListRefType,
+} from "@/features/applet/builder/modules/smart-parts/applets/SmartAppletList";
 import SmartAppletListWrapper from "@/features/applet/builder/modules/smart-parts/applets/SmartAppletListWrapper";
 import AppletSelectorOverlay from "@/features/applet/builder/modules/smart-parts/applets/AppletSelectorOverlay";
 import MultiAppletSelector from "@/features/applet/builder/modules/smart-parts/applets/MultiAppletSelector";
@@ -44,9 +48,13 @@ import MultiGroupSelector from "@/features/applet/builder/modules/smart-parts/co
 import MultiFieldSelector from "@/features/applet/builder/modules/smart-parts/fields/MultiFieldSelector";
 import GroupSelectorOverlay from "@/features/applet/builder/modules/smart-parts/containers/GroupSelectorOverlay";
 import FieldSelectorOverlay from "@/features/applet/builder/modules/smart-parts/fields/FieldSelectorOverlay";
-import SmartGroupList from "@/features/applet/builder/modules/smart-parts/containers/SmartContainerList";
+import SmartGroupList, {
+  type SmartContainerListRefType,
+} from "@/features/applet/builder/modules/smart-parts/containers/SmartContainerList";
 import SmartGroupListWrapper from "@/features/applet/builder/modules/smart-parts/containers/SmartGroupListWrapper";
-import SmartFieldsList from "@/features/applet/builder/modules/smart-parts/fields/SmartFieldsList";
+import SmartFieldsList, {
+  type SmartFieldsListRefType,
+} from "@/features/applet/builder/modules/smart-parts/fields/SmartFieldsList";
 import SmartFieldsListWrapper from "@/features/applet/builder/modules/smart-parts/fields/SmartFieldsListWrapper";
 
 // Import types
@@ -74,10 +82,10 @@ const SmartAppListsDemo = () => {
   const [showComparison, setShowComparison] = useState(true);
 
   // Refs for programmatic refresh
-  const appListRef = useRef(null);
-  const appletListRef = useRef(null);
-  const groupListRef = useRef(null);
-  const fieldListRef = useRef(null);
+  const appListRef = useRef<SmartAppListRefType | null>(null);
+  const appletListRef = useRef<SmartAppletListRefType | null>(null);
+  const groupListRef = useRef<SmartContainerListRefType | null>(null);
+  const fieldListRef = useRef<SmartFieldsListRefType | null>(null);
 
   // MultiAppletSelector state
   const [selectedApplets, setSelectedApplets] = useState<CustomAppletConfig[]>(

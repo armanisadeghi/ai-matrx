@@ -140,8 +140,8 @@ export function transformAppWithApplets(rawConfig: AppAndAppletConfig): {
             appletIcon: applet.applet_icon || undefined,
             appletSubmitText: applet.applet_submit_text || undefined,
             creator: applet.creator || undefined,
-            primaryColor: applet.primary_color,
-            accentColor: applet.accent_color,
+            primaryColor: applet.primary_color ?? undefined,
+            accentColor: applet.accent_color ?? undefined,
             layoutType: (applet.layout_type as AppletLayoutOption) || undefined,
             containers: Array.isArray(applet.containers) ? (applet.containers as AppletContainer[]) : [],
             dataSourceConfig: applet.data_source_config,
@@ -177,8 +177,8 @@ export function transformAppWithApplets(rawConfig: AppAndAppletConfig): {
         mainAppIcon: config.main_app_icon || undefined,
         mainAppSubmitIcon: config.main_app_submit_icon || undefined,
         creator: config.creator || undefined,
-        primaryColor: config.primary_color,
-        accentColor: config.accent_color,
+        primaryColor: config.primary_color ?? undefined,
+        accentColor: config.accent_color ?? undefined,
         appletList: appletList.length > 0 ? appletList : undefined,
         extraButtons:
             config.extra_buttons !== null && Array.isArray(config.extra_buttons)

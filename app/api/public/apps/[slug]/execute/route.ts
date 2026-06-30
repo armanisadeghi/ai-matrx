@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
-import { checkGuestLimit, recordGuestExecution } from '@/lib/services/guest-limit-service';
+import { checkGuestLimit, recordGuestExecution, type GuestLimitStatus } from '@/lib/services/guest-limit-service';
 import { isValidFingerprint, isTempFingerprint } from '@/lib/services/fingerprint-service';
 import { getPublicAppsRatelimiter } from '@/lib/rate-limit/client';
 import { ipRateLimit } from '@/lib/rate-limit/helpers';
@@ -142,13 +142,14 @@ export async function POST(
         }
 
         // OPTIMIZATION: Check guest limit (for tracking, not blocking - client already checked)
-        let guestLimitResult = null;
+        let guestLimitResult: GuestLimitStatus | null = null;
         if (isPublicAccess) {
             try {
-                guestLimitResult = await checkGuestLimit(supabase, primaryIdentifier);
+                const limitStatus = await checkGuestLimit(supabase, primaryIdentifier);
+                guestLimitResult = limitStatus;
                 
                 // If limit exceeded, still log but return error
-                if (!guestLimitResult.allowed || guestLimitResult.is_blocked) {
+                if (!limitStatus.allowed || limitStatus.is_blocked) {
                     const taskId = uuidv4();
                     
                     // Track failed execution due to guest limit (fire-and-forget)
@@ -172,7 +173,7 @@ export async function POST(
                         metadata: {
                             ...metadata,
                             guest_limit_hit: true,
-                            total_used: guestLimitResult.total_used,
+                            total_used: limitStatus.total_used,
                             identifier_type: identifierType,
                             backup_identifier: backupIdentifier
                         }
@@ -182,14 +183,14 @@ export async function POST(
 
                     return NextResponse.json({
                         success: false,
-                        guest_limit: guestLimitResult,
+                        guest_limit: limitStatus,
                         error: {
                             type: 'guest_limit_exceeded',
                             message: 'You have reached the maximum number of free executions. Please sign up to continue.',
                             details: {
-                                remaining: guestLimitResult.remaining,
-                                total_used: guestLimitResult.total_used,
-                                is_blocked: guestLimitResult.is_blocked
+                                remaining: limitStatus.remaining,
+                                total_used: limitStatus.total_used,
+                                is_blocked: limitStatus.is_blocked
                             }
                         }
                     }, { status: 429 });

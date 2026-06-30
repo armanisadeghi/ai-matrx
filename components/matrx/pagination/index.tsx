@@ -30,7 +30,7 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
     };
 
     const renderPageNumbers = () => {
-        const pageNumbers = [];
+        const pageNumbers: React.ReactElement[] = [];
         const showPages = 5;
 
         let startPage = Math.max(1, currentPage - 2);

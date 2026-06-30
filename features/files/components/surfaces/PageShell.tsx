@@ -76,6 +76,7 @@ import {
   selectViewMode,
 } from "@/features/files/redux/selectors";
 import {
+  attachVirtualRoot,
   setActiveFileId,
   setActiveFolderId,
   setChipFilter,
@@ -83,6 +84,8 @@ import {
   setSearchQuery,
   setUiBatch,
 } from "@/features/files/redux/slice";
+import { makeRootSyntheticId } from "@/features/files/virtual-sources/path";
+import { listVirtualSources } from "@/features/files/virtual-sources/registry";
 import type { ChipFilter, UiState } from "@/features/files/types";
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import {
@@ -117,10 +120,9 @@ import { RenameHost } from "@/features/files/components/core/RenameDialog/Rename
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 import { CloudFileEditorHost } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
 // Side-effect import: each adapter calls `registerVirtualSource` at module
-// load. Must come before `attachVirtualRoots` is dispatched.
+// load. Must come before virtual roots are mounted on mount.
 import "@/features/files/virtual-sources/registerBuiltinVirtualSources";
 import {
-  attachVirtualRoots,
   loadVirtualChildren,
   moveAny,
 } from "@/features/files/redux/virtual-thunks";
@@ -281,7 +283,15 @@ function PageShellDesktop({
   // synthetic id. Fires once on mount; the adapters self-registered at module
   // load via `registerBuiltinVirtualSources`.
   useEffect(() => {
-    void dispatch(attachVirtualRoots());
+    for (const adapter of listVirtualSources()) {
+      dispatch(
+        attachVirtualRoot({
+          adapterId: adapter.sourceId,
+          rootId: makeRootSyntheticId(adapter.sourceId),
+          label: adapter.label,
+        }),
+      );
+    }
   }, [dispatch]);
 
   // Global keyboard shortcuts — copy link, duplicate, delete. Strictly
@@ -377,16 +387,18 @@ function PageShellDesktop({
       const over = event.over?.data.current as
         | { type?: string; id?: string }
         | undefined;
-      if (!active?.id || !over?.id) return;
+      const activeId = active?.id;
+      const overId = over?.id;
+      if (!activeId || !overId) return;
       if (over.type !== "folder") return;
-      if (active.id === over.id) return;
+      if (activeId === overId) return;
 
       // Cross-source drop policy: reject when source records aren't from the
       // same backing store. v1 ships with same-source-only moves; cross-source
       // ("import this Note as a real .md") will land in a follow-up.
       const activeRec =
-        active.type === "file" ? filesById[active.id] : foldersById[active.id];
-      const overRec = foldersById[over.id];
+        active.type === "file" ? filesById[activeId] : foldersById[activeId];
+      const overRec = foldersById[overId];
       if (activeRec && overRec) {
         const a = activeRec.source;
         const o = overRec.source;
@@ -397,39 +409,39 @@ function PageShellDesktop({
       }
 
       if (active.type === "file") {
-        const file = filesById[active.id];
-        if (file && file.parentFolderId === over.id) return; // already there
+        const file = filesById[activeId];
+        if (file && file.parentFolderId === overId) return; // already there
         // Virtual file → adapter move via moveAny.
         if (file?.source.kind === "virtual") {
-          void dispatch(moveAny({ id: active.id, newParentId: over.id }));
+          void dispatch(moveAny({ id: activeId, newParentId: overId }));
           return;
         }
         void dispatch(
-          moveFileThunk({ fileId: active.id, newParentFolderId: over.id }),
+          moveFileThunk({ fileId: activeId, newParentFolderId: overId }),
         );
       } else if (active.type === "folder") {
         // Folder → folder move uses updateFolder with parentId patch (the
         // backend cascades child folder_path updates). Guard against:
         //   • dropping onto the current parent (no-op)
         //   • dropping onto a descendant (cycle)
-        const moving = foldersById[active.id];
+        const moving = foldersById[activeId];
         if (!moving) return;
-        if (moving.parentId === over.id) return;
-        let cursor: string | null = over.id;
+        if (moving.parentId === overId) return;
+        let cursor: string | null = overId;
         const seen = new Set<string>();
         while (cursor && !seen.has(cursor)) {
-          if (cursor === active.id) return; // cycle — refuse
+          if (cursor === activeId) return; // cycle — refuse
           seen.add(cursor);
           cursor = foldersById[cursor]?.parentId ?? null;
         }
         if (moving.source.kind === "virtual") {
-          void dispatch(moveAny({ id: active.id, newParentId: over.id }));
+          void dispatch(moveAny({ id: activeId, newParentId: overId }));
           return;
         }
         void dispatch(
           updateFolderThunk({
-            folderId: active.id,
-            patch: { parentId: over.id },
+            folderId: activeId,
+            patch: { parentId: overId },
           }),
         );
       }
@@ -447,14 +459,12 @@ function PageShellDesktop({
       // loaded folder is a no-op — `loadVirtualChildren` short-circuits via
       // the slice's `fullyLoadedFolderIds` set.
       const folder = foldersById[folderId];
-      if (folder?.source.kind === "virtual") {
+      if (folder !== undefined && folder.source.kind === "virtual") {
+        const { adapterId, virtualId } = folder.source;
         void dispatch(
           loadVirtualChildren({
-            adapterId: folder.source.adapterId,
-            parentVirtualId:
-              folder.source.virtualId === "__root__"
-                ? null
-                : folder.source.virtualId,
+            adapterId,
+            parentVirtualId: virtualId === "__root__" ? null : virtualId,
           }),
         );
       }
@@ -674,7 +684,7 @@ function PageShellDesktop({
     writeSidebarCollapsedCookie(false);
   }, [sidebarPanelRef]);
 
-  const handleSidebarResize = useCallback<OnPanelResize>((next, _id, prev) => {
+  const handleSidebarResize: OnPanelResize = (next, _id, prev) => {
     if (prev === undefined) return; // first mount
     if (previewMaximizedRef.current) return; // maximize transient — not user intent
     const wasCollapsed = prev.asPercentage === 0;
@@ -683,7 +693,7 @@ function PageShellDesktop({
       setSidebarCollapsed(isCollapsed);
       writeSidebarCollapsedCookie(isCollapsed);
     }
-  }, []);
+  };
 
   // If the user closes the preview while it's maximized, fall back to the
   // normal layout so the next file opens in the regular sheet.

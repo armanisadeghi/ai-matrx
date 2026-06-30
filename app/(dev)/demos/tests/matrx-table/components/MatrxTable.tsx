@@ -119,7 +119,7 @@ const MatrxTable: React.FC<MatrxTableProps> = ({
 
   const { globalFilter, pageIndex, pageSize } = state as ExtendedTableState;
 
-  const pageNumbers = [];
+  const pageNumbers: number[] = [];
   const totalPages = pageCount;
   const currentPage = pageIndex + 1;
 

@@ -16,7 +16,7 @@ export function filterNotes(notes: Note[], filters: NoteFilters): Note[] {
         filtered = filtered.filter(
             note =>
                 note.label.toLowerCase().includes(searchLower) ||
-                note.content.toLowerCase().includes(searchLower) ||
+                (note.content ?? '').toLowerCase().includes(searchLower) ||
                 idMatchesQuery(note, searchLower)
         );
     }
@@ -29,7 +29,7 @@ export function filterNotes(notes: Note[], filters: NoteFilters): Note[] {
     // Filter by tags (note must have all selected tags)
     if (filters.tags && filters.tags.length > 0) {
         filtered = filtered.filter(note =>
-            filters.tags!.every(tag => note.tags.includes(tag))
+            filters.tags.every(tag => (note.tags ?? []).includes(tag))
         );
     }
 
@@ -52,12 +52,12 @@ export function sortNotes(notes: Note[], sortConfig: NoteSortConfig): Note[] {
                 bVal = b.label.toLowerCase();
                 break;
             case 'created_at':
-                aVal = new Date(a.created_at).getTime();
-                bVal = new Date(b.created_at).getTime();
+                aVal = a.created_at ? new Date(a.created_at).getTime() : 0;
+                bVal = b.created_at ? new Date(b.created_at).getTime() : 0;
                 break;
             case 'updated_at':
-                aVal = new Date(a.updated_at).getTime();
-                bVal = new Date(b.updated_at).getTime();
+                aVal = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+                bVal = b.updated_at ? new Date(b.updated_at).getTime() : 0;
                 break;
             default:
                 return 0;
@@ -121,7 +121,7 @@ export function groupNotesByFolder(notes: Note[]): FolderGroup[] {
  * Extract all unique tags from notes
  */
 export function extractUniqueTags(notes: Note[]): string[] {
-    const allTags = notes.flatMap(note => note.tags);
+    const allTags = notes.flatMap(note => note.tags ?? []);
     return Array.from(new Set(allTags)).sort();
 }
 

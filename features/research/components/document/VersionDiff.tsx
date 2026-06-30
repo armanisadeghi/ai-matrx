@@ -33,8 +33,8 @@ export function VersionDiff({ oldDoc, newDoc, onClose }: VersionDiffProps) {
       </div>
       <div className="flex-1 min-h-0 overflow-hidden rounded-lg border border-border">
         <DiffViewer
-          original={oldDoc.content}
-          modified={newDoc.content}
+          original={oldDoc.content ?? ""}
+          modified={newDoc.content ?? ""}
           originalLabel={`v${oldDoc.version}`}
           modifiedLabel={`v${newDoc.version}`}
           engine="light"

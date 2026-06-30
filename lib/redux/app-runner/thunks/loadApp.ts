@@ -37,6 +37,9 @@ export const loadApp =
         id,
       });
       const appId = appConfig.id;
+      if (!appId) {
+        throw new Error("App configuration is missing id");
+      }
 
       // 2. Clear existing state if requested
       if (clearExisting) {
@@ -52,7 +55,7 @@ export const loadApp =
       );
 
       // 4. Load all applets and add recipe brokers to neededBrokers
-      const appletResults = [];
+      const appletResults: NonNullable<LoadAppResult["appletResults"]> = [];
       for (const applet of applets || []) {
         const appletId = applet.id || "";
         // Load applet

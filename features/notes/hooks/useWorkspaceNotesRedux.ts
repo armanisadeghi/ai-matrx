@@ -111,15 +111,18 @@ export function useWorkspaceNotesRedux() {
       return {
         data: {
           id: record.id,
-          label: record.label,
-          content: record.content,
-          folder_name: record.folder_name,
-          tags: record.tags,
+          label: record.label ?? "New Note",
+          content: record.content ?? "",
+          folder_name: record.folder_name ?? "",
+          tags: record.tags ?? [],
           metadata: record.metadata as Record<string, unknown>,
-          updated_at: record.updated_at,
+          updated_at: record.updated_at ?? record.created_at ?? "",
         },
         localEdits: record._dirty
-          ? { label: record.label, content: record.content }
+          ? {
+              label: record.label ?? "New Note",
+              content: record.content ?? "",
+            }
           : null,
         saveState:
           record._error === "conflict"
@@ -185,7 +188,7 @@ export function useWorkspaceNotesRedux() {
           dispatch(
             markNoteSaved({
               id: noteId,
-              updatedAt: data?.updated_at,
+              updatedAt: data?.updated_at ?? undefined,
             }),
           );
 
@@ -227,7 +230,11 @@ export function useWorkspaceNotesRedux() {
       }
       const record = notesMap[noteId];
       if (!record || !record._dirty) return;
-      scheduleSave(noteId, record.label, record.content);
+      scheduleSave(
+        noteId,
+        record.label ?? "New Note",
+        record.content ?? "",
+      );
     },
     [notesMap, scheduleSave],
   );
@@ -405,7 +412,7 @@ export function useWorkspaceNotesRedux() {
       const record = notesMap[noteId];
       if (!record) return;
       try {
-        await navigator.clipboard.writeText(record.content);
+        await navigator.clipboard.writeText(record.content ?? "");
       } catch {
         // ignore
       }
@@ -417,7 +424,7 @@ export function useWorkspaceNotesRedux() {
     (noteId: string) => {
       const record = notesMap[noteId];
       if (!record) return;
-      const blob = new Blob([record.content], { type: "text/markdown" });
+      const blob = new Blob([record.content ?? ""], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

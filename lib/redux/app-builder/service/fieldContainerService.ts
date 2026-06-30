@@ -65,14 +65,14 @@ export const dbToComponentGroup = (
   return {
     id: dbRecord.id,
     label: dbRecord.label,
-    shortLabel: dbRecord.short_label,
-    description: dbRecord.description,
-    hideDescription: dbRecord.hide_description,
-    helpText: dbRecord.help_text,
+    shortLabel: dbRecord.short_label ?? undefined,
+    description: dbRecord.description ?? undefined,
+    hideDescription: dbRecord.hide_description ?? undefined,
+    helpText: dbRecord.help_text ?? undefined,
     fields: processedFields,
-    isPublic: dbRecord.is_public,
+    isPublic: dbRecord.is_public ?? undefined,
     authenticatedRead: undefined,
-    publicRead: dbRecord.public_read,
+    publicRead: dbRecord.public_read ?? undefined,
   };
 };
 /**
@@ -134,10 +134,10 @@ export const createComponentGroup = async (
           "create_component_group",
           {
             p_label: group.label,
-            p_short_label: group.shortLabel || null,
-            p_description: group.description || null,
+            p_short_label: group.shortLabel || undefined,
+            p_description: group.description || undefined,
             p_hide_description: group.hideDescription || false,
-            p_help_text: group.helpText || null,
+            p_help_text: group.helpText || undefined,
             p_field_ids: fieldIds,
           },
         );

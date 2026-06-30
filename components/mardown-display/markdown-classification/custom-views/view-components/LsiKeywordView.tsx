@@ -23,7 +23,7 @@ const KeywordHierarchyDisplay = ({ data }) => {
   const [expandedSection, setExpandedSection] = useState("all"); // All sections open by default
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
   const [newKeywords, setNewKeywords] = useState({}); // Track new keywords for each section
   const [keywordData, setKeywordData] = useState({
     primaryKeyword: "",

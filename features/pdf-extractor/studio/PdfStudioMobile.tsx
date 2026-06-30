@@ -514,8 +514,8 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                   onRunPipeline={handleRunPipeline}
                   pipelineRunning={pipelineRunning}
                   pdfPaneEditMode={null}
-                  onStartCrop={undefined}
-                  onStartReorder={undefined}
+                  onStartCrop={() => {}}
+                  onStartReorder={() => {}}
                   onEditModeCancel={() => {}}
                 />
               </div>

@@ -217,7 +217,18 @@ export function NoteEditor({
     openTabs,
     splitNoteId: null,
     allFolders: availableFolders,
-    notesMap,
+    notesMap: Object.fromEntries(
+      Object.entries(notesMap).map(([id, rec]) => [
+        id,
+        {
+          id: rec.id,
+          label: rec.label,
+          folder_name: rec.folder_name ?? undefined,
+          updated_at: rec.updated_at ?? undefined,
+          deleted_at: rec.deleted_at,
+        },
+      ]),
+    ),
   });
 
   const getApplicationScope = useCallback(() => {
@@ -281,7 +292,7 @@ export function NoteEditor({
   // Sync local state when note changes (switching notes OR explicit refresh from realtime)
   useEffect(() => {
     if (note) {
-      setLocalContent(note.content);
+      setLocalContent(note.content ?? "");
       setLocalFolder(note.folder_name || "Draft");
       setLocalTags(note.tags || []);
       setLocalLabel(note.label);

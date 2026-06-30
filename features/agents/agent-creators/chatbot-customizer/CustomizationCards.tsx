@@ -50,10 +50,19 @@ export const GenericOptionsCard: React.FC<
     <div className="space-y-2">
       {options.map((option) => {
         // Use current value from state or default from the option config
-        const currentValue =
-          state[option.id] !== undefined
-            ? state[option.id]
-            : option.defaultValue;
+        const stored = state[option.id];
+        const currentValue: OptionValue =
+          stored !== undefined
+            ? stored
+            : option.defaultValue !== undefined
+              ? option.defaultValue
+              : option.type === "toggle"
+                ? false
+                : option.type === "slider"
+                  ? 0
+                  : option.type === "multiSelect"
+                    ? []
+                    : "";
 
         return createOptionComponent(option, currentValue, handleChange);
       })}
@@ -413,7 +422,7 @@ export const TechnicalFeaturesCard: React.FC<CardComponentProps> = (props) => {
       <div className="mt-4">
         {createOptionComponent(
           themeOption,
-          props.state["theme"] || themeOption.defaultValue,
+          props.state["theme"] ?? themeOption.defaultValue ?? "system",
           handleChange,
         )}
       </div>

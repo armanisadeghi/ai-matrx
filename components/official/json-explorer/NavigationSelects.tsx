@@ -13,7 +13,7 @@ const NavigationSelects: React.FC<NavigationRowsProps> = ({
   if (!originalData) return null;
 
   // Create array of selects to render
-  const selectsToRender = [];
+  const selectsToRender: React.ReactElement[] = [];
 
   // Add actual navigation selects
   currentPath.forEach(([rowIndex, selectedKey], idx) => {

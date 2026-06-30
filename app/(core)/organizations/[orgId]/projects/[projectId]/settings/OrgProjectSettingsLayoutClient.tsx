@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useProject } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { getProjectBySlug, getProject } from "@/features/projects/service";
+import type { Project } from "@/features/projects/types";
 import { ProjectSidebar } from "@/features/projects/components/ProjectSidebar";
 
 const UUID_REGEX =
@@ -40,7 +41,7 @@ export function OrgProjectSettingsLayoutClient({
         setResolvedOrgId(org.id);
         setOrgSlug(org.slug);
 
-        let proj = null;
+        let proj: Project | null = null;
         if (UUID_REGEX.test(projectId)) {
           proj = await getProject(projectId);
         } else {

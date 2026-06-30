@@ -59,7 +59,7 @@ export const AdminSaveJsonButton = ({
       if (result.success) {
         setState({
           status: "File saved successfully",
-          fileLink: result.clickableLink || result.filePath,
+          fileLink: result.clickableLink ?? result.filePath ?? null,
         });
       } else {
         setState({
@@ -107,7 +107,7 @@ export const AdminSaveTextButton = ({
       if (result.success) {
         setState({
           status: "File saved successfully",
-          fileLink: result.clickableLink || result.filePath,
+          fileLink: result.clickableLink ?? result.filePath ?? null,
         });
       } else {
         setState({
@@ -157,7 +157,7 @@ export const AdminSaveImageButton = ({
       if (result.success) {
         setState({
           status: "File saved successfully",
-          fileLink: result.clickableLink || result.filePath,
+          fileLink: result.clickableLink ?? result.filePath ?? null,
         });
       } else {
         setState({

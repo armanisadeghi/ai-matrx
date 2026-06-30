@@ -278,7 +278,7 @@ export function InlineCopyButton({
   const [showHtmlModal, setShowHtmlModal] = useState(false);
   const [htmlContent, setHtmlContent] = useState("");
   const [htmlTitle, setHtmlTitle] = useState("");
-  const buttonRef = useRef(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   // Close dropdown when clicking outside
   const inlineDropdownRef = useOnClickOutside<HTMLDivElement>(() =>

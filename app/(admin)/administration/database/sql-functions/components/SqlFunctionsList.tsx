@@ -15,6 +15,7 @@ import {
   ArrowUp, 
   ArrowDown 
 } from 'lucide-react';
+import { getSqlFunctionKey } from "../utils/functionIdentity";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +31,7 @@ import {
 interface SqlFunctionsListProps {
   functions: SqlFunction[];
   loading: boolean;
+  selectedFunctionKey?: string | null;
   onViewDetails: (func: SqlFunction) => void;
   onEditFunction: (func: SqlFunction) => void;
   onDeleteFunction: (schema: string, name: string, argumentTypes: string) => Promise<boolean>;
@@ -41,6 +43,7 @@ interface SqlFunctionsListProps {
 export default function SqlFunctionsList({
   functions,
   loading,
+  selectedFunctionKey,
   onViewDetails,
   onEditFunction,
   onDeleteFunction,
@@ -147,11 +150,20 @@ export default function SqlFunctionsList({
                 </TableCell>
               </TableRow>
             ) : (
-              functions.map((func, index) => (
+              functions.map((func, index) => {
+                const rowKey = getSqlFunctionKey(func);
+                const isSelected = selectedFunctionKey === rowKey;
+
+                return (
                 <TableRow 
-                  key={`${func.schema}.${func.name}.${index}`}
-                  className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                  key={`${rowKey}.${index}`}
+                  className={`border-b border-slate-200 dark:border-slate-700 cursor-pointer transition-colors ${
+                    isSelected
+                      ? "bg-primary/10 hover:bg-primary/15 dark:bg-primary/15 dark:hover:bg-primary/20"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  }`}
                   onClick={() => handleRowClick(func)}
+                  aria-selected={isSelected}
                 >
                   <TableCell className="font-medium text-slate-800 dark:text-slate-200">{func.name}</TableCell>
                   <TableCell className="text-slate-600 dark:text-slate-400">{func.schema}</TableCell>
@@ -224,7 +236,8 @@ export default function SqlFunctionsList({
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+              );
+              })
             )}
           </TableBody>
         </Table>

@@ -246,7 +246,7 @@ export function SidebarLayout({
             <Logo open={open} />
             <SidebarToggle open={open} onToggle={() => setOpen(!open)} />
             <div className={cn("flex flex-col", open ? "mt-8" : "mt-4")}>
-              {primaryLinks.map((link, idx) => (
+              {(primaryLinks ?? []).map((link, idx) => (
                 <SidebarLink key={idx} link={link} />
               ))}
             </div>
@@ -260,7 +260,7 @@ export function SidebarLayout({
                   Admin
                 </div>
               )}
-              {secondaryLinks.map((link, idx) => (
+              {(secondaryLinks ?? []).map((link, idx) => (
                 <SidebarLink key={idx} link={link} />
               ))}
             </div>

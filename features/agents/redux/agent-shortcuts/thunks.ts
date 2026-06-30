@@ -394,8 +394,8 @@ export const fetchShortcutsForContext = createAsyncThunk<
     const { data, error } = await supabase.rpc(
       "agx_get_shortcuts_for_context",
       {
-        p_project_id: projectId ?? null,
-        p_task_id: taskId ?? null,
+        p_project_id: projectId ?? undefined,
+        p_task_id: taskId ?? undefined,
       },
     );
 
@@ -781,7 +781,16 @@ export const createShortcutForAgent = createAsyncThunk<
         : null),
   };
 
-  const { data, error } = await supabase.rpc("agx_create_shortcut", rpcParams);
+  const { data, error } = await supabase.rpc("agx_create_shortcut", {
+    p_agent_id: rpcParams.p_agent_id,
+    p_category_id: rpcParams.p_category_id,
+    p_label: rpcParams.p_label,
+    p_use_latest: rpcParams.p_use_latest,
+    p_user_id: rpcParams.p_user_id ?? undefined,
+    p_organization_id: rpcParams.p_organization_id ?? undefined,
+    p_project_id: rpcParams.p_project_id ?? undefined,
+    p_task_id: rpcParams.p_task_id ?? undefined,
+  });
 
   if (error) throw pgErrorToError(error);
 

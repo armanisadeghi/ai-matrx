@@ -66,7 +66,9 @@ export const selectAllNotesList = createSelector(
     Object.values(notes)
       .filter((n) => !n.deleted_at)
       .sort((a, b) => {
-        if (a.position !== b.position) return a.position - b.position;
+        const aPos = a.position ?? 0;
+        const bPos = b.position ?? 0;
+        if (aPos !== bPos) return aPos - bPos;
         return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
       }),
 );
@@ -172,7 +174,7 @@ export const selectNoteContent = (noteId: string) =>
   cached(`noteContent:${noteId}`, () =>
     createSelector(
       selectNotesMap,
-      (notes): string | undefined => notes[noteId]?.content,
+      (notes): string | undefined => notes[noteId]?.content ?? undefined,
     ),
   );
 
@@ -188,7 +190,7 @@ export const selectNoteFolder = (noteId: string) =>
   cached(`noteFolder:${noteId}`, () =>
     createSelector(
       selectNotesMap,
-      (notes): string | undefined => notes[noteId]?.folder_name,
+      (notes): string | undefined => notes[noteId]?.folder_name ?? undefined,
     ),
   );
 
@@ -383,14 +385,18 @@ export const selectFilteredNotes = (
       let result = notes;
       if (folder) result = result.filter((n) => n.folder_name === folder);
       if (tags && tags.length > 0)
-        result = result.filter((n) => tags.every((t) => n.tags.includes(t)));
+        result = result.filter((n) =>
+          tags.every((t) => (n.tags ?? EMPTY_NOTE_TAGS).includes(t)),
+        );
       if (search) {
         const q = search.toLowerCase();
         result = result.filter(
           (n) =>
             n.label.toLowerCase().includes(q) ||
             (n.content ?? "").toLowerCase().includes(q) ||
-            n.tags.some((t) => t.toLowerCase().includes(q)) ||
+            (n.tags ?? EMPTY_NOTE_TAGS).some((t) =>
+              t.toLowerCase().includes(q),
+            ) ||
             idMatchesQuery(n, q),
         );
       }

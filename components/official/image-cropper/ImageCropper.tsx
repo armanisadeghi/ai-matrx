@@ -144,6 +144,9 @@ const ImageCropper = ({
         canvas.width = image.width;
         canvas.height = image.height;
         const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          throw new Error('No 2d context');
+        }
         ctx.drawImage(image, 0, 0);
         
         // Convert to data URL (this step makes it same-origin)
@@ -221,7 +224,7 @@ const ImageCropper = ({
               image={imageUrl}
               crop={crop}
               zoom={zoom}
-              aspect={aspect}
+              aspect={aspect ?? 4 / 3}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={handleCropAreaComplete}

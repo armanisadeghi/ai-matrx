@@ -203,13 +203,13 @@ export function registerUtilityFunctions() {
           }
           
           const headers = lines[0].split(',').map(h => h.trim());
-          const result = [];
+          const result: Record<string, string | number | boolean>[] = [];
           
           for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
             
             const values = lines[i].split(',');
-            const obj = {};
+            const obj: Record<string, string | number | boolean> = {};
             
             headers.forEach((header, index) => {
               let value = values[index] ? values[index].trim() : '';
@@ -399,7 +399,7 @@ export function registerUtilityFunctions() {
     },
     async (params: Record<string, any>) => {
       const { type, count = 1, options = {} } = params;
-      const results = [];
+      const results: (string | number | boolean)[] = [];
       
       for (let i = 0; i < count; i++) {
         switch(type) {
@@ -590,7 +590,7 @@ export function registerUtilityFunctions() {
           }
         case 'keys':
           try {
-            const keys = [];
+            const keys: string[] = [];
             for (let i = 0; i < storage.length; i++) {
               const key = storage.key(i);
               if (key) keys.push(key);

@@ -35,8 +35,8 @@ export default function FlashcardDisplay({ flashcardHook }: { flashcardHook: Ret
                 <div className="absolute w-full h-full [transform:rotateY(180deg)] [backface-visibility:hidden]">
                     <FlashcardBack
                         answer={activeFlashcard.back}
-                        detailedExplanation={activeFlashcard.detailedExplanation}
-                        example={activeFlashcard.example}
+                        detailedExplanation={activeFlashcard.detailedExplanation ?? ''}
+                        example={activeFlashcard.example ?? ''}
                         dynamicContent={activeFlashcard.dynamicContent}
                         fontSize={fontSize}
                         onAnswer={handleAnswer}

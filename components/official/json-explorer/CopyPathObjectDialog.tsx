@@ -4,9 +4,50 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { generateEnhancedBookmarkObject } from "./json-utils";
+import { generateAccessPath, parseAccessPathToArray } from "./json-utils";
 import { PathArray } from "./types";
 import { copyToClipboard } from "@/features/scraper/utils/scraper-utils";
+
+function buildEnhancedBookmarkObject(
+  currentPath: PathArray,
+  name: string,
+  ignorePrefix?: string,
+) {
+  try {
+    const fullPathArray = parseAccessPathToArray(generateAccessPath(currentPath));
+
+    if (ignorePrefix) {
+      try {
+        const prefixArray = parseAccessPathToArray(ignorePrefix);
+
+        if (
+          Array.isArray(prefixArray) &&
+          prefixArray.length > 0 &&
+          prefixArray.length <= fullPathArray.length
+        ) {
+          let matches = true;
+          for (let i = 0; i < prefixArray.length; i++) {
+            if (prefixArray[i] !== "*" && fullPathArray[i] !== prefixArray[i]) {
+              matches = false;
+              break;
+            }
+          }
+
+          if (matches) {
+            return { name, path: fullPathArray.slice(prefixArray.length) };
+          }
+        }
+      } catch (parseError) {
+        console.warn("Failed to parse ignorePrefix:", ignorePrefix, parseError);
+      }
+    }
+
+    return { name, path: fullPathArray };
+  } catch (error) {
+    console.error("Error building enhanced bookmark object:", error);
+    return { name, path: [] };
+  }
+}
 
 export interface CopyPathObjectDialogProps {
   open: boolean;
@@ -26,7 +67,7 @@ const CopyPathObjectDialog: React.FC<CopyPathObjectDialogProps> = ({
   const handleCopy = () => {
     if (!name.trim()) return;
     
-    const enhancedBookmark = generateEnhancedBookmarkObject(currentPath, name.trim(), ignorePrefix);
+    const enhancedBookmark = buildEnhancedBookmarkObject(currentPath, name.trim(), ignorePrefix);
     const jsonString = JSON.stringify(enhancedBookmark, null, 2);
     
     copyToClipboard(jsonString);
@@ -64,7 +105,7 @@ const CopyPathObjectDialog: React.FC<CopyPathObjectDialogProps> = ({
             <Label>Preview:</Label>
             <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
               <pre className="text-xs text-gray-800 dark:text-gray-300">
-                {JSON.stringify(generateEnhancedBookmarkObject(currentPath, name.trim() || "", ignorePrefix), null, 2)}
+                {JSON.stringify(buildEnhancedBookmarkObject(currentPath, name.trim() || "", ignorePrefix), null, 2)}
               </pre>
             </div>
           </div>

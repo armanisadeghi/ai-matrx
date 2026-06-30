@@ -110,9 +110,9 @@ export default function TableReferenceOverlay({
           p_table_id: tableId,
           p_limit: 100, // Load first 100 rows for selection
           p_offset: 0,
-          p_sort_field: null,
+          p_sort_field: undefined,
           p_sort_direction: "asc",
-          p_search_term: null,
+          p_search_term: undefined,
         },
       );
 

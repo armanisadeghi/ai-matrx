@@ -48,6 +48,7 @@ import {
   fetchAgentAppsAdmin,
   updateAgentAppAdmin,
   type AgentAppAdminView,
+  type UpdateAgentAppAdminInput,
 } from "@/lib/services/agent-apps-admin-service";
 
 const STATUS_VARIANT: Record<
@@ -120,7 +121,11 @@ export default function AdminSystemAppsListPage() {
   // Optimistic per-row patcher: write the new value into local state so the UI
   // reacts instantly, fire the network call, roll back on failure.
   const patchRow = useCallback(
-    async (id: string, patch: Partial<AgentAppAdminView>, label: string) => {
+    async (
+      id: string,
+      patch: Omit<Partial<UpdateAgentAppAdminInput>, "id">,
+      label: string,
+    ) => {
       const prev = apps.find((a) => a.id === id);
       if (!prev) return;
       setBusyIds((s) => new Set(s).add(id));

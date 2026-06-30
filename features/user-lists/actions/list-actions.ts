@@ -54,10 +54,10 @@ export async function updateListAction(formData: {
 
   const { data, error } = await supabase.rpc("update_user_list", {
     p_list_id: formData.list_id,
-    p_list_name: formData.list_name ?? null,
-    p_description: formData.description ?? null,
-    p_is_public: formData.is_public ?? null,
-    p_public_read: formData.public_read ?? null,
+    p_list_name: formData.list_name,
+    p_description: formData.description,
+    p_is_public: formData.is_public,
+    p_public_read: formData.public_read,
     p_items: formData.items !== undefined ? formData.items : null,
   });
 

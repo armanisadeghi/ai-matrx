@@ -11,7 +11,7 @@ const DEFAULT_IMAGE = '/images/dashboard.jpg';
 
 const Window = ({id, title, content, images, onClose, onMinimize, onMaximize, onClick, isFullScreen, href}) => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [validImages, setValidImages] = useState([]);
+    const [validImages, setValidImages] = useState<string[]>([]);
     const scale = useMotionValue(1);
     const boxShadow = useTransform(
         scale,
@@ -34,7 +34,7 @@ const Window = ({id, title, content, images, onClose, onMinimize, onMaximize, on
                     }
                 })
             );
-            setValidImages(checkedImages.filter(Boolean));
+            setValidImages(checkedImages.filter((src): src is string => src !== null));
         };
 
         checkImages();
@@ -166,7 +166,7 @@ const NextWindowManager = ({windows: initialWindows}) => {
     const [fullScreenWindow, setFullScreenWindow] = useState(null);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [backgroundPosition, setBackgroundPosition] = useState({x: 0, y: 0});
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [windowSize, setWindowSize] = useState({width: 0, height: 0});
 
     const router = useRouter();

@@ -91,13 +91,13 @@ function FileTreeRowImpl(
   const rowBody = (
     <div
       ref={setMergedRef}
+      {...attributes}
+      {...listeners}
       role="treeitem"
       aria-selected={selected}
       aria-expanded={isFolder ? row.expanded : undefined}
       aria-level={row.depth + 1}
       tabIndex={focused ? 0 : -1}
-      {...attributes}
-      {...listeners}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       className={cn(

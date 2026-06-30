@@ -17,11 +17,18 @@ import {
   importBookmarks,
 } from "../utils/json-path-navigation-util";
 
+interface PathBookmark {
+  path: string;
+  segments: Array<{ type: string; value: string }>;
+  name: string;
+  description?: string;
+}
+
 /**
  * A component that displays values from a JSON object using saved bookmarks
  */
 const BookmarkViewer = ({ pageData }) => {
-  const [bookmarks, setBookmarks] = useState([]);
+  const [bookmarks, setBookmarks] = useState<PathBookmark[]>([]);
   const [importText, setImportText] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [error, setError] = useState("");

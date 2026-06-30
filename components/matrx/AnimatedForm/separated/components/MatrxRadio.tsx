@@ -51,6 +51,10 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
     xl: "after:w-3.5 after:h-3.5",
   }[size];
 
+  if (!field) {
+    return null;
+  }
+
   return (
     <motion.div
       className={cn(densityStyles.spacing, className)}
@@ -92,7 +96,7 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
           >
             <button
               type="button"
-              onClick={() => onChange("")}
+              onClick={() => onChange?.("")}
               disabled={disabled}
               className={cn(
                 "text-primary hover:text-primary/80",

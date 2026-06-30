@@ -259,7 +259,7 @@ export async function addColumn(
     const normalizedDataType = normalizeDataType(dataType);
 
     // Format default value based on data type
-    let formattedDefaultValue = null;
+    let formattedDefaultValue: string | number | boolean | null = null;
     if (defaultValue !== undefined && defaultValue !== null) {
       switch (normalizedDataType) {
         case "number":

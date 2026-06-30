@@ -34,6 +34,7 @@ import {
   Boxes,
   ChevronRight,
   Link2,
+  Info,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,13 @@ import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeS
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
+import {
+  CONTENT_ROLES,
+  entriesByRole,
+  type OrgResourceEntry,
+} from "@/features/organizations/resource-catalogue";
+import { useOrgResourceInventory } from "@/features/organizations/hooks/useOrgResourceInventory";
+import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContributeResourceSheet } from "@/features/organizations/components/ContributeResourceSheet";
 import { OrgShareReviewCard } from "@/features/organizations/components/OrgShareReviewCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
@@ -149,14 +157,37 @@ export function OrgWorkspace() {
   const countsLoading =
     orgLinks.status === "loading" || orgLinks.status === "idle";
 
+  // Legacy iam.permissions sharing inventory — feeds the "Resources by content
+  // role" grid (OrgResourceRoleSection) + the contribute flow. Kept ALONGSIDE
+  // the canonical association cards until the sharing surface is reconciled.
+  const { counts: inventoryCounts, loading: inventoryLoading } =
+    useOrgResourceInventory(organization?.id ?? null);
+
   const suggestions = useScopeSuggestions();
   const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
-  function openContribute() {
-    setContributeKey(null);
+  function openContribute(entry?: OrgResourceEntry) {
+    setContributeKey(entry?.key ?? null);
     setContributeOpen(true);
+  }
+
+  function handleOpenEntry(entry: OrgResourceEntry) {
+    // Projects + Tasks are first-class containers with their own canonical
+    // top-level homes; the org is a filtered view (?org=slug), not a parent.
+    if (entry.key === "project") {
+      router.push(`/projects?org=${slug}`);
+      return;
+    }
+    if (entry.key === "task") {
+      router.push(`/tasks?org=${slug}`);
+      return;
+    }
+    // Every other kind has a consistent, catalogue-driven org page (team view +
+    // share-your-own). The dedicated legacy route, when present, is linked from
+    // there as "Full view".
+    router.push(`/organizations/${slug}/resources/${entry.key}`);
   }
 
   if (loading) {
@@ -418,6 +449,36 @@ export function OrgWorkspace() {
           )}
         </div>
 
+        {/* ─── Resources by content role (legacy iam.permissions sharing) ──
+            The original role-bucketed grid (Utilities / Sources / Outputs /
+            Workspaces) with the share-your-own contribute flow. KEPT alongside
+            the canonical association grid below until the sharing surface is
+            reconciled — do not remove without confirming. */}
+        <div className="space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Boxes className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Resources</h2>
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grouped by what they do</span>
+            </div>
+          </div>
+
+          {CONTENT_ROLES.map((role) => (
+            <OrgResourceRoleSection
+              key={role.id}
+              role={role.id}
+              entries={entriesByRole(role.id)}
+              counts={inventoryCounts}
+              loading={inventoryLoading}
+              onOpen={handleOpenEntry}
+              onContribute={openContribute}
+            />
+          ))}
+        </div>
+
         {/* ─── Resources = canonical platform.associations edges ─────────
             Every kind of thing attached to this org, one card per entity
             token, fully driven by the entity registry. Adding a card = one
@@ -433,9 +494,9 @@ export function OrgWorkspace() {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Resources</h2>
+              <h2 className="text-lg font-semibold">Associations</h2>
               <span className="text-xs text-muted-foreground">
-                Attached to this organization
+                Attached to this organization (canonical)
               </span>
             </div>
             <AssociationCardGrid />

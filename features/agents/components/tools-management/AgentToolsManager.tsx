@@ -644,7 +644,7 @@ function ServerToolsTab({
       dispatch(
         setAgentTools({
           id: agentId,
-          tools: next as unknown as typeof selectedTools,
+          tools: next,
         }),
       );
     },
@@ -655,7 +655,7 @@ function ServerToolsTab({
     dispatch(
       setAgentTools({
         id: agentId,
-        tools: [] as unknown as typeof selectedTools,
+        tools: [],
       }),
     );
   };
@@ -668,9 +668,7 @@ function ServerToolsTab({
       dispatch(
         setAgentTools({
           id: agentId,
-          tools: current.filter(
-            (t) => t !== toolId,
-          ) as unknown as typeof selectedTools,
+          tools: current.filter((t) => t !== toolId),
         }),
       );
     },
@@ -684,9 +682,7 @@ function ServerToolsTab({
     dispatch(
       setAgentTools({
         id: agentId,
-        tools: current.filter((t) =>
-          availableIdSet.has(t),
-        ) as unknown as typeof selectedTools,
+        tools: current.filter((t) => availableIdSet.has(t)),
       }),
     );
   }, [agentId, selectedTools, availableIdSet, dispatch]);
@@ -863,7 +859,7 @@ function ServerToolsTab({
     dispatch(
       setAgentTools({
         id: agentId,
-        tools: next as unknown as typeof selectedTools,
+        tools: next,
       }),
     );
   }, [agentId, selectedTools, visibleTools, dispatch]);
@@ -877,7 +873,7 @@ function ServerToolsTab({
     dispatch(
       setAgentTools({
         id: agentId,
-        tools: next as unknown as typeof selectedTools,
+        tools: next,
       }),
     );
   }, [agentId, selectedTools, visibleTools, dispatch]);

@@ -186,7 +186,7 @@ export const autoSaveMiddleware: Middleware =
           // Mark as materialized (no longer auto-generated)
           storeApi.dispatch(materializeNote(noteId));
           storeApi.dispatch(
-            markNoteSaved({ id: noteId, updatedAt: data?.updated_at }),
+            markNoteSaved({ id: noteId, updatedAt: data?.updated_at ?? undefined }),
           );
         } else {
           // ── Subsequent saves: UPDATE ──────────────────────────────
@@ -218,7 +218,7 @@ export const autoSaveMiddleware: Middleware =
           }
 
           storeApi.dispatch(
-            markNoteSaved({ id: noteId, updatedAt: data?.updated_at }),
+            markNoteSaved({ id: noteId, updatedAt: data?.updated_at ?? undefined }),
           );
         }
 

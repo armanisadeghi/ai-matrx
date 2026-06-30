@@ -318,7 +318,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     mcp_servers: agent.mcpServers,
 
     user_id: agent.userId,
-    organization_id: agent.organizationId,
+    organization_id: agent.organizationId ?? undefined,
     project_id: agent.projectId,
     task_id: agent.taskId,
 
@@ -395,7 +395,7 @@ export function agentDefinitionToUpdate(
 
   if (partial.userId !== undefined) update.user_id = partial.userId;
   if (partial.organizationId !== undefined)
-    update.organization_id = partial.organizationId;
+    update.organization_id = partial.organizationId ?? undefined;
   if (partial.projectId !== undefined) update.project_id = partial.projectId;
   if (partial.taskId !== undefined) update.task_id = partial.taskId;
 

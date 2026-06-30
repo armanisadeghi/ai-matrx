@@ -18,6 +18,21 @@ export type ImageOrientation =
   | undefined;
 export type PremiumFilter = "mixed" | "only" | "none";
 
+/** Minimal Unsplash photo shape used by this hook */
+export type UnsplashPhoto = {
+  id: string;
+  tags?: Array<{ title: string }>;
+  links: { download_location: string };
+};
+
+type UnsplashCollection = {
+  id: string;
+};
+
+type UnsplashTopic = {
+  id: string;
+};
+
 // Type conversion helpers
 const mapSortOrderToOrderBy = (sort?: SortOrder): OrderBy => {
   if (!sort) return OrderBy.LATEST;
@@ -82,18 +97,18 @@ const UNSPLASH_TOPICS = [
 const unsplash = unsplashClient;
 
 export function useUnsplashGallery() {
-  const [photos, setPhotos] = useState([]);
+  const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [relatedPhotos, setRelatedPhotos] = useState([]);
-  const [favorites, setFavorites] = useState([]);
+  const [selectedPhoto, setSelectedPhoto] = useState<UnsplashPhoto | null>(null);
+  const [relatedPhotos, setRelatedPhotos] = useState<UnsplashPhoto[]>([]);
+  const [favorites, setFavorites] = useState<UnsplashPhoto[]>([]);
   const [fetchType, setFetchType] = useState("search");
   const [fetchParam, setFetchParam] = useState("");
-  const [collections, setCollections] = useState([]);
-  const [topics, setTopics] = useState([]);
+  const [collections, setCollections] = useState<UnsplashCollection[]>([]);
+  const [topics, setTopics] = useState<UnsplashTopic[]>([]);
 
   // Simple parameters
   const [sortOrder, setSortOrder] = useState<SortOrder>("relevant");
@@ -527,7 +542,7 @@ export function useUnsplashGallery() {
     fetchTopics,
   ]);
 
-  const handlePhotoClick = async (photo) => {
+  const handlePhotoClick = async (photo: UnsplashPhoto) => {
     setSelectedPhoto(photo);
 
     if (photo.tags && photo.tags.length > 0) {
@@ -556,7 +571,7 @@ export function useUnsplashGallery() {
     setRelatedPhotos([]);
   };
 
-  const toggleFavorite = (photo) => {
+  const toggleFavorite = (photo: UnsplashPhoto) => {
     setFavorites((prev) =>
       prev.some((fav) => fav.id === photo.id)
         ? prev.filter((fav) => fav.id !== photo.id)
@@ -564,7 +579,7 @@ export function useUnsplashGallery() {
     );
   };
 
-  const downloadImage = async (photo) => {
+  const downloadImage = async (photo: UnsplashPhoto) => {
     const response = await fetch(photo.links.download_location);
     const data = await response.json();
     window.open(data.url, "_blank");

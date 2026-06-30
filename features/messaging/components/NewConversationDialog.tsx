@@ -57,11 +57,6 @@ type _CheckLookupUserByEmailRow =
 declare const _lookupUserByEmailRow: _CheckLookupUserByEmailRow;
 true satisfies typeof _lookupUserByEmailRow;
 
-type _CheckUserBasicInfo =
-  UserBasicInfo extends DbRpcRow<"get_dm_user_info"> ? true : false;
-declare const _dmUserInfo: _CheckUserBasicInfo;
-true satisfies typeof _dmUserInfo;
-
 export function NewConversationDialog({
   open,
   onOpenChange,
@@ -153,6 +148,12 @@ export function NewConversationDialog({
 
       // Clear results if query is too short
       if (query.length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      if (!currentUserId) {
         setSearchResults([]);
         setIsSearching(false);
         return;

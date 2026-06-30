@@ -34,9 +34,9 @@ export default function SiteSettingsPage() {
       await CmsSiteService.updateSite(siteId, {
         name,
         slug,
-        domain: domain || null,
-        globalCss: globalCss || null,
-        favicon: favicon || null,
+        domain: domain || undefined,
+        globalCss: globalCss || undefined,
+        favicon: favicon || undefined,
         isActive,
       });
       await refreshSite();

@@ -155,7 +155,7 @@ describe("remoteWrite scheduler", () => {
 
     it("aborts in-flight write when a new schedule lands", async () => {
         let receivedSignal: AbortSignal | null = null;
-        let resolveWrite: (() => void) | null = null;
+        let resolveWrite: () => void = () => {};
         const writeCalls: unknown[] = [];
 
         const policy = definePolicy<{ v: number }>({
@@ -169,7 +169,9 @@ describe("remoteWrite scheduler", () => {
                     writeCalls.push(ctx.body);
                     // Keep the first call pending so re-schedule can abort it.
                     await new Promise<void>((resolve) => {
-                        resolveWrite = resolve;
+                        resolveWrite = () => {
+                            resolve();
+                        };
                     });
                 },
             },
@@ -194,7 +196,7 @@ describe("remoteWrite scheduler", () => {
         expect(receivedSignal!.aborted).toBe(true);
 
         // Let the first one resolve its promise; it was aborted so no extra writes.
-        resolveWrite?.();
+        resolveWrite();
         await wait(5);
 
         // The new debounce fires the second write.
@@ -207,7 +209,7 @@ describe("remoteWrite scheduler", () => {
 
     it("onIdentitySwap cancels all pending + in-flight writes", async () => {
         let seenAbort: AbortSignal | null = null;
-        let inFlightResolve: (() => void) | null = null;
+        let inFlightResolve: () => void = () => {};
         const writeCalls: unknown[] = [];
         const policy = definePolicy<{ v: number }>({
             sliceName: "slice1",
@@ -219,7 +221,9 @@ describe("remoteWrite scheduler", () => {
                     seenAbort = ctx.signal;
                     writeCalls.push(ctx.body);
                     await new Promise<void>((resolve) => {
-                        inFlightResolve = resolve;
+                        inFlightResolve = () => {
+                            resolve();
+                        };
                     });
                 },
             },
@@ -241,7 +245,7 @@ describe("remoteWrite scheduler", () => {
         scheduler.onIdentitySwap();
         expect(seenAbort!.aborted).toBe(true);
 
-        inFlightResolve?.();
+        inFlightResolve();
         await wait(5);
 
         // No new writes should fire; the pending entry was wiped.
@@ -286,7 +290,7 @@ describe("remoteWrite scheduler", () => {
     });
 
     it("pagehide (via attachPageHide hook) flushes pending writes", async () => {
-        let hideFire: (() => void) | null = null;
+        let hideFire: () => void = () => {};
         const writeCalls: unknown[] = [];
         const policy = definePolicy<{ v: number }>({
             sliceName: "slice1",
@@ -303,7 +307,9 @@ describe("remoteWrite scheduler", () => {
             store: fakeStore() as never,
             getIdentity: () => identity,
             attachPageHide: (handler) => {
-                hideFire = handler;
+                hideFire = () => {
+                    handler();
+                };
                 return () => {};
             },
             defaultDebounceMs: FAST_DEBOUNCE,
@@ -311,7 +317,7 @@ describe("remoteWrite scheduler", () => {
 
         scheduler.schedule("slice1", { v: 99 });
         // Simulate pagehide before debounce elapses.
-        hideFire?.();
+        hideFire();
         // flushAll is fire-and-forget internally; give Dexie + awaits a moment.
         await wait(40);
         expect(writeCalls).toEqual([{ v: 99 }]);

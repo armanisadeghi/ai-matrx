@@ -24,6 +24,10 @@ import type {
 import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef } from "@/features/files";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * Accept Invitation Page
  *
@@ -172,7 +176,9 @@ export default function AcceptInvitationPage() {
           updatedAt: data.organizations.updated_at,
           createdBy: data.organizations.created_by,
           isPersonal: data.organizations.is_personal,
-          settings: data.organizations.settings,
+          settings: isRecord(data.organizations.settings)
+            ? data.organizations.settings
+            : undefined,
         },
       };
 
@@ -261,6 +267,38 @@ export default function AcceptInvitationPage() {
     );
   }
 
+  const organization = invitation.organization;
+  if (!organization) {
+    return (
+      <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
+              <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
+            </div>
+            <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">
+              Invalid Invitation
+            </h2>
+            <p className="text-red-700 dark:text-red-300">
+              Organization details are unavailable for this invitation.
+            </p>
+            <div className="flex gap-3 justify-center pt-4">
+              <Button
+                onClick={() => router.push("/settings/organizations")}
+                variant="outline"
+              >
+                Go to Organizations
+              </Button>
+              <Button onClick={() => router.push("/dashboard")}>
+                Go to Dashboard
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // Success state - show invitation details
   return (
     <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
@@ -287,7 +325,7 @@ export default function AcceptInvitationPage() {
               {/* Logo */}
               <div className="flex-shrink-0">
                 <InlineMediaRef
-                  ref={invitation.organization.logoUrl ?? null}
+                  ref={organization.logoUrl ?? null}
                   size={{ width: 64, height: 64 }}
                   fit="cover"
                   rounded="lg"
@@ -296,18 +334,18 @@ export default function AcceptInvitationPage() {
                     <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />
                   }
                   className="bg-blue-100 dark:bg-blue-900"
-                  alt={invitation.organization.name}
+                  alt={organization.name}
                 />
               </div>
 
               {/* Info */}
               <div className="flex-1 text-left">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {invitation.organization.name}
+                  {organization.name}
                 </h3>
-                {invitation.organization.description && (
+                {organization.description && (
                   <p className="text-sm text-muted-foreground mb-3">
-                    {invitation.organization.description}
+                    {organization.description}
                   </p>
                 )}
                 <div className="flex items-center gap-2">
@@ -315,9 +353,9 @@ export default function AcceptInvitationPage() {
                     <UserPlus className="h-3 w-3" />
                     Join as {invitation.role}
                   </Badge>
-                  {invitation.organization.website && (
+                  {organization.website && (
                     <a
-                      href={invitation.organization.website}
+                      href={organization.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -387,8 +425,8 @@ export default function AcceptInvitationPage() {
 
           {/* Note */}
           <p className="text-xs text-muted-foreground pt-4">
-            By accepting, you agree to join {invitation.organization.name} and
-            will gain access to shared resources.
+            By accepting, you agree to join {organization.name} and will gain
+            access to shared resources.
           </p>
         </div>
       </Card>

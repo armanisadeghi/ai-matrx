@@ -186,7 +186,7 @@ export function ShortcutEditorNext({
     for (const v of Object.values(BASELINE_VALUES)) byName.set(v.name, v);
     for (const v of surfaceValues) byName.set(v.name, v);
     return Array.from(byName.values()).sort(
-      (a, b) => a.sortOrder - b.sortOrder,
+      (a, b) => (a.sortOrder ?? 1000) - (b.sortOrder ?? 1000),
     );
   }, [surfaceValues]);
 
@@ -344,7 +344,7 @@ export function ShortcutEditorNext({
           >
             <SurfaceVariableBindingList
               targets={targets}
-              value={form.valueMappings}
+              value={form.valueMappings ?? {}}
               availableSurfaceValues={availableSurfaceValues}
               disabled={busy}
               onChange={(next) => update("valueMappings", next)}

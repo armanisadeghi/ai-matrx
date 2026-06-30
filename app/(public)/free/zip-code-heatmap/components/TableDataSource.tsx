@@ -215,9 +215,9 @@ export default function TableDataSource({
           p_table_id: selectedTable.id,
           p_limit: 10000, // Get up to 10k rows
           p_offset: 0,
-          p_sort_field: null,
+          p_sort_field: undefined,
           p_sort_direction: "asc",
-          p_search_term: null,
+          p_search_term: undefined,
         },
       );
 

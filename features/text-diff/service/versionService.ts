@@ -5,7 +5,45 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { Json } from "@/types/database.types";
 import type { NoteVersion } from "../types";
+
+type RpcVersionRow = {
+  id: string;
+  version_number: number;
+  content: string;
+  label: string;
+  change_source: string;
+  change_type: string;
+  diff_metadata: Json;
+  created_at: string;
+  note_id?: string;
+};
+
+function diffMetadataFromJson(value: Json): Record<string, any> {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    const result: Record<string, any> = {};
+    for (const [key, val] of Object.entries(value)) {
+      result[key] = val;
+    }
+    return result;
+  }
+  return {};
+}
+
+function mapVersionRow(row: RpcVersionRow, noteId: string): NoteVersion {
+  return {
+    id: row.id,
+    note_id: row.note_id ?? noteId,
+    version_number: row.version_number,
+    content: row.content,
+    label: row.label,
+    change_source: row.change_source,
+    change_type: row.change_type,
+    diff_metadata: diffMetadataFromJson(row.diff_metadata),
+    created_at: row.created_at,
+  };
+}
 
 /**
  * Fetch version history for a note
@@ -21,7 +59,7 @@ export async function fetchVersions(noteId: string): Promise<NoteVersion[]> {
   }
 
   // The RPC does not return `note_id`; stamp it back on for the local type.
-  return (data ?? []).map((row) => ({ ...row, note_id: noteId }));
+  return (data ?? []).map((row) => mapVersionRow(row, noteId));
 }
 
 /**
@@ -40,7 +78,8 @@ export async function fetchVersion(
   }
 
   // RPC returns a single-row array.
-  return data?.[0] ?? null;
+  const row = data?.[0];
+  return row ? mapVersionRow(row, row.note_id) : null;
 }
 
 /**
@@ -109,7 +148,7 @@ export async function createManualVersion(
       p_content: content,
       p_label: label,
       p_change_source: options.change_source ?? "user",
-      p_change_type: options.change_type ?? null,
+      p_change_type: options.change_type,
     },
   );
 

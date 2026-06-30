@@ -156,11 +156,12 @@ function ListItem({
   const isEmpty = !isFailed && !isDoneAnalysis(analysis);
   const usage = tokenUsageFromJson(analysis.token_usage);
   const tokenCost = usage?.estimated_cost;
-  const createdAt = new Date(analysis.created_at);
-  const formattedDate = createdAt.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+  const formattedDate = analysis.created_at
+    ? new Date(analysis.created_at).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      })
+    : "";
 
   return (
     <div
@@ -251,7 +252,9 @@ function DetailPanel({
   const [retrying, setRetrying] = useState(false);
 
   const isFailed = analysis.status === "failed";
-  const createdAt = new Date(analysis.created_at);
+  const createdAt = analysis.created_at
+    ? new Date(analysis.created_at)
+    : null;
   const usage = tokenUsageFromJson(analysis.token_usage);
   const tokenCost = usage?.estimated_cost;
   const totalTokens = (usage?.input_tokens ?? 0) + (usage?.output_tokens ?? 0);
@@ -301,13 +304,15 @@ function DetailPanel({
                   {source.hostname}
                 </span>
               )}
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {createdAt.toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })}
-              </span>
+              {createdAt && (
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {createdAt.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
               {analysis.model_id && (
                 <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
                   {analysis.model_id}

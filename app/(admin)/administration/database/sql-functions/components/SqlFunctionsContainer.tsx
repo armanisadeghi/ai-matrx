@@ -25,6 +25,7 @@ import { Search, RefreshCw, Plus, X } from "lucide-react";
 import SqlFunctionsList from "./SqlFunctionsList";
 import SqlFunctionDetail from "./SqlFunctionDetail";
 import SqlFunctionForm from "./SqlFunctionForm";
+import { getSqlFunctionKey } from "../utils/functionIdentity";
 
 interface SqlFunctionsContainerProps {
   initialFunctions?: SqlFunction[];
@@ -71,8 +72,13 @@ export default function SqlFunctionsContainer({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentPage(1);
     updateFilter({ name: nameSearch });
   };
+
+  const selectedFunctionKey = selectedFunction
+    ? getSqlFunctionKey(selectedFunction)
+    : null;
 
   const handleCreateFunction = async (definition: string) => {
     const success = await createFunction(definition);
@@ -349,6 +355,7 @@ export default function SqlFunctionsContainer({
                     <SqlFunctionsList
                       functions={currentFunctions}
                       loading={loading || isRefreshing}
+                      selectedFunctionKey={selectedFunctionKey}
                       onViewDetails={(func) => selectFunction(func)}
                       onEditFunction={handleEditFunction}
                       onDeleteFunction={handleDeleteFunction}
@@ -365,6 +372,7 @@ export default function SqlFunctionsContainer({
                 {/* Detail panel — fills remaining space */}
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <SqlFunctionDetail
+                    key={selectedFunctionKey ?? undefined}
                     func={selectedFunction}
                     onClose={() => selectFunction(null)}
                     onEdit={() => handleEditFunction(selectedFunction)}
@@ -390,6 +398,7 @@ export default function SqlFunctionsContainer({
                     <SqlFunctionsList
                       functions={currentFunctions}
                       loading={loading || isRefreshing}
+                      selectedFunctionKey={selectedFunctionKey}
                       onViewDetails={(func) => selectFunction(func)}
                       onEditFunction={handleEditFunction}
                       onDeleteFunction={handleDeleteFunction}

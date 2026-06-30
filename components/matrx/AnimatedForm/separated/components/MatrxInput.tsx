@@ -34,8 +34,12 @@ const MatrxInput: React.FC<MatrxInputProps> = ({
   const densityStyles = densityConfig[density];
   const animationProps = useComponentAnimation(animation, disableAnimation);
 
+  if (!field) {
+    return null;
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value);
+    onChange?.(e.target.value);
   };
 
   return (

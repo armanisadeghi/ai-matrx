@@ -292,14 +292,16 @@ export const appletBuilderSlice = createSlice({
             const { appletId, container } = action.payload;
             if (!checkAppletExists(state, appletId)) return;
 
-            state.applets[appletId].containers = [...state.applets[appletId].containers, container];
+            const currentContainers = state.applets[appletId].containers ?? [];
+            state.applets[appletId].containers = [...currentContainers, container];
             state.applets[appletId].isDirty = true;
         },
         removeContainer: (state, action: PayloadAction<{ appletId: string; containerId: string }>) => {
             const { appletId, containerId } = action.payload;
             if (!checkAppletExists(state, appletId)) return;
 
-            state.applets[appletId].containers = state.applets[appletId].containers.filter((c) => c.id !== containerId);
+            const currentContainers = state.applets[appletId].containers ?? [];
+            state.applets[appletId].containers = currentContainers.filter((c) => c.id !== containerId);
             state.applets[appletId].isDirty = true;
         },
         recompileContainer: (
@@ -309,9 +311,12 @@ export const appletBuilderSlice = createSlice({
             const { appletId, containerId, updatedContainer } = action.payload;
             if (!checkAppletExists(state, appletId)) return;
 
-            const containerIndex = state.applets[appletId].containers.findIndex((c) => c.id === containerId);
+            const containers = state.applets[appletId].containers ?? [];
+            const containerIndex = containers.findIndex((c) => c.id === containerId);
             if (containerIndex >= 0) {
-                state.applets[appletId].containers[containerIndex] = updatedContainer;
+                const updatedContainers = [...containers];
+                updatedContainers[containerIndex] = updatedContainer;
+                state.applets[appletId].containers = updatedContainers;
                 state.applets[appletId].isDirty = true;
             } else {
                 console.error(`Container with ID ${containerId} not found in applet ${appletId}`);
@@ -347,9 +352,10 @@ export const appletBuilderSlice = createSlice({
         },
         setTempAppletSourceConfig: (state, action: PayloadAction<AppletSourceConfig | null>) => {
             const sourceConfig = action.payload;
-            if (sourceConfig) {
+            if (sourceConfig?.config) {
+                const sourceConfigId = sourceConfig.config.id;
                 const existingIndex = state.tempSourceConfigList.findIndex(
-                    (config) => config.config.id === sourceConfig.config.id && config.sourceType === sourceConfig.sourceType
+                    (config) => config.config?.id === sourceConfigId && config.sourceType === sourceConfig.sourceType
                 );
 
                 if (existingIndex === -1) {
@@ -511,7 +517,8 @@ export const appletBuilderSlice = createSlice({
         builder.addCase(removeContainerThunk.fulfilled, (state, action) => {
             const { appletId, containerId } = action.meta.arg;
             if (state.applets[appletId]) {
-                state.applets[appletId].containers = state.applets[appletId].containers.filter((c) => c.id !== containerId);
+                const currentContainers = state.applets[appletId].containers ?? [];
+                state.applets[appletId].containers = currentContainers.filter((c) => c.id !== containerId);
                 state.applets[appletId].isDirty = true;
             }
             state.isLoading = false;
@@ -587,15 +594,15 @@ export const appletBuilderSlice = createSlice({
             const { container, appletId } = action.payload;
 
             if (container && appletId && state.applets[appletId]) {
-                // Find the container in the applet
-                const containerIndex = state.applets[appletId].containers.findIndex((c) => c.id === container.id);
+                const containers = state.applets[appletId].containers ?? [];
+                const containerIndex = containers.findIndex((c) => c.id === container.id);
 
                 if (containerIndex >= 0) {
-                    // Update existing container
-                    state.applets[appletId].containers[containerIndex] = container;
+                    const updatedContainers = [...containers];
+                    updatedContainers[containerIndex] = container;
+                    state.applets[appletId].containers = updatedContainers;
                 } else {
-                    // Add new container
-                    state.applets[appletId].containers.push(container);
+                    state.applets[appletId].containers = [...containers, container];
                 }
 
                 state.applets[appletId].isDirty = true;
@@ -609,7 +616,8 @@ export const appletBuilderSlice = createSlice({
             // Find which applet contains this container and mark it as dirty
             if (containerId) {
                 Object.values(state.applets).forEach((applet) => {
-                    const containerIndex = applet.containers.findIndex((c) => c.id === containerId);
+                    const containers = applet.containers ?? [];
+                    const containerIndex = containers.findIndex((c) => c.id === containerId);
                     if (containerIndex >= 0) {
                         // Mark the applet as dirty since a field in one of its containers changed
                         applet.isDirty = true;

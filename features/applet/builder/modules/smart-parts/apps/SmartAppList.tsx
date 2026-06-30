@@ -94,7 +94,9 @@ const SmartAppList = forwardRef<
                   if (!appIds.length) {
                       return allApps;
                   }
-                  const filteredApps = allApps.filter((app) => appIds.includes(app.id));
+                  const filteredApps = allApps.filter(
+                      (app) => app.id !== undefined && appIds.includes(app.id)
+                  );
                   const selectorResult = selectAppsByIds(state, appIds);
                   return filteredApps.length ? filteredApps : allApps;
               })
@@ -130,10 +132,10 @@ const SmartAppList = forwardRef<
                     break;
                 case "date-asc":
                     // Sort by ID as a fallback since createdAt might not be available
-                    result.sort((a, b) => a.id?.localeCompare(b.id || ""));
+                    result.sort((a, b) => (a.id ?? "").localeCompare(b.id ?? ""));
                     break;
                 case "date-desc":
-                    result.sort((a, b) => b.id?.localeCompare(a.id || ""));
+                    result.sort((a, b) => (b.id ?? "").localeCompare(a.id ?? ""));
                     break;
                 default:
                     break;
@@ -209,6 +211,14 @@ const SmartAppList = forwardRef<
 
         // Handle app deletion
         const handleDeleteApp = async (app: CustomAppConfig) => {
+            if (!app.id) {
+                toast({
+                    title: "Delete Failed",
+                    description: "This app has no id and cannot be deleted.",
+                    variant: "destructive",
+                });
+                return;
+            }
             try {
                 await dispatch(deleteAppThunk(app.id)).unwrap();
                 toast({
@@ -413,7 +423,7 @@ const SmartAppList = forwardRef<
                           `}
                                                         >
                                                             <IconPicker
-                                                                selectedIcon={app.mainAppIcon}
+                                                                selectedIcon={app.mainAppIcon ?? ""}
                                                                 onIconSelect={() => {}}
                                                                 className="w-12 h-12 opacity-20"
                                                                 defaultIcon={app.mainAppIcon}
@@ -444,7 +454,7 @@ const SmartAppList = forwardRef<
                         `}
                                                     >
                                                         <IconPicker
-                                                            selectedIcon={app.mainAppIcon}
+                                                            selectedIcon={app.mainAppIcon ?? ""}
                                                             onIconSelect={() => {}} // Read-only in this context
                                                             className={`${viewMode === "list" ? "w-5 h-5" : "w-6 h-6"}`}
                                                             defaultIcon={app.mainAppIcon}

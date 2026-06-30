@@ -85,9 +85,9 @@ export const favoritesService = {
       const { error } = await supabase.rpc("ues_set", {
         p_entity_type: args.entityType,
         p_entity_id: args.entityId,
-        p_is_favorite: args.isFavorite ?? null,
-        p_is_pinned: args.isPinned ?? null,
-        p_is_hidden: args.isHidden ?? null,
+        p_is_favorite: args.isFavorite,
+        p_is_pinned: args.isPinned,
+        p_is_hidden: args.isHidden,
       });
       if (error) return err(...mapPgErrorPair(error));
       return ok(null);
@@ -137,7 +137,7 @@ export const favoritesService = {
     try {
       requireUserId();
       const { data, error } = await supabase.rpc("ues_list", {
-        p_kind: kind ?? null,
+        p_kind: kind,
       });
       if (error) return err(...mapPgErrorPair(error));
       const rows = (Array.isArray(data) ? data : []) as UesListRow[];

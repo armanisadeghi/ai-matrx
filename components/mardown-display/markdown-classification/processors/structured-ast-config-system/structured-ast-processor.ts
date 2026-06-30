@@ -73,10 +73,11 @@ export function processStructuredAST(nodes: any[], config: StructuredConfig): St
         if (currentGroup) {
             for (const [fieldKey, fieldConfig] of Object.entries(config.fields)) {
                 // Handle collectAllChildren
-                if (fieldConfig.collectAllChildren && node !== currentGroup) {
+                if (fieldConfig.collectAllChildren && node !== currentGroup && fieldConfig.trigger) {
+                    const trigger = fieldConfig.trigger;
                     if (
-                        fieldConfig.trigger?.type === node.type &&
-                        (!fieldConfig.trigger.content || node.content === fieldConfig.trigger.content)
+                        trigger.type === node.type &&
+                        (!trigger.content || node.content === trigger.content)
                     ) {
                         const childContent = collectAllChildContent(node);
                         currentGroup[fieldKey] = ((currentGroup[fieldKey] as string[]) || []).concat(childContent);
@@ -89,11 +90,12 @@ export function processStructuredAST(nodes: any[], config: StructuredConfig): St
                     node.type === fieldConfig.trigger.type &&
                     node.content === fieldConfig.trigger.content
                 ) {
+                    const contentPath = fieldConfig.contentPath;
                     if (node.children) {
                         const contentNode = node.children.find(
                             (child) =>
-                                child.type === fieldConfig.contentPath.type &&
-                                (!fieldConfig.contentPath.depth || child.depth === fieldConfig.contentPath.depth)
+                                child.type === contentPath.type &&
+                                (!contentPath.depth || child.depth === contentPath.depth)
                         );
                         if (contentNode && contentNode.content) {
                             currentGroup[fieldKey] = contentNode.content;

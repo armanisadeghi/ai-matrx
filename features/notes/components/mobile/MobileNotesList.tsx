@@ -96,7 +96,7 @@ export default function MobileNotesList({
       result = result.filter(
         (n) =>
           n.label.toLowerCase().includes(q) ||
-          n.content.toLowerCase().includes(q) ||
+          (n.content ?? "").toLowerCase().includes(q) ||
           n.tags?.some((t) => t.toLowerCase().includes(q)) ||
           idMatchesQuery(n, q),
       );
@@ -120,7 +120,8 @@ export default function MobileNotesList({
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     const now = new Date();
     const diffHrs = (now.getTime() - date.getTime()) / (1000 * 60 * 60);

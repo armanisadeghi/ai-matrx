@@ -1,5 +1,5 @@
 
-export const getKeysAtPath = (data, path = []) => {
+export const getKeysAtPath = (data, path: string[] = []) => {
     try {
       let currentData = data;
       
@@ -47,7 +47,7 @@ export const getKeysAtPath = (data, path = []) => {
     }
   };
   
-  export const getDataAtPath = (data, path = []) => {
+  export const getDataAtPath = (data, path: string[] = []) => {
     try {
       let currentData = data;
       

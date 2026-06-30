@@ -8,6 +8,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import type { Json } from "@/types/database.types";
 import type { CodeFile, CodeFolder } from "../redux/code-files.types";
 
 // ── Inputs ──────────────────────────────────────────────────────────────────
@@ -24,7 +25,7 @@ export interface CreateCodeFileInput {
   task_id?: string | null;
   workspace_id?: string | null;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
   s3_key?: string | null;
   s3_bucket?: string | null;
   is_public?: boolean;
@@ -42,7 +43,7 @@ export interface UpdateCodeFileInput {
   task_id?: string | null;
   workspace_id?: string | null;
   tags?: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
   s3_key?: string | null;
   s3_bucket?: string | null;
   is_public?: boolean;
@@ -65,9 +66,9 @@ export interface UpdateCodeFolderInput {
   name?: string;
   description?: string | null;
   parent_folder_id?: string | null;
-  icon_name?: string | null;
+  icon_name?: string;
   color?: string | null;
-  sort_order?: number;
+  sort_order?: number | null;
 }
 
 // ── Code file list (metadata only, no content) ──────────────────────────────

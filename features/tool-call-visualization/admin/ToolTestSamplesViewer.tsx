@@ -421,7 +421,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                             Model
                         </TabsTrigger>
                     )}
-                    {outputSchema && (
+                    {outputSchema != null && (
                         <TabsTrigger value="schema" className="text-[11px] h-7 px-2.5 data-[state=active]:bg-muted shrink-0 gap-1">
                             <FileCode2 className="h-3 w-3" />
                             Schema
@@ -488,7 +488,7 @@ function SampleCard({ sample, index, onUpdate }: SampleCardProps) {
                 )}
 
                 {/* Output schema tab */}
-                {outputSchema && (
+                {outputSchema != null && (
                     <TabsContent value="schema" className="p-3 mt-0">
                         <JsonBlock label="output_schema" data={outputSchema} defaultExpanded />
                     </TabsContent>

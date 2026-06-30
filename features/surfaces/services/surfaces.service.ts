@@ -169,9 +169,14 @@ export async function updateSurface(
     parent_surface_name: string | null;
   }>,
 ): Promise<void> {
+  const { description, ...rest } = patch;
+  const updatePayload: UiTables["ui_surface"]["Update"] = {
+    ...rest,
+    ...(description !== undefined ? { description: description ?? undefined } : {}),
+  };
   const { error } = await sb()
     .schema("ui").from("ui_surface")
-    .update(patch)
+    .update(updatePayload)
     .eq("name", name);
   if (error) throw error;
 }
@@ -214,7 +219,7 @@ export async function createUiClient(args: {
     .schema("ui").from("ui_client")
     .insert({
       name: args.name,
-      description: args.description,
+      description: args.description ?? undefined,
       sort_order: args.sortOrder ?? 100,
       is_active: true,
     });

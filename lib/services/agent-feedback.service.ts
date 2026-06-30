@@ -209,16 +209,16 @@ export async function triageItem(
   try {
     const supabase = createAdminClient();
 
-    // Always pass p_category_id (even as null) to resolve the PostgreSQL function overload ambiguity
+    // Always pass p_category_id to resolve the PostgreSQL function overload ambiguity
     const { data, error } = await supabase.rpc("triage_feedback_item", {
       p_id: feedbackId,
-      p_ai_solution_proposal: triage.ai_solution_proposal || null,
-      p_ai_suggested_priority: triage.ai_suggested_priority || null,
-      p_ai_complexity: triage.ai_complexity || null,
-      p_ai_estimated_files: triage.ai_estimated_files || null,
-      p_autonomy_score: triage.autonomy_score || null,
-      p_ai_assessment: triage.ai_assessment || null,
-      p_category_id: triage.category_id || null,
+      p_ai_solution_proposal: triage.ai_solution_proposal,
+      p_ai_suggested_priority: triage.ai_suggested_priority,
+      p_ai_complexity: triage.ai_complexity,
+      p_ai_estimated_files: triage.ai_estimated_files,
+      p_autonomy_score: triage.autonomy_score,
+      p_ai_assessment: triage.ai_assessment,
+      p_category_id: triage.category_id,
     });
 
     if (error) return { success: false, error: error.message };
@@ -275,8 +275,8 @@ export async function resolveWithTesting(
     const { data, error } = await supabase.rpc("resolve_with_testing", {
       p_id: feedbackId,
       p_resolution_notes: resolutionNotes,
-      p_testing_instructions: testingInstructions || null,
-      p_testing_url: testingUrl || null,
+      p_testing_instructions: testingInstructions,
+      p_testing_url: testingUrl,
     });
 
     if (error) return { success: false, error: error.message };
@@ -306,8 +306,8 @@ export async function setAdminDecision(
     const { data, error } = await supabase.rpc("set_admin_decision", {
       p_id: feedbackId,
       p_decision: decision,
-      p_direction: direction || null,
-      p_work_priority: workPriority || null,
+      p_direction: direction,
+      p_work_priority: workPriority,
     });
 
     if (error) return { success: false, error: error.message };
