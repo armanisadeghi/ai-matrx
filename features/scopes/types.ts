@@ -131,6 +131,7 @@ export const ASSOCIATION_TARGET_TYPES = [
   "fc_card", //              a flashcard (card→card hierarchy, quiz→card)
   "file", //                 a file (card→file media + source lineage)
   "quiz_session", //         a quiz a card is used in
+  "agent", //                an orchestrator agent — the container an Agent Set's member agents attach into (role 'member'); a 'matrx_set' self-edge marks the orchestrator
 ] as const satisfies readonly EntityTypeToken[];
 
 export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];

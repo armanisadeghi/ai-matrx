@@ -92,7 +92,7 @@ import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice"
 import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
 import agentUsagesReducer from "@/features/agents/redux/usages/usages.slice";
 import agentContentBlockReducer from "@/features/agents/redux/agent-content-blocks/slice";
-import agentSetsReducer from "@/features/agents/agent-sets/redux/slice";
+import agentSetsReducer from "@/features/agents/redux/agent-sets/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";

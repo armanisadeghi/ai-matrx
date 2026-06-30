@@ -26,6 +26,7 @@ import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
 import { ComingSoonModal } from "./ComingSoonModal";
 import { FavoriteAgentButton } from "./FavoriteAgentButton";
+import { AddToSetMenu } from "@/features/agents/agent-sets/components/AddToSetMenu";
 import { useState } from "react";
 import { toast } from "@/lib/toast-service";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -361,6 +362,7 @@ export function AgentCard({
               onClick={handleShareClickInline}
               disabled={isDisabled}
             />
+            <AddToSetMenu agentId={id} disabled={isDisabled} />
             <IconButton
               icon={FileText}
               tooltip={isDisabled ? "Please wait..." : "Edit Details"}

@@ -22188,6 +22188,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      agent_set_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          member_count: number
+          metadata: Json
+          name: string
+          orchestrator_id: string
+          set_label: string
+          updated_at: string
+        }[]
+      }
       agx_build_shortcut_menu: {
         Args: { p_placement_types: string[] }
         Returns: {

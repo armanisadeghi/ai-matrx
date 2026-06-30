@@ -559,6 +559,23 @@ const heavyImplStaticImportBan = [
     },
 ];
 
+// React Flow (@xyflow/react / reactflow) is a heavy, browser-only graph-canvas
+// engine. It lives in exactly ONE module — the Agent Set builder canvas
+// (features/agents/agent-sets/components/SetBuilderCanvasImpl.tsx) — reached
+// only through the SetBuilderCanvas `next/dynamic({ ssr: false })` wrapper. A
+// static value import anywhere else drags the whole flow runtime into that
+// route/server chunk: the exact build-time-leak class that ballooned the build
+// 15→24min for the context menu. The Impl file carries a justified one-line
+// eslint-disable. `import type {...}` and dynamic `import()` are unaffected.
+const reactFlowStaticImportBan = [
+    {
+        selector:
+            "ImportDeclaration[importKind!='type'][source.value=/^(@xyflow\\/react|reactflow)$/]",
+        message:
+            "Do not statically import React Flow (@xyflow/react / reactflow) — it's a heavy browser-only canvas. Keep it in features/agents/agent-sets/components/SetBuilderCanvasImpl.tsx behind the SetBuilderCanvas next/dynamic({ ssr: false }) wrapper. If this file IS that Impl, add `// eslint-disable-next-line no-restricted-syntax` directly above the import with a one-line justification. `import type {...}` and dynamic import() are fine. See the code-splitting skill.",
+    },
+];
+
 export default [
     ...nextCoreWebVitals,
     {
@@ -656,6 +673,8 @@ export default [
                 ...contextMenuV3StaticImportBan,
                 // Heavy "*Impl" cores must be reached via their dynamic wrapper, never imported statically.
                 ...heavyImplStaticImportBan,
+                // React Flow is a heavy browser-only canvas — only the Agent Set builder Impl may import it.
+                ...reactFlowStaticImportBan,
             ],
         },
     },

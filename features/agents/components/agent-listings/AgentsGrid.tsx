@@ -27,6 +27,7 @@ import {
   Plus,
   Webhook,
   Users,
+  Network,
 } from "lucide-react";
 import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
 import {
@@ -518,6 +519,19 @@ export function AgentsGrid() {
                 toastLabel={`${filteredAgents.length} agent${filteredAgents.length === 1 ? "" : "s"}`}
               />
             )}
+
+            {/* Agent Sets (orchestrators) */}
+            <Link href="/agents/sets">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 rounded-full matrx-glass-thin-border hover:shadow-xl shrink-0"
+                title="Agent sets — orchestrators presiding over teams of agents"
+              >
+                <Network className="h-4 w-4" />
+                Sets
+              </Button>
+            </Link>
 
             {/* New agent icon (right) */}
             <Link href="/agents/new">
