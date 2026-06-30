@@ -19,7 +19,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "The flashcard creation + study workspace: manual rich-text editor, AI generation from any source, and every study mode.",
     icon: Layers,
     letter: "Fc",
-    status: "coming-soon",
+    status: "live",
     accessTier: "free",
     visionRef: "VISION §1 Flashcard System, §2 Study Modes",
     capabilities: [

@@ -74,8 +74,17 @@ export const fcService = {
 
   async getSet(setId: string): Promise<FcResult<FcSetRow>> {
     try {
-      const { data, error } = await EDU().from("fc_set").select("*").eq("id", setId).single();
+      // maybeSingle (not single): an RLS-hidden or missing row returns no row
+      // with NO error, so we surface a clear not-found message instead of the
+      // opaque empty-string PostgREST error that `.single()` raises.
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("*")
+        .eq("id", setId)
+        .is("deleted_at", null)
+        .maybeSingle();
       if (error) return fail("getSet", error);
+      if (!data) return { data: null, error: "Set not found or you don't have access to it" };
       return { data: data as FcSetRow, error: null };
     } catch (e) {
       return fail("getSet", e);
