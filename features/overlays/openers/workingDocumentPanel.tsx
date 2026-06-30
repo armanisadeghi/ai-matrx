@@ -26,6 +26,8 @@ export interface OpenWorkingDocumentPanelOptions {
   conversationId: string;
   /** Header title; falls back to "Working document". */
   title?: string;
+  /** Which document tab to open first ("working" | "scratch"). */
+  initialKind?: "working" | "scratch";
 }
 
 export interface WorkingDocumentPanelHandle {
@@ -42,6 +44,7 @@ export function useOpenWorkingDocumentPanel() {
           data: {
             conversationId: opts.conversationId,
             title: opts.title,
+            initialKind: opts.initialKind,
           },
         }),
       );

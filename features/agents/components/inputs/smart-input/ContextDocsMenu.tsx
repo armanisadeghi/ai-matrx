@@ -9,7 +9,15 @@
  */
 
 import { useState } from "react";
-import { FileText, Layers, Link2, Lock, NotebookPen } from "lucide-react";
+import {
+  FileText,
+  Layers,
+  Link2,
+  Lock,
+  NotebookPen,
+  PanelRight,
+} from "lucide-react";
+import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
 import {
   Popover,
   PopoverContent,
@@ -47,6 +55,8 @@ interface DocRowProps {
   icon: typeof FileText;
   title: string;
   description: string;
+  /** Close the menu after opening the doc, so the sidebar isn't behind it. */
+  onOpen?: () => void;
 }
 
 function DocRow({
@@ -55,8 +65,10 @@ function DocRow({
   icon: Icon,
   title,
   description,
+  onOpen,
 }: DocRowProps) {
   const dispatch = useAppDispatch();
+  const openPanel = useOpenWorkingDocumentPanel();
   const enabled = useAppSelector(selectWorkingDocEnabled(conversationId, kind));
 
   return (
@@ -76,29 +88,44 @@ function DocRow({
           {description}
         </p>
         {enabled && (
-          <DocumentLinkPicker
-            kind={kind}
-            align="start"
-            side="bottom"
-            onSelect={(documentId) =>
-              void dispatch(
-                linkConversationDocumentThunk({
-                  conversationId,
-                  kind,
-                  documentId,
-                }),
-              )
-            }
-            trigger={
-              <button
-                type="button"
-                className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-              >
-                <Link2 className="h-3 w-3" />
-                Link existing…
-              </button>
-            }
-          />
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {/* Immediate "see it" affordance — opens the doc in the non-blocking
+                right sidebar so the user never has to hunt for a window. */}
+            <button
+              type="button"
+              onClick={() => {
+                openPanel({ conversationId, initialKind: kind });
+                onOpen?.();
+              }}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <PanelRight className="h-3 w-3" />
+              Open
+            </button>
+            <DocumentLinkPicker
+              kind={kind}
+              align="start"
+              side="bottom"
+              onSelect={(documentId) =>
+                void dispatch(
+                  linkConversationDocumentThunk({
+                    conversationId,
+                    kind,
+                    documentId,
+                  }),
+                )
+              }
+              trigger={
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  <Link2 className="h-3 w-3" />
+                  Link existing…
+                </button>
+              }
+            />
+          </div>
         )}
       </div>
       <Switch
@@ -119,7 +146,10 @@ function DocRow({
   );
 }
 
-function ContextDocsMenuBody({ conversationId }: ContextDocsMenuProps) {
+function ContextDocsMenuBody({
+  conversationId,
+  onClose,
+}: ContextDocsMenuProps & { onClose?: () => void }) {
   return (
     <>
       <div className="px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -131,6 +161,7 @@ function ContextDocsMenuBody({ conversationId }: ContextDocsMenuProps) {
         icon={FileText}
         title="Working document"
         description="A shared, living document you build with the agent. It can read and edit it each round."
+        onOpen={onClose}
       />
       <DocRow
         conversationId={conversationId}
@@ -138,6 +169,7 @@ function ContextDocsMenuBody({ conversationId }: ContextDocsMenuProps) {
         icon={NotebookPen}
         title="My scratchpad"
         description="A private space the agent can read for context — but never edits."
+        onOpen={onClose}
       />
 
       <div className="border-t border-border px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -199,7 +231,10 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
         >
           <BottomSheetHeader title="Documents & context" />
           <BottomSheetBody>
-            <ContextDocsMenuBody conversationId={conversationId} />
+            <ContextDocsMenuBody
+              conversationId={conversationId}
+              onClose={() => setOpen(false)}
+            />
           </BottomSheetBody>
         </BottomSheet>
       </>

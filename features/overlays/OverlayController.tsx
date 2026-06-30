@@ -3937,6 +3937,8 @@ export default function OverlayController() {
         const conversationId =
           typeof data?.conversationId === "string" ? data.conversationId : null;
         if (!conversationId) return null;
+        const initialKind =
+          data?.initialKind === "scratch" ? "scratch" : "working";
         // Container title is "Documents" — NOT the doc title. The workspace's tab
         // strip already names each doc (Working document / Scratchpad); repeating
         // it here would be a redundant nested heading.
@@ -3952,6 +3954,7 @@ export default function OverlayController() {
           >
             <DocumentsWorkspace
               conversationId={conversationId}
+              initialKind={initialKind}
               defaultRailOpen
               className="h-full"
             />
