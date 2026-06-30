@@ -69,7 +69,9 @@ export type CapturedErrorSource =
   /** An expiring/private media URL reached a render/store path (durability defect). */
   | "media-durability"
   /** A user-facing `toast.error(...)` — already handled + shown to the user. */
-  | "user-toast";
+  | "user-toast"
+  /** An RTK rejected thunk (action type ending in /rejected) — a real failure. */
+  | "redux-rejected";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

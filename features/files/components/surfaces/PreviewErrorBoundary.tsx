@@ -24,6 +24,7 @@
 import React from "react";
 import { AlertCircle, ExternalLink, RefreshCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 import { getStore } from "@/lib/redux/store-singleton";
 import { setActiveFileId } from "@/features/files/redux/slice";
 import { getSignedUrl } from "@/features/files/redux/thunks";
@@ -58,6 +59,12 @@ export class PreviewErrorBoundary extends React.Component<
     // Surface to console so it's still discoverable in dev / Sentry.
     // eslint-disable-next-line no-console
     console.error("[PreviewErrorBoundary]", error, info);
+    captureReactRenderError(error, {
+      boundary: "PreviewErrorBoundary",
+      relation: `file:${this.props.fileId}`,
+      componentStack:
+        (info as React.ErrorInfo | undefined)?.componentStack ?? null,
+    });
   }
 
   override componentDidUpdate(prev: PreviewErrorBoundaryProps): void {

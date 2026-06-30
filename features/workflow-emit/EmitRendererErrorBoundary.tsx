@@ -11,6 +11,7 @@
  * `tool-call-visualization/db-renderer/ToolRendererErrorBoundary.tsx`.
  */
 import React from "react";
+import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 interface Props {
   componentRef: string;
@@ -38,6 +39,11 @@ export class EmitRendererErrorBoundary extends React.Component<Props, State> {
       error,
       errorInfo.componentStack,
     );
+    captureReactRenderError(error, {
+      boundary: "EmitRendererErrorBoundary",
+      componentStack: errorInfo.componentStack ?? null,
+      relation: `emit:${this.props.componentRef}`,
+    });
   }
 
   override render(): React.ReactNode {
