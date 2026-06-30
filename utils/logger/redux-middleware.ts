@@ -175,7 +175,7 @@ export const loggerMiddleware: Middleware =
 
     const prevState = store.getState();
     let result;
-    let error = null;
+    let error: unknown = null;
 
     // Check if the action type starts with any excluded prefix (case-insensitive)
     const shouldExclude = excludedPrefixes.some((prefix) =>

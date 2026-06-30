@@ -87,7 +87,7 @@ export function CaPdCalculatorClient({
   // noise). The hook is also gated by `enabled: !!userId` internally.
   const shouldFetchSavedCases = mode === "draft" && isAuthed && !hasContent;
   const savedCasesQuery = useMyClaims(
-    shouldFetchSavedCases ? userId : undefined,
+    shouldFetchSavedCases ? (userId ?? undefined) : undefined,
   );
   const savedCases = savedCasesQuery.data ?? [];
 

@@ -116,7 +116,7 @@ const FlashcardTable: React.FC<FlashcardTableProps> = ({ onEditCard }) => {
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDeleteCard(card.id);
+                      if (card.id) handleDeleteCard(card.id);
                     }}
                     variant="destructive"
                   >

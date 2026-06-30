@@ -469,7 +469,6 @@ export const RecipeSelectionList: React.FC<RecipeSelectionListProps> = ({
                                 title="No Recipe Selected"
                                 description="Please select a recipe from the list to choose version"
                                 icon={BookOpenText}
-                                buttonText={null}
                             />
                         </div>
                     )

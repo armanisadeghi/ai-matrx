@@ -105,7 +105,7 @@ export function useEpisodeArticles(
       setDrafts((d) => ({ ...d, [kind]: undefined }));
       try {
         const metadataJson = JSON.stringify(episodeMetadata(episode));
-        const variables =
+        const variables: Record<string, string> =
           kind === "blog"
             ? {
                 episode_transcript: episode.script,

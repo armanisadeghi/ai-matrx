@@ -396,7 +396,7 @@ export function ContentTemplateManager({
         label: editData.label || "",
         content: editData.content || "",
         role: editData.role || "user",
-        metadata: editData.metadata,
+        metadata: editData.metadata ?? undefined,
         is_public: editData.is_public,
         tags: editData.tags || [],
       });

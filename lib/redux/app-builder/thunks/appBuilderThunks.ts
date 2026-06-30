@@ -82,7 +82,7 @@ export const removeAppletThunk = createAsyncThunk<void, { appId: string; appletI
     async ({ appId, appletId }, { rejectWithValue }) => {
         try {
             // Update applet to clear app_id
-            await updateCustomAppletConfig(appletId, { id: appletId, appId: null });
+            await updateCustomAppletConfig(appletId, { id: appletId, appId: undefined });
             return undefined;
         } catch (error: any) {
             return rejectWithValue(error.message);

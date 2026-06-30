@@ -21,6 +21,8 @@ import type {
   Message,
   MessageWithSender,
   ConversationWithDetails,
+  ConversationType,
+  ParticipantRole,
   UserBasicInfo,
   SendMessageRequest,
   UseMessagesReturn,
@@ -28,6 +30,21 @@ import type {
   UseChatReturn,
   UseConversationsReturn,
 } from "@/features/messaging/types";
+import type { Database } from "@/types/database.types";
+
+type DmConversationRpcRow =
+  Database["public"]["Functions"]["get_dm_conversations_with_details"]["Returns"][number];
+
+function toConversationType(value: string): ConversationType {
+  return value === "group" ? "group" : "direct";
+}
+
+function toParticipantRole(value: string | null | undefined): ParticipantRole {
+  if (value === "owner" || value === "admin" || value === "member") {
+    return value;
+  }
+  return "member";
+}
 
 // ============================================
 // useMessages Hook
@@ -571,15 +588,8 @@ export function useConversations(
 
       // Fetch participants for each conversation
       const conversationsWithParticipants = await Promise.all(
-        (data || []).map(async (conv: Record<string, unknown>) => {
+        (data || []).map(async (conv: DmConversationRpcRow) => {
           const conversationId = conv.conversation_id;
-          if (typeof conversationId !== "string") {
-            console.warn(
-              "[Messaging] Skipping row with invalid conversation_id",
-              conv,
-            );
-            return null;
-          }
 
           const { data: participants } = await supabase
             .schema("communication").from("dm_conversation_participants")
@@ -595,7 +605,10 @@ export function useConversations(
               );
               return {
                 ...p,
-                user: userInfo?.[0] || null,
+                role: toParticipantRole(p.role),
+                is_muted: p.is_muted ?? false,
+                is_archived: p.is_archived ?? false,
+                user: userInfo?.[0] ?? undefined,
               };
             }),
           );
@@ -605,9 +618,9 @@ export function useConversations(
             (p) => p.user_id !== userId,
           );
 
-          return {
+          const conversation: ConversationWithDetails = {
             id: conversationId,
-            type: conv.conversation_type,
+            type: toConversationType(conv.conversation_type),
             group_name: conv.group_name,
             group_image_url: conv.group_image_url,
             created_by: null,
@@ -618,8 +631,8 @@ export function useConversations(
               ? {
                   id: "",
                   conversation_id: conversationId,
-                  sender_id: conv.last_message_sender_id as string,
-                  content: conv.last_message_content as string,
+                  sender_id: conv.last_message_sender_id,
+                  content: conv.last_message_content,
                   message_type: "text" as const,
                   media_url: null,
                   media_thumbnail_url: null,
@@ -628,13 +641,13 @@ export function useConversations(
                   reply_to_id: null,
                   deleted_at: null,
                   deleted_for_everyone: false,
-                  created_at: conv.last_message_at as string,
+                  created_at: conv.last_message_at,
                   edited_at: null,
                   client_message_id: null,
                   action_data: null,
                 }
               : null,
-            unread_count: conv.unread_count as number,
+            unread_count: conv.unread_count,
             display_name:
               conv.conversation_type === "direct" && otherParticipant
                 ? otherParticipant.user?.display_name ||
@@ -645,7 +658,9 @@ export function useConversations(
               conv.conversation_type === "direct" && otherParticipant
                 ? otherParticipant.user?.avatar_url
                 : conv.group_image_url,
-          } as ConversationWithDetails;
+          };
+
+          return conversation;
         }),
       );
 

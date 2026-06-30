@@ -28,7 +28,7 @@ export interface MultiFileCodeEditorBodyProps {
   currentFile: CodeFile;
   code: string;
   monacoLanguage: string;
-  monacoFileExtension: string;
+  monacoFileExtension?: string;
   editorPath: string;
 
   // ── UI state ────────────────────────────────────────────────────────────────

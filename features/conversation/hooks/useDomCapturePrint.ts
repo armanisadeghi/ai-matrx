@@ -19,7 +19,7 @@ export interface DomCaptureOptions {
 }
 
 export interface UseDomCapturePrintReturn {
-    captureRef: React.RefObject<HTMLDivElement>;
+    captureRef: React.RefObject<HTMLDivElement | null>;
     isCapturing: boolean;
     progress: number;
     captureAsPDF: (options?: DomCaptureOptions) => Promise<void>;

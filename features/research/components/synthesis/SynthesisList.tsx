@@ -127,7 +127,10 @@ function SynthesisCard({
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-0.5">
-            {new Date(synthesis.created_at).toLocaleDateString()} · v
+            {synthesis.created_at
+              ? new Date(synthesis.created_at).toLocaleDateString()
+              : "Unknown date"}{" "}
+            · v
             {synthesis.version}
             {synthesis.model_id && ` · ${synthesis.model_id}`}
           </p>

@@ -1728,7 +1728,7 @@ interface OutputPanelProps {
   setOutputText: (v: string) => void;
   setOutputEdited: (v: boolean) => void;
   setHighlightedOffset: (v: number) => void;
-  outputRef: React.RefObject<HTMLTextAreaElement>;
+  outputRef: React.RefObject<HTMLTextAreaElement | null>;
   totalOriginal: number;
   totalOutput: number;
   savings: number;

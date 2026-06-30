@@ -29,7 +29,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
         avatar_url: null, // Can be fetched from user profiles later
         score: score.score,
         time_taken: score.time_taken,
-        created_at: score.created_at,
+        created_at: score.created_at ?? "",
         is_current_user: score.user_id === userId,
       }));
 

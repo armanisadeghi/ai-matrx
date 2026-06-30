@@ -68,8 +68,8 @@ export const useContextCollection = (helpDocs?: Record<string, string>) => {
           return {
             selector: selector,
             text: el.textContent || undefined,
-            role: el.getAttribute('role'),
-            ariaLabel: el.getAttribute('aria-label'),
+            role: el.getAttribute('role') ?? undefined,
+            ariaLabel: el.getAttribute('aria-label') ?? undefined,
             isVisible: rect.width > 0 && rect.height > 0,
             boundingBox: {
               top: rect.top,

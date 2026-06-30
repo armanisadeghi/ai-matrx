@@ -270,7 +270,7 @@ const FactCheckerPage: React.FC<FactCheckerPageProps> = ({
 
     return (
       <Card title="Claims Assessment Table">
-        {tableData ? (
+        {tableData?.markdown ? (
           <MarkdownTable data={tableData.markdown} />
         ) : (
           <EmptyState

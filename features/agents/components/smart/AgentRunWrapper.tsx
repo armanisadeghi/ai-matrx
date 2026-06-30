@@ -156,6 +156,8 @@ export function AgentRunWrapper({
     }
   }, [agentId, conversationId, debugProjectCreate, store]);
 
+  if (!conversationId) return null;
+
   return (
     <AgentRunner conversationId={conversationId} surfaceKey={surfaceKey} />
   );

@@ -122,12 +122,12 @@ describe("invokeRemoteFetch", () => {
     });
 
     it("drops the response when identity changes mid-flight", async () => {
-        let release: (() => void) | null = null;
+        let release: (() => void) | undefined;
         let liveIdentity = identityA;
         const { store, policy, dispatched } = makeSetup(async () => {
             // Hold the response open until the caller swaps identity.
             await new Promise<void>((resolve) => {
-                release = resolve;
+                release = () => resolve();
             });
             return { value: "stale", loaded: true };
         });
@@ -148,10 +148,10 @@ describe("invokeRemoteFetch", () => {
 
     it("skips dispatch when an external signal aborts", async () => {
         const controller = new AbortController();
-        let release: (() => void) | null = null;
+        let release: (() => void) | undefined;
         const { store, policy, dispatched } = makeSetup(async () => {
             await new Promise<void>((resolve) => {
-                release = resolve;
+                release = () => resolve();
             });
             return { value: "late", loaded: true };
         });

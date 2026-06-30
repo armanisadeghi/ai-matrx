@@ -90,7 +90,10 @@ function fmtRelativeTime(iso: string | null | undefined): string {
   return `${Math.round(diffSec / 86400)}d ago`;
 }
 
-const STATUS_VARIANT: Record<BatchStatus, "secondary" | "default" | "destructive" | "outline"> = {
+const STATUS_VARIANT: Record<
+  BatchStatus,
+  "secondary" | "default" | "destructive" | "outline"
+> = {
   pending: "secondary",
   in_progress: "default",
   completed: "outline",
@@ -109,7 +112,8 @@ function StatusBadge({ status }: { status: BatchStatus }) {
 
 function percentColorClass(percent: number): string {
   if (percent >= 100) return "text-destructive font-semibold";
-  if (percent >= 80) return "text-orange-500 dark:text-orange-400 font-semibold";
+  if (percent >= 80)
+    return "text-orange-500 dark:text-orange-400 font-semibold";
   if (percent >= 50) return "text-foreground";
   return "text-muted-foreground";
 }
@@ -163,7 +167,13 @@ function fmtPercent(value: number | null | undefined): string | null {
   return `${value.toFixed(1)}%`;
 }
 
-function KpiTiles({ summary, loading }: { summary: KgCostSummaryResponse | null; loading: boolean }) {
+function KpiTiles({
+  summary,
+  loading,
+}: {
+  summary: KgCostSummaryResponse | null;
+  loading: boolean;
+}) {
   // Defensive: `ner_coverage_pct` is being added on the Python side; until
   // it lands the tile renders "—" with the explainer copy. Once present,
   // the value flows through cleanly.
@@ -239,7 +249,8 @@ function OrgLeaderboard({
   if (orgs.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        No organization_preferences rows yet. Counters fill as auto-ingest cost lands.
+        No organization_preferences rows yet. Counters fill as auto-ingest cost
+        lands.
       </div>
     );
   }
@@ -319,7 +330,8 @@ function PendingBatchesTable({
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
         No in-flight batches. (Pending submissions appear here within seconds of
-        a matrx-batch dispatch; completion lands within ~24h of the provider SLA.)
+        a matrx-batch dispatch; completion lands within ~24h of the provider
+        SLA.)
       </div>
     );
   }
@@ -362,7 +374,9 @@ function PendingBatchesTable({
             <TableCell className="text-muted-foreground">
               {fmtRelativeTime(row.submitted_at)}
             </TableCell>
-            <TableCell className="text-right tabular-nums">{row.poll_count}</TableCell>
+            <TableCell className="text-right tabular-nums">
+              {row.poll_count}
+            </TableCell>
             <TableCell>
               <StatusBadge status={row.status} />
             </TableCell>
@@ -408,7 +422,9 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
       .setIndexNonPdf(next)
       .then(() =>
         toast.success(
-          next ? "Non-PDF auto-indexing enabled" : "Non-PDF auto-indexing disabled",
+          next
+            ? "Non-PDF auto-indexing enabled"
+            : "Non-PDF auto-indexing disabled",
         ),
       )
       .catch(() => toast.error("Couldn't update non-PDF auto-indexing"));
@@ -506,9 +522,7 @@ function OrgAutoIngestControls({ orgId }: { orgId: string }) {
           )}
         </div>
 
-        {pref.error && (
-          <p className="text-xs text-destructive">{pref.error}</p>
-        )}
+        {pref.error && <p className="text-xs text-destructive">{pref.error}</p>}
       </div>
     </section>
   );
@@ -553,7 +567,8 @@ function OrgDetailDialog({
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>
-            {detail?.organization_name ?? orgId?.slice(0, 8) ?? "Organization"} cost detail
+            {detail?.organization_name ?? orgId?.slice(0, 8) ?? "Organization"}{" "}
+            cost detail
           </DialogTitle>
         </DialogHeader>
 
@@ -577,7 +592,9 @@ function OrgDetailDialog({
               {/* Header stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-md border border-border bg-card p-3">
-                  <div className="text-xs text-muted-foreground">Used today</div>
+                  <div className="text-xs text-muted-foreground">
+                    Used today
+                  </div>
                   <div className="text-lg font-semibold tabular-nums">
                     {fmtUsdShort(detail.used_today_usd)}
                   </div>
@@ -589,7 +606,9 @@ function OrgDetailDialog({
                   </div>
                 </div>
                 <div className="rounded-md border border-border bg-card p-3">
-                  <div className="text-xs text-muted-foreground">Window started</div>
+                  <div className="text-xs text-muted-foreground">
+                    Window started
+                  </div>
                   <div className="text-sm tabular-nums">
                     {fmtRelativeTime(detail.window_start)}
                   </div>
@@ -603,7 +622,9 @@ function OrgDetailDialog({
               <section>
                 <h3 className="mb-2 text-sm font-semibold">Last 30 days</h3>
                 {detail.daily_series.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No cost in this window.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No cost in this window.
+                  </p>
                 ) : (
                   <div className="rounded-md border border-border">
                     <Table>
@@ -616,7 +637,9 @@ function OrgDetailDialog({
                       <TableBody>
                         {detail.daily_series.map((d) => (
                           <TableRow key={d.date}>
-                            <TableCell className="font-mono text-xs">{d.date}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {d.date}
+                            </TableCell>
                             <TableCell className="text-right tabular-nums">
                               {fmtUsd(d.cost_usd)}
                             </TableCell>
@@ -630,9 +653,13 @@ function OrgDetailDialog({
 
               {/* Top sources */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold">Top sources (30 days)</h3>
+                <h3 className="mb-2 text-sm font-semibold">
+                  Top sources (30 days)
+                </h3>
                 {detail.top_sources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No source breakdown available.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No source breakdown available.
+                  </p>
                 ) : (
                   <div className="rounded-md border border-border">
                     <Table>
@@ -646,7 +673,9 @@ function OrgDetailDialog({
                       <TableBody>
                         {detail.top_sources.map((s) => (
                           <TableRow key={s.source}>
-                            <TableCell className="font-mono text-xs">{s.source}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {s.source}
+                            </TableCell>
                             <TableCell className="text-right tabular-nums">
                               {fmtUsd(s.cost_usd)}
                             </TableCell>
@@ -663,9 +692,13 @@ function OrgDetailDialog({
 
               {/* Batch summary */}
               <section>
-                <h3 className="mb-2 text-sm font-semibold">Batches by status</h3>
+                <h3 className="mb-2 text-sm font-semibold">
+                  Batches by status
+                </h3>
                 {detail.batch_summary.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No batch submissions yet.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No batch submissions yet.
+                  </p>
                 ) : (
                   <div className="rounded-md border border-border">
                     <Table>
@@ -673,7 +706,9 @@ function OrgDetailDialog({
                         <TableRow>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Count</TableHead>
-                          <TableHead className="text-right">Total cost</TableHead>
+                          <TableHead className="text-right">
+                            Total cost
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -682,7 +717,9 @@ function OrgDetailDialog({
                             <TableCell>
                               <StatusBadge status={b.status} />
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">{b.count}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {b.count}
+                            </TableCell>
                             <TableCell className="text-right tabular-nums">
                               {fmtUsd(b.total_cost_usd)}
                             </TableCell>
@@ -726,7 +763,9 @@ function BatchDetailDialog({
       .then(setDetail)
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
-        setError(e instanceof Error ? e.message : "Failed to load batch detail");
+        setError(
+          e instanceof Error ? e.message : "Failed to load batch detail",
+        );
       })
       .finally(() => {
         if (controller.signal.aborted) return;
@@ -736,7 +775,10 @@ function BatchDetailDialog({
   }, [batchRowId]);
 
   return (
-    <Dialog open={batchRowId !== null} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={batchRowId !== null}
+      onOpenChange={(open) => !open && onClose()}
+    >
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>
@@ -773,13 +815,17 @@ function BatchDetailDialog({
                 </dd>
 
                 <dt className="text-muted-foreground">Provider batch_id</dt>
-                <dd className="font-mono text-xs break-all">{detail.batch_id ?? "—"}</dd>
+                <dd className="font-mono text-xs break-all">
+                  {detail.batch_id ?? "—"}
+                </dd>
 
                 <dt className="text-muted-foreground">Organization</dt>
                 <dd>{detail.organization_name ?? "personal"}</dd>
 
                 <dt className="text-muted-foreground">User</dt>
-                <dd className="font-mono text-xs">{detail.user_id.slice(0, 8)}…</dd>
+                <dd className="font-mono text-xs">
+                  {detail.user_id.slice(0, 8)}…
+                </dd>
 
                 <dt className="text-muted-foreground">Source</dt>
                 <dd className="font-mono text-xs">
@@ -831,9 +877,11 @@ function BatchDetailDialog({
                 </section>
               )}
 
-              {detail.error && (
+              {Boolean(detail.error) && (
                 <section>
-                  <h3 className="mb-1 text-sm font-semibold text-destructive">Error</h3>
+                  <h3 className="mb-1 text-sm font-semibold text-destructive">
+                    Error
+                  </h3>
                   <pre className="rounded-md border border-border bg-muted/50 p-3 text-xs overflow-x-auto">
                     {JSON.stringify(detail.error, null, 2)}
                   </pre>
@@ -915,7 +963,8 @@ export function KgCostDashboard() {
         <div>
           <h1 className="text-lg font-semibold">KG Cost</h1>
           <p className="text-xs text-muted-foreground">
-            Auto-ingest spend per org and in-flight provider Batch API submissions.
+            Auto-ingest spend per org and in-flight provider Batch API
+            submissions.
           </p>
         </div>
         <Button

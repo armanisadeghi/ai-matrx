@@ -46,12 +46,14 @@ export function VoicePadFooterLeft({
 }: Pick<VoicePadFooterProps, "entries" | "onNewSession">) {
   return (
     <>
-      <ActionFeedbackButton
-        icon={<Plus />}
-        tooltip="New session"
-        onClick={onNewSession}
-        className="text-muted-foreground"
-      />
+      {onNewSession ? (
+        <ActionFeedbackButton
+          icon={<Plus />}
+          tooltip="New session"
+          onClick={onNewSession}
+          className="text-muted-foreground"
+        />
+      ) : null}
       <span className="text-[10px] text-muted-foreground/60 tabular-nums">
         {entries.length} {entries.length === 1 ? "entry" : "entries"}
       </span>

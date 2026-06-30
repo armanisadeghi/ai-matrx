@@ -14,7 +14,11 @@ export interface SimplePhoto {
   description: string;
 }
 
-export function MobileImageGallery({ imageUrls = [] }) {
+export function MobileImageGallery({
+  imageUrls = [],
+}: {
+  imageUrls?: string[];
+}) {
   const [photos, setPhotos] = useState<SimplePhoto[]>([]);
   const [filteredPhotos, setFilteredPhotos] = useState<SimplePhoto[]>([]);
   const [loading, setLoading] = useState(false);

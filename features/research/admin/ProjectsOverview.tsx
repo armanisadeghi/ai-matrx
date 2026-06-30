@@ -29,7 +29,7 @@ interface ResearchTopicRow {
   template_id: string | null;
   agent_config: Json | null;
   autonomy_level: string;
-  created_at: string;
+  created_at: string | null;
 }
 
 export function ProjectsOverview() {
@@ -204,7 +204,9 @@ export function ProjectsOverview() {
                 </TableCell>
                 <TableCell>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(config.created_at).toLocaleDateString()}
+                    {config.created_at
+                      ? new Date(config.created_at).toLocaleDateString()
+                      : "Unknown"}
                   </span>
                 </TableCell>
                 <TableCell>

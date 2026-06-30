@@ -103,7 +103,9 @@ export function AllContextItemsHub() {
     dispatch(fetchFullContext());
   }, [dispatch]);
 
-  const realOrgs = orgs.filter((o) => o.id !== PERSONAL_PROJECTS_ORG_ID);
+  const realOrgs = (orgs ?? []).filter(
+    (o) => o.id !== PERSONAL_PROJECTS_ORG_ID,
+  );
 
   return (
     <div className="space-y-6 pr-14">

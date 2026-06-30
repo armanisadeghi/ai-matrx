@@ -35,9 +35,15 @@ export interface PdfBinaryResult {
 }
 
 export interface PdfClient {
-  backendUrl: string;
-  postJson: <T = unknown>(endpoint: PdfEndpointKey, body: unknown) => Promise<T>;
-  postPdfBlob: (endpoint: PdfEndpointKey, body: unknown) => Promise<PdfBinaryResult>;
+  backendUrl: string | undefined;
+  postJson: <T = unknown>(
+    endpoint: PdfEndpointKey,
+    body: unknown,
+  ) => Promise<T>;
+  postPdfBlob: (
+    endpoint: PdfEndpointKey,
+    body: unknown,
+  ) => Promise<PdfBinaryResult>;
   getJson: <T = unknown>(endpoint: PdfEndpointKey) => Promise<T>;
   /** Absolute URL for an endpoint key (or raw path) — for multipart/stream callers. */
   buildUrl: (endpoint: PdfEndpointKey | (string & {})) => string;
@@ -144,7 +150,10 @@ export function usePdfClient(): PdfClient {
     if (contentType.includes("application/json")) {
       // A JSON body on a blob endpoint = persist-mode envelope or an error
       // that slipped through with 200 — never hand it to the user as a PDF.
-      throw await pdfErrorFromResponse(`POST ${endpoint} (expected binary)`, response);
+      throw await pdfErrorFromResponse(
+        `POST ${endpoint} (expected binary)`,
+        response,
+      );
     }
     const blob = await response.blob();
     return {

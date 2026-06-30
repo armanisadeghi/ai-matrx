@@ -102,7 +102,7 @@ function JsonDisplay({ data, label }: { data: unknown; label: string }) {
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
 function OverviewTab({ tool }: { tool: ToolRow }) {
-  const icon = mapIcon(tool.icon, tool.category, 20);
+  const icon = mapIcon(tool.icon, tool.category ?? undefined, 20);
 
   return (
     <div className="space-y-6 p-1">

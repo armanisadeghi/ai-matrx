@@ -40,7 +40,7 @@ const FALLBACK_ICONS: Record<string, React.ReactNode> = {
  */
 export function mapIcon(
   iconName?: string | null,
-  category?: string,
+  category?: string | null,
   size: number = 20,
 ): React.ReactNode {
   // Try to map by icon name from database

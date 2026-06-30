@@ -38,7 +38,7 @@ export const useAiChat = () => {
         flashcard: Flashcard,
         firstName: string
     ) => {
-        if (isLoading || currentChat.length > 0) return;
+        if (isLoading || currentChat.length > 0 || !flashcard.id) return;
 
         setIsLoading(true);
         setStreamingMessage('');

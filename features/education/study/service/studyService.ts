@@ -28,21 +28,65 @@ import type {
 const EDU = () => supabase.schema("education");
 
 function fail<T>(context: string, error: unknown): StudyResult<T> {
-  console.error(`[studyService] ${context}:`, error);
-  return { data: null, error: `${context}: ${describeError(error)}` };
+  const message = describeError(error);
+  // Log the DESCRIBED message in the string itself — passing the raw error object
+  // as a console arg serializes to a useless "[object Object]" in the Error
+  // Inspector. Keep the raw object as a trailing arg for devtools drill-down.
+  console.error(`[studyService] ${context}: ${message}`, error);
+  return { data: null, error: `${context}: ${message}` };
 }
 
-/** Surface PostgREST/DB errors loudly (message + details + hint + code), not "[object Object]". */
+/**
+ * Surface PostgREST/DB errors loudly (message + details + hint + code), never a
+ * bare "[object Object]" or an opaque "Unknown error". Supabase PostgREST errors
+ * are plain objects (not `Error` instances) carrying `{ message, details, hint,
+ * code }`; some failures (auth, network, fetch) arrive in other shapes — so when
+ * none of the known fields are present we dump the raw object rather than hide it.
+ */
 function describeError(error: unknown): string {
-  if (error instanceof Error) return error.message;
+  if (error == null) return "Unknown error";
+  if (error instanceof Error) return error.message || error.name || "Error";
   if (typeof error === "string") return error;
-  if (error && typeof error === "object" && "message" in error) {
+  if (typeof error === "object") {
     const e = error as { message?: string; details?: string; hint?: string; code?: string };
-    return [e.message, e.details, e.hint && `hint: ${e.hint}`, e.code && `(${e.code})`]
-      .filter(Boolean)
-      .join(" — ") || "Unknown error";
+    const parts = [
+      e.message,
+      e.details,
+      e.hint && `hint: ${e.hint}`,
+      e.code && `(${e.code})`,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(" — ");
+    // No recognizable PostgREST fields — serialize the raw shape so the real
+    // cause is never swallowed (an empty `{}` still beats "[object Object]").
+    try {
+      const json = JSON.stringify(error);
+      if (json && json !== "{}") return json;
+    } catch {
+      /* circular / non-serializable — fall through */
+    }
   }
   return "Unknown error";
+}
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * A transient HTTP status worth retrying — a server / edge / gateway / network
+ * hiccup, NOT a real DB rejection (4xx like 401/403/409 are deterministic and
+ * must surface, not loop). PostgREST auto-retries idempotent GETs on transient
+ * 5xx/520/503 but NEVER POSTs (its RETRYABLE_METHODS is GET/HEAD/OPTIONS only),
+ * so a transient hiccup on an INSERT would otherwise surface as a hard failure —
+ * exactly the message-less edge error that the old logging hid as "Unknown error".
+ */
+function isTransientStatus(status: number | undefined): boolean {
+  return (
+    status === undefined ||
+    status === 0 ||
+    status === 408 ||
+    status === 429 ||
+    status >= 500
+  );
 }
 
 /** Shape the `study_record_attempt` RPC returns: `{ attempt_id, mastery }`. */
@@ -68,27 +112,58 @@ export const studyService = {
    * so the `_stamp_org_default` trigger fills the creator's personal org.
    */
   async createSession(input: NewSessionInput): Promise<StudyResult<StudySessionRow>> {
-    try {
-      const { data, error } = await EDU()
-        .from("study_session")
-        .insert({
-          ...(input.orgId ? { organization_id: input.orgId } : {}),
-          mode: input.mode,
-          source_kind: input.sourceKind ?? null,
-          source_set_id: input.sourceSetId ?? null,
-          source_query: (input.sourceQuery ?? null) as never,
-          settings: (input.settings ?? {}) as never,
-          ...(input.status ? { status: input.status } : {}),
-          ...(input.visibility ? { visibility: input.visibility } : {}),
-          metadata: (input.metadata ?? {}) as never,
-        } as never)
-        .select("*")
-        .single();
-      if (error) return fail("createSession", error);
-      return { data: data as StudySessionRow, error: null };
-    } catch (e) {
-      return fail("createSession", e);
+    const payload = {
+      ...(input.orgId ? { organization_id: input.orgId } : {}),
+      mode: input.mode,
+      source_kind: input.sourceKind ?? null,
+      source_set_id: input.sourceSetId ?? null,
+      source_query: (input.sourceQuery ?? null) as never,
+      settings: (input.settings ?? {}) as never,
+      ...(input.status ? { status: input.status } : {}),
+      ...(input.visibility ? { visibility: input.visibility } : {}),
+      metadata: (input.metadata ?? {}) as never,
+    } as never;
+
+    // Opening a session is best-effort and SAFE TO REPEAT: a duplicate session
+    // row is harmless (it is only a grouping — mastery is advanced exclusively by
+    // recordAttempt, never here, so no double-count). PostgREST does not retry
+    // POSTs on transient 5xx/edge errors, so we retry the insert ourselves on a
+    // transient status — loudly (every retry screams), and only on transient
+    // statuses so deterministic rejections (401/403/409/22xxx/23xxx) fail fast.
+    // NOTE: this retry must NEVER be lifted to recordAttempt — that POST is a
+    // non-idempotent ledger append; repeating it would double the mastery update.
+    const MAX_ATTEMPTS = 3;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const lastAttempt = attempt === MAX_ATTEMPTS;
+      try {
+        const { data, error, status } = await EDU()
+          .from("study_session")
+          .insert(payload)
+          .select("*")
+          .single();
+        if (!error) return { data: data as StudySessionRow, error: null };
+        if (!lastAttempt && isTransientStatus(status)) {
+          console.warn(
+            `[studyService] createSession transient failure (status ${status ?? "none"}) — retry ${attempt}/${MAX_ATTEMPTS - 1}: ${describeError(error)}`,
+          );
+          await sleep(250 * attempt);
+          continue;
+        }
+        return fail("createSession", error);
+      } catch (e) {
+        // A thrown rejection here is a network/abort failure (also transient).
+        if (!lastAttempt) {
+          console.warn(
+            `[studyService] createSession threw — retry ${attempt}/${MAX_ATTEMPTS - 1}: ${describeError(e)}`,
+          );
+          await sleep(250 * attempt);
+          continue;
+        }
+        return fail("createSession", e);
+      }
     }
+    // Unreachable (the loop always returns), but satisfies the type checker.
+    return fail("createSession", "exhausted retries");
   },
 
   /** Patch a session — status / ended_at / aggregate_score / audio / transcript / review / settings. */

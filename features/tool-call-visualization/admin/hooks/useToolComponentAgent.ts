@@ -63,7 +63,10 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
 
   // Outstanding execute() promise resolver — fulfilled on stream completion
   // (or rejected on stream error). Cleared after each resolution.
-  const resolveRef = useRef<((value: string | null) => void) | null>(null);
+  // Wrapped in an object — React 19 treats function-typed refs as callback refs.
+  const resolveRef = useRef<{ fn: ((value: string | null) => void) | null }>({
+    fn: null,
+  });
 
   // ── Streaming selectors keyed by conversationId ─────────────────────────
   const accumulatedText = useAppSelector(
@@ -86,16 +89,16 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
 
   // ── Phase watcher: resolve / reject the outstanding execute() promise ──
   useEffect(() => {
-    if (!resolveRef.current) return;
+    if (!resolveRef.current.fn) return;
     if (streamPhase === "complete") {
-      resolveRef.current(accumulatedText || "");
-      resolveRef.current = null;
+      resolveRef.current.fn(accumulatedText || "");
+      resolveRef.current.fn = null;
     } else if (streamPhase === "error") {
       const message =
         requestError?.user_message || requestError?.message || "Stream error";
       setError(String(message));
-      resolveRef.current(null);
-      resolveRef.current = null;
+      resolveRef.current.fn(null);
+      resolveRef.current.fn = null;
     }
   }, [streamPhase, accumulatedText, requestError]);
 
@@ -104,9 +107,9 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
     return () => {
       if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
       // Reject any pending promise so callers don't hang.
-      if (resolveRef.current) {
-        resolveRef.current(null);
-        resolveRef.current = null;
+      if (resolveRef.current.fn) {
+        resolveRef.current.fn(null);
+        resolveRef.current.fn = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -143,9 +146,9 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
       // Reset prior run — destroy the previous instance, clear local state,
       // and reject any in-flight promise to keep callers consistent.
       if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
-      if (resolveRef.current) {
-        resolveRef.current(null);
-        resolveRef.current = null;
+      if (resolveRef.current.fn) {
+        resolveRef.current.fn(null);
+        resolveRef.current.fn = null;
       }
       setConversationId(null);
       setError(null);

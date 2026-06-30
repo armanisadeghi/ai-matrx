@@ -13,6 +13,7 @@
  *
  * See `features/data-tables/FEATURE.md` for architecture context.
  */
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { supabase } from "@/utils/supabase/client";
 
 import type {
@@ -57,6 +58,19 @@ export async function createWorkbook(
     };
   }
 
+  let organizationId: string;
+  try {
+    organizationId = await ensureOrgId(args.organizationId);
+  } catch (orgError) {
+    return {
+      success: false,
+      error:
+        orgError instanceof Error
+          ? orgError.message
+          : "Could not resolve organization for workbook",
+    };
+  }
+
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_workbooks")
@@ -64,7 +78,7 @@ export async function createWorkbook(
       workbook_name: args.name,
       description: args.description ?? null,
       source: args.source ?? "created",
-      organization_id: args.organizationId ?? null,
+      organization_id: organizationId,
       project_id: args.projectId ?? null,
       task_id: args.taskId ?? null,
       is_public: args.isPublic ?? false,

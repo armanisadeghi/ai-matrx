@@ -267,6 +267,10 @@ export default function GoogleAPIProvider({
       setError("Google auth not initialized.");
       return false;
     }
+    if (!clientId) {
+      setError("Google client ID is not configured.");
+      return false;
+    }
     if (authInProgress) {
       console.log("Auth in progress, skipping...");
       return false;
@@ -338,6 +342,10 @@ export default function GoogleAPIProvider({
       !tokenClientRef.current
     ) {
       setError("Google auth not ready.");
+      return false;
+    }
+    if (!clientId) {
+      setError("Google client ID is not configured.");
       return false;
     }
     if (authInProgress) {

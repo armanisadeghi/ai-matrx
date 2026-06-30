@@ -51,7 +51,7 @@ export function useTools(options: UseToolsOptions = {}): UseToolsReturn {
       displayName: formatText(dbTool.name),               // Pretty formatted name for display
       description: dbTool.description,
       category: dbTool.category || 'Other',
-      icon: mapIcon(dbTool.icon, dbTool.category)
+      icon: mapIcon(dbTool.icon, dbTool.category ?? undefined)
     }));
   }, [databaseTools]);
 
@@ -155,7 +155,7 @@ export function useToolsByIds(ids: string[], autoFetch: boolean = true) {
         displayName: formatText(dbTool.name),               // Pretty formatted name for display
         description: dbTool.description,
         category: dbTool.category || 'Other',
-        icon: mapIcon(dbTool.icon, dbTool.category)
+        icon: mapIcon(dbTool.icon, dbTool.category ?? undefined)
       }));
       setTools(mappedTools);
     } catch (err) {

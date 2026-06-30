@@ -90,8 +90,8 @@ const ICONS: Record<AgentConfigKey, LucideIcon> = {
 };
 
 /** All agent roles, in pipeline order, with their UI metadata. */
-export const AGENT_ROLES: AgentRoleDefinition[] = AGENT_CONFIG_KEYS.map(
-  (key) => ({
+export const AGENT_ROLES: AgentRoleDefinition[] = [
+  ...AGENT_CONFIG_KEYS.map((key) => ({
     configKey: key,
     label: AGENT_CONFIG_META[key].label,
     description: AGENT_CONFIG_META[key].description,
@@ -100,8 +100,7 @@ export const AGENT_ROLES: AgentRoleDefinition[] = AGENT_CONFIG_KEYS.map(
     systemVersionId: SYSTEM_AGENT_VERSION_UUIDS[key],
     icon: ICONS[key],
     systemOnly: false,
-  }),
-).concat([
+  })),
   {
     configKey: null,
     label: "Research Setup Suggest Agent",
@@ -113,7 +112,7 @@ export const AGENT_ROLES: AgentRoleDefinition[] = AGENT_CONFIG_KEYS.map(
     icon: Compass,
     systemOnly: true,
   },
-]);
+];
 
 /** UUID v4-ish format check — matches the format Supabase RPC expects. */
 export const UUID_PATTERN =

@@ -90,7 +90,7 @@ const KeywordAnalysisPage: React.FC<KeywordAnalysisPageProps> = ({
 
     return (
       <Card title="Content Comparison">
-        {tableData && <MarkdownTable data={tableData.markdown} />}
+        {tableData?.markdown && <MarkdownTable data={tableData.markdown} />}
       </Card>
     );
   };

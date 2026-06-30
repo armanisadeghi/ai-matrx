@@ -14,6 +14,12 @@ import type { Database } from "@/types/database.types";
 type UserEmailPreferencesRow =
   Database["users"]["Tables"]["user_email_preferences"]["Row"];
 
+/** Fields read when deciding whether to send a notification email. */
+type EmailNotificationPreferences = Pick<
+  UserEmailPreferencesRow,
+  "task_notifications" | "comment_notifications" | "message_notifications"
+>;
+
 /**
  * Email Notification Service
  * Handles sending notification emails with preference checking
@@ -26,28 +32,11 @@ interface NotificationResult {
   error?: string;
 }
 
-function defaultEmailPreferences(userId: string): UserEmailPreferencesRow {
+function defaultEmailPreferences(): EmailNotificationPreferences {
   return {
-    id: "",
-    user_id: userId,
-    feedback_notifications: true,
-    sharing_notifications: true,
-    organization_invitations: true,
-    resource_updates: true,
-    marketing_emails: false,
-    weekly_digest: true,
     task_notifications: true,
     comment_notifications: true,
     message_notifications: true,
-    message_digest: false,
-    metadata: {},
-    organization_id: null,
-    version: 0,
-    created_by: null,
-    deleted_at: null,
-    updated_by: null,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
   };
 }
 

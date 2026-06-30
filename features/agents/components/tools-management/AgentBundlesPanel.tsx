@@ -119,7 +119,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
       dispatch(
         setAgentTools({
           id: agentId,
-          tools: next as unknown as typeof selectedTools,
+          tools: next,
         }),
       );
     },
@@ -151,7 +151,10 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
       ? filterAndSortBySearch(scopeBundles, search, [
           { get: (b) => b.name, weight: "title" },
           { get: (b) => b.description, weight: "body" },
-          { get: (b) => b.members.map((m) => m.name).join(" "), weight: "body" },
+          {
+            get: (b) => b.members.map((m) => m.name).join(" "),
+            weight: "body",
+          },
           { get: (b) => b.serverSlug ?? "", weight: "tag" },
           { get: (b) => b.id, weight: "id" },
         ])
@@ -207,7 +210,8 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
         </div>
         <p className="text-[11px] text-muted-foreground leading-tight mb-2">
           A bundle carries many tools behind one lister the model expands on
-          demand — one tool slot instead of dozens, so it costs far less context.
+          demand — one tool slot instead of dozens, so it costs far less
+          context.
         </p>
         {/* Internal vs MCP scope */}
         <div className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5">
@@ -420,8 +424,8 @@ function BundleCard({
         <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 text-[10px] text-emerald-700 dark:text-emerald-400">
           <Lightbulb className="w-3 h-3 mt-0.5 shrink-0" />
           <span>
-            You already use {heldIds.size} of these tools individually — add this
-            bundle to consolidate, then drop the individual copies.
+            You already use {heldIds.size} of these tools individually — add
+            this bundle to consolidate, then drop the individual copies.
           </span>
         </div>
       )}
@@ -429,9 +433,9 @@ function BundleCard({
         <div className="px-3 pb-2 -mt-1 flex items-start gap-1.5 text-[10px] text-amber-700 dark:text-amber-400">
           <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
           <span>
-            {heldIds.size} of these tools {heldIds.size === 1 ? "is" : "are"} also
-            added individually — redundant with this bundle. Consider removing the
-            individual copies.
+            {heldIds.size} of these tools {heldIds.size === 1 ? "is" : "are"}{" "}
+            also added individually — redundant with this bundle. Consider
+            removing the individual copies.
           </span>
         </div>
       )}

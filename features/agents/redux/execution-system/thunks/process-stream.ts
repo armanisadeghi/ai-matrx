@@ -362,11 +362,9 @@ export async function processStream({
 
   const dispatchBatch = () => {
     if (rafHandle !== null) {
-      if (typeof window !== "undefined" && window.cancelAnimationFrame) {
-        cancelAnimationFrame(rafHandle);
-      } else {
-        clearTimeout(rafHandle);
-      }
+      // rafHandle is always scheduled via setTimeout (see below), so it must be
+      // cleared with clearTimeout — cancelAnimationFrame would silently no-op.
+      clearTimeout(rafHandle);
       rafHandle = null;
     }
 
@@ -842,8 +840,7 @@ export async function processStream({
             const unified: UnifiedImageBlock = fromImageOutputData(
               d as ImageOutputData,
               ((d as unknown as Record<string, unknown>).metadata as
-                | Record<string, unknown>
-                | undefined) ?? null,
+                Record<string, unknown> | undefined) ?? null,
             );
             blockData = unified as unknown as Record<string, unknown>;
           } else if (dataType === "partial_image") {
@@ -979,9 +976,8 @@ export async function processStream({
           // the DB. The end-of-stream flush still runs as a backstop.
           if (toolData.event === "tool_completed") {
             const dbId = toolCallIdByProviderCallId.get(toolData.call_id);
-            const rawResult = (
-              toolData.data as Record<string, unknown> | null
-            )?.result;
+            const rawResult = (toolData.data as Record<string, unknown> | null)
+              ?.result;
             if (dbId && rawResult != null) {
               const outputStr =
                 typeof rawResult === "string"
@@ -1182,8 +1178,7 @@ export async function processStream({
         } else if (d.table === "user_request") {
           reservedUserRequestId = d.record_id;
           const parents = d.parent_refs as
-            | { conversation_id?: string }
-            | undefined;
+            { conversation_id?: string } | undefined;
           const nowIso = new Date().toISOString();
           // Phase 2 — server has persisted the user's request. Safe to visually
           // clear the input field; lastSubmittedText is retained in the slice.

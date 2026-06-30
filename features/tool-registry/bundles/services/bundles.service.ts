@@ -341,7 +341,7 @@ export async function createBundleWithLister(args: {
     p_name: args.name,
     p_description: args.description ?? "",
     p_is_system: args.isSystem ?? false,
-    p_lister_tool_name: args.listerToolName ?? null,
+    p_lister_tool_name: args.listerToolName,
     p_member_tool_names: args.memberToolNames ?? [],
   });
   if (error) throw error;

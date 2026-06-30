@@ -33,6 +33,7 @@ import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-re
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { extractMermaidFromOutput } from "../extract-fence";
@@ -113,7 +114,12 @@ export function useMermaidAgentEdit() {
   );
 
   const run = useCallback(
-    async ({ agentId, instruction, source, scope }: RunArgs): Promise<string | null> => {
+    async ({
+      agentId,
+      instruction,
+      source,
+      scope,
+    }: RunArgs): Promise<string | null> => {
       setError(null);
       setLaunching(true);
       try {
@@ -125,21 +131,35 @@ export function useMermaidAgentEdit() {
         const slotKeys = new Set(slots.map((s) => s.key));
 
         // 2. Surface bindings (layered merge: global → org → user).
-        let bindingMappings = null;
+        let bindingMappings: ValueMappingMap | null = null;
         try {
-          const layers = await fetchSurfaceBindingLayers(agentId, MERMAID_SURFACE_NAME);
+          const layers = await fetchSurfaceBindingLayers(
+            agentId,
+            MERMAID_SURFACE_NAME,
+          );
           if (layers.length > 0) {
             const merged = mergeValueMappingLayers(layers);
             bindingMappings =
               Object.keys(merged.merged).length > 0 ? merged.merged : null;
           }
         } catch (err) {
-          console.warn(`[mermaid] surface-binding lookup failed for agent ${agentId}:`, err);
+          console.warn(
+            `[mermaid] surface-binding lookup failed for agent ${agentId}:`,
+            err,
+          );
         }
-        const resolved = resolveValueMappings(scope, bindingMappings, defs, slots);
-        if (resolved.errors.length > 0) throw new Error(resolved.errors.join("\n"));
+        const resolved = resolveValueMappings(
+          scope,
+          bindingMappings,
+          defs,
+          slots,
+        );
+        if (resolved.errors.length > 0)
+          throw new Error(resolved.errors.join("\n"));
 
-        const variableValues: Record<string, unknown> = { ...resolved.variableValues };
+        const variableValues: Record<string, unknown> = {
+          ...resolved.variableValues,
+        };
 
         // 3. Make sure the diagram source reaches the agent. If a binding
         //    already placed it on a variable, leave it; else use the
@@ -178,7 +198,12 @@ export function useMermaidAgentEdit() {
         ).unwrap();
 
         if (Object.keys(variableValues).length > 0) {
-          dispatch(setUserVariableValues({ conversationId: cid, values: variableValues }));
+          dispatch(
+            setUserVariableValues({
+              conversationId: cid,
+              values: variableValues,
+            }),
+          );
         }
         if (entries.length > 0) {
           dispatch(setContextEntries({ conversationId: cid, entries }));

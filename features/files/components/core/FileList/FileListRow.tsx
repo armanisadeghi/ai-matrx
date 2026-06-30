@@ -82,12 +82,12 @@ function FileListRowImpl({
   const rowBody = (
     <div
       ref={setMergedRef}
-      role="row"
       aria-selected={selected}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       {...attributes}
       {...listeners}
+      role="row"
       className={cn(
         "group grid items-center gap-3 px-3 py-1.5",
         showContext

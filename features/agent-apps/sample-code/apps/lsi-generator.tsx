@@ -20,7 +20,7 @@ import {
   FileText,
   FileSpreadsheet,
   RefreshCw,
-  Zap
+  Zap,
 } from "lucide-react";
 
 export default function LSIMarkdownGenerator({
@@ -69,8 +69,9 @@ export default function LSIMarkdownGenerator({
         if (trimmed.startsWith("## ")) {
           data.keyword = trimmed.replace("## ", "");
         } else if (trimmed.startsWith("### ")) {
-          currentCategory = trimmed.replace("### ", "");
-          data.categories[currentCategory] = [];
+          const category = trimmed.replace("### ", "");
+          currentCategory = category;
+          data.categories[category] = [];
         } else if (trimmed.startsWith("- ") && currentCategory) {
           const keyword = trimmed.replace("- ", "");
           if (keyword) data.categories[currentCategory].push(keyword);

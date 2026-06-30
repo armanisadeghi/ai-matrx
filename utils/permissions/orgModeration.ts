@@ -40,7 +40,8 @@ export async function listOrgShareGrants(
 ): Promise<OrgShareGrant[]> {
   if (!orgId) return [];
   const { data, error } = await supabase
-    .schema("iam").from("permissions")
+    .schema("iam")
+    .from("permissions")
     .select(
       "id, resource_type, resource_id, permission_level, status, created_by, created_at, reviewed_by, reviewed_at, review_note",
     )
@@ -58,7 +59,8 @@ export async function listOrgShareGrants(
       permissionId: String(r.id),
       resourceTable: String(r.resource_type),
       resourceId: String(r.resource_id),
-      permissionLevel: (r.permission_level as OrgShareGrant["permissionLevel"]) ?? "viewer",
+      permissionLevel:
+        (r.permission_level as OrgShareGrant["permissionLevel"]) ?? "viewer",
       status: (r.status as OrgShareStatus) ?? "active",
       sharedBy: (r.created_by as string | null) ?? null,
       createdAt: (r.created_at as string | null) ?? null,
@@ -81,13 +83,17 @@ export async function listOrgSharedIdsForTable(
 ): Promise<Set<string>> {
   if (!orgId || !tableName) return new Set();
   const { data, error } = await supabase
-    .schema("iam").from("permissions")
+    .schema("iam")
+    .from("permissions")
     .select("resource_id")
     .eq("granted_to_organization_id", orgId)
     .eq("resource_type", tableName)
     .neq("status", "rejected");
   if (error) {
-    console.error("[orgModeration] listOrgSharedIdsForTable failed:", error.message);
+    console.error(
+      "[orgModeration] listOrgSharedIdsForTable failed:",
+      error.message,
+    );
     return new Set();
   }
   return new Set(
@@ -140,16 +146,24 @@ export async function reviewOrgShare(
     const { data, error } = await supabase.rpc("review_org_share", {
       p_permission_id: permissionId,
       p_status: status,
-      p_note: note ?? null,
+      p_note: note,
     });
     if (error) throw error;
-    const parsed = (data ?? {}) as { success?: boolean; error?: string; status?: OrgShareStatus };
+    const parsed = (data ?? {}) as {
+      success?: boolean;
+      error?: string;
+      status?: OrgShareStatus;
+    };
     if (!parsed.success) {
-      return { success: false, error: parsed.error ?? "Failed to update share" };
+      return {
+        success: false,
+        error: parsed.error ?? "Failed to update share",
+      };
     }
     return { success: true, status: parsed.status ?? status };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to update share";
+    const message =
+      err instanceof Error ? err.message : "Failed to update share";
     console.error("[orgModeration] reviewOrgShare failed:", message);
     return { success: false, error: message };
   }

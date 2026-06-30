@@ -901,7 +901,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           )}
         </div>
       )}
-      {showSaveModal && (
+      {showSaveModal && internalTableData.normalizedData && (
         <SaveTableModal
           isOpen={showSaveModal}
           onClose={() => setShowSaveModal(false)}

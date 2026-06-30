@@ -64,12 +64,7 @@ interface SettingsReviewTarget {
 }
 
 type SortField =
-  | "model"
-  | "provider"
-  | "model_class"
-  | "prompts"
-  | "builtins"
-  | "total";
+  "model" | "provider" | "model_class" | "prompts" | "builtins" | "total";
 type SortDir = "asc" | "desc";
 
 function SortIcon({
@@ -140,7 +135,7 @@ export default function DeprecatedModelsAudit({
           allModels
             .filter((m) => m.is_deprecated)
             .map((m) => m.provider)
-            .filter(Boolean),
+            .filter((p): p is string => p != null),
         ),
       ].sort(),
     [allModels],
@@ -906,15 +901,27 @@ export default function DeprecatedModelsAudit({
       {settingsTarget && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-card rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
-            <p className="text-sm font-medium">Apply replacement without settings review?</p>
+            <p className="text-sm font-medium">
+              Apply replacement without settings review?
+            </p>
             <p className="text-xs text-muted-foreground">
-              Settings editor is temporarily unavailable. Click Apply to replace model IDs only.
+              Settings editor is temporarily unavailable. Click Apply to replace
+              model IDs only.
             </p>
             <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSettingsTarget(null)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setSettingsTarget(null)}
+              >
                 Cancel
               </Button>
-              <Button size="sm" className="h-7 text-xs gap-1" onClick={handleApplyWithSettings}>
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleApplyWithSettings}
+              >
                 <ArrowRightLeft className="h-3 w-3" />
                 Apply Replacement
               </Button>

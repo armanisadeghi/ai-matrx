@@ -10,7 +10,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface TextIconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof textIconButtonVariants> {
   tooltip?: string;
   icon?: React.ReactNode;
@@ -26,9 +27,12 @@ const textIconButtonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -48,11 +52,11 @@ const textIconButtonVariants = cva(
       size: "default",
       isIconOnly: false,
     },
-  }
+  },
 );
 
 // Helper function to determine icon-only dimensions
-const getIconOnlySize = (size?: string) => {
+const getIconOnlySize = (size?: string | null) => {
   switch (size) {
     case "sm":
       return "h-7 w-7";
@@ -64,26 +68,27 @@ const getIconOnlySize = (size?: string) => {
 };
 
 const TextIconButton = React.forwardRef<HTMLButtonElement, TextIconButtonProps>(
-  ({ 
-    className, 
-    variant, 
-    size, 
-    tooltip, 
-    disabledTooltip,
-    icon,
-    iconPosition = "left",
-    showTooltipOnDisabled = true,
-    disabled,
-    children,
-    ...props 
-  }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      tooltip,
+      disabledTooltip,
+      icon,
+      iconPosition = "left",
+      showTooltipOnDisabled = true,
+      disabled,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     const isIconOnly = !children && !!icon;
-    
+
     // Apply icon-only dimensions if needed
-    const sizeClassName = isIconOnly 
-      ? getIconOnlySize(size) 
-      : "";
-    
+    const sizeClassName = isIconOnly ? getIconOnlySize(size) : "";
+
     // Create base button
     const button = (
       <Button
@@ -91,15 +96,15 @@ const TextIconButton = React.forwardRef<HTMLButtonElement, TextIconButtonProps>(
         variant={variant}
         size={isIconOnly ? "icon" : size}
         className={cn(
-          textIconButtonVariants({ 
-            variant, 
-            size, 
-            isIconOnly, 
-            className 
+          textIconButtonVariants({
+            variant,
+            size,
+            isIconOnly,
+            className,
           }),
           sizeClassName,
           disabled && "opacity-50 cursor-not-allowed",
-          isIconOnly ? "" : "gap-2"
+          isIconOnly ? "" : "gap-2",
         )}
         disabled={disabled}
         {...props}
@@ -119,9 +124,14 @@ const TextIconButton = React.forwardRef<HTMLButtonElement, TextIconButtonProps>(
     const tooltipText = disabled && disabledTooltip ? disabledTooltip : tooltip;
 
     // If disabled and we want to show tooltip, wrap in a span to make tooltip work
-    const triggerElement = disabled && showTooltipOnDisabled ? (
-      <span className="inline-block" aria-disabled={true}>{button}</span>
-    ) : button;
+    const triggerElement =
+      disabled && showTooltipOnDisabled ? (
+        <span className="inline-block" aria-disabled={true}>
+          {button}
+        </span>
+      ) : (
+        button
+      );
 
     return (
       <TooltipProvider>
@@ -129,9 +139,11 @@ const TextIconButton = React.forwardRef<HTMLButtonElement, TextIconButtonProps>(
           <TooltipTrigger asChild disabled={false}>
             {triggerElement}
           </TooltipTrigger>
-          <TooltipContent 
+          <TooltipContent
             className={cn(
-              disabled && showTooltipOnDisabled && "bg-zinc-400 dark:bg-zinc-700 text-zinc-100"
+              disabled &&
+                showTooltipOnDisabled &&
+                "bg-zinc-400 dark:bg-zinc-700 text-zinc-100",
             )}
             sideOffset={5}
           >
@@ -140,7 +152,7 @@ const TextIconButton = React.forwardRef<HTMLButtonElement, TextIconButtonProps>(
         </Tooltip>
       </TooltipProvider>
     );
-  }
+  },
 );
 
 TextIconButton.displayName = "TextIconButton";
@@ -149,7 +161,8 @@ export { TextIconButton, textIconButtonVariants };
 
 // Also export the original IconButton for backward compatibility
 export interface IconButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof iconButtonVariants> {
   tooltip?: string;
   icon: React.ReactNode;
@@ -163,9 +176,12 @@ const iconButtonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -179,21 +195,24 @@ const iconButtonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ 
-    className, 
-    variant, 
-    size, 
-    tooltip, 
-    disabledTooltip,
-    icon, 
-    showTooltipOnDisabled = true,
-    disabled,
-    ...props 
-  }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      tooltip,
+      disabledTooltip,
+      icon,
+      showTooltipOnDisabled = true,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
     // Create base button
     const button = (
       <Button
@@ -202,7 +221,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         size={size}
         className={cn(
           iconButtonVariants({ variant, size, className }),
-          disabled && "opacity-50 cursor-not-allowed"
+          disabled && "opacity-50 cursor-not-allowed",
         )}
         disabled={disabled}
         {...props}
@@ -217,18 +236,25 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     // Use different tooltip text for disabled state if provided
     const tooltipText = disabled && disabledTooltip ? disabledTooltip : tooltip;
     // If disabled and we want to show tooltip, wrap in a span to make tooltip work
-    const triggerElement = disabled && showTooltipOnDisabled ? (
-      <span className="inline-block" aria-disabled={true}>{button}</span>
-    ) : button;
+    const triggerElement =
+      disabled && showTooltipOnDisabled ? (
+        <span className="inline-block" aria-disabled={true}>
+          {button}
+        </span>
+      ) : (
+        button
+      );
     return (
       <TooltipProvider>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild disabled={false}>
             {triggerElement}
           </TooltipTrigger>
-          <TooltipContent 
+          <TooltipContent
             className={cn(
-              disabled && showTooltipOnDisabled && "bg-zinc-400 dark:bg-zinc-700 text-zinc-100"
+              disabled &&
+                showTooltipOnDisabled &&
+                "bg-zinc-400 dark:bg-zinc-700 text-zinc-100",
             )}
             sideOffset={5}
           >
@@ -237,7 +263,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         </Tooltip>
       </TooltipProvider>
     );
-  }
+  },
 );
 
 IconButton.displayName = "IconButton";

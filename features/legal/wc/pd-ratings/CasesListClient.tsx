@@ -32,7 +32,7 @@ export function CasesListClient() {
   const isAuthed = useAppSelector(selectIsAuthenticated);
   // Direct Supabase query, RLS-gated to the current user. Replaces the
   // old wc_user_claim_bookmarks join table entirely.
-  const { data: claims, isLoading, error } = useMyClaims(userId);
+  const { data: claims, isLoading, error } = useMyClaims(userId ?? undefined);
   const deleteClaim = useDeleteClaim();
 
   const [confirmTarget, setConfirmTarget] = React.useState<SavedClaimRow | null>(

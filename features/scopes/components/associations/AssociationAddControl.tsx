@@ -68,6 +68,7 @@ const TARGET_LABEL: Record<AssociationTargetType, string> = {
   fc_card: "flashcard",
   file: "file",
   quiz_session: "quiz",
+  agent: "agent",
 };
 
 export function AssociationAddControl(props: AssociationAddControlProps) {

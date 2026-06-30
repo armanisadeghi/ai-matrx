@@ -112,5 +112,5 @@ export async function resolveProxyContext(sandboxRowId: string) {
       response: NextResponse.json({ error }, { status }),
     };
   }
-  return { ok: true as const, ...lookup };
+  return lookup;
 }

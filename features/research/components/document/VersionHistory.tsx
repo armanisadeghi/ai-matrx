@@ -37,7 +37,9 @@ export function VersionHistory({ open, onOpenChange, topicId, currentVersion, on
                             )}
                         </div>
                         <span className="text-xs text-muted-foreground">
-                            {new Date(doc.created_at).toLocaleString()}
+                            {doc.created_at
+                                ? new Date(doc.created_at).toLocaleString()
+                                : "Unknown date"}
                         </span>
                     </div>
                     {i < versionList.length - 1 && (

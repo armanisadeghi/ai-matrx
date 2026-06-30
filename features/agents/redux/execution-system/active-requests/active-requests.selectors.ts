@@ -1024,8 +1024,7 @@ export const selectFirstTypedDataPayload =
     const payloads = state.activeRequests.byRequestId[requestId]?.dataPayloads;
     if (!payloads) return undefined;
     return payloads.find((p) => p.type === dataType) as
-      | DataTypeMap[T]
-      | undefined;
+      DataTypeMap[T] | undefined;
   };
 
 /** All data payloads as a typed union. Memoized. */
@@ -1046,7 +1045,7 @@ export const selectReceivedDataTypes = (requestId: string) =>
       if (!payloads) return undefined;
       const types = new Set<string>();
       for (const p of payloads) {
-        types.add(p.type);
+        if (p.type) types.add(p.type);
       }
       return Array.from(types);
     },

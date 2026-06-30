@@ -161,7 +161,7 @@ export const useFlashcard = (initialFlashcards: FlashcardData[]) => {
 
   const handleAnswer = useCallback(
     (isCorrect: boolean) => {
-      if (activeFlashcard) {
+      if (activeFlashcard?.id) {
         dispatch(
           updateFlashcardStats({ flashcardId: activeFlashcard.id, isCorrect }),
         );

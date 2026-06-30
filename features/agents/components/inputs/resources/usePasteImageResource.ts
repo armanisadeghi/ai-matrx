@@ -59,7 +59,10 @@ export function usePasteImageResource(
         const normalized = await upload(
           { kind: "file", file },
           {
-            folderPath: composeLegacyFolderPath(uploadBucket, uploadPath),
+            folderPath: composeLegacyFolderPath(
+              uploadBucket ?? "attachments",
+              uploadPath,
+            ),
             visibility: "private",
             createShareLink: true,
             shareLinkPermissionLevel: "read",
@@ -76,7 +79,12 @@ export function usePasteImageResource(
         if (!source) return;
         const resourceId = generateResourceId();
         dispatch(
-          addResource({ conversationId, blockType: "image", source, resourceId }),
+          addResource({
+            conversationId,
+            blockType: "image",
+            source,
+            resourceId,
+          }),
         );
         dispatch(
           setResourcePreview({

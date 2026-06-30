@@ -44,12 +44,7 @@ import { CloudFolders, InlineMediaRef } from "@/features/files";
 // ---------------------------------------------------------------------------
 
 export type BlockType =
-  | "text"
-  | "image"
-  | "audio"
-  | "video"
-  | "youtube_video"
-  | "document";
+  "text" | "image" | "audio" | "video" | "youtube_video" | "document";
 
 interface FieldConfig {
   key: string;
@@ -282,8 +277,10 @@ export function BlockEditor({
         )
       : {},
   );
-  const [metadataPairs, setMetadataPairs] = useState<MetadataPair[]>(
-    () => metadataToPairs(initialValues.metadata as Record<string, unknown> | undefined),
+  const [metadataPairs, setMetadataPairs] = useState<MetadataPair[]>(() =>
+    metadataToPairs(
+      initialValues.metadata as Record<string, unknown> | undefined,
+    ),
   );
   const openImageUploader = useOpenImageUploaderWindow();
 
@@ -406,7 +403,8 @@ export function BlockEditor({
                       title: "Upload image for block",
                       currentUrl: values[key] ?? null,
                       folder: CloudFolders.AGENT_BLOCKS,
-                      onUploaded: (e) => setValue(key, e.result.primary_url),
+                      onUploaded: (e) =>
+                        setValue(key, e.result.primary_url ?? ""),
                       onCleared: () => setValue(key, ""),
                     })
                   }

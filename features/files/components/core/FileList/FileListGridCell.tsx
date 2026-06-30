@@ -73,12 +73,12 @@ function FileListGridCellImpl({
   const cellBody = (
     <div
       ref={setMergedRef}
-      role="gridcell"
       aria-selected={selected}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       {...attributes}
       {...listeners}
+      role="gridcell"
       className={cn(
         "group relative flex flex-col items-center justify-start gap-2 p-3 rounded-md",
         "cursor-pointer select-none border border-transparent",

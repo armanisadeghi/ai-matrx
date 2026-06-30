@@ -358,6 +358,12 @@ export const createInstanceFromShortcut = createAsyncThunk<
     contextSlots: shortcutContextSlots,
   } = shortcut;
 
+  if (!agentId) {
+    throw new Error(
+      `Shortcut ${shortcutId} has no agentId — cannot create an agent instance from it`,
+    );
+  }
+
   // ── Trace: what the shortcut tells us to do ─────────────────────────────
   if (typeof window !== "undefined") {
     console.groupCollapsed(

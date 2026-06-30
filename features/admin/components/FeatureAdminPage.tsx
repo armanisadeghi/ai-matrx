@@ -382,7 +382,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
                   <ResourceRow
                     key={entry.overlayId}
                     title={resolved.label}
-                    label={resolved.slug}
+                    label={resolved.slug ?? undefined}
                     meta={
                       <>
                         {resolved.kind} · {resolved.instanceMode} ·{" "}

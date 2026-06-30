@@ -130,7 +130,7 @@ export function MobileUnifiedMenu() {
                   <span className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     {user.email}
                   </span>
-                  {userIsCreator && (
+                  {Boolean(userIsCreator) && (
                     <span className="text-xs font-medium text-amber-500 dark:text-amber-400 flex items-center mt-1">
                       <Crown size={12} className="mr-1" /> Creator
                     </span>

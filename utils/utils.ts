@@ -15,14 +15,17 @@ export function encodedRedirect(
   return redirect(`${path}?${type}=${encodeURIComponent(message)}`);
 }
 
-
 export const truncateText = (text: string, maxLength: number = 100) => {
   if (!text || text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
+  return text.slice(0, maxLength) + "...";
 };
 
-
-export function noErrors(value, defaultValue, options, transform = null) {
+export function noErrors<T>(
+  value: unknown,
+  defaultValue: T,
+  options: readonly T[],
+  transform: ((value: unknown) => T | null) | null = null,
+): T {
   if (transform) {
     const transformed = transform(value);
     if (transformed !== null && options.includes(transformed)) {
@@ -34,10 +37,10 @@ export function noErrors(value, defaultValue, options, transform = null) {
     return value;
   }
 
-  if (typeof defaultValue === 'string' && typeof value === 'string') {
+  if (typeof defaultValue === "string" && typeof value === "string") {
     const normalizedValue = value.toLowerCase();
-    const match = options.find(v =>
-        typeof v === 'string' && v.toLowerCase() === normalizedValue
+    const match = options.find(
+      (v) => typeof v === "string" && v.toLowerCase() === normalizedValue,
     );
     if (match) return match;
   }

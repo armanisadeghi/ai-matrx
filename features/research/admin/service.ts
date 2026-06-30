@@ -198,7 +198,7 @@ export async function fetchResearchTopics(): Promise<
     template_id: string | null;
     agent_config: Json;
     autonomy_level: string;
-    created_at: string;
+    created_at: string | null;
   }>
 > {
   const { data, error } = await supabase

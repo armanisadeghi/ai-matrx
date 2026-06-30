@@ -264,7 +264,6 @@ const conversationsSlice = createSlice({
         // continue to work.
         const now = new Date().toISOString();
         state.byConversationId[conversationId] = {
-          conversationId,
           agentId:
             (action.payload.agentId as string | undefined) ??
             (action.payload.initialAgentId as string | undefined) ??
@@ -280,6 +279,7 @@ const conversationsSlice = createSlice({
           createdAt: action.payload.createdAt ?? now,
           updatedAt: action.payload.updatedAt ?? now,
           ...action.payload,
+          conversationId,
         } as ConversationRecord;
         state.allConversationIds.push(conversationId);
       }

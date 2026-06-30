@@ -112,21 +112,7 @@ type _CheckSharedSlimRow = SharedSlimRow extends DbRpcRow<"agx_get_shared_for_ch
 declare const _sharedSlimRow: _CheckSharedSlimRow;
 true satisfies typeof _sharedSlimRow;
 
-interface CoreRow {
-  id: string;
-  source: string;
-  name: string;
-  description: string | null;
-  tags: string[] | null;
-  category: string | null;
-  is_archived: boolean;
-  is_favorite: boolean;
-  is_active: boolean;
-  output_format: string | null;
-  created_at: string;
-  updated_at: string;
-  version: number | null;
-}
+type CoreRow = DbRpcRow<"get_agent_core_batch">;
 type _CheckCoreRow = CoreRow extends DbRpcRow<"get_agent_core_batch"> ? true : false;
 declare const _coreRow: _CheckCoreRow;
 true satisfies typeof _coreRow;
@@ -220,7 +206,7 @@ export const fetchAgentSlimList = createAsyncThunk<
     if (source === "owned") {
       const { data, error } = await supabase.rpc("get_agents_for_chat", {
         p_limit: AGENT_PAGE_SIZE,
-        p_cursor: cursor ?? null,
+        ...(cursor != null ? { p_cursor: cursor } : {}),
       });
       if (error) throw error;
 

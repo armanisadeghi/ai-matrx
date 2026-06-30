@@ -134,7 +134,8 @@ export function MessagingInitializer() {
       try {
         // Get conversation basic info
         const { data: convData, error: convError } = await supabase
-          .schema("communication").from("dm_conversations")
+          .schema("communication")
+          .from("dm_conversations")
           .select("*")
           .eq("id", conversationId)
           .single();
@@ -143,7 +144,8 @@ export function MessagingInitializer() {
 
         // Get participants with user info
         const { data: participants } = await supabase
-          .schema("communication").from("dm_conversation_participants")
+          .schema("communication")
+          .from("dm_conversation_participants")
           .select("*")
           .eq("conversation_id", conversationId);
 
@@ -154,14 +156,15 @@ export function MessagingInitializer() {
             });
             return {
               ...p,
-              user: userInfo?.[0] || null,
+              user: userInfo?.[0] ?? undefined,
             };
           }),
         );
 
         // Get last message
         const { data: lastMsgData } = await supabase
-          .schema("communication").from("dm_messages")
+          .schema("communication")
+          .from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -252,7 +255,8 @@ export function MessagingInitializer() {
       const conversationsWithParticipants = await Promise.all(
         (data || []).map(async (conv: DmConversationRpcRow) => {
           const { data: participants } = await supabase
-            .schema("communication").from("dm_conversation_participants")
+            .schema("communication")
+            .from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", String(conv.conversation_id));
 
@@ -268,7 +272,7 @@ export function MessagingInitializer() {
                 role: toParticipantRole(p.role),
                 is_muted: p.is_muted ?? false,
                 is_archived: p.is_archived ?? false,
-                user: userInfo?.[0] || null,
+                user: userInfo?.[0] ?? undefined,
               };
             }),
           );

@@ -10,6 +10,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import type { Database } from "@/types/database.types";
 import type {
   DictEntry,
   DictEntryDraft,
@@ -22,6 +23,24 @@ import type {
 function rpcError(context: string, error: { message: string } | null): never {
   throw new Error(`dictionary.${context}: ${error?.message ?? "unknown error"}`);
 }
+
+type DictSetSettingsDbArgs =
+  Database["public"]["Functions"]["dict_set_settings"]["Args"];
+
+/** NULL clears to default — migrations/dict_dictionary_system.sql; PG accepts null, codegen does not. */
+type DictSetSettingsArgs = Omit<DictSetSettingsDbArgs, "p_max_inline_chars"> & {
+  p_max_inline_chars: number | null;
+};
+
+type _DictSetSettingsArgsCheck =
+  Omit<DictSetSettingsArgs, "p_max_inline_chars"> extends Omit<
+    DictSetSettingsDbArgs,
+    "p_max_inline_chars"
+  >
+    ? true
+    : false;
+declare const _dictSetSettingsArgsCheck: _DictSetSettingsArgsCheck;
+true satisfies typeof _dictSetSettingsArgsCheck;
 
 /** Map a raw dict_entries row (snake_case, nullable arrays) to DictEntry. */
 function toEntry(row: {
@@ -113,11 +132,15 @@ export const dictionaryService = {
     ownerId: string,
     maxInlineChars: number | null,
   ): Promise<{ max_inline_chars: number | null; has_row: boolean }> {
-    const { data, error } = await supabase.rpc("dict_set_settings", {
+    const rpcArgs: DictSetSettingsArgs = {
       p_level: level,
       p_owner_id: ownerId,
       p_max_inline_chars: maxInlineChars,
-    });
+    };
+    const { data, error } = await supabase.rpc(
+      "dict_set_settings",
+      rpcArgs as unknown as DictSetSettingsDbArgs,
+    );
     if (error) rpcError("setSettings", error);
     return data as unknown as { max_inline_chars: number | null; has_row: boolean };
   },

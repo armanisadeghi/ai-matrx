@@ -323,7 +323,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
     openSmartCodeEditorWindow({
       agents: [agent],
       defaultPickerAgentId: agent.id,
-      initialCode: editedCode,
+      initialCode: editedCode ?? initialCode ?? "",
       language: monacoLanguage,
       title: config.title,
       onCodeChange: (event) => {

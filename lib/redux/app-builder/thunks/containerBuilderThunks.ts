@@ -436,7 +436,7 @@ export const saveOrUpdateContainerToAppletThunk = createAsyncThunk<
         throw new Error("Failed to add container to applet");
       }
 
-      return { appletId, updatedApplet: updatedApplet.containers };
+      return { appletId, updatedApplet: updatedApplet.containers ?? null };
     } catch (error: any) {
       console.error("Error saving container to applet:", error);
       return rejectWithValue(

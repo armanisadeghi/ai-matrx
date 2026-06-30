@@ -193,7 +193,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       />
     ),
     table: () => {
-      if (!tableData) return null;
+      if (!tableData?.markdown) return null;
       return (
         <div className="border-2 border-border">
           <MarkdownTable data={tableData.markdown} />

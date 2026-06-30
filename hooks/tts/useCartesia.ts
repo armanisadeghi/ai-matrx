@@ -93,7 +93,7 @@ export function useCartesia(
         const ws = cartesia.tts.websocket({
             container: config.container,
             encoding: config.encoding,
-            sampleRate: config.sampleRate,
+            sampleRate: config.sampleRate ?? 44100,
         });
         
         ws.connect()
@@ -102,7 +102,7 @@ export function useCartesia(
                 setWebsocket(ws);
                 // Create the player but don't start AudioContext yet
                 if (!playerRef.current) {
-                    playerRef.current = new WebPlayer({bufferDuration: config.bufferDuration});
+                    playerRef.current = new WebPlayer({bufferDuration: config.bufferDuration ?? 1});
                 }
             })
             .catch((err: Error) => {

@@ -24,17 +24,25 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
   // For rendering primitive values
   const renderPrimitive = (val, type) => {
     if (val === null) return <span className="text-gray-500 italic">null</span>;
-    if (val === undefined) return <span className="text-gray-500 italic">undefined</span>;
+    if (val === undefined)
+      return <span className="text-gray-500 italic">undefined</span>;
 
     switch (type) {
       case "boolean":
         return (
-          <Badge variant={val ? "success" : "destructive"} className="font-mono">
+          <Badge
+            variant={val ? "success" : "destructive"}
+            className="font-mono"
+          >
             {val.toString()}
           </Badge>
         );
       case "number":
-        return <span className="font-mono text-blue-600 dark:text-blue-400">{val}</span>;
+        return (
+          <span className="font-mono text-blue-600 dark:text-blue-400">
+            {val}
+          </span>
+        );
       case "string":
         // Handle URLs specially
         if (typeof val === "string" && val.startsWith("http")) {
@@ -49,7 +57,11 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
             </a>
           );
         }
-        return <span className="font-mono text-green-600 dark:text-green-400 break-all">"{val}"</span>;
+        return (
+          <span className="font-mono text-green-600 dark:text-green-400 break-all">
+            "{val}"
+          </span>
+        );
       default:
         return <span className="font-mono">{String(val)}</span>;
     }
@@ -71,7 +83,9 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
         {value.map((item, index) => (
           <div key={`${path}.${index}`} className="py-1">
             <div className="flex items-start gap-2">
-              <span className="text-slate-500 dark:text-slate-400 font-mono min-w-[50px]">[{index}]:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-mono min-w-[50px]">
+                [{index}]:
+              </span>
               <div className="flex-1">
                 {typeof item === "object" && item !== null ? (
                   <RecursiveValueViewer
@@ -93,7 +107,7 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
   // For objects: render each key-value pair
   if (typeof value === "object" && value !== null) {
     const entries = Object.entries(value);
-    
+
     if (entries.length === 0) {
       return <div className="text-gray-500 italic pl-4 py-1">Empty object</div>;
     }
@@ -102,13 +116,17 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
       <div className="pl-4 border-t border-slate-300 dark:border-slate-700">
         <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm pt-1 pb-3">
           <Badge variant="outline" className="font-mono border-none">
-            (STRUCTURED DATA OBJECT: {entries.length} individually named items inside)
+            (STRUCTURED DATA OBJECT: {entries.length} individually named items
+            inside)
           </Badge>
         </div>
         {entries.map(([key, val]) => (
           <div key={`${path}.${key}`} className="py-1">
             <div className="flex items-start gap-2">
-              <span className="text-yellow-600 dark:text-yellow-400 font-mono min-w-[120px] truncate" title={key}>
+              <span
+                className="text-yellow-600 dark:text-yellow-400 font-mono min-w-[120px] truncate"
+                title={key}
+              >
                 {key}:
               </span>
               <div className="flex-1">
@@ -164,19 +182,23 @@ const CopyButton = ({ text, size = "sm" }) => {
 const BrokerValuesSimpleViewer = () => {
   const brokers = useAppSelector(brokerSelectors.selectAllValues);
   const [selectedBroker, setSelectedBroker] = useState<string | null>(null);
-  
+
   // Get broker keys for the left column
   const brokerKeys = Object.keys(brokers);
-  
+
   // Get the value of the selected broker
   const selectedValue = selectedBroker ? brokers[selectedBroker] : null;
 
   return (
     <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-slate-900">
       <p className="text-sm text-slate-600 dark:text-slate-400 px-4 py-2 mb-2 max-w-full">
-        Brokers are the the source of Dynamic data shared across the entire application. A broker value can be used in any Workflow, Recipe, Applet or updated in real time. Some Brokers are created and set by the system, but most are specific to your company, your app, or your applets. You can set values in one applet and then access them in another.
+        Brokers are the the source of Dynamic data shared across the entire
+        application. A broker value can be used in any Workflow, Recipe, Applet
+        or updated in real time. Some Brokers are created and set by the system,
+        but most are specific to your company, your app, or your applets. You
+        can set values in one applet and then access them in another.
       </p>
-      
+
       <div className="flex h-full w-full gap-6">
         {/* Left column: List of brokers */}
         <div className="w-1/3 border-r border-slate-200 dark:border-slate-700">
@@ -186,7 +208,10 @@ const BrokerValuesSimpleViewer = () => {
           <ScrollArea className="h-[calc(100%-3rem)] w-full">
             <div className="px-2">
               {brokerKeys.map((key) => (
-                <div key={key} className="flex items-center mb-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md">
+                <div
+                  key={key}
+                  className="flex items-center mb-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md"
+                >
                   <button
                     onClick={() => setSelectedBroker(key)}
                     className={`flex-1 text-left px-4 py-2 font-mono text-sm rounded-md ${
@@ -213,10 +238,12 @@ const BrokerValuesSimpleViewer = () => {
               {selectedBroker || "Select a broker"}
             </h3>
             {selectedValue !== null && (
-              <CopyButton 
-                text={typeof selectedValue === 'object' 
-                  ? JSON.stringify(selectedValue, null, 2) 
-                  : String(selectedValue)} 
+              <CopyButton
+                text={
+                  typeof selectedValue === "object"
+                    ? JSON.stringify(selectedValue, null, 2)
+                    : String(selectedValue)
+                }
                 size="default"
               />
             )}
@@ -225,10 +252,15 @@ const BrokerValuesSimpleViewer = () => {
             <ScrollArea className="h-full w-full">
               <div className="text-sm text-slate-800 dark:text-slate-200 pb-4">
                 {selectedValue === null ? (
-                  <span className="text-gray-500 italic">Select a broker from the list</span>
-                ) : (
-                  <RecursiveValueViewer value={selectedValue} path={selectedBroker} />
-                )}
+                  <span className="text-gray-500 italic">
+                    Select a broker from the list
+                  </span>
+                ) : selectedBroker ? (
+                  <RecursiveValueViewer
+                    value={selectedValue}
+                    path={selectedBroker}
+                  />
+                ) : null}
               </div>
             </ScrollArea>
           </div>

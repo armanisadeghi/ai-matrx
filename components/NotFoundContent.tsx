@@ -49,7 +49,7 @@ export function NotFoundContent({
     return links.map((link) => ({
       title: link.label,
       description: `Go to ${link.label}`,
-      icon: link.icon as React.ReactElement,
+      icon: link.icon as CardProps["icon"],
       color: colorMap[link.favicon?.color || "#6366f1"] || "indigo",
       path: link.href,
     }));

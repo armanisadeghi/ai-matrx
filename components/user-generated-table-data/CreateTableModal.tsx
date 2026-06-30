@@ -64,12 +64,18 @@ export default function CreateTableModal({
 
     setCheckingName(true);
     try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) {
+        setTableNameWarning(null);
+        return;
+      }
+
       const { data, error } = await supabase
         .schema("workbench")
         .from("udt_datasets")
         .select("id")
         .eq("table_name", name)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (data) {

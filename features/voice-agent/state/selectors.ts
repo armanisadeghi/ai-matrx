@@ -25,7 +25,9 @@ const EMPTY_INSTANCE: Readonly<VoiceAgentInstance> = Object.freeze({
   sessionStartedAtMs: null,
 }) as VoiceAgentInstance;
 
-const EMPTY_TURNS: ReadonlyArray<VoiceTurn> = Object.freeze([]) as VoiceTurn[];
+const EMPTY_TURNS: ReadonlyArray<VoiceTurn> = Object.freeze(
+  [] as VoiceTurn[],
+);
 
 const getInstance = (
   state: StateWithVoiceAgent,

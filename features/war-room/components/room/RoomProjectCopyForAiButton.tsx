@@ -21,7 +21,7 @@ export function RoomProjectCopyForAiButton({
   return (
     <ProjectCopyForAiButton
       projectId={roomProjectId}
-      projectName={projectName}
+      projectName={projectName ?? undefined}
       location="War Room — room project"
       size="icon"
       className="size-7 shrink-0"

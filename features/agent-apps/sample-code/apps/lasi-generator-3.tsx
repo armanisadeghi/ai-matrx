@@ -10,7 +10,7 @@ import {
   TrendingUp,
   GitBranch,
   Link2,
-  Layers
+  Layers,
 } from "lucide-react";
 
 export default function LSIKeywordGenerator({
@@ -37,7 +37,8 @@ export default function LSIKeywordGenerator({
   const parseResponse = (text) => {
     if (!text) return null;
 
-    const sections = {
+    type SectionKey = "parent" | "child" | "natural" | "related";
+    const sections: Record<SectionKey, string[]> = {
       parent: [],
       child: [],
       natural: [],
@@ -45,7 +46,6 @@ export default function LSIKeywordGenerator({
     };
 
     const lines = text.split("\n");
-    type SectionKey = keyof typeof sections;
     let currentSection: SectionKey | null = null;
 
     for (const line of lines) {

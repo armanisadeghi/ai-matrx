@@ -208,7 +208,7 @@ export async function checkPromptAppDrift(
     userId?: string
 ): Promise<DriftItem[]> {
     const { data, error } = await supabase.rpc('check_prompt_app_drift', {
-        p_user_id: userId ?? null,
+        p_user_id: userId,
     });
 
     if (error) {

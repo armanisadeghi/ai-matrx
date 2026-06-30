@@ -39,9 +39,9 @@ const FetchResultsBlock: React.FC<FetchResultsBlockProps> = ({
           <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
             {results.length}
           </span>
-          {metadata?.query && (
+          {Boolean(metadata?.query) && (
             <span className="text-xs text-muted-foreground italic truncate max-w-40">
-              "{String(metadata.query)}"
+              "{String(metadata?.query)}"
             </span>
           )}
         </div>

@@ -90,7 +90,7 @@ class MultiApiBaseAdapter {
 
         const stream = await anthropicClient.messages.stream({
             model: options.model || 'claude-3-sonnet-20240229',
-            max_tokens: options.maxTokens,
+            max_tokens: options.maxTokens ?? 4096,
             temperature: options.temperature,
             top_p: options.topP,
             top_k: options.topK,

@@ -33,7 +33,7 @@ export function useAppValidation(
   );
   
   useEffect(() => {
-    if (!appConfig) {
+    if (!appConfig?.id) {
       setValidationResult({ 
         valid: false, 
         issues: [{ 
@@ -44,9 +44,11 @@ export function useAppValidation(
       });
       return undefined;
     }
+
+    const appId = appConfig.id;
     
     // Check if we have cached validation results
-    const storedResults = getValidationResults(appConfig.id);
+    const storedResults = getValidationResults(appId);
     
     if (storedResults) {
       // Use stored results if available

@@ -264,7 +264,7 @@ export const saveNote = createAsyncThunk<void, string>(
     dispatch(
       markNoteSaved({
         id: noteId,
-        updatedAt: data?.updated_at,
+        updatedAt: data?.updated_at ?? undefined,
       }),
     );
 

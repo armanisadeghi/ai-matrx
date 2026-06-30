@@ -426,7 +426,7 @@ class FileNodeManager {
 
           const parentNode = index > 0 ? nodeMap.get(currentPath) : null;
           if (parentNode) {
-            parentNode.children.push(newNode);
+            (parentNode.children ??= []).push(newNode);
             parentNode.isEmpty = false;
           } else {
             rootNodes.push(newNode);

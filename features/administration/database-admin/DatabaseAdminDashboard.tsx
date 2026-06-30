@@ -8,6 +8,24 @@ import { FunctionsList } from "./FunctionsList";
 import { SQLEditor } from "./SQLEditor";
 import FunctionDetails from "./functionDetails";
 import PermissionsList from "./PermissionsList";
+import type { DatabasePermission } from "./types";
+
+function toDatabasePermissions(data: unknown): DatabasePermission[] {
+  if (!Array.isArray(data)) return [];
+  return data.filter(
+    (row): row is DatabasePermission =>
+      typeof row === "object" &&
+      row !== null &&
+      "object_name" in row &&
+      typeof row.object_name === "string" &&
+      "object_type" in row &&
+      typeof row.object_type === "string" &&
+      "role" in row &&
+      typeof row.role === "string" &&
+      "privileges" in row &&
+      Array.isArray(row.privileges),
+  );
+}
 
 // Started: https://claude.ai/chat/ca16ca5d-adc0-4e6b-b81c-5347948fd86d (Brains)
 // Cleanup: https://claude.ai/chat/aec2fe7a-e732-4162-a679-e7d05f303374
@@ -15,7 +33,7 @@ import PermissionsList from "./PermissionsList";
 const DatabaseAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("functions");
   const [functions, setFunctions] = useState<unknown[]>([]);
-  const [permissions, setPermissions] = useState<unknown[]>([]);
+  const [permissions, setPermissions] = useState<DatabasePermission[]>([]);
   const [selectedFunction, setSelectedFunction] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,7 +70,7 @@ const DatabaseAdminDashboard = () => {
   const loadPermissions = async () => {
     try {
       const permissionsData = await fetchPermissions();
-      setPermissions(permissionsData || []);
+      setPermissions(toDatabasePermissions(permissionsData));
       setPermissionsLoaded(true);
     } catch (err) {
       console.error("Failed to load permissions:", err);

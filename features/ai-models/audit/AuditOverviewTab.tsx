@@ -73,7 +73,14 @@ export default function AuditOverviewTab({
   const [detailModelId, setDetailModelId] = useState<string | null>(null);
 
   const providers = useMemo(
-    () => [...new Set(allModels.map((m) => m.provider).filter(Boolean))].sort(),
+    () =>
+      [
+        ...new Set(
+          allModels
+            .map((m) => m.provider)
+            .filter((p): p is string => p != null),
+        ),
+      ].sort(),
     [allModels],
   );
 

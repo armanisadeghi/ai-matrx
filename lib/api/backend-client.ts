@@ -63,7 +63,13 @@ export class BackendClient {
   private readonly scope: ContextScope;
 
   constructor(config: BackendClientConfig = {}) {
-    this.baseUrl = config.baseUrl || BACKEND_URLS.production;
+    const resolvedBaseUrl = config.baseUrl ?? BACKEND_URLS.production;
+    if (!resolvedBaseUrl) {
+      throw new Error(
+        "[BackendClient] No backend URL configured. Set NEXT_PUBLIC_BACKEND_URL_PROD or pass baseUrl.",
+      );
+    }
+    this.baseUrl = resolvedBaseUrl;
     this.auth = config.auth || { type: "anonymous" };
     this.scope = config.scope || {};
   }

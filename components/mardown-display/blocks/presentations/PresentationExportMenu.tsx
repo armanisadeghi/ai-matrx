@@ -29,7 +29,7 @@ import IconButton from "@/components/official/IconButton";
 interface PresentationExportMenuProps {
   presentationData: PresentationData;
   presentationTitle?: string;
-  slideContainerRef: React.RefObject<HTMLDivElement>;
+  slideContainerRef: React.RefObject<HTMLDivElement | null>;
   slides: any[];
 }
 

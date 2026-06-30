@@ -157,16 +157,17 @@ export function useSetGlobalBasics() {
         window.addEventListener("online", updateNetworkStatus);
         window.addEventListener("offline", updateNetworkStatus);
 
-        if (nav.connection) {
+        const connection = nav.connection;
+        if (connection) {
             const updateConnectionType = () => {
                 dispatch(
                     brokerActions.setValue({
                         brokerId: "GLOBAL_CONNECTION_TYPE",
-                        value: nav.connection.effectiveType || "unknown",
+                        value: connection.effectiveType || "unknown",
                     })
                 );
             };
-            nav.connection.addEventListener("change", updateConnectionType);
+            connection.addEventListener("change", updateConnectionType);
         }
 
         // Window Dimensions
@@ -252,16 +253,17 @@ export function useSetGlobalBasics() {
             window.removeEventListener("resize", updateWindowDimensions);
             mediaQuery.removeEventListener("change", updateColorScheme);
             
-            if (nav.connection) {
+            const cleanupConnection = nav.connection;
+            if (cleanupConnection) {
                 const updateConnectionType = () => {
                     dispatch(
                         brokerActions.setValue({
                             brokerId: "GLOBAL_CONNECTION_TYPE",
-                            value: nav.connection.effectiveType || "unknown",
+                            value: cleanupConnection.effectiveType || "unknown",
                         })
                     );
                 };
-                nav.connection.removeEventListener("change", updateConnectionType);
+                cleanupConnection.removeEventListener("change", updateConnectionType);
             }
         };
     }, [dispatch]);

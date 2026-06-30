@@ -94,7 +94,8 @@ export function CropPreviewWindow({
             (activePresetId ? getPresetById(activePresetId) : null) ??
             (previewablePresetIds[0]
                 ? getPresetById(previewablePresetIds[0])
-                : null),
+                : null) ??
+            null,
         [activePresetId, previewablePresetIds],
     );
 

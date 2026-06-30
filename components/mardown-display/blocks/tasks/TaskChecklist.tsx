@@ -247,9 +247,10 @@ const TaskChecklist = ({
     if (editIsSubtask && addToTaskId) {
       const addSubtaskToParent = (items: TaskItemType[]): boolean => {
         for (let i = 0; i < items.length; i++) {
-          if (items[i].id === addToTaskId) {
-            if (!items[i].children) items[i].children = [];
-            items[i].children.push(newTask);
+          const item = items[i];
+          if (item?.id === addToTaskId) {
+            if (!item.children) item.children = [];
+            item.children.push(newTask);
             return true;
           }
 
@@ -562,66 +563,66 @@ const TaskChecklist = ({
 
           {/* Bottom right save/reset/import buttons */}
           {!hideActions && (
-          <div className="mt-6 flex justify-end space-x-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={handleReset}
-                  className="flex items-center"
-                >
-                  {resetSuccess ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" /> Reset
-                    </>
-                  ) : (
-                    <>
-                      <RotateCcw className="h-3.5 w-3.5" /> Reset
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Reset to initial state</TooltipContent>
-            </Tooltip>
+            <div className="mt-6 flex justify-end space-x-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={handleReset}
+                    className="flex items-center"
+                  >
+                    {resetSuccess ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" /> Reset
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="h-3.5 w-3.5" /> Reset
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset to initial state</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="xs"
-                  onClick={handleSave}
-                  className="flex items-center"
-                  variant={saveSuccess ? "outline" : "ghost"}
-                >
-                  {saveSuccess ? (
-                    <>
-                      <Check className="h-3.5 w-3.5" /> Saved
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-3.5 w-3.5" /> Save
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Save current state</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="xs"
+                    onClick={handleSave}
+                    className="flex items-center"
+                    variant={saveSuccess ? "outline" : "ghost"}
+                  >
+                    {saveSuccess ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" /> Saved
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3.5 w-3.5" /> Save
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Save current state</TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="xs"
-                  onClick={() => setIsImportModalOpen(true)}
-                  className="flex items-center px-1  bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  Save as Tasks
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Import these tasks into your task manager
-              </TooltipContent>
-            </Tooltip>
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="xs"
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="flex items-center px-1  bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    Save as Tasks
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Import these tasks into your task manager
+                </TooltipContent>
+              </Tooltip>
+            </div>
           )}
         </CardContent>
       </Card>

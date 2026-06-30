@@ -50,7 +50,9 @@ export const RecipeVersionSelectionCard: React.FC<RecipeVersionSelectionCardProp
     if (!selectedRecipe) return null;
 
     // Find the selected recipe details - only needed for card layout
-    const selectedRecipeDetails = useCardLayout ? filteredRecipes.find((recipe) => recipe.id === selectedRecipe) : undefined;
+    const selectedRecipeDetails = filteredRecipes.find(
+        (recipe) => recipe.id === selectedRecipe,
+    );
 
     // If we're using card layout but couldn't find recipe details, don't render
     if (useCardLayout && !selectedRecipeDetails) return null;

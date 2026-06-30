@@ -563,7 +563,7 @@ export default IconResolver;
  * {@link isRegisteredOrLucideIconName} instead.
  */
 export const getIconComponent = (
-  iconName: string | null,
+  iconName: string | null | undefined,
   fallbackIcon: string = "Zap",
 ) => {
   if (!iconName) {

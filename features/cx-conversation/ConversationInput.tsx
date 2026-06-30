@@ -81,6 +81,7 @@ import { TranscriptionLoader } from "@/features/audio/components/TranscriptionLo
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
 import type { Resource } from "@/features/agents/resources/types";
+import type { ConversationResource } from "@/features/cx-chat/types/conversation";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 // PromptSettings / PromptVariable replaced with agents equivalents.
@@ -139,7 +140,7 @@ export interface ConversationInputProps {
    */
   onSubmitOverride?: (
     content: string,
-    resources: Resource[],
+    resources: ConversationResource[],
   ) => Promise<boolean>;
 
   // ── Footer row ─────────────────────────────────────────────────────────────
@@ -432,10 +433,7 @@ export function ConversationInput({
 
       // Welcome screen override — intercepts submit before sendMessage
       if (onSubmitOverride) {
-        const shouldClear = await onSubmitOverride(
-          finalContent,
-          resources as unknown as Resource[],
-        );
+        const shouldClear = await onSubmitOverride(finalContent, resources);
         if (shouldClear) {
           dispatch(
             chatConversationsActions.setCurrentInput({ sessionId, input: "" }),

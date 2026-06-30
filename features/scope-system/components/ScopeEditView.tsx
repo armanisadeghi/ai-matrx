@@ -150,7 +150,7 @@ export function ScopeEditView({
   }
 
   async function handleDelete() {
-    if (!scope) return;
+    if (!scope || !scopeType) return;
     const ok = await confirm({
       title: `Delete ${scope.name}?`,
       description: `This permanently deletes “${scope.name}” and all its values. This cannot be undone.`,

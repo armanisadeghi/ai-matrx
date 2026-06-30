@@ -66,7 +66,7 @@ export function ContextAssignmentWindow({
 
   return (
     <WindowPanel
-      title={`Organize — ${fieldProps.subject.title}`}
+      title={`Organize — ${fieldProps.subject?.title ?? "Organize"}`}
       onClose={onClose}
       minWidth={560}
       minHeight={520}

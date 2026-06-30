@@ -348,7 +348,7 @@ function InformativeErrorFallback({
 
   const fileId =
     mediaRef && typeof mediaRef === "object" && "file_id" in mediaRef
-      ? mediaRef.file_id
+      ? (mediaRef.file_id ?? null)
       : null;
 
   const FailIcon =

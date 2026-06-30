@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Check, Copy } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import React, { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Check, Copy } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const JsonDataDisplay = (parsedContent: any) => {
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  let displayContent = '';
+  let displayContent = "";
   try {
     displayContent = JSON.stringify(parsedContent, null, 2);
   } catch (err) {
-    setError('Failed to parse content');
+    setError("Failed to parse content");
   }
 
   const handleCopy = async () => {
@@ -20,7 +20,7 @@ const JsonDataDisplay = (parsedContent: any) => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 

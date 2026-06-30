@@ -20,11 +20,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 export type ProJsonIssueSeverity = "error" | "warning" | "info";
 export type ProJsonIssueKind =
-  | "parse"
-  | "shape"
-  | "unknown_key"
-  | "schema"
-  | "custom";
+  "parse" | "shape" | "unknown_key" | "schema" | "custom";
 
 export interface ProJsonValidationIssue {
   kind: ProJsonIssueKind;
@@ -54,8 +50,10 @@ export type ProJsonValidator = (args: {
   parsed: unknown;
 }) => ProJsonValidationIssue[];
 
-export interface ProJsonTextareaProps
-  extends Omit<ProTextareaProps, "value" | "onChange" | "getApplicationScope"> {
+export interface ProJsonTextareaProps extends Omit<
+  ProTextareaProps,
+  "value" | "onChange" | "getApplicationScope"
+> {
   value: string;
   onChange: React.ChangeEventHandler<HTMLTextAreaElement>;
   rootType?: "any" | "object" | "array";
@@ -149,11 +147,8 @@ function labelForPath(path?: string): string {
   return parts.length ? parts.join(".") : "root";
 }
 
-function normalizeIssue(
-  issue: ProJsonValidationIssue,
-): ProJsonValidationIssue {
+function normalizeIssue(issue: ProJsonValidationIssue): ProJsonValidationIssue {
   return {
-    severity: "error",
     ...issue,
     line: issue.line ?? null,
     column: issue.column ?? null,
@@ -353,7 +348,8 @@ function defaultApplicationScope(
 
 function statusLabel(state: ProJsonValidationState) {
   if (state.isEmpty) return "Empty";
-  if (state.errors.length > 0) return `${state.errors.length} error${state.errors.length === 1 ? "" : "s"}`;
+  if (state.errors.length > 0)
+    return `${state.errors.length} error${state.errors.length === 1 ? "" : "s"}`;
   if (state.warnings.length > 0) {
     return `${state.warnings.length} warning${state.warnings.length === 1 ? "" : "s"}`;
   }
@@ -365,7 +361,9 @@ function ValidationPanel({ state }: { state: ProJsonValidationState }) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
         <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-        {state.isEmpty ? "Validation will run as you type." : "No JSON issues found."}
+        {state.isEmpty
+          ? "Validation will run as you type."
+          : "No JSON issues found."}
       </div>
     );
   }
@@ -373,7 +371,11 @@ function ValidationPanel({ state }: { state: ProJsonValidationState }) {
   return (
     <div className="space-y-2">
       {state.issues.map((issue, index) => (
-        <IssueCard key={`${issue.kind}-${issue.path ?? "root"}-${index}`} issue={issue} text={state.text} />
+        <IssueCard
+          key={`${issue.kind}-${issue.path ?? "root"}-${index}`}
+          issue={issue}
+          text={state.text}
+        />
       ))}
     </div>
   );
@@ -441,7 +443,10 @@ function IssueCard({
             return (
               <div
                 key={absoluteIndex}
-                className={cn("flex", active && (isError ? "bg-red-950/60" : "bg-amber-950/50"))}
+                className={cn(
+                  "flex",
+                  active && (isError ? "bg-red-950/60" : "bg-amber-950/50"),
+                )}
               >
                 <span
                   className={cn(
@@ -455,7 +460,12 @@ function IssueCard({
                 >
                   {absoluteIndex + 1}
                 </span>
-                <span className={cn("flex-1 whitespace-pre px-3 py-0.5", active ? "text-white" : "text-zinc-300")}>
+                <span
+                  className={cn(
+                    "flex-1 whitespace-pre px-3 py-0.5",
+                    active ? "text-white" : "text-zinc-300",
+                  )}
+                >
                   {lineText || " "}
                 </span>
               </div>
@@ -490,29 +500,26 @@ export const ProJsonTextarea = React.forwardRef<
   },
   ref,
 ) {
-  const compiledSchema = useMemo(
-    () => {
-      let schemaValidator: ValidateFunction | null = null;
-      let schemaCompileError: Error | null = null;
-      if (schema) {
-        try {
-          const ajv = new Ajv({ ...DEFAULT_AJV_OPTIONS, ...ajvOptions });
-          schemaValidator = ajv.compile(schema);
-        } catch (error) {
-          schemaCompileError =
-            error instanceof Error
-              ? error
-              : new Error("Schema could not be compiled.");
-        }
+  const compiledSchema = useMemo(() => {
+    let schemaValidator: ValidateFunction | null = null;
+    let schemaCompileError: Error | null = null;
+    if (schema) {
+      try {
+        const ajv = new Ajv({ ...DEFAULT_AJV_OPTIONS, ...ajvOptions });
+        schemaValidator = ajv.compile(schema);
+      } catch (error) {
+        schemaCompileError =
+          error instanceof Error
+            ? error
+            : new Error("Schema could not be compiled.");
       }
+    }
 
-      return {
-        schemaValidator,
-        schemaCompileError,
-      };
-    },
-    [ajvOptions, schema],
-  );
+    return {
+      schemaValidator,
+      schemaCompileError,
+    };
+  }, [ajvOptions, schema]);
 
   const validationState = useMemo(
     () =>
@@ -629,7 +636,9 @@ export const ProJsonTextarea = React.forwardRef<
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge
-            variant={hasErrors ? "destructive" : hasWarnings ? "warning" : "success"}
+            variant={
+              hasErrors ? "destructive" : hasWarnings ? "warning" : "success"
+            }
             className="font-mono text-[10px]"
           >
             {statusLabel(validationState)}

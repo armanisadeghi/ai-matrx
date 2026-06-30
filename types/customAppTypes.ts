@@ -78,7 +78,7 @@ export interface ComponentProps {
   onLabel: string;
   offLabel: string;
   multiSelect: boolean;
-  maxItems: number;
+  maxItems?: number;
   minItems: number;
   gridCols: string;
   autoComplete: string;
@@ -88,7 +88,7 @@ export interface ComponentProps {
   width: string;
   valuePrefix: string;
   valueSuffix: string;
-  maxLength: number;
+  maxLength?: number;
   spellCheck: boolean;
   tableRules: TableRules;
 }
@@ -171,13 +171,7 @@ export interface RecipeSourceConfig {
 
 export interface AppletSourceConfig {
   sourceType?:
-    | "recipe"
-    | "workflow"
-    | "api"
-    | "database"
-    | "prompt"
-    | "other"
-    | string;
+    "recipe" | "workflow" | "api" | "database" | "prompt" | "other" | string;
   config?:
     | RecipeSourceConfig
     | WorkflowSourceConfig
@@ -234,11 +228,7 @@ export type AppLayoutOptions =
   | "icons";
 
 export type KnownMethod =
-  | "renderChat"
-  | "changeApplet"
-  | "renderModal"
-  | "renderSampleApplet"
-  | "none";
+  "renderChat" | "changeApplet" | "renderModal" | "renderSampleApplet" | "none";
 
 export interface HeaderExtraButtonsConfig {
   label: string;
@@ -331,7 +321,9 @@ export type FieldBuilderInput = Partial<
   }
 >;
 
-export function normalizeFieldDefinition(field: FieldBuilderInput): FieldDefinition {
+export function normalizeFieldDefinition(
+  field: FieldBuilderInput,
+): FieldDefinition {
   const componentType = field.component || "textarea";
   const defaultComponentProps: ComponentProps = {
     min: 0,

@@ -49,17 +49,7 @@ export function generateAppSlug(appName: string): string {
   return candidates[candidates.length - 1];
 }
 
-interface SlugValidationResult {
-  slug: string;
-  is_available: boolean;
-  is_format_valid: boolean;
-  error: string | null;
-}
-type _CheckSlugValidationResult = SlugValidationResult extends DbRpcRow<"validate_slugs">
-  ? true
-  : false;
-declare const _slugValidationResult: _CheckSlugValidationResult;
-true satisfies typeof _slugValidationResult;
+type SlugValidationResult = DbRpcRow<"validate_slugs">;
 
 interface BatchSlugValidationResult {
   valid: SlugValidationResult[];

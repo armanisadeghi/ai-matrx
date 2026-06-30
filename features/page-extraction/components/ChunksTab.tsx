@@ -26,6 +26,7 @@ import {
 import { ChunkCard } from "@/features/page-extraction/components/ChunkCard";
 import { getJob } from "@/features/page-extraction/api/jobs";
 import { selectActiveRunByJob } from "@/features/page-extraction/redux/selectors";
+import type { ActivePageRun } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
@@ -117,11 +118,7 @@ export function ChunksTab({
     selectActiveRunByJob(s, inAllView ? null : viewedJobId),
   );
   const pageRunByChunkIndex = useMemo(() => {
-    if (!activeRun)
-      return new Map<
-        number,
-        NonNullable<(typeof activeRun)["pageRuns"]>[string]
-      >();
+    if (!activeRun) return new Map<number, ActivePageRun>();
     return new Map(
       Object.values(activeRun.pageRuns).map((pr) => [pr.chunkIndex, pr]),
     );

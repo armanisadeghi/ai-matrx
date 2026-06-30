@@ -25,7 +25,7 @@ export function ContentViewer({
   const [saving, setSaving] = useState(false);
 
   const startEdit = useCallback(() => {
-    setEditText(content.content);
+    setEditText(content.content ?? "");
     setEditing(true);
   }, [content.content]);
 
