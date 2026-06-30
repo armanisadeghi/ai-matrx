@@ -20,6 +20,9 @@ interface EduComingSoonProps {
   visionRef?: string;
   status?: EduStatus;
   accessTier?: AccessTier;
+  /** For sub-route placeholders: which surface this is + how it's gated
+   *  (e.g. "Edit surface — gated to edit permission"). See ROUTING.md. */
+  surfaceNote?: string;
   className?: string;
 }
 
@@ -31,6 +34,7 @@ export function EduComingSoon({
   visionRef,
   status = "coming-soon",
   accessTier,
+  surfaceNote,
   className,
 }: EduComingSoonProps) {
   return (
@@ -52,6 +56,12 @@ export function EduComingSoon({
         <p className="text-sm text-muted-foreground leading-relaxed">
           {description}
         </p>
+
+        {surfaceNote ? (
+          <p className="mt-3 text-xs text-muted-foreground border-l-2 border-primary/40 pl-3 py-0.5">
+            {surfaceNote}
+          </p>
+        ) : null}
 
         {capabilities && capabilities.length > 0 ? (
           <div className="mt-5">

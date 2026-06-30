@@ -42,6 +42,8 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 
 ## Invariants & gotchas
 
+- **Routing contract → [`app/(core)/education/ROUTING.md`](../../app/(core)/education/ROUTING.md). Read it before adding any route.** Marketing/content is **nested + data-driven** (`education/<axis>/[slug]`, `education/learn/[...slug]`); app tools are **FLAT** (`education/<tool>` + sub-routes) — never nest a tool under an axis, never scatter it into `(transitional)`/`(legacy)`/a sibling feature. A tool graduates from its coming-soon placeholder to the real build **at the same slug**.
+- **View/edit split (the share-gating fundamental).** Per tool: `[id]` (+ use-modes like `study`/`take`/`results`) is gated by **VIEW** access (the shareable URL); `[id]/edit` is a separate segment gated by **EDIT** permission (view-only sharees redirect to `[id]`). Gate via `iam.has_access` + the permissions registry, not a bespoke check. Models Google Docs / Quizlet.
 - **Marketing/content pages never `"use client"`.** Interactivity goes in leaf client components (e.g. `AuthedWorkspaceCTA`), never the page.
 - **`SectionRenderer` is the only home for page-body markup.** New block type → extend the `EduSection` union + add one branch. Never inline bespoke JSX in a registry entry.
 - **Registry icons must resolve at lucide-react RUNTIME, not just type-level.** Lucide dropped its brand icons (e.g. `Youtube`) — a type-valid-but-runtime-missing icon compiles, passes `tsc`, then **500s every education route** through the shared `registry.ts`. Validate new icons at runtime (`node -e "console.log('Video' in require('lucide-react'))"`), never `tsc` alone.
