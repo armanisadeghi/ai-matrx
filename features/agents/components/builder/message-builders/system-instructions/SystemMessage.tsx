@@ -59,7 +59,7 @@ function getOffsetWithinRoot(root: Node, node: Node, offset: number): number {
 interface SystemMessageProps {
   agentId: string;
   onOpenFullScreenEditor?: () => void;
-  scrollContainerRef?: RefObject<HTMLDivElement>;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function SystemMessage({
@@ -300,7 +300,7 @@ export function SystemMessage({
 
   // Check if variable insertion is enabled
   const hasVariableSupport =
-    variableDefinitions && variableDefinitions.length > 0;
+    !!variableDefinitions && variableDefinitions.length > 0;
 
   // Derive variable names from variableDefaults
   const variableNames = variableDefinitions

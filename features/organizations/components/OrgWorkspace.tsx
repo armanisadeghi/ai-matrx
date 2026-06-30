@@ -34,6 +34,7 @@ import {
   Boxes,
   ChevronRight,
   Info,
+  Link2,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,8 @@ import { useOrgResourceInventory } from "@/features/organizations/hooks/useOrgRe
 import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContributeResourceSheet } from "@/features/organizations/components/ContributeResourceSheet";
 import { OrgShareReviewCard } from "@/features/organizations/components/OrgShareReviewCard";
+import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
+import { AssociationCard } from "@/features/scopes/components/associations/AssociationCard";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 
@@ -439,6 +442,30 @@ export function OrgWorkspace() {
             </div>
           )}
         </div>
+
+        {/* ─── Associations (canonical platform.associations edges) ──── */}
+        <PrimaryEntityProvider
+          value={{
+            type: "organization",
+            id: organization.id,
+            orgId: organization.id,
+            label: organization.name,
+          }}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">Associations</h2>
+              <span className="text-xs text-muted-foreground">
+                Attached directly to this organization
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <AssociationCard token="task" />
+              <AssociationCard token="file" />
+            </div>
+          </div>
+        </PrimaryEntityProvider>
 
         {/* ─── Resources by content role ────────────────────────────── */}
         <div className="space-y-5">

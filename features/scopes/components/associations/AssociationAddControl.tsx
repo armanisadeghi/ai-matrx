@@ -54,6 +54,7 @@ interface AssociationAddControlProps {
 }
 
 const TARGET_LABEL: Record<AssociationTargetType, string> = {
+  organization: "organization",
   scope: "scope",
   scope_type: "scope type",
   project: "project",
@@ -209,7 +210,9 @@ function renderScopeTypeOptions(
   return rows.map((t) => (
     <OptionRow
       key={t.id}
-      icon={<DynamicIcon name={t.icon} color={t.color} className="h-3.5 w-3.5" />}
+      icon={
+        <DynamicIcon name={t.icon} color={t.color} className="h-3.5 w-3.5" />
+      }
       label={t.label_singular}
       onClick={() => choose(t.id, t.label_singular)}
     />

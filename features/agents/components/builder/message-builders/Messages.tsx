@@ -9,7 +9,7 @@ import { MessageItem } from "@/features/agents/components/builder/message-builde
 interface MessagesProps {
   agentId: string;
   onOpenFullScreenEditor?: (messageIndex: number) => void;
-  scrollContainerRef?: RefObject<HTMLDivElement>;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function Messages({

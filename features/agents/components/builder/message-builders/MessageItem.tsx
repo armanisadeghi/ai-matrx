@@ -90,7 +90,7 @@ interface MessageItemProps {
   messageIndex: number;
   agentId: string;
   onOpenFullScreenEditor?: (messageIndex: number) => void;
-  scrollContainerRef?: RefObject<HTMLDivElement>;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 }
 
 export function MessageItem({

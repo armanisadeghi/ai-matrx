@@ -117,6 +117,7 @@ export type FavoriteKind = EntityType | "nav";
 // validated at runtime (the full registry is allowed there); only the deliberate
 // container set is narrowed here.
 export const ASSOCIATION_TARGET_TYPES = [
+  "organization", //         an org — the top-level container resources attach into
   "scope",
   "scope_type",
   "project",

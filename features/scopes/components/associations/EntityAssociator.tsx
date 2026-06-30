@@ -68,6 +68,7 @@ const DEFAULT_ALLOWED: AssociationTargetType[] = ["scope", "project", "task"];
 // the "Add" affordance grouping. New AssociationTargetType members must be
 // added here (TS will flag a missing key).
 const TYPE_LABEL_PLURAL: Record<AssociationTargetType, string> = {
+  organization: "Organizations",
   scope: "Scopes",
   scope_type: "Scope types",
   project: "Projects",
@@ -195,7 +196,9 @@ export function EntityAssociator(props: EntityAssociatorProps) {
         <div className="flex items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2">
           <span className="flex items-center gap-1.5 text-[11px] text-destructive">
             <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="truncate">{error || "Failed to load associations"}</span>
+            <span className="truncate">
+              {error || "Failed to load associations"}
+            </span>
           </span>
           <button
             type="button"
