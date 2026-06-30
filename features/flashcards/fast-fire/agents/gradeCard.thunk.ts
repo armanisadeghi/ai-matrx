@@ -153,8 +153,13 @@ export function gradeCard(args: GradeCardArgs) {
       }
     }
 
-    // GRADER-OPTIONAL: no agent → record a result-less attempt and mark skipped.
-    if (!config.graderAgentId) {
+    // GRADER-OPTIONAL + NO-AUDIO GUARD: skip the grader (record result-less) when
+    // there's no grader configured OR no audio was captured/uploaded. Grading with
+    // NO audio is worse than not grading: the model has nothing to transcribe and
+    // hallucinates a "correct" answer from the card back (the exact 100%-on-
+    // everything bug). This also makes abort-mid-pad safe — an abandoned card whose
+    // clip resolved null never launches a grader or records a fabricated grade.
+    if (!config.graderAgentId || !responseAudioFileId) {
       dispatch(gradeSkipped({ cardId, responseAudioFileId, runId: sessionId }));
       await recordAttempt({
         cardId,

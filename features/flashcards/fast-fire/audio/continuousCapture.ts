@@ -152,11 +152,23 @@ registerProcessor('pcm-recorder', PcmRecorderProcessor);
 `;
 
 let workletModulePromise: Promise<boolean> | null = null;
+/** The context the cached module promise belongs to. The shared AudioContext can
+ *  be RECREATED (iOS/Safari may close it under memory pressure / backgrounding,
+ *  and `getSharedAudioContext` re-mints a fresh one), and an `addModule` is bound
+ *  to a specific context — a stale cached promise would let us build an
+ *  AudioWorkletNode on a context that never registered the processor. */
+let workletModuleCtx: AudioContext | null = null;
 
-/** Load the PCM worklet module once for the shared context. Returns false (so the
- *  caller can fall back to ScriptProcessor) if AudioWorklet is unavailable. */
+/** Load the PCM worklet module once PER context. Returns false (so the caller can
+ *  fall back to ScriptProcessor) if AudioWorklet is unavailable. */
 async function ensureWorkletModule(ctx: AudioContext): Promise<boolean> {
   if (!ctx.audioWorklet) return false;
+  if (workletModuleCtx !== ctx) {
+    // Context changed (or first load) — the old module promise is for a dead
+    // context; reload on this one.
+    workletModulePromise = null;
+    workletModuleCtx = ctx;
+  }
   if (!workletModulePromise) {
     workletModulePromise = (async () => {
       const url = URL.createObjectURL(
@@ -168,6 +180,7 @@ async function ensureWorkletModule(ctx: AudioContext): Promise<boolean> {
       } catch (err) {
         console.error("[fastfire.capture] worklet addModule failed:", err);
         workletModulePromise = null; // allow a retry next session
+        workletModuleCtx = null;
         return false;
       } finally {
         URL.revokeObjectURL(url);
@@ -178,8 +191,24 @@ async function ensureWorkletModule(ctx: AudioContext): Promise<boolean> {
 }
 
 // ── PCM buffer (growable, doubling capacity) ──────────────────────────────────
+/** Hard safety cap so a forgotten/runaway session can't grow the buffer without
+ *  bound (~30 min at 48kHz ≈ 345MB). Fast Fire drills are far shorter by design;
+ *  this only guards against an abandoned, never-stopped capture. */
+const MAX_BUFFER_SEC = 1800;
+let bufferCapWarned = false;
+
 function appendFrame(frame: Float32Array): void {
   if (frame.length === 0) return;
+  const maxSamples = Math.round((store.sampleRate || 48000) * MAX_BUFFER_SEC);
+  if (store.sampleCount + frame.length > maxSamples) {
+    if (!bufferCapWarned) {
+      bufferCapWarned = true;
+      console.warn(
+        `[fastfire.capture] PCM buffer hit the ${MAX_BUFFER_SEC}s safety cap — dropping further audio. End the session.`,
+      );
+    }
+    return;
+  }
   if (store.sampleCount + frame.length > store.pcm.length) {
     let cap = Math.max(store.pcm.length, 1);
     while (store.sampleCount + frame.length > cap) cap *= 2;
@@ -267,6 +296,7 @@ export async function startContinuousCapture(): Promise<void> {
   store.sampleRate = ctx.sampleRate;
   store.pcm = new Float32Array(Math.round(ctx.sampleRate * INITIAL_CAPACITY_SEC));
   store.sampleCount = 0;
+  bufferCapWarned = false;
   store.cards.clear();
   store.cardOrder = [];
   store.activeCardId = null;
@@ -281,20 +311,34 @@ export async function startContinuousCapture(): Promise<void> {
   store.sinkGain.connect(ctx.destination);
 
   const haveWorklet = await ensureWorkletModule(ctx);
+  let started = false;
   if (haveWorklet) {
-    const node = new AudioWorkletNode(ctx, "pcm-recorder", {
-      numberOfInputs: 1,
-      numberOfOutputs: 1,
-      channelCount: 1,
-    });
-    node.port.onmessage = (e: MessageEvent<Float32Array>) => appendFrame(e.data);
-    store.source.connect(node);
-    node.connect(store.sinkGain);
-    store.workletNode = node;
-    store.capturePath = "worklet";
-  } else {
-    // Universal fallback (older engines): ScriptProcessorNode.
-    console.warn("[fastfire.capture] AudioWorklet unavailable — ScriptProcessor fallback");
+    try {
+      const node = new AudioWorkletNode(ctx, "pcm-recorder", {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        channelCount: 1,
+      });
+      node.port.onmessage = (e: MessageEvent<Float32Array>) => appendFrame(e.data);
+      store.source.connect(node);
+      node.connect(store.sinkGain);
+      store.workletNode = node;
+      store.capturePath = "worklet";
+      started = true;
+    } catch (err) {
+      // e.g. InvalidStateError if the module isn't registered on THIS context
+      // (a recreated context that slipped past the cache guard). Reset the cache
+      // and fall through to the ScriptProcessor path so capture still works.
+      console.error(
+        "[fastfire.capture] AudioWorkletNode failed — ScriptProcessor fallback:",
+        err,
+      );
+      workletModulePromise = null;
+      workletModuleCtx = null;
+    }
+  }
+  if (!started) {
+    // Universal fallback (older engines / worklet failure): ScriptProcessorNode.
     const node = ctx.createScriptProcessor(4096, 1, 1);
     node.onaudioprocess = (e: AudioProcessingEvent) => {
       appendFrame(new Float32Array(e.inputBuffer.getChannelData(0)));
@@ -367,17 +411,14 @@ function buildCardClip(cardId: string): Blob | null {
   if (clipEnd <= clipStart) return null;
 
   const clip = store.pcm.slice(clipStart, clipEnd);
-  // Boundary beeps at the REAL card start/stop offsets within the clip.
-  mixInto(
-    clip,
-    makeSineFloat32(BEEP_START_HZ, BEEP_DUR_SEC, rate, BEEP_AMP),
-    win.startSample - clipStart,
-  );
-  mixInto(
-    clip,
-    makeSineFloat32(BEEP_STOP_HZ, BEEP_DUR_SEC, rate, BEEP_AMP),
-    end - clipStart,
-  );
+  // Boundary beeps at the REAL card start/stop offsets within the clip, clamped
+  // so the whole beep fits (the last card's post-pad can be clipped to the buffer
+  // end, putting the stop offset AT clip.length where mixInto would drop it).
+  const beepLen = Math.round(BEEP_DUR_SEC * rate);
+  const startAt = Math.max(0, Math.min(win.startSample - clipStart, clip.length - beepLen));
+  const stopAt = Math.max(0, Math.min(end - clipStart, clip.length - beepLen));
+  mixInto(clip, makeSineFloat32(BEEP_START_HZ, BEEP_DUR_SEC, rate, BEEP_AMP), startAt);
+  mixInto(clip, makeSineFloat32(BEEP_STOP_HZ, BEEP_DUR_SEC, rate, BEEP_AMP), stopAt);
   return encodeWavFromFloat32(clip, rate, { targetRate: WAV_TARGET_RATE });
 }
 
@@ -497,6 +538,10 @@ export function stopContinuousCapture(): Blob | null {
   store.capturePath = null;
   store.pcm = new Float32Array(0);
   store.sampleCount = 0;
+  // Clear the per-card windows too (parity with hardStopCapture) so a debug read
+  // between sessions never reports stale cards from the prior drill.
+  store.cards.clear();
+  store.cardOrder = [];
   store.activeCardId = null;
   maybeEmitDebug(true);
   return full;
