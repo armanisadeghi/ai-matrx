@@ -565,19 +565,19 @@ function timelineSummary(
     case "record_reserved": {
       const r = entry.data;
       const short = `${r.record_id.slice(0, 8)}…`;
-      if (r.table === "cx_message") {
+      if (r.table === "message") {
         const role = r.metadata?.role ?? "?";
         const pos = r.metadata?.position ?? "?";
-        return `cx_message reserved [${role} #${pos}]: ${short}`;
+        return `message reserved [${role} #${pos}]: ${short}`;
       }
-      if (r.table === "cx_request") {
+      if (r.table === "request") {
         const iter = r.metadata?.iteration ?? "?";
-        return `cx_request reserved [iter ${iter}]: ${short}`;
+        return `request reserved [iter ${iter}]: ${short}`;
       }
-      if (r.table === "cx_tool_call") {
+      if (r.table === "tool_call") {
         const tool = r.metadata?.tool_name ?? "?";
         const iter = r.metadata?.iteration ?? "?";
-        return `cx_tool_call reserved [${tool}, iter ${iter}]: ${short}`;
+        return `tool_call reserved [${tool}, iter ${iter}]: ${short}`;
       }
       return `${r.table} reserved: ${short} [${r.db_project}]`;
     }

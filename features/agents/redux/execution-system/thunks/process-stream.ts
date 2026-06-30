@@ -1179,7 +1179,7 @@ export async function processStream({
               });
             }
           }
-        } else if (d.table === "cx_user_request") {
+        } else if (d.table === "user_request") {
           reservedUserRequestId = d.record_id;
           const parents = d.parent_refs as
             | { conversation_id?: string }
@@ -1311,7 +1311,7 @@ export async function processStream({
               deletedAt: null,
             }),
           );
-        } else if (d.table === "cx_conversation") {
+        } else if (d.table === "conversation") {
           // Manual mode: wire convId ≠ local Redux convId by design. The
           // server-side cx_conversation row is keyed by a different id than
           // our local Redux conversationId, so the local id is NOT a valid
@@ -1370,7 +1370,7 @@ export async function processStream({
         // deliberately ONLY touch the `status` field — never content —
         // so subscribers rendering message bodies don't re-render on
         // bookkeeping status changes. (See Phase 5.3 re-render audit.)
-        if (d.table === "cx_message") {
+        if (d.table === "message") {
           // On a failed transition, carry the structured error + metadata
           // through so the in-session record matches what the DB serves back on
           // reload. The top-level `error` jsonb is the new canonical signal
@@ -1407,7 +1407,7 @@ export async function processStream({
               patch,
             }),
           );
-        } else if (d.table === "cx_user_request") {
+        } else if (d.table === "user_request") {
           dispatch(
             patchUserRequest({
               id: d.record_id,
@@ -1420,7 +1420,7 @@ export async function processStream({
               },
             }),
           );
-        } else if (d.table === "cx_tool_call") {
+        } else if (d.table === "tool_call") {
           // Stamp `completedAt` whenever the tool-call record transitions —
           // "active" / "completed" / "failed" all mark the row as no longer
           // reserved and give us the server's timestamp.

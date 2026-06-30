@@ -1173,7 +1173,7 @@ export const selectReservationCount =
     return Object.keys(reservations).length;
   };
 
-/** The conversation_id from the cx_conversation reservation, if available. */
+/** The conversation_id from the conversation reservation, if available. */
 export const selectReservedConversationId =
   (requestId: string) =>
   (state: RootState): string | null => {
@@ -1181,7 +1181,7 @@ export const selectReservedConversationId =
       state.activeRequests.byRequestId[requestId]?.reservations;
     if (!reservations) return null;
     const conv = Object.values(reservations).find(
-      (r) => r.table === "cx_conversation",
+      (r) => r.table === "conversation",
     );
     return conv?.recordId ?? null;
   };

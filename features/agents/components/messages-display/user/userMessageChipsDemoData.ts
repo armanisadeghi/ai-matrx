@@ -132,7 +132,7 @@ export const DEMO_TYPE_ENTRIES: {
       label: "Database Ref",
       type: "db_ref",
       slotMatched: true,
-      value: { table: "cx_message", id: "msg-abc-123" },
+      value: { table: "message", id: "msg-abc-123" },
     },
   },
   {

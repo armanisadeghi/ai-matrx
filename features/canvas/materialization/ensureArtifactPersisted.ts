@@ -19,7 +19,7 @@ export interface EnsureArtifactInput {
   title: string;
   /** Raw payload the type's renderer consumes (markdown or JSON string). */
   content: string;
-  /** Real cx_message.id — required to create a new row when none exists. */
+  /** Real message.id — required to create a new row when none exists. */
   messageId?: string | null;
   conversationId?: string | null;
   /** Stable 1-based index within the message (= canvas_items.artifact_index). */
@@ -203,7 +203,7 @@ export async function ensureArtifactPersisted(
   // ── 3. Upsert new row ─────────────────────────────────────────────────────
   if (!input.messageId || isClientTempId(input.messageId)) {
     errors.push(
-      "cannot create artifact — need a real cx_message.id (wait for message commit or stream end)",
+      "cannot create artifact — need a real message.id (wait for message commit or stream end)",
     );
     return {
       ok: false,

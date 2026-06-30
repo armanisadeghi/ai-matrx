@@ -271,7 +271,7 @@ export interface ContextTrimmedPayload {
 // --- Typed Record Reservation Variants (discriminated on `table`) ---
 
 // Narrows RecordReservedPayload.metadata / parent_refs by table.
-// Server guarantees these shapes for cx_message, cx_request, cx_tool_call.
+// Server guarantees these shapes for message, request, tool_call.
 
 export interface CxMessageReservedParentRefs {
   [key: string]: unknown;
@@ -311,19 +311,19 @@ export interface CxToolCallReservedMetadata {
 }
 
 export type CxMessageReservedPayload = RecordReservedPayload & {
-  table: "cx_message";
+  table: "message";
   parent_refs: CxMessageReservedParentRefs;
   metadata: CxMessageReservedMetadata;
 };
 
 export type CxRequestReservedPayload = RecordReservedPayload & {
-  table: "cx_request";
+  table: "request";
   parent_refs: CxRequestReservedParentRefs;
   metadata: CxRequestReservedMetadata;
 };
 
 export type CxToolCallReservedPayload = RecordReservedPayload & {
-  table: "cx_tool_call";
+  table: "tool_call";
   parent_refs: CxToolCallReservedParentRefs;
   metadata: CxToolCallReservedMetadata;
 };
@@ -336,22 +336,22 @@ export type TypedRecordReservedPayload =
 
 /** True when the reservation is for a known table with typed metadata. */
 export function isTypedRecordReservedPayload(p: RecordReservedPayload): p is RecordReservedPayload & TypedRecordReservedPayload {
-  return p.table === "cx_message" || p.table === "cx_request" || p.table === "cx_tool_call";
+  return p.table === "message" || p.table === "request" || p.table === "tool_call";
 }
 
 /** Narrows to CxMessageReservedPayload — `metadata.role` and `metadata.position` are guaranteed. */
 export function isCxMessageReservation(p: RecordReservedPayload): p is CxMessageReservedPayload {
-  return p.table === "cx_message";
+  return p.table === "message";
 }
 
 /** Narrows to CxRequestReservedPayload — `metadata.iteration` is guaranteed. */
 export function isCxRequestReservation(p: RecordReservedPayload): p is CxRequestReservedPayload {
-  return p.table === "cx_request";
+  return p.table === "request";
 }
 
 /** Narrows to CxToolCallReservedPayload — `metadata.tool_name`, `metadata.call_id`, and `metadata.iteration` are guaranteed. */
 export function isCxToolCallReservation(p: RecordReservedPayload): p is CxToolCallReservedPayload {
-  return p.table === "cx_tool_call";
+  return p.table === "tool_call";
 }
 
 // --- Typed Data Payloads ---
