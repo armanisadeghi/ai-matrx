@@ -21,8 +21,10 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { studyService } from "@/features/education/study/service/studyService";
 import { getFastFireAgentConfig } from "../config";
 import { setSessionReview } from "../redux/fastFireSlice";
-import { selectGradesInOrder, selectFastFireCards } from "../redux/fastFire.selectors";
-import { FC_REVIEW_BATCH_SCHEMA } from "./schemas";
+import {
+  selectGradesInOrder,
+  selectFastFireCards,
+} from "../redux/fastFire.selectors";
 
 interface ReviewSessionArgs {
   sessionId: string | null;
@@ -94,7 +96,10 @@ export function reviewSession(args: ReviewSessionArgs) {
           isEphemeral: true,
           runtime: {
             variables: {
-              transcript: attempts.map((a) => a.transcript).filter(Boolean).join("\n"),
+              transcript: attempts
+                .map((a) => a.transcript)
+                .filter(Boolean)
+                .join("\n"),
               attempts,
               aggregate,
               remaining_cards: [],
@@ -103,7 +108,9 @@ export function reviewSession(args: ReviewSessionArgs) {
           config: {
             autoRun: false,
             displayMode: "background",
-            llmOverrides: { response_format: FC_REVIEW_BATCH_SCHEMA },
+            // Response format has nothing to do with a SCHEMA! Also, providing it as an ovveride means partially modifying the agent setttings, but not completely, which will guarantee failures!
+            // llmOverrides: { response_format: FC_REVIEW_BATCH_SCHEMA },
+            // ADDITIONALLY: It is utterly STUPID to provide "Overrides" to modify the behavior of an agent made SPECIFCIALY for this task! If the agent settings are wrong, then modify them in the database.
           },
           jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
         }),

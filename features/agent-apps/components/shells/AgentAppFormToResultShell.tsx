@@ -274,7 +274,7 @@ function DefaultVariableInput({
     <SmartAgentVariables
       conversationId={conversationId}
       compact={config?.compact}
-      onSubmit={onSubmit}
+      onSubmit={onSubmit ?? (() => {})}
       styleOverride={config?.variableInputStyle}
     />
   );

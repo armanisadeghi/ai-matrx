@@ -113,12 +113,7 @@ export interface UseAgentAppArgs {
   showVariablePanel?: boolean;
   /** Variables panel layout style — passes through to SmartAgentVariables. */
   variablesPanelStyle?:
-    | "form"
-    | "inline"
-    | "wizard"
-    | "compact"
-    | "guided"
-    | "cards";
+    "form" | "inline" | "wizard" | "compact" | "guided" | "cards";
   /** Show the pre-execution gate before the first run. */
   showPreExecutionGate?: boolean;
   /** Custom pre-execution message. */
@@ -547,7 +542,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       conversationId,
       agent,
       variableDefinitions: agent?.variableDefinitions ?? null,
-      contextSlots: agent?.contextSlots ?? null,
+      contextSlots: agent?.contextSlots ?? [],
       variables: variables as Record<string, unknown>,
       setVariable,
       setVariables,

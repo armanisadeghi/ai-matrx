@@ -1,10 +1,6 @@
 // features/flashcards/fast-fire/agents/schemas.ts
 //
-// The json_schema response_format contracts the FastFire agents are coded
-// against, copied verbatim from features/education/docs/AGENT_SPECS.md. The user
-// authors/perfects the prompts in-system; the FE pins these schemas so the
-// extracted object always matches what the UI reads. Passed through
-// `config.llmOverrides.response_format` at launch.
+// These are meaningless since this only works if it's defined in the database for the agent definition. Do not trust this data as it can be stale and wrong.
 
 /** §5 fc_grade_spoken — per-card spoken answer → structured grade. */
 export const FC_GRADE_SPOKEN_SCHEMA = {
