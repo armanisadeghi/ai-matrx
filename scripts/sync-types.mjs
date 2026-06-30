@@ -67,6 +67,18 @@ if (fastMode) {
         console.error('    Fix the errors above, then re-run: pnpm sync-types\n');
         process.exit(1);
     }
+
+    // Step 1b: Regenerate the type-safe entity-token vocabulary from
+    // platform.entity_types (the source of truth for every association token).
+    console.log('  Step 1b: Regenerating entity-token vocabulary (pnpm gen:entity-types)...\n');
+    try {
+        execSync('pnpm gen:entity-types', { stdio: 'inherit', cwd: PROJECT_ROOT });
+        console.log('\n  ✓ Entity-token vocabulary updated.\n');
+    } catch {
+        console.error('\n  ✗ Failed to regenerate entity-token vocabulary.');
+        console.error('    Fix the errors above, then re-run: pnpm sync-types\n');
+        process.exit(1);
+    }
 }
 
 // ── Step 2: Python API types ───────────────────────────────────────────────

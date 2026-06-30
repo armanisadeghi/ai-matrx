@@ -60,7 +60,7 @@ export default function TaskAttachmentsPanel({
         await dispatch(
           associateWithTask({
             taskId,
-            entityType: "user_file",
+            entityType: "file",
             entityId: fileId,
           }),
         ).unwrap();
@@ -251,7 +251,7 @@ export default function TaskAttachmentsPanel({
               key: f.id,
               primary: f.filename,
               secondary: f.mime_type ?? undefined,
-              onRemove: () => handleRemove("user_file", f.id),
+              onRemove: () => handleRemove("file", f.id),
             }))}
           />
           {/* AI messages from cx_message — linked back to the conversation */}

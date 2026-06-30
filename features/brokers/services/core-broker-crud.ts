@@ -171,13 +171,13 @@ export class BrokerService {
       p_broker_id: input.broker_id,
       p_value: input.value,
       p_is_global: input.is_global || false,
-      p_user_id: input.user_id || null,
-      p_organization_id: input.organization_id || null,
-      p_project_id: input.project_id || null,
-      p_task_id: input.task_id || null,
-      p_ai_runs_id: input.ai_runs_id || null,
-      p_ai_tasks_id: input.ai_tasks_id || null,
-      p_created_by: input.created_by || null,
+      p_user_id: input.user_id || undefined,
+      p_organization_id: input.organization_id || undefined,
+      p_project_id: input.project_id || undefined,
+      p_task_id: input.task_id || undefined,
+      p_ai_runs_id: input.ai_runs_id || undefined,
+      p_ai_tasks_id: input.ai_tasks_id || undefined,
+      p_created_by: input.created_by || undefined,
     });
 
     if (error) throw error;
@@ -194,13 +194,13 @@ export class BrokerService {
     const { data, error } = await supabase.rpc("bulk_upsert_broker_values", {
       p_broker_value_pairs: brokerValues,
       p_is_global: false,
-      p_user_id: scope.user_id || null,
-      p_organization_id: scope.organization_id || null,
-      p_project_id: scope.project_id || null,
-      p_task_id: scope.task_id || null,
-      p_ai_runs_id: scope.ai_runs_id || null,
-      p_ai_tasks_id: scope.ai_tasks_id || null,
-      p_created_by: scope.created_by || null,
+      p_user_id: scope.user_id || undefined,
+      p_organization_id: scope.organization_id || undefined,
+      p_project_id: scope.project_id || undefined,
+      p_task_id: scope.task_id || undefined,
+      p_ai_runs_id: scope.ai_runs_id || undefined,
+      p_ai_tasks_id: scope.ai_tasks_id || undefined,
+      p_created_by: scope.created_by || undefined,
     });
 
     if (error) throw error;
@@ -237,12 +237,12 @@ export class BrokerService {
       "get_broker_values_for_context",
       {
         p_broker_ids: brokerIds,
-        p_user_id: context.user_id || null,
-        p_organization_id: context.organization_id || null,
-        p_project_id: context.project_id || null,
-        p_task_id: context.task_id || null,
-        p_ai_runs_id: context.ai_runs_id || null,
-        p_ai_tasks_id: context.ai_tasks_id || null,
+        p_user_id: context.user_id || undefined,
+        p_organization_id: context.organization_id || undefined,
+        p_project_id: context.project_id || undefined,
+        p_task_id: context.task_id || undefined,
+        p_ai_runs_id: context.ai_runs_id || undefined,
+        p_ai_tasks_id: context.ai_tasks_id || undefined,
       },
     );
 
@@ -261,12 +261,12 @@ export class BrokerService {
       "get_complete_broker_data_for_context",
       {
         p_broker_ids: brokerIds,
-        p_user_id: context.user_id || null,
-        p_organization_id: context.organization_id || null,
-        p_project_id: context.project_id || null,
-        p_task_id: context.task_id || null,
-        p_ai_runs_id: context.ai_runs_id || null,
-        p_ai_tasks_id: context.ai_tasks_id || null,
+        p_user_id: context.user_id || undefined,
+        p_organization_id: context.organization_id || undefined,
+        p_project_id: context.project_id || undefined,
+        p_task_id: context.task_id || undefined,
+        p_ai_runs_id: context.ai_runs_id || undefined,
+        p_ai_tasks_id: context.ai_tasks_id || undefined,
       },
     );
 
@@ -284,12 +284,12 @@ export class BrokerService {
   ): Promise<string[]> {
     const { data, error } = await supabase.rpc("get_missing_broker_ids", {
       p_broker_ids: brokerIds,
-      p_user_id: context.user_id || null,
-      p_organization_id: context.organization_id || null,
-      p_project_id: context.project_id || null,
-      p_task_id: context.task_id || null,
-      p_ai_runs_id: context.ai_runs_id || null,
-      p_ai_tasks_id: context.ai_tasks_id || null,
+      p_user_id: context.user_id || undefined,
+      p_organization_id: context.organization_id || undefined,
+      p_project_id: context.project_id || undefined,
+      p_task_id: context.task_id || undefined,
+      p_ai_runs_id: context.ai_runs_id || undefined,
+      p_ai_tasks_id: context.ai_tasks_id || undefined,
     });
 
     if (error) throw error;

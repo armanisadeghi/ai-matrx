@@ -32,10 +32,7 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "sonner";
-import {
-  closeOverlay,
-  openOverlay,
-} from "@/lib/redux/slices/overlaySlice";
+import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -595,8 +592,10 @@ function saveItems(ctx: ContentActionContext): MenuItem[] {
 
         dispatch(
           setPendingSource({
-            entity_type: "generic_content",
-            entity_id: "",
+            // Raw content has no registered entity row → no association edge,
+            // just a standalone task. Never a phantom token.
+            entity_type: null,
+            entity_id: null,
             label: title ? `${title} — ${preview.slice(0, 80)}` : preview,
             metadata: {
               ...(title ? { source_title: title } : {}),
@@ -775,8 +774,9 @@ export function resumePendingContentAuthAction(
         : "Task Related To Content";
       dispatch(
         setPendingSource({
-          entity_type: "generic_content",
-          entity_id: "",
+          // Raw content has no registered entity row → standalone task, no edge.
+          entity_type: null,
+          entity_id: null,
           label: preview,
           prePopulate: { title: seedTitle, description: savedContent },
         }),

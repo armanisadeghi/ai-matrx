@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import {
   getTemplateForDisplayMode,
   DISPLAY_MODE_OPTIONS,
 } from "@/features/agent-apps/sample-code/templates";
 import { TemplatePreviewRenderer } from "@/features/agent-apps/components/TemplatePreviewRenderer";
+import { TemplateModeActions } from "@/features/agent-apps/components/TemplateModeHeader";
 import type { AppDisplayMode } from "@/features/agent-apps/types";
 import type { Metadata } from "next";
+import RouteHeader from "@/features/shell/components/header/RouteHeader";
+import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
 const VALID_MODES: AppDisplayMode[] = [
   "form",
@@ -50,77 +53,60 @@ export default async function TemplateDemoPage({
   const templateCode = getTemplateForDisplayMode(displayMode);
   const option = DISPLAY_MODE_OPTIONS.find((o) => o.value === displayMode)!;
 
-  const currentIndex = VALID_MODES.indexOf(displayMode);
-  const prevMode = currentIndex > 0 ? VALID_MODES[currentIndex - 1] : null;
-  const nextMode =
-    currentIndex < VALID_MODES.length - 1
-      ? VALID_MODES[currentIndex + 1]
-      : null;
-  const prevOption = prevMode
-    ? DISPLAY_MODE_OPTIONS.find((o) => o.value === prevMode)
-    : null;
-  const nextOption = nextMode
-    ? DISPLAY_MODE_OPTIONS.find((o) => o.value === nextMode)
-    : null;
+  const navItems = DISPLAY_MODE_OPTIONS.filter((o) =>
+    VALID_MODES.includes(o.value),
+  ).map((o) => ({
+    name: o.label,
+    href: `/agent-apps/templates/${o.value}`,
+  }));
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-border bg-card">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/agent-apps/templates"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            All Templates
-          </Link>
-          <span className="text-muted-foreground/50">/</span>
-          <h1 className="text-sm font-semibold text-foreground truncate">
-            {option.label}
-          </h1>
-          {option.supportsChat && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-              Chat
+    <>
+      <RouteHeader
+        left={
+          <>
+            <ChevronLeftTapButton
+              href="/agent-apps/templates"
+              ariaLabel="All templates"
+              tooltip="All templates"
+            />
+            <span className="truncate px-1 text-sm font-medium text-[var(--shell-nav-text)]">
+              {option.label}
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          {prevOption && (
-            <Link
-              href={`/agent-apps/templates/${prevMode}`}
-              className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
-            >
-              {prevOption.label}
-            </Link>
-          )}
-          {nextOption && (
-            <Link
-              href={`/agent-apps/templates/${nextMode}`}
-              className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
-            >
-              {nextOption.label}
-            </Link>
-          )}
-        </div>
-      </div>
+          </>
+        }
+        center={<RouteModeNav items={navItems} />}
+        right={
+          <TemplateModeActions
+            templateCode={templateCode}
+            supportsChat={option.supportsChat}
+          />
+        }
+      />
 
-      <div className="flex-shrink-0 px-4 py-1.5 border-b border-border/50 bg-muted/30">
-        <p className="text-xs text-muted-foreground">
-          {option.description}{" "}
-          <span className="text-muted-foreground/60">
-            — Responses are simulated mock data. Try interacting with the
-            template below.
-          </span>
-        </p>
-      </div>
+      <div
+        className="flex flex-col h-full overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        <div className="flex-shrink-0 px-4 py-1.5 border-b border-border/50 bg-muted/30">
+          <p className="text-xs text-muted-foreground">
+            {option.description}{" "}
+            <span className="text-muted-foreground/60">
+              — Responses are simulated mock data. Try interacting with the
+              template below.
+            </span>
+          </p>
+        </div>
 
-      <div className="flex-1 overflow-hidden">
-        <TemplatePreviewRenderer
-          templateCode={templateCode}
-          displayMode={displayMode}
-          appName={`${option.label} Demo`}
-          appTagline={option.description}
-        />
+        <div className="flex-1 overflow-hidden">
+          <TemplatePreviewRenderer
+            templateCode={templateCode}
+            displayMode={displayMode}
+            appName={`${option.label} Demo`}
+            appTagline={option.description}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

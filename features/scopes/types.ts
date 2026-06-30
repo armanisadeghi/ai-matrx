@@ -7,6 +7,19 @@
 // Aligned with the data model in features/scopes/FEATURE.md.
 
 import type { Database, Json } from "@/types/database.types";
+import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+
+// Re-export the GENERATED entity-token vocabulary so consumers import the
+// canonical, type-safe token set from the scopes types module (the single
+// place feature code already reaches for association/scope types). The
+// generated file is the source of truth — mirrored from `platform.entity_types`
+// via `pnpm gen:entity-types`; never hand-edit it.
+export type { EntityTypeToken } from "@/types/generated/entity-types.generated";
+export {
+  ENTITY_TYPE_METADATA,
+  ENTITY_TYPE_TOKENS,
+  isEntityTypeToken,
+} from "@/types/generated/entity-types.generated";
 
 // ─── Database row aliases ───────────────────────────────────────────
 //
@@ -43,16 +56,18 @@ export type ContextAccessLogRow =
 // participate in the unified association edge (`platform.associations`). One
 // vocabulary — there is no separate "scope assignment" union.
 //
-// The DB registry `platform.entity_types` is the source of truth; this union
-// mirrors it. New entity types are added to `platform.entity_types` FIRST,
-// then mirrored here — never the reverse. (Neither `ctx_scope_assignments`
-// nor `platform.associations.source_type` enforce membership at the DB level —
-// both are free-text source columns — so this union is the app-side guard that
-// stops callers inventing tokens.)
+// The DB registry `platform.entity_types` is the source of truth. The FULL,
+// type-safe token set is GENERATED at `types/generated/entity-types.generated.ts`
+// (`EntityTypeToken`, 216 tokens) — re-exported above. Prefer `EntityTypeToken`
+// for any NEW association/source-type argument; it covers every registered token
+// so callers are never forced to widen to a raw string.
 //
-// 15 canonical registry tokens + 3 app entity types (`agent_app`,
-// `agent_surface_binding`, `page_extraction_job`), registered in the registry
-// by migrations/platform_entity_types_app_tokens.sql.
+// `EntityType` below is the narrower, hand-curated "first-class app entity" set
+// kept for the existing scope-tagging / favorites consumers. It is being
+// converged onto `EntityTypeToken` (and is now a strict subset of it — every
+// member is a real `platform.entity_types` token). Do not extend it — add the
+// token to `platform.entity_types` (then it appears in `EntityTypeToken`
+// automatically).
 export type EntityType =
   // ── canonical (platform.entity_types) ──
   | "agent"
@@ -72,7 +87,7 @@ export type EntityType =
   | "transcript"
   | "working_document" //      a chat working document (workbench.working_documents)
   // ── app entity types (also registered in platform.entity_types) ──
-  | "agent_app" //             an `aga_apps` row (packaged agent experience)
+  | "app" //                   an `app.definition` row (packaged agent experience)
   | "agent_surface_binding" // an agent⇄surface binding row
   | "page_extraction_job"; //  an extraction dataset (one `page_extraction_jobs` row)
 
@@ -92,23 +107,32 @@ export type FavoriteKind = EntityType | "nav";
 
 // Allowed TARGET tokens for a `platform.associations` edge. There is NO DB CHECK
 // constraint on the type columns — the only gate is the FK to
-// `platform.entity_types.token` (any registered token is accepted). This union is
+// `platform.entity_types.token` (any registered token is accepted). This list is
 // the app-side guard that keeps `add`/`setTargets` callers honest about which
-// containers we deliberately attach into. A `source_type` is unconstrained.
-export type AssociationTargetType =
-  | "scope"
-  | "scope_type"
-  | "project"
-  | "task"
-  | "context_item"
-  | "thread"
-  | "war_room"
-  | "category"
-  | "conversation" //         a chat conversation a working_document is attached to
-  | "fc_set" //               a flashcard set (card→set membership)
-  | "fc_card" //              a flashcard (card→card hierarchy, quiz→card)
-  | "file" //                 a file (card→file media + source lineage)
-  | "quiz_session"; //        a quiz a card is used in
+// containers we deliberately attach into.
+//
+// `satisfies readonly EntityTypeToken[]` PROVES at compile time that every token
+// here is a real, registered entity type — so this curated list can never drift
+// to a token that doesn't exist in `platform.entity_types`. A `source_type` is
+// validated at runtime (the full registry is allowed there); only the deliberate
+// container set is narrowed here.
+export const ASSOCIATION_TARGET_TYPES = [
+  "scope",
+  "scope_type",
+  "project",
+  "task",
+  "context_item",
+  "thread",
+  "war_room",
+  "category",
+  "conversation", //         a chat conversation a working_document is attached to
+  "fc_set", //               a flashcard set (card→set membership)
+  "fc_card", //              a flashcard (card→card hierarchy, quiz→card)
+  "file", //                 a file (card→file media + source lineage)
+  "quiz_session", //         a quiz a card is used in
+] as const satisfies readonly EntityTypeToken[];
+
+export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];
 
 // ─── Association edges (per-entity, both-directions cache) ─────────────
 //
@@ -336,11 +360,7 @@ export interface TaskBucketEntry {
 // ─── Orphan buckets (separate lifecycle from the tree) ────────────────
 
 export type OrphanBucketStatus =
-  | "unfetched"
-  | "loading"
-  | "ready"
-  | "empty"
-  | "error";
+  "unfetched" | "loading" | "ready" | "empty" | "error";
 
 export interface OrphanBucket<T> {
   status: OrphanBucketStatus;
@@ -529,12 +549,7 @@ export interface ResolvedSuggestionTarget {
 
 /** Mirrors the `public.context_source_type` enum. */
 export type ContextSourceType =
-  | "manual"
-  | "ai_generated"
-  | "ai_enriched"
-  | "imported"
-  | "scraped"
-  | "system";
+  "manual" | "ai_generated" | "ai_enriched" | "imported" | "scraped" | "system";
 
 export interface SetContextValuePayload {
   context_item_id: string;
@@ -586,8 +601,7 @@ export interface ScopesRpcError {
 }
 
 export type ScopesRpcResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: ScopesRpcError };
+  { ok: true; data: T } | { ok: false; error: ScopesRpcError };
 
 /**
  * Type-guard narrowing helper for {@link ScopesRpcResult}. The repo runs with

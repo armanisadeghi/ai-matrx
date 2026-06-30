@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  createSlice,
-  createAsyncThunk,
-  PayloadAction,
-} from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import type { ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -12,6 +8,9 @@ import {
   type TaskRecord,
 } from "@/features/agent-context/redux/tasksSlice";
 import { adjustProjectTaskCount } from "@/features/agent-context/redux/projectsSlice";
+import { createTask } from "@/features/tasks/services/taskService";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 
 /** One row of the canonical `platform.associations` edge (source → target=`task`). */
 export interface AssociationRef {
@@ -26,7 +25,12 @@ export interface AssociationRef {
 /** Aggregated bundle of what's attached to a task — returned by `get_task_associations`. */
 export interface TaskAssociationsBundle {
   task_id: string;
-  notes: { id: string; label: string; updated_at: string; folder_name?: string | null }[];
+  notes: {
+    id: string;
+    label: string;
+    updated_at: string;
+    folder_name?: string | null;
+  }[];
   files: {
     id: string;
     filename: string;
@@ -151,33 +155,41 @@ export const associateWithTask = createAsyncThunk<
   { dispatch: ThunkDispatch<object, unknown, UnknownAction> }
 >(
   "taskAssociations/associate",
-  async (
-    { taskId, entityType, entityId, label, metadata },
-    { dispatch },
-  ) => {
-    const { data, error } = await supabase.rpc("associate_with_task", {
-      p_task_id: taskId,
-      p_entity_type: entityType,
-      p_entity_id: entityId,
-      p_label: label ?? null,
-      p_metadata: metadata ?? {},
+  async ({ taskId, entityType, entityId, label, metadata }, { dispatch }) => {
+    // Canonical path: the generic `assoc_add` edge (entity → task) via the
+    // associationsService chokepoint — NOT the graveyarded `associate_with_task`
+    // RPC, which hand-rolled a 4-column ON CONFLICT that matched no unique index
+    // (the 5-tuple incl. role) and threw 42P10. The service validates the token +
+    // ids up front and resolves the org from the task.
+    const res = await associationsService.add({
+      sourceType: entityType,
+      sourceId: entityId,
+      targetType: "task",
+      targetId: taskId,
+      label: label ?? undefined,
+      metadata: metadata ?? {},
     });
-    if (error) {
-      console.error("[associateWithTask] RPC error:", {
-        message: error.message,
-        code: (error as { code?: string }).code,
-        hint: (error as { hint?: string }).hint,
-        details: (error as { details?: string }).details,
+    if (isScopesRpcErr(res)) {
+      console.error("[associateWithTask] association failed:", {
+        message: res.error.message,
+        code: res.error.code,
         args: { taskId, entityType, entityId, label },
       });
-      throw error;
+      throw new Error(res.error.message);
     }
     // Refresh both sides of the linkage
     await Promise.all([
       dispatch(fetchTaskAssociations(taskId)),
       dispatch(fetchTasksForEntity({ entityType, entityId })),
     ]);
-    return data as AssociationRef;
+    return {
+      id: res.data.id,
+      entity_type: entityType,
+      entity_id: entityId,
+      label: label ?? null,
+      metadata: metadata ?? {},
+      created_at: new Date().toISOString(),
+    };
   },
 );
 
@@ -188,12 +200,25 @@ export const dissociateFromTask = createAsyncThunk<
 >(
   "taskAssociations/dissociate",
   async ({ taskId, entityType, entityId }, { dispatch }) => {
-    const { error } = await supabase.rpc("dissociate_from_task", {
-      p_task_id: taskId,
-      p_entity_type: entityType,
-      p_entity_id: entityId,
+    // Canonical path: the generic `assoc_remove` edge (entity → task) via the
+    // associationsService chokepoint — NOT the bespoke `dissociate_from_task`
+    // RPC (a pure duplicate of `assoc_remove`, left behind when its sibling
+    // associate/create thunks moved to the chokepoint). The service validates
+    // the token + ids up front.
+    const res = await associationsService.remove({
+      sourceType: entityType,
+      sourceId: entityId,
+      targetType: "task",
+      targetId: taskId,
     });
-    if (error) throw error;
+    if (isScopesRpcErr(res)) {
+      console.error("[dissociateFromTask] dissociation failed:", {
+        message: res.error.message,
+        code: res.error.code,
+        args: { taskId, entityType, entityId },
+      });
+      throw new Error(res.error.message);
+    }
     await Promise.all([
       dispatch(fetchTaskAssociations(taskId)),
       dispatch(fetchTasksForEntity({ entityType, entityId })),
@@ -227,65 +252,75 @@ export const createTaskWithAssociation = createAsyncThunk<
   },
   { dispatch: ThunkDispatch<object, unknown, UnknownAction> }
 >("taskAssociations/createTaskWithAssociation", async (input, { dispatch }) => {
-  const { data, error } = await supabase.rpc("create_task_with_association", {
-    p_title: input.title,
-    p_description: input.description ?? null,
-    p_project_id: input.project_id ?? null,
-    p_organization_id: input.organization_id ?? null,
-    p_priority: input.priority ?? null,
-    p_due_date: input.due_date ?? null,
-    p_scope_ids: input.scope_ids ?? [],
-    p_entity_type: input.entity_type ?? null,
-    p_entity_id: input.entity_id ?? null,
-    p_label: input.label ?? null,
-    p_metadata: input.metadata ?? {},
+  // Canonical path (replaces the graveyarded `create_task_with_association` RPC,
+  // whose hand-rolled 4-column ON CONFLICT threw 42P10 on the entity branch):
+  //   1. insert the task via the feature's own service (owns defaults), then
+  //   2. wire edges through the generic associationsService chokepoint.
+  // Task creation is the PRIMARY action — a failed edge no longer aborts it
+  // (the old single-transaction RPC blocked the whole create on the assoc bug);
+  // edge failures are logged loud and surfaced, never silently swallowed.
+  const task = await createTask({
+    title: input.title,
+    description: input.description ?? null,
+    project_id: input.project_id ?? null,
+    organization_id: input.organization_id ?? null,
+    priority: input.priority ?? null,
+    due_date: input.due_date ?? null,
+    status: "incomplete",
   });
-  if (error) {
-    // Surface the full error so the browser console shows the RPC message
-    // (code, hint, details) rather than the opaque "AsyncThunk rejected".
-    console.error("[createTaskWithAssociation] RPC error:", {
-      message: error.message,
-      code: (error as { code?: string }).code,
-      hint: (error as { hint?: string }).hint,
-      details: (error as { details?: string }).details,
-      input,
+  if (!task) return null;
+
+  // Entity → task edge (org resolves from the task inside assoc_add).
+  if (input.entity_type && input.entity_id) {
+    const linked = await associationsService.add({
+      sourceType: input.entity_type,
+      sourceId: input.entity_id,
+      targetType: "task",
+      targetId: task.id,
+      label: input.label ?? undefined,
+      metadata: input.metadata ?? {},
     });
-    throw error;
+    if (isScopesRpcErr(linked)) {
+      console.error("[createTaskWithAssociation] source edge failed:", {
+        message: linked.error.message,
+        code: linked.error.code,
+        source: { entity_type: input.entity_type, entity_id: input.entity_id },
+      });
+    }
   }
-  const payload = (data ?? {}) as {
-    task?: Record<string, unknown>;
-    association?: Record<string, unknown> | null;
-  };
-  if (!payload.task) return null;
-  const rec = payload.task as {
-    id: string;
-    title: string;
-    status: string;
-    priority: string | null;
-    due_date: string | null;
-    assignee_id: string | null;
-    project_id: string | null;
-    parent_task_id: string | null;
-    organization_id: string | null;
-    description: string | null;
-    settings: Record<string, unknown> | null;
-    created_at: string | null;
-    created_by: string | null;
-  };
+
+  // Task → scope tags (set-semantics; org resolves from each scope target).
+  if (input.scope_ids && input.scope_ids.length > 0) {
+    const tagged = await associationsService.setTargets({
+      sourceType: "task",
+      sourceId: task.id,
+      targetType: "scope",
+      targetIds: input.scope_ids,
+      orgId: input.organization_id ?? undefined,
+    });
+    if (isScopesRpcErr(tagged)) {
+      console.error("[createTaskWithAssociation] scope tags failed:", {
+        message: tagged.error.message,
+        code: tagged.error.code,
+        scope_ids: input.scope_ids,
+      });
+    }
+  }
+
   const record: TaskRecord = {
-    id: rec.id,
-    title: rec.title,
-    status: rec.status,
-    priority: rec.priority,
-    due_date: rec.due_date,
-    assignee_id: rec.assignee_id,
-    project_id: rec.project_id,
-    parent_task_id: rec.parent_task_id,
-    organization_id: rec.organization_id ?? "",
-    description: rec.description,
-    settings: rec.settings,
-    created_at: rec.created_at,
-    created_by: rec.created_by,
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    priority: task.priority,
+    due_date: task.due_date,
+    assignee_id: task.assignee_id,
+    project_id: task.project_id,
+    parent_task_id: task.parent_task_id,
+    organization_id: task.organization_id ?? "",
+    description: task.description,
+    settings: (task.settings ?? null) as Record<string, unknown> | null,
+    created_at: task.created_at,
+    created_by: task.created_by,
   };
   dispatch(upsertTaskWithLevel({ record, level: "full-data" }));
   if (record.project_id) {
@@ -330,11 +365,11 @@ export const createTasksBulk = createAsyncThunk<
 >("taskAssociations/createTasksBulk", async (input, { dispatch }) => {
   const { data, error } = await supabase.rpc("create_tasks_bulk", {
     p_items: input.items.map((x, i) => ({ ...x, index: i })),
-    p_project_id: input.project_id ?? null,
-    p_organization_id: input.organization_id ?? null,
+    p_project_id: input.project_id ?? undefined,
+    p_organization_id: input.organization_id ?? undefined,
     p_scope_ids: input.scope_ids ?? [],
-    p_entity_type: input.entity_type ?? null,
-    p_entity_id: input.entity_id ?? null,
+    p_entity_type: input.entity_type ?? undefined,
+    p_entity_id: input.entity_id ?? undefined,
     p_metadata: input.metadata ?? {},
   });
   if (error) {

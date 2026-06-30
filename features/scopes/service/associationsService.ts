@@ -25,6 +25,12 @@ import {
   mapPgError,
   ok,
 } from "@/features/scopes/service/rpcResult";
+import {
+  checkToken,
+  checkUuid,
+  checkUuidArray,
+  firstError,
+} from "@/features/scopes/service/associationGuards";
 import type {
   AssociationEdge,
   AssociationSourceEdge,
@@ -139,6 +145,8 @@ export const associationsService = {
   ): Promise<ScopesRpcResult<{ edges: AssociationEdge[] }>> {
     try {
       requireUserId();
+      const bad = firstError(checkToken("type", type), checkUuid("id", id));
+      if (bad) return { ok: false, error: bad };
       const { data, error } = await supabase.rpc("assoc_for_entity", {
         p_type: type,
         p_id: id,
@@ -170,6 +178,11 @@ export const associationsService = {
       requireUserId();
       const ids = Array.from(new Set(targetIds));
       if (ids.length === 0) return ok({ edges: [] });
+      const bad = firstError(
+        checkToken("targetType", targetType),
+        checkUuidArray("targetIds", ids),
+      );
+      if (bad) return { ok: false, error: bad };
       const { data, error } = await supabase.rpc("assoc_for_targets", {
         p_target_type: targetType,
         p_target_ids: ids,
@@ -204,6 +217,12 @@ export const associationsService = {
       requireUserId();
       const ids = Array.from(new Set(sourceIds));
       if (ids.length === 0) return ok({ edges: [] });
+      const bad = firstError(
+        checkToken("sourceType", sourceType),
+        checkUuidArray("sourceIds", ids),
+        targetType ? checkToken("targetType", targetType) : null,
+      );
+      if (bad) return { ok: false, error: bad };
       const { data, error } = await supabase.rpc("assoc_for_sources", {
         p_source_type: sourceType,
         p_source_ids: ids,
@@ -240,6 +259,14 @@ export const associationsService = {
   }): Promise<ScopesRpcResult<{ id: string }>> {
     try {
       requireUserId();
+      const bad = firstError(
+        checkToken("sourceType", args.sourceType),
+        checkUuid("sourceId", args.sourceId),
+        checkToken("targetType", args.targetType),
+        checkUuid("targetId", args.targetId),
+        args.orgId != null ? checkUuid("orgId", args.orgId) : null,
+      );
+      if (bad) return { ok: false, error: bad };
       const { data, error } = await supabase.rpc("assoc_add", {
         p_source_type: args.sourceType,
         p_source_id: args.sourceId,
@@ -279,6 +306,13 @@ export const associationsService = {
   }): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
+      const bad = firstError(
+        checkToken("sourceType", args.sourceType),
+        checkUuid("sourceId", args.sourceId),
+        checkToken("targetType", args.targetType),
+        checkUuid("targetId", args.targetId),
+      );
+      if (bad) return { ok: false, error: bad };
       const { error } = await supabase.rpc("assoc_remove", {
         p_source_type: args.sourceType,
         p_source_id: args.sourceId,
@@ -313,6 +347,14 @@ export const associationsService = {
     try {
       requireUserId();
       const target = Array.from(new Set(args.targetIds));
+      const bad = firstError(
+        checkToken("sourceType", args.sourceType),
+        checkUuid("sourceId", args.sourceId),
+        checkToken("targetType", args.targetType),
+        checkUuidArray("targetIds", target),
+        args.orgId != null ? checkUuid("orgId", args.orgId) : null,
+      );
+      if (bad) return { ok: false, error: bad };
       const { error } = await supabase.rpc("assoc_set_targets", {
         p_source_type: args.sourceType,
         p_source_id: args.sourceId,
@@ -344,6 +386,8 @@ export const associationsService = {
   ): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
+      const bad = firstError(checkToken("type", type), checkUuid("id", id));
+      if (bad) return { ok: false, error: bad };
       const { error } = await supabase.rpc("assoc_remove_for_entity", {
         p_type: type,
         p_id: id,

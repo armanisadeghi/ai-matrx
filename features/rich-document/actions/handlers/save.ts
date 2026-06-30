@@ -5,7 +5,14 @@
 // because it hard-coded `entity_type: "cx_message"`; we generalize via
 // a source → entity_type map so any source can produce a task.
 
-import { FileText, Save, FileCode, FileDown, CheckSquare, BookText } from "lucide-react";
+import {
+  FileText,
+  Save,
+  FileCode,
+  FileDown,
+  CheckSquare,
+  BookText,
+} from "lucide-react";
 import { toast } from "sonner";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -34,40 +41,39 @@ function sourceToEntityType(source: ContentSource): {
   switch (source.type) {
     case "chat-message":
       return {
-        entity_type: "cx_message",
+        entity_type: "message",
         entity_id: source.messageId,
         parent: {
-          entity_type: "cx_conversation",
+          entity_type: "conversation",
           entity_id: source.conversationId,
         },
       };
     case "note":
       return { entity_type: "note", entity_id: source.noteId };
-    case "prompt-result":
-      return {
-        entity_type: "prompt_execution",
-        entity_id: source.executionId,
-      };
     case "artifact":
       return { entity_type: "artifact", entity_id: source.artifactId };
-    case "scraper-result":
-      return { entity_type: "scraper_run", entity_id: source.runId };
     case "working-document":
       // Link to the durable backing row when one exists; otherwise hang the
       // task off the conversation so it still has a home.
       return source.documentId
         ? {
-            entity_type: "cx_working_document",
+            entity_type: "working_document",
             entity_id: source.documentId,
             parent: {
-              entity_type: "cx_conversation",
+              entity_type: "conversation",
               entity_id: source.conversationId,
             },
           }
         : {
-            entity_type: "cx_conversation",
+            entity_type: "conversation",
             entity_id: source.conversationId,
           };
+    // No association edge: these sources have no registered entity row.
+    // `prompt-result` (prompt system retired), `scraper-result` (no registered
+    // scraper-run entity) and `raw` content become standalone tasks. Inventing a
+    // phantom token here would FK-violate platform.associations — never do it.
+    case "prompt-result":
+    case "scraper-result":
     case "raw":
       return null;
   }
@@ -326,8 +332,9 @@ registerAction({
 
     ctx.dispatch(
       setPendingSource({
-        entity_type: entityLink?.entity_type ?? "raw_content",
-        entity_id: entityLink?.entity_id ?? "",
+        // No entityLink → no association (standalone task). Never a phantom token.
+        entity_type: entityLink?.entity_type ?? null,
+        entity_id: entityLink?.entity_id ?? null,
         label: preview,
         metadata: {
           ...(entityLink?.parent

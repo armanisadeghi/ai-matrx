@@ -17,13 +17,11 @@ import {
   Folder,
   Link2,
   Tag,
-  Flame,
   MessagesSquare,
   StickyNote,
   MessageSquare,
   CheckSquare,
   FileText,
-  Cpu,
 } from "lucide-react";
 import { Button } from "@/components/ui/ButtonMine";
 import { Input } from "@/components/ui/input";
@@ -74,8 +72,8 @@ export interface TaskPrePopulate {
 }
 
 export interface TaskQuickCreateCoreProps {
-  /** Entity this task should link to. A cx_message source with a
-   *  metadata.parent of cx_conversation gets a link-scope toggle. */
+  /** Entity this task should link to. A `message` source with a
+   *  metadata.parent of `conversation` gets a link-scope toggle. */
   source?: TaskSourceInput;
   prePopulate?: TaskPrePopulate;
   compact?: boolean;
@@ -792,11 +790,8 @@ function ResourceLinkChip({
   );
 
   // Wrap with the appropriate hover preview when we have the necessary ids.
-  const isConversation =
-    entityType === "cx_conversation" ||
-    entityType === "conversation" ||
-    entityType === "agent_conversation";
-  const isMessage = entityType === "cx_message" || entityType === "message";
+  const isConversation = entityType === "conversation";
+  const isMessage = entityType === "message";
 
   if (isConversation && entityId) {
     return (
@@ -835,40 +830,19 @@ function getEntityStyle(entityType: string): {
   typeLabel: string;
 } {
   switch (entityType) {
-    case "cx_message":
-      return {
-        Icon: Flame,
-        colorClass: "text-violet-600 dark:text-violet-400",
-        bgClass: "bg-violet-500/10",
-        typeLabel: "AI message",
-      };
-    case "cx_conversation":
-      return {
-        Icon: MessagesSquare,
-        colorClass: "text-blue-600 dark:text-blue-400",
-        bgClass: "bg-blue-500/10",
-        typeLabel: "AI conversation",
-      };
     case "message":
       return {
         Icon: MessageSquare,
-        colorClass: "text-slate-600 dark:text-slate-400",
-        bgClass: "bg-slate-500/10",
+        colorClass: "text-violet-600 dark:text-violet-400",
+        bgClass: "bg-violet-500/10",
         typeLabel: "Message",
       };
     case "conversation":
       return {
         Icon: MessagesSquare,
-        colorClass: "text-slate-600 dark:text-slate-400",
-        bgClass: "bg-slate-500/10",
+        colorClass: "text-blue-600 dark:text-blue-400",
+        bgClass: "bg-blue-500/10",
         typeLabel: "Conversation",
-      };
-    case "agent_conversation":
-      return {
-        Icon: Cpu,
-        colorClass: "text-indigo-600 dark:text-indigo-400",
-        bgClass: "bg-indigo-500/10",
-        typeLabel: "Agent chat",
       };
     case "note":
       return {
@@ -877,19 +851,27 @@ function getEntityStyle(entityType: string): {
         bgClass: "bg-orange-500/10",
         typeLabel: "Note",
       };
-    case "user_file":
+    case "file":
       return {
         Icon: FileText,
         colorClass: "text-purple-600 dark:text-purple-400",
         bgClass: "bg-purple-500/10",
         typeLabel: "File",
       };
-    case "chat_block":
+    case "working_document":
+    case "udt_document":
+      return {
+        Icon: FileText,
+        colorClass: "text-emerald-600 dark:text-emerald-400",
+        bgClass: "bg-emerald-500/10",
+        typeLabel: "Document",
+      };
+    case "artifact":
       return {
         Icon: CheckSquare,
         colorClass: "text-teal-600 dark:text-teal-400",
         bgClass: "bg-teal-500/10",
-        typeLabel: "Chat block",
+        typeLabel: "Artifact",
       };
     default:
       return {
@@ -911,9 +893,9 @@ function openEntity(
   parentConversationId?: string,
 ) {
   if (!entityId) return;
-  if (entityType === "cx_conversation") {
+  if (entityType === "conversation") {
     window.open(`/demos/chat/c/${entityId}`, "_blank", "noopener,noreferrer");
-  } else if (entityType === "cx_message" && parentConversationId) {
+  } else if (entityType === "message" && parentConversationId) {
     window.open(
       `/demos/chat/c/${parentConversationId}#m-${entityId}`,
       "_blank",

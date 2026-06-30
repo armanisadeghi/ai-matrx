@@ -30,6 +30,7 @@ A **metadata-only registry** (`registry.ts`, the spirit of the feature admin map
 **Components**
 - `components/ReportsLanding.tsx` — registry-driven card grid (`mode: "user" | "admin"`).
 - `components/agent-drift/AgentDriftReport.tsx` — master-detail report. The rollup table is the master; **the detail pane reuses `features/agents/components/usages/AgentUsagesEngine`** — zero forked detail UI.
+- `components/agent-drift/AgentDriftReportHeader.tsx` — shell header via `<PageHeader>` (tap-button row, same height as agent build — no borders).
 - `components/agent-drift/RollupTable.tsx` — sortable per-agent rollup.
 
 **Nav** — `features/shell/constants/nav-data.ts` (primary "Reports" item with `dashboard: true` + "Agent Drift" child; admin-section row). Icons `FileChartColumn` / `GitCompareArrows` in `shellIconMap.ts`.
@@ -53,4 +54,5 @@ A **metadata-only registry** (`registry.ts`, the spirit of the feature admin map
 
 ## Change log
 
+- `2026-06-29` — Agent Drift header uses `<PageHeader>` tap-button row (agent build pattern); severity summary moved into rollup table caption. Added `check:page-headers` guard.
 - `2026-06-12` — **Module created** with Agent Drift as report #1 (registry + user/admin landings + user/admin agent-drift routes + nav + admin map). Detail pane reuses the agents `AgentUsagesEngine`.

@@ -1,5 +1,50 @@
 # Header Variants — Usage Guide
 
+## Route pages — required pattern
+
+**Never render a top toolbar inside the page body** (`border-b border-border bg-card` bars with back/title/refresh). The shell header already owns the left edge (sidebar toggle) and right edge (avatar). In-body bars with `ml-auto` / `justify-between` push actions behind the avatar.
+
+**Correct pattern** (see `app/(core)/agents/[id]/build/page.tsx` and `app/(core)/tasks/[id]/page.tsx`):
+
+```tsx
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import IconButton from "@/features/shell/components/IconButton";
+import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { RotateCw } from "lucide-react";
+
+export default function MyPage() {
+  return (
+    <>
+      <PageHeader>
+        <div className="flex items-center w-full min-w-0 gap-0 px-0">
+          <ChevronLeftTapButton href="/back" variant="transparent" ariaLabel="Back" />
+          <h1 className="ml-2 text-sm font-medium text-foreground truncate">My Page</h1>
+          <div className="ml-auto shrink-0 flex items-center">
+            <IconButton icon={<RotateCw className="h-4 w-4" />} onClick={refresh} label="Refresh" />
+          </div>
+        </div>
+      </PageHeader>
+      <div
+        className="h-full overflow-hidden"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        {/* page body — no bg-card / border-b faux headers */}
+      </div>
+    </>
+  );
+}
+```
+
+Rules for the center injection zone:
+- **Exact shell header height** — one flat row (`text-sm` title + tap targets). No extra padding, borders, or `bg-card` on the inject row.
+- **One icon max** on the left (back) and **one icon max** on the right (primary action) within the center zone — never viewport-edge toolbars in the page body.
+- **Body content** sits below the transparent shell header via `paddingTop: var(--shell-header-h)`.
+- Use `HeaderStructured` / variants only when you need their specific UX (dropdown center, pills, tabs) — not for a simple back + title + action row.
+
+Audit existing routes: `pnpm check:page-headers` (strict: `pnpm check:page-headers:strict`).
+
+---
+
 ## Setup
 
 ```tsx

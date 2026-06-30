@@ -5,7 +5,7 @@
 > file is the short, current "where are we / what's next / how to run it" sheet so we can
 > work the remaining waves in batches over time without reloading all the context.
 >
-> **Last updated:** 2026-06-29 · **Active wave:** 5 (`strictNullChecks`) — Wave 4 (`strictFunctionTypes`) is **✅ 0 errors, ready to land**
+> **Last updated:** 2026-06-29 · **Active wave:** 5 (`strictNullChecks`) — flag **ON**, **1347 errors** surfaced. Wave 4 (`strictFunctionTypes`) **✅ 0 errors, ready to land**.
 
 ---
 
@@ -48,7 +48,7 @@ Measured on the `tsconfig.typecheck.json` include set (excludes `(transitional)`
 | 2 | 54 | 26 | `noImplicitOverride` | TS4114 | ✅ landed |
 | 3 | 579 | 404 | `noImplicitReturns` | TS7030 | ✅ landed (commit `6008d4a25`) |
 | 4 | 822 | 314 | `strictFunctionTypes` | TS2769 (792), TS2322, TS2345 | ✅ **0 errors with flag ON** (mostly central fixes — see below); ready to commit |
-| 5 | 1346 | 388 | `strictNullChecks` | TS2322/2345/2339/18047/18048 | ⬜ queued |
+| **5** | **1347** | **388** | **`strictNullChecks`** | **TS2322 (531), TS2339 (248), TS2345 (246), TS18047/18048 (175)** | 🟡 **ACTIVE — flag ON, DB types regenerated, fixing in batches** |
 | 6 | 1420 | 363 | `noImplicitAny` | TS7006/7031/7053/7018 | ⬜ queued |
 
 **Explicitly NOT being added** (Arman): `noUncheckedIndexedAccess`,
@@ -139,11 +139,47 @@ The remaining ~30 genuine per-file/cluster fixes were applied directly (no fan-o
 `chore(ts): strictness Wave 4 — strictFunctionTypes` and update §5 + the change log in
 `docs/upgrades/README.md` and the table above.
 
-### Wave 5 — `strictNullChecks` (~1346 / 388)
+### Wave 5 — `strictNullChecks` (ACTIVE — 1347 errors, flag ON)
 
-Same loop: `pnpm wave:split strictNullChecks`, fan out, central verify, flip flag on, land.
-The semantically heaviest wave — expect real bug-finds (genuinely-possibly-null values).
-`strictPropertyInitialization` rides on once `strictNullChecks` is on (re-measure then).
+> **Why this wave matters most (Arman, 2026-06-29):** this is the **Supabase loudness
+> switch**. Every supabase-js call returns `{ data: T | null, error }` (and `.single()` →
+> `T | null`); with the flag OFF, TS treated `data` as always-present, so
+> `data.map(...)` / `data.id` on a failed-or-empty query compiled clean and **crashed at
+> runtime**. The Supabase major bump was already done (`supabase-js` 2.108.2 / `ssr` 0.12,
+> Phase C) and both clients are typed `<Database>` — the version was never the gap; the gap
+> was `strictNullChecks: false`. Flipping it converts those latent runtime crashes into 1347
+> compile errors. Also ran `pnpm db-types` to refresh the generated types (near no-op — only
+> two RPC signatures drifted, NO tables removed). **Note:** `pnpm check:schema` flagged 8
+> "orphan" types (`admin.feature_docs` + 7 `education.*`) but those are **false positives** —
+> the tables are real and live (the live-DB regen kept them); the check's committed snapshot
+> `scripts/schema-check/current-schema.json` is stale and should be refreshed separately.
+
+**⚠️ Until this wave reaches 0, `pnpm type-check` / `sync-types` step 3 are RED by design.**
+That's the expected WIP state for an active wave (same as Wave 4 ran with its flag on).
+
+**Dominant patterns + canonical fixes (measure bodies, fix the shared shape):**
+
+1. **`X | null` not assignable to `X | undefined` (the #1 shape).** Postgres columns are
+   `T | null`; optional RPC args + domain types are `T | undefined`. The classic site is an
+   RPC call passing `someId || null`:
+   ```ts
+   // ❌ supabase-js generates optional RPC args as `string | undefined`; null is rejected
+   p_user_id: input.user_id || null,
+   // ✅ behavior-preserving — `|| undefined` omits the arg, DB applies its default (null)
+   p_user_id: input.user_id || undefined,
+   ```
+   A whole-file sweep is safe **only when every `|| null` is an RPC `p_*` arg** (verify
+   first). **Done as exemplar:** `features/brokers/services/core-broker-crud.ts` (32 → 0).
+   For DB-row → domain-object mappers, prefer `?? undefined` per field, or widen the domain
+   type to `| null` to match the DB — don't blanket-cast.
+2. **`X is possibly 'null' / 'undefined'` (TS18047/18048) on query results.** Guard the
+   `error` / empty `data` first (`if (error) throw error; if (!data) return …;`) so `data`
+   narrows to non-null before use. This is the real-bug class — handle it, don't `!`.
+3. **`Property … does not exist` (TS2339)** usually follows from (2): narrow first.
+
+**Loop:** `pnpm wave:split strictNullChecks` to segregate into per-file task files (Arman is
+fixing directly, in batches, not via parallel agents). Re-measure for shared causes BEFORE
+grinding. `strictPropertyInitialization` rides on once this is green (re-measure then).
 
 ### Wave 6 — `noImplicitAny` (~1420 / 363)
 

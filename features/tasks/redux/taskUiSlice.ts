@@ -54,8 +54,11 @@ export interface TaskUiState {
 }
 
 export interface PendingSource {
-  entity_type: string;
-  entity_id: string;
+  // Null when the captured content has no registered entity row (raw content,
+  // retired prompt-result, scraper-result) → the task is created with NO edge.
+  // Never a phantom token.
+  entity_type: string | null;
+  entity_id: string | null;
   label?: string;
   metadata?: Record<string, unknown>;
   prePopulate?: {
@@ -66,12 +69,7 @@ export interface PendingSource {
 }
 
 export type TaskGroupBy =
-  | "project"
-  | "scope"
-  | "priority"
-  | "status"
-  | "dueDate"
-  | "none";
+  "project" | "scope" | "priority" | "status" | "dueDate" | "none";
 
 export interface TaskEditDraft {
   title?: string;
@@ -198,10 +196,13 @@ const slice = createSlice({
       if (toProjectId) {
         const to = state.projectsWithTasks.find((p) => p.id === toProjectId);
         if (to) {
-          to.tasks = [...((to.tasks ?? []) as DatabaseTask[]), {
-            ...task,
-            project_id: toProjectId,
-          }];
+          to.tasks = [
+            ...((to.tasks ?? []) as DatabaseTask[]),
+            {
+              ...task,
+              project_id: toProjectId,
+            },
+          ];
         }
       }
     },

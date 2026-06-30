@@ -12,6 +12,7 @@
 // are server-rendered and stream through it.
 
 import "@/styles/shell.css";
+import "@/features/shell/components/header/variants/header-variants.css";
 import { Providers } from "@/app/Providers";
 import Sidebar from "@/features/shell/components/sidebar/Sidebar";
 import Header from "@/features/shell/components/header/Header";

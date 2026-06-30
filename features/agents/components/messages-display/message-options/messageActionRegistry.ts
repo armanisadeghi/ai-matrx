@@ -602,7 +602,7 @@ function saveItems(ctx: MessageActionContext): MenuItem[] {
 
         dispatch(
           setPendingSource({
-            entity_type: "cx_message",
+            entity_type: "message",
             entity_id: ctx.messageId ?? "",
             label: preview,
             metadata: {
@@ -611,7 +611,7 @@ function saveItems(ctx: MessageActionContext): MenuItem[] {
               ...(ctx.conversationId
                 ? {
                     parent: {
-                      entity_type: "cx_conversation",
+                      entity_type: "conversation",
                       entity_id: ctx.conversationId,
                       label: preview.slice(0, 120),
                     },
@@ -1489,7 +1489,7 @@ export function resumePendingAuthAction(
         : "Task Related To AI message";
       dispatch(
         setPendingSource({
-          entity_type: "cx_message",
+          entity_type: "message",
           entity_id: "",
           label: preview,
           prePopulate: { title: seedTitle, description: savedContent },

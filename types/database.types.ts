@@ -22886,16 +22886,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      associate_with_task: {
-        Args: {
-          p_entity_id: string
-          p_entity_type: string
-          p_label?: string
-          p_metadata?: Json
-          p_task_id: string
-        }
-        Returns: Json
-      }
       auth_is_org_admin: {
         Args: { org_id: string; user_id: string }
         Returns: boolean
@@ -23416,22 +23406,6 @@ export type Database = {
         }
         Returns: string
       }
-      create_task_with_association: {
-        Args: {
-          p_description?: string
-          p_due_date?: string
-          p_entity_id?: string
-          p_entity_type?: string
-          p_label?: string
-          p_metadata?: Json
-          p_organization_id?: string
-          p_priority?: string
-          p_project_id?: string
-          p_scope_ids?: string[]
-          p_title: string
-        }
-        Returns: Json
-      }
       create_tasks_bulk: {
         Args: {
           p_entity_id?: string
@@ -23895,6 +23869,24 @@ export type Database = {
       ensure_updated_at_on_table: {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
+      }
+      entity_types_list: {
+        Args: never
+        Returns: {
+          base_tier: number
+          category: string
+          default_scopeable: boolean
+          has_soft_delete: boolean
+          is_active: boolean
+          is_component: boolean
+          is_listed: boolean
+          is_module: boolean
+          is_versioned: boolean
+          label: string
+          schema_name: string
+          table_name: string
+          token: string
+        }[]
       }
       execute_admin_query: { Args: { query: string }; Returns: Json }
       execute_complex_save: {

@@ -182,7 +182,7 @@ export async function getTopLevelProjectTasks(
 // ─── Attachments ─────────────────────────────────────────────────────────────
 //
 // Canonical model: "a file attached to a task" is an ASSOCIATION edge with the
-// file as SOURCE (`user_file`) and the task as TARGET (`task`) — there is no
+// file as SOURCE (`file`) and the task as TARGET (`task`) — there is no
 // dedicated attachments table anymore. Reads come from `get_task_associations`
 // (which already aggregates the task's `files`), writes go through the
 // `associationsService` chokepoint. The file itself lives in cloud-files under
@@ -211,7 +211,7 @@ export async function getTaskAttachments(
 ): Promise<TaskAttachment[]> {
   try {
     // `get_task_associations` returns the task's attached files (the source
-    // entities of `user_file → task` edges), joined to file metadata.
+    // entities of `file → task` edges), joined to file metadata.
     const { data, error } = await supabase.rpc("get_task_associations", {
       p_task_id: taskId,
     });
@@ -247,7 +247,7 @@ export async function getTaskAttachments(
 /**
  * Upload a file and attach it to a task. The file lands in cloud-files under
  * `Task Attachments/{taskId}/`; the link is an association edge
- * (`user_file → task`) created through `associationsService`.
+ * (`file → task`) created through `associationsService`.
  */
 export async function uploadTaskAttachment(
   taskId: string,
@@ -292,7 +292,7 @@ export async function uploadTaskAttachment(
 
     // Link file (source) → task (target) via the canonical association edge.
     const linked = await associationsService.add({
-      sourceType: "user_file",
+      sourceType: "file",
       sourceId: fileId,
       targetType: "task",
       targetId: taskId,
@@ -341,7 +341,7 @@ export async function getAttachmentUrl(fileId: string): Promise<string> {
 }
 
 /**
- * Detach a file from a task. Removes the `user_file → task` association edge
+ * Detach a file from a task. Removes the `file → task` association edge
  * and soft-deletes the cloud-files row. `attachmentId` and `fileId` are the
  * same cloud-files UUID for canonical (association-backed) attachments.
  */
@@ -352,7 +352,7 @@ export async function deleteTaskAttachment(
   try {
     // Drop the association edge (file → task).
     const unlinked = await associationsService.remove({
-      sourceType: "user_file",
+      sourceType: "file",
       sourceId: fileId,
       targetType: "task",
       targetId: taskId,

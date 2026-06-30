@@ -7,14 +7,20 @@
 
 "use client";
 
+import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
+import { DRIFT_SEVERITY_ORDER } from "@/features/agents/components/usages/severity";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { DriftSeverityBadge } from "@/features/agents/components/usages/DriftSeverityBadge";
 import type {
   AgentDriftReportAdminRow,
   AgentDriftReportRow,
 } from "@/features/agents/redux/usages/usages.types";
 import type { ReportSortKey } from "@/features/agents/redux/usages/usages.selectors";
+
+interface RollupSummary {
+  agents: number;
+  totals: Record<(typeof DRIFT_SEVERITY_ORDER)[number], number>;
+}
 
 interface RollupTableProps {
   mode: "user" | "admin";
@@ -24,6 +30,7 @@ interface RollupTableProps {
   onSelect: (agentId: string) => void;
   sort: { key: ReportSortKey; desc: boolean };
   onSort: (key: ReportSortKey) => void;
+  summary?: RollupSummary;
 }
 
 function Th({
@@ -50,9 +57,19 @@ function Th({
       )}
       onClick={sortKey && onSort ? () => onSort(sortKey) : undefined}
     >
-      <span className={cn("inline-flex items-center gap-0.5", align === "right" && "flex-row-reverse")}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-0.5",
+          align === "right" && "flex-row-reverse",
+        )}
+      >
         {label}
-        {active && (desc ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}
+        {active &&
+          (desc ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronUp className="h-3 w-3" />
+          ))}
       </span>
     </th>
   );
@@ -66,6 +83,7 @@ export function RollupTable({
   onSelect,
   sort,
   onSort,
+  summary,
 }: RollupTableProps) {
   const isAdmin = mode === "admin";
   const count = isAdmin ? adminRows.length : rows.length;
@@ -73,56 +91,141 @@ export function RollupTable({
   if (count === 0) {
     return (
       <div className="px-3 py-12 text-center text-sm text-muted-foreground">
+        {summary ? (
+          <RollupSummaryLine
+            mode={mode}
+            summary={summary}
+            className="mb-6 justify-center"
+          />
+        ) : null}
         No drift detected. Every agent&apos;s usages are healthy.
       </div>
     );
   }
 
   return (
-    <table className="w-full border-collapse text-sm">
-      <thead className="sticky top-0 z-10 border-b border-border bg-card">
-        <tr>
-          <Th label="Agent" sortKey="agentName" active={sort.key === "agentName"} desc={sort.desc} onSort={onSort} />
-          <Th label="Usages" sortKey="totalUsages" active={sort.key === "totalUsages"} desc={sort.desc} onSort={onSort} align="right" />
-          <Th label="Breaking" sortKey="breaking" active={sort.key === "breaking"} desc={sort.desc} onSort={onSort} align="right" />
-          <Th label="Silent" sortKey="silent" active={sort.key === "silent"} desc={sort.desc} onSort={onSort} align="right" />
-          <Th label="Stale" sortKey="stalePins" active={sort.key === "stalePins"} desc={sort.desc} onSort={onSort} align="right" />
-          {isAdmin && <Th label="Users" align="right" />}
-        </tr>
-      </thead>
-      <tbody>
-        {isAdmin
-          ? adminRows.map((r) => (
-              <Row
-                key={r.agentId}
-                agentId={r.agentId}
-                name={r.agentName}
-                version={r.currentVersion}
-                usages={r.usageCount}
-                breaking={r.breaking}
-                silent={r.silent}
-                stale={r.stalePins}
-                extra={r.affectedUsers}
-                selected={selectedAgentId === r.agentId}
-                onSelect={onSelect}
-              />
-            ))
-          : rows.map((r) => (
-              <Row
-                key={r.agentId}
-                agentId={r.agentId}
-                name={r.agentName}
-                version={r.currentVersion}
-                usages={r.myUsageCount}
-                breaking={r.myBreaking}
-                silent={r.mySilent}
-                stale={r.myStalePins}
-                selected={selectedAgentId === r.agentId}
-                onSelect={onSelect}
-              />
-            ))}
-      </tbody>
-    </table>
+    <>
+      {summary ? (
+        <RollupSummaryLine
+          mode={mode}
+          summary={summary}
+          className="px-3 py-1.5"
+        />
+      ) : null}
+      <table className="w-full border-collapse text-sm">
+        <thead className="sticky top-0 z-10 border-b border-border bg-card">
+          <tr>
+            <Th
+              label="Agent"
+              sortKey="agentName"
+              active={sort.key === "agentName"}
+              desc={sort.desc}
+              onSort={onSort}
+            />
+            <Th
+              label="Usages"
+              sortKey="totalUsages"
+              active={sort.key === "totalUsages"}
+              desc={sort.desc}
+              onSort={onSort}
+              align="right"
+            />
+            <Th
+              label="Breaking"
+              sortKey="breaking"
+              active={sort.key === "breaking"}
+              desc={sort.desc}
+              onSort={onSort}
+              align="right"
+            />
+            <Th
+              label="Silent"
+              sortKey="silent"
+              active={sort.key === "silent"}
+              desc={sort.desc}
+              onSort={onSort}
+              align="right"
+            />
+            <Th
+              label="Stale"
+              sortKey="stalePins"
+              active={sort.key === "stalePins"}
+              desc={sort.desc}
+              onSort={onSort}
+              align="right"
+            />
+            {isAdmin && <Th label="Users" align="right" />}
+          </tr>
+        </thead>
+        <tbody>
+          {isAdmin
+            ? adminRows.map((r) => (
+                <Row
+                  key={r.agentId}
+                  agentId={r.agentId}
+                  name={r.agentName}
+                  version={r.currentVersion}
+                  usages={r.usageCount}
+                  breaking={r.breaking}
+                  silent={r.silent}
+                  stale={r.stalePins}
+                  extra={r.affectedUsers}
+                  selected={selectedAgentId === r.agentId}
+                  onSelect={onSelect}
+                />
+              ))
+            : rows.map((r) => (
+                <Row
+                  key={r.agentId}
+                  agentId={r.agentId}
+                  name={r.agentName}
+                  version={r.currentVersion}
+                  usages={r.myUsageCount}
+                  breaking={r.myBreaking}
+                  silent={r.mySilent}
+                  stale={r.myStalePins}
+                  selected={selectedAgentId === r.agentId}
+                  onSelect={onSelect}
+                />
+              ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
+function RollupSummaryLine({
+  mode,
+  summary,
+  className,
+}: {
+  mode: "user" | "admin";
+  summary: RollupSummary;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-2 text-xs text-muted-foreground",
+        className,
+      )}
+    >
+      <span>
+        {summary.agents} agent{summary.agents !== 1 ? "s" : ""} with drift
+        {mode === "admin" ? " (platform-wide)" : ""}
+      </span>
+      <div className="flex items-center gap-1.5">
+        {DRIFT_SEVERITY_ORDER.map((sev) =>
+          summary.totals[sev] > 0 ? (
+            <DriftSeverityBadge
+              key={sev}
+              severity={sev}
+              count={summary.totals[sev]}
+            />
+          ) : null,
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -159,18 +262,44 @@ function Row({
     >
       <td className="px-3 py-2">
         <div className="font-medium text-foreground">{name}</div>
-        <div className="text-[11px] text-muted-foreground">v{version} active</div>
+        <div className="text-[11px] text-muted-foreground">
+          v{version} active
+        </div>
       </td>
-      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{usages}</td>
+      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+        {usages}
+      </td>
       <td className="px-3 py-2 text-right">
-        {breaking > 0 ? <DriftSeverityBadge severity="breaking" size="sm" count={breaking} iconOnly /> : <span className="text-muted-foreground/40">—</span>}
+        {breaking > 0 ? (
+          <DriftSeverityBadge
+            severity="breaking"
+            size="sm"
+            count={breaking}
+            iconOnly
+          />
+        ) : (
+          <span className="text-muted-foreground/40">—</span>
+        )}
       </td>
       <td className="px-3 py-2 text-right">
-        {silent > 0 ? <DriftSeverityBadge severity="silent_breaking" size="sm" count={silent} iconOnly /> : <span className="text-muted-foreground/40">—</span>}
+        {silent > 0 ? (
+          <DriftSeverityBadge
+            severity="silent_breaking"
+            size="sm"
+            count={silent}
+            iconOnly
+          />
+        ) : (
+          <span className="text-muted-foreground/40">—</span>
+        )}
       </td>
-      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{stale || "—"}</td>
+      <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+        {stale || "—"}
+      </td>
       {extra != null && (
-        <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{extra}</td>
+        <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+          {extra}
+        </td>
       )}
     </tr>
   );

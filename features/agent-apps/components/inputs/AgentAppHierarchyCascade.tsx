@@ -9,10 +9,9 @@
  * - Organization / Project / Task → flat FK columns on aga_apps.
  *   Saved via `saveAppField` (one PATCH per dimension that actually
  *   changed).
- * - Scope tags (scopeSelections) → many-to-many join via
- *   `set_entity_scopes(entity_type='agent_app', entity_id=<app.id>,
- *   scope_ids=[...])`. The wrapper hydrates the current assignments
- *   from `get_entity_scopes` on mount and re-derives the
+ * - Scope tags (scopeSelections) → many-to-many join via the canonical
+ *   association edge (entity_type='app', entity_id=<app.id>, scope_ids=[...]).
+ *   The wrapper hydrates the current assignments on mount and re-derives the
  *   {typeId → scopeId} shape that HierarchyCascade expects from the
  *   raw scope-id list + the scope catalogue.
  *
@@ -28,7 +27,9 @@ import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { selectAllScopesFlat } from "@/features/scopes/redux/selectors/tree";
 import type { EntityType } from "@/features/scopes/types";
 
-const ENTITY_TYPE: EntityType = "agent_app";
+// Agent apps live in app.definition (registry token `app`). The pre-reorg
+// `agent_app` token was renamed to `app` in platform.entity_types — use canonical.
+const ENTITY_TYPE: EntityType = "app";
 
 interface AgentAppHierarchyCascadeProps {
   appId: string;

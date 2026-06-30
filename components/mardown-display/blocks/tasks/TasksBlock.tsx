@@ -56,7 +56,7 @@ const TasksBlock: React.FC<TasksBlockProps> = ({
       {messageId && (
         <div className="mt-2 pt-2 border-t border-border/30">
           <TaskChipRow
-            entityType="chat_block"
+            entityType="message"
             entityId={messageId}
             label={`Tasks from block #${blockIndex ?? 0}`}
             size="xs"
@@ -72,7 +72,7 @@ const TasksBlock: React.FC<TasksBlockProps> = ({
         source={
           messageId
             ? {
-                entity_type: "chat_block",
+                entity_type: "message",
                 entity_id: messageId,
                 metadata: { block_index: blockIndex ?? 0 },
               }
