@@ -28,10 +28,21 @@ import type {
 const EDU = () => supabase.schema("education");
 
 function fail<T>(context: string, error: unknown): StudyResult<T> {
-  const message =
-    error instanceof Error ? error.message : typeof error === "string" ? error : "Unknown error";
   console.error(`[studyService] ${context}:`, error);
-  return { data: null, error: `${context}: ${message}` };
+  return { data: null, error: `${context}: ${describeError(error)}` };
+}
+
+/** Surface PostgREST/DB errors loudly (message + details + hint + code), not "[object Object]". */
+function describeError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const e = error as { message?: string; details?: string; hint?: string; code?: string };
+    return [e.message, e.details, e.hint && `hint: ${e.hint}`, e.code && `(${e.code})`]
+      .filter(Boolean)
+      .join(" — ") || "Unknown error";
+  }
+  return "Unknown error";
 }
 
 /** Shape the `study_record_attempt` RPC returns: `{ attempt_id, mastery }`. */

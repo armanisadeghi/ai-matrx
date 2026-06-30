@@ -193,7 +193,7 @@ export function useFlashcardStudy(
       if (withSession) {
         const sessionRes = await studyService.createSession({
           mode: STUDY_MODE,
-          sourceKind: "fc_set",
+          sourceKind: "set", //  study_session.source_kind CHECK = set|dynamic_batch|adaptive
           sourceSetId: loadedSet.id,
         });
         if (!cancelled) {

@@ -4,8 +4,8 @@
 // "savior" list view, NOT a forced detail page). Loads every set the current
 // user owns or can see (RLS-filtered, recent-first) via fcService.listSets()
 // and renders them as cards. Click a card → set detail; "Study" → the study
-// surface. Creation/AI flows are out of scope for now (the "New set" button is
-// intentionally disabled with a "coming soon" tooltip).
+// surface. "New set" → /education/flashcards/new (the AI create-from-topic
+// flow).
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
@@ -22,18 +22,15 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fcService } from "../../data/fcService";
 import type { FcSetRow } from "../../data/types";
 
 const EDU_BASE = "/education/flashcards";
+
+/** Sentinel nav id for the "New set" button (set ids are real UUIDs). */
+const NEW_SET_NAV_ID = "__new__";
 
 /** Visibility → display chip. */
 const VISIBILITY_LABEL: Record<FcSetRow["visibility"], string> = {
@@ -186,6 +183,13 @@ export function FlashcardsHome() {
     });
   };
 
+  const newSet = () => {
+    setNavigatingId(NEW_SET_NAV_ID);
+    startTransition(() => {
+      router.push(`${EDU_BASE}/new`);
+    });
+  };
+
   return (
     <div className="min-h-full w-full bg-textured">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
@@ -200,24 +204,18 @@ export function FlashcardsHome() {
                 Flashcards
               </h1>
               <p className="text-sm text-muted-foreground">
-                Browse your sets and study them. Generate new sets from chat.
+                Browse your sets and study them, or generate a new set from any
+                topic.
               </p>
             </div>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {/* Wrapper span so the tooltip still fires over the disabled button. */}
-                <span tabIndex={0}>
-                  <Button disabled className="pointer-events-none">
-                    <Plus className="mr-1.5 h-4 w-4" />
-                    New set
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Coming soon — generate sets in chat for now</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            onClick={newSet}
+            disabled={isPending && navigatingId === NEW_SET_NAV_ID}
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            New set
+          </Button>
         </div>
 
         {/* Body */}
@@ -245,9 +243,13 @@ export function FlashcardsHome() {
                 No flashcard sets yet
               </p>
               <p className="max-w-sm text-xs text-muted-foreground">
-                Generate a set in chat — ask an agent to make flashcards on any
-                topic — and it will show up here, ready to study.
+                Generate your first set from any topic and it will show up here,
+                ready to study.
               </p>
+              <Button onClick={newSet} className="mt-2">
+                <Plus className="mr-1.5 h-4 w-4" />
+                New set
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
