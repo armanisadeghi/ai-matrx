@@ -51,7 +51,10 @@ import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mapping
  * "successful" binding is impossible to miss in the console AND in the
  * systemwide Error Inspector (console.error is captured as `console-error`).
  */
-function reportCondemnedBindingWrite(op: string, detail: Record<string, unknown>): void {
+function reportCondemnedBindingWrite(
+  op: string,
+  detail: Record<string, unknown>,
+): void {
   console.error(
     `[agent-surface-bindings] CONDEMNED WRITE (${op}) — this path models project/task as single FKs (P1), ` +
       `scope/scope-type as single relationships (P2), may read PASSIVE active context instead of the user's ` +

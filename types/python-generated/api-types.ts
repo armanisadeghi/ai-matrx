@@ -16528,7 +16528,7 @@ export interface components {
              */
             store: boolean;
             /** Verbosity */
-            verbosity?: string | null;
+            verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
             internal_web_search?: boolean | null;
             /** Internal Url Context */
@@ -16536,7 +16536,7 @@ export interface components {
             /** Internal X Search */
             internal_x_search?: boolean | null;
             /** Aspect Ratio */
-            aspect_ratio?: string | null;
+            aspect_ratio?: ("1:1" | "2:3" | "3:2" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "16:9" | "21:9") | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -16556,19 +16556,17 @@ export interface components {
             /** Partial Images */
             partial_images?: number | null;
             /** Style */
-            style?: string | null;
+            style?: ("vivid" | "natural") | null;
             /** Reference Strength */
             reference_strength?: number | null;
             /** Tts Voice */
-            tts_voice?: string | {
-                [key: string]: string;
-            }[] | null;
+            tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | null;
             /** Audio Format */
-            audio_format?: string | null;
+            audio_format?: ("mp3" | "wav" | "ogg" | "opus" | "aac" | "flac" | "pcm" | "mulaw" | "alaw") | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
-            resolution?: string | null;
+            resolution?: ("480p" | "720p" | "1080p" | "4k" | "1K" | "2K" | "4K") | null;
             /** Fps */
             fps?: number | null;
             /** Steps */
@@ -16582,49 +16580,39 @@ export interface components {
             /** Negative Prompt */
             negative_prompt?: string | null;
             /** Output Format */
-            output_format?: string | null;
+            output_format?: ("jpeg" | "png" | "webp" | "base64" | "url" | "text" | "json_object" | "json_schema") | null;
             /** Frame Images */
-            frame_images?: unknown[] | null;
+            frame_images?: components["schemas"]["MediaRef"][] | null;
             /** Reference Images */
-            reference_images?: unknown[] | null;
+            reference_images?: components["schemas"]["MediaRef"][] | null;
             /** Image Loras */
-            image_loras?: unknown[] | null;
+            image_loras?: components["schemas"]["ImageLora"][] | null;
             /** Disable Safety Checker */
             disable_safety_checker?: boolean | null;
             /** Generate Audio */
             generate_audio?: boolean | null;
             /** Enhance Prompt */
             enhance_prompt?: boolean | null;
-            /** Image Input */
-            image_input?: unknown | null;
+            image_input?: components["schemas"]["MediaRef"] | null;
             /** Image Inputs */
-            image_inputs?: unknown[] | null;
-            /** Mask */
-            mask?: unknown | null;
-            /** Last Frame Image */
-            last_frame_image?: unknown | null;
-            /** Video Input */
-            video_input?: unknown | null;
+            image_inputs?: components["schemas"]["MediaRef"][] | null;
+            mask?: components["schemas"]["MediaRef"] | null;
+            last_frame_image?: components["schemas"]["MediaRef"] | null;
+            video_input?: components["schemas"]["MediaRef"] | null;
             /** Video Action */
             video_action?: ("generate" | "edit" | "extend") | null;
             /** Custom Tools */
-            custom_tools?: unknown[] | null;
+            custom_tools?: components["schemas"]["CustomTool"][] | null;
             /** Mcp Servers */
             mcp_servers?: string[] | null;
-            /** Compaction Settings */
-            compaction_settings?: {
-                [key: string]: unknown;
-            } | null;
+            compaction_settings?: components["schemas"]["CompactionSettings"] | null;
             /** Detected Contexts */
             detected_contexts?: {
                 [key: string]: string;
             } | null;
-            /** Dictionary */
-            dictionary?: {
-                [key: string]: unknown;
-            } | null;
+            dictionary?: components["schemas"]["DictionaryConfig"] | null;
             /** Tts Quality */
-            tts_quality?: string | null;
+            tts_quality?: ("high_quality" | "fast") | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Project Id */
@@ -17368,6 +17356,22 @@ export interface components {
                 number,
                 number
             ];
+        };
+        /**
+         * CompactionSettings
+         * @description Optional overrides for the 5-tier context compaction pipeline.
+         *
+         *     Rarely sent by clients today — reserved for explicit compaction control.
+         */
+        CompactionSettings: {
+            /** Tier2 Minimal Prune */
+            tier2_minimal_prune?: boolean | null;
+            /** Tier3 Content To Retrieval */
+            tier3_content_to_retrieval?: boolean | null;
+            /** Tier4 Threshold Trim */
+            tier4_threshold_trim?: boolean | null;
+            /** Tier5 Hard Compression */
+            tier5_hard_compression?: boolean | null;
         };
         /**
          * CompensationOut
@@ -18160,14 +18164,23 @@ export interface components {
             /** Matches */
             matches?: components["schemas"]["CrossTopicSourceMatch"][];
         };
-        /**
-         * CustomToolInputSchema
-         * @description JSON Schema for a custom tool's input parameters.
-         *
-         *     Follows the MCP / JSON Schema standard. The type must be "object" and
-         *     properties defines the named parameters. Required is the list of
-         *     parameter names that must be present in every call.
-         */
+        /** CustomTool */
+        CustomTool: {
+            /**
+             * Name
+             * @description Unique tool name. Must match [a-zA-Z0-9_-]{1,64}.
+             */
+            name: string;
+            /**
+             * Description
+             * @description Human-readable description shown to the model.
+             * @default
+             */
+            description: string;
+            /** @description JSON Schema describing the tool's input parameters. */
+            input_schema?: components["schemas"]["CustomToolInputSchema"];
+        };
+        /** CustomToolInputSchema */
         CustomToolInputSchema: {
             /**
              * Type
@@ -18889,6 +18902,48 @@ export interface components {
             };
             /** Notes */
             notes: string[];
+        };
+        /** DictionaryConfig */
+        DictionaryConfig: {
+            /**
+             * Entries
+             * @default []
+             */
+            entries: components["schemas"]["DictionaryEntry"][];
+            /**
+             * Custom Entries
+             * @default []
+             */
+            custom_entries: components["schemas"]["DictionaryEntry"][];
+            /** Max Inline Chars */
+            max_inline_chars?: number | null;
+            /**
+             * Source Count
+             * @default 0
+             */
+            source_count: number;
+        };
+        /** DictionaryEntry */
+        DictionaryEntry: {
+            /** Term */
+            term: string;
+            /**
+             * Sounds Like
+             * @default []
+             */
+            sounds_like: string[];
+            /** Pronunciation */
+            pronunciation?: string | null;
+            /** Ipa */
+            ipa?: string | null;
+            /** Definition */
+            definition?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Source Level */
+            source_level?: string | null;
+            /** Source Name */
+            source_name?: string | null;
         };
         /** DirectChatRequest */
         DirectChatRequest: {
@@ -21375,6 +21430,22 @@ export interface components {
             output?: components["schemas"]["ImageEditOutput"];
         };
         /**
+         * ImageLora
+         * @description Together FLUX LoRA reference — passed through to the provider API.
+         */
+        ImageLora: {
+            /**
+             * Path
+             * @description LoRA weights path or URL.
+             */
+            path: string;
+            /**
+             * Scale
+             * @description Blend strength (provider-native scale).
+             */
+            scale: number;
+        };
+        /**
          * ImageOpDescriptor
          * @description One entry in the ops catalog returned by GET /images/ops.
          */
@@ -22174,7 +22245,7 @@ export interface components {
             /** Store */
             store?: boolean | null;
             /** Verbosity */
-            verbosity?: string | null;
+            verbosity?: ("low" | "medium" | "high") | null;
             /** Internal Web Search */
             internal_web_search?: boolean | null;
             /** Internal Url Context */
@@ -22182,7 +22253,7 @@ export interface components {
             /** Internal X Search */
             internal_x_search?: boolean | null;
             /** Aspect Ratio */
-            aspect_ratio?: string | null;
+            aspect_ratio?: ("1:1" | "2:3" | "3:2" | "3:4" | "4:3" | "4:5" | "5:4" | "9:16" | "16:9" | "21:9") | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -22202,19 +22273,17 @@ export interface components {
             /** Partial Images */
             partial_images?: number | null;
             /** Style */
-            style?: string | null;
+            style?: ("vivid" | "natural") | null;
             /** Reference Strength */
             reference_strength?: number | null;
             /** Tts Voice */
-            tts_voice?: string | {
-                [key: string]: string;
-            }[] | null;
+            tts_voice?: string | components["schemas"]["TtsVoiceSpeaker"][] | null;
             /** Audio Format */
-            audio_format?: string | null;
+            audio_format?: ("mp3" | "wav" | "ogg" | "opus" | "aac" | "flac" | "pcm" | "mulaw" | "alaw") | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /** Resolution */
-            resolution?: string | null;
+            resolution?: ("480p" | "720p" | "1080p" | "4k" | "1K" | "2K" | "4K") | null;
             /** Fps */
             fps?: number | null;
             /** Steps */
@@ -22228,49 +22297,39 @@ export interface components {
             /** Negative Prompt */
             negative_prompt?: string | null;
             /** Output Format */
-            output_format?: string | null;
+            output_format?: ("jpeg" | "png" | "webp" | "base64" | "url" | "text" | "json_object" | "json_schema") | null;
             /** Frame Images */
-            frame_images?: unknown[] | null;
+            frame_images?: components["schemas"]["MediaRef"][] | null;
             /** Reference Images */
-            reference_images?: unknown[] | null;
+            reference_images?: components["schemas"]["MediaRef"][] | null;
             /** Image Loras */
-            image_loras?: unknown[] | null;
+            image_loras?: components["schemas"]["ImageLora"][] | null;
             /** Disable Safety Checker */
             disable_safety_checker?: boolean | null;
             /** Generate Audio */
             generate_audio?: boolean | null;
             /** Enhance Prompt */
             enhance_prompt?: boolean | null;
-            /** Image Input */
-            image_input?: unknown | null;
+            image_input?: components["schemas"]["MediaRef"] | null;
             /** Image Inputs */
-            image_inputs?: unknown[] | null;
-            /** Mask */
-            mask?: unknown | null;
-            /** Last Frame Image */
-            last_frame_image?: unknown | null;
-            /** Video Input */
-            video_input?: unknown | null;
+            image_inputs?: components["schemas"]["MediaRef"][] | null;
+            mask?: components["schemas"]["MediaRef"] | null;
+            last_frame_image?: components["schemas"]["MediaRef"] | null;
+            video_input?: components["schemas"]["MediaRef"] | null;
             /** Video Action */
             video_action?: ("generate" | "edit" | "extend") | null;
             /** Custom Tools */
-            custom_tools?: unknown[] | null;
+            custom_tools?: components["schemas"]["CustomTool"][] | null;
             /** Mcp Servers */
             mcp_servers?: string[] | null;
-            /** Compaction Settings */
-            compaction_settings?: {
-                [key: string]: unknown;
-            } | null;
+            compaction_settings?: components["schemas"]["CompactionSettings"] | null;
             /** Detected Contexts */
             detected_contexts?: {
                 [key: string]: string;
             } | null;
-            /** Dictionary */
-            dictionary?: {
-                [key: string]: unknown;
-            } | null;
+            dictionary?: components["schemas"]["DictionaryConfig"] | null;
             /** Tts Quality */
-            tts_quality?: string | null;
+            tts_quality?: ("high_quality" | "fast") | null;
         };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {
@@ -23798,6 +23857,20 @@ export interface components {
             percent_used: number;
             /** Last Charge At */
             last_charge_at: string | null;
+        };
+        /**
+         * OutputSchemaEnvelope
+         * @description OpenAI ``json_schema`` inner envelope — matches ``agx_agent.output_schema``.
+         */
+        OutputSchemaEnvelope: {
+            /** Name */
+            name?: string | null;
+            /** Schema */
+            schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Strict */
+            strict?: boolean | null;
         };
         /** OverlayBboxIn */
         OverlayBboxIn: {
@@ -26286,10 +26359,7 @@ export interface components {
              * @enum {string}
              */
             type: "json_schema";
-            /** Json Schema */
-            json_schema?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            } | null;
+            json_schema?: components["schemas"]["OutputSchemaEnvelope"] | null;
             /** Name */
             name?: string | null;
             /** Schema */
@@ -29893,6 +29963,19 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** TtsVoiceSpeaker */
+        TtsVoiceSpeaker: {
+            /**
+             * Name
+             * @description Speaker label in multi-speaker TTS scripts.
+             */
+            name: string;
+            /**
+             * Voice
+             * @description Provider-native voice id or name.
+             */
+            voice: string;
         };
         /**
          * TurnRange

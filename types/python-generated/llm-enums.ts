@@ -25,6 +25,10 @@ export const REASONING_SUMMARY_OPTIONS = ['concise', 'detailed', 'never', 'auto'
 
 export const THINKING_LEVEL_OPTIONS = ['minimal', 'low', 'medium', 'high'] as const satisfies readonly NonNullable<LLMParams['thinking_level']>[];
 
+export const VERBOSITY_OPTIONS = ['low', 'medium', 'high'] as const satisfies readonly NonNullable<LLMParams['verbosity']>[];
+
+export const ASPECT_RATIO_OPTIONS = ['1:1', '2:3', '3:2', '3:4', '4:3', '4:5', '5:4', '9:16', '16:9', '21:9'] as const satisfies readonly NonNullable<LLMParams['aspect_ratio']>[];
+
 export const RENDER_QUALITY_OPTIONS = ['low', 'medium', 'high', 'auto'] as const satisfies readonly NonNullable<LLMParams['render_quality']>[];
 
 export const BACKGROUND_OPTIONS = ['auto', 'opaque', 'transparent'] as const satisfies readonly NonNullable<LLMParams['background']>[];
@@ -33,7 +37,17 @@ export const MODERATION_OPTIONS = ['auto', 'low'] as const satisfies readonly No
 
 export const INPUT_FIDELITY_OPTIONS = ['high', 'low'] as const satisfies readonly NonNullable<LLMParams['input_fidelity']>[];
 
+export const STYLE_OPTIONS = ['vivid', 'natural'] as const satisfies readonly NonNullable<LLMParams['style']>[];
+
+export const AUDIO_FORMAT_OPTIONS = ['mp3', 'wav', 'ogg', 'opus', 'aac', 'flac', 'pcm', 'mulaw', 'alaw'] as const satisfies readonly NonNullable<LLMParams['audio_format']>[];
+
+export const RESOLUTION_OPTIONS = ['480p', '720p', '1080p', '4k', '1K', '2K', '4K'] as const satisfies readonly NonNullable<LLMParams['resolution']>[];
+
+export const OUTPUT_FORMAT_OPTIONS = ['jpeg', 'png', 'webp', 'base64', 'url', 'text', 'json_object', 'json_schema'] as const satisfies readonly NonNullable<LLMParams['output_format']>[];
+
 export const VIDEO_ACTION_OPTIONS = ['generate', 'edit', 'extend'] as const satisfies readonly NonNullable<LLMParams['video_action']>[];
+
+export const TTS_QUALITY_OPTIONS = ['high_quality', 'fast'] as const satisfies readonly NonNullable<LLMParams['tts_quality']>[];
 
 // ── LLMParams key set ────────────────────────────────────────────────────────
 // Every key is a real field on the Pydantic LLMParams model.

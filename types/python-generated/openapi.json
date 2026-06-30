@@ -46029,7 +46029,12 @@
           "verbosity": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
               },
               {
                 "type": "null"
@@ -46073,7 +46078,19 @@
           "aspect_ratio": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "1:1",
+                  "2:3",
+                  "3:2",
+                  "3:4",
+                  "4:3",
+                  "4:5",
+                  "5:4",
+                  "9:16",
+                  "16:9",
+                  "21:9"
+                ]
               },
               {
                 "type": "null"
@@ -46202,7 +46219,11 @@
           "style": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "vivid",
+                  "natural"
+                ]
               },
               {
                 "type": "null"
@@ -46228,10 +46249,7 @@
               },
               {
                 "items": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object"
+                  "$ref": "#/components/schemas/TtsVoiceSpeaker"
                 },
                 "type": "array"
               },
@@ -46244,7 +46262,18 @@
           "audio_format": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "mp3",
+                  "wav",
+                  "ogg",
+                  "opus",
+                  "aac",
+                  "flac",
+                  "pcm",
+                  "mulaw",
+                  "alaw"
+                ]
               },
               {
                 "type": "null"
@@ -46266,7 +46295,16 @@
           "resolution": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "480p",
+                  "720p",
+                  "1080p",
+                  "4k",
+                  "1K",
+                  "2K",
+                  "4K"
+                ]
               },
               {
                 "type": "null"
@@ -46310,7 +46348,7 @@
           "guidance_scale": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -46343,7 +46381,17 @@
           "output_format": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "jpeg",
+                  "png",
+                  "webp",
+                  "base64",
+                  "url",
+                  "text",
+                  "json_object",
+                  "json_schema"
+                ]
               },
               {
                 "type": "null"
@@ -46354,7 +46402,9 @@
           "frame_images": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/MediaRef"
+                },
                 "type": "array"
               },
               {
@@ -46366,7 +46416,9 @@
           "reference_images": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/MediaRef"
+                },
                 "type": "array"
               },
               {
@@ -46378,7 +46430,9 @@
           "image_loras": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/ImageLora"
+                },
                 "type": "array"
               },
               {
@@ -46422,17 +46476,20 @@
           },
           "image_input": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Image Input"
+            ]
           },
           "image_inputs": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/MediaRef"
+                },
                 "type": "array"
               },
               {
@@ -46443,30 +46500,33 @@
           },
           "mask": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Mask"
+            ]
           },
           "last_frame_image": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Last Frame Image"
+            ]
           },
           "video_input": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Video Input"
+            ]
           },
           "video_action": {
             "anyOf": [
@@ -46487,7 +46547,9 @@
           "custom_tools": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/CustomTool"
+                },
                 "type": "array"
               },
               {
@@ -46513,14 +46575,12 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/CompactionSettings"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Compaction Settings"
+            ]
           },
           "detected_contexts": {
             "anyOf": [
@@ -46539,19 +46599,21 @@
           "dictionary": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/DictionaryConfig"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Dictionary"
+            ]
           },
           "tts_quality": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "high_quality",
+                  "fast"
+                ]
               },
               {
                 "type": "null"
@@ -48899,6 +48961,58 @@
         ],
         "title": "CompactTurnsResponse"
       },
+      "CompactionSettings": {
+        "properties": {
+          "tier2_minimal_prune": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier2 Minimal Prune"
+          },
+          "tier3_content_to_retrieval": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier3 Content To Retrieval"
+          },
+          "tier4_threshold_trim": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier4 Threshold Trim"
+          },
+          "tier5_hard_compression": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier5 Hard Compression"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CompactionSettings",
+        "description": "Optional overrides for the 5-tier context compaction pipeline.\n\nRarely sent by clients today — reserved for explicit compaction control."
+      },
       "CompensationOut": {
         "properties": {
           "compensation": {
@@ -50875,6 +50989,31 @@
         "type": "object",
         "title": "CrossTopicSourceMatchResponse"
       },
+      "CustomTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Unique tool name. Must match [a-zA-Z0-9_-]{1,64}."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Human-readable description shown to the model.",
+            "default": ""
+          },
+          "input_schema": {
+            "$ref": "#/components/schemas/CustomToolInputSchema",
+            "description": "JSON Schema describing the tool's input parameters."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CustomTool"
+      },
       "CustomToolInputSchema": {
         "properties": {
           "type": {
@@ -50896,9 +51035,9 @@
             "title": "Required"
           }
         },
+        "additionalProperties": false,
         "type": "object",
-        "title": "CustomToolInputSchema",
-        "description": "JSON Schema for a custom tool's input parameters.\n\nFollows the MCP / JSON Schema standard. The type must be \"object\" and\nproperties defines the named parameters. Required is the list of\nparameter names that must be present in every call."
+        "title": "CustomToolInputSchema"
       },
       "CxExplorerFacetEntry": {
         "properties": {
@@ -52974,6 +53113,131 @@
           "notes"
         ],
         "title": "DiagnoseResponse"
+      },
+      "DictionaryConfig": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryEntry"
+            },
+            "type": "array",
+            "title": "Entries",
+            "default": []
+          },
+          "custom_entries": {
+            "items": {
+              "$ref": "#/components/schemas/DictionaryEntry"
+            },
+            "type": "array",
+            "title": "Custom Entries",
+            "default": []
+          },
+          "max_inline_chars": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Inline Chars"
+          },
+          "source_count": {
+            "type": "integer",
+            "title": "Source Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "DictionaryConfig"
+      },
+      "DictionaryEntry": {
+        "properties": {
+          "term": {
+            "type": "string",
+            "title": "Term"
+          },
+          "sounds_like": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sounds Like",
+            "default": []
+          },
+          "pronunciation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pronunciation"
+          },
+          "ipa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ipa"
+          },
+          "definition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "source_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Level"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "term"
+        ],
+        "title": "DictionaryEntry"
       },
       "DirectChatRequest": {
         "properties": {
@@ -59731,6 +59995,28 @@
         ],
         "title": "ImageInpaintRequest"
       },
+      "ImageLora": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "LoRA weights path or URL."
+          },
+          "scale": {
+            "type": "number",
+            "title": "Scale",
+            "description": "Blend strength (provider-native scale)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "path",
+          "scale"
+        ],
+        "title": "ImageLora",
+        "description": "Together FLUX LoRA reference — passed through to the provider API."
+      },
       "ImageOpDescriptor": {
         "properties": {
           "name": {
@@ -61950,7 +62236,12 @@
           "verbosity": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
               },
               {
                 "type": "null"
@@ -61994,7 +62285,19 @@
           "aspect_ratio": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "1:1",
+                  "2:3",
+                  "3:2",
+                  "3:4",
+                  "4:3",
+                  "4:5",
+                  "5:4",
+                  "9:16",
+                  "16:9",
+                  "21:9"
+                ]
               },
               {
                 "type": "null"
@@ -62123,7 +62426,11 @@
           "style": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "vivid",
+                  "natural"
+                ]
               },
               {
                 "type": "null"
@@ -62149,10 +62456,7 @@
               },
               {
                 "items": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object"
+                  "$ref": "#/components/schemas/TtsVoiceSpeaker"
                 },
                 "type": "array"
               },
@@ -62165,7 +62469,18 @@
           "audio_format": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "mp3",
+                  "wav",
+                  "ogg",
+                  "opus",
+                  "aac",
+                  "flac",
+                  "pcm",
+                  "mulaw",
+                  "alaw"
+                ]
               },
               {
                 "type": "null"
@@ -62187,7 +62502,16 @@
           "resolution": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "480p",
+                  "720p",
+                  "1080p",
+                  "4k",
+                  "1K",
+                  "2K",
+                  "4K"
+                ]
               },
               {
                 "type": "null"
@@ -62231,7 +62555,7 @@
           "guidance_scale": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "number"
               },
               {
                 "type": "null"
@@ -62264,7 +62588,17 @@
           "output_format": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "jpeg",
+                  "png",
+                  "webp",
+                  "base64",
+                  "url",
+                  "text",
+                  "json_object",
+                  "json_schema"
+                ]
               },
               {
                 "type": "null"
@@ -62275,7 +62609,9 @@
           "frame_images": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/MediaRef"
+                },
                 "type": "array"
               },
               {
@@ -62287,7 +62623,9 @@
           "reference_images": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/MediaRef"
+                },
                 "type": "array"
               },
               {
@@ -62299,7 +62637,9 @@
           "image_loras": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/ImageLora"
+                },
                 "type": "array"
               },
               {
@@ -62343,17 +62683,20 @@
           },
           "image_input": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Image Input"
+            ]
           },
           "image_inputs": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/MediaRef"
+                },
                 "type": "array"
               },
               {
@@ -62364,30 +62707,33 @@
           },
           "mask": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Mask"
+            ]
           },
           "last_frame_image": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Last Frame Image"
+            ]
           },
           "video_input": {
             "anyOf": [
-              {},
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
               {
                 "type": "null"
               }
-            ],
-            "title": "Video Input"
+            ]
           },
           "video_action": {
             "anyOf": [
@@ -62408,7 +62754,9 @@
           "custom_tools": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/CustomTool"
+                },
                 "type": "array"
               },
               {
@@ -62434,14 +62782,12 @@
           "compaction_settings": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/CompactionSettings"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Compaction Settings"
+            ]
           },
           "detected_contexts": {
             "anyOf": [
@@ -62460,19 +62806,21 @@
           "dictionary": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/DictionaryConfig"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Dictionary"
+            ]
           },
           "tts_quality": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "high_quality",
+                  "fast"
+                ]
               },
               {
                 "type": "null"
@@ -66661,6 +67009,50 @@
         ],
         "title": "OrgCostRow",
         "description": "One row in the org-leaderboard table on /administration/kg-cost."
+      },
+      "OutputSchemaEnvelope": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema"
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OutputSchemaEnvelope",
+        "description": "OpenAI ``json_schema`` inner envelope — matches ``agx_agent.output_schema``."
       },
       "OverlayBboxIn": {
         "properties": {
@@ -73131,16 +73523,12 @@
           "json_schema": {
             "anyOf": [
               {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/JsonValue"
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/OutputSchemaEnvelope"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Json Schema"
+            ]
           },
           "name": {
             "anyOf": [
@@ -83004,6 +83392,27 @@
           "enabled"
         ],
         "title": "TriggerResponse"
+      },
+      "TtsVoiceSpeaker": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Speaker label in multi-speaker TTS scripts."
+          },
+          "voice": {
+            "type": "string",
+            "title": "Voice",
+            "description": "Provider-native voice id or name."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "voice"
+        ],
+        "title": "TtsVoiceSpeaker"
       },
       "TurnRange": {
         "properties": {

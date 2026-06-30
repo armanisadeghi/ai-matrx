@@ -1,6 +1,467 @@
 {
   "$defs": {
+    "CompactionSettings": {
+      "additionalProperties": false,
+      "description": "Optional overrides for the 5-tier context compaction pipeline.\n\nRarely sent by clients today — reserved for explicit compaction control.",
+      "properties": {
+        "tier2_minimal_prune": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tier2 Minimal Prune"
+        },
+        "tier3_content_to_retrieval": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tier3 Content To Retrieval"
+        },
+        "tier4_threshold_trim": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tier4 Threshold Trim"
+        },
+        "tier5_hard_compression": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tier5 Hard Compression"
+        }
+      },
+      "title": "CompactionSettings",
+      "type": "object"
+    },
+    "CustomTool": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Unique tool name. Must match [a-zA-Z0-9_-]{1,64}.",
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "description": "Human-readable description shown to the model.",
+          "title": "Description",
+          "type": "string"
+        },
+        "input_schema": {
+          "$ref": "#/$defs/CustomToolInputSchema",
+          "description": "JSON Schema describing the tool's input parameters."
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CustomTool",
+      "type": "object"
+    },
+    "CustomToolInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "object",
+          "default": "object",
+          "title": "Type",
+          "type": "string"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "title": "Properties"
+        },
+        "required": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required",
+          "type": "array"
+        }
+      },
+      "title": "CustomToolInputSchema",
+      "type": "object"
+    },
+    "DictionaryConfig": {
+      "properties": {
+        "entries": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DictionaryEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        },
+        "custom_entries": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DictionaryEntry"
+          },
+          "title": "Custom Entries",
+          "type": "array"
+        },
+        "max_inline_chars": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Inline Chars"
+        },
+        "source_count": {
+          "default": 0,
+          "title": "Source Count",
+          "type": "integer"
+        }
+      },
+      "title": "DictionaryConfig",
+      "type": "object"
+    },
+    "DictionaryEntry": {
+      "properties": {
+        "term": {
+          "title": "Term",
+          "type": "string"
+        },
+        "sounds_like": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Sounds Like",
+          "type": "array"
+        },
+        "pronunciation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pronunciation"
+        },
+        "ipa": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ipa"
+        },
+        "definition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Definition"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "source_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Level"
+        },
+        "source_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Name"
+        }
+      },
+      "required": [
+        "term"
+      ],
+      "title": "DictionaryEntry",
+      "type": "object"
+    },
+    "ImageLora": {
+      "additionalProperties": false,
+      "description": "Together FLUX LoRA reference — passed through to the provider API.",
+      "properties": {
+        "path": {
+          "description": "LoRA weights path or URL.",
+          "title": "Path",
+          "type": "string"
+        },
+        "scale": {
+          "description": "Blend strength (provider-native scale).",
+          "title": "Scale",
+          "type": "number"
+        }
+      },
+      "required": [
+        "path",
+        "scale"
+      ],
+      "title": "ImageLora",
+      "type": "object"
+    },
     "JsonValue": {},
+    "MediaRef": {
+      "additionalProperties": true,
+      "description": "Canonical media reference shared across every API that takes media.",
+      "properties": {
+        "file_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "cld_files UUID. Preferred form; returned by POST /files/upload.",
+          "title": "File Id"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Any URL we issued (share link, /files/{id}/url, /files/{id}/download, raw S3 URL) or a truly external https://. The server recognises ours and resolves to bytes; external URLs are passed through to providers that fetch them, or downloaded as a last resort.",
+          "title": "Url"
+        },
+        "file_uri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Native cloud URI: s3://bucket/key, gs://..., supabase://...",
+          "title": "File Uri"
+        },
+        "mime_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Hint from the client. Server REPLACES with the canonical cld_files.mime_type when the reference resolves to one of our files.",
+          "title": "Mime Type"
+        },
+        "metadata": {
+          "additionalProperties": true,
+          "description": "Free-form per-API metadata. Opaque to the resolver.",
+          "title": "Metadata",
+          "type": "object"
+        },
+        "vision_class": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional name of a registered vision class (e.g. 'anthropic_opus_hires', 'gemini3_high'). When set, resolution produces a derived variant of the master file using the host-registered encoder for the 'vision' family. Wire-stable: frontends and tools may pin a specific variant; otherwise the unified client annotates this field based on the target model.",
+          "title": "Vision Class"
+        },
+        "base64_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Inline bytes (base64). Set by resolver when needs_bytes=True.",
+          "title": "Base64 Data"
+        },
+        "resolved_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fresh presigned URL the resolver minted (provider-fetchable).",
+          "title": "Resolved Url"
+        },
+        "file_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Size"
+        },
+        "owner_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner Id"
+        },
+        "is_ours": {
+          "default": false,
+          "description": "True iff the resolver matched the reference to a cld_files row.",
+          "title": "Is Ours",
+          "type": "boolean"
+        },
+        "resolver_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set when resolution failed; surface to the caller for logging.",
+          "title": "Resolver Error"
+        },
+        "is_resolved": {
+          "default": false,
+          "description": "Set to True by the boundary normaliser. Resolvers short-circuit when this is True (idempotency). Internal — clients do not set.",
+          "title": "Is Resolved",
+          "type": "boolean"
+        }
+      },
+      "title": "MediaRef",
+      "type": "object"
+    },
+    "OutputSchemaEnvelope": {
+      "additionalProperties": false,
+      "description": "OpenAI ``json_schema`` inner envelope — matches ``agx_agent.output_schema``.",
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema"
+        },
+        "strict": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strict"
+        }
+      },
+      "title": "OutputSchemaEnvelope",
+      "type": "object"
+    },
     "ResponseFormatJsonObject": {
       "additionalProperties": false,
       "properties": {
@@ -27,17 +488,13 @@
         "json_schema": {
           "anyOf": [
             {
-              "additionalProperties": {
-                "$ref": "#/$defs/JsonValue"
-              },
-              "type": "object"
+              "$ref": "#/$defs/OutputSchemaEnvelope"
             },
             {
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Json Schema"
+          "default": null
         },
         "name": {
           "anyOf": [
@@ -98,6 +555,27 @@
         "type"
       ],
       "title": "ResponseFormatText",
+      "type": "object"
+    },
+    "TtsVoiceSpeaker": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Speaker label in multi-speaker TTS scripts.",
+          "title": "Name",
+          "type": "string"
+        },
+        "voice": {
+          "description": "Provider-native voice id or name.",
+          "title": "Voice",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "voice"
+      ],
+      "title": "TtsVoiceSpeaker",
       "type": "object"
     }
   },
@@ -370,6 +848,11 @@
     "verbosity": {
       "anyOf": [
         {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
           "type": "string"
         },
         {
@@ -418,6 +901,18 @@
     "aspect_ratio": {
       "anyOf": [
         {
+          "enum": [
+            "1:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "21:9"
+          ],
           "type": "string"
         },
         {
@@ -557,6 +1052,10 @@
     "style": {
       "anyOf": [
         {
+          "enum": [
+            "vivid",
+            "natural"
+          ],
           "type": "string"
         },
         {
@@ -585,10 +1084,7 @@
         },
         {
           "items": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object"
+            "$ref": "#/$defs/TtsVoiceSpeaker"
           },
           "type": "array"
         },
@@ -602,6 +1098,17 @@
     "audio_format": {
       "anyOf": [
         {
+          "enum": [
+            "mp3",
+            "wav",
+            "ogg",
+            "opus",
+            "aac",
+            "flac",
+            "pcm",
+            "mulaw",
+            "alaw"
+          ],
           "type": "string"
         },
         {
@@ -626,6 +1133,15 @@
     "resolution": {
       "anyOf": [
         {
+          "enum": [
+            "480p",
+            "720p",
+            "1080p",
+            "4k",
+            "1K",
+            "2K",
+            "4K"
+          ],
           "type": "string"
         },
         {
@@ -674,7 +1190,7 @@
     "guidance_scale": {
       "anyOf": [
         {
-          "type": "integer"
+          "type": "number"
         },
         {
           "type": "null"
@@ -710,6 +1226,16 @@
     "output_format": {
       "anyOf": [
         {
+          "enum": [
+            "jpeg",
+            "png",
+            "webp",
+            "base64",
+            "url",
+            "text",
+            "json_object",
+            "json_schema"
+          ],
           "type": "string"
         },
         {
@@ -722,7 +1248,9 @@
     "frame_images": {
       "anyOf": [
         {
-          "items": {},
+          "items": {
+            "$ref": "#/$defs/MediaRef"
+          },
           "type": "array"
         },
         {
@@ -735,7 +1263,9 @@
     "reference_images": {
       "anyOf": [
         {
-          "items": {},
+          "items": {
+            "$ref": "#/$defs/MediaRef"
+          },
           "type": "array"
         },
         {
@@ -748,7 +1278,9 @@
     "image_loras": {
       "anyOf": [
         {
-          "items": {},
+          "items": {
+            "$ref": "#/$defs/ImageLora"
+          },
           "type": "array"
         },
         {
@@ -796,18 +1328,21 @@
     },
     "image_input": {
       "anyOf": [
-        {},
+        {
+          "$ref": "#/$defs/MediaRef"
+        },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Image Input"
+      "default": null
     },
     "image_inputs": {
       "anyOf": [
         {
-          "items": {},
+          "items": {
+            "$ref": "#/$defs/MediaRef"
+          },
           "type": "array"
         },
         {
@@ -819,33 +1354,36 @@
     },
     "mask": {
       "anyOf": [
-        {},
+        {
+          "$ref": "#/$defs/MediaRef"
+        },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Mask"
+      "default": null
     },
     "last_frame_image": {
       "anyOf": [
-        {},
+        {
+          "$ref": "#/$defs/MediaRef"
+        },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Last Frame Image"
+      "default": null
     },
     "video_input": {
       "anyOf": [
-        {},
+        {
+          "$ref": "#/$defs/MediaRef"
+        },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Video Input"
+      "default": null
     },
     "video_action": {
       "anyOf": [
@@ -867,7 +1405,9 @@
     "custom_tools": {
       "anyOf": [
         {
-          "items": {},
+          "items": {
+            "$ref": "#/$defs/CustomTool"
+          },
           "type": "array"
         },
         {
@@ -895,15 +1435,13 @@
     "compaction_settings": {
       "anyOf": [
         {
-          "additionalProperties": true,
-          "type": "object"
+          "$ref": "#/$defs/CompactionSettings"
         },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Compaction Settings"
+      "default": null
     },
     "detected_contexts": {
       "anyOf": [
@@ -923,19 +1461,21 @@
     "dictionary": {
       "anyOf": [
         {
-          "additionalProperties": true,
-          "type": "object"
+          "$ref": "#/$defs/DictionaryConfig"
         },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Dictionary"
+      "default": null
     },
     "tts_quality": {
       "anyOf": [
         {
+          "enum": [
+            "high_quality",
+            "fast"
+          ],
           "type": "string"
         },
         {
