@@ -112,28 +112,31 @@ export function TrayStatusChip({
   const showBreakdown = visibleSegments.length > 1;
   const hasCount = typeof count === "number";
 
+  // Scale matches the sibling `ErrorInspectorBadge` (h-3.5 icon / text-xs count
+  // / text-[10px] detail) — the same tray text scale as every other preview.
+  // Never bump these: a minimized chip is ~270px wide and must stay glanceable.
   return (
-    <div className="flex h-full items-center gap-2 overflow-hidden">
+    <div className="flex h-full items-center gap-1.5 overflow-hidden">
       <Icon
-        className={cn("h-6 w-6 shrink-0", t.fg, pulse && "animate-pulse")}
+        className={cn("h-3.5 w-3.5 shrink-0", t.fg, pulse && "animate-pulse")}
         aria-hidden
       />
 
-      <div className="flex min-w-0 items-baseline gap-1.5">
+      <div className="flex min-w-0 items-baseline gap-1">
         {hasCount ? (
-          <span className={cn("text-base font-semibold tabular-nums", t.fg)}>
+          <span className={cn("text-xs font-semibold tabular-nums", t.fg)}>
             {count}
           </span>
         ) : null}
         {caption ? (
-          <span className="truncate text-[11px] text-muted-foreground/80">
+          <span className="truncate text-[11px] text-muted-foreground">
             {caption}
           </span>
         ) : null}
       </div>
 
       {showBreakdown ? (
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {visibleSegments.map((s, i) => (
             <span
               key={i}
