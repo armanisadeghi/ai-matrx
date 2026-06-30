@@ -10,7 +10,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Flame, Layers, Clock, Hash, Gauge, AlertCircle, Mic } from "lucide-react";
+import Link from "next/link";
+import {
+  Flame,
+  Layers,
+  Clock,
+  Hash,
+  Gauge,
+  AlertCircle,
+  Mic,
+  Headphones,
+  ChevronDown,
+  ChevronRight,
+  Video,
+  Plus,
+  History,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -19,6 +34,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { FcSetRow } from "@/features/flashcards/data/types";
+import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevicesPanel";
 import { updateConfig } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
@@ -30,6 +46,10 @@ export function FastFireSetup() {
 
   const [sets, setSets] = useState<FcSetRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Device-check gate (Zoom/Meet style): confirm + test mic/speaker BEFORE the
+  // drill. Open by default so the learner sees it; reuses the shared
+  // AudioDevicesPanel (the same component the avatar-menu window opens).
+  const [showDevices, setShowDevices] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,6 +212,38 @@ export function FastFireSetup() {
           />
         </section>
 
+        {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the
+            drill. Reuses the shared AudioDevicesPanel (also openable as a window
+            from the avatar menu via dispatch). Built to host video later. */}
+        <section className="mb-5 rounded-xl border border-border bg-card">
+          <button
+            type="button"
+            onClick={() => setShowDevices((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Headphones className="h-4 w-4 text-muted-foreground" />
+              Check your audio
+            </span>
+            {showDevices ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          {showDevices && (
+            <div className="border-t border-border">
+              <AudioDevicesPanel />
+              <div className="flex items-start gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
+                <Video className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Camera setup for video study aids is coming soon.
+                </span>
+              </div>
+            </div>
+          )}
+        </section>
+
         {startError && (
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -221,6 +273,25 @@ export function FastFireSetup() {
           One microphone prompt for the whole session. Answer each card aloud
           before the timer runs out.
         </p>
+
+        {/* Entry-flow affordances: create a new set, or review past results. */}
+        <div className="mt-5 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <Link
+            href="/education/flashcards/new"
+            className="inline-flex items-center gap-1 hover:text-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Create a new set
+          </Link>
+          <span className="text-border">|</span>
+          <Link
+            href="/education/flashcards/sessions"
+            className="inline-flex items-center gap-1 hover:text-foreground"
+          >
+            <History className="h-3.5 w-3.5" />
+            View past results
+          </Link>
+        </div>
       </div>
     </div>
   );
