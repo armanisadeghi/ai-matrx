@@ -1120,7 +1120,8 @@ export default function ControlsEditor({
     }
   };
 
-  const handleRawSave = async (data: object) => {
+  const handleRawSave = async (data: object | string) => {
+    if (typeof data === "string") return;
     const next = data as ControlsSchema;
     setLocalControls(next);
     setHasChanges(false);

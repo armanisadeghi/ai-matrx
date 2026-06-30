@@ -27,6 +27,8 @@ import { useState, useMemo } from "react";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
+import type { Components } from "react-markdown";
+
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 // ---------------------------------------------------------------------------
@@ -900,7 +902,7 @@ export const ConfigurableMarkdownContent: React.FC<
         tr: () => null,
         th: () => null,
         td: () => null,
-      };
+      } as Components;
     },
     // Re-derive when config or overrides change
     [typography, colors, spacing, headings, componentOverrides, LinkWrapper],

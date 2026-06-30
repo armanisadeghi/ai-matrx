@@ -24,7 +24,12 @@ import { updateThreadHandler } from "../handlers/update-thread.handler";
 
 export interface WarRoomToolRegistryEntry {
   schema: z.ZodTypeAny;
-  handler: WarRoomToolHandler<unknown, unknown>;
+  // Heterogeneous handler registry: each handler has its own validated arg/result
+  // shape (args are checked against `schema` at runtime before the handler runs).
+  // `any` (not `unknown`) is required so per-tool handler types remain assignable
+  // under `strictFunctionTypes` — mirrors `ui-first-tools/tools/registry.ts`.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handler: WarRoomToolHandler<any, any>;
 }
 
 const registry: Record<string, WarRoomToolRegistryEntry> = {

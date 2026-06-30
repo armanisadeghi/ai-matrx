@@ -20,6 +20,7 @@
  */
 
 import type { Middleware, ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
+import type { RootState } from "@/lib/redux/store";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 const STRUCTURAL_MUTATIONS = new Set<string>([
@@ -43,8 +44,8 @@ let timer: ReturnType<typeof setTimeout> | null = null;
 // RTK's defaults) so dispatching ensureScopeTree needs no coercion.
 export const scopeTreeInvalidationMiddleware: Middleware<
   Record<string, never>,
-  unknown,
-  ThunkDispatch<unknown, unknown, UnknownAction>
+  RootState,
+  ThunkDispatch<RootState, unknown, UnknownAction>
 > = (store) => (next) => (action) => {
   const result = next(action);
   const type = (action as { type?: string })?.type;

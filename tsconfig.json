@@ -37,7 +37,7 @@
     "noUnusedParameters": false,
     "allowUnreachableCode": false,
     "noErrorTruncation": true,
-    "strictFunctionTypes": false,
+    "strictFunctionTypes": true,
     "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": false,
     "strictBindCallApply": true,

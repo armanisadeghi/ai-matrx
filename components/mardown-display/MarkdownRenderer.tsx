@@ -8,6 +8,8 @@ import { parseMarkdownTable } from "@/components/mardown-display/markdown-classi
 import MarkdownTable from "./tables/TableWithSeparatedControls";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
+import type { Components } from "react-markdown";
+
 const ReactMarkdown = dynamic(() => import("react-markdown"), {
   ssr: false,
 });
@@ -143,7 +145,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         {...props}
       />
     ),
-    code: ({ node, inline, className, children, ...props }) => {
+    code: ({ node, inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || "");
       const language = match ? match[1] : "";
       if (!inline && language) {
@@ -203,7 +205,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     tr: () => null,
     th: () => null,
     td: () => null,
-  };
+  } as Components;
 
   const containerStyles = cn(
     "font-sans text-base antialiased leading-relaxed tracking-wide h-full w-full",

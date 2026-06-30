@@ -17,13 +17,11 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
-import type { AgentSortOption } from "@/features/agents/redux/agent-consumers/slice";
-import type { AgentFavFilter } from "@/features/agents/redux/agent-consumers/slice";
-import type { AgentArchFilter } from "@/features/agents/redux/agent-consumers/slice";
 
 // Prompt-filter types inlined here so this component has no dependency on
 // features/prompts. The agent consumer slice mirrors these shapes.
-type PromptSortOption = "updated-desc" | "created-desc" | "name-asc" | "name-desc" | "category-asc";
+type PromptSortOption =
+  "updated-desc" | "created-desc" | "name-asc" | "name-desc" | "category-asc";
 type PromptTab = "mine" | "shared" | "all";
 type FavFilter = "all" | "yes" | "no";
 type ArchFilter = "active" | "archived" | "both";
@@ -56,7 +54,7 @@ interface DesktopFilterPanelProps {
 }
 
 const SORT_OPTIONS: {
-  value: PromptSortOption | AgentSortOption;
+  value: PromptSortOption;
   label: string;
 }[] = [
   { value: "updated-desc", label: "Recently Updated" },
@@ -66,13 +64,13 @@ const SORT_OPTIONS: {
   { value: "category-asc", label: "Category (A-Z)" },
 ];
 
-const FAV_OPTIONS: { value: FavFilter | AgentFavFilter; label: string }[] = [
+const FAV_OPTIONS: { value: FavFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "yes", label: "Favorites only" },
   { value: "no", label: "Not favorites" },
 ];
 
-const ARCH_OPTIONS: { value: ArchFilter | AgentArchFilter; label: string }[] = [
+const ARCH_OPTIONS: { value: ArchFilter; label: string }[] = [
   { value: "active", label: "Active only" },
   { value: "archived", label: "Archived only" },
   { value: "both", label: "All (active + archived)" },
@@ -83,10 +81,10 @@ function RadioSelect<T extends string>({
   onChange,
   options,
 }: {
-  value: T | AgentSortOption | AgentFavFilter | AgentArchFilter;
-  onChange: (v: T | AgentSortOption | AgentFavFilter | AgentArchFilter) => void;
+  value: T;
+  onChange: (v: T) => void;
   options: {
-    value: T | AgentSortOption | AgentFavFilter | AgentArchFilter;
+    value: T;
     label: string;
   }[];
 }) {
@@ -338,7 +336,7 @@ export function DesktopFilterPanel({
 
           {hasShared && (
             <FilterSection label="Show" active={activeTab !== "mine"}>
-              <RadioSelect
+              <RadioSelect<PromptTab | AgentTab>
                 value={activeTab}
                 onChange={setActiveTab}
                 options={[

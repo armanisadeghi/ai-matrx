@@ -8,8 +8,12 @@
  * shares them so analytics can attribute all runs to /agents/battle.
  */
 
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import type { AppDispatch, RootState } from "@/lib/redux/store";
+import {
+  createAsyncThunk,
+  type ThunkDispatch,
+  type UnknownAction,
+} from "@reduxjs/toolkit";
+import type { RootState } from "@/lib/redux/store";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import {
   createInstance,
@@ -66,7 +70,7 @@ export const BATTLE_SURFACE_KEY = "agent-comparison";
 const BATTLE_SOURCE_FEATURE = "agent-comparison" as const;
 
 interface ThunkApi {
-  dispatch: AppDispatch;
+  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>;
   state: RootState;
 }
 

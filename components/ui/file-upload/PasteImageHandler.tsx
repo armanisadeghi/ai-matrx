@@ -53,7 +53,6 @@ type PasteImageHandlerProps = {
   onError?: (message: string) => void;
 };
 
-
 function classifyFileType(mimeType: string): string {
   if (!mimeType) return "unknown";
   const t = mimeType.toLowerCase();
@@ -146,7 +145,8 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
           };
           onImagePasted?.(result);
         } catch (error) {
-          const reason = error instanceof Error ? error.message : "Upload failed";
+          const reason =
+            error instanceof Error ? error.message : "Upload failed";
           // eslint-disable-next-line no-console
           console.error("Error processing pasted image:", error);
           if (onError) onError(reason);
@@ -156,15 +156,24 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
         }
       }
     },
-    [disabled, bucket, path, saveTo, upload, onImagePasted, onError, updateProcessing],
+    [
+      disabled,
+      bucket,
+      path,
+      saveTo,
+      upload,
+      onImagePasted,
+      onError,
+      updateProcessing,
+    ],
   );
 
   useEffect(() => {
     const element = targetRef.current;
     if (!element || disabled) return undefined;
-    element.addEventListener("paste", handlePaste as EventListener);
+    element.addEventListener("paste", handlePaste);
     return () => {
-      element.removeEventListener("paste", handlePaste as EventListener);
+      element.removeEventListener("paste", handlePaste);
     };
   }, [handlePaste, disabled]);
 

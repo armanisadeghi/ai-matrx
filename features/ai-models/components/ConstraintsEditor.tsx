@@ -711,7 +711,7 @@ export default function ConstraintsEditor({
     }
   };
 
-  const rawSave = async (data: object) => {
+  const rawSave = async (data: object | string) => {
     if (!Array.isArray(data)) return;
     const parsed = data as ModelConstraint[];
     setSaving(true);

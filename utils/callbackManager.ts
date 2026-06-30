@@ -44,7 +44,11 @@ class CallbackManager {
     const callbackId = uuidv4();
     const { context, groupId } = options || {};
 
-    this.callbacks.set(callbackId, { callback, context, groupId });
+    this.callbacks.set(callbackId, {
+      callback: callback as Callback,
+      context,
+      groupId,
+    });
 
     if (groupId) {
       const group = this.groups.get(groupId) || new Set();
@@ -69,7 +73,7 @@ class CallbackManager {
       entry.listeners = [];
     }
 
-    entry.listeners.push(listener);
+    entry.listeners.push(listener as Callback);
     return true;
   }
   /**
@@ -82,7 +86,7 @@ class CallbackManager {
     const entry = this.callbacks.get(callbackId);
     if (!entry || !entry.listeners) return false;
 
-    const index = entry.listeners.indexOf(listener);
+    const index = entry.listeners.indexOf(listener as Callback);
     if (index === -1) return false;
 
     entry.listeners.splice(index, 1);

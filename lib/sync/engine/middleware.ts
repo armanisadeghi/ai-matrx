@@ -12,12 +12,7 @@
  * migration retires legacy broadcast plumbing earlier.
  */
 
-import type {
-  Action,
-  Middleware,
-  MiddlewareAPI,
-  Dispatch,
-} from "@reduxjs/toolkit";
+import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
 import { logger } from "../logger";
 import { buildActionMessage, type ActionMessage } from "../messages";
@@ -221,195 +216,204 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
   // we never re-key a write-in-progress to the new identity).
   let lastSeenIdentity = ctx.getIdentity().key;
 
-  return (api: MiddlewareAPI) => (next: Dispatch) => (action: unknown) => {
-    // Seed baselines BEFORE `next(action)` so the first mutation is
-    // compared against the boot state — not against the post-action
-    // state. Must run exactly once per middleware instance.
-    if (!seededFromBoot) {
-      seededFromBoot = true;
-      const bootState = api.getState();
-      for (const policy of ctx.policies) {
-        const sliceState = selectSliceState(bootState, policy.config.sliceName);
-        if (sliceState !== undefined) {
+  const middleware =
+    (api: MiddlewareAPI) =>
+    (next: (action: unknown) => unknown) =>
+    (action: unknown) => {
+      // Seed baselines BEFORE `next(action)` so the first mutation is
+      // compared against the boot state — not against the post-action
+      // state. Must run exactly once per middleware instance.
+      if (!seededFromBoot) {
+        seededFromBoot = true;
+        const bootState = api.getState();
+        for (const policy of ctx.policies) {
+          const sliceState = selectSliceState(
+            bootState,
+            policy.config.sliceName,
+          );
+          if (sliceState !== undefined) {
+            lastPersistedRef.set(policy.config.sliceName, sliceState);
+            lastAppliedRef.set(policy.config.sliceName, sliceState);
+          }
+        }
+      }
+
+      const result = next(action as Action);
+
+      // Ignore rehydrate echoes and anything without a string type.
+      if (
+        action === null ||
+        typeof action !== "object" ||
+        typeof (action as { type?: unknown }).type !== "string"
+      ) {
+        return result;
+      }
+      const a = action as ActionWithMeta;
+
+      // --- Broadcast ---
+      const broadcastPolicy = broadcastIndex.get(a.type);
+      if (broadcastPolicy && !hasMetaFromBroadcast(a)) {
+        try {
+          const identity = ctx.getIdentity();
+          const sliceState = selectSliceState(
+            api.getState(),
+            broadcastPolicy.config.sliceName,
+          );
+          const msg: ActionMessage = buildActionMessage(
+            identity.key,
+            broadcastPolicy.config.sliceName,
+            broadcastPolicy.config.version,
+            { type: a.type, payload: a.payload },
+          );
+          ctx.channel.post(msg);
+          // Hint to TS — we may use sliceState below.
+          void sliceState;
+        } catch (err) {
+          logger.error("broadcast.emit.failed", {
+            meta: { error: extractErrorMessage(err) },
+          });
+        }
+      }
+
+      // Detect identity swap between actions. The sync context's getIdentity
+      // is a closure over `currentIdentity` in `makeStore`; if it changed,
+      // cancel any pending debounced writes so they don't land under the
+      // wrong identity.
+      const currentIdentityKey = ctx.getIdentity().key;
+      if (currentIdentityKey !== lastSeenIdentity) {
+        lastSeenIdentity = currentIdentityKey;
+        remoteWriteScheduler?.onIdentitySwap();
+        autoSaveScheduler?.onIdentitySwap();
+      }
+
+      // --- AutoSave (per-record, post-reducer) ---
+      // For each policy whose `autoSave.triggerActions` includes this action,
+      // schedule a save on the recordId carried in the action payload.
+      // Convention: action.payload.id (or .recordId, or .noteId, or .fileId)
+      // is the per-record key. The slice reducer is responsible for the
+      // mutation; the engine just schedules the write.
+      if (!isRehydrateAction(a)) {
+        const triggered = autoSaveTriggerIndex.get(a.type);
+        if (triggered && triggered.length > 0) {
+          const recordId = extractRecordId(a.payload);
+          if (recordId) {
+            if (!autoSaveScheduler) {
+              autoSaveScheduler = createAutoSaveScheduler({
+                policies: ctx.policies,
+                store: {
+                  getState: api.getState,
+                  dispatch: api.dispatch,
+                } as Parameters<typeof createAutoSaveScheduler>[0]["store"],
+                getIdentity: ctx.getIdentity,
+                ...(ctx.defaultDebounceMs !== undefined
+                  ? { defaultDebounceMs: ctx.defaultDebounceMs }
+                  : {}),
+              });
+            }
+            for (const policy of triggered) {
+              autoSaveScheduler.schedule(policy.config.sliceName, recordId);
+            }
+          }
+        }
+      }
+
+      // --- Persist (sync write-through for boot-critical; debounced for warm-cache) ---
+      // Rehydrate actions flow through reducers but must NOT trigger a re-persist.
+      if (!isRehydrateAction(a)) {
+        for (const policy of ctx.policies) {
+          const caps = getPreset(policy.config.preset);
+          if (caps.writeStrategy === "none") continue;
+          // Only write when the slice state reference changed.
+          const sliceState = selectSliceState(
+            api.getState(),
+            policy.config.sliceName,
+          );
+          if (sliceState === undefined) continue;
+          if (lastPersistedRef.get(policy.config.sliceName) === sliceState)
+            continue;
           lastPersistedRef.set(policy.config.sliceName, sliceState);
-          lastAppliedRef.set(policy.config.sliceName, sliceState);
-        }
-      }
-    }
 
-    const result = next(action as Action);
+          const body = serializeBody(policy, sliceState);
 
-    // Ignore rehydrate echoes and anything without a string type.
-    if (
-      action === null ||
-      typeof action !== "object" ||
-      typeof (action as { type?: unknown }).type !== "string"
-    ) {
-      return result;
-    }
-    const a = action as ActionWithMeta;
-
-    // --- Broadcast ---
-    const broadcastPolicy = broadcastIndex.get(a.type);
-    if (broadcastPolicy && !hasMetaFromBroadcast(a)) {
-      try {
-        const identity = ctx.getIdentity();
-        const sliceState = selectSliceState(
-          api.getState(),
-          broadcastPolicy.config.sliceName,
-        );
-        const msg: ActionMessage = buildActionMessage(
-          identity.key,
-          broadcastPolicy.config.sliceName,
-          broadcastPolicy.config.version,
-          { type: a.type, payload: a.payload },
-        );
-        ctx.channel.post(msg);
-        // Hint to TS — we may use sliceState below.
-        void sliceState;
-      } catch (err) {
-        logger.error("broadcast.emit.failed", {
-          meta: { error: extractErrorMessage(err) },
-        });
-      }
-    }
-
-    // Detect identity swap between actions. The sync context's getIdentity
-    // is a closure over `currentIdentity` in `makeStore`; if it changed,
-    // cancel any pending debounced writes so they don't land under the
-    // wrong identity.
-    const currentIdentityKey = ctx.getIdentity().key;
-    if (currentIdentityKey !== lastSeenIdentity) {
-      lastSeenIdentity = currentIdentityKey;
-      remoteWriteScheduler?.onIdentitySwap();
-      autoSaveScheduler?.onIdentitySwap();
-    }
-
-    // --- AutoSave (per-record, post-reducer) ---
-    // For each policy whose `autoSave.triggerActions` includes this action,
-    // schedule a save on the recordId carried in the action payload.
-    // Convention: action.payload.id (or .recordId, or .noteId, or .fileId)
-    // is the per-record key. The slice reducer is responsible for the
-    // mutation; the engine just schedules the write.
-    if (!isRehydrateAction(a)) {
-      const triggered = autoSaveTriggerIndex.get(a.type);
-      if (triggered && triggered.length > 0) {
-        const recordId = extractRecordId(a.payload);
-        if (recordId) {
-          if (!autoSaveScheduler) {
-            autoSaveScheduler = createAutoSaveScheduler({
-              policies: ctx.policies,
-              store: {
-                getState: api.getState,
-                dispatch: api.dispatch,
-              } as Parameters<typeof createAutoSaveScheduler>[0]["store"],
-              getIdentity: ctx.getIdentity,
-              ...(ctx.defaultDebounceMs !== undefined
-                ? { defaultDebounceMs: ctx.defaultDebounceMs }
-                : {}),
+          if (caps.writeStrategy === "sync") {
+            // boot-critical: synchronous localStorage write-through.
+            adapterFor(policy).write(policy.storageKey, {
+              version: policy.config.version,
+              identityKey: ctx.getIdentity().key,
+              body,
             });
+          } else if (caps.writeStrategy === "debounced") {
+            // warm-cache: debounced write — both IDB and remote.write
+            // (if declared) flush after quiescence. Lazy scheduler
+            // construction on first use.
+            if (!remoteWriteScheduler) {
+              remoteWriteScheduler = createRemoteWriteScheduler({
+                policies: ctx.policies,
+                store: {
+                  getState: api.getState,
+                  dispatch: api.dispatch,
+                } as Parameters<typeof createRemoteWriteScheduler>[0]["store"],
+                getIdentity: ctx.getIdentity,
+                ...(ctx.defaultDebounceMs !== undefined
+                  ? { defaultDebounceMs: ctx.defaultDebounceMs }
+                  : {}),
+              });
+            }
+            remoteWriteScheduler.schedule(policy.config.sliceName, body);
           }
-          for (const policy of triggered) {
-            autoSaveScheduler.schedule(policy.config.sliceName, recordId);
+        }
+      } else {
+        // REHYDRATE path: the reducer just replaced slice state with data
+        // pulled from a persistent source (IDB, LS fallback, remote.fetch,
+        // or peer HYDRATE_RESPONSE). That new state IS the persisted
+        // baseline — update `lastPersistedRef` so the first subsequent
+        // mutation is compared against it. Without this, a user edit
+        // right after rehydrate would be detected as "changed since boot
+        // seed" and flushed back to the same source we just read from.
+        for (const policy of ctx.policies) {
+          const caps = getPreset(policy.config.preset);
+          if (caps.writeStrategy === "none") continue;
+          const sliceState = selectSliceState(
+            api.getState(),
+            policy.config.sliceName,
+          );
+          if (sliceState !== undefined) {
+            lastPersistedRef.set(policy.config.sliceName, sliceState);
           }
         }
       }
-    }
+      void hasWarmCache;
 
-    // --- Persist (sync write-through for boot-critical; debounced for warm-cache) ---
-    // Rehydrate actions flow through reducers but must NOT trigger a re-persist.
-    if (!isRehydrateAction(a)) {
+      // --- Apply pre-paint descriptors at runtime ---
+      // Mirrors the one-shot inline SyncBootScript so DOM class/attribute
+      // state stays in lockstep with Redux for local toggles, inbound
+      // broadcasts, AND rehydrate (boot). Idempotent: skips if slice state
+      // reference didn't change.
       for (const policy of ctx.policies) {
-        const caps = getPreset(policy.config.preset);
-        if (caps.writeStrategy === "none") continue;
-        // Only write when the slice state reference changed.
+        if (policy.prePaintDescriptors.length === 0) continue;
         const sliceState = selectSliceState(
           api.getState(),
           policy.config.sliceName,
         );
         if (sliceState === undefined) continue;
-        if (lastPersistedRef.get(policy.config.sliceName) === sliceState)
+        if (lastAppliedRef.get(policy.config.sliceName) === sliceState)
           continue;
-        lastPersistedRef.set(policy.config.sliceName, sliceState);
-
-        const body = serializeBody(policy, sliceState);
-
-        if (caps.writeStrategy === "sync") {
-          // boot-critical: synchronous localStorage write-through.
-          adapterFor(policy).write(policy.storageKey, {
-            version: policy.config.version,
-            identityKey: ctx.getIdentity().key,
-            body,
+        lastAppliedRef.set(policy.config.sliceName, sliceState);
+        try {
+          applyPrePaintDescriptors(
+            policy.prePaintDescriptors,
+            sliceState as Record<string, unknown>,
+          );
+        } catch (err) {
+          logger.error("apply.prePaint.failed", {
+            sliceName: policy.config.sliceName,
+            meta: { error: extractErrorMessage(err) },
           });
-        } else if (caps.writeStrategy === "debounced") {
-          // warm-cache: debounced write — both IDB and remote.write
-          // (if declared) flush after quiescence. Lazy scheduler
-          // construction on first use.
-          if (!remoteWriteScheduler) {
-            remoteWriteScheduler = createRemoteWriteScheduler({
-              policies: ctx.policies,
-              store: {
-                getState: api.getState,
-                dispatch: api.dispatch,
-              } as Parameters<typeof createRemoteWriteScheduler>[0]["store"],
-              getIdentity: ctx.getIdentity,
-              ...(ctx.defaultDebounceMs !== undefined
-                ? { defaultDebounceMs: ctx.defaultDebounceMs }
-                : {}),
-            });
-          }
-          remoteWriteScheduler.schedule(policy.config.sliceName, body);
         }
       }
-    } else {
-      // REHYDRATE path: the reducer just replaced slice state with data
-      // pulled from a persistent source (IDB, LS fallback, remote.fetch,
-      // or peer HYDRATE_RESPONSE). That new state IS the persisted
-      // baseline — update `lastPersistedRef` so the first subsequent
-      // mutation is compared against it. Without this, a user edit
-      // right after rehydrate would be detected as "changed since boot
-      // seed" and flushed back to the same source we just read from.
-      for (const policy of ctx.policies) {
-        const caps = getPreset(policy.config.preset);
-        if (caps.writeStrategy === "none") continue;
-        const sliceState = selectSliceState(
-          api.getState(),
-          policy.config.sliceName,
-        );
-        if (sliceState !== undefined) {
-          lastPersistedRef.set(policy.config.sliceName, sliceState);
-        }
-      }
-    }
-    void hasWarmCache;
 
-    // --- Apply pre-paint descriptors at runtime ---
-    // Mirrors the one-shot inline SyncBootScript so DOM class/attribute
-    // state stays in lockstep with Redux for local toggles, inbound
-    // broadcasts, AND rehydrate (boot). Idempotent: skips if slice state
-    // reference didn't change.
-    for (const policy of ctx.policies) {
-      if (policy.prePaintDescriptors.length === 0) continue;
-      const sliceState = selectSliceState(
-        api.getState(),
-        policy.config.sliceName,
-      );
-      if (sliceState === undefined) continue;
-      if (lastAppliedRef.get(policy.config.sliceName) === sliceState) continue;
-      lastAppliedRef.set(policy.config.sliceName, sliceState);
-      try {
-        applyPrePaintDescriptors(
-          policy.prePaintDescriptors,
-          sliceState as Record<string, unknown>,
-        );
-      } catch (err) {
-        logger.error("apply.prePaint.failed", {
-          sliceName: policy.config.sliceName,
-          meta: { error: extractErrorMessage(err) },
-        });
-      }
-    }
+      return result;
+    };
 
-    return result;
-  };
+  return middleware as unknown as Middleware;
 }

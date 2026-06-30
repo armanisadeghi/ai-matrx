@@ -58,6 +58,8 @@ function splitWithVariables(text: string): React.ReactNode[] {
   return nodes.length > 0 ? nodes : [text];
 }
 
+import type { Components } from "react-markdown";
+
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 // Detect text direction utility
@@ -408,470 +410,474 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
   // Memoize components to prevent recreation during streaming
   const components = useMemo(
-    () => ({
-      input: ({ node, type, checked, disabled, ...props }: any) => {
-        if (type === "checkbox") {
-          return (
-            <Checkbox
-              checked={!!checked}
-              disabled={disabled}
-              className="mr-2"
-            />
-          );
-        }
-        return <input type={type} {...props} />;
-      },
-      p: ({ node, children, ...props }: any) => {
-        // Blank line placeholder — render as an empty line with no extra margin
-        const childArray = React.Children.toArray(children);
-        if (childArray.length === 1 && childArray[0] === "\u00A0") {
-          return <div className="h-[0.75em]" />;
-        }
+    () =>
+      ({
+        input: ({ node, type, checked, disabled, ...props }: any) => {
+          if (type === "checkbox") {
+            return (
+              <Checkbox
+                checked={!!checked}
+                disabled={disabled}
+                className="mr-2"
+              />
+            );
+          }
+          return <input type={type} {...props} />;
+        },
+        p: ({ node, children, ...props }: any) => {
+          // Blank line placeholder — render as an empty line with no extra margin
+          const childArray = React.Children.toArray(children);
+          if (childArray.length === 1 && childArray[0] === "\u00A0") {
+            return <div className="h-[0.75em]" />;
+          }
 
-        // Thick blue thematic break — sentinel emitted by preprocessContent for
-        // standalone `={3,}` lines. Rendered as a heavier blue rule than the
-        // default `---` <hr>, with extra vertical breathing room.
-        if (
-          childArray.length === 1 &&
-          childArray[0] === "\uE000THICK_HR\uE000"
-        ) {
-          return (
-            <hr
-              className="my-5 border-0 h-[3px] rounded-full bg-blue-500 dark:bg-blue-400"
-              role="separator"
-            />
-          );
-        }
-
-        // Check if this paragraph only contains math (display math should be centered)
-        let isMathOnly = false;
-
-        if (childArray.length === 1) {
-          const child = childArray[0] as any;
-          // Check if it's a React element with katex className
+          // Thick blue thematic break — sentinel emitted by preprocessContent for
+          // standalone `={3,}` lines. Rendered as a heavier blue rule than the
+          // default `---` <hr>, with extra vertical breathing room.
           if (
-            child &&
-            typeof child === "object" &&
-            child.props &&
-            child.props.className
+            childArray.length === 1 &&
+            childArray[0] === "\uE000THICK_HR\uE000"
           ) {
-            isMathOnly = child.props.className.includes("katex");
+            return (
+              <hr
+                className="my-5 border-0 h-[3px] rounded-full bg-blue-500 dark:bg-blue-400"
+                role="separator"
+              />
+            );
           }
-        }
 
-        // Detect direction for this specific paragraph
-        // Better text extraction that handles nested React elements
-        const extractTextFromChildren = (children: any): string => {
-          if (typeof children === "string") return children;
-          if (Array.isArray(children)) {
-            return children
-              .map((child) => extractTextFromChildren(child))
-              .join("");
+          // Check if this paragraph only contains math (display math should be centered)
+          let isMathOnly = false;
+
+          if (childArray.length === 1) {
+            const child = childArray[0] as any;
+            // Check if it's a React element with katex className
+            if (
+              child &&
+              typeof child === "object" &&
+              child.props &&
+              child.props.className
+            ) {
+              isMathOnly = child.props.className.includes("katex");
+            }
           }
-          if (children && typeof children === "object" && children.props) {
-            return extractTextFromChildren(children.props.children);
+
+          // Detect direction for this specific paragraph
+          // Better text extraction that handles nested React elements
+          const extractTextFromChildren = (children: any): string => {
+            if (typeof children === "string") return children;
+            if (Array.isArray(children)) {
+              return children
+                .map((child) => extractTextFromChildren(child))
+                .join("");
+            }
+            if (children && typeof children === "object" && children.props) {
+              return extractTextFromChildren(children.props.children);
+            }
+            return "";
+          };
+
+          const paragraphText = extractTextFromChildren(children);
+          const paragraphDirection = detectTextDirection(paragraphText);
+          const paragraphDirClasses = getDirectionClasses(paragraphDirection);
+
+          // If it's only math, center it and override direction classes
+          if (isMathOnly) {
+            return (
+              <p
+                className="font-sans tracking-wide leading-relaxed text-base mb-4 text-center"
+                {...props}
+              >
+                {children}
+              </p>
+            );
           }
-          return "";
-        };
 
-        const paragraphText = extractTextFromChildren(children);
-        const paragraphDirection = detectTextDirection(paragraphText);
-        const paragraphDirClasses = getDirectionClasses(paragraphDirection);
-
-        // If it's only math, center it and override direction classes
-        if (isMathOnly) {
           return (
             <p
-              className="font-sans tracking-wide leading-relaxed text-base mb-4 text-center"
+              className={`font-sans tracking-wide leading-relaxed ${getDirectionFontSize(paragraphDirection)} mb-2 pl-0 ml-0 ${paragraphDirClasses}`}
+              dir={paragraphDirection}
               {...props}
             >
               {children}
             </p>
           );
-        }
-
-        return (
-          <p
-            className={`font-sans tracking-wide leading-relaxed ${getDirectionFontSize(paragraphDirection)} mb-2 pl-0 ml-0 ${paragraphDirClasses}`}
-            dir={paragraphDirection}
-            {...props}
-          >
-            {children}
-          </p>
-        );
-      },
-      strong: ({ node, children, ...props }) => {
-        const parentTagName = node.parent?.tagName?.toLowerCase() || "";
-        const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-          parentTagName,
-        );
-
-        // Detect direction for bold text content
-        const boldText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const boldDirection = detectTextDirection(boldText);
-        const boldDirClasses = getDirectionClasses(boldDirection);
-
-        return (
-          <strong
-            className={`${isInHeading ? "" : "font-extrabold"} ${boldDirClasses}`}
-            dir={boldDirection}
-            {...props}
-          >
-            {children}
-          </strong>
-        );
-      },
-      em: ({ node, children, ...props }) => {
-        const parentTagName = node.parent?.tagName?.toLowerCase() || "";
-        const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-          parentTagName,
-        );
-
-        // Detect direction for italic text content
-        const italicText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const italicDirection = detectTextDirection(italicText);
-        const italicDirClasses = getDirectionClasses(italicDirection);
-
-        return (
-          <em
-            className={`${isInHeading ? "italic" : "italic text-blue-600 dark:text-blue-400"} ${italicDirClasses}`}
-            dir={italicDirection}
-            {...props}
-          >
-            {children}
-          </em>
-        );
-      },
-      blockquote: ({ node, children, ...props }) => {
-        // Detect direction for blockquote content
-        const blockquoteText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const blockquoteDirection = detectTextDirection(blockquoteText);
-        const isRtl = blockquoteDirection === "rtl";
-
-        return (
-          <blockquote
-            className={`${isRtl ? "pr-4 border-r-4" : "pl-4 border-l-4"} py-3 border-blue-200 dark:border-blue-700 italic text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-950/20 ${getDirectionClasses(blockquoteDirection)}`}
-            dir={blockquoteDirection}
-            {...props}
-          >
-            {children}
-          </blockquote>
-        );
-      },
-      ul: ({ node, children, ...props }) => {
-        // Detect direction for list content
-        const listText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const listDirection = detectTextDirection(listText);
-
-        return (
-          <ul
-            // Bullet markers by nesting depth: L1 filled disc, L2 hollow
-            // circle, L3+ dash. The full cascade is applied to every <ul>; the
-            // ancestor descendant-selectors ([&_ul], [&_ul_ul]) have higher
-            // specificity than a deeper list's own `list-disc`, so each level
-            // resolves to the right marker regardless of how deep it is.
-            className={`matrx-md-ul mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
-            dir={listDirection}
-            {...props}
-          >
-            {children}
-          </ul>
-        );
-      },
-      ol: ({ node, children, ...props }) => {
-        // Detect direction for list content
-        const listText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const listDirection = detectTextDirection(listText);
-
-        return (
-          <ol
-            // Numbering by nesting depth: L1 decimal (1.2.3.), L2 lower-roman
-            // (i.ii.iii.), L3+ lower-alpha (a.b.c.). Same specificity-cascade
-            // approach as <ul> above.
-            className={`matrx-md-ol mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
-            dir={listDirection}
-            {...props}
-          >
-            {children}
-          </ol>
-        );
-      },
-      li: ({ node, children, ...props }) => {
-        return <ListItemComponent node={node}>{children}</ListItemComponent>;
-      },
-      a: LinkWrapper,
-      h1: ({ node, children, ...props }) => {
-        const headingText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const headingDirection = detectTextDirection(headingText);
-
-        return (
-          <h1
-            className={`text-xl text-blue-500 font-bold mt-4 mb-2 font-heading ${getDirectionClasses(headingDirection)}`}
-            dir={headingDirection}
-            {...props}
-          >
-            {children}
-          </h1>
-        );
-      },
-      h2: ({ node, children, ...props }) => {
-        const headingText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const headingDirection = detectTextDirection(headingText);
-
-        return (
-          <h2
-            className={`text-lg text-blue-500 font-semibold mt-3 mb-1.5 font-heading ${getDirectionClasses(headingDirection)}`}
-            dir={headingDirection}
-            {...props}
-          >
-            {children}
-          </h2>
-        );
-      },
-      h3: ({ node, children, ...props }) => {
-        const headingText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const headingDirection = detectTextDirection(headingText);
-
-        return (
-          <h3
-            className={`text-base text-blue-500 font-semibold mt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
-            dir={headingDirection}
-            {...props}
-          >
-            {children}
-          </h3>
-        );
-      },
-      h4: ({ node, children, ...props }) => {
-        const headingText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : "";
-        const headingDirection = detectTextDirection(headingText);
-
-        return (
-          <h4
-            className={`text-sm text-blue-400 font-semibold mt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
-            dir={headingDirection}
-            {...props}
-          >
-            {children}
-          </h4>
-        );
-      },
-      pre: ({ node, children, ...props }) => {
-        // react-markdown wraps fenced code in <pre><code>. Extract the code
-        // element and render via InlineCodeSnippet for proper formatting.
-        const childArray = React.Children.toArray(children);
-        const codeChild = childArray.find((child: any) => {
-          if (!React.isValidElement(child)) return false;
-          const p = child.props as Record<string, any>;
-          return (
-            p?.node?.tagName === "code" || typeof p?.className === "string"
+        },
+        strong: ({ node, children, ...props }: any) => {
+          const parentTagName = node.parent?.tagName?.toLowerCase() || "";
+          const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
+            parentTagName,
           );
-        });
 
-        if (React.isValidElement(codeChild)) {
-          const codeProps = codeChild.props as Record<string, any>;
-          const langClass = String(codeProps.className || "");
-          const langMatch = langClass.match(/language-(\w+)/);
-          const language = langMatch?.[1];
-          const codeText = String(codeProps.children ?? "").replace(/\n$/, "");
+          // Detect direction for bold text content
+          const boldText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const boldDirection = detectTextDirection(boldText);
+          const boldDirClasses = getDirectionClasses(boldDirection);
 
-          if (codeText) {
+          return (
+            <strong
+              className={`${isInHeading ? "" : "font-extrabold"} ${boldDirClasses}`}
+              dir={boldDirection}
+              {...props}
+            >
+              {children}
+            </strong>
+          );
+        },
+        em: ({ node, children, ...props }: any) => {
+          const parentTagName = node.parent?.tagName?.toLowerCase() || "";
+          const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
+            parentTagName,
+          );
+
+          // Detect direction for italic text content
+          const italicText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const italicDirection = detectTextDirection(italicText);
+          const italicDirClasses = getDirectionClasses(italicDirection);
+
+          return (
+            <em
+              className={`${isInHeading ? "italic" : "italic text-blue-600 dark:text-blue-400"} ${italicDirClasses}`}
+              dir={italicDirection}
+              {...props}
+            >
+              {children}
+            </em>
+          );
+        },
+        blockquote: ({ node, children, ...props }) => {
+          // Detect direction for blockquote content
+          const blockquoteText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const blockquoteDirection = detectTextDirection(blockquoteText);
+          const isRtl = blockquoteDirection === "rtl";
+
+          return (
+            <blockquote
+              className={`${isRtl ? "pr-4 border-r-4" : "pl-4 border-l-4"} py-3 border-blue-200 dark:border-blue-700 italic text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-950/20 ${getDirectionClasses(blockquoteDirection)}`}
+              dir={blockquoteDirection}
+              {...props}
+            >
+              {children}
+            </blockquote>
+          );
+        },
+        ul: ({ node, children, ...props }) => {
+          // Detect direction for list content
+          const listText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const listDirection = detectTextDirection(listText);
+
+          return (
+            <ul
+              // Bullet markers by nesting depth: L1 filled disc, L2 hollow
+              // circle, L3+ dash. The full cascade is applied to every <ul>; the
+              // ancestor descendant-selectors ([&_ul], [&_ul_ul]) have higher
+              // specificity than a deeper list's own `list-disc`, so each level
+              // resolves to the right marker regardless of how deep it is.
+              className={`matrx-md-ul mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
+              dir={listDirection}
+              {...props}
+            >
+              {children}
+            </ul>
+          );
+        },
+        ol: ({ node, children, ...props }) => {
+          // Detect direction for list content
+          const listText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const listDirection = detectTextDirection(listText);
+
+          return (
+            <ol
+              // Numbering by nesting depth: L1 decimal (1.2.3.), L2 lower-roman
+              // (i.ii.iii.), L3+ lower-alpha (a.b.c.). Same specificity-cascade
+              // approach as <ul> above.
+              className={`matrx-md-ol mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
+              dir={listDirection}
+              {...props}
+            >
+              {children}
+            </ol>
+          );
+        },
+        li: ({ node, children, ...props }) => {
+          return <ListItemComponent node={node}>{children}</ListItemComponent>;
+        },
+        a: LinkWrapper,
+        h1: ({ node, children, ...props }) => {
+          const headingText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const headingDirection = detectTextDirection(headingText);
+
+          return (
+            <h1
+              className={`text-xl text-blue-500 font-bold mt-4 mb-2 font-heading ${getDirectionClasses(headingDirection)}`}
+              dir={headingDirection}
+              {...props}
+            >
+              {children}
+            </h1>
+          );
+        },
+        h2: ({ node, children, ...props }) => {
+          const headingText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const headingDirection = detectTextDirection(headingText);
+
+          return (
+            <h2
+              className={`text-lg text-blue-500 font-semibold mt-3 mb-1.5 font-heading ${getDirectionClasses(headingDirection)}`}
+              dir={headingDirection}
+              {...props}
+            >
+              {children}
+            </h2>
+          );
+        },
+        h3: ({ node, children, ...props }) => {
+          const headingText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const headingDirection = detectTextDirection(headingText);
+
+          return (
+            <h3
+              className={`text-base text-blue-500 font-semibold mt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
+              dir={headingDirection}
+              {...props}
+            >
+              {children}
+            </h3>
+          );
+        },
+        h4: ({ node, children, ...props }) => {
+          const headingText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : "";
+          const headingDirection = detectTextDirection(headingText);
+
+          return (
+            <h4
+              className={`text-sm text-blue-400 font-semibold mt-2 mb-1 font-heading ${getDirectionClasses(headingDirection)}`}
+              dir={headingDirection}
+              {...props}
+            >
+              {children}
+            </h4>
+          );
+        },
+        pre: ({ node, children, ...props }) => {
+          // react-markdown wraps fenced code in <pre><code>. Extract the code
+          // element and render via InlineCodeSnippet for proper formatting.
+          const childArray = React.Children.toArray(children);
+          const codeChild = childArray.find((child: any) => {
+            if (!React.isValidElement(child)) return false;
+            const p = child.props as Record<string, any>;
             return (
-              <InlineCodeSnippet
-                code={codeText}
-                language={language}
-                className="my-2"
-                renderVariables
-              />
+              p?.node?.tagName === "code" || typeof p?.className === "string"
+            );
+          });
+
+          if (React.isValidElement(codeChild)) {
+            const codeProps = codeChild.props as Record<string, any>;
+            const langClass = String(codeProps.className || "");
+            const langMatch = langClass.match(/language-(\w+)/);
+            const language = langMatch?.[1];
+            const codeText = String(codeProps.children ?? "").replace(
+              /\n$/,
+              "",
+            );
+
+            if (codeText) {
+              return (
+                <InlineCodeSnippet
+                  code={codeText}
+                  language={language}
+                  className="my-2"
+                  renderVariables
+                />
+              );
+            }
+          }
+
+          return (
+            <pre className="my-3" {...props}>
+              {children}
+            </pre>
+          );
+        },
+        code: ({ node, inline, className, children, ...props }: any) => {
+          // Fenced code blocks are handled by the `pre` component above.
+          // Here we only render inline code spans.
+          const langClass = className || "";
+          const isFenced = langClass.startsWith("language-");
+
+          if (isFenced) {
+            // Let the parent <pre> handle this — return the raw code element
+            // so `pre` can extract language and content.
+            return (
+              <code className={className} {...props}>
+                {children}
+              </code>
             );
           }
-        }
 
-        return (
-          <pre className="my-3" {...props}>
-            {children}
-          </pre>
-        );
-      },
-      code: ({ node, inline, className, children, ...props }) => {
-        // Fenced code blocks are handled by the `pre` component above.
-        // Here we only render inline code spans.
-        const langClass = className || "";
-        const isFenced = langClass.startsWith("language-");
+          // Expand {{variable}} tokens inside inline code spans.
+          // The remark plugin intentionally skips inlineCode nodes, so we handle
+          // them here at the React render level — the raw source is untouched.
+          const rawText =
+            typeof children === "string"
+              ? children
+              : Array.isArray(children)
+                ? children.join("")
+                : null;
+          const codeContent =
+            rawText && rawText.includes("{{")
+              ? splitWithVariables(rawText)
+              : children;
 
-        if (isFenced) {
-          // Let the parent <pre> handle this — return the raw code element
-          // so `pre` can extract language and content.
           return (
-            <code className={className} {...props}>
-              {children}
+            <code
+              className={cn(
+                "px-1.5 py-0 rounded font-mono text-sm font-medium",
+                "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+                className,
+              )}
+              style={{
+                overflowWrap: "anywhere",
+                wordBreak: "normal",
+              }}
+              {...props}
+            >
+              {codeContent}
             </code>
           );
-        }
-
-        // Expand {{variable}} tokens inside inline code spans.
-        // The remark plugin intentionally skips inlineCode nodes, so we handle
-        // them here at the React render level — the raw source is untouched.
-        const rawText =
-          typeof children === "string"
-            ? children
-            : Array.isArray(children)
-              ? children.join("")
-              : null;
-        const codeContent =
-          rawText && rawText.includes("{{")
-            ? splitWithVariables(rawText)
-            : children;
-
-        return (
-          <code
-            className={cn(
-              "px-1.5 py-0 rounded font-mono text-sm font-medium",
-              "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-              className,
-            )}
-            style={{
-              overflowWrap: "anywhere",
-              wordBreak: "normal",
-            }}
+        },
+        img: ({ node, ...props }) => (
+          <img
+            className="w-full h-auto rounded-md my-4 object-contain max-w-[700px]"
+            style={{ maxHeight: 700 }}
+            {...props}
+            alt={props.alt || "Image"}
+          />
+        ),
+        hr: ({ node, ...props }) => (
+          <hr
+            className="my-3 border-t border-gray-300 dark:border-gray-600"
+            {...props}
+          />
+        ),
+        br: ({ node, ...props }) => <br />,
+        div: ({ node, className, children, ...props }: any) => {
+          // Regular div - no special handling needed
+          return (
+            <div className={className} {...props}>
+              {children}
+            </div>
+          );
+        },
+        span: ({ node, className, children, ...props }: any) => {
+          // Regular span - no special handling needed
+          return (
+            <span className={className} {...props}>
+              {children}
+            </span>
+          );
+        },
+        "matrx-variable": ({ node, ...props }: any) => (
+          <MatrxVariableInline {...props} />
+        ),
+        table: ({ node, children, ...props }: any) => (
+          <div>
+            <div className="my-3 overflow-x-auto rounded-md border border-border">
+              <table className="w-full text-sm border-collapse" {...props}>
+                {children}
+              </table>
+            </div>
+            {tableRenderDiagnostic ? (
+              <TableRenderPathDiagnostic
+                context={{
+                  ...tableRenderDiagnostic,
+                  renderPath: "BasicMarkdownContent",
+                  contentPreview:
+                    tableRenderDiagnostic.contentPreview ??
+                    content.slice(0, 120).replace(/\n/g, " "),
+                }}
+              />
+            ) : null}
+          </div>
+        ),
+        thead: ({ node, children, ...props }: any) => (
+          <thead className="bg-muted/50" {...props}>
+            {children}
+          </thead>
+        ),
+        tbody: ({ node, children, ...props }: any) => (
+          <tbody {...props}>{children}</tbody>
+        ),
+        tr: ({ node, children, ...props }: any) => (
+          <tr
+            className="border-t border-border/30 hover:bg-muted/20 transition-colors"
             {...props}
           >
-            {codeContent}
-          </code>
-        );
-      },
-      img: ({ node, ...props }) => (
-        <img
-          className="w-full h-auto rounded-md my-4 object-contain max-w-[700px]"
-          style={{ maxHeight: 700 }}
-          {...props}
-          alt={props.alt || "Image"}
-        />
-      ),
-      hr: ({ node, ...props }) => (
-        <hr
-          className="my-3 border-t border-gray-300 dark:border-gray-600"
-          {...props}
-        />
-      ),
-      br: ({ node, ...props }) => <br />,
-      div: ({ node, className, children, ...props }: any) => {
-        // Regular div - no special handling needed
-        return (
-          <div className={className} {...props}>
             {children}
-          </div>
-        );
-      },
-      span: ({ node, className, children, ...props }: any) => {
-        // Regular span - no special handling needed
-        return (
-          <span className={className} {...props}>
+          </tr>
+        ),
+        th: ({ node, children, ...props }: any) => (
+          <th
+            className="px-3 py-1.5 text-left text-xs font-semibold text-foreground border-r border-border/30 last:border-r-0"
+            {...props}
+          >
             {children}
-          </span>
-        );
-      },
-      "matrx-variable": ({ node, ...props }: any) => (
-        <MatrxVariableInline {...props} />
-      ),
-      table: ({ node, children, ...props }: any) => (
-        <div>
-          <div className="my-3 overflow-x-auto rounded-md border border-border">
-            <table className="w-full text-sm border-collapse" {...props}>
-              {children}
-            </table>
-          </div>
-          {tableRenderDiagnostic ? (
-            <TableRenderPathDiagnostic
-              context={{
-                ...tableRenderDiagnostic,
-                renderPath: "BasicMarkdownContent",
-                contentPreview:
-                  tableRenderDiagnostic.contentPreview ??
-                  content.slice(0, 120).replace(/\n/g, " "),
-              }}
-            />
-          ) : null}
-        </div>
-      ),
-      thead: ({ node, children, ...props }: any) => (
-        <thead className="bg-muted/50" {...props}>
-          {children}
-        </thead>
-      ),
-      tbody: ({ node, children, ...props }: any) => (
-        <tbody {...props}>{children}</tbody>
-      ),
-      tr: ({ node, children, ...props }: any) => (
-        <tr
-          className="border-t border-border/30 hover:bg-muted/20 transition-colors"
-          {...props}
-        >
-          {children}
-        </tr>
-      ),
-      th: ({ node, children, ...props }: any) => (
-        <th
-          className="px-3 py-1.5 text-left text-xs font-semibold text-foreground border-r border-border/30 last:border-r-0"
-          {...props}
-        >
-          {children}
-        </th>
-      ),
-      td: ({ node, children, ...props }: any) => (
-        <td
-          className="px-3 py-1.5 text-foreground border-r border-border/30 last:border-r-0"
-          {...props}
-        >
-          {children}
-        </td>
-      ),
-    }),
+          </th>
+        ),
+        td: ({ node, children, ...props }: any) => (
+          <td
+            className="px-3 py-1.5 text-foreground border-r border-border/30 last:border-r-0"
+            {...props}
+          >
+            {children}
+          </td>
+        ),
+      }) as Components,
     [tableRenderDiagnostic, content],
   );
 

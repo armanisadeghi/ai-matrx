@@ -1,47 +1,57 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { DatabaseEnum, CreateEnumRequest, UpdateEnumRequest } from '@/types/enum-types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Save, X, Plus, Trash2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import React, { useState, useEffect } from "react";
+import {
+  DatabaseEnum,
+  CreateEnumRequest,
+  UpdateEnumRequest,
+} from "@/types/enum-types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, Save, X, Plus, Trash2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-interface EnumFormProps {
-  enumData?: DatabaseEnum;
-  onSubmit: (request: CreateEnumRequest | UpdateEnumRequest) => Promise<boolean>;
-  onCancel: () => void;
-}
+type EnumFormProps =
+  | {
+      mode?: "create";
+      enumData?: undefined;
+      onSubmit: (request: CreateEnumRequest) => Promise<boolean>;
+      onCancel: () => void;
+    }
+  | {
+      mode: "edit";
+      enumData: DatabaseEnum;
+      onSubmit: (request: UpdateEnumRequest) => Promise<boolean>;
+      onCancel: () => void;
+    };
 
-export default function EnumForm({
-  enumData,
-  onSubmit,
-  onCancel,
-}: EnumFormProps) {
+export default function EnumForm(props: EnumFormProps) {
+  const { onCancel } = props;
+  const enumData = "enumData" in props ? props.enumData : undefined;
   const isEdit = !!enumData;
-  
+
   // Initialize form state
-  const [name, setName] = useState(enumData?.name || '');
-  const [schema, setSchema] = useState(enumData?.schema || 'public');
-  const [description, setDescription] = useState(enumData?.description || '');
-  const [values, setValues] = useState<string[]>(enumData?.values || ['']);
-  const [newValues, setNewValues] = useState<string[]>(['']);
+  const [name, setName] = useState(enumData?.name || "");
+  const [schema, setSchema] = useState(enumData?.schema || "public");
+  const [description, setDescription] = useState(enumData?.description || "");
+  const [values, setValues] = useState<string[]>(enumData?.values || [""]);
+  const [newValues, setNewValues] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  
+
   // Handle adding a new value input
   const addValueInput = () => {
     if (isEdit) {
-      setNewValues([...newValues, '']);
+      setNewValues([...newValues, ""]);
     } else {
-      setValues([...values, '']);
+      setValues([...values, ""]);
     }
   };
-  
+
   // Handle removing a value input
   const removeValueInput = (index: number) => {
     if (isEdit) {
@@ -52,7 +62,7 @@ export default function EnumForm({
       setValues(updated);
     }
   };
-  
+
   // Handle updating a value
   const updateValue = (index: number, value: string) => {
     if (isEdit) {
@@ -65,75 +75,72 @@ export default function EnumForm({
       setValues(updated);
     }
   };
-  
+
   // Validate form
   const validateForm = (): boolean => {
     if (!name.trim()) {
-      setError('Enum name is required');
+      setError("Enum name is required");
       return false;
     }
-    
+
     if (!schema.trim()) {
-      setError('Schema is required');
+      setError("Schema is required");
       return false;
     }
-    
+
     if (isEdit) {
       // For edits, we only need to validate new values
-      const filteredNewValues = newValues.filter(v => v.trim());
+      const filteredNewValues = newValues.filter((v) => v.trim());
       if (filteredNewValues.length === 0) {
-        setError('At least one new value is required for updates');
+        setError("At least one new value is required for updates");
         return false;
       }
     } else {
       // For creates, we need at least one value
-      const filteredValues = values.filter(v => v.trim());
+      const filteredValues = values.filter((v) => v.trim());
       if (filteredValues.length === 0) {
-        setError('At least one enum value is required');
+        setError("At least one enum value is required");
         return false;
       }
     }
-    
+
     return true;
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
+    setError("");
+
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
-      let request: CreateEnumRequest | UpdateEnumRequest;
-      
-      if (isEdit) {
-        // Filter out empty values for updates
-        const filteredNewValues = newValues.filter(v => v.trim());
-        
-        request = {
+      let success: boolean;
+
+      if (props.mode === "edit") {
+        const filteredNewValues = newValues.filter((v) => v.trim());
+
+        success = await props.onSubmit({
           schema,
           name,
-          valuesToAdd: filteredNewValues.length > 0 ? filteredNewValues : undefined,
+          valuesToAdd:
+            filteredNewValues.length > 0 ? filteredNewValues : undefined,
           description: description.trim() || undefined,
-        } as UpdateEnumRequest;
+        });
       } else {
-        // Filter out empty values for creates
-        const filteredValues = values.filter(v => v.trim());
-        
-        request = {
+        const filteredValues = values.filter((v) => v.trim());
+
+        success = await props.onSubmit({
           name,
           schema,
           values: filteredValues,
           description: description.trim() || undefined,
-        } as CreateEnumRequest;
+        });
       }
-      
-      const success = await onSubmit(request);
       if (success) {
         setShowSuccessMessage(true);
         setTimeout(() => {
@@ -141,36 +148,46 @@ export default function EnumForm({
         }, 3000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while saving the enum');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while saving the enum",
+      );
     } finally {
       setLoading(false);
     }
   };
-  
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <Alert variant="destructive" className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800">
+        <Alert
+          variant="destructive"
+          className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800"
+        >
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
+
       {showSuccessMessage && (
         <Alert className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Success</AlertTitle>
           <AlertDescription>
-            {isEdit ? 'Enum updated successfully' : 'Enum created successfully'}
+            {isEdit ? "Enum updated successfully" : "Enum created successfully"}
           </AlertDescription>
         </Alert>
       )}
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="name"
+              className="text-slate-700 dark:text-slate-300"
+            >
               Enum Name *
             </Label>
             <Input
@@ -183,9 +200,12 @@ export default function EnumForm({
               className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="schema" className="text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="schema"
+              className="text-slate-700 dark:text-slate-300"
+            >
               Schema *
             </Label>
             <Input
@@ -198,9 +218,12 @@ export default function EnumForm({
               className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"
             />
           </div>
-          
+
           <div>
-            <Label htmlFor="description" className="text-slate-700 dark:text-slate-300">
+            <Label
+              htmlFor="description"
+              className="text-slate-700 dark:text-slate-300"
+            >
               Description
             </Label>
             <Textarea
@@ -213,7 +236,7 @@ export default function EnumForm({
             />
           </div>
         </div>
-        
+
         <div className="space-y-4">
           {isEdit && enumData && (
             <div>
@@ -223,7 +246,7 @@ export default function EnumForm({
               <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-md border border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto">
                 <div className="flex flex-wrap gap-2">
                   {enumData.values.map((value, index) => (
-                    <Badge 
+                    <Badge
                       key={index}
                       variant="secondary"
                       className="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200"
@@ -234,14 +257,15 @@ export default function EnumForm({
                 </div>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Note: PostgreSQL doesn't support removing or renaming enum values. You can only add new values.
+                Note: PostgreSQL doesn't support removing or renaming enum
+                values. You can only add new values.
               </p>
             </div>
           )}
-          
+
           <div>
             <Label className="text-slate-700 dark:text-slate-300">
-              {isEdit ? 'New Values to Add' : 'Enum Values *'}
+              {isEdit ? "New Values to Add" : "Enum Values *"}
             </Label>
             <div className="space-y-2">
               {(isEdit ? newValues : values).map((value, index) => (
@@ -278,11 +302,11 @@ export default function EnumForm({
           </div>
         </div>
       </div>
-      
+
       <div className="flex justify-end space-x-3">
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={onCancel}
           disabled={loading}
           className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -290,15 +314,15 @@ export default function EnumForm({
           <X className="h-4 w-4 mr-2" />
           Cancel
         </Button>
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           disabled={loading}
           className="bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
         >
           <Save className="h-4 w-4 mr-2" />
-          {isEdit ? 'Update Enum' : 'Create Enum'}
+          {isEdit ? "Update Enum" : "Create Enum"}
         </Button>
       </div>
     </form>
   );
-} 
+}

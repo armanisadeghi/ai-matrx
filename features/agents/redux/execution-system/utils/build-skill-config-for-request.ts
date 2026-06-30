@@ -27,13 +27,17 @@ export function buildSkillConfigForRequest(
     ...agentSkillConfig.included.filter((id) => !addedSet.has(id)),
     ...added,
   ];
-  const forbidden = agentSkillConfig.forbidden.filter((id) => !addedSet.has(id));
+  const forbidden = agentSkillConfig.forbidden.filter(
+    (id) => !addedSet.has(id),
+  );
 
   return {
     included,
     listed: [...agentSkillConfig.listed],
     forbidden,
-    disabled: agentSkillConfig.disabled,
+    // Explicit per-run picks override the agent-level kill switch for this turn.
+    // We only reach here with added.length > 0, so the override always re-enables.
+    disabled: false,
   };
 }
 
@@ -68,7 +72,12 @@ export function attachSkillConfigFromState(
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) return;
 
-  const agentId = instance.initialAgentVersionId ?? instance.agentId;
+  // Resolve the agent's saved tiers under the BASE agent id — the same key the
+  // Skills picker displays and the agent-definition slice is keyed by (the picker
+  // fetches via `selectAgentIdFromInstance` = `instance.agentId`). Resolving under
+  // the version id would miss the slice and send an empty base config; the server
+  // merge is additive so it would recover, but we send the correct payload here.
+  const agentId = instance.agentId ?? instance.initialAgentVersionId;
   const agentSkillConfig = agentId
     ? selectAgentSkillConfig(state, agentId)
     : EMPTY_SKILL_CONFIG;

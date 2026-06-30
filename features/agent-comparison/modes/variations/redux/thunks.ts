@@ -115,7 +115,9 @@ function applyVariationSnapshot(
   agentId: string,
   snap: VariationAgentSnapshot,
 ) {
-  dispatch(setAgentField({ id: agentId, field: "modelId", value: snap.modelId }));
+  dispatch(
+    setAgentField({ id: agentId, field: "modelId", value: snap.modelId }),
+  );
   dispatch(setAgentSettings({ id: agentId, settings: snap.settings }));
   dispatch(setAgentMessages({ id: agentId, messages: snap.messages }));
   dispatch(
@@ -124,7 +126,9 @@ function applyVariationSnapshot(
       variableDefinitions: snap.variableDefinitions,
     }),
   );
-  dispatch(setAgentContextSlots({ id: agentId, contextSlots: snap.contextSlots }));
+  dispatch(
+    setAgentContextSlots({ id: agentId, contextSlots: snap.contextSlots }),
+  );
   dispatch(setAgentTools({ id: agentId, tools: snap.tools }));
   dispatch(setAgentCustomTools({ id: agentId, customTools: snap.customTools }));
   dispatch(setAgentMcpServers({ id: agentId, mcpServers: snap.mcpServers }));
@@ -240,7 +244,7 @@ export const setLockedVersion = createAsyncThunk<
     dispatch(
       setLocked({
         agentVersion: version,
-        agentVersionId: version === "current" ? null : versionId ?? null,
+        agentVersionId: version === "current" ? null : (versionId ?? null),
       }),
     );
 
@@ -252,7 +256,11 @@ export const setLockedVersion = createAsyncThunk<
 
     for (const col of post.agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
-      const syntheticId = forkAgentForVariant(dispatch, getState(), forkSourceId);
+      const syntheticId = forkAgentForVariant(
+        dispatch,
+        getState(),
+        forkSourceId,
+      );
       if (!syntheticId) continue;
       const conversationId = generateConversationId();
       await dispatch(
@@ -528,9 +536,14 @@ export const resetAllVariationsConversations = createAsyncThunk<
 
       teardownColumn(dispatch, col);
 
-      const syntheticId = forkAgentForVariant(dispatch, getState(), forkSourceId);
+      const syntheticId = forkAgentForVariant(
+        dispatch,
+        getState(),
+        forkSourceId,
+      );
       if (!syntheticId) continue;
-      if (savedSnapshot) applyVariationSnapshot(dispatch, syntheticId, savedSnapshot);
+      if (savedSnapshot)
+        applyVariationSnapshot(dispatch, syntheticId, savedSnapshot);
 
       const conversationId = generateConversationId();
       await dispatch(
@@ -579,7 +592,9 @@ function buildVariationEntries(state: RootState): UpsertEntryInput[] {
       displayOrder: idx,
       agentId: sourceAgentId,
       agentVersion:
-        agentVersion === "current" || agentVersion == null ? null : agentVersion,
+        agentVersion === "current" || agentVersion == null
+          ? null
+          : agentVersion,
       agentVersionSnapshotId: agentVersionId,
       metadata: meta as unknown as Record<string, unknown>,
     });
@@ -588,8 +603,13 @@ function buildVariationEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const { sourceAgentId, agentVersion, agentVersionId, variables, userMessage } =
-    state.agentComparisonVariations.locked;
+  const {
+    sourceAgentId,
+    agentVersion,
+    agentVersionId,
+    variables,
+    userMessage,
+  } = state.agentComparisonVariations.locked;
   return {
     mode: "variations",
     locked: {
@@ -721,8 +741,7 @@ export const loadVariationsBattleSet = createAsyncThunk<
     const nextColumns: VariationColumn[] = [];
     for (const entry of entries) {
       const entryMeta = (entry.metadata ?? {}) as
-        | Partial<PersistedVariationEntryMeta>
-        | undefined;
+        Partial<PersistedVariationEntryMeta> | undefined;
 
       const syntheticId = forkSourceId
         ? forkAgentForVariant(dispatch, getState(), forkSourceId)

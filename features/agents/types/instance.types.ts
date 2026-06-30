@@ -850,15 +850,15 @@ export interface InstanceUIState {
 /**
  * ManagedAgentOptions — the full invocation envelope for launching an agent.
  *
- * Organized in three sections:
- *   1. IDENTITY — who is being launched, from where
- *   2. CONFIG    — the AgentExecutionConfig bundle (customization knobs)
- *   3. RUNTIME   — per-call values (user input, scope, handles)
+ * Organized in four sections:
+ *   1. IDENTITY   — who is being launched, from where
+ *   2. CONFIG     — the AgentExecutionConfig bundle (customization knobs)
+ *   3. RUNTIME    — per-call values (user input, scope, handles)
  *   4. INVOCATION — flags that don't belong in any of the above
  *
- * Legacy flat-field versions of the config/runtime knobs are preserved
- * with @deprecated markers so existing callers keep working. The
- * launchAgentExecution thunk normalizes both shapes at entry.
+ * All customization knobs live in the nested `config` bundle and all
+ * per-call values in `runtime`; there are no flat config fields on this
+ * type. The launchAgentExecution thunk reads both at entry.
  */
 export interface ManagedAgentOptions {
   // ═══════════════════════════════════════════════════════════

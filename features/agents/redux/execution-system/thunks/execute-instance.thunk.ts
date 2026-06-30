@@ -272,7 +272,8 @@ interface ExecuteInstanceResult {
 
 export const executeInstance = createAsyncThunk<
   ExecuteInstanceResult,
-  ExecuteInstanceArgs
+  ExecuteInstanceArgs,
+  { state: RootState }
 >(
   "instances/execute",
   async (

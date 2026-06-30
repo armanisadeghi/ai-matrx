@@ -531,7 +531,7 @@ const StorageManager = ({
   const [newModule, setNewModule] = useState("");
   const [newFeature, setNewFeature] = useState("");
   const [newKey, setNewKey] = useState("");
-  const [newValue, setNewValue] = useState<object>({});
+  const [newValue, setNewValue] = useState<object | string>({});
 
   const refreshData = async () => {
     const allModules = await storage.getAllModules();
@@ -622,7 +622,7 @@ const StorageManager = ({
     module: string,
     feature: string,
     key: string,
-    value: object,
+    value: object | string,
   ) => {
     const result = await storage.setItem(module, feature, key, value);
     setFeedback(result);
@@ -1290,7 +1290,7 @@ const CookieManager = ({ storage }: { storage: UseLocalStorageManager }) => {
 
 const ImportExport = ({ storage }: { storage: UseLocalStorageManager }) => {
   const [feedback, setFeedback] = useState<StorageVerification | null>(null);
-  const [importData, setImportData] = useState<object>({});
+  const [importData, setImportData] = useState<object | string>({});
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     action: () => Promise<void>;

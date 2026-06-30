@@ -159,7 +159,20 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
 }
 
 /** Adapter for rows read straight off `skill.resource` via Supabase. */
-export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
+export function supabaseRowToResourceRow(
+  row: Pick<
+    SklResourceRow,
+    | "id"
+    | "skill_id"
+    | "resource_type"
+    | "filename"
+    | "content"
+    | "storage_path"
+    | "mime_type"
+    | "sort_order"
+    | "is_active"
+  >,
+): ResourceRow {
   return {
     id: row.id,
     skillId: row.skill_id,
@@ -194,11 +207,20 @@ function metaIsActiveStringFromJson(meta: Json | null): string | null {
 
 type PlatformCategorySelectRow = Pick<
   PlatformCategoryRow,
-  "id" | "slug" | "name" | "icon" | "color" | "parent_id" | "position" | "metadata"
+  | "id"
+  | "slug"
+  | "name"
+  | "icon"
+  | "color"
+  | "parent_id"
+  | "position"
+  | "metadata"
 >;
 
 /** Maps a `platform.categories` row (dimension='skill') to the aliased select shape. */
-export function platformCategoryToSklRow(row: PlatformCategorySelectRow): SklCategoryRow {
+export function platformCategoryToSklRow(
+  row: PlatformCategorySelectRow,
+): SklCategoryRow {
   return {
     id: row.id,
     category_key: row.slug,

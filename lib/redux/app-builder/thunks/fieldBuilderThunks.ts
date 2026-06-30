@@ -62,7 +62,9 @@ export const saveFieldThunk = createAsyncThunk<
 /**
  * Integrated thunk to save a field and update its parent container
  */
-export const saveFieldAndUpdateContainerThunk = createAsyncThunk(
+export const saveFieldAndUpdateContainerThunk = createAsyncThunk.withTypes<{
+  state: WithFieldBuilder;
+}>()(
   "fieldBuilder/saveAndUpdateContainer",
   async (
     { fieldId, containerId }: { fieldId: string; containerId: string },

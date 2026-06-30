@@ -3,48 +3,21 @@
 import type React from "react";
 
 export type ComponentSize =
-  | "default"
-  | "xs"
-  | "sm"
-  | "md"
-  | "lg"
-  | "xl"
-  | "2xl"
-  | "3xl"
-  | "icon";
+  "default" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "icon";
 
 export type ComponentDensity = "compact" | "normal" | "comfortable";
 
 export type TextareaSize =
-  | "compact"
-  | "default"
-  | "large"
-  | "article"
-  | "custom";
+  "compact" | "default" | "large" | "article" | "custom";
 
 export type AnimationPreset =
-  | "none"
-  | "subtle"
-  | "smooth"
-  | "energetic"
-  | "playful"
-  | "feedback"
-  | "error";
+  "none" | "subtle" | "smooth" | "energetic" | "playful" | "feedback" | "error";
 
 export type ComponentVariant =
-  | "default"
-  | "primary"
-  | "secondary"
-  | "destructive"
-  | "ghost"
-  | "link";
+  "default" | "primary" | "secondary" | "destructive" | "ghost" | "link";
 
 export type ComponentState =
-  | "idle"
-  | "loading"
-  | "success"
-  | "error"
-  | "disabled";
+  "idle" | "loading" | "success" | "error" | "disabled";
 
 export interface BaseMatrxProps {
   size?: ComponentSize;
@@ -170,7 +143,7 @@ export interface MatrxInputGroupProps extends BaseMatrxProps {
 
 export interface AnimatedCheckboxProps extends MatrxFieldProps {
   checked?: boolean;
-  onChange?: (checked: boolean) => void;
+  onChange?: (value: unknown) => void;
 }
 
 export interface MatrxRadioProps extends MatrxFieldProps {

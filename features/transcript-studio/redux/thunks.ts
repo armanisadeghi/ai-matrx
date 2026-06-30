@@ -6,6 +6,7 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import type { RootState } from "@/lib/redux/store";
 import { toast } from "sonner";
 import type { ChunkCompleteInfo } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
 import {
@@ -611,7 +612,8 @@ export const ingestExternalRecordingThunk = createAsyncThunk<
     text: string;
     /** Recording length in seconds — becomes the segment's tEnd (0-based per recording). */
     durationSec: number;
-  }
+  },
+  { state: RootState }
 >(
   "transcriptStudio/ingestExternalRecording",
   async (

@@ -271,7 +271,8 @@ async function prepareLaunchMappings(args: {
 
 export const launchAgentExecution = createAsyncThunk<
   LaunchResult,
-  ManagedAgentOptions
+  ManagedAgentOptions,
+  { state: RootState }
 >("instances/launch", async (options, { dispatch, getState }) => {
   const {
     agentId,

@@ -3,26 +3,20 @@
  */
 
 import { createHash } from "node:crypto";
+import {
+  classifyFeatureDocPath,
+  FEATURE_DOC_GLOBS,
+} from "@/features/feature-docs/constants";
 
-/** Same roots the legacy filesystem viewer traced (see next.config.js history). */
-export const FEATURE_DOC_GLOBS = [
-  "./*.md",
-  "app/**/*.md",
-  "features/**/*.md",
-  "components/**/*.md",
-  "lib/**/*.md",
-  "hooks/**/*.md",
-  "utils/**/*.md",
-  "providers/**/*.md",
-  "types/**/*.md",
-  "constants/**/*.md",
-  "scripts/**/*.md",
-  "migrations/**/*.md",
-  "docs/**/*.md",
-  "styles/**/*.md",
-  ".cursor/**/*.md",
-  ".claude/**/*.md",
-] as const;
+export {
+  classifyFeatureDocPath,
+  FEATURE_DOC_CODEBASE_GLOBS,
+  FEATURE_DOC_DOCS_GLOBS,
+  FEATURE_DOC_DOT_DIR_GLOBS,
+  FEATURE_DOC_DOT_DIRS,
+  FEATURE_DOC_GLOBS,
+  pathMatchesZone,
+} from "@/features/feature-docs/constants";
 
 export interface ParsedFeatureDoc {
   /** Raw file bytes as UTF-8 (includes frontmatter when present). */
@@ -84,10 +78,17 @@ export function parseFrontmatter(content: string): {
   return { frontmatter, body: content };
 }
 
-export function deriveArea(repoPath: string): string | null {
+export function deriveArea(
+  repoPath: string,
+  frontmatter: Record<string, string>,
+): string | null {
+  if (frontmatter.area) return frontmatter.area;
+  const { zone, dotDir } = classifyFeatureDocPath(repoPath);
+  if (zone === "docs") return "docs";
+  if (zone === "dotdir" && dotDir) return dotDir;
   const parts = repoPath.split("/");
-  if (parts.length < 2) return null;
-  return parts[0] || null;
+  if (parts.length >= 2) return parts[0] ?? null;
+  return null;
 }
 
 export function deriveSlug(
@@ -125,7 +126,7 @@ export function parseFeatureDocFile(
     content,
     slug: deriveSlug(repoPath, frontmatter),
     title: deriveTitle(repoPath, content, frontmatter),
-    area: frontmatter.area ?? deriveArea(repoPath),
+    area: deriveArea(repoPath, frontmatter),
     metadata,
   };
 }

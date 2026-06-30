@@ -15,7 +15,7 @@ import {
   type UserProfileState,
 } from "@/lib/redux/slices/userProfileSlice";
 import type { UserData } from "@/utils/userDataMapper";
-import type { AppDispatch } from "@/lib/redux/store";
+import type { Dispatch } from "@reduxjs/toolkit";
 
 const AUTH_KEYS = [
   "id",
@@ -52,7 +52,7 @@ type LegacyUserPayload = Partial<UserData> & Partial<UserProfileState>;
  * dispatch `setAuthReady(true)` separately.
  */
 export const setUserData =
-  (payload: LegacyUserPayload) => (dispatch: AppDispatch) => {
+  (payload: LegacyUserPayload) => (dispatch: Dispatch) => {
     const authPart: Partial<UserAuthState> = {};
     const profilePart: Partial<UserProfileState> = {};
 

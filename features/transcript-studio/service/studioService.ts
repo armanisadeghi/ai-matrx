@@ -9,6 +9,8 @@
  * never see DB casing.
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
@@ -33,6 +35,14 @@ type LooseSupabase = {
   schema: (schema: string) => { from: (table: string) => any };
 };
 const db = supabase as unknown as LooseSupabase;
+
+// The server-created Supabase client (`@/utils/supabase/server`'s `createClient`,
+// awaited) — same `SupabaseClient<Database>` shape the browser client uses. The
+// `*Server` helpers accept this real client type rather than a loose structural
+// `{ from; schema }` shape: under `strictFunctionTypes`, the real client's
+// `schema(name: keyof Database)` (a narrow param) is NOT assignable to a loose
+// `schema(name: string)`, so the loose shape rejected every callsite (TS2345).
+type ServerSupabaseClient = SupabaseClient<Database>;
 
 // ── Mappers ───────────────────────────────────────────────────────────
 
@@ -117,7 +127,11 @@ export async function listSessions(
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const { data, error } = await applySourceFilter(
-    db.schema("transcripts").from("studio_sessions").select("*").eq("is_deleted", false),
+    db
+      .schema("transcripts")
+      .from("studio_sessions")
+      .select("*")
+      .eq("is_deleted", false),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -232,15 +246,16 @@ export async function softDeleteSession(id: string): Promise<void> {
 // Server-side fetch for SSR hydration. Pass a server Supabase client built
 // via utils/supabase/server.ts.
 export async function listSessionsServer(
-  serverClient: {
-    from: (table: string) => unknown;
-    schema: (schema: string) => { from: (table: string) => unknown };
-  },
+  serverClient: ServerSupabaseClient,
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await applySourceFilter(
-    looseClient.schema("transcripts").from("studio_sessions").select("*").eq("is_deleted", false),
+    looseClient
+      .schema("transcripts")
+      .from("studio_sessions")
+      .select("*")
+      .eq("is_deleted", false),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -252,10 +267,7 @@ export async function listSessionsServer(
 }
 
 export async function getSessionServer(
-  serverClient: {
-    from: (table: string) => unknown;
-    schema: (schema: string) => { from: (table: string) => unknown };
-  },
+  serverClient: ServerSupabaseClient,
   id: string,
 ): Promise<StudioSession | null> {
   const looseClient = serverClient as unknown as LooseSupabase;
@@ -355,7 +367,7 @@ export async function listRawSegments(
 }
 
 export async function listRawSegmentsServer(
-  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
+  serverClient: ServerSupabaseClient,
   sessionId: string,
 ): Promise<import("../types").RawSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
@@ -393,7 +405,11 @@ export async function updateRawSegmentText(
 
 /** Hard-delete a raw segment. Use case: corrective edits on noisy chunks. */
 export async function deleteRawSegment(id: string): Promise<void> {
-  const { error } = await db.schema("transcripts").from("studio_raw_segments").delete().eq("id", id);
+  const { error } = await db
+    .schema("transcripts")
+    .from("studio_raw_segments")
+    .delete()
+    .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteRawSegment failed: ${error.message}`);
   }
@@ -559,7 +575,7 @@ export async function listRecordingSegments(
 }
 
 export async function listRecordingSegmentsServer(
-  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
+  serverClient: ServerSupabaseClient,
   sessionId: string,
 ): Promise<import("../types").RecordingSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
@@ -921,7 +937,7 @@ export async function listCleanedSegments(
 }
 
 export async function listCleanedSegmentsServer(
-  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
+  serverClient: ServerSupabaseClient,
   sessionId: string,
 ): Promise<import("../types").CleanedSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
@@ -1161,7 +1177,7 @@ export async function listConceptItems(
 }
 
 export async function listConceptItemsServer(
-  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
+  serverClient: ServerSupabaseClient,
   sessionId: string,
 ): Promise<import("../types").ConceptItem[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
@@ -1211,7 +1227,11 @@ export async function updateConceptItem(
 }
 
 export async function deleteConceptItem(id: string): Promise<void> {
-  const { error } = await db.schema("transcripts").from("studio_concept_items").delete().eq("id", id);
+  const { error } = await db
+    .schema("transcripts")
+    .from("studio_concept_items")
+    .delete()
+    .eq("id", id);
   if (error) {
     throw new Error(`[studio] deleteConceptItem failed: ${error.message}`);
   }
@@ -1311,7 +1331,7 @@ export async function listModuleSegments(
 }
 
 export async function listModuleSegmentsServer(
-  serverClient: { from: (table: string) => unknown; schema: (schema: string) => { from: (table: string) => unknown } },
+  serverClient: ServerSupabaseClient,
   sessionId: string,
 ): Promise<import("../types").ModuleSegment[]> {
   const looseClient = serverClient as unknown as LooseSupabase;

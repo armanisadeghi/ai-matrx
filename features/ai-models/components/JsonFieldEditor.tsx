@@ -73,7 +73,10 @@ export default function JsonFieldEditor({
                 <div className="p-2">
                     <EnhancedEditableJsonViewer
                         data={normalizedData}
-                        onSave={onSave}
+                        onSave={async (d) => {
+                            if (typeof d === 'string') return;
+                            await onSave(d);
+                        }}
                         hideHeader={false}
                     />
                 </div>

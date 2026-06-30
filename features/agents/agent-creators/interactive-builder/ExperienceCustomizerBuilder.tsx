@@ -19,11 +19,11 @@ interface ExperienceCustomizerBuilderProps {
 const Section: React.FC<{
   section: SectionConfig;
   state: Record<string, ConfigState>;
-  onChange: (sectionId: string, optionId: string, value: unknown) => void;
+  onChange: (sectionId: string, optionId: string, value: OptionValue) => void;
 }> = ({ section, state, onChange }) => {
   const [isOpen, setIsOpen] = useState(true);
 
-  const handleChange = (optionId: string, value: unknown) => {
+  const handleChange = (optionId: string, value: OptionValue) => {
     onChange(section.id, optionId, value);
   };
 

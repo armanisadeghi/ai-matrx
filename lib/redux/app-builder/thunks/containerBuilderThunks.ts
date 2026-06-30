@@ -74,7 +74,9 @@ export const saveContainerThunk = createAsyncThunk<
 /**
  * Integrated thunk to save a container and update its parent applet
  */
-export const saveContainerAndUpdateAppletThunk = createAsyncThunk(
+export const saveContainerAndUpdateAppletThunk = createAsyncThunk.withTypes<{
+  state: WithContainerBuilder;
+}>()(
   "containerBuilder/saveAndUpdateApplet",
   async (
     { containerId, appletId }: { containerId: string; appletId: string },

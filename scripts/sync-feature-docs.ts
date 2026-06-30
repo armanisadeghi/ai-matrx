@@ -113,9 +113,10 @@ async function fetchDbRows(
     const { data, error } = await supabase
       .schema("admin")
       .from("feature_docs")
-      .select(
-        "id, path, slug, title, area, content, content_hash, sync_base_hash, sync_base_commit, synced_at, deleted_at, metadata",
-      )
+      // Select all columns so the result matches the full `FeatureDocRow`
+      // (the map stores whole rows). An explicit subset drops columns the
+      // Row type requires and fails assignment under strict checking.
+      .select("*")
       .range(from, from + PAGE - 1);
     if (error) {
       console.error("[FAIL] Failed to load admin.feature_docs:", error.message);

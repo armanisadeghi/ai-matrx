@@ -456,6 +456,14 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Code",
         link: "/administration/markdown-tester",
       },
+      {
+        title: "Feature Docs",
+        description:
+          "Browse internal FEATURE.md and README docs synced from the repo into admin.feature_docs. Two-way sync via pnpm sync:feature-docs.",
+        iconName: "FileText",
+        link: "/administration/feature-docs/codebase",
+        isNew: true,
+      },
     ],
   },
   {
@@ -643,14 +651,6 @@ export const adminCategoriesData: AdminCategory[] = [
         description: "See functions, security policies, and more",
         iconName: "DatabaseBackup",
         link: "/administration/database-admin",
-      },
-      {
-        title: "Feature Docs",
-        description:
-          "Browse internal FEATURE.md and README docs synced from the repo into admin.feature_docs. Two-way sync via pnpm sync:feature-docs.",
-        iconName: "FileText",
-        link: "/administration/feature-docs",
-        isNew: true,
       },
       {
         title: "Database Tools Hub",

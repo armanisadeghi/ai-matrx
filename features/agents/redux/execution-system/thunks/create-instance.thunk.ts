@@ -971,7 +971,8 @@ interface StartNewConversationAndExecuteResult {
  */
 export const startNewConversationAndExecute = createAsyncThunk<
   StartNewConversationAndExecuteResult,
-  StartNewConversationAndExecuteArgs
+  StartNewConversationAndExecuteArgs,
+  { state: RootState }
 >(
   "instances/startNewConversationAndExecute",
   async (

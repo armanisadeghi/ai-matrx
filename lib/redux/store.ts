@@ -3,10 +3,18 @@
 // Entity-aware routes use `makeEntityStore` from `./entity-store.ts`.
 "use client";
 
-import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit";
+import {
+  configureStore,
+  ThunkAction,
+  Action,
+  type ThunkDispatch,
+  type UnknownAction,
+  type Dispatch,
+} from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
 import { createSlimRootSaga } from "@/lib/redux/sagas/rootSaga";
 import { createSlimRootReducer } from "@/lib/redux/rootReducer";
+import type { RootState } from "@/lib/redux/rootReducer";
 import { loggerMiddleware } from "@/utils/logger";
 import { enableMapSet } from "immer";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
@@ -236,8 +244,22 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
 };
 
 export type AppStore = ReturnType<typeof makeStore>;
-export type RootState = ReturnType<AppStore["getState"]>;
-export type AppDispatch = AppStore["dispatch"];
+// RootState is derived from the root reducer (see rootReducer.ts), NOT from
+// `AppStore["getState"]`. Routing it through the store instance creates a type
+// cycle once `AppDispatch` references `RootState`: AppStore -> makeStore body
+// (which references RootState/AppDispatch) -> RootState -> AppStore. The
+// reducer-derived type is structurally identical for the slim store and breaks
+// the loop so `AppDispatch` below can safely reference it.
+export type { RootState };
+// Explicit dispatch type rather than the inferred `AppStore["dispatch"]`.
+// Under `strictFunctionTypes`, TS checks the thunk middleware's function-typed
+// parameter contravariantly, which collapses the inferred store dispatch down to
+// the plain-action overload — so `dispatch(someThunk())` everywhere fails with
+// TS2769 ("AsyncThunkAction is not assignable to UnknownAction"). Declaring the
+// canonical `ThunkDispatch & Dispatch` intersection (the same shape every local
+// `ThunkApi.dispatch` fix uses) keeps the thunk overload intact app-wide.
+export type AppDispatch = ThunkDispatch<RootState, unknown, UnknownAction> &
+  Dispatch<UnknownAction>;
 export type AppThunk<ReturnType = void> = ThunkAction<
   ReturnType,
   RootState,

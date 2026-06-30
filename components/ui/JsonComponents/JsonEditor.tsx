@@ -409,8 +409,8 @@ export const FullEditableJsonViewer: React.FC<
 export interface EnhancedEditableJsonViewerProps extends React.HTMLAttributes<HTMLDivElement> {
   data: object | string;
   title?: string;
-  onSave?: (data: object) => void;
-  onChange?: (data: object) => void;
+  onSave?: (data: object | string) => void;
+  onChange?: (data: object | string) => void;
   className?: string;
   allowMinimize?: boolean;
   isMinimized?: boolean;
@@ -455,7 +455,7 @@ export const EnhancedEditableJsonViewer: React.FC<
     onMinimizeChange?.(newValue);
   };
 
-  const handleChange = (newData: object) => {
+  const handleChange = (newData: object | string) => {
     setLocalData(newData);
     setHasChanges(true);
     onChange?.(newData);

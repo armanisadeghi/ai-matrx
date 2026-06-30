@@ -58,10 +58,10 @@ export const useClipboardPaste = ({ textareaRef, onPasteImage, disabled = false 
         const textarea = textareaRef.current;
         if (!textarea) return undefined;
 
-        textarea.addEventListener("paste", handlePaste as EventListener);
+        textarea.addEventListener("paste", handlePaste);
 
         return () => {
-            textarea.removeEventListener("paste", handlePaste as EventListener);
+            textarea.removeEventListener("paste", handlePaste);
         };
     }, [textareaRef, handlePaste]);
 

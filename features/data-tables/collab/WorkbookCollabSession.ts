@@ -56,9 +56,9 @@ type ExecuteOptions = {
 };
 
 export type CommandServiceLike = {
-  onMutationExecutedForCollab(
-    listener: (info: CollabMutationInfo) => void,
-  ): { dispose: () => void };
+  onMutationExecutedForCollab(listener: (info: CollabMutationInfo) => void): {
+    dispose: () => void;
+  };
   syncExecuteCommand(
     id: string,
     params: MutationParams,
@@ -91,8 +91,8 @@ export class WorkbookCollabSession {
   private awareness: Awareness | null = null;
   private provider: CollabProviderLike | null = null;
   private commandDisposer: { dispose: () => void } | null = null;
-  private yArrayObserver: ((event: Y.YArrayEvent<unknown>) => void) | null =
-    null;
+  private yArrayObserver:
+    ((event: Y.YArrayEvent<CollabMutationInfo>) => void) | null = null;
   private awarenessObserver: (() => void) | null = null;
   private started = false;
   private disposed = false;
@@ -155,9 +155,10 @@ export class WorkbookCollabSession {
     }
 
     // Subscribe to Univer's collab-grain mutation stream.
-    this.commandDisposer = this.options.commandService.onMutationExecutedForCollab(
-      (info) => this.handleLocalMutation(info),
-    );
+    this.commandDisposer =
+      this.options.commandService.onMutationExecutedForCollab((info) =>
+        this.handleLocalMutation(info),
+      );
 
     await this.provider.connect();
     await this.provider.ready();
@@ -200,7 +201,11 @@ export class WorkbookCollabSession {
    * listener (`worksheet.onSelectionChange(...)`). Throttle at the call site
    * (~50ms is plenty); the provider broadcasts on its own debounced cycle.
    */
-  setCursor(input: { sheetId: string | null; row: number | null; col: number | null }): void {
+  setCursor(input: {
+    sheetId: string | null;
+    row: number | null;
+    col: number | null;
+  }): void {
     if (!this.awareness) return;
     const current = this.awareness.getLocalState() ?? {};
     this.awareness.setLocalState({
@@ -277,7 +282,10 @@ export class WorkbookCollabSession {
     // echo the apply back into Yjs.
     const taggedParams: MutationParams =
       op.params && typeof op.params === "object" && !Array.isArray(op.params)
-        ? { ...(op.params as Record<string, unknown>), [REMOTE_PARAM_TAG]: true }
+        ? {
+            ...(op.params as Record<string, unknown>),
+            [REMOTE_PARAM_TAG]: true,
+          }
         : op.params;
 
     this.options.commandService.syncExecuteCommand(op.id, taggedParams, {

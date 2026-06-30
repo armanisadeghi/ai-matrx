@@ -833,7 +833,7 @@ export const fetchSkillResourcesThunk = createAsyncThunk<
     throw new Error(error.message);
   }
 
-  const rows = (data ?? []).map(supabaseRowToResourceRow);
+  const rows = (data ?? []).map((row) => supabaseRowToResourceRow(row));
   dispatch(skillsActions.resourcesReceived({ skillId, rows }));
   return rows;
 });
