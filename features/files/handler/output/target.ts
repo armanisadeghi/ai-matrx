@@ -212,6 +212,13 @@ function toJsonbContentPart(file: NormalizedFile): MessagePart {
   const locator = preferIdentityLocator(file);
   const base = {
     type: "media" as const,
+    // file_id is the PREFERRED locator (preferIdentityLocator returns ONLY
+    // file_id when present — never url alongside it) and the Python MediaRef
+    // resolver prefers it. Omitting it here meant a file-id-only part (e.g. a
+    // private FastFire audio clip) shipped {url:null, file_uri:null} — the model
+    // received an empty media block and hallucinated from context. Carry it,
+    // like toMediaBlock/toMediaRef do, and per media-durability doctrine.
+    file_id: locator.file_id ?? null,
     url: locator.url ?? null,
     file_uri: locator.file_uri ?? null,
     mime_type: file.meta.mime ?? null,

@@ -35,11 +35,14 @@ So: the server's only no-persist path requires *it* to mint the id, but the clie
 differing from the one it generated. The two cannot both hold. The client's ephemeral turn-1 currently
 sends `conversation_id + is_new:false`, lands in the 404 branch, and grading never runs.
 
-**Interim workaround in place (not the fix):** Fast Fire runs are now `isEphemeral:false` (they persist),
-kept out of the user's normal chats by distinct system `source_feature`s
+**Current state for Fast Fire (owner-confirmed 2026-06-30):** Fast Fire runs are `isEphemeral:false` and
+**intentionally persist** — a durable record of each grade/help/review run is desirable (audit, re-grade,
+debugging). They are kept out of the user's normal chats by distinct system `source_feature`s
 (`fastfire-grade`/`fastfire-help`/`fastfire-review`, registered in
-`features/agents/redux/conversation-history/source-registry.ts`). This works but writes throwaway
-`cx_conversation` rows. Replacing it is the goal of this spec.
+`features/agents/redux/conversation-history/source-registry.ts`). So for Fast Fire this is the chosen
+design, not a stopgap. This spec remains the requirement for a TRUE stateless ephemeral run, which other
+consumers (e.g. `executeBuiltinWithJsonExtraction`) still need and which the platform should support
+properly; reverting Fast Fire to ephemeral once it exists is then optional, not required.
 
 ## Requirements — the contract
 

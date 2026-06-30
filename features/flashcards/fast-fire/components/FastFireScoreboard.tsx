@@ -89,7 +89,11 @@ export function FastFireScoreboard({
   const pending = useAppSelector(selectPendingGradeCount);
 
   return (
-    <div className="min-h-full w-full overflow-y-auto bg-textured">
+    // h-full (not min-h-full): the parent route is a fixed-height,
+    // overflow-hidden box, so the scroll container must be height-constrained
+    // here — otherwise it grows past the viewport and the parent clips the list
+    // (you'd only see the first few cards). h-full + overflow-y-auto scrolls.
+    <div className="h-full w-full overflow-y-auto bg-textured">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8 pb-safe">
         {/* Header */}
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
