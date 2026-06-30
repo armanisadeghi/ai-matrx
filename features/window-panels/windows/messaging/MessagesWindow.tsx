@@ -73,7 +73,7 @@ export default function MessagesWindow({
       minHeight={360}
       sidebar={
         <ConversationList
-          userId={userId}
+          userId={userId ?? undefined}
           activeConversationId={activeConversationId}
           onSelectConversation={handleSelect}
           className="h-full"
@@ -90,7 +90,7 @@ export default function MessagesWindow({
       {activeConversationId ? (
         <ChatThread
           conversationId={activeConversationId}
-          userId={userId}
+          userId={userId ?? undefined}
           displayName={displayName}
           className="h-full"
         />

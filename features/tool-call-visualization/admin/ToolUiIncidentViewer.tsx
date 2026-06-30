@@ -344,7 +344,7 @@ function IncidentCard({
             )}
 
             {/* Data snapshot */}
-            {incident.tool_update_snapshot && (
+            {incident.tool_update_snapshot != null && (
               <div>
                 <Label className="text-[11px] font-medium text-slate-500 mb-1 block">
                   Tool Update Snapshot

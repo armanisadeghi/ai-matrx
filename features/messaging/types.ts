@@ -13,18 +13,9 @@
 export type ConversationType = "direct" | "group";
 export type ParticipantRole = "owner" | "admin" | "member";
 export type MessageType =
-  | "text"
-  | "image"
-  | "video"
-  | "audio"
-  | "file"
-  | "system";
+  "text" | "image" | "video" | "audio" | "file" | "system";
 export type MessageStatus =
-  | "sending"
-  | "sent"
-  | "delivered"
-  | "read"
-  | "failed";
+  "sending" | "sent" | "delivered" | "read" | "failed";
 
 export interface Conversation {
   id: string; // UUID
@@ -41,7 +32,7 @@ export interface ConversationParticipant {
   conversation_id: string; // UUID
   user_id: string; // auth.users.id UUID
   role: ParticipantRole;
-  joined_at: string;
+  joined_at: string | null;
   last_read_at: string | null;
   is_muted: boolean;
   is_archived: boolean;

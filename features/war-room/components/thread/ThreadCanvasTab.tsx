@@ -179,6 +179,7 @@ export function ThreadCanvasTab({
     setBusy(true);
     try {
       const ids = await openFilePicker({ multi: true });
+      if (!ids) return;
       for (const id of ids) {
         await dispatch(attachCanvasResourceToThread(threadId, "user_file", id));
       }

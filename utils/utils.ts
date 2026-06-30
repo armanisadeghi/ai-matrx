@@ -33,8 +33,8 @@ export function noErrors<T>(
     }
   }
 
-  if (options.includes(value)) {
-    return value;
+  if (options.some((option): option is T => Object.is(option, value))) {
+    return value as T;
   }
 
   if (typeof defaultValue === "string" && typeof value === "string") {

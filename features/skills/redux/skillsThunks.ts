@@ -540,6 +540,9 @@ export const createCategoryThunk = createAsyncThunk<
   // RLS stamps + validates. created_by and organization_id are required for
   // org-scoped dimensions.
   const organizationId = selectOrganizationId(getState());
+  if (!organizationId) {
+    throw new Error("Organization is required to create a skill category");
+  }
   const insertPayload = {
     dimension: "skill" as const,
     slug: draft.categoryKey,
@@ -549,7 +552,7 @@ export const createCategoryThunk = createAsyncThunk<
     parent_id: draft.parentCategoryId ?? null,
     position: draft.sortOrder ?? 0,
     created_by: userId,
-    organization_id: organizationId ?? null,
+    organization_id: organizationId,
     metadata: {
       category_key: draft.categoryKey,
       description: draft.description ?? null,

@@ -1,4 +1,106 @@
 {
+  "$defs": {
+    "JsonValue": {},
+    "ResponseFormatJsonObject": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "json_object",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ResponseFormatJsonObject",
+      "type": "object"
+    },
+    "ResponseFormatJsonSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "json_schema",
+          "title": "Type",
+          "type": "string"
+        },
+        "json_schema": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Json Schema"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "schema": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Schema"
+        },
+        "strict": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Strict"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ResponseFormatJsonSchema",
+      "type": "object"
+    },
+    "ResponseFormatText": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "text",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ResponseFormatText",
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "model": {
@@ -199,8 +301,25 @@
     "response_format": {
       "anyOf": [
         {
-          "additionalProperties": true,
-          "type": "object"
+          "discriminator": {
+            "mapping": {
+              "json_object": "#/$defs/ResponseFormatJsonObject",
+              "json_schema": "#/$defs/ResponseFormatJsonSchema",
+              "text": "#/$defs/ResponseFormatText"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ResponseFormatText"
+            },
+            {
+              "$ref": "#/$defs/ResponseFormatJsonObject"
+            },
+            {
+              "$ref": "#/$defs/ResponseFormatJsonSchema"
+            }
+          ]
         },
         {
           "type": "null"

@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/popover";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  asScopeIds,
   selectSessionById,
+  selectScopeIdsForEntity,
 } from "@/features/war-room/redux/selectors";
 import { setSessionContextThunk } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,9 @@ export function SessionContextButton({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
   const organizationId = session?.organization_id ?? null;
-  const scopeIds = asScopeIds(session?.context_scope_ids);
+  const scopeIds = useAppSelector(
+    selectScopeIdsForEntity("war_room", sessionId),
+  );
   const hasContext = !!organizationId || scopeIds.length > 0;
 
   return (

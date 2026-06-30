@@ -111,7 +111,7 @@ export function selectOrderedGalleryThreadIds(roomId: string | null) {
             ): row is {
               thread: WarRoomThread;
               id: string;
-              us: ThreadUserState | undefined;
+              us?: ThreadUserState;
             } => !!row.thread && !(row.us?.isHidden ?? false),
           );
         visible.sort((a, b) => {

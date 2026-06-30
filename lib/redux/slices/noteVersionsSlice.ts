@@ -1,12 +1,15 @@
 /**
  * Note Versions Redux Slice
- * 
+ *
  * Manages version history state for notes
  */
 
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { NoteVersion, VersionHistoryState } from '@/features/text-diff/types';
-import { supabase } from '@/utils/supabase/client';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import type {
+  NoteVersion,
+  VersionHistoryState,
+} from "@/features/text-diff/types";
+import { supabase } from "@/utils/supabase/client";
 
 const initialState: VersionHistoryState = {
   versions: {},
@@ -22,9 +25,9 @@ const initialState: VersionHistoryState = {
  * Fetch version history for a note
  */
 export const fetchNoteVersions = createAsyncThunk(
-  'noteVersions/fetchNoteVersions',
+  "noteVersions/fetchNoteVersions",
   async (noteId: string) => {
-    const { data, error } = await supabase.rpc('get_note_versions', {
+    const { data, error } = await supabase.rpc("get_note_versions", {
       p_note_id: noteId,
     });
 
@@ -34,44 +37,56 @@ export const fetchNoteVersions = createAsyncThunk(
     const versions: NoteVersion[] = (data ?? []).map((row) => ({
       ...row,
       note_id: noteId,
+      diff_metadata:
+        row.diff_metadata &&
+        typeof row.diff_metadata === "object" &&
+        !Array.isArray(row.diff_metadata)
+          ? (row.diff_metadata as Record<string, unknown>)
+          : {},
     }));
 
     return { noteId, versions };
-  }
+  },
 );
 
 /**
  * Restore a note to a specific version
  */
 export const restoreNoteVersion = createAsyncThunk(
-  'noteVersions/restoreNoteVersion',
-  async ({ noteId, versionNumber }: { noteId: string; versionNumber: number }) => {
-    const { data, error } = await supabase.rpc('restore_note_version', {
+  "noteVersions/restoreNoteVersion",
+  async ({
+    noteId,
+    versionNumber,
+  }: {
+    noteId: string;
+    versionNumber: number;
+  }) => {
+    const { data, error } = await supabase.rpc("restore_note_version", {
       p_note_id: noteId,
       p_version_number: versionNumber,
     });
 
     if (error) throw error;
-    if (!data) throw new Error('Failed to restore version');
+    if (!data) throw new Error("Failed to restore version");
 
     return { noteId, versionNumber };
-  }
+  },
 );
 
 /**
  * Delete a specific version
  */
 export const deleteNoteVersion = createAsyncThunk(
-  'noteVersions/deleteNoteVersion',
+  "noteVersions/deleteNoteVersion",
   async ({ noteId, versionId }: { noteId: string; versionId: string }) => {
-    const { error } = await supabase.rpc('delete_note_version', {
+    const { error } = await supabase.rpc("delete_note_version", {
       p_id: versionId,
     });
 
     if (error) throw error;
 
     return { noteId, versionId };
-  }
+  },
 );
 
 // ============================================================================
@@ -79,7 +94,7 @@ export const deleteNoteVersion = createAsyncThunk(
 // ============================================================================
 
 const noteVersionsSlice = createSlice({
-  name: 'noteVersions',
+  name: "noteVersions",
   initialState,
   reducers: {
     // Clear versions for a specific note
@@ -114,7 +129,8 @@ const noteVersionsSlice = createSlice({
       .addCase(fetchNoteVersions.rejected, (state, action) => {
         const noteId = action.meta.arg;
         state.loading[noteId] = false;
-        state.error[noteId] = action.error.message || 'Failed to fetch versions';
+        state.error[noteId] =
+          action.error.message || "Failed to fetch versions";
       });
 
     // Restore version
@@ -133,7 +149,8 @@ const noteVersionsSlice = createSlice({
       .addCase(restoreNoteVersion.rejected, (state, action) => {
         const noteId = action.meta.arg.noteId;
         state.loading[noteId] = false;
-        state.error[noteId] = action.error.message || 'Failed to restore version';
+        state.error[noteId] =
+          action.error.message || "Failed to restore version";
       });
 
     // Delete version
@@ -145,26 +162,28 @@ const noteVersionsSlice = createSlice({
       })
       .addCase(deleteNoteVersion.fulfilled, (state, action) => {
         const { noteId, versionId } = action.payload;
-        
+
         // Remove the deleted version from state
         if (state.versions[noteId]) {
           state.versions[noteId] = state.versions[noteId].filter(
-            v => v.id !== versionId
+            (v) => v.id !== versionId,
           );
         }
-        
+
         state.loading[noteId] = false;
         state.error[noteId] = null;
       })
       .addCase(deleteNoteVersion.rejected, (state, action) => {
         const noteId = action.meta.arg.noteId;
         state.loading[noteId] = false;
-        state.error[noteId] = action.error.message || 'Failed to delete version';
+        state.error[noteId] =
+          action.error.message || "Failed to delete version";
       });
   },
 });
 
-export const { clearNoteVersions, clearAllVersions } = noteVersionsSlice.actions;
+export const { clearNoteVersions, clearAllVersions } =
+  noteVersionsSlice.actions;
 
 // ============================================================================
 // Selectors
@@ -172,20 +191,23 @@ export const { clearNoteVersions, clearAllVersions } = noteVersionsSlice.actions
 
 type WithNoteVersions = { noteVersions: VersionHistoryState };
 
-export const selectNoteVersions = (noteId: string) => (state: WithNoteVersions) =>
-  state.noteVersions.versions[noteId];
+export const selectNoteVersions =
+  (noteId: string) => (state: WithNoteVersions) =>
+    state.noteVersions.versions[noteId];
 
-export const selectNoteVersionsLoading = (noteId: string) => (state: WithNoteVersions) =>
-  state.noteVersions.loading[noteId] ?? false;
+export const selectNoteVersionsLoading =
+  (noteId: string) => (state: WithNoteVersions) =>
+    state.noteVersions.loading[noteId] ?? false;
 
-export const selectNoteVersionsError = (noteId: string) => (state: WithNoteVersions) =>
-  state.noteVersions.error[noteId] ?? null;
+export const selectNoteVersionsError =
+  (noteId: string) => (state: WithNoteVersions) =>
+    state.noteVersions.error[noteId] ?? null;
 
-export const selectLatestVersion = (noteId: string) => (state: WithNoteVersions) => {
-  const versions = state.noteVersions.versions[noteId];
-  if (!versions || versions.length === 0) return null;
-  return versions[0]; // Already sorted by version_number DESC
-};
+export const selectLatestVersion =
+  (noteId: string) => (state: WithNoteVersions) => {
+    const versions = state.noteVersions.versions[noteId];
+    if (!versions || versions.length === 0) return null;
+    return versions[0]; // Already sorted by version_number DESC
+  };
 
 export default noteVersionsSlice.reducer;
-

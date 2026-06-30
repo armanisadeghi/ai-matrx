@@ -58,7 +58,7 @@ export default function SingleMessageWindow({
     >
       <ChatThread
         conversationId={conversationId}
-        userId={userId}
+        userId={userId ?? undefined}
         displayName={displayName}
         className="h-full"
       />

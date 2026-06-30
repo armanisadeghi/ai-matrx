@@ -45,11 +45,12 @@ function defaultEmailPreferences(): EmailNotificationPreferences {
  */
 async function getUserEmailPreferences(
   userId: string,
-): Promise<UserEmailPreferencesRow | null> {
+): Promise<EmailNotificationPreferences | null> {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
-      .schema("users").from("user_email_preferences")
+      .schema("users")
+      .from("user_email_preferences")
       .select("*")
       .eq("user_id", userId)
       .single();
@@ -57,13 +58,17 @@ async function getUserEmailPreferences(
     if (error) {
       // If no preferences found, return defaults (all enabled except marketing)
       if (error.code === "PGRST116") {
-        return defaultEmailPreferences(userId);
+        return defaultEmailPreferences();
       }
       console.error("Error fetching email preferences:", error);
       return null;
     }
 
-    return data;
+    return {
+      task_notifications: data.task_notifications,
+      comment_notifications: data.comment_notifications,
+      message_notifications: data.message_notifications,
+    };
   } catch (error) {
     console.error("Exception fetching email preferences:", error);
     return null;
@@ -92,7 +97,8 @@ async function getUserDetails(
     }
 
     const { data: profile } = await supabase
-      .schema("users").from("profiles")
+      .schema("users")
+      .from("profiles")
       .select("display_name")
       .eq("id", userId)
       .maybeSingle();

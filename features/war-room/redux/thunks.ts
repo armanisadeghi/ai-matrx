@@ -395,7 +395,7 @@ export const setSessionContextThunk =
     try {
       if (ctx.organizationId !== undefined) {
         const updated = await service.updateSession(sessionId, {
-          organization_id: ctx.organizationId,
+          organization_id: ctx.organizationId ?? undefined,
         });
         dispatch(sessionUpserted(updated));
       }

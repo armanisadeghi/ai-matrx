@@ -198,7 +198,8 @@ export const fetchAppWithApplets = createAsyncThunk(
 
       // Run validations in the background *after* app is loaded
       // This is completely decoupled from the main application flow
-      if (validationOptions.runValidations) {
+      if (validationOptions.runValidations && appConfig.id) {
+        const appId = appConfig.id;
         // Use setTimeout with a longer delay to ensure it runs well after the app is loaded
         setTimeout(() => {
           try {
@@ -206,7 +207,7 @@ export const fetchAppWithApplets = createAsyncThunk(
               appConfig,
               applets,
               validationOptions,
-              appConfig.id,
+              appId,
             );
           } catch (error) {
             // Completely silence any validation errors to prevent affecting the main app

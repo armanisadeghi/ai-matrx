@@ -16514,9 +16514,7 @@ export interface components {
             /** Disable Reasoning */
             disable_reasoning?: boolean | null;
             /** Response Format */
-            response_format?: {
-                [key: string]: unknown;
-            } | null;
+            response_format?: (components["schemas"]["ResponseFormatText"] | components["schemas"]["ResponseFormatJsonObject"] | components["schemas"]["ResponseFormatJsonSchema"]) | null;
             /** Stop Sequences */
             stop_sequences?: string[] | null;
             /**
@@ -22168,9 +22166,7 @@ export interface components {
             /** Disable Reasoning */
             disable_reasoning?: boolean | null;
             /** Response Format */
-            response_format?: {
-                [key: string]: unknown;
-            } | null;
+            response_format?: (components["schemas"]["ResponseFormatText"] | components["schemas"]["ResponseFormatJsonObject"] | components["schemas"]["ResponseFormatJsonSchema"]) | null;
             /** Stop Sequences */
             stop_sequences?: string[] | null;
             /** Stream */
@@ -26274,6 +26270,42 @@ export interface components {
             virtual_id: string;
             /** Field Id */
             field_id?: string | null;
+        };
+        /** ResponseFormatJsonObject */
+        ResponseFormatJsonObject: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "json_object";
+        };
+        /** ResponseFormatJsonSchema */
+        ResponseFormatJsonSchema: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "json_schema";
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Name */
+            name?: string | null;
+            /** Schema */
+            schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Strict */
+            strict?: boolean | null;
+        };
+        /** ResponseFormatText */
+        ResponseFormatText: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
         };
         /** RestoreRequest */
         RestoreRequest: {

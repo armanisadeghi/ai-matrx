@@ -45976,8 +45976,25 @@
           "response_format": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatText"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatJsonObject"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatJsonSchema"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/ResponseFormatJsonObject",
+                    "json_schema": "#/components/schemas/ResponseFormatJsonSchema",
+                    "text": "#/components/schemas/ResponseFormatText"
+                  }
+                }
               },
               {
                 "type": "null"
@@ -61868,8 +61885,25 @@
           "response_format": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatText"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatJsonObject"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatJsonSchema"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "json_object": "#/components/schemas/ResponseFormatJsonObject",
+                    "json_schema": "#/components/schemas/ResponseFormatJsonSchema",
+                    "text": "#/components/schemas/ResponseFormatText"
+                  }
+                }
               },
               {
                 "type": "null"
@@ -73071,6 +73105,101 @@
           "virtual_id"
         ],
         "title": "ResolvedPath"
+      },
+      "ResponseFormatJsonObject": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_object",
+            "title": "Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatJsonObject"
+      },
+      "ResponseFormatJsonSchema": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "json_schema",
+            "title": "Type"
+          },
+          "json_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Json Schema"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema"
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strict"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatJsonSchema"
+      },
+      "ResponseFormatText": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "text",
+            "title": "Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "ResponseFormatText"
       },
       "RestoreRequest": {
         "properties": {

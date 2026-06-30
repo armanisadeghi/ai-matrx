@@ -45,10 +45,12 @@ interface ThreadSearchRow {
 }
 
 function activeEntityIdOf(
-  rows: { entity_type: string; entity_id: string; is_active: boolean }[],
+  rows: { entity_type: string; entity_id: string; is_active: boolean | null }[],
   entityType: string,
 ): string | null {
-  const active = rows.find((r) => r.entity_type === entityType && r.is_active);
+  const active = rows.find(
+    (r) => r.entity_type === entityType && r.is_active === true,
+  );
   if (active) return active.entity_id;
   return rows.find((r) => r.entity_type === entityType)?.entity_id ?? null;
 }

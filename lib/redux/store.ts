@@ -195,9 +195,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
 
   const store = configureStore({
     reducer: rootReducer,
-    preloadedState: resolved as unknown as Parameters<
-      typeof configureStore
-    >[0]["preloadedState"],
+    preloadedState: resolved as Partial<RootState>,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: false,
@@ -217,7 +215,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         scopeTreeInvalidationMiddleware,
         overlayRenderWatchdogMiddleware,
         reduxErrorCaptureMiddleware,
-      ),
+      ) as ReturnType<typeof getDefaultMiddleware>,
     devTools: process.env.NODE_ENV !== "production",
   });
 

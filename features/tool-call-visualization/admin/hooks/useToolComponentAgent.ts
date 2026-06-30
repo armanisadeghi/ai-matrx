@@ -121,9 +121,9 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
     if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     setConversationId(null);
     setError(null);
-    if (resolveRef.current) {
-      resolveRef.current(null);
-      resolveRef.current = null;
+    if (resolveRef.current.fn) {
+      resolveRef.current.fn(null);
+      resolveRef.current.fn = null;
     }
   }, [conversationId, dispatch]);
 
@@ -131,9 +131,9 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
     if (conversationId) {
       abortConversation(conversationId);
     }
-    if (resolveRef.current) {
-      resolveRef.current(null);
-      resolveRef.current = null;
+    if (resolveRef.current.fn) {
+      resolveRef.current.fn(null);
+      resolveRef.current.fn = null;
     }
   }, [conversationId]);
 
@@ -157,7 +157,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
         // Build and arm the result promise BEFORE firing the launch so a
         // synchronous resolution (e.g. immediate failure) can't race.
         const resultPromise = new Promise<string | null>((resolve) => {
-          resolveRef.current = resolve;
+          resolveRef.current.fn = resolve;
         });
 
         await launchAgent(agentId, {
@@ -187,9 +187,9 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
         const message =
           err instanceof Error ? err.message : "Failed to launch agent";
         setError(message);
-        if (resolveRef.current) {
-          resolveRef.current(null);
-          resolveRef.current = null;
+        if (resolveRef.current.fn) {
+          resolveRef.current.fn(null);
+          resolveRef.current.fn = null;
         }
         return null;
       }

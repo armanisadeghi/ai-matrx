@@ -61,11 +61,7 @@ export type ResizeEdge =
 
 /** Where to place the window when it first opens. */
 export type WindowPosition =
-  | "center"
-  | "top-right"
-  | "top-left"
-  | "bottom-right"
-  | "bottom-left";
+  "center" | "top-right" | "top-left" | "bottom-right" | "bottom-left";
 
 /**
  * Resolve a dimension value to pixels.
@@ -155,7 +151,11 @@ export interface UseWindowPanelOptions {
 }
 
 /** Shared subset of MouseEvent / PointerEvent / TouchEvent we need. */
-type PointerLike = { clientX: number; clientY: number; preventDefault: () => void };
+type PointerLike = {
+  clientX: number;
+  clientY: number;
+  preventDefault: () => void;
+};
 
 export interface UseWindowPanelReturn {
   /** The stable window id. */
@@ -291,6 +291,7 @@ export function useWindowPanel(
 
       const onUp = () => {
         const wasCandidate = dragOutState.isCandidate;
+        const dragOrigin = dragStart.current;
         dragStart.current = null;
         document.removeEventListener("pointermove", onMove);
         document.removeEventListener("pointerup", onUp);
@@ -310,8 +311,8 @@ export function useWindowPanel(
           // visually placed the window at that position, even though the
           // popout will appear at OS-controlled coordinates.
           const lastRect: WindowRect = {
-            x: dragStart.current?.wx ?? entry.windowed.x,
-            y: dragStart.current?.wy ?? entry.windowed.y,
+            x: dragOrigin?.wx ?? entry.windowed.x,
+            y: dragOrigin?.wy ?? entry.windowed.y,
             width: entry.windowed.width,
             height: entry.windowed.height,
           };

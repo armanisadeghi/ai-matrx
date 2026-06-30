@@ -52,6 +52,7 @@ import {
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
 import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
+import type { ValueMappingMap } from "@/features/surfaces/types";
 import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
@@ -166,7 +167,7 @@ export function useAiPostProcess() {
         // 2. Surface bindings — same layered per-key merge as the launch
         //    thunk (global → org-by-membership → user), so the in-page Run
         //    buttons and the context menu resolve identically.
-        let bindingMappings = null;
+        let bindingMappings: ValueMappingMap | null = null;
         try {
           const layers = await fetchSurfaceBindingLayers(
             agentId,

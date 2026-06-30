@@ -94,9 +94,10 @@ function AudioControlBody() {
   // `nonce` lets a fresh open re-sync the tab even while already mounted.
   const requestedTab = useAppSelector(
     (s) =>
-      (selectOverlayData(s, "audioControlWindow") as
-        | { tab?: AudioTab; nonce?: number }
-        | null) ?? null,
+      (selectOverlayData(s, "audioControlWindow") as {
+        tab?: AudioTab;
+        nonce?: number;
+      } | null) ?? null,
   );
   const requestedKey = requestedTab?.tab
     ? `${requestedTab.tab}:${requestedTab.nonce ?? ""}`
@@ -266,7 +267,12 @@ function NowPlaying({
               icon={isPaused ? <Play /> : <Pause />}
             />
             <TransportButton
-              onClick={() => startTransition(() => id && control(id, "stop"))}
+              onClick={() => {
+                if (!id) return;
+                startTransition(() => {
+                  control(id, "stop");
+                });
+              }}
               disabled={(!isActive && !isPaused && !isLoading) || isPending}
               title="Stop"
               label="Stop"
