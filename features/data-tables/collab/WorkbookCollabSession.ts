@@ -143,7 +143,7 @@ export class WorkbookCollabSession {
         }
       }
     };
-    yArray.observe(this.yArrayObserver);
+    yArray.observe(this.yArrayObserver as Parameters<typeof yArray.observe>[0]);
 
     // Awareness change passthrough.
     if (this.options.onAwarenessChange) {
@@ -173,7 +173,9 @@ export class WorkbookCollabSession {
 
     if (this.doc && this.yArrayObserver) {
       const yArray = this.doc.getArray<CollabMutationInfo>(MUTATIONS_ARRAY_KEY);
-      yArray.unobserve(this.yArrayObserver);
+      yArray.unobserve(
+        this.yArrayObserver as Parameters<typeof yArray.unobserve>[0],
+      );
       this.yArrayObserver = null;
     }
 
