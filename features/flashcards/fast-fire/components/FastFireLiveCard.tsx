@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   HelpCircle,
   SkipForward,
@@ -25,6 +25,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { getFastFireAgentConfig } from "../config";
 import { helpLive, type HelpLiveResult } from "../agents/helpLive.thunk";
 import {
+  selectFastFirePhase,
   selectFastFireCurrentCard,
   selectFastFireCurrentIndex,
   selectFastFireCards,
@@ -48,6 +49,7 @@ export function FastFireLiveCard({
   onAbort,
 }: FastFireLiveCardProps) {
   const dispatch = useAppDispatch();
+  const phase = useAppSelector(selectFastFirePhase);
   const card = useAppSelector(selectFastFireCurrentCard);
   const index = useAppSelector(selectFastFireCurrentIndex);
   const cards = useAppSelector(selectFastFireCards);
@@ -59,7 +61,19 @@ export function FastFireLiveCard({
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpUnavailable, setHelpUnavailable] = useState(false);
 
+  // L3: clear any help text when the card changes, so the previous card's help
+  // doesn't linger over the next card. Keyed on the card id.
+  useEffect(() => {
+    setHelp(null);
+    setHelpUnavailable(false);
+  }, [card?.id]);
+
   if (!card) return null;
+
+  // H1+H4: between cards (`advancing` beat) the card is no longer being recorded,
+  // so Skip and Help are no-ops — disable them rather than render them live-but-
+  // dead. They re-enable when the next card enters `card_recording`.
+  const betweenCards = phase !== "card_recording";
 
   const askForHelp = async (): Promise<void> => {
     const cfg = getFastFireAgentConfig();
@@ -115,7 +129,7 @@ export function FastFireLiveCard({
             size="sm"
             className="gap-1.5"
             onClick={() => void askForHelp()}
-            disabled={helpLoading}
+            disabled={helpLoading || betweenCards}
           >
             {helpLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -129,6 +143,7 @@ export function FastFireLiveCard({
             size="sm"
             className="gap-1.5 text-muted-foreground"
             onClick={onSkip}
+            disabled={betweenCards}
           >
             <SkipForward className="h-4 w-4" />
             Skip

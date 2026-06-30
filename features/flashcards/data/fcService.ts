@@ -213,7 +213,14 @@ export const fcService = {
       if (!edgesRes.ok) return fail("getSetWithCards", "failed to load membership edges");
       const members = edgesRes.data.edges
         .filter((e) => e.sourceType === "fc_card" && e.role === EDGE_ROLE.member)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        // Deterministic order: position first (null → last), then createdAt, then id —
+        // so a set never silently reshuffles when positions are missing/duplicated.
+        .sort(
+          (a, b) =>
+            (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER) ||
+            a.createdAt.localeCompare(b.createdAt) ||
+            a.id.localeCompare(b.id),
+        );
       const cardIds = members.map((e) => e.sourceId);
       const posByCard = new Map(members.map((e) => [e.sourceId, e.position ?? null]));
 

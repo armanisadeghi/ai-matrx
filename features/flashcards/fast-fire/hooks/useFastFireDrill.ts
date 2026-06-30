@@ -1,7 +1,7 @@
 // features/flashcards/fast-fire/hooks/useFastFireDrill.ts
 //
 // THE drill orchestrator. It wires the ONE state-machine slice to the deadline
-// timer and the continuous-capture singleton, and fires grading per card —
+// timer and the per-card-capture singleton, and fires grading per card —
 // without ever awaiting the AI in the loop. Everything the historical bug class
 // touched is structurally handled here:
 //
@@ -9,17 +9,20 @@
 //     dispatches transitions. No drifting useStates driving the flow.
 //   • Deadline timer (#2): one `deadlineTs` (state) → useDeadlineTimer's single
 //     rAF loop → `onExpire` fires the card transition once. No setInterval.
-//   • Continuous capture (#3): ONE warm mic for the whole session; per-card
-//     window timestamps recorded against the capture origin; buzzers at each
-//     boundary.
-//   • Fire-and-forget grading (#4): when a card's window closes we SLICE its clip
-//     and dispatch `gradeCard(...)` WITHOUT awaiting. The drill advances to the
-//     next card immediately; grades catch up via Redux.
+//   • Per-card capture (#3): ONE warm mic for the whole session; a fresh
+//     MediaRecorder is started per card (`startCardClip`) and stopped at the card
+//     boundary (`stopCardClip`), so each card's clip is a COMPLETE, self-contained,
+//     decodable container — no mid-stream slicing, no arrival-timestamp math. A
+//     separate full-session recorder retains the durable whole-session recording.
+//     Buzzers fire at each boundary.
+//   • Fire-and-forget grading (#4): when a card's window closes we stop its
+//     recorder, take the resulting blob, and dispatch `gradeCard(...)` WITHOUT
+//     awaiting the grade. The drill advances to the next card immediately; grades
+//     catch up via Redux.
 //
-// The per-card window is measured in two clocks that must not be confused:
-//   - WALL CLOCK (Date.now()) for the deadline (what the timer compares).
-//   - CAPTURE CLOCK (performance.now() via captureOrigin) for slicing the audio.
-// We record both edges per card so the slice lines up with the real recording.
+// The deadline is wall-clock (Date.now()); the clip is the card's audio by
+// construction (the per-card recorder spans exactly the card), so no capture-clock
+// window math is needed.
 //
 // React Compiler is on: no manual memo/callback.
 
@@ -45,7 +48,8 @@ import {
 } from "../redux/fastFire.selectors";
 import { useDeadlineTimer } from "./useDeadlineTimer";
 import {
-  sliceCardClip,
+  startCardClip,
+  stopCardClip,
   playBuzzer,
   stopContinuousCapture,
   hardStopCapture,
@@ -53,6 +57,7 @@ import {
 import { fileHandler } from "@/features/files";
 import { gradeCard } from "../agents/gradeCard.thunk";
 import { reviewSession } from "../agents/reviewSession.thunk";
+import { studyService } from "@/features/education/study/service/studyService";
 
 const COUNTDOWN_SECONDS = 3;
 /** The brief beat between cards (buzzer + slice), then the next card arms. */
@@ -71,8 +76,6 @@ export interface UseFastFireDrillResult {
 
 interface CardWindow {
   cardId: string;
-  /** capture-clock ms (performance.now()) when the card appeared. */
-  captureStart: number;
 }
 
 export function useFastFireDrill(): UseFastFireDrillResult {
@@ -93,7 +96,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   // (the timer bar) WITHOUT any React state write — zero re-render per frame.
   const progressListenersRef = useRef<Set<(r: number, p: number) => void>>(new Set());
 
-  // The capture-clock start of the card currently being recorded — for slicing.
+  // The card currently being recorded (its per-card recorder is live).
   const windowRef = useRef<CardWindow | null>(null);
   // CLOSE-ONCE GUARD: the set of card ids already closed (graded + advanced).
   // Both the deadline timer's onExpire AND the manual Skip path call
@@ -133,28 +136,27 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     return () => clearInterval(id);
   }, [phase, dispatch]);
 
-  // ── Arm the deadline + open the card window when a card starts recording ─────
+  // ── Arm the deadline + open the per-card recorder when a card starts ─────────
   // Keyed on (phase, currentIndex). When a new card enters `card_recording` we
-  // play the start buzzer, stamp the capture-clock window start, and set the
-  // wall-clock deadline. The deadline change is what (re)starts the rAF loop.
+  // play the start buzzer, start a FRESH per-card MediaRecorder (so this card's
+  // clip is a complete, self-contained container), and set the wall-clock
+  // deadline. The deadline change is what (re)starts the rAF loop.
   useEffect(() => {
     if (phase !== "card_recording" || !currentCard) {
       return undefined;
     }
     playBuzzer("start");
-    windowRef.current = {
-      cardId: currentCard.id,
-      captureStart: performance.now(),
-    };
+    windowRef.current = { cardId: currentCard.id };
+    startCardClip(currentCard.id);
     setDeadlineTs(Date.now() + config.secondsPerCard * 1000);
     return undefined;
     // currentCard.id is the real key (the card changing); phase guards entry.
   }, [phase, currentCard?.id, config.secondsPerCard]);
 
-  // ── Deadline expiry → close the card: buzzer, slice, fire grading, advance ───
-  // This is the ONE place a card ends. It runs synchronously-ish: it slices the
-  // clip and dispatches `gradeCard(...)` FIRE-AND-FORGET (no await), then moves
-  // the machine to `advancing`. The drill never blocks on a grade.
+  // ── Deadline expiry → close the card: buzzer, stop recorder, grade, advance ──
+  // This is the ONE place a card ends. It stops the per-card recorder and
+  // dispatches `gradeCard(...)` FIRE-AND-FORGET (no await on the clip flush or the
+  // grade), then moves the machine to `advancing`. The drill never blocks.
   const handleExpire = (): void => {
     const win = windowRef.current;
     const card = currentCard;
@@ -169,23 +171,21 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     }
     closedCardsRef.current.add(card.id);
     playBuzzer("stop");
-    const captureEnd = performance.now();
 
-    // Slice the clip for THIS card from the continuous stream (±1s overlap +
-    // header is handled inside sliceCardClip).
-    const clip = sliceCardClip(win.captureStart, captureEnd);
-
-    // Fire-and-forget grade — keyed by stable card id, never awaited.
-    void dispatch(
-      gradeCard({
-        cardId: card.id,
-        front: card.front,
-        back: card.back,
-        secondsAllowed: config.secondsPerCard,
-        clip,
-        sessionId,
-      }),
-    );
+    // Stop THIS card's recorder and grade its complete, self-contained clip. The
+    // blob flushes asynchronously (MediaRecorder.stop → onstop), so we grade in
+    // the resolve callback — still fire-and-forget: the drill advances NOW and
+    // never blocks on the clip or the grade. Keyed by stable card id.
+    const cardSnapshot = {
+      cardId: card.id,
+      front: card.front,
+      back: card.back,
+      secondsAllowed: config.secondsPerCard,
+      sessionId,
+    };
+    void stopCardClip(card.id).then((clip) => {
+      void dispatch(gradeCard({ ...cardSnapshot, clip }));
+    });
 
     windowRef.current = null;
     setDeadlineTs(null);
@@ -302,6 +302,26 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   const abort = (): void => {
     hardStopCapture();
     setDeadlineTs(null);
+    // H1+H4: close the study_session so it doesn't leak as `active` forever.
+    // Best-effort and fire-and-forget — abandoning the UI must not block on the DB.
+    if (sessionId) {
+      void (async () => {
+        try {
+          const res = await studyService.updateSession(sessionId, {
+            status: "abandoned",
+            ended_at: new Date().toISOString(),
+          });
+          if (res.error) {
+            console.error(
+              "[useFastFireDrill] abandon updateSession failed:",
+              res.error,
+            );
+          }
+        } catch (err) {
+          console.error("[useFastFireDrill] abandon updateSession threw:", err);
+        }
+      })();
+    }
     dispatch(abandonDrill());
   };
 

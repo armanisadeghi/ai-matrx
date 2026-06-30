@@ -70,6 +70,8 @@ export default function AgentSettingsWindow({
           onOpenAgent={openAgent}
         />
       }
+      sidebarDefaultSize={260}
+      sidebarMinSize={200}
       urlSyncKey="agent-settings"
       urlSyncId="agent-settings-window"
       urlSyncArgs={{ m: "as" }}

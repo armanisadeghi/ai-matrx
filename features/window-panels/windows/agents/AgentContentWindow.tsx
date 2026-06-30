@@ -792,8 +792,8 @@ export default function AgentContentWindow({
         overlayId="agentAdvancedEditorWindow"
         onCollectData={collectData}
         sidebar={sidebarNode}
-        sidebarDefaultSize={multiAgentMode ? 200 : undefined}
-        sidebarMinSize={multiAgentMode ? 140 : undefined}
+        sidebarDefaultSize={multiAgentMode ? 260 : undefined}
+        sidebarMinSize={multiAgentMode ? 200 : undefined}
         sidebarExpandsWindow={false}
         actionsRight={
           agentId ? (

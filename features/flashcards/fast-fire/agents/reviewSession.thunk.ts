@@ -11,6 +11,7 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
+import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import {
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
@@ -80,6 +81,11 @@ export function reviewSession(args: ReviewSessionArgs) {
 
     let conversationId: string | null = null;
     try {
+      // Launch WITHOUT auto-running (autoRun:false + background) — exactly the
+      // grading lane's pattern. With autoRun:true the launch thunk internally
+      // executes AND polls to completion (up to 300s) before returning, blocking
+      // finalize; autoRun:false returns the conversationId immediately and we run
+      // it ourselves so the existing `waitForObject` polling owns the wait.
       const launch = await dispatch(
         launchAgentExecution({
           agentId: config.reviewAgentId,
@@ -95,15 +101,17 @@ export function reviewSession(args: ReviewSessionArgs) {
             },
           },
           config: {
-            autoRun: true,
-            displayMode: "direct",
+            autoRun: false,
+            displayMode: "background",
             llmOverrides: { response_format: FC_REVIEW_BATCH_SCHEMA },
           },
           jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
         }),
       ).unwrap();
       conversationId = launch.conversationId;
-      const requestId = launch.requestId;
+
+      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
+      const requestId = exec.requestId;
       if (!requestId) return;
 
       const raw = await waitForObject(getState, requestId);

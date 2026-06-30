@@ -150,7 +150,7 @@ export function gradeCard(args: GradeCardArgs) {
 
     // GRADER-OPTIONAL: no agent → record a result-less attempt and mark skipped.
     if (!config.graderAgentId) {
-      dispatch(gradeSkipped({ cardId, responseAudioFileId }));
+      dispatch(gradeSkipped({ cardId, responseAudioFileId, runId: sessionId }));
       await recordAttempt({
         cardId,
         sessionId,
@@ -164,7 +164,7 @@ export function gradeCard(args: GradeCardArgs) {
       return;
     }
 
-    dispatch(gradePending({ cardId, responseAudioFileId }));
+    dispatch(gradePending({ cardId, responseAudioFileId, runId: sessionId }));
 
     let conversationId: string | null = null;
     try {
@@ -215,6 +215,7 @@ export function gradeCard(args: GradeCardArgs) {
       dispatch(
         gradeResolved({
           cardId,
+          runId: sessionId,
           score: grade.score,
           result: grade.result,
           rubric: grade.rubric,
@@ -238,7 +239,7 @@ export function gradeCard(args: GradeCardArgs) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "grading failed";
       console.error(`[fastfire.gradeCard] card ${cardId}:`, err);
-      dispatch(gradeFailed({ cardId, error: message }));
+      dispatch(gradeFailed({ cardId, error: message, runId: sessionId }));
       // Still record the attempt (result-less) so the response audio + session
       // are not lost just because the grade failed.
       await recordAttempt({

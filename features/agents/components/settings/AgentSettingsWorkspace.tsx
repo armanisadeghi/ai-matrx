@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
-import { makeSelectFilteredAgents } from "@/features/agents/redux/agent-consumers/selectors";
-import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 
-const CONSUMER_ID = "agent-settings-workspace";
+/** Redux consumer slot for sidebar search / sort / filter state. */
+export const AGENT_SETTINGS_SIDEBAR_CONSUMER_ID = "agent-settings-workspace";
 
 interface AgentSidebarProps {
   openedTabIds: string[];
@@ -17,55 +15,15 @@ interface AgentSidebarProps {
   onOpenAgent: (id: string) => void;
 }
 
-export function AgentSidebar({
-  openedTabIds,
-  activeTabId,
-  onOpenAgent,
-}: AgentSidebarProps) {
-  const dispatch = useAppDispatch();
-  const consumer = useAgentConsumer(CONSUMER_ID, { unregisterOnUnmount: true });
-  const selectFiltered = useMemo(
-    () => makeSelectFilteredAgents(CONSUMER_ID),
-    [],
-  );
-  const agents = useAppSelector(selectFiltered);
-
-  useEffect(() => {
-    dispatch(initializeChatAgents());
-  }, [dispatch]);
-
+export function AgentSidebar({ activeTabId, onOpenAgent }: AgentSidebarProps) {
   return (
-    <div className="flex flex-col h-full bg-card/10 pt-2 relative">
-      <div className="flex-1 overflow-y-auto">
-        {agents.map((agent) => {
-          const isOpen = openedTabIds.includes(agent.id);
-          const isActive = activeTabId === agent.id;
-          return (
-            <button
-              key={agent.id}
-              onClick={() => onOpenAgent(agent.id)}
-              className={cn(
-                "w-full flex items-center gap-2 px-2 py-1 rounded-md text-left transition-colors",
-                isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : isOpen
-                    ? "bg-muted/60 text-foreground"
-                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
-              )}
-            >
-              <span className="text-xs truncate flex-1">
-                {agent.name || "Untitled"}
-              </span>
-              {isActive && (
-                <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-              )}
-            </button>
-          );
-        })}
-        {/* <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" /> */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-b from-transparent via-background/80 via-[70%] to-background" />
-      </div>
-    </div>
+    <AgentListInlinePicker
+      consumerId={AGENT_SETTINGS_SIDEBAR_CONSUMER_ID}
+      onSelect={onOpenAgent}
+      activeAgentId={activeTabId}
+      className="h-full bg-card/10"
+      autoFocusSearch={false}
+    />
   );
 }
 

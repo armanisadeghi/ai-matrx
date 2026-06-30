@@ -20,7 +20,6 @@ import {
   AlertCircle,
   Loader2,
   Play,
-  Pause,
   RotateCcw,
   Layers,
   GraduationCap,
@@ -35,12 +34,9 @@ import {
   selectFastFireSessionReview,
   selectReviewRows,
   selectReviewFilter,
-  selectPlayingCardId,
   selectPendingGradeCount,
 } from "../redux/fastFire.selectors";
 import {
-  playCard,
-  stopPlayback,
   setReviewFilter,
   type ReviewFilter,
   type GradeResult,
@@ -90,7 +86,6 @@ export function FastFireScoreboard({
   const review = useAppSelector(selectFastFireSessionReview);
   const rows = useAppSelector(selectReviewRows);
   const filter = useAppSelector(selectReviewFilter);
-  const playingCardId = useAppSelector(selectPlayingCardId);
   const pending = useAppSelector(selectPendingGradeCount);
 
   return (
@@ -172,8 +167,8 @@ export function FastFireScoreboard({
           {rows.map(({ card, grade }) => {
             const result = grade?.result;
             const meta = result ? RESULT_META[result] : null;
-            const isPlaying = playingCardId === card.id;
-            const hasAudio = !!grade?.responseAudioFileId;
+            const audioFileId = grade?.responseAudioFileId ?? null;
+            const hasAudio = !!audioFileId;
             return (
               <div
                 key={card.id}
@@ -214,40 +209,26 @@ export function FastFireScoreboard({
                         )}
                       </span>
                     )}
-                    {hasAudio && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() =>
-                          dispatch(
-                            isPlaying
-                              ? stopPlayback()
-                              : playCard({ cardId: card.id }),
-                          )
-                        }
-                        aria-label={isPlaying ? "Stop" : "Play your answer"}
-                      >
-                        {isPlaying ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
                   </div>
                 </div>
 
-                {/* Grader feedback + playback */}
+                {/* Grader feedback */}
                 {grade?.feedback && (
                   <p className="mt-2 rounded-md bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
                     {grade.feedback}
                   </p>
                 )}
-                {isPlaying && (
-                  <FastFireReviewPlayer
-                    fileId={grade?.responseAudioFileId ?? null}
-                  />
+
+                {/* Your recorded answer — native controls, always mounted so iOS
+                    can start playback synchronously on the tap (M3). */}
+                {hasAudio && (
+                  <div className="mt-2">
+                    <div className="mb-1 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                      <Play className="h-3 w-3" />
+                      Your answer
+                    </div>
+                    <FastFireReviewPlayer fileId={audioFileId} cardId={card.id} />
+                  </div>
                 )}
               </div>
             );

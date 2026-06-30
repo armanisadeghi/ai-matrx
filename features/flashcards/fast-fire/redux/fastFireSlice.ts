@@ -259,8 +259,18 @@ const fastFireSlice = createSlice({
     /** Mark a card's grade as in-flight (clip sent to the grader agent). */
     gradePending(
       state,
-      action: PayloadAction<{ cardId: string; responseAudioFileId: string | null }>,
+      action: PayloadAction<{
+        cardId: string;
+        responseAudioFileId: string | null;
+        runId: string | null;
+      }>,
     ) {
+      // M4: ignore a result from a PREVIOUS run. In-flight grade thunks can
+      // resolve late, after `restart()`/`openSetup()` reset state and a new run
+      // started — writing a stale grade would corrupt the new drill. Each grade
+      // dispatch is stamped with the run's sessionId; drop any whose runId no
+      // longer matches the current session.
+      if (action.payload.runId !== state.sessionId) return;
       const { cardId, responseAudioFileId } = action.payload;
       const grade = state.gradesByCard[cardId] ?? blankGrade(cardId);
       grade.status = "pending";
@@ -277,6 +287,7 @@ const fastFireSlice = createSlice({
       state,
       action: PayloadAction<{
         cardId: string;
+        runId: string | null;
         score: number;
         result: GradeResult;
         rubric: GradeRubric;
@@ -286,6 +297,8 @@ const fastFireSlice = createSlice({
       }>,
     ) {
       const p = action.payload;
+      // M4: drop a stale grade from a previous run (see gradePending).
+      if (p.runId !== state.sessionId) return;
       const grade = state.gradesByCard[p.cardId] ?? blankGrade(p.cardId);
       grade.status = "resolved";
       grade.score = p.score;
@@ -299,7 +312,16 @@ const fastFireSlice = createSlice({
     },
 
     /** No grader configured — the attempt was recorded result-less. */
-    gradeSkipped(state, action: PayloadAction<{ cardId: string; responseAudioFileId: string | null }>) {
+    gradeSkipped(
+      state,
+      action: PayloadAction<{
+        cardId: string;
+        responseAudioFileId: string | null;
+        runId: string | null;
+      }>,
+    ) {
+      // M4: drop a stale grade from a previous run (see gradePending).
+      if (action.payload.runId !== state.sessionId) return;
       const { cardId, responseAudioFileId } = action.payload;
       const grade = state.gradesByCard[cardId] ?? blankGrade(cardId);
       grade.status = "skipped";
@@ -308,7 +330,12 @@ const fastFireSlice = createSlice({
     },
 
     /** A grade attempt failed (loud, never silent). */
-    gradeFailed(state, action: PayloadAction<{ cardId: string; error: string }>) {
+    gradeFailed(
+      state,
+      action: PayloadAction<{ cardId: string; error: string; runId: string | null }>,
+    ) {
+      // M4: drop a stale grade from a previous run (see gradePending).
+      if (action.payload.runId !== state.sessionId) return;
       const { cardId, error } = action.payload;
       const grade = state.gradesByCard[cardId] ?? blankGrade(cardId);
       grade.status = "error";
