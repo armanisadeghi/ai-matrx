@@ -7,7 +7,12 @@
 //
 // Fully token-driven: NO per-entity code. Add a token's `titleColumn` to the
 // registry overlay and its picker works. RLS is the real visibility gate; the
-// optional `ownerColumn` filter just narrows to the user's own rows.
+// `ownerColumn` (`created_by` by convention) just narrows to the user's rows.
+//
+// LOUD RECOVERY: if the owner-column filter hits a missing-column error (42703 —
+// a divergent table the registry convention doesn't fit), it screams to the
+// console and RETRIES with RLS-only filtering rather than surfacing a hard 400.
+// A recovery firing means the registry overlay needs an `ownerColumn` override.
 //
 // Reads go DIRECT to Postgres via supabase-js (CLAUDE.md data-flow rule: pure
 // table reads never round-trip through Python/Next).
@@ -48,29 +53,46 @@ export async function listAssociationCandidates(
   }
   const titleCol = info.titleColumn;
 
-  try {
-    // Dynamic schema/table read — mirrors the established org-inventory pattern:
-    // cast the schema to a known literal so supabase-js accepts a runtime value,
-    // then `as never` the table/column args. Row shape is unknown → cast on read.
-    const db = (
-      info.schema && info.schema !== "public"
-        ? supabase.schema(info.schema as "files")
-        : supabase
-    ) as typeof supabase;
+  // Dynamic schema/table read — mirrors the established org-inventory pattern:
+  // cast the schema to a known literal so supabase-js accepts a runtime value,
+  // then `as never` the table/column args. Row shape is unknown → cast on read.
+  const db = (
+    info.schema && info.schema !== "public"
+      ? supabase.schema(info.schema as "files")
+      : supabase
+  ) as typeof supabase;
 
+  const runQuery = async (applyOwnerFilter: boolean) => {
     let q = db
       .from(info.table as never)
       .select(`id, ${titleCol}`)
       .order(titleCol as never, { ascending: true })
       .limit(limit);
-    if (info.ownerColumn && ownerId) {
+    if (applyOwnerFilter && info.ownerColumn && ownerId) {
       q = q.eq(info.ownerColumn as never, ownerId as never);
     }
     if (search && search.trim()) {
       q = q.ilike(titleCol as never, `%${search.trim()}%`);
     }
+    return q;
+  };
 
-    const { data, error } = await q;
+  try {
+    const wantOwnerFilter = Boolean(info.ownerColumn && ownerId);
+    let { data, error } = await runQuery(wantOwnerFilter);
+
+    // Loud recovery: the owner column doesn't exist on this table. Scream, then
+    // retry RLS-only so the picker still works instead of erroring out.
+    if (error && error.code === "42703" && wantOwnerFilter) {
+      console.error(
+        `[listAssociationCandidates] owner column "${info.ownerColumn}" missing on ` +
+          `${info.schema}.${info.table} for token "${token}" — add an ownerColumn ` +
+          `override in entityRegistry.ts. Falling back to RLS-only listing.`,
+        { token, error },
+      );
+      ({ data, error } = await runQuery(false));
+    }
+
     if (error) {
       console.error("[listAssociationCandidates] query failed", {
         token,

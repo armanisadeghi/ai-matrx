@@ -107,13 +107,21 @@ export const fieldBuilderSlice = createSlice({
             const { id, description } = action.payload;
             if (!checkFieldExists(state, id)) return;
             
-            state.fields[id] = { ...state.fields[id], description, isDirty: true };
+            state.fields[id] = {
+                ...state.fields[id],
+                description: description ?? state.fields[id].description,
+                isDirty: true,
+            };
         },
         setHelpText: (state, action: PayloadAction<{ id: string; helpText?: string }>) => {
             const { id, helpText } = action.payload;
             if (!checkFieldExists(state, id)) return;
             
-            state.fields[id] = { ...state.fields[id], helpText, isDirty: true };
+            state.fields[id] = {
+                ...state.fields[id],
+                helpText: helpText ?? state.fields[id].helpText,
+                isDirty: true,
+            };
         },
         setGroup: (state, action: PayloadAction<{ id: string; group?: string }>) => {
             const { id, group } = action.payload;
@@ -137,13 +145,21 @@ export const fieldBuilderSlice = createSlice({
             const { id, required } = action.payload;
             if (!checkFieldExists(state, id)) return;
             
-            state.fields[id] = { ...state.fields[id], required, isDirty: true };
+            state.fields[id] = {
+                ...state.fields[id],
+                required: required ?? state.fields[id].required,
+                isDirty: true,
+            };
         },
         setPlaceholder: (state, action: PayloadAction<{ id: string; placeholder?: string }>) => {
             const { id, placeholder } = action.payload;
             if (!checkFieldExists(state, id)) return;
             
-            state.fields[id] = { ...state.fields[id], placeholder, isDirty: true };
+            state.fields[id] = {
+                ...state.fields[id],
+                placeholder: placeholder ?? state.fields[id].placeholder,
+                isDirty: true,
+            };
         },
         setDefaultValue: (state, action: PayloadAction<{ id: string; defaultValue?: any }>) => {
             const { id, defaultValue } = action.payload;
@@ -161,7 +177,11 @@ export const fieldBuilderSlice = createSlice({
             const { id, includeOther } = action.payload;
             if (!checkFieldExists(state, id)) return;
             
-            state.fields[id] = { ...state.fields[id], includeOther, isDirty: true };
+            state.fields[id] = {
+                ...state.fields[id],
+                includeOther: includeOther ?? state.fields[id].includeOther,
+                isDirty: true,
+            };
         },
         setIsPublic: (state, action: PayloadAction<{ id: string; isPublic?: boolean }>) => {
             const { id, isPublic } = action.payload;
@@ -185,141 +205,141 @@ export const fieldBuilderSlice = createSlice({
         setMin: (state, action: PayloadAction<{ id: string; min?: number }>) => {
             const { id, min } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, min },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, min: min ?? field.componentProps.min },
+                isDirty: true,
             };
         },
         setMax: (state, action: PayloadAction<{ id: string; max?: number }>) => {
             const { id, max } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, max },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, max: max ?? field.componentProps.max },
+                isDirty: true,
             };
         },
         setStep: (state, action: PayloadAction<{ id: string; step?: number }>) => {
             const { id, step } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, step },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, step: step ?? field.componentProps.step },
+                isDirty: true,
             };
         },
         setRows: (state, action: PayloadAction<{ id: string; rows?: number }>) => {
             const { id, rows } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, rows },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, rows: rows ?? field.componentProps.rows },
+                isDirty: true,
             };
         },
         setMinDate: (state, action: PayloadAction<{ id: string; minDate?: string }>) => {
             const { id, minDate } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, minDate },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, minDate: minDate ?? field.componentProps.minDate },
+                isDirty: true,
             };
         },
         setMaxDate: (state, action: PayloadAction<{ id: string; maxDate?: string }>) => {
             const { id, maxDate } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, maxDate },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, maxDate: maxDate ?? field.componentProps.maxDate },
+                isDirty: true,
             };
         },
         setOnLabel: (state, action: PayloadAction<{ id: string; onLabel?: string }>) => {
             const { id, onLabel } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, onLabel },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, onLabel: onLabel ?? field.componentProps.onLabel },
+                isDirty: true,
             };
         },
         setOffLabel: (state, action: PayloadAction<{ id: string; offLabel?: string }>) => {
             const { id, offLabel } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, offLabel },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, offLabel: offLabel ?? field.componentProps.offLabel },
+                isDirty: true,
             };
         },
         setMultiSelect: (state, action: PayloadAction<{ id: string; multiSelect?: boolean }>) => {
             const { id, multiSelect } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, multiSelect },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, multiSelect: multiSelect ?? field.componentProps.multiSelect },
+                isDirty: true,
             };
         },
         setMaxItems: (state, action: PayloadAction<{ id: string; maxItems?: number }>) => {
             const { id, maxItems } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, maxItems },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, maxItems: maxItems ?? field.componentProps.maxItems },
+                isDirty: true,
             };
         },
         setMinItems: (state, action: PayloadAction<{ id: string; minItems?: number }>) => {
             const { id, minItems } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, minItems },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, minItems: minItems ?? field.componentProps.minItems },
+                isDirty: true,
             };
         },
         setGridCols: (state, action: PayloadAction<{ id: string; gridCols?: string }>) => {
             const { id, gridCols } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, gridCols },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, gridCols: gridCols ?? field.componentProps.gridCols },
+                isDirty: true,
             };
         },
         setAutoComplete: (state, action: PayloadAction<{ id: string; autoComplete?: string }>) => {
             const { id, autoComplete } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, autoComplete },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, autoComplete: autoComplete ?? field.componentProps.autoComplete },
+                isDirty: true,
             };
         },
         setDirection: (state, action: PayloadAction<{ id: string; direction?: fieldDirection }>) => {
             const { id, direction } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, direction },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, direction: direction ?? field.componentProps.direction },
+                isDirty: true,
             };
         },
         setCustomContent: (state, action: PayloadAction<{ id: string; customContent?: string }>) => {
@@ -335,61 +355,61 @@ export const fieldBuilderSlice = createSlice({
         setShowSelectAll: (state, action: PayloadAction<{ id: string; showSelectAll?: boolean }>) => {
             const { id, showSelectAll } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, showSelectAll },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, showSelectAll: showSelectAll ?? field.componentProps.showSelectAll },
+                isDirty: true,
             };
         },
         setWidth: (state, action: PayloadAction<{ id: string; width?: string }>) => {
             const { id, width } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, width },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, width: width ?? field.componentProps.width },
+                isDirty: true,
             };
         },
         setValuePrefix: (state, action: PayloadAction<{ id: string; valuePrefix?: string }>) => {
             const { id, valuePrefix } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, valuePrefix },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, valuePrefix: valuePrefix ?? field.componentProps.valuePrefix },
+                isDirty: true,
             };
         },
         setValueSuffix: (state, action: PayloadAction<{ id: string; valueSuffix?: string }>) => {
             const { id, valueSuffix } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, valueSuffix },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, valueSuffix: valueSuffix ?? field.componentProps.valueSuffix },
+                isDirty: true,
             };
         },
         setMaxLength: (state, action: PayloadAction<{ id: string; maxLength?: number }>) => {
             const { id, maxLength } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, maxLength },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, maxLength: maxLength ?? field.componentProps.maxLength },
+                isDirty: true,
             };
         },
         setSpellCheck: (state, action: PayloadAction<{ id: string; spellCheck?: boolean }>) => {
             const { id, spellCheck } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
+            const field = state.fields[id];
             state.fields[id] = {
-                ...state.fields[id],
-                componentProps: { ...state.fields[id].componentProps, spellCheck },
-                isDirty: true
+                ...field,
+                componentProps: { ...field.componentProps, spellCheck: spellCheck ?? field.componentProps.spellCheck },
+                isDirty: true,
             };
         },
         // Actions for options

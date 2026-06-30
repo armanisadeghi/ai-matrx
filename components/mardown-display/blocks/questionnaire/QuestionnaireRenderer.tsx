@@ -23,11 +23,43 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
 import { useQuestionnaireContext } from "./QuestionnaireContext";
+
+type QuestionOption = { name: string };
+
+type QuestionSection = {
+  title: string;
+  intro?: string;
+  items?: QuestionOption[];
+};
+
+type QuestionnaireData = {
+  intro?: string;
+  sections?: QuestionSection[];
+};
+
+type ThemeColors = (typeof THEMES)[keyof typeof THEMES];
+
+type QuestionnaireStatePayload = {
+  formState: Record<string, unknown>;
+};
+
+interface QuestionnaireRendererProps {
+  data: QuestionnaireData;
+  theme?: keyof typeof THEMES;
+  questionnaireId?: string | null;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
+  initialState?: { formState?: Record<string, unknown> };
+  onStateChange?: (state: QuestionnaireStatePayload) => void;
+}
+
 // Helper function to check if an option is an "Other" option
-const isOtherOption = (option) => {
+const isOtherOption = (option: unknown): boolean => {
   if (!option || typeof option !== "object") return false;
-  if (!option.name || typeof option.name !== "string") return false;
-  const lowerName = option.name.toLowerCase();
+  const name = (option as QuestionOption).name;
+  if (!name || typeof name !== "string") return false;
+  const lowerName = name.toLowerCase();
   // Match "Other" exactly or anything starting with "other:"
   return lowerName === "other" || lowerName.startsWith("other:");
 };
@@ -38,7 +70,11 @@ const supportsOtherOption = (intro = "") => {
 };
 
 // Helper function to normalize options - filters out model-provided "Other" and adds standardized one for checkboxes/dropdowns
-const normalizeOptions = (options = [], intro = "", questionType = "") => {
+const normalizeOptions = (
+  options: QuestionOption[] = [],
+  intro = "",
+  questionType = "",
+): QuestionOption[] => {
   if (!options || options.length === 0) return [];
 
   // Filter out any "Other" options provided by the model
@@ -63,7 +99,10 @@ const extractType = (intro = "") => {
 };
 
 // Helper function to find options for a question
-const findOptionsForQuestion = (sections, questionTitle) => {
+const findOptionsForQuestion = (
+  sections: QuestionSection[],
+  questionTitle: string,
+): QuestionOption[] => {
   const questionIndex = sections.findIndex(
     (section) => section.title === questionTitle,
   );
@@ -118,7 +157,10 @@ const processQuestionTitle = (title, questionIndex) => {
   return `Q${questionIndex + 1}: ${cleanTitle}`;
 };
 
-const getDefaultValue = (questionType, options = []) => {
+const getDefaultValue = (
+  questionType: string,
+  options: QuestionOption[] = [],
+): string | boolean | number | Record<string, string> | null => {
   switch (questionType) {
     case "SLIDER":
       return 50; // Default middle value
@@ -164,12 +206,19 @@ const CheckboxQuestion = ({
   value = {},
   theme,
   questionId = "",
+}: {
+  options?: QuestionOption[];
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  theme: ThemeColors;
+  questionId?: string;
 }) => {
   // Convert the object-based value back to array format for internal logic
-  const convertToArrayFormat = useCallback((checkboxData) => {
-    if (!checkboxData || typeof checkboxData !== "object") return [];
+  const convertToArrayFormat = useCallback(
+    (checkboxData: Record<string, string> | unknown): string[] => {
+      if (!checkboxData || typeof checkboxData !== "object") return [];
 
-    const selectedItems = [];
+      const selectedItems: string[] = [];
     Object.entries(checkboxData).forEach(([key, value]) => {
       if (key === "Other") {
         // "Other" stores the actual text value (or "Not Selected")
@@ -184,7 +233,7 @@ const CheckboxQuestion = ({
     return selectedItems;
   }, []);
 
-  const [selectedValues, setSelectedValues] = useState(
+  const [selectedValues, setSelectedValues] = useState<Set<string>>(
     () => new Set(convertToArrayFormat(value)),
   );
 
@@ -192,10 +241,12 @@ const CheckboxQuestion = ({
   const [otherValue, setOtherValue] = useState(() => {
     if (
       typeof value === "object" &&
-      value["Other"] &&
-      value["Other"] !== "Not Selected"
+      value !== null &&
+      "Other" in value &&
+      typeof (value as Record<string, string>)["Other"] === "string" &&
+      (value as Record<string, string>)["Other"] !== "Not Selected"
     ) {
-      return value["Other"];
+      return (value as Record<string, string>)["Other"];
     }
     return "";
   });
@@ -207,16 +258,22 @@ const CheckboxQuestion = ({
     // Update otherValue from the new format
     if (
       typeof value === "object" &&
-      value["Other"] &&
-      value["Other"] !== "Not Selected"
+      value !== null &&
+      "Other" in value &&
+      typeof (value as Record<string, string>)["Other"] === "string" &&
+      (value as Record<string, string>)["Other"] !== "Not Selected"
     ) {
-      setOtherValue(value["Other"]);
+      setOtherValue((value as Record<string, string>)["Other"]);
     } else {
       setOtherValue("");
     }
   }, [value, convertToArrayFormat]);
 
-  const handleCheckboxChange = (optionName, checked, isOther = false) => {
+  const handleCheckboxChange = (
+    optionName: string,
+    checked: boolean | "indeterminate",
+    isOther = false,
+  ) => {
     const newSelected = new Set(selectedValues);
 
     if (checked) {
@@ -306,9 +363,16 @@ const DropdownQuestion = ({
   value = {},
   theme,
   questionId = "",
+}: {
+  options?: QuestionOption[];
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  theme: ThemeColors;
+  questionId?: string;
 }) => {
   // Convert the object-based value to get which option is selected
-  const getSelectedOption = useCallback((dropdownData) => {
+  const getSelectedOption = useCallback(
+    (dropdownData: Record<string, string> | unknown): string => {
     if (!dropdownData || typeof dropdownData !== "object") return "";
 
     // Find the selected option
@@ -332,10 +396,12 @@ const DropdownQuestion = ({
   const [otherValue, setOtherValue] = useState(() => {
     if (
       typeof value === "object" &&
-      value["Other"] &&
-      value["Other"] !== "Not Selected"
+      value !== null &&
+      "Other" in value &&
+      typeof (value as Record<string, string>)["Other"] === "string" &&
+      (value as Record<string, string>)["Other"] !== "Not Selected"
     ) {
-      return value["Other"];
+      return (value as Record<string, string>)["Other"];
     }
     return "";
   });
@@ -347,16 +413,18 @@ const DropdownQuestion = ({
     // Update otherValue from the new format
     if (
       typeof value === "object" &&
-      value["Other"] &&
-      value["Other"] !== "Not Selected"
+      value !== null &&
+      "Other" in value &&
+      typeof (value as Record<string, string>)["Other"] === "string" &&
+      (value as Record<string, string>)["Other"] !== "Not Selected"
     ) {
-      setOtherValue(value["Other"]);
+      setOtherValue((value as Record<string, string>)["Other"]);
     } else {
       setOtherValue("");
     }
   }, [value, getSelectedOption]);
 
-  const handleSelectionChange = (newValue) => {
+  const handleSelectionChange = (newValue: string) => {
     setSelectedValue(newValue);
     if (!isOtherOption({ name: newValue })) {
       onChange(newValue);
@@ -405,11 +473,19 @@ const RadioQuestion = ({
   value = "",
   theme,
   questionId = "",
+}: {
+  options?: QuestionOption[];
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  theme: ThemeColors;
+  questionId?: string;
 }) => {
-  const [selectedValue, setSelectedValue] = useState(value);
+  const [selectedValue, setSelectedValue] = useState(() =>
+    typeof value === "string" ? value : "",
+  );
   const [otherValue, setOtherValue] = useState("");
 
-  const handleSelectionChange = (value) => {
+  const handleSelectionChange = (value: string) => {
     setSelectedValue(value);
     if (!isOtherOption({ name: value })) {
       onChange(value);
@@ -465,11 +541,17 @@ const ToggleQuestion = ({
   value = false,
   theme,
   questionId = "",
+}: {
+  options?: QuestionOption[];
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  theme: ThemeColors;
+  questionId?: string;
 }) => (
   <div className="flex items-center space-x-2">
     <Switch
       id={`toggle-${questionId}`}
-      checked={value}
+      checked={typeof value === "boolean" ? value : false}
       onCheckedChange={onChange}
     />
     <Label
@@ -481,18 +563,38 @@ const ToggleQuestion = ({
   </div>
 );
 
-const TextQuestion = ({ onChange, value = "", theme }) => (
+const TextQuestion = ({
+  onChange,
+  value = "",
+  theme,
+}: {
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  theme: ThemeColors;
+}) => (
   <Textarea
     className={`w-full min-h-[100px] ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
-    value={value}
+    value={typeof value === "string" ? value : ""}
     onChange={(e) => onChange(e.target.value)}
   />
 );
 
-const SliderQuestion = ({ onChange, value, questionData, theme }) => {
-  const range = extractSliderRange(questionData.intro);
-  const { min, max } = range || {};
-  const currentValue = value ?? Math.floor(max / 2);
+const SliderQuestion = ({
+  onChange,
+  value,
+  questionData,
+  theme,
+}: {
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  questionData: { intro?: string };
+  theme: ThemeColors;
+}) => {
+  const range = extractSliderRange(questionData.intro ?? "");
+  const min = range?.min ?? 0;
+  const max = range?.max ?? 100;
+  const numericValue = typeof value === "number" ? value : undefined;
+  const currentValue = numericValue ?? Math.floor(max / 2);
 
   return (
     <div className="w-full">
@@ -513,10 +615,18 @@ const SliderQuestion = ({ onChange, value, questionData, theme }) => {
   );
 };
 
-const InputQuestion = ({ onChange, value = "", theme }) => (
+const InputQuestion = ({
+  onChange,
+  value = "",
+  theme,
+}: {
+  onChange: (value: unknown) => void;
+  value?: unknown;
+  theme: ThemeColors;
+}) => (
   <Input
     type="text"
-    value={value}
+    value={typeof value === "string" ? value : ""}
     onChange={(e) => onChange(e.target.value)}
     className={`w-full ${theme.input.background} border-2 ${theme.input.border} ${theme.input.text}`}
   />
@@ -530,6 +640,16 @@ const QuestionComponent = ({
   value,
   theme,
   questionId,
+}: {
+  questionData: QuestionSection & {
+    title: string;
+    customSettings?: Record<string, unknown>;
+  };
+  options: QuestionOption[];
+  onChange: (value: unknown) => void;
+  value: unknown;
+  theme: ThemeColors;
+  questionId: string;
 }) => {
   if (!questionData) return null;
 
@@ -753,7 +873,9 @@ const QuestionnaireHeader = ({ title, description, theme }) => {
   );
 };
 
-const extractSliderRange = (intro) => {
+const extractSliderRange = (
+  intro: string,
+): { min: number; max: number } | null => {
   if (!intro.includes("Type: Slider")) {
     return null;
   }
@@ -784,7 +906,7 @@ const QuestionnaireRenderer = ({
   // Absent when rendered standalone (demos/playground) → no persistence.
   initialState = undefined,
   onStateChange = undefined,
-}) => {
+}: QuestionnaireRendererProps) => {
   // Generate a unique ID for this questionnaire if not provided
   const uniqueId =
     questionnaireId ||
@@ -803,7 +925,9 @@ const QuestionnaireRenderer = ({
   // SEES them as context on the next turn. Driven by QuestionnaireArtifact
   // (useArtifactState). Stable ref so the debounced flush never goes stale and
   // never re-registers the effect.
-  const onStateChangeRef = useRef(onStateChange);
+  const onStateChangeRef = useRef<
+    QuestionnaireRendererProps["onStateChange"]
+  >(onStateChange);
   onStateChangeRef.current = onStateChange;
 
   const lastPersistedRef = useRef<string>("");
@@ -896,10 +1020,10 @@ const QuestionnaireRenderer = ({
   }
 
   const handleChange = (
-    questionTitle,
-    value,
-    questionType = null,
-    options = [],
+    questionTitle: string,
+    value: unknown,
+    questionType?: string,
+    options: QuestionOption[] = [],
   ) => {
     // questionTitle is already numbered, use it directly
     updateFormData(uniqueId, questionTitle, value, questionType, options);

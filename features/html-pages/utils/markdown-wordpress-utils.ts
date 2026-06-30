@@ -144,7 +144,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
     html = html.replace(/^[\*]{3,}$/gm, '<hr class="matrx-hr">');
     
     // Handle images FIRST (before links, since images use ![text](url) syntax)
-    const imagePlaceholders = [];
+    const imagePlaceholders: Array<{ placeholder: string; html: string }> = [];
     let imageIndex = 0;
     
     // Match markdown image syntax: ![alt text](url)
@@ -159,7 +159,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
     });
     
     // Handle links SECOND with improved regex and placeholder system to prevent interference
-    const linkPlaceholders = [];
+    const linkPlaceholders: Array<{ placeholder: string; html: string }> = [];
     let linkIndex = 0;
     
     // Use a more robust regex that handles URLs with underscores and other special characters
@@ -192,7 +192,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
     // Handle nested lists with proper indentation and nesting structure
     const lines = html.split('\n');
     let processedHtml = '';
-    let listStack = []; // Stack to track nested lists: {type: 'ul'|'ol', indent: number, hasContent: boolean}
+    let listStack: Array<{ type: 'ul' | 'ol'; indent: number; hasContent: boolean }> = [];
     let lastListItem = ''; // Track the last list item for proper nesting
     
     for (let i = 0; i < lines.length; i++) {
@@ -221,6 +221,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
               lastListItem = '';
             }
             const closingList = listStack.pop();
+            if (!closingList) break;
             processedHtml += closingList.type === 'ol' ? '</ol>\n' : '</ul>\n';
             // After closing a nested list, close its parent item too (if not at root level)
             if (listStack.length > 0) {
@@ -267,6 +268,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
               lastListItem = '';
             }
             const closingList = listStack.pop();
+            if (!closingList) break;
             processedHtml += closingList.type === 'ol' ? '</ol>\n' : '</ul>\n';
             // After closing a nested list, close its parent item too (if not at root level)
             if (listStack.length > 0) {
@@ -301,6 +303,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
             lastListItem = '';
           }
           const closingList = listStack.pop();
+          if (!closingList) break;
           processedHtml += closingList.type === 'ol' ? '</ol>\n' : '</ul>\n';
           // If there are more lists in the stack, close their parent item too
           if (listStack.length > 0) {
@@ -320,6 +323,7 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
         lastListItem = '';
       }
       const closingList = listStack.pop();
+      if (!closingList) break;
       processedHtml += closingList.type === 'ol' ? '</ol>\n' : '</ul>\n';
       // If there are more lists in the stack, close their parent item too
       if (listStack.length > 0) {

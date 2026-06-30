@@ -61,6 +61,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import TableReferenceModal from "./TableReferenceModal";
 import ColumnHeaderMenu from "./ColumnHeaderMenu";
+import type { TableField } from "@/utils/user-table-utls/table-utils";
+
+interface TableDataRow {
+  id: string;
+  data: Record<string, unknown>;
+}
+
+interface RowOrderingConfig {
+  enabled?: boolean;
+  order?: unknown;
+  default_sort?: {
+    field: string;
+    direction?: "asc" | "desc";
+  };
+}
+
+interface TableInfo {
+  table_name: string;
+  description?: string;
+  user_id?: string;
+  row_ordering_config?: RowOrderingConfig;
+}
 
 interface UserTable {
   id: string;
@@ -97,6 +119,42 @@ function rowIdFromRpcDataRow(row: unknown): string | undefined {
   return undefined;
 }
 
+function asTableDataRows(raw: unknown): TableDataRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((row): TableDataRow[] => {
+    if (
+      row &&
+      typeof row === "object" &&
+      "id" in row &&
+      typeof (row as { id: unknown }).id === "string" &&
+      "data" in row &&
+      typeof (row as { data: unknown }).data === "object" &&
+      (row as { data: unknown }).data !== null
+    ) {
+      return [
+        {
+          id: (row as { id: string }).id,
+          data: (row as { data: Record<string, unknown> }).data,
+        },
+      ];
+    }
+    return [];
+  });
+}
+
+function asTableFields(raw: unknown): TableField[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (field): field is TableField =>
+      !!field &&
+      typeof field === "object" &&
+      typeof (field as TableField).id === "string" &&
+      typeof (field as TableField).field_name === "string" &&
+      typeof (field as TableField).display_name === "string" &&
+      typeof (field as TableField).data_type === "string",
+  );
+}
+
 interface UserTableViewerProps {
   tableId: string;
   showTableSelector?: boolean;
@@ -124,11 +182,11 @@ const UserTableViewer = ({
   toolbarTrailing,
 }: UserTableViewerProps) => {
   const router = useRouter();
-  const [tableInfo, setTableInfo] = useState<any>(null);
-  const [fields, setFields] = useState([]);
-  const [data, setData] = useState([]);
+  const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
+  const [fields, setFields] = useState<TableField[]>([]);
+  const [data, setData] = useState<TableDataRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Ownership state
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -158,12 +216,17 @@ const UserTableViewer = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>(
     {},
   );
-  const [fullDatasetCache, setFullDatasetCache] = useState<any[] | null>(null);
+  const [fullDatasetCache, setFullDatasetCache] = useState<
+    TableDataRow[] | null
+  >(null);
   const [loadingFullDataset, setLoadingFullDataset] = useState(false);
 
   // Row action state
-  const [selectedRowId, setSelectedRowId] = useState(null);
-  const [selectedRowData, setSelectedRowData] = useState(null);
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [selectedRowData, setSelectedRowData] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -372,11 +435,11 @@ const UserTableViewer = ({
           fields: unknown[];
           row_count: number;
         };
-        currentTableInfo = complete.table;
-        currentFields = complete.fields;
+        currentTableInfo = complete.table as TableInfo;
+        currentFields = asTableFields(complete.fields);
 
-        setTableInfo(complete.table);
-        setFields(complete.fields);
+        setTableInfo(complete.table as TableInfo);
+        setFields(currentFields);
         setTotalCount(complete.row_count);
         setTotalPages(Math.ceil(complete.row_count / pageLimit));
 
@@ -384,7 +447,7 @@ const UserTableViewer = ({
         if (!sort && currentTableInfo?.row_ordering_config?.default_sort) {
           const savedSort = currentTableInfo.row_ordering_config.default_sort;
           const fieldExists = currentFields.some(
-            (f: any) => f.field_name === savedSort.field,
+            (f) => f.field_name === savedSort.field,
           );
           if (fieldExists) {
             effectiveSort = savedSort.field;
@@ -406,9 +469,9 @@ const UserTableViewer = ({
           p_table_id: tableId,
           p_limit: pageLimit,
           p_offset: offset,
-          p_sort_field: effectiveSort,
+          p_sort_field: effectiveSort ?? undefined,
           p_sort_direction: effectiveDirection,
-          p_search_term: search || null,
+          p_search_term: search ? search : undefined,
         },
       );
 
@@ -425,7 +488,7 @@ const UserTableViewer = ({
           current_page: number;
         };
       };
-      let processedData = pagePayload.data;
+      let processedData = asTableDataRows(pagePayload.data);
 
       // Apply row ordering if enabled and no other sorting is active
       if (
@@ -436,9 +499,9 @@ const UserTableViewer = ({
         const orderConfig = rowOrderingIds(
           currentTableInfo.row_ordering_config.order,
         );
-        processedData = [...pagePayload.data].sort((a, b) => {
-          const aId = rowIdFromRpcDataRow(a);
-          const bId = rowIdFromRpcDataRow(b);
+        processedData = [...processedData].sort((a, b) => {
+          const aId = a.id;
+          const bId = b.id;
           const aIndex = aId !== undefined ? orderConfig.indexOf(aId) : -1;
           const bIndex = bId !== undefined ? orderConfig.indexOf(bId) : -1;
 
@@ -465,7 +528,7 @@ const UserTableViewer = ({
       ) {
         // Use currentFields (local variable) since state might not be updated yet
         const fieldDef = currentFields.find(
-          (f: any) => f.field_name === effectiveSort,
+          (f) => f.field_name === effectiveSort,
         );
         const fieldDataType = fieldDef?.data_type;
         processedData = smartSort(
@@ -520,9 +583,9 @@ const UserTableViewer = ({
           p_table_id: tableId,
           p_limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
           p_offset: 0,
-          p_sort_field: null,
+          p_sort_field: undefined,
           p_sort_direction: "asc",
-          p_search_term: searchTerm || null,
+          p_search_term: searchTerm ? searchTerm : undefined,
         },
       );
 
@@ -532,7 +595,7 @@ const UserTableViewer = ({
         throw new Error(allData.error || "Failed to load data for filtering");
 
       const payload = allData as typeof allData & { data: unknown[] };
-      setFullDatasetCache(payload.data as any[]);
+      setFullDatasetCache(asTableDataRows(payload.data));
     } catch (err) {
       console.error("Error loading full dataset for filtering:", err);
     } finally {
@@ -567,7 +630,7 @@ const UserTableViewer = ({
   };
 
   // Apply active column filters to a row set (case-insensitive substring).
-  const applyColumnFilters = (rows: any[]): any[] => {
+  const applyColumnFilters = (rows: TableDataRow[]): TableDataRow[] => {
     if (!hasColumnFilters) return rows;
     const active = Object.entries(columnFilters).filter(([, v]) => v.trim());
     return rows.filter((row) =>
@@ -675,7 +738,9 @@ const UserTableViewer = ({
   const CLIENT_SORT_THRESHOLD = 1000;
 
   // State for storing all sorted data when doing client-side sorting
-  const [allSortedData, setAllSortedData] = useState<any[] | null>(null);
+  const [allSortedData, setAllSortedData] = useState<TableDataRow[] | null>(
+    null,
+  );
 
   // Smart numeric sorting helper
   const isNumericValue = (value: any): boolean => {
@@ -691,12 +756,12 @@ const UserTableViewer = ({
 
   // Get the data type for a field by name
   const getFieldDataType = (fieldName: string): string | undefined => {
-    const field = fields.find((f: any) => f.field_name === fieldName);
+    const field = fields.find((f) => f.field_name === fieldName);
     return field?.data_type;
   };
 
   const smartSort = (
-    data: any[],
+    rows: TableDataRow[],
     fieldName: string,
     direction: "asc" | "desc",
     declaredDataType?: string,
@@ -705,7 +770,7 @@ const UserTableViewer = ({
     const forceNumeric =
       declaredDataType === "integer" || declaredDataType === "number";
 
-    return [...data].sort((a, b) => {
+    return [...rows].sort((a, b) => {
       const aValue = a.data[fieldName];
       const bValue = b.data[fieldName];
 
@@ -789,9 +854,9 @@ const UserTableViewer = ({
             p_table_id: tableId,
             p_limit: totalCount,
             p_offset: 0,
-            p_sort_field: null, // Don't use server-side sorting
+            p_sort_field: undefined,
             p_sort_direction: "asc",
-            p_search_term: null,
+            p_search_term: undefined,
           },
         );
 
@@ -803,7 +868,7 @@ const UserTableViewer = ({
         const allPayload = allData as typeof allData & { data: unknown[] };
         // Sort all data client-side with type awareness
         const sortedData = smartSort(
-          allPayload.data,
+          asTableDataRows(allPayload.data),
           field,
           newDirection,
           fieldDataType,
@@ -1096,7 +1161,7 @@ const UserTableViewer = ({
         "update_user_table_default_sort",
         {
           p_table_id: tableId,
-          p_sort_field: null,
+          p_sort_field: undefined,
         },
       );
 
@@ -1159,11 +1224,14 @@ const UserTableViewer = ({
       const stringFields = fields.filter(
         (field) => field.data_type === "string",
       );
-      const updates = [];
+      const updates: Array<{
+        rowId: string;
+        data: Record<string, string>;
+      }> = [];
 
       // Collect all rows that need cleaning
       for (const row of data) {
-        const cleanedData = {};
+        const cleanedData: Record<string, string> = {};
         let hasChanges = false;
 
         for (const field of stringFields) {
@@ -1387,7 +1455,7 @@ const UserTableViewer = ({
   // Derive the rows actually shown. When column filters are active we filter
   // (and sort) the full dataset client-side, then paginate the result. With no
   // filters we defer entirely to the server-driven `data`.
-  let displayRows = data;
+  let displayRows: TableDataRow[] = data;
   let effectiveTotalCount = totalCount;
   let effectiveTotalPages = totalPages;
 
@@ -1475,7 +1543,7 @@ const UserTableViewer = ({
           <span className="text-gray-500 dark:text-gray-400">
             Sorted by{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
-              {fields.find((f: any) => f.field_name === sortField)
+              {fields.find((f) => f.field_name === sortField)
                 ?.display_name || sortField}
             </span>
             <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>

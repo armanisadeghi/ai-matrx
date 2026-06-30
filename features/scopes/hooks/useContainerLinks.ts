@@ -50,6 +50,8 @@ export interface UseContainerLinksReturn {
   status: ReturnType<typeof useAssociations>["status"];
   error: string | null;
   reload: () => Promise<void>;
+  /** Total attached resources across every token (all incoming edges). */
+  totalCount: number;
   /** Live count of attached resources of `token`. */
   countFor: (token: EntityTypeToken) => number;
   /** Ids of resources of `token` already attached (for picker "attached" state). */
@@ -141,6 +143,7 @@ export function useContainerLinks(
     status,
     error,
     reload,
+    totalCount: incoming.length,
     countFor,
     attachedIdsFor,
     linksFor,

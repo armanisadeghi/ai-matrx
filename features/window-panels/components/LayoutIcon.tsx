@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type LayoutIconType =
@@ -36,7 +37,7 @@ export function LayoutIcon({
   const flexRow = "flex flex-row w-full h-full gap-[1px]";
   const flexCol = "flex flex-col w-full h-full gap-[1px]";
 
-  let content = null;
+  let content: ReactNode = null;
 
   switch (type) {
     case "left-half":

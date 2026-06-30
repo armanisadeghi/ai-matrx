@@ -15,9 +15,40 @@ import { extractErrorMessage } from "../utils/errors";
 // Load environment variables
 dotenv.config({ path: resolve(process.cwd(), ".env.local") });
 
+type LocalMathProblem = {
+  id: string;
+  title: string;
+  courseName: string;
+  topicName: string;
+  moduleName: string;
+  description: string;
+  introText: string;
+  finalStatement: string;
+  problemStatement: {
+    text: string;
+    equation: string;
+    instruction: string;
+  };
+  solutions: Array<{
+    task: string;
+    steps: Array<{
+      title: string;
+      equation: string;
+      explanation: string;
+      simplified: string;
+    }>;
+    solutionAnswer: string;
+    transitionText: string;
+  }>;
+  hint?: string | null;
+  resources?: string[] | null;
+  difficultyLevel?: "easy" | "medium" | "hard" | null;
+  relatedContent?: string[] | null;
+};
+
 // Import the sample data
 // import { problemsData } from '../app/(authenticated)/tests/math/local-data/sample-data';
-const problemsData = [];
+const problemsData: LocalMathProblem[] = [];
 
 // API keys: ONLY sb_secret_*. The legacy JWT-based SUPABASE_SERVICE_ROLE_KEY
 // is DEPRECATED and BANNED in this repo — ESLint will block it.
@@ -37,7 +68,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 /**
  * Transform local data format to database format
  */
-function transformProblemForDatabase(problem: (typeof problemsData)[0]) {
+function transformProblemForDatabase(problem: LocalMathProblem) {
   return {
     id: problem.id,
     title: problem.title,

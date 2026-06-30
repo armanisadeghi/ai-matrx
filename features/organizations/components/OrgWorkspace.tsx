@@ -33,7 +33,6 @@ import {
   Layers3,
   Boxes,
   ChevronRight,
-  Info,
   Link2,
 } from "lucide-react";
 import Link from "next/link";
@@ -63,17 +62,11 @@ import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeS
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
-import {
-  CONTENT_ROLES,
-  entriesByRole,
-  type OrgResourceEntry,
-} from "@/features/organizations/resource-catalogue";
-import { useOrgResourceInventory } from "@/features/organizations/hooks/useOrgResourceInventory";
-import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContributeResourceSheet } from "@/features/organizations/components/ContributeResourceSheet";
 import { OrgShareReviewCard } from "@/features/organizations/components/OrgShareReviewCard";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
-import { AssociationCard } from "@/features/scopes/components/associations/AssociationCard";
+import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
+import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 
@@ -144,44 +137,26 @@ export function OrgWorkspace() {
     dispatch(fetchScopes({ org_id: organization.id }));
   }, [dispatch, organization?.id]);
 
-  const { counts, loading: countsLoading } = useOrgResourceInventory(
-    organization?.id ?? null,
-  );
+  // Canonical resource count = how many entities are attached to this org via
+  // platform.associations (the org's incoming edges). Shares the SAME cached
+  // fetch as every AssociationCard in the grid below.
+  const orgLinks = useContainerLinks({
+    containerType: "organization",
+    containerId: organization?.id ?? null,
+    orgId: organization?.id ?? null,
+  });
+  const totalResources = orgLinks.totalCount;
+  const countsLoading =
+    orgLinks.status === "loading" || orgLinks.status === "idle";
 
   const suggestions = useScopeSuggestions();
   const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
-  const totalResources = React.useMemo(
-    () =>
-      Object.values(counts).reduce<number>(
-        (sum, c) => sum + (typeof c === "number" ? c : 0),
-        0,
-      ),
-    [counts],
-  );
-
-  function openContribute(entry?: OrgResourceEntry) {
-    setContributeKey(entry?.key ?? null);
+  function openContribute() {
+    setContributeKey(null);
     setContributeOpen(true);
-  }
-
-  function handleOpenEntry(entry: OrgResourceEntry) {
-    // Projects + Tasks are first-class containers with their own canonical
-    // top-level homes; the org is a filtered view (?org=slug), not a parent.
-    if (entry.key === "project") {
-      router.push(`/projects?org=${slug}`);
-      return;
-    }
-    if (entry.key === "task") {
-      router.push(`/tasks?org=${slug}`);
-      return;
-    }
-    // Every other kind has a consistent, catalogue-driven org page (team view +
-    // share-your-own). The dedicated legacy route, when present, is linked from
-    // there as "Full view".
-    router.push(`/organizations/${slug}/resources/${entry.key}`);
   }
 
   if (loading) {
@@ -443,7 +418,10 @@ export function OrgWorkspace() {
           )}
         </div>
 
-        {/* ─── Associations (canonical platform.associations edges) ──── */}
+        {/* ─── Resources = canonical platform.associations edges ─────────
+            Every kind of thing attached to this org, one card per entity
+            token, fully driven by the entity registry. Adding a card = one
+            overlay line in entityRegistry.ts — nothing to wire here. */}
         <PrimaryEntityProvider
           value={{
             type: "organization",
@@ -455,43 +433,14 @@ export function OrgWorkspace() {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Link2 className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Associations</h2>
+              <h2 className="text-lg font-semibold">Resources</h2>
               <span className="text-xs text-muted-foreground">
-                Attached directly to this organization
+                Attached to this organization
               </span>
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              <AssociationCard token="task" />
-              <AssociationCard token="file" />
-            </div>
+            <AssociationCardGrid />
           </div>
         </PrimaryEntityProvider>
-
-        {/* ─── Resources by content role ────────────────────────────── */}
-        <div className="space-y-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Boxes className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-semibold">Resources</h2>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Info className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grouped by what they do</span>
-            </div>
-          </div>
-
-          {CONTENT_ROLES.map((role) => (
-            <OrgResourceRoleSection
-              key={role.id}
-              role={role.id}
-              entries={entriesByRole(role.id)}
-              counts={counts}
-              loading={countsLoading}
-              onOpen={handleOpenEntry}
-              onContribute={openContribute}
-            />
-          ))}
-        </div>
 
         {/* ─── Member contributions (moderation) ────────────────────── */}
         <OrgShareReviewCard

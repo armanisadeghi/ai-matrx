@@ -99,6 +99,7 @@ class LocalFileSystem {
 
     async updateFileStatus(id: string, status: LocalFile['status']): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const file = await tx.store.get(id);
         if (file) {
@@ -109,6 +110,7 @@ class LocalFileSystem {
 
     async updateBucketStructure(bucketName: string, structure: any): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         await db.put(this.STORES.METADATA, {
             id: `bucket:${bucketName}`,
             bucketName,
@@ -127,6 +129,7 @@ class LocalFileSystem {
 
     async updateSyncState(bucketName: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         await db.put(this.STORES.SYNC_STATE, {
             id: bucketName,
             lastSync: Date.now()
@@ -135,30 +138,35 @@ class LocalFileSystem {
 
     async getLastSyncTime(bucketName: string): Promise<number> {
         const db = await this.getDbSafe();
+        if (!db) return 0;
         const state = await db.get(this.STORES.SYNC_STATE, bucketName);
         return state?.lastSync || 0;
     }
 
     async getPendingUploads(): Promise<LocalFile[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const index = db.transaction(this.STORES.FILES).store.index('status');
         return await index.getAll('pending_upload');
     }
 
     async getModifiedFiles(): Promise<LocalFile[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const index = db.transaction(this.STORES.FILES).store.index('status');
         return await index.getAll('modified');
     }
 
     async getConflicts(): Promise<LocalFile[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const index = db.transaction(this.STORES.FILES).store.index('status');
         return await index.getAll('conflict');
     }
 
     async getAllBucketStructures(): Promise<any[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const tx = db.transaction(this.STORES.METADATA, 'readonly');
         const index = tx.store.index('type');
         return await index.getAll('bucket');
@@ -166,12 +174,14 @@ class LocalFileSystem {
 
     async deleteFile(bucketName: string, path: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const id = `${bucketName}:${path}`;
         await db.delete(this.STORES.FILES, id);
     }
 
     async updateFilePath(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const oldId = `${bucketName}:${oldPath}`;
         const file = await tx.store.get(oldId);
@@ -188,6 +198,7 @@ class LocalFileSystem {
 
     async deleteFolder(bucketName: string, folderPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const index = tx.store.index('path');
 
@@ -206,6 +217,7 @@ class LocalFileSystem {
 
     async updateFileMetadata(bucketName: string, path: string, metadata: any): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const id = `${bucketName}:${path}`;
         const file = await tx.store.get(id);
@@ -218,6 +230,7 @@ class LocalFileSystem {
 
     async getFilesByBucket(bucketName: string): Promise<LocalFile[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const tx = db.transaction(this.STORES.FILES, 'readonly');
         const index = tx.store.index('bucketName');
         return await index.getAll(bucketName);
@@ -225,6 +238,7 @@ class LocalFileSystem {
 
     async fileExists(bucketName: string, path: string): Promise<boolean> {
         const db = await this.getDbSafe();
+        if (!db) return false;
         const id = `${bucketName}:${path}`;
         const file = await db.get(this.STORES.FILES, id);
         return !!file;
@@ -232,12 +246,14 @@ class LocalFileSystem {
 
     async clearBucketStructure(bucketName: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const id = `bucket:${bucketName}`;
         await db.delete(this.STORES.METADATA, id);
     }
 
     async clearBucketFiles(bucketName: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const index = tx.store.index('bucketName');
         const range = IDBKeyRange.only(bucketName);
@@ -252,6 +268,7 @@ class LocalFileSystem {
 
     async isStructureStale(bucketName: string, threshold: number = 900000): Promise<boolean> {
         const db = await this.getDbSafe();
+        if (!db) return true;
         const structure = await db.get(this.STORES.METADATA, `bucket:${bucketName}`);
         if (!structure) return true;
 
@@ -260,12 +277,14 @@ class LocalFileSystem {
 
     async getStructureLastUpdated(bucketName: string): Promise<number | null> {
         const db = await this.getDbSafe();
+        if (!db) return null;
         const structure = await db.get(this.STORES.METADATA, `bucket:${bucketName}`);
         return structure?.lastUpdated || null;
     }
 
     async markFolderForRename(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const index = tx.store.index('path');
         const range = IDBKeyRange.bound(
@@ -288,6 +307,7 @@ class LocalFileSystem {
 
     async revertFolderRename(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const index = tx.store.index('path');
         const range = IDBKeyRange.bound(
@@ -310,6 +330,7 @@ class LocalFileSystem {
 
     async getFolderContents(bucketName: string, folderPath: string): Promise<any[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const tx = db.transaction(this.STORES.FILES, 'readonly');
         const index = tx.store.index('path');
         const range = IDBKeyRange.bound(
@@ -347,6 +368,7 @@ class LocalFileSystem {
 
     async updateFile(fileData: Partial<LocalFile> & { id: string }): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const existingFile = await tx.store.get(fileData.id);
 
@@ -362,6 +384,7 @@ class LocalFileSystem {
 
     async moveFile(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const oldId = `${bucketName}:${oldPath}`;
         const file = await tx.store.get(oldId);
@@ -382,6 +405,7 @@ class LocalFileSystem {
 
     async createFolder(bucketName: string, folderPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         await db.put(this.STORES.METADATA, {
             id: `folder:${bucketName}:${folderPath}`,
             bucketName,
@@ -398,6 +422,7 @@ class LocalFileSystem {
         fileData?: Partial<LocalFile>
     ): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
         const oldId = `${bucketName}:${oldPath}`;
         const file = await tx.store.get(oldId);
@@ -418,6 +443,7 @@ class LocalFileSystem {
 
     async markFileForDeletion(bucketName: string, path: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const id = `${bucketName}:${path}`;
         const file = await db.get(this.STORES.FILES, id);
         if (file) {
@@ -429,6 +455,7 @@ class LocalFileSystem {
 
     async revertDeletion(bucketName: string, path: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const id = `${bucketName}:${path}`;
         const file = await db.get(this.STORES.FILES, id);
         if (file) {
@@ -442,6 +469,7 @@ class LocalFileSystem {
 
     async markFileForMove(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const id = `${bucketName}:${oldPath}`;
         const file = await db.get(this.STORES.FILES, id);
         if (file) {
@@ -456,6 +484,7 @@ class LocalFileSystem {
 
     async revertMove(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const newId = `${bucketName}:${newPath}`;
         const file = await db.get(this.STORES.FILES, newId);
         if (file) {
@@ -479,6 +508,7 @@ class LocalFileSystem {
 
     async markFileForRename(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const id = `${bucketName}:${oldPath}`;
         const file = await db.get(this.STORES.FILES, id);
         if (file) {
@@ -493,6 +523,7 @@ class LocalFileSystem {
 
     async revertRename(bucketName: string, oldPath: string, newPath: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const newId = `${bucketName}:${newPath}`;
         const file = await db.get(this.STORES.FILES, newId);
         if (file) {
@@ -516,6 +547,7 @@ class LocalFileSystem {
 
     async cachePublicUrl(bucketName: string, path: string, url: string): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         await db.put(this.STORES.METADATA, {
             id: `url:${bucketName}:${path}`,
             url,
@@ -525,6 +557,7 @@ class LocalFileSystem {
 
     async getCachedPublicUrl(bucketName: string, path: string): Promise<string | null> {
         const db = await this.getDbSafe();
+        if (!db) return null;
         const cached = await db.get(this.STORES.METADATA, `url:${bucketName}:${path}`);
         if (cached && Date.now() - cached.timestamp < 3600000) { // 1 hour cache
             return cached.url;
@@ -534,6 +567,7 @@ class LocalFileSystem {
 
     async storeBuckets(buckets: any[]): Promise<void> {
         const db = await this.getDbSafe();
+        if (!db) return;
         const tx = db.transaction(this.STORES.METADATA, 'readwrite');
         await Promise.all(buckets.map(bucket =>
             tx.store.put({
@@ -547,6 +581,7 @@ class LocalFileSystem {
 
     async getBuckets(): Promise<any[]> {
         const db = await this.getDbSafe();
+        if (!db) return [];
         const tx = db.transaction(this.STORES.METADATA, 'readonly');
         const index = tx.store.index('type');
         return await index.getAll('bucket-info');

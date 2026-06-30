@@ -57,6 +57,7 @@
     "check:hatches:update": "tsx scripts/check-type-hatches.ts --update",
     "fix:hatches": "tsx scripts/check-type-hatches.ts",
     "wave:split": "tsx scripts/wave-split.ts",
+    "wave:batch": "tsx scripts/wave-batch.ts",
     "check:ui-primitives": "tsx scripts/check-ui-primitives.ts",
     "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
     "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",

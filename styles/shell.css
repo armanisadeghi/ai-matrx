@@ -650,6 +650,24 @@ button.shell-nav-item {
   width: 0;
 }
 
+/* Nav item badges — trailing count when expanded, icon-overlay when collapsed.
+   Prevents ml-auto badges from widening the collapsed icon rail. */
+.shell-nav-badge-expanded {
+  margin-left: auto;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-badge-expanded {
+  display: none;
+}
+
+.shell-nav-badge-collapsed {
+  display: none;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-badge-collapsed {
+  display: flex;
+}
+
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-sidebar-brand {
   gap: 0;
 }

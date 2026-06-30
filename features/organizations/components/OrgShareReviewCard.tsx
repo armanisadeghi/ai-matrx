@@ -84,18 +84,44 @@ export function OrgShareReviewCard({
       [...byTable.entries()].map(async ([table, ids]) => {
         const entry = ENTRY_BY_TABLE.get(table);
         if (!entry?.titleColumn) return;
+        // CANONICAL READ: `table` is permissions.resource_type (e.g. "agent"),
+        // NOT a public-schema table. Resolve the real schema + physical table
+        // from the shareable-resource registry — a bare `.from("agent")` hits
+        // `public.agent` (PGRST205) since the 2026 reorg moved it to
+        // `agent.definition`. The registry knows every resource type's home.
+        const shareable = getShareableResource(table);
+        const schema = shareable?.schemaName ?? null;
+        const physicalTable =
+          shareable?.physicalTable ?? shareable?.tableName ?? table;
+        const titleCol = entry.titleColumn;
+        const db = (
+          schema && schema !== "public"
+            ? supabase.schema(schema as "files")
+            : supabase
+        ) as typeof supabase;
         try {
-          const { data } = await supabase
-            .from(table as never)
-            .select(`id, ${entry.titleColumn}`)
+          const { data, error } = await db
+            .from(physicalTable as never)
+            .select(`id, ${titleCol}`)
             .in("id", ids);
+          if (error) {
+            console.error(
+              `[OrgShareReviewCard] title hydration failed for resource_type "${table}" ` +
+                `→ ${schema ?? "public"}.${physicalTable}`,
+              error,
+            );
+            return;
+          }
           const map = new Map<string, string>();
           for (const row of (data as unknown as Array<Record<string, unknown>>) ?? []) {
-            map.set(String(row.id), String(row[entry.titleColumn!] ?? "").trim());
+            map.set(String(row.id), String(row[titleCol] ?? "").trim());
           }
           titleMaps.set(table, map);
-        } catch {
-          /* leave untitled */
+        } catch (err) {
+          console.error(
+            `[OrgShareReviewCard] title hydration exception for "${table}"`,
+            err,
+          );
         }
       }),
     );

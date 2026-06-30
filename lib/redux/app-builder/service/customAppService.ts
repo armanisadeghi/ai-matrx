@@ -7,25 +7,25 @@ import { isSlugInUse } from "@/config/applets/apps/constants";
 // Define the database type for CustomAppConfig
 export type CustomAppConfigDB = {
   id: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: string | null;
+  updated_at?: string | null;
   name: string;
-  description?: string;
+  description?: string | null;
   slug: string;
   organization_id: string;
-  main_app_icon?: string;
-  main_app_submit_icon?: string;
-  creator?: string;
-  primary_color?: string;
-  accent_color?: string;
-  applet_list?: any;
-  extra_buttons?: any;
-  layout_type?: string;
-  user_id?: string;
-  is_public?: boolean;
+  main_app_icon?: string | null;
+  main_app_submit_icon?: string | null;
+  creator?: string | null;
+  primary_color?: string | null;
+  accent_color?: string | null;
+  applet_list?: unknown;
+  extra_buttons?: unknown;
+  layout_type?: string | null;
+  user_id?: string | null;
+  is_public?: boolean | null;
   authenticated_read?: boolean;
-  public_read?: boolean;
-  image_url?: string;
+  public_read?: boolean | null;
+  image_url?: string | null;
   image_file_id?: string | null;
 };
 
@@ -40,19 +40,19 @@ export const normalizeCustomAppConfig = (
     name: config.name || "",
     description: config.description || "",
     slug: config.slug || "",
-    mainAppIcon: config.mainAppIcon || null,
-    mainAppSubmitIcon: config.mainAppSubmitIcon || null,
-    creator: config.creator || null,
+    mainAppIcon: config.mainAppIcon || undefined,
+    mainAppSubmitIcon: config.mainAppSubmitIcon || undefined,
+    creator: config.creator || undefined,
     primaryColor: config.primaryColor || "gray",
     accentColor: config.accentColor || "blue",
     appletList: config.appletList || [],
     extraButtons: config.extraButtons || [],
     layoutType: config.layoutType || "tabbedApplets",
-    imageUrl: config.imageUrl || null,
-    imageFileId: config.imageFileId || null,
-    createdAt: config.createdAt || null,
-    updatedAt: config.updatedAt || null,
-    userId: config.userId || null,
+    imageUrl: config.imageUrl || undefined,
+    imageFileId: config.imageFileId || undefined,
+    createdAt: config.createdAt || undefined,
+    updatedAt: config.updatedAt || undefined,
+    userId: config.userId || undefined,
     isPublic: config.isPublic || false,
     authenticatedRead: config.authenticatedRead || false,
     publicRead: config.publicRead || false,
@@ -108,24 +108,24 @@ export const dbToCustomAppConfig = (
   return normalizeCustomAppConfig({
     id: dbRecord.id,
     name: dbRecord.name,
-    description: dbRecord.description,
+    description: dbRecord.description ?? undefined,
     slug: dbRecord.slug,
-    mainAppIcon: dbRecord.main_app_icon,
-    mainAppSubmitIcon: dbRecord.main_app_submit_icon,
-    creator: dbRecord.creator,
-    primaryColor: dbRecord.primary_color,
-    accentColor: dbRecord.accent_color,
-    appletList: dbRecord.applet_list,
-    extraButtons: dbRecord.extra_buttons,
-    layoutType: dbRecord.layout_type as AppLayoutOptions,
-    imageUrl: dbRecord.image_url,
-    imageFileId: dbRecord.image_file_id,
-    createdAt: dbRecord.created_at,
-    updatedAt: dbRecord.updated_at,
-    userId: dbRecord.user_id,
-    isPublic: dbRecord.is_public,
+    mainAppIcon: dbRecord.main_app_icon ?? undefined,
+    mainAppSubmitIcon: dbRecord.main_app_submit_icon ?? undefined,
+    creator: dbRecord.creator ?? undefined,
+    primaryColor: dbRecord.primary_color ?? undefined,
+    accentColor: dbRecord.accent_color ?? undefined,
+    appletList: dbRecord.applet_list as CustomAppConfig["appletList"],
+    extraButtons: dbRecord.extra_buttons as CustomAppConfig["extraButtons"],
+    layoutType: dbRecord.layout_type as AppLayoutOptions | undefined,
+    imageUrl: dbRecord.image_url ?? undefined,
+    imageFileId: dbRecord.image_file_id ?? undefined,
+    createdAt: dbRecord.created_at ?? undefined,
+    updatedAt: dbRecord.updated_at ?? undefined,
+    userId: dbRecord.user_id ?? undefined,
+    isPublic: dbRecord.is_public ?? undefined,
     authenticatedRead: dbRecord.authenticated_read,
-    publicRead: dbRecord.public_read,
+    publicRead: dbRecord.public_read ?? undefined,
   });
 };
 

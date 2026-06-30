@@ -7,7 +7,8 @@
  *
  * Shows the live tiered state inline: a red count when there are clear errors,
  * else a small orange dot for minor ones, else nothing — same priority the
- * floating badge uses.
+ * floating badge uses. When the sidebar is collapsed the indicator sits on the
+ * icon; when expanded it trails the label.
  */
 
 import { useEffect, useState } from "react";
@@ -54,15 +55,24 @@ export default function SidebarErrorInspectorToggle() {
       title="Error Inspector — every captured error, with Copy for AI"
     >
       <span className="shell-nav-icon">
-        <AlertTriangle size={18} strokeWidth={1.75} />
+        <span className="relative inline-flex">
+          <AlertTriangle size={18} strokeWidth={1.75} />
+          {red > 0 ? (
+            <span className="shell-nav-badge-collapsed absolute -right-1 -top-1 h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-semibold leading-none text-destructive-foreground tabular-nums">
+              {red}
+            </span>
+          ) : orange > 0 ? (
+            <span className="shell-nav-badge-collapsed absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-500" />
+          ) : null}
+        </span>
       </span>
       <span className="shell-nav-label">Error Inspector</span>
       {red > 0 ? (
-        <span className="ml-auto rounded-full bg-destructive/20 text-destructive px-1.5 text-[10px] font-semibold tabular-nums">
+        <span className="shell-nav-badge-expanded rounded-full bg-destructive/20 text-destructive px-1.5 text-[10px] font-semibold tabular-nums">
           {red}
         </span>
       ) : orange > 0 ? (
-        <span className="ml-auto h-2 w-2 rounded-full bg-amber-500" />
+        <span className="shell-nav-badge-expanded h-2 w-2 rounded-full bg-amber-500" />
       ) : null}
     </button>
   );

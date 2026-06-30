@@ -3,14 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { PartyPopper, Handshake } from 'lucide-react';
 
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  decay: number;
+}
+
 const TicTacToe = () => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'won', 'draw'
   const [winner, setWinner] = useState(null);
-  const [winningLine, setWinningLine] = useState([]);
+  const [winningLine, setWinningLine] = useState<number[]>([]);
   const [scores, setScores] = useState({ X: 0, O: 0, draws: 0 });
-  const [particles, setParticles] = useState([]);
+  const [particles, setParticles] = useState<Particle[]>([]);
   const [gameMode, setGameMode] = useState('human'); // 'human' or 'ai'
 
   const winPatterns = [
@@ -71,7 +81,7 @@ const TicTacToe = () => {
   };
 
   const createParticles = (x, y) => {
-    const newParticles = [];
+    const newParticles: Particle[] = [];
     for (let i = 0; i < 15; i++) {
       newParticles.push({
         id: Math.random(),
@@ -140,8 +150,11 @@ const TicTacToe = () => {
     setIsXNext(!isXNext);
 
     if (!isAI) {
-      const rect = document.getElementById(`cell-${index}`).getBoundingClientRect();
-      createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      const cellElement = document.getElementById(`cell-${index}`);
+      if (cellElement) {
+        const rect = cellElement.getBoundingClientRect();
+        createParticles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      }
     }
   };
 

@@ -1,20 +1,38 @@
 /**
- * Org Resource Catalogue
- * ----------------------
- * The single front-end source of truth for *what kinds of things* live inside
- * an organization and *how they should be presented* on the org workspace.
+ * Org Resource Catalogue  [DEPRECATED for display/association]
+ * ============================================================
  *
+ * ⚠️  DO NOT ADD NEW ENTRIES HERE FOR DISPLAY OR ASSOCIATION.
+ *
+ * The "what kinds of things exist + how to render/query them" concern (icon,
+ * label, schema, table, title column, scopeable) is now CANONICAL in the entity
+ * registry, generated 1:1 from `platform.entity_types`:
+ *
+ *     import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
+ *     const info = getEntityInfo("file");   // schema/table/title/icon/owner/org
+ *
+ * That registry is the single source of truth. This catalogue hand-re-lists the
+ * same facts and HAS DRIFTED (e.g. `workflow` → bare `public.workflow` instead
+ * of `workflow.definition`; `agent_app` instead of the canonical `app` token;
+ * `flashcard_data`/`canvas_items`/`rs_topic` tables with no registered token) —
+ * exactly the class of `PGRST205` / `42703` bugs the canonical system exists to
+ * kill. The org workspace count grid no longer reads from here; it renders
+ * `AssociationCard`s driven by the registry.
+ *
+ * THIS FILE PERSISTS FOR ONE REASON ONLY: the legacy access-control / sharing
+ * surface (`iam.permissions`). The `shareKey`, `contributableEntries`,
+ * `getEntryByShareKey`, and `moduleKey` helpers feed the "share your own" /
+ * org-grants UI, which is a DIFFERENT domain from content associations and has
+ * not yet migrated. When that UI moves to a registry-resolved access-control
+ * model, delete this file. Until then: read display/query metadata from
+ * `getEntityInfo`, and touch this catalogue only for sharing.
+ *
+ * ── (original note, retained) ──
  * This is the FE expression of the knowledge-system "content role" concept
  * (docs/knowledge/scopeable_entities.md → Source / Destination / Utility /
  * Container). The DB `shareable_resource_registry` does not yet carry a
  * `content_role` / `is_scopeable` column; when it does, this catalogue should
- * be generated from it. Until then it is curated here, deliberately, against
- * the "Include — high confidence" scopeable-entity list.
- *
- * Anything that wants to render, count, or let a user contribute an org
- * resource should read from this catalogue rather than re-listing entity types
- * inline. Add a new scopeable entity here ONCE and every org surface picks it
- * up: the role grouping, the count grid, and the "share your own" picker.
+ * be generated from it.
  */
 
 import type { LucideIcon } from "lucide-react";

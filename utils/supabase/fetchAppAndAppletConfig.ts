@@ -8,6 +8,7 @@ import {
   AppLayoutOptions,
   AppletLayoutOption,
   AppletContainer,
+  AppletSourceConfig,
 } from "@/types/customAppTypes";
 import type { BrokerMapping } from "@/types/customAppTypes";
 
@@ -52,14 +53,24 @@ function parseAppAndAppletRpcPayload(
   return root as unknown as AppAndAppletRpcPayload;
 }
 
+function isAppletSourceConfig(value: Json | null): value is AppletSourceConfig {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseAppletSourceConfig(
+  raw: Json | null,
+): AppletSourceConfig | undefined {
+  return isAppletSourceConfig(raw) ? raw : undefined;
+}
+
 export async function fetchAppAndAppletConfig(
   id: string | null = null,
   slug: string | null = null,
 ): Promise<AppAndAppletRpcPayload | null> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("fetch_app_and_applet_config", {
-    p_id: id,
-    p_slug: slug,
+    p_id: id ?? undefined,
+    p_slug: slug ?? undefined,
   });
 
   if (error) {
@@ -93,15 +104,15 @@ export async function fetchAppBySlug(slug: string): Promise<CustomAppConfig> {
     name: data.name,
     description: data.description ?? "",
     slug: data.slug,
-    mainAppIcon: data.main_app_icon,
-    mainAppSubmitIcon: data.main_app_submit_icon,
-    creator: data.creator,
-    primaryColor: data.primary_color,
-    accentColor: data.accent_color,
+    mainAppIcon: data.main_app_icon ?? undefined,
+    mainAppSubmitIcon: data.main_app_submit_icon ?? undefined,
+    creator: data.creator ?? undefined,
+    primaryColor: data.primary_color ?? undefined,
+    accentColor: data.accent_color ?? undefined,
     appletList: (data.applet_list ?? []) as CustomAppConfig["appletList"],
     extraButtons: (data.extra_buttons ?? []) as CustomAppConfig["extraButtons"],
     layoutType: data.layout_type as AppLayoutOptions, // Cast to AppLayoutOptions
-    imageUrl: data.image_url,
+    imageUrl: data.image_url ?? undefined,
   };
 
   return transformedData;
@@ -130,25 +141,25 @@ export async function fetchAppletBySlug(
   const transformedData: CustomAppletConfig = {
     id: data.id,
     name: data.name,
-    description: data.description,
+    description: data.description ?? undefined,
     slug: data.slug,
     userId: data.user_id,
     publicRead: data.public_read,
-    appletIcon: data.applet_icon,
-    appletSubmitText: data.applet_submit_text,
-    creator: data.creator,
-    primaryColor: data.primary_color,
-    accentColor: data.accent_color,
+    appletIcon: data.applet_icon ?? undefined,
+    appletSubmitText: data.applet_submit_text ?? undefined,
+    creator: data.creator ?? undefined,
+    primaryColor: data.primary_color ?? undefined,
+    accentColor: data.accent_color ?? undefined,
     layoutType: data.layout_type as AppletLayoutOption,
     containers: data.containers as AppletContainer[],
-    dataSourceConfig: data.data_source_config,
+    dataSourceConfig: parseAppletSourceConfig(data.data_source_config),
     brokerMap: data.broker_map as BrokerMapping[],
     resultComponentConfig: data.result_component_config,
     nextStepConfig: data.next_step_config,
-    compiledRecipeId: data.compiled_recipe_id,
-    subcategoryId: data.subcategory_id,
-    imageUrl: data.image_url,
-    appId: data.app_id,
+    compiledRecipeId: data.compiled_recipe_id ?? undefined,
+    subcategoryId: data.subcategory_id ?? undefined,
+    imageUrl: data.image_url ?? undefined,
+    appId: data.app_id ?? undefined,
   };
 
   return transformedData;

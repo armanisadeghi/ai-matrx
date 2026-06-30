@@ -3,6 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { extractErrorMessage } from '@/utils/errors';
 
+type ParsedNode = {
+  id: string;
+  name: string;
+  description: string;
+  lineIndex: number;
+};
+
+type ParsedConnection = {
+  source: string;
+  target: string;
+  type: 'vertical' | 'branch';
+};
+
 const MarkdownFlowDiagramConverter = () => {
   const [markdownInput, setMarkdownInput] = useState(`+-------------------+
 |   AiClientFacade  |  <--- Single entry point for all API calls
@@ -41,16 +54,16 @@ const MarkdownFlowDiagramConverter = () => {
 +-------------------+
 |  ResponseWrapper  |  <--- Unified output for downstream processing
 +-------------------+`);
-  const [nodes, setNodes] = useState([]);
-  const [connections, setConnections] = useState([]);
+  const [nodes, setNodes] = useState<ParsedNode[]>([]);
+  const [connections, setConnections] = useState<ParsedConnection[]>([]);
   const [debug, setDebug] = useState("");
 
   // Parse the diagram whenever the input changes
   useEffect(() => {
     try {
       const lines = markdownInput.split('\n');
-      const parsedNodes = [];
-      const parsedConnections = [];
+      const parsedNodes: ParsedNode[] = [];
+      const parsedConnections: ParsedConnection[] = [];
       
       // First pass: Find all the boxes (nodes)
       for (let i = 0; i < lines.length; i++) {
@@ -90,7 +103,7 @@ const MarkdownFlowDiagramConverter = () => {
         
         if (line === '|' || line === 'v' || line === 'V' || line === '↓') {
           // Find closest node above
-          let sourceNode = null;
+          let sourceNode: ParsedNode | null = null;
           for (let j = i - 1; j >= 0; j--) {
             const node = parsedNodes.find(n => n.lineIndex === j);
             if (node) {
@@ -100,7 +113,7 @@ const MarkdownFlowDiagramConverter = () => {
           }
           
           // Find closest node below
-          let targetNode = null;
+          let targetNode: ParsedNode | null = null;
           for (let j = i + 1; j < lines.length; j++) {
             const node = parsedNodes.find(n => n.lineIndex === j);
             if (node) {
@@ -125,7 +138,7 @@ const MarkdownFlowDiagramConverter = () => {
         
         if (line.includes('+--') && line.includes('>')) {
           // Find source node (usually above)
-          let sourceNode = null;
+          let sourceNode: ParsedNode | null = null;
           for (let j = i - 1; j >= 0; j--) {
             const node = parsedNodes.find(n => n.lineIndex === j);
             if (node) {
@@ -135,14 +148,14 @@ const MarkdownFlowDiagramConverter = () => {
           }
           
           // Look for a node in the next line (or few lines)
-          let targetNode = null;
+          let targetNode: ParsedNode | null = null;
           for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
             const potentialLine = lines[j];
             if (potentialLine.includes('|')) {
               const nameMatch = potentialLine.match(/\|\s*(.*?)\s*\|/);
               if (nameMatch) {
                 const name = nameMatch[1].trim();
-                targetNode = parsedNodes.find(n => n.id === name);
+                targetNode = parsedNodes.find(n => n.id === name) ?? null;
                 break;
               }
             }
@@ -171,11 +184,11 @@ const MarkdownFlowDiagramConverter = () => {
   // Position nodes in a hierarchical layout
   const getNodePositions = () => {
     // Create a map of node depths (how far from the root)
-    const nodeDepths = {};
-    const nodeHorizontalPositions = {};
+    const nodeDepths: Record<string, number> = {};
+    const nodeHorizontalPositions: Record<string, number> = {};
     
     // Find root nodes (no incoming connections)
-    const getIncomingConnections = (nodeId) => {
+    const getIncomingConnections = (nodeId: string) => {
       return connections.filter(conn => conn.target === nodeId);
     };
     
