@@ -150,16 +150,22 @@ listener set.
 
 ## Extending
 
+**Invoke the `error-capture` skill** before adding/improving a captured source,
+adapter, or tier rule — it holds the full recipe + invariants.
+
+- New error source → add to the `CapturedErrorSource` union, add its label to
+  `SOURCE_LABELS` (the `Record` typecheck enforces it), call `captureError({
+  source, ... })` from the chokepoint. Store + UI are source-agnostic.
 - New raw field → add to `CapturedError` + `CaptureInput`
-  (`errorCaptureStore.ts`), populate in the relevant adapter, render in
+  (`errorCaptureStore.ts`), populate in the adapter, render in
   `ErrorInspectorWindow`, include in `buildCapturedErrorPayload`.
-- New error source → add to the `CapturedErrorSource` union, write a small
-  adapter that calls `captureError({ source, ... })`, add a label in
-  `SOURCE_LABELS`. Store + UI are source-agnostic.
 - New downgrade → edit `DOWNGRADE_RULES` only.
 
 ## Change Log
 
+- 2026-06-30 — Added the **`error-capture` skill** (the recipe for new sources/
+  adapters/tiers). Fixed the `org-resolution` source missing its `SOURCE_LABELS`
+  entry (a typecheck break).
 - 2026-06-29 — Detail pane focuses on the error: the downgrade-rule block moved
   out of the middle into a collapsed "Downgrade rule" disclosure at the bottom
   (the Copy-for-AI payload still embeds it with instructions).
