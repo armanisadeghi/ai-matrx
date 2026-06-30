@@ -18,11 +18,11 @@ import {
   AlertCircle,
   BookOpen,
   Lightbulb,
-  Sparkles,
+  Quote,
   Volume2,
   Zap,
   Pencil,
-  Wand2,
+  Expand,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
               title="Has example detail"
               className="inline-flex items-center gap-0.5 rounded border border-border px-1 py-0 text-[10px] text-muted-foreground"
             >
-              <Sparkles className="h-2.5 w-2.5" />
+              <Quote className="h-2.5 w-2.5" />
               Example
             </span>
           )}
@@ -93,8 +93,8 @@ export function SetDetailView({ setId }: { setId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     void (async () => {
+      setLoading(true);
       const res = await fcService.getSetWithCards(setId);
       if (cancelled) return;
       if (!res.data) {
@@ -245,7 +245,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                     })
                   }
                 >
-                  <Wand2 className="mr-1.5 h-4 w-4" />
+                  <Expand className="mr-1.5 h-4 w-4" />
                   Enhance
                 </Button>
               </div>

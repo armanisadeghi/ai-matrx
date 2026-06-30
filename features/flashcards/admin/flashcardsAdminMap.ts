@@ -48,6 +48,14 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       notes: ["Driven by useFlashcardStudy({ withSession: true })", "Grading funnels through the shared study spine"],
     },
     {
+      url: "/education/flashcards/[setId]/edit",
+      label: "Edit surface",
+      description: "Authoring surface (view↔edit split): rename set, edit card front/back inline, add cards. RLS-gated.",
+      filePath: "app/(core)/education/flashcards/[setId]/edit/page.tsx",
+      status: "Live",
+      notes: ["VIEW-vs-EDIT permission gate + duplicate-to-edit for sharees is a Wave-5 follow-up"],
+    },
+    {
       url: "/education/fastfire",
       label: "Fast Fire drill",
       description: "Voice-graded, timed flashcard drill (?set=<id> deep-links a set). Web-Audio PCM→WAV capture core.",
@@ -89,6 +97,12 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       name: "StudySurface",
       filePath: "features/flashcards/components/study/StudySurface.tsx",
       description: "Focused study session over useFlashcardStudy; flip/grade/keyboard + completion summary.",
+      tier: "internal",
+    },
+    {
+      name: "EditSetView",
+      filePath: "features/flashcards/components/editor/EditSetView.tsx",
+      description: "The set authoring surface: rename set, inline per-card front/back edit (dirty-tracked), add card. Writes via fcService.",
       tier: "internal",
     },
     {
