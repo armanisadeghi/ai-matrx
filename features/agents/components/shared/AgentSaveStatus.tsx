@@ -18,7 +18,14 @@ import {
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { useAgentSaveAction } from "./useAgentSaveAction";
 
-export function AgentSaveStatus({ agentId }: { agentId: string }) {
+export function AgentSaveStatus({
+  agentId,
+  editModeOverride,
+}: {
+  agentId: string;
+  /** When true, expose save affordances outside `/agents/.../build` (e.g. window panels). */
+  editModeOverride?: boolean;
+}) {
   const {
     isDirty,
     isLoading,
@@ -29,7 +36,7 @@ export function AgentSaveStatus({ agentId }: { agentId: string }) {
     handleSave,
     showModelWarning,
     setShowModelWarning,
-  } = useAgentSaveAction(agentId);
+  } = useAgentSaveAction(agentId, { editModeOverride });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showDiff, setShowDiff] = useState(false);

@@ -26,7 +26,10 @@ import { toast } from "@/lib/toast-service";
  * Returned `isEditMode` mirrors the legacy desktop check — only the `/build`
  * route or the in-flight `/agents/new` route should expose a save affordance.
  */
-export function useAgentSaveAction(agentId: string) {
+export function useAgentSaveAction(
+  agentId: string,
+  options?: { editModeOverride?: boolean },
+) {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const router = useRouter();
@@ -47,7 +50,9 @@ export function useAgentSaveAction(agentId: string) {
 
   const isNewRoute = pathname === "/agents/new";
   const isEditMode =
-    isNewRoute || !!pathname?.includes(`/agents/${agentId}/build`);
+    options?.editModeOverride === true ||
+    isNewRoute ||
+    !!pathname?.includes(`/agents/${agentId}/build`);
   const canSave = (isDirty || isNewRoute) && !isLoading;
 
   const handleSave = async () => {

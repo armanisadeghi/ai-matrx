@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { compareTimestamps, parseTimestamp } from "@/utils/datetime";
 import {
   RefreshCw,
   CheckCircle2,
@@ -11,6 +12,8 @@ import {
   Plus,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
+  ChevronsUpDown,
   X,
   Copy,
   Check,
@@ -22,7 +25,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ModelDetailSheet, { OpenDetailButton } from "../audit/ModelDetailSheet";
 import AddProviderModelDialog from "./AddProviderModelDialog";
-import type { AiModel, AiProvider, ProviderModelEntry } from "../types";
+import {
+  ProviderSyncPageCopyForAiButton,
+  ProviderSyncProviderCopyForAiMenu,
+  ProviderSyncRowCopyForAiButton,
+} from "./ProviderSyncCopyForAi";
+import {
+  buildProviderSyncComparisons,
+  countProviderSyncByStatus,
+  type ProviderSyncComparison,
+  type ProviderSyncComparisonStatus,
+} from "../utils/providerSyncComparison";
+import type { AiModel, AiProvider } from "../types";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -36,16 +50,23 @@ type ProviderSummary = {
   provider_key: string | null;
 };
 
-type ComparisonStatus = "matched" | "missing_local" | "extra_local";
+type ComparisonStatus = ProviderSyncComparisonStatus;
+type ModelComparison = ProviderSyncComparison;
 
-type ModelComparison = {
-  id: string;
-  display_name: string;
-  provider_id: string;
-  status: ComparisonStatus;
-  providerEntry?: ProviderModelEntry;
-  localEntry?: AiModel;
-};
+type ComparisonSortKey =
+  | "display_name"
+  | "id"
+  | "context"
+  | "max_out"
+  | "released"
+  | "our_name"
+  | "class"
+  | "api_class"
+  | "primary"
+  | "deprecated"
+  | "status";
+
+type ComparisonSortDir = "asc" | "desc";
 
 type Props = {
   localModels: AiModel[];
@@ -75,21 +96,127 @@ const formatDate = (d?: string | null) => {
   }
 };
 
+function compareNullableNumbers(a?: number | null, b?: number | null): number {
+  const aNull = a == null;
+  const bNull = b == null;
+  if (aNull && bNull) return 0;
+  if (aNull) return 1;
+  if (bNull) return -1;
+  return a - b;
+}
+
+const STATUS_SORT_ORDER: Record<ComparisonStatus, number> = {
+  matched: 0,
+  missing_local: 1,
+  excluded: 2,
+  extra_local: 3,
+};
+
+function defaultSortDirForColumn(key: ComparisonSortKey): ComparisonSortDir {
+  switch (key) {
+    case "released":
+    case "context":
+    case "max_out":
+    case "primary":
+    case "deprecated":
+      return "desc";
+    default:
+      return "asc";
+  }
+}
+
+function compareComparisons(
+  a: ModelComparison,
+  b: ModelComparison,
+  key: ComparisonSortKey,
+  dir: ComparisonSortDir,
+): number {
+  const sign = dir === "asc" ? 1 : -1;
+  const peA = a.providerEntry;
+  const peB = b.providerEntry;
+  const leA = a.localEntry;
+  const leB = b.localEntry;
+
+  let cmp = 0;
+  switch (key) {
+    case "display_name":
+      cmp = a.display_name.localeCompare(b.display_name);
+      break;
+    case "id":
+      cmp = a.id.localeCompare(b.id);
+      break;
+    case "context":
+      cmp = compareNullableNumbers(
+        peA?.max_input_tokens ?? leA?.context_window,
+        peB?.max_input_tokens ?? leB?.context_window,
+      );
+      break;
+    case "max_out":
+      cmp = compareNullableNumbers(
+        peA?.max_tokens ?? leA?.max_tokens,
+        peB?.max_tokens ?? leB?.max_tokens,
+      );
+      break;
+    case "released": {
+      const dateA = peA?.created_at;
+      const dateB = peB?.created_at;
+      const hasA = parseTimestamp(dateA) != null;
+      const hasB = parseTimestamp(dateB) != null;
+      if (!hasA && !hasB) {
+        cmp = 0;
+      } else if (!hasA) {
+        return 1;
+      } else if (!hasB) {
+        return -1;
+      } else {
+        cmp = compareTimestamps(dateA, dateB);
+      }
+      break;
+    }
+    case "our_name":
+      cmp = (leA?.common_name ?? "").localeCompare(leB?.common_name ?? "");
+      break;
+    case "class":
+      cmp = (leA?.model_class ?? "").localeCompare(leB?.model_class ?? "");
+      break;
+    case "api_class":
+      cmp = (leA?.api_class ?? "").localeCompare(leB?.api_class ?? "");
+      break;
+    case "primary":
+      cmp = Number(Boolean(leA?.is_primary)) - Number(Boolean(leB?.is_primary));
+      break;
+    case "deprecated":
+      cmp =
+        Number(Boolean(leA?.is_deprecated)) -
+        Number(Boolean(leB?.is_deprecated));
+      break;
+    case "status":
+      cmp = STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status];
+      break;
+  }
+
+  if (cmp !== 0) return cmp * sign;
+  return a.id.localeCompare(b.id);
+}
+
 // ─── Status ───────────────────────────────────────────────────────────────
 
 const STATUS_BG: Record<ComparisonStatus, string> = {
   matched: "bg-green-50/60 dark:bg-green-900/10",
   missing_local: "bg-amber-50/70 dark:bg-amber-900/15",
+  excluded: "bg-muted/40 dark:bg-muted/20",
   extra_local: "bg-blue-50/50 dark:bg-blue-900/10",
 };
 const STATUS_BG_SEL: Record<ComparisonStatus, string> = {
   matched: "bg-green-100 dark:bg-green-900/30",
   missing_local: "bg-amber-100 dark:bg-amber-900/30",
+  excluded: "bg-muted/60 dark:bg-muted/30",
   extra_local: "bg-blue-100 dark:bg-blue-900/30",
 };
 const STATUS_LEFT: Record<ComparisonStatus, string> = {
   matched: "border-l-green-400",
   missing_local: "border-l-amber-400",
+  excluded: "border-l-muted-foreground/40",
   extra_local: "border-l-blue-400",
 };
 
@@ -111,6 +238,15 @@ function StatusBadge({ status }: { status: ComparisonStatus }) {
         className="text-[10px] h-5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-300 whitespace-nowrap"
       >
         Not in DB
+      </Badge>
+    );
+  if (status === "excluded")
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] h-5 bg-muted/50 text-muted-foreground border-border whitespace-nowrap"
+      >
+        Excluded
       </Badge>
     );
   return (
@@ -480,7 +616,49 @@ function ProviderEntryDetail({
 
 // ─── Comparison table (real <table> for alignment) ────────────────────────
 
-const TH = ({
+function SortableTH({
+  sortKey,
+  activeSortKey,
+  activeSortDir,
+  onSort,
+  children,
+  className = "",
+}: {
+  sortKey: ComparisonSortKey;
+  activeSortKey: ComparisonSortKey;
+  activeSortDir: ComparisonSortDir;
+  onSort: (key: ComparisonSortKey) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const isActive = activeSortKey === sortKey;
+  return (
+    <th
+      className={`px-2 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap bg-muted/50 ${className}`}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${
+          isActive ? "text-foreground" : "text-muted-foreground"
+        }`}
+      >
+        {children}
+        {isActive ? (
+          activeSortDir === "asc" ? (
+            <ChevronUp className="h-3 w-3 shrink-0" />
+          ) : (
+            <ChevronDown className="h-3 w-3 shrink-0" />
+          )
+        ) : (
+          <ChevronsUpDown className="h-3 w-3 shrink-0 opacity-40" />
+        )}
+      </button>
+    </th>
+  );
+}
+
+const STATIC_TH = ({
   children,
   className = "",
 }: {
@@ -496,17 +674,37 @@ const TH = ({
 
 function ComparisonTable({
   comparisons,
+  providerName,
   selectedId,
   onSelect,
   onOpenModel,
   onAddMissing,
 }: {
   comparisons: ModelComparison[];
+  providerName: string | null;
   selectedId: string | null;
   onSelect: (c: ModelComparison | null) => void;
   onOpenModel: (id: string) => void;
   onAddMissing: (c: ModelComparison) => void;
 }) {
+  const [sortKey, setSortKey] = useState<ComparisonSortKey>("released");
+  const [sortDir, setSortDir] = useState<ComparisonSortDir>("desc");
+
+  const toggleSort = (key: ComparisonSortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDir(defaultSortDirForColumn(key));
+  };
+
+  const sortedComparisons = useMemo(() => {
+    const arr = [...comparisons];
+    arr.sort((a, b) => compareComparisons(a, b, sortKey, sortDir));
+    return arr;
+  }, [comparisons, sortKey, sortDir]);
+
   if (comparisons.length === 0) {
     return (
       <div className="px-4 py-6 text-center text-xs text-muted-foreground border-t">
@@ -520,22 +718,100 @@ function ComparisonTable({
       <table className="w-full text-xs border-collapse">
         <thead>
           <tr className="border-b">
-            <TH className="pl-3">Display Name</TH>
-            <TH>Model ID</TH>
-            <TH>Context</TH>
-            <TH>Max Out</TH>
-            <TH>Released</TH>
-            <TH>Our Name</TH>
-            <TH>Class</TH>
-            <TH>API Class</TH>
-            <TH>Primary</TH>
-            <TH>Deprecated</TH>
-            <TH>Status</TH>
-            <TH className="pr-3"></TH>
+            <SortableTH
+              sortKey="display_name"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+              className="pl-3"
+            >
+              Display Name
+            </SortableTH>
+            <SortableTH
+              sortKey="id"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Model ID
+            </SortableTH>
+            <SortableTH
+              sortKey="context"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Context
+            </SortableTH>
+            <SortableTH
+              sortKey="max_out"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Max Out
+            </SortableTH>
+            <SortableTH
+              sortKey="released"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Released
+            </SortableTH>
+            <SortableTH
+              sortKey="our_name"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Our Name
+            </SortableTH>
+            <SortableTH
+              sortKey="class"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Class
+            </SortableTH>
+            <SortableTH
+              sortKey="api_class"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              API Class
+            </SortableTH>
+            <SortableTH
+              sortKey="primary"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Primary
+            </SortableTH>
+            <SortableTH
+              sortKey="deprecated"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Deprecated
+            </SortableTH>
+            <SortableTH
+              sortKey="status"
+              activeSortKey={sortKey}
+              activeSortDir={sortDir}
+              onSort={toggleSort}
+            >
+              Status
+            </SortableTH>
+            <STATIC_TH className="pr-3"></STATIC_TH>
           </tr>
         </thead>
         <tbody>
-          {comparisons.map((c) => {
+          {sortedComparisons.map((c) => {
             const isSelected = c.id === selectedId;
             const le = c.localEntry;
             const pe = c.providerEntry;
@@ -611,6 +887,10 @@ function ComparisonTable({
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center gap-1">
+                    <ProviderSyncRowCopyForAiButton
+                      comparison={c}
+                      providerName={providerName}
+                    />
                     {c.status === "matched" && le && (
                       <OpenDetailButton onClick={() => onOpenModel(le.id)} />
                     )}
@@ -662,49 +942,16 @@ function ProviderSection({
   const [selectedComparison, setSelectedComparison] =
     useState<ModelComparison | null>(null);
 
-  const comparisons = React.useMemo<ModelComparison[]>(() => {
-    const cache = provider?.provider_models_cache;
-    if (!cache) return [];
+  const comparisons = React.useMemo<ModelComparison[]>(
+    () => buildProviderSyncComparisons(summary, provider, localModels),
+    [provider, localModels, summary],
+  );
 
-    const providerIds = new Set(cache.models.map((m) => m.id));
-    const localForProvider = localModels.filter(
-      (m) =>
-        m.model_provider === summary.id ||
-        (summary.name &&
-          m.provider?.toLowerCase() === summary.name.toLowerCase()),
-    );
-
-    const result: ModelComparison[] = [];
-    for (const pm of cache.models) {
-      const local = localForProvider.find((lm) => lm.name === pm.id);
-      result.push({
-        id: pm.id,
-        display_name: pm.display_name ?? pm.id,
-        provider_id: summary.id,
-        status: local ? "matched" : "missing_local",
-        providerEntry: pm,
-        localEntry: local,
-      });
-    }
-    for (const lm of localForProvider) {
-      if (!providerIds.has(lm.name)) {
-        result.push({
-          id: lm.id,
-          display_name: lm.common_name ?? lm.name,
-          provider_id: summary.id,
-          status: "extra_local",
-          localEntry: lm,
-        });
-      }
-    }
-    return result;
-  }, [provider, localModels, summary]);
-
-  const matched = comparisons.filter((c) => c.status === "matched").length;
-  const missing = comparisons.filter(
-    (c) => c.status === "missing_local",
-  ).length;
-  const extra = comparisons.filter((c) => c.status === "extra_local").length;
+  const statusCounts = countProviderSyncByStatus(comparisons);
+  const matched = statusCounts.matched;
+  const missing = statusCounts.missing_local;
+  const extra = statusCounts.extra_local;
+  const excluded = statusCounts.excluded;
 
   const handleExpand = () => {
     if (expanded) setSelectedComparison(null);
@@ -768,6 +1015,11 @@ function ProviderSection({
                   {missing} not in DB
                 </span>
               )}
+              {excluded > 0 && (
+                <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                  {excluded} excluded
+                </span>
+              )}
               {extra > 0 && (
                 <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400 whitespace-nowrap">
                   {extra} extra/deprecated
@@ -783,6 +1035,12 @@ function ProviderSection({
 
         {/* Actions */}
         <div className="shrink-0 flex items-center gap-2">
+          {summary.has_cache && (
+            <ProviderSyncProviderCopyForAiMenu
+              summary={summary}
+              comparisons={comparisons}
+            />
+          )}
           {provider?.models_link && (
             <a
               href={provider.models_link}
@@ -823,6 +1081,7 @@ function ProviderSection({
           >
             <ComparisonTable
               comparisons={comparisons}
+              providerName={summary.name}
               selectedId={selectedComparison?.id ?? null}
               onSelect={setSelectedComparison}
               onOpenModel={onOpenModel}
@@ -920,6 +1179,18 @@ export default function ProviderSyncDashboard({
   };
 
   const providerMap = new Map(providers.map((p) => [p.id, p]));
+  const pageExports = useMemo(
+    () =>
+      summaries.map((summary) => ({
+        summary,
+        comparisons: buildProviderSyncComparisons(
+          summary,
+          providerMap.get(summary.id),
+          localModels,
+        ),
+      })),
+    [summaries, providers, localModels],
+  );
   const totalProviderModels = summaries.reduce(
     (acc, s) => acc + s.model_count,
     0,
@@ -959,6 +1230,7 @@ export default function ProviderSyncDashboard({
           {[
             { color: "bg-green-400", label: "Matched" },
             { color: "bg-amber-400", label: "Not in DB" },
+            { color: "bg-muted-foreground/50", label: "Excluded" },
             { color: "bg-blue-400", label: "Extra/deprecated" },
           ].map(({ color, label }) => (
             <span key={label} className="inline-flex items-center gap-1.5">
@@ -968,7 +1240,11 @@ export default function ProviderSyncDashboard({
           ))}
         </div>
 
-        {/* Refresh */}
+        {/* Refresh + page copy */}
+        <ProviderSyncPageCopyForAiButton
+          exports={pageExports}
+          disabled={loading}
+        />
         <Button
           variant="ghost"
           size="sm"

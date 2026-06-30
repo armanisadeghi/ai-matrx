@@ -1101,6 +1101,22 @@
     color-scheme: dark;
   }
 
+  /* Native audio/video controls: tell the browser which chrome palette to use.
+     Without this, control bars and icons often stay in the OS default (e.g. light
+     chrome on a dark card). Scoped to [controls] — headless <audio>/<video> used
+     by custom players (AudioPreview, PodcastAudioPlayer, etc.) are untouched. */
+  audio[controls],
+  video[controls] {
+    color-scheme: light;
+    display: block;
+    max-width: 100%;
+  }
+
+  .dark audio[controls],
+  .dark video[controls] {
+    color-scheme: dark;
+  }
+
   /* RTL/Arabic font size adjustments - make RTL text slightly larger for better readability */
   .rtl,
   [dir="rtl"] {

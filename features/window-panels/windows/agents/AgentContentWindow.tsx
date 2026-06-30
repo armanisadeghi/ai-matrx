@@ -49,6 +49,7 @@ import { AgentContextSlotsManager } from "@/features/agents/components/context-s
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import { AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
 import { AgentSharePanel } from "@/features/agents/components/sharing/AgentSharePanel";
+import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -175,12 +176,14 @@ export function CompactTabStrip({
 
 // ── Header Actions ────────────────────────────────────────────────────────────
 
+const HEADER_ICON_BTN =
+  "grid h-6 w-6 shrink-0 place-items-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground [&_svg]:h-3.5 [&_svg]:w-3.5";
+
 interface HeaderActionsProps {
   agentId: string;
-  isDirty: boolean;
 }
 
-function HeaderActions({ agentId, isDirty }: HeaderActionsProps) {
+function HeaderActions({ agentId }: HeaderActionsProps) {
   const dispatch = useAppDispatch();
 
   const handleRefresh = () => {
@@ -188,21 +191,16 @@ function HeaderActions({ agentId, isDirty }: HeaderActionsProps) {
   };
 
   return (
-    <div className="flex items-center gap-1">
-      {isDirty && (
-        <span className="text-[10px] text-amber-500 font-medium px-1">
-          unsaved
-        </span>
-      )}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6"
+    <div className="flex items-center gap-0.5">
+      <AgentSaveStatus agentId={agentId} editModeOverride />
+      <button
+        type="button"
         onClick={handleRefresh}
         title="Refresh agent data"
+        className={HEADER_ICON_BTN}
       >
-        <RefreshCw className="h-3 w-3" />
-      </Button>
+        <RefreshCw />
+      </button>
     </div>
   );
 }
@@ -250,41 +248,40 @@ function FooterControls({
   };
 
   return (
-    <div className="flex items-center justify-between px-3 py-1">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-xs font-medium text-foreground truncate max-w-[160px]">
+    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="max-w-[160px] truncate text-[11px] font-medium text-foreground">
           {agentName || "Agent"}
         </span>
         <button
+          type="button"
           onClick={handleCopyId}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/60 hover:bg-muted text-[10px] font-mono text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          className="inline-flex shrink-0 items-center gap-1 rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="Copy agent ID"
         >
-          <span className="truncate max-w-[80px]">{agentId.slice(0, 8)}…</span>
+          <span className="max-w-[80px] truncate">{agentId.slice(0, 8)}…</span>
           <Copy className="h-2.5 w-2.5 shrink-0" />
         </button>
       </div>
 
       {showSaveControls && (
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs text-muted-foreground"
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
             onClick={handleCancel}
+            className="inline-flex h-5 items-center gap-1 rounded px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <X className="h-3 w-3 mr-1" />
+            <X className="h-3 w-3" />
             Cancel
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            className="h-6 px-2 text-xs"
+          </button>
+          <button
+            type="button"
             onClick={handleSave}
+            className="inline-flex h-5 items-center gap-1 rounded bg-primary px-2 text-[11px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            <Save className="h-3 w-3 mr-1" />
+            <Save className="h-3 w-3" />
             Save
-          </Button>
+          </button>
         </div>
       )}
     </div>
@@ -795,11 +792,7 @@ export default function AgentContentWindow({
         sidebarDefaultSize={multiAgentMode ? 260 : undefined}
         sidebarMinSize={multiAgentMode ? 200 : undefined}
         sidebarExpandsWindow={false}
-        actionsRight={
-          agentId ? (
-            <HeaderActions agentId={agentId} isDirty={isDirty} />
-          ) : undefined
-        }
+        actionsRight={agentId ? <HeaderActions agentId={agentId} /> : undefined}
         footerLeft={
           agentId ? (
             <FooterControls
