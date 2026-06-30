@@ -15,7 +15,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { getMessagingService } from "@/lib/supabase/messaging";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
 import type {
   Message,
@@ -765,7 +765,7 @@ export function useConversations(
         return existingConv;
       }
 
-      const organizationId = await resolvePersonalOrgId();
+      const organizationId = await ensureOrgId(undefined);
 
       // Create new conversation
       const { data: newConv, error: createError } = await supabase

@@ -27,6 +27,8 @@
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 let cachedId: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -80,14 +82,57 @@ export async function resolvePersonalOrgId(): Promise<string> {
 }
 
 /**
- * Resolve an org id for an org-scoped write: returns the given id when set,
- * otherwise the cached personal org. Use this everywhere instead of writing a
- * null `organization_id` — "never insert an org-scoped row with a null org."
+ * Resolve an org id for an org-scoped write. Resolution order:
+ *   1. the explicitly-passed `orgId` (a callsite that already knows the org);
+ *   2. the user's GLOBAL active org from Redux (`getActiveOrgId` — the org they
+ *      have selected in the header, else their personal org). This is the
+ *      important step: every write now rides along on the user's CURRENT org,
+ *      not just their personal one;
+ *   3. the cached/RPC personal org (`resolvePersonalOrgId`) as the never-null
+ *      backstop — but ONLY for the brief window before Redux has hydrated. The
+ *      `appContextPolicy` sync engine rehydrates the active org from cache
+ *      before first paint, so in steady state step 2 should ALWAYS win. If we
+ *      reach step 3, that is a DEFECT — so we scream (console.error + the
+ *      systemwide Error Inspector) before falling back. Defensive, never silent.
+ *
+ * Use this everywhere instead of writing a null `organization_id` — "never
+ * insert an org-scoped row with a null org."
  */
 export async function ensureOrgId(
   orgId: string | null | undefined,
 ): Promise<string> {
-  return orgId ? orgId : resolvePersonalOrgId();
+  if (orgId) return orgId;
+  const activeOrgId = getActiveOrgId();
+  if (activeOrgId) return activeOrgId;
+
+  // ── LOUD last-resort fallback ────────────────────────────────────────────
+  // Reaching here means the active org was NOT in Redux when an org-scoped
+  // write needed it — the sync engine's appContextPolicy should have made it
+  // present before any write runs. Recovery (the personal-org RPC) still fires
+  // so the write does not fail, but it SCREAMS so the defect can't hide: a
+  // recovery firing means a real bug slipped past the proactive layer.
+  const message =
+    "[ensureOrgId] active org MISSING from Redux at write time — falling back to the personal-org RPC. " +
+    "appContextPolicy (lib/sync) should keep the active org present before any write. This is a defect, not a normal path.";
+  // console.error is also captured globally in prod (globalErrorCapture wrapper);
+  // the explicit captureError below guarantees it lands in the Error Inspector
+  // in every environment with structured, admin-visible fields.
+  console.error(message);
+  try {
+    captureError({
+      source: "org-resolution",
+      operation: "rpc",
+      relation: "current_personal_org_id",
+      message,
+      hint:
+        "Ensure appContextPolicy is registered (lib/sync/registry) and the store " +
+        "has booted/hydrated before this write. Check for writes that run before sync boot completes.",
+    });
+  } catch {
+    /* capture must never break the write path */
+  }
+
+  return resolvePersonalOrgId();
 }
 
 /**

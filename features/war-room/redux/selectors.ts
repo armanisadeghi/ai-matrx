@@ -104,19 +104,23 @@ export function selectOrderedGalleryThreadIds(roomId: string | null) {
       (byId, idsByRoom, userStateById): string[] => {
         const ids = idsByRoom[roomId] ?? EMPTY_IDS;
         const visible = ids
-          .map((id) => ({ thread: byId[id], id, us: userStateById[id] }))
+          .map((id) => ({
+            thread: byId[id],
+            id,
+            us: userStateById[id] ?? DEFAULT_USER_STATE,
+          }))
           .filter(
             (
               row,
             ): row is {
               thread: WarRoomThread;
               id: string;
-              us?: ThreadUserState;
-            } => !!row.thread && !(row.us?.isHidden ?? false),
+              us: ThreadUserState;
+            } => !!row.thread && !row.us.isHidden,
           );
         visible.sort((a, b) => {
-          const ap = a.us?.isPinned ?? false;
-          const bp = b.us?.isPinned ?? false;
+          const ap = a.us.isPinned;
+          const bp = b.us.isPinned;
           if (ap !== bp) return ap ? -1 : 1;
           return a.thread.position - b.thread.position;
         });

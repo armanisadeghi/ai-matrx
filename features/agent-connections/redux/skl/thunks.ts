@@ -69,17 +69,20 @@ interface ScopeStampInput {
 async function stampScopeForWrite<T extends ScopeStampInput>(
   payload: T,
   args: ScopedQueryArgs,
-): Promise<T> {
+): Promise<T & { organization_id: string }> {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData?.user?.id ?? null;
-  const stamped: T = { ...payload };
+  const stamped: T & { organization_id: string } = {
+    ...payload,
+    organization_id: payload.organization_id ?? "",
+  };
   if (args.scope === "user") {
     stamped.user_id = userId;
     stamped.project_id = null;
     stamped.task_id = null;
   } else if (args.scope === "organization") {
     stamped.user_id = userId;
-    stamped.organization_id = args.scopeId;
+    stamped.organization_id = args.scopeId ?? "";
     stamped.project_id = null;
     stamped.task_id = null;
   } else if (args.scope === "project") {
@@ -110,7 +113,8 @@ export const fetchRenderDefinitions = createAsyncThunk(
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id ?? null;
       let query = supabase
-        .schema("skill").from("render_definition")
+        .schema("skill")
+        .from("render_definition")
         .select("*")
         .order("sort_order", { ascending: true })
         .order("label", { ascending: true });
@@ -148,7 +152,8 @@ export const createRenderDefinition = createAsyncThunk(
       scopeId: args.scopeId,
     });
     const { data, error } = await supabase
-      .schema("skill").from("render_definition")
+      .schema("skill")
+      .from("render_definition")
       .insert(stamped)
       .select()
       .single();
@@ -167,7 +172,8 @@ export const updateRenderDefinition = createAsyncThunk(
   ) => {
     const payload = sklRenderDefinitionToUpdate(args.patch);
     const { data, error } = await supabase
-      .schema("skill").from("render_definition")
+      .schema("skill")
+      .from("render_definition")
       .update(payload)
       .eq("id", args.id)
       .select()
@@ -183,7 +189,8 @@ export const deleteRenderDefinition = createAsyncThunk(
   "skl/deleteRenderDefinition",
   async (args: { id: string }, { dispatch }) => {
     const { error } = await supabase
-      .schema("skill").from("render_definition")
+      .schema("skill")
+      .from("render_definition")
       .delete()
       .eq("id", args.id);
     if (error) throw error;
@@ -198,7 +205,8 @@ export const fetchRenderComponents = createAsyncThunk(
   "skl/fetchRenderComponents",
   async (_args: void, { dispatch }) => {
     const { data, error } = await supabase
-      .schema("skill").from("render_component")
+      .schema("skill")
+      .from("render_component")
       .select("*");
     if (error) throw error;
     const rows = (data ?? []).map(rowToSklRenderComponent);
@@ -217,7 +225,8 @@ export const fetchRenderBlockCategories = createAsyncThunk(
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id ?? null;
       let query = supabase
-        .schema("platform").from("categories")
+        .schema("platform")
+        .from("categories")
         // user_id / project_id / task_id moved into metadata in platform.categories;
         // they are not top-level columns. Scope filtering below falls back to
         // organization_id (the only surviving top-level scope column). The metadata
@@ -271,7 +280,8 @@ export const deleteResource = createAsyncThunk(
   "skl/deleteResource",
   async (args: { id: string }, { dispatch }) => {
     const { error } = await supabase
-      .schema("skill").from("resource")
+      .schema("skill")
+      .from("resource")
       .delete()
       .eq("id", args.id);
     if (error) throw error;

@@ -68,6 +68,13 @@ export type CapturedErrorSource =
   // ── Domain ────────────────────────────────────────────────────────────────
   /** An expiring/private media URL reached a render/store path (durability defect). */
   | "media-durability"
+  /**
+   * The active-org single-source-of-truth was MISSING from Redux when an
+   * org-scoped write needed it, so `ensureOrgId` fell back to the personal-org
+   * RPC. The `appContextPolicy` sync engine is supposed to keep the org present
+   * before any write runs — this firing means a real defect got past it.
+   */
+  | "org-resolution"
   /** A user-facing `toast.error(...)` — already handled + shown to the user. */
   | "user-toast"
   /** An RTK rejected thunk (action type ending in /rejected) — a real failure. */

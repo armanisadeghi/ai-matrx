@@ -7,6 +7,61 @@ import {
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
 
+// =============================================================================
+// ⛔️ CONDEMNED MODULE — DO NOT EXTEND. Replacement in progress.
+// =============================================================================
+// This service binds an AGENT to a SURFACE via the `agent.agent_surface` table.
+// Nearly everything about HOW it does that violates the current canonical model
+// and must be replaced — not patched. The type errors on the org/project/task
+// columns are a SYMPTOM; the real defects are architectural:
+//
+//   (P1) FOREIGN-KEY SINGLE RELATIONSHIPS for project_id / task_id.
+//        project/task are now MANY-TO-MANY across every table in the system.
+//        A single FK column is the wrong shape and the underlying columns are
+//        being removed. Do not write them. Do not read them as "the" project.
+//
+//   (P2) SINGLE scope / scope-type relationship.
+//        Scopes and scope types are M2M by design. This module models "one
+//        org / one scope tier per binding" — that cardinality does not exist.
+//
+//   (P3) ACTION CONTEXT vs USER-SELECTED CONTEXT conflation (the dangerous one).
+//        Binding is a USER ACTION. The org/scope it binds to MUST come from
+//        what the user EXPLICITLY selected in the UI — never from the passive,
+//        cached "active context" (appContextSlice active org / scope_selections)
+//        just because it happens to be loaded. See the Global-vs-Local context
+//        invariant in CLAUDE.md + features/scopes/FEATURE.md. A SUCCESSFUL write
+//        here is WORSE than a failure: it silently ties an agent surface to an
+//        org/scope the user never intended. That is why these paths scream at
+//        runtime even though TypeScript only flags some of them.
+//
+//   (P4) THE KICKER — wrong mechanism entirely.
+//        Connecting an agent to a surface is an ASSOCIATION. It MUST go through
+//        the canonical `platform.associations` system (features/scopes
+//        associationsService + the canonical-associations skill), NOT a bespoke
+//        per-table M2M like `agent_surface`. No new M2M relationships are
+//        allowed outside canonical associations. This whole module is slated
+//        for removal once the association-backed binding lands.
+//
+// Tracking: features/surfaces/FEATURE.md (Condemned section) + the
+// canonical-associations / context-assignment skills.
+// =============================================================================
+
+/**
+ * Shared loud-failure beacon. Fires on every legacy write so a broken-but-
+ * "successful" binding is impossible to miss in the console AND in the
+ * systemwide Error Inspector (console.error is captured as `console-error`).
+ */
+function reportCondemnedBindingWrite(op: string, detail: Record<string, unknown>): void {
+  console.error(
+    `[agent-surface-bindings] CONDEMNED WRITE (${op}) — this path models project/task as single FKs (P1), ` +
+      `scope/scope-type as single relationships (P2), may read PASSIVE active context instead of the user's ` +
+      `explicit UI selection (P3), and uses a bespoke M2M instead of canonical associations (P4). ` +
+      `A successful write here can SILENTLY mis-bind an agent surface. Replace via platform.associations. ` +
+      `See features/surfaces/FEATURE.md (Condemned).`,
+    detail,
+  );
+}
+
 const sb = () => createClient();
 
 export interface AgentSurfaceBinding {
@@ -77,6 +132,15 @@ export async function fetchSurfaceBindingLayers(
     .eq("surface_name", surfaceName);
   if (error) throw error;
 
+  if ((data ?? []).length > 0) {
+    // Read path is non-destructive but still legacy — warn so consumers migrate.
+    console.warn(
+      "[agent-surface-bindings] reading CONDEMNED agent_surface bindings — " +
+        "this single-tier scope model (P1/P2) and bespoke M2M (P4) are being replaced " +
+        "by canonical platform.associations. See features/surfaces/FEATURE.md (Condemned).",
+    );
+  }
+
   const rows = ((data ?? []) as unknown as RawBindingRow[]).map(fromRow);
   const withMappings = rows.filter(
     (r) => Object.keys(r.valueMappings).length > 0,
@@ -141,6 +205,14 @@ export async function upsertAgentSurfaceBinding(args: {
 }): Promise<AgentSurfaceBinding> {
   const { agentId, surfaceName, scope, valueMappings } = args;
 
+  // ⛔️ See the CONDEMNED MODULE banner at the top of this file (P1–P4). This
+  // write models scope as a single tier and may be binding to passive context.
+  reportCondemnedBindingWrite("upsertAgentSurfaceBinding", {
+    agentId,
+    surfaceName,
+    scope,
+  });
+
   // Find existing row matching the same (agent, surface, scope) — the partial
   // unique indexes guarantee at most one match per tier.
   const existing = await findBinding(agentId, surfaceName, scope);
@@ -166,7 +238,16 @@ export async function upsertAgentSurfaceBinding(args: {
       agent_id: agentId,
       surface_name: surfaceName,
       user_id: scope.userId ?? null,
-      organization_id: scope.organizationId ?? null,
+      // ⛔️ P2: single-scope org tier — scopes are M2M. ⛔️ P3: `scope` may be
+      // sourced from passive active context, not the user's explicit selection.
+      // TEMPORARY COMPILE BRIDGE (not a fix): the DB column is NOT NULL but the
+      // multi-tier model needs null for non-org tiers — proof this mechanism is
+      // broken (P2). Cast keeps the build green; runtime is unchanged and the
+      // beacon above screams. Removed entirely when this module is replaced by
+      // canonical associations (P4).
+      organization_id: (scope.organizationId ?? null) as string,
+      // ⛔️ P1: project_id / task_id are M2M now; these FK columns are being
+      // removed. Do not write a single project/task here.
       project_id: scope.projectId ?? null,
       task_id: scope.taskId ?? null,
       value_mappings: valueMappings,
@@ -255,6 +336,12 @@ export async function bulkUpsertAgentSurfaceBindings(args: {
   bindings: BulkUpsertBindingInput[];
 }): Promise<BulkUpsertResult> {
   const { agentId, bindings } = args;
+  // ⛔️ Condemned bulk path — see banner (P1–P4). Each child write also beacons.
+  reportCondemnedBindingWrite("bulkUpsertAgentSurfaceBindings", {
+    agentId,
+    count: bindings.length,
+    surfaces: bindings.map((b) => b.surfaceName),
+  });
   const settled = await Promise.allSettled(
     bindings.map((b) =>
       upsertAgentSurfaceBinding({

@@ -974,6 +974,26 @@ interface AgentSettingsCoreProps {
   onUnappliedEditsChange?: (dirty: boolean) => void;
 }
 
+type ResponseFormat = NonNullable<FeLlmParams["response_format"]>;
+
+/**
+ * Build the canonical { type } shape the API expects from a bare selection
+ * string. Each branch returns a single-literal object so it matches one member
+ * of the ResponseFormat discriminated union. Unknown values yield null (ignored).
+ */
+function toResponseFormat(value: string): ResponseFormat | null {
+  switch (value) {
+    case "text":
+      return { type: "text" };
+    case "json_object":
+      return { type: "json_object" };
+    case "json_schema":
+      return { type: "json_schema" };
+    default:
+      return null;
+  }
+}
+
 export function AgentSettingsCore({
   agentId,
   onUnappliedEditsChange,
@@ -1168,12 +1188,15 @@ export function AgentSettingsCore({
       // Store EXACTLY what the user picked — including "text". Never drop a
       // selection on the user's behalf. The canonical { type: <value> } shape
       // matches how json_schema / json_object are stored.
-      dispatch(
-        setAgentSettings({
-          id: agentId,
-          settings: { ...currentSettings, response_format: { type: value } },
-        }),
-      );
+      const response_format = toResponseFormat(value);
+      if (response_format) {
+        dispatch(
+          setAgentSettings({
+            id: agentId,
+            settings: { ...currentSettings, response_format },
+          }),
+        );
+      }
       return;
     }
 

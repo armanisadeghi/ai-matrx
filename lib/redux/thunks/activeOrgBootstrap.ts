@@ -1,153 +1,65 @@
 // lib/redux/thunks/activeOrgBootstrap.ts
 //
-// Active-organization bootstrap + the single sanctioned UI write path for
-// switching the active org. This is the front line of the org-enforcement
-// rollout (CLAUDE.md "enforcing organization_id"): every user always has a
-// valid org riding along on API calls, even before they explicitly pick one.
+// The single sanctioned UI write path for SWITCHING the active org, plus a
+// back-compat bootstrap wrapper.
 //
-// Two pieces:
-//   1. bootstrapActiveOrganization() — run once at shell hydration by the
-//      ActiveOrgBootstrap island (features/shell/components/ActiveOrgBootstrap).
-//      Loads the user's orgs, records their PERSONAL org id (the soft-
-//      enforcement API fallback), then resolves the active org with this
-//      precedence:
-//        a. the user's DEFAULT org preference (cross-device, durable) — if they
-//           are still a member;
-//        b. otherwise, if they belong to exactly ONE org, that org (silent —
-//           there is nothing to choose, so no nudge);
-//        c. otherwise leave organization_id null on purpose — the signal the
-//           UI uses to nudge the user (red avatar ring + drop-down reminder)
-//           to pick one and optionally set it as their default.
-//      Either way it marks the bootstrap RESOLVED so the "no org" cues stop
-//      suppressing themselves (selectShouldPromptForOrganization).
-//   2. chooseActiveOrganization({id,name}) — the compliant wrapper UI surfaces
-//      call to switch orgs.
+// ⚠️ Active-org HYDRATION is no longer owned here. It is now a first-class
+// citizen of the unified sync engine via `appContextPolicy`
+// (lib/redux/slices/appContextSlice.ts, registered in lib/sync/registry.ts):
+// the engine rehydrates the org from IDB→localStorage before first paint and
+// reconciles via `remote.fetch` → `resolveActiveOrgContext`. The old
+// `ActiveOrgBootstrap` island that called `bootstrapActiveOrganization()` on
+// every launch (and paid ~4 round-trips each time) has been RETIRED.
 //
-// The default org is the SINGLE durable source of truth for "which org am I in"
-// — there is no separate localStorage "last org" mechanism. The default is read
-// straight from the `user_preferences` row at startup (authoritative — no race
-// with the client-side preferences sync hydration); want to be restored to an
-// org next session? Set it as your default (one switch in the picker).
+// `bootstrapActiveOrganization()` is kept as a thin, idempotent back-compat
+// wrapper over the same shared resolver — for any legacy caller that still
+// wants to force a resolve imperatively. New code should NOT call it; the
+// policy already keeps the org present and fresh.
 //
-// Why the eslint-disable below: setOrganization is an appContextSlice WRITE
-// action, gated to Surface-A active-context components (eslint.config.mjs
-// `appContextWriteSyntaxRestrictions`). This module is a legitimate Surface-A
-// writer that lives outside active-context/** — the same sanctioned exception
-// the canonical useHierarchyReduxBridge and the logout-reset watcher use.
-// Setting the global active org IS the job here.
+// Why the eslint-disable below: setOrganization / setPersonalOrganization are
+// appContextSlice WRITE actions, gated to Surface-A active-context components
+// (eslint.config.mjs `appContextWriteSyntaxRestrictions`). This module is a
+// legitimate Surface-A writer — switching the global active org IS its job.
 
-// eslint-disable-next-line no-restricted-syntax -- Surface A: canonical active-org bootstrap + switcher
+// eslint-disable-next-line no-restricted-syntax -- Surface A: canonical active-org switcher + back-compat bootstrap
 import {
   setOrganization,
   setPersonalOrganization,
   setOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
-import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
-import { getUserOrganizations } from "@/features/organizations/service";
+import { resolveActiveOrgContext } from "@/lib/organizations/resolveActiveOrgContext";
 import { getUserId } from "@/utils/auth/getUserId";
-import { supabase } from "@/utils/supabase/client";
-import { resolvePersonalOrgId, primePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 
 /**
- * Read the user's default-org preference straight from `user_preferences`.
- * Authoritative + race-free: it does not depend on the client-side preferences
- * sync engine having hydrated yet. Never throws — returns null on any failure
- * (no default → the nudge path).
- */
-async function readDefaultOrgIdFromDb(): Promise<string | null> {
-  try {
-    const userId = getUserId();
-    if (!userId) return null;
-    const { data, error } = await supabase
-      .schema("users").from("user_preferences")
-      .select("preferences")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (error || !data) return null;
-    const prefs = data.preferences as {
-      organization?: { defaultOrganizationId?: string | null };
-    } | null;
-    return prefs?.organization?.defaultOrganizationId ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Hydrate active-org state. Records the personal org id (API fallback) and
- * auto-selects the user's default org (or their only org). Safe to call once
- * per session after auth resolves. Never throws — a failure still marks the
- * bootstrap resolved so the UI doesn't hang on suppressed cues.
+ * Back-compat imperative bootstrap. Delegates to the shared resolver and
+ * dispatches the result. Hydration is normally owned by `appContextPolicy`;
+ * this exists only for legacy callers. Never throws — always marks the
+ * bootstrap resolved so the UI's "no org" cues don't hang suppressed.
  */
 export const bootstrapActiveOrganization =
   () => async (dispatch: AppDispatch, getState: () => RootState) => {
     try {
-      // Authoritative personal org id straight from the DB (auto-provisioned at
-      // signup, never changes). This is the canonical source — it also primes
-      // the session-wide `personalOrg` cache so service callsites resolving a
-      // null org afterward make zero extra RPC calls. Falls back to the org-list
-      // heuristic only if the RPC is unavailable.
-      let personalOrgId: string | null = null;
-      try {
-        personalOrgId = await resolvePersonalOrgId();
-      } catch (e) {
-        console.warn("[activeOrgBootstrap] current_personal_org_id() failed; falling back to org-list heuristic", e);
+      const userId = getUserId();
+      if (!userId) return;
+      const resolved = await resolveActiveOrgContext(userId);
+      if (!resolved) return;
+
+      if (resolved.personal_organization_id) {
+        dispatch(setPersonalOrganization(resolved.personal_organization_id));
       }
-
-      const orgs = await getUserOrganizations();
-      if (!orgs || orgs.length === 0) {
-        if (personalOrgId) dispatch(setPersonalOrganization(personalOrgId));
-        return;
-      }
-
-      // Prefer the authoritative id; fall back to the personal-flag org, then
-      // the first org if the flag is ever missing.
-      const resolvedPersonalId =
-        personalOrgId ?? (orgs.find((o) => o.isPersonal) ?? orgs[0])?.id ?? null;
-      primePersonalOrgId(resolvedPersonalId);
-      dispatch(setPersonalOrganization(resolvedPersonalId));
-
-      // Respect an org that is already actively selected (e.g. a deep-link or a
-      // restored full context beat us here).
-      if (getState().appContext.organization_id) return;
-
-      // a. Default org preference (durable, cross-device, read authoritatively
-      //    from the DB).
-      const preferredOrgId = await readDefaultOrgIdFromDb();
-      if (preferredOrgId) {
-        const match = orgs.find((o) => o.id === preferredOrgId);
-        if (match) {
-          dispatch(setOrganization({ id: match.id, name: match.name }));
-          return;
-        }
-        // Default points at an org the user is no longer a member of — clear
-        // the stale preference so it stops being retried, then fall through.
+      // Respect an org already actively selected (deep-link / restored context).
+      if (!getState().appContext.organization_id && resolved.organization_id) {
         dispatch(
-          setPreference({
-            module: "organization",
-            preference: "defaultOrganizationId",
-            value: null,
+          setOrganization({
+            id: resolved.organization_id,
+            name: resolved.organization_name,
           }),
         );
       }
-
-      // b. Exactly one org → auto-select it. There is nothing to choose, so
-      //    suppressing the nudge here is correct, not a shortcut.
-      if (orgs.length === 1) {
-        const only = orgs[0];
-        dispatch(setOrganization({ id: only.id, name: only.name }));
-        return;
-      }
-
-      // c. Multiple orgs, no default: leave organization_id null on purpose so
-      //    the UI nudges the user to choose one (personal org still rides along
-      //    on API calls via selectEffectiveOrganizationId).
     } catch (err) {
       console.error("[activeOrgBootstrap] failed to hydrate active org", err);
     } finally {
-      // Resolved either way — the UI gates its "no org" cues on this so they
-      // never flash before we know the user genuinely has no org.
       dispatch(setOrgBootstrapResolved(true));
     }
   };

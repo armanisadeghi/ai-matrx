@@ -7,6 +7,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   ComparisonEntryRow,
   ComparisonSetRow,
@@ -41,7 +42,7 @@ export async function createComparisonSet(
     .insert({
       name: input.name,
       user_id: input.userId,
-      organization_id: input.organizationId ?? null,
+      organization_id: await ensureOrgId(input.organizationId),
       project_id: input.projectId ?? null,
       task_id: input.taskId ?? null,
       metadata: input.metadata ?? {},

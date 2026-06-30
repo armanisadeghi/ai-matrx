@@ -24,13 +24,29 @@
 //                   └── conversations
 //
 // All fields are nullable — none means "scope is just the current user".
-// Setting org narrows scope; setting project narrows further; etc. The
-// scope_selections map keys by scope_type_id and values are scope_ids —
-// exactly one scope per scope_type (collisions are rejected at reducer).
+// Setting org narrows scope; setting project narrows further; etc.
+//
+// scope_selections is MULTI-SELECT (2026-06-12): any number of scopes across
+// any number of scope types can be active at once (keyed by scope id). The old
+// "exactly one scope per scope_type" cardinality is GONE — do not reintroduce
+// it. See the AppContextState.scope_selections doc below.
+//
+// ⚠️ ACTIVE (passive) context vs USER-SELECTED context — load-bearing:
+// this slice is the user's ACTIVE working context ("ground rules"), written
+// ONLY by Surface A (features/scopes/components/active-context/**). It is NOT
+// what the user is setting ON a specific object. Object-level assignment (the
+// "tag THIS with…" action) goes through features/scopes against
+// ctx_scope_assignments / canonical associations and MUST read the user's
+// explicit UI selection — never reach into this slice just because it's loaded.
 //
 // Stamped onto every API call by lib/api/call-api.ts → resolveScope.
 
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { definePolicy } from "@/lib/sync/policies/define";
+import {
+  REHYDRATE_ACTION_TYPE,
+  type RehydrateAction,
+} from "@/lib/sync/engine/rehydrate";
 
 export interface AppContextState {
   /** Currently active organization */
@@ -56,6 +72,17 @@ export interface AppContextState {
    * type — that cardinality is GONE. Do not reintroduce it.
    */
   scope_selections: Record<string, string | null>;
+
+  /**
+   * Active scope TYPES with NO specific scope chosen (2026-06-30). Rare but
+   * real: "I'm working in the Clients dimension" / an HR manager activating
+   * "Departments" / a parent activating "Kids" — without narrowing to one
+   * instance. Independent of `scope_selections` (which holds chosen scope
+   * instances): a type id here means "this whole dimension is in play." A type
+   * that already has a chosen scope in `scope_selections` does NOT need to be
+   * listed here. Flatten both for the full active picture.
+   */
+  active_scope_type_ids: string[];
 
   /** Currently active project (lives under an org, scoped by scope_selections) */
   project_id: string | null;
@@ -83,6 +110,7 @@ const initialState: AppContextState = {
   organization_name: null,
   personal_organization_id: null,
   scope_selections: {},
+  active_scope_type_ids: [],
   project_id: null,
   project_name: null,
   task_id: null,
@@ -102,6 +130,7 @@ const appContextSlice = createSlice({
       state.organization_id = action.payload.id;
       state.organization_name = action.payload.name ?? null;
       state.scope_selections = {};
+      state.active_scope_type_ids = [];
       state.project_id = null;
       state.project_name = null;
       state.task_id = null;
@@ -124,6 +153,14 @@ const appContextSlice = createSlice({
       state.project_name = null;
       state.task_id = null;
       state.task_name = null;
+    },
+    /**
+     * Set the active scope TYPES that have no specific scope chosen (the "whole
+     * dimension is in play" case). Surface A only. Independent of
+     * scope_selections — does NOT touch chosen scopes, project, or task.
+     */
+    setActiveScopeTypes: (state, action: PayloadAction<string[]>) => {
+      state.active_scope_type_ids = action.payload;
     },
     setProject: (
       state,
@@ -172,6 +209,8 @@ const appContextSlice = createSlice({
           action.payload.personal_organization_id;
       if (action.payload.scope_selections !== undefined)
         state.scope_selections = action.payload.scope_selections;
+      if (action.payload.active_scope_type_ids !== undefined)
+        state.active_scope_type_ids = action.payload.active_scope_type_ids;
       if (action.payload.project_id !== undefined)
         state.project_id = action.payload.project_id;
       if (action.payload.project_name !== undefined)
@@ -185,12 +224,48 @@ const appContextSlice = createSlice({
     },
     clearContext: () => initialState,
   },
+  extraReducers: (builder) => {
+    // Sync engine rehydrate — `appContextPolicy` (warm-cache) persists the org
+    // identity fields (organization_id / _name / personal_organization_id) to
+    // IDB→LS keyed by identity, and on boot the engine reads them back (cache
+    // primary, else `remote.fetch` → resolveActiveOrgContext) and dispatches
+    // REHYDRATE. This is what makes the active org PRESENT before any
+    // service/selector runs — the single, always-there source of truth.
+    //
+    // Only the org identity fields are persisted (partialize). Working context
+    // (project/task/scope/conversation) is intentionally NOT restored here —
+    // it stays at initialState on a fresh boot.
+    builder.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
+      if (action.payload.sliceName !== "appContext") return;
+      const loaded = action.payload.state as
+        | Partial<AppContextState>
+        | undefined;
+      // Mark resolved even on an empty payload — the engine ran, so the "no
+      // org" cues may stop suppressing themselves (selectShouldPromptForOrganization).
+      state.orgBootstrapResolved = true;
+      if (!loaded) return;
+      if (loaded.personal_organization_id !== undefined) {
+        state.personal_organization_id = loaded.personal_organization_id;
+      }
+      // Respect an org the user has already actively selected this session
+      // (deep-link / restored context beat the async refresh here).
+      if (state.organization_id == null) {
+        if (loaded.organization_id !== undefined) {
+          state.organization_id = loaded.organization_id;
+        }
+        if (loaded.organization_name !== undefined) {
+          state.organization_name = loaded.organization_name;
+        }
+      }
+    });
+  },
 });
 
 export const {
   setOrganization,
   setPersonalOrganization,
   setScopeSelections,
+  setActiveScopeTypes,
   setProject,
   setTask,
   setConversation,
@@ -258,6 +333,19 @@ export const selectScopeSelectionsContext = (
   state: StateWithAppContext,
 ): Record<string, string | null> => state.appContext.scope_selections;
 
+const EMPTY_ACTIVE_SCOPE_TYPES: string[] = [];
+
+/**
+ * Active scope TYPES with no specific scope chosen (the "whole dimension is in
+ * play" case). Independent of scope_selections. Stable empty array reference.
+ */
+export const selectActiveScopeTypeIds = (
+  state: StateWithAppContext,
+): string[] =>
+  state.appContext.active_scope_type_ids.length > 0
+    ? state.appContext.active_scope_type_ids
+    : EMPTY_ACTIVE_SCOPE_TYPES;
+
 export const selectProjectId = (state: StateWithAppContext): string | null =>
   state.appContext.project_id;
 
@@ -286,3 +374,75 @@ export const selectTaskName = (state: StateWithAppContext): string | null =>
  */
 export const selectAppContext = (state: StateWithAppContext): AppContextState =>
   state.appContext;
+
+// ---- Sync engine policy --------------------------------------------------
+//
+// `appContextPolicy` makes the ACTIVE ORGANIZATION a first-class, always-present
+// citizen of the unified sync engine — the same machinery behind userPreferences
+// / userProfile. This REPLACES the old ActiveOrgBootstrap island + per-launch
+// multi-round-trip bootstrap. It:
+//   - persists the org IDENTITY fields (organization_id / _name /
+//     personal_organization_id) to IDB→localStorage, keyed by identity, so on a
+//     hard refresh the active org rehydrates BEFORE any service/selector runs —
+//     impossible to be missing;
+//   - on cold-boot (and after `staleAfter`) runs `remote.fetch` →
+//     resolveActiveOrgContext to reconcile against the durable default-org
+//     preference + current memberships;
+//   - broadcasts org switches across tabs in <20ms.
+//
+// `partialize` deliberately persists ONLY the org identity fields. Working
+// context (scope/project/task/conversation) and the transient
+// `orgBootstrapResolved` flag are NOT persisted — REHYDRATE sets the flag true.
+//
+// NOTE: there is no `remote.write` — the durable cross-device "which org" truth
+// is the default-org PREFERENCE (owned by userPreferences), not a column here.
+// The local cache restores the last active org instantly; `remote.fetch`
+// reconciles. Switching orgs durably = set your default.
+
+export const appContextPolicy = definePolicy<AppContextState>({
+  sliceName: "appContext",
+  preset: "warm-cache",
+  version: 1, // Bump destroys client caches; Phase 6 adds migration hooks.
+  broadcast: {
+    actions: [
+      "appContext/setOrganization",
+      "appContext/setPersonalOrganization",
+      "appContext/setFullContext",
+      "appContext/clearContext",
+    ],
+  },
+  storageKey: "matrx:appContext",
+  partialize: [
+    "organization_id",
+    "organization_name",
+    "personal_organization_id",
+  ],
+  serialize: (state) => ({
+    organization_id: state.organization_id,
+    organization_name: state.organization_name,
+    personal_organization_id: state.personal_organization_id,
+  }),
+  deserialize: (raw) => {
+    if (!raw || typeof raw !== "object") return {};
+    const r = raw as Record<string, unknown>;
+    const str = (v: unknown): string | null =>
+      typeof v === "string" && v.length > 0 ? v : null;
+    return {
+      organization_id: str(r.organization_id),
+      organization_name: str(r.organization_name),
+      personal_organization_id: str(r.personal_organization_id),
+    };
+  },
+  staleAfter: 5 * 60_000, // reconcile against default-pref / membership after 5 min idle
+  remote: {
+    fetch: async ({ identity, signal }) => {
+      if (identity.type !== "auth") return null; // guests have no server org
+      const { resolveActiveOrgContext } = await import(
+        "@/lib/organizations/resolveActiveOrgContext"
+      );
+      const resolved = await resolveActiveOrgContext(identity.userId);
+      if (signal.aborted || !resolved) return null;
+      return resolved as Partial<AppContextState>;
+    },
+  },
+});

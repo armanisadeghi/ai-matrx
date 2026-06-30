@@ -13,6 +13,7 @@
 "use client";
 
 import { createJob, updateJob } from "@/features/page-extraction/api/jobs";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
 import type {
   PageExtractionJob,
@@ -190,7 +191,7 @@ export async function saveTemplateFromDraft(
     // to outrank or underrank the agent's usual output.
     rag_boost: draft.ragBoost ?? null,
     owner_id: opts.ownerId,
-    organization_id: opts.organizationId ?? null,
+    organization_id: await ensureOrgId(opts.organizationId),
     project_id: null,
     archived_at: null,
   };

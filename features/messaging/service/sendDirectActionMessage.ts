@@ -9,7 +9,7 @@
  * Direct Supabase — no Next.js API hop (the messaging system is client→Supabase).
  */
 
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import type { MessageActionData } from "@/features/messaging/types";
@@ -28,7 +28,7 @@ export async function findOrCreateDirectConversation(
   if (findError) throw findError;
   if (existing) return existing as string;
 
-  const organizationId = await resolvePersonalOrgId();
+  const organizationId = await ensureOrgId(undefined);
   const { data: conv, error: createError } = await supabase
     .schema("communication").from("dm_conversations")
     .insert({

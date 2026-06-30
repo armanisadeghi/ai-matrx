@@ -418,14 +418,14 @@ function TreeItem({
       )}
 
       {/* Task status indicator */}
-      {node.type === "task" && node.meta?.status && (
+      {node.type === "task" && Boolean(node.meta?.status) && (
         <span
           className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-            node.meta.status === "completed"
+            node.meta?.status === "completed"
               ? "bg-green-400"
-              : node.meta.status === "in_progress"
+              : node.meta?.status === "in_progress"
                 ? "bg-blue-400"
-                : node.meta.status === "blocked"
+                : node.meta?.status === "blocked"
                   ? "bg-red-400"
                   : "bg-gray-400"
           }`}

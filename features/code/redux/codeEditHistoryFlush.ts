@@ -23,6 +23,7 @@ import type { AppDispatch, AppStore, RootState } from "@/lib/redux/store";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { createClient } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Json } from "@/types/database.types";
 import {
   markPersisted,
@@ -70,7 +71,7 @@ interface RpcResponse {
   edits: Array<{ block_index: number | string; id: string }>;
 }
 
-function buildPayload(snap: MessageFileSnapshot): RpcPayload {
+async function buildPayload(snap: MessageFileSnapshot): Promise<RpcPayload> {
   let applied = 0;
   let rejected = 0;
   let reverted = 0;
@@ -82,7 +83,9 @@ function buildPayload(snap: MessageFileSnapshot): RpcPayload {
   return {
     message_id: snap.messageId,
     conversation_id: snap.conversationId,
-    organization_id: snap.organizationId ?? null,
+    // Org is required on the history row — ride the snapshot's org if captured,
+    // else the user's active org (never null) via the canonical resolver.
+    organization_id: await ensureOrgId(snap.organizationId),
     file_adapter: snap.fileAdapter,
     file_path: snap.filePath,
     library_file_id: snap.libraryFileId ?? null,
@@ -160,7 +163,7 @@ export function flushHistoryThunk(
         // 500ms debounce window) is what we send.
         const snap = findSnapshot(getState(), write);
         if (!snap) return;
-        const payload = buildPayload(snap);
+        const payload = await buildPayload(snap);
 
         inFlight.add(key);
         try {

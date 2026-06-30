@@ -395,9 +395,9 @@ const scopesChokepointSyntaxRestrictions = [
 const appContextWriteSyntaxRestrictions = [
     {
         selector:
-            "ImportDeclaration[source.value='@/lib/redux/slices/appContextSlice']:has(ImportSpecifier[imported.name=/^(setOrganization|setScopeSelections|setProject|setTask|setConversation|setFullContext|clearContext)$/])",
+            "ImportDeclaration[source.value='@/lib/redux/slices/appContextSlice']:has(ImportSpecifier[imported.name=/^(setOrganization|setScopeSelections|setActiveScopeTypes|setProject|setTask|setConversation|setFullContext|clearContext)$/])",
         message:
-            "appContextSlice write actions (setOrganization / setScopeSelections / setProject / setTask / setConversation / setFullContext / clearContext) may be imported ONLY by Surface A components under features/scopes/components/active-context/**. Global active context is written by Surface A alone; every other surface must persist a DURABLE association (platform.associations via the association primitive, or ctx_scope_assignments) instead of mutating the sidebar's working context. If this IS a legitimate Surface-A active-context write, add `// eslint-disable-next-line no-restricted-syntax` directly above this import with a one-line justification. See CLAUDE.md 'Scopes and Context' + features/scopes/FEATURE.md 'Global vs local context'.",
+            "appContextSlice write actions (setOrganization / setScopeSelections / setActiveScopeTypes / setProject / setTask / setConversation / setFullContext / clearContext) may be imported ONLY by Surface A components under features/scopes/components/active-context/**. Global active context is written by Surface A alone; every other surface must persist a DURABLE association (platform.associations via the association primitive, or ctx_scope_assignments) instead of mutating the sidebar's working context. If this IS a legitimate Surface-A active-context write, add `// eslint-disable-next-line no-restricted-syntax` directly above this import with a one-line justification. See CLAUDE.md 'Scopes and Context' + features/scopes/FEATURE.md 'Global vs local context'.",
     },
 ];
 

@@ -31,7 +31,7 @@ import {
   type ConnectionUser,
 } from "../hooks/useUserConnections";
 import type { UserBasicInfo } from "../types";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 
 interface NewConversationDialogProps {
@@ -100,7 +100,7 @@ export function NewConversationDialog({
       }
 
       // Create new conversation
-      const organizationId = await resolvePersonalOrgId();
+      const organizationId = await ensureOrgId(undefined);
       const { data: newConv, error: createError } = await supabase
         .schema("communication").from("dm_conversations")
         .insert({

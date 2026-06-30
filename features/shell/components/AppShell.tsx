@@ -23,7 +23,6 @@ import NavActiveSync from "@/features/shell/components/NavActiveSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
-import ActiveOrgBootstrap from "@/features/shell/components/ActiveOrgBootstrap";
 import type { UserData } from "@/utils/userDataMapper";
 import type { BaseReduxState } from "@/types/reduxTypes";
 
@@ -78,7 +77,10 @@ export default function AppShell({
       <NavActiveSync />
       <VisualViewportSync />
       <ShellSidebarCookieSync />
-      {isAuthenticated && <ActiveOrgBootstrap />}
+      {/* Active-organization hydration is owned by the sync engine
+          (`appContextPolicy`, registered in lib/sync/registry) — it rehydrates
+          the org from cache before first paint and reconciles via remote.fetch.
+          The old <ActiveOrgBootstrap /> island was retired in favor of it. */}
       <DeferredIslands />
     </Providers>
   );

@@ -430,7 +430,8 @@ function VariablesTab({ conversationId }: { conversationId: string | null }) {
               <span className="text-muted-foreground">
                 {d.helpText ?? "—"}{" "}
                 <span className="text-primary/60">
-                  (default: {d.defaultValue ?? "—"})
+                  (default:{" "}
+                  {d.defaultValue != null ? String(d.defaultValue) : "—"})
                 </span>
               </span>
             }

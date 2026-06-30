@@ -118,6 +118,7 @@ export const fetchAppletsForAppThunk = createAsyncThunk<
     return applets.map((applet) => ({
       ...applet,
       containers: applet.containers || [],
+      publicRead: applet.publicRead ?? undefined,
     }));
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

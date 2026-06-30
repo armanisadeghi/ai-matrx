@@ -36014,7 +36014,7 @@ export type Database = {
           id: string
           metadata: Json
           namespace: string
-          organization_id: string
+          organization_id: string | null
           scope_id: string | null
           surface_name: string
           updated_at: string
@@ -36030,7 +36030,7 @@ export type Database = {
           id?: string
           metadata?: Json
           namespace: string
-          organization_id: string
+          organization_id?: string | null
           scope_id?: string | null
           surface_name: string
           updated_at?: string
@@ -36046,7 +36046,7 @@ export type Database = {
           id?: string
           metadata?: Json
           namespace?: string
-          organization_id?: string
+          organization_id?: string | null
           scope_id?: string | null
           surface_name?: string
           updated_at?: string

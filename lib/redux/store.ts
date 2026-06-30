@@ -215,7 +215,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         scopeTreeInvalidationMiddleware,
         overlayRenderWatchdogMiddleware,
         reduxErrorCaptureMiddleware,
-      ) as ReturnType<typeof getDefaultMiddleware>,
+      ),
     devTools: process.env.NODE_ENV !== "production",
   });
 

@@ -13,9 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import type { RootState } from "@/lib/redux/store";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { EDGE_ROLE } from "./types";
 import type {
   FcResult,
@@ -31,12 +29,14 @@ import type {
 
 const EDU = () => supabase.schema("education");
 
-/** Active-context org (falls back to the user's personal org inside the selector). */
-function getOrgId(explicit?: string): string | null {
-  if (explicit) return explicit;
-  const store = getStoreSingleton();
-  if (!store) return null;
-  return selectEffectiveOrganizationId(store.getState() as RootState) ?? null;
+/**
+ * Resolve the org for a flashcard write. The canonical `ensureOrgId` rides the
+ * user's ACTIVE org (header selection, else personal) and never returns null —
+ * it screams + falls back to the personal-org RPC if Redux somehow lacks it, so
+ * a write is never blocked on an unhydrated store.
+ */
+function resolveOrgId(explicit?: string): Promise<string> {
+  return ensureOrgId(explicit);
 }
 
 function fail<T>(context: string, error: unknown): FcResult<T> {
@@ -61,8 +61,7 @@ export const fcService = {
   // ─── SETS ───────────────────────────────────────────────────────────────
   async createSet(input: NewSetInput): Promise<FcResult<FcSetRow>> {
     try {
-      const orgId = getOrgId(input.orgId);
-      if (!orgId) return fail("createSet", "no active organization");
+      const orgId = await resolveOrgId(input.orgId);
       const { data, error } = await EDU()
         .from("fc_set")
         .insert({
@@ -131,8 +130,7 @@ export const fcService = {
   ): Promise<FcResult<FcCardRow[]>> {
     try {
       if (cards.length === 0) return { data: [], error: null };
-      const orgId = getOrgId(opts.orgId);
-      if (!orgId) return fail("addCards", "no active organization");
+      const orgId = await resolveOrgId(opts.orgId);
       const rows = cards.map((c) => ({
         organization_id: orgId,
         front: c.front,

@@ -6,6 +6,18 @@ export interface ContextMenuRow {
   categories_flat: unknown[];
 }
 
+/**
+ * Thin org shape returned in the SSR payload — enough to warm the
+ * organizations slice + the org picker without a secondary fetch.
+ */
+export interface SSRShellOrganization {
+  id: string;
+  name: string;
+  slug: string;
+  is_personal: boolean;
+  role: string;
+}
+
 export interface SSRShellData {
   is_admin: boolean;
   preferences_exists: boolean;
@@ -13,6 +25,16 @@ export interface SSRShellData {
   ai_models: AIModel[];
   context_menu: ContextMenuRow[];
   sms_unread_total: number;
+  /** The user's never-null personal org (iam.personal_org_id). */
+  personal_organization_id: string | null;
+  /**
+   * The resolved EXPLICIT active org (default-if-member → only-org → null).
+   * Null is intentional — the signal the UI uses to nudge the user to pick
+   * one; the personal org still rides along via selectEffectiveOrganizationId.
+   */
+  active_organization_id: string | null;
+  /** The user's active org memberships (thin shape). */
+  organizations: SSRShellOrganization[];
 }
 
 export interface SSRAgentShellData {
@@ -56,6 +78,9 @@ export async function getSSRShellData(
         ai_models: [],
         context_menu: [],
         sms_unread_total: 0,
+        personal_organization_id: null,
+        active_organization_id: null,
+        organizations: [],
       };
     }
     console.error("[SSR Shell] Failed to fetch shell data:", error);
@@ -70,6 +95,9 @@ export async function getSSRShellData(
       ai_models: [],
       context_menu: [],
       sms_unread_total: 0,
+      personal_organization_id: null,
+      active_organization_id: null,
+      organizations: [],
     };
   }
 

@@ -2,7 +2,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { resolvePersonalOrgId, ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   Note,
   CreateNoteInput,
@@ -158,16 +158,17 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
   }
 
   // Resolve a home org so notes are never created homeless. If the caller
-  // didn't pass one, default to the user's personal organization (every user
-  // has one) via the canonical session-cached resolver.
+  // didn't pass one, ride the user's ACTIVE org (header selection, else their
+  // personal org) via the canonical resolver — every write follows the org the
+  // user is currently working in.
   let organizationId = input.organization_id ?? null;
   if (!organizationId) {
     try {
-      organizationId = await resolvePersonalOrgId();
+      organizationId = await ensureOrgId(undefined);
     } catch (orgError) {
       // Don't block note creation on org resolution — log loudly and fall back
       // to homeless (the sidebar's "add to my organization" action recovers it).
-      console.error("Could not resolve personal organization for note:", orgError);
+      console.error("Could not resolve organization for note:", orgError);
     }
   }
 
@@ -450,8 +451,8 @@ export async function createFolder(name: string): Promise<string> {
       name,
       path: name,
       position: 0,
-      // Root entity (no org-inherit trigger) — org is NOT NULL; resolve it.
-      organization_id: await resolvePersonalOrgId(),
+      // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
+      organization_id: await ensureOrgId(undefined),
     })
     .select("id")
     .single();

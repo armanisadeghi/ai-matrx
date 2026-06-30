@@ -448,7 +448,7 @@ function NewSurfaceDialog({
       await createSurface({
         name: fullName,
         client_name: client,
-        description: description || null,
+        description: description,
         sort_order: tierEntry.min + 50,
         is_active: true,
       });

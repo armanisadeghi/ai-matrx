@@ -51,8 +51,6 @@ import {
   wireToIngestReport,
   wireToSkillRow,
 } from "./skillsConverters";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-
 /** Columns selected for every skill read, plus the project-membership join.
  * Used by `fetchSkills` + `fetchSkillById` so both return identical shapes. */
 const SKILL_SELECT = "*, project(project_id)";
@@ -538,11 +536,8 @@ export const createCategoryThunk = createAsyncThunk<
 
   // Personal category — Supabase direct via platform.categories (dimension='skill').
   // RLS stamps + validates. created_by and organization_id are required for
-  // org-scoped dimensions.
-  const organizationId = selectOrganizationId(getState());
-  if (!organizationId) {
-    throw new Error("Organization is required to create a skill category");
-  }
+  // org-scoped dimensions — ride the active org (never null) via ensureOrgId.
+  const organizationId = await ensureOrgId(undefined);
   const insertPayload = {
     dimension: "skill" as const,
     slug: draft.categoryKey,

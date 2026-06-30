@@ -50,6 +50,22 @@ A scope value is a curated, authoritative fact about the scope — not a guess t
 - An **org** owns its **scope types** (dimensions are per-org).
 - **Projects** and **tasks** are a *separate* system — not scopes. They can optionally be associated with scopes (via the same M2M assignment), but they are not part of the scope hierarchy.
 
+## Runtime context — three layers (NEVER conflate them)
+
+At runtime, "context" splits into three distinct things. Reaching into the wrong one is the single biggest source of rot in this codebase (it silently binds entities to scopes the user never chose).
+
+| Layer | What it is | Where it lives | Who writes it |
+|---|---|---|---|
+| **A — Active (passive) context** | The user's working "ground rules" right now: active org + active scopes + active scope *types* + active project/task. Sitting there because it's loaded. | `lib/redux/slices/appContextSlice.ts` | **Surface A only** (`features/scopes/components/active-context/**`) |
+| **B — Reference tree** | What *exists*: the full org → scope type → scope → item catalogue. Read-only cache. | `features/agent-context/redux/*` (hierarchy + 5 fan-out slices — **being consolidated onto the hierarchy owner**) | Fetched once at boot; invalidated by `scopeTreeInvalidationMiddleware` |
+| **C — Object assignment** | What the user is setting *on* a specific object ("tag THIS note with Ava"). | `ctx_scope_assignments` / canonical `platform.associations` | `setEntityScopes` chokepoint, from the user's **explicit UI selection** |
+
+**The load-bearing rule:** a user **action** (binding, tagging, assigning — Layer C) MUST read the user's **explicit UI selection**, *never* Layer A just because it's convenient and loaded. Layer A is "where I'm working," not "what I'm acting on." A successful write that sourced Layer A instead of the explicit selection is *worse* than a failure — it silently mis-binds.
+
+**Active scopes are multi, and so are active types.** Layer A holds *any number* of active scopes across *any number* of types (`scope_selections`, keyed by scope id since 2026-06-12). Separately and more rarely, a user can activate a whole scope **type with no specific scope chosen** — "I'm working in Clients" / an HR manager activating "Departments" / a parent activating "Kids" without picking one. That lives in `appContextSlice.active_scope_type_ids` (added 2026-06-30); a type with a chosen scope doesn't need to be listed there.
+
+> **Associations are the only M2M.** Object assignment (Layer C), and every agent/entity↔scope/project/task link, goes through the canonical `platform.associations` system. No bespoke per-table M2M (the condemned `agent_surface` binding in `features/surfaces` is the cautionary example). project_id / task_id are M2M now — not single FK columns.
+
 ## Tables (look up the DB for columns)
 
 | Table | Holds |

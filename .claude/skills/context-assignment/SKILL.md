@@ -18,15 +18,28 @@ description: Use whenever a task touches context selection, scope tagging, or th
 3. **A scope NEVER implies its organization.** Org is an independent context
    dimension — it is part of a selection only when explicitly checked.
    Display follows the same rule (`ContextSummaryChips` enforces it).
-4. **Active vs durable — the load-bearing distinction:**
-   - **Active (working) context** = "what I'm doing right now"; ephemeral;
-     lives in `appContextSlice`; feeds every agent run automatically
-     (execute-instance stamps it). MULTI-scope (keyed by scope id since
-     2026-06-12), single org/project/task.
-   - **Durable assignment** = "this entity belongs to these"; persisted in
-     `ctx_scope_assignments` via the `setEntityScopes` chokepoint.
-   - Never write one when the user meant the other. Never auto-convert
-     active → durable (suggest only).
+4. **Three runtime layers — NEVER conflate them** (full table:
+   `docs/knowledge/scope-model.md` → "Runtime context — three layers"):
+   - **Layer A — Active (working/passive) context** = "what I'm doing right
+     now"; ephemeral; lives in `appContextSlice`; feeds every agent run
+     automatically (execute-instance stamps it). MULTI-scope (keyed by scope id
+     since 2026-06-12), single org/project/task, plus independent active scope
+     **types** (`active_scope_type_ids`, 2026-06-30 — "whole dimension in play,
+     no instance chosen"). **Writers MUST be Surface A** (ESLint-gated; the
+     write actions include `setActiveScopeTypes`).
+   - **Layer B — Reference tree** = what *exists* (org→type→scope→item). Cache
+     only; fetched once at boot. **Being consolidated onto the hierarchy owner**
+     — read scope data via hierarchy selectors, do NOT reach for the fragmented
+     `scopeTypes`/`scopes`/… fan-out slices in new code.
+   - **Layer C — Durable object assignment** = "this entity belongs to these";
+     persisted in `ctx_scope_assignments` / canonical `platform.associations`
+     via the `setEntityScopes` chokepoint, **from the user's explicit UI
+     selection**.
+   - A user ACTION (Layer C) must read the explicit selection, **never** Layer A
+     just because it's loaded. A successful write that sourced Layer A is *worse*
+     than a failure — it silently mis-binds. Never auto-convert active → durable
+     (suggest only). The condemned `agent_surface` binding service
+     (`features/surfaces`) is the cautionary example of doing this wrong.
 
 ## Component selection table
 

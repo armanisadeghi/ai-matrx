@@ -39,7 +39,7 @@ const AgentVariableCardsInputs = dynamic(() =>
 interface SmartAgentVariablesProps {
   conversationId: string;
   compact?: boolean;
-  onSubmit: () => void;
+  onSubmit?: () => void;
   /** Override the Redux-stored style (e.g. from parent props) */
   styleOverride?: VariablesPanelStyle;
 }
@@ -47,7 +47,7 @@ interface SmartAgentVariablesProps {
 export function SmartAgentVariables({
   conversationId,
   compact = false,
-  onSubmit,
+  onSubmit = () => {},
   styleOverride,
 }: SmartAgentVariablesProps) {
   const reduxStyle = useAppSelector(selectVariableInputStyle(conversationId));

@@ -24,6 +24,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { NotesAPI } from "@/features/notes/service/notesApi";
+import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import {
   refreshNoteContent,
   saveNoteField,
@@ -80,10 +81,16 @@ export function deriveWorkingDocTitle(content: string): string {
   return generateLabelFromContent(content, AUTO_TITLE_MAX);
 }
 
-/** The org a new document is stamped with: the conversation's org, then active. */
+/**
+ * The org a new working document is stamped with: the conversation's org first,
+ * then the user's GLOBAL active org (header selection, else personal) via the
+ * canonical `getActiveOrgId()`. Only returns null in the impossible case where
+ * neither is present — callers still guard, but in practice it's never null.
+ */
 function resolveOrgId(state: RootState, conversationId: string): string | null {
   return (
-    state.conversations.byConversationId[conversationId]?.organizationId ?? null
+    state.conversations.byConversationId[conversationId]?.organizationId ??
+    getActiveOrgId()
   );
 }
 

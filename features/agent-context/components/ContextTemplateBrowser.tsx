@@ -352,7 +352,7 @@ function ApplyTemplateDialog({
   const toSkip = selectedItems.filter((i) => existingKeys.has(i.key));
 
   useEffect(() => {
-    if (step === "confirm") {
+    if (step === "confirm" && selectedScope.scopeTypeId) {
       setLoadingKeys(true);
       contextService
         .fetchExistingKeys(selectedScope.scopeTypeId)

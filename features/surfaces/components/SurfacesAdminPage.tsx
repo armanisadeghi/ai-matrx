@@ -17,7 +17,7 @@ import {
   Check,
   Zap,
   ChevronRight,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -70,7 +66,9 @@ const ALL = "__all__";
 
 export function SurfacesAdminPage() {
   const [surfaces, setSurfaces] = useState<SurfaceWithStats[]>([]);
-  const [clients, setClients] = useState<{ name: string; description: string | null; is_active: boolean | null }[]>([]);
+  const [clients, setClients] = useState<
+    { name: string; description: string | null; is_active: boolean | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<ClientFilterValue>(ALL);
@@ -80,14 +78,18 @@ export function SurfacesAdminPage() {
   const [creating, setCreating] = useState(false);
   const [candidatesOpen, setCandidatesOpen] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
-  const [openDrawerSurface, setOpenDrawerSurface] = useState<SurfaceWithStats | null>(null);
+  const [openDrawerSurface, setOpenDrawerSurface] =
+    useState<SurfaceWithStats | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [s, c] = await Promise.all([listSurfacesWithStats(), listClientNames()]);
+      const [s, c] = await Promise.all([
+        listSurfacesWithStats(),
+        listClientNames(),
+      ]);
       setSurfaces(s);
       setClients(c);
     } catch (e) {
@@ -127,7 +129,9 @@ export function SurfacesAdminPage() {
   // counts/description in the header stay in sync.
   const drawerSurface =
     openDrawerSurface && surfaces.find((s) => s.name === openDrawerSurface.name)
-      ? (surfaces.find((s) => s.name === openDrawerSurface.name) as SurfaceWithStats)
+      ? (surfaces.find(
+          (s) => s.name === openDrawerSurface.name,
+        ) as SurfaceWithStats)
       : openDrawerSurface;
 
   // Apply client + status + search filters
@@ -137,7 +141,10 @@ export function SurfacesAdminPage() {
     if (status === "inactive" && s.is_active) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      if (!s.name.toLowerCase().includes(q) && !(s.description ?? "").toLowerCase().includes(q)) {
+      if (
+        !s.name.toLowerCase().includes(q) &&
+        !(s.description ?? "").toLowerCase().includes(q)
+      ) {
         return false;
       }
     }
@@ -154,7 +161,8 @@ export function SurfacesAdminPage() {
   })).filter((g) => g.rows.length > 0);
 
   const visibleNames = visible.map((s) => s.name);
-  const allVisibleSelected = visibleNames.length > 0 && visibleNames.every((n) => selected.has(n));
+  const allVisibleSelected =
+    visibleNames.length > 0 && visibleNames.every((n) => selected.has(n));
   const someVisibleSelected = visibleNames.some((n) => selected.has(n));
 
   const toggleSelectAll = () => {
@@ -183,7 +191,9 @@ export function SurfacesAdminPage() {
       await bulkSetSurfacesActive(targets, active);
       await load();
       setSelected(new Set());
-      toast.success(`${targets.length} surface${targets.length === 1 ? "" : "s"} ${active ? "activated" : "deactivated"}`);
+      toast.success(
+        `${targets.length} surface${targets.length === 1 ? "" : "s"} ${active ? "activated" : "deactivated"}`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Bulk update failed");
     }
@@ -209,7 +219,9 @@ export function SurfacesAdminPage() {
       await bulkDeleteSurfaces(targets);
       await load();
       setSelected(new Set());
-      toast.success(`${targets.length} surface${targets.length === 1 ? "" : "s"} deleted`);
+      toast.success(
+        `${targets.length} surface${targets.length === 1 ? "" : "s"} deleted`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Bulk delete failed");
     }
@@ -221,7 +233,9 @@ export function SurfacesAdminPage() {
 
   // Aggregate counts shown in the header chips
   const totalActive = surfaces.filter((s) => s.is_active).length;
-  const totalUnused = surfaces.filter((s) => s.toolCount === 0 && s.agentCount === 0).length;
+  const totalUnused = surfaces.filter(
+    (s) => s.toolCount === 0 && s.agentCount === 0,
+  ).length;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -229,15 +243,25 @@ export function SurfacesAdminPage() {
         <Layers className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-medium">Tool Registry · UI Surfaces</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <Badge variant="outline" className="text-[10px]">{surfaces.length} total</Badge>
-          <Badge variant="outline" className="text-[10px]">{totalActive} active</Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {surfaces.length} total
+          </Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {totalActive} active
+          </Badge>
           {totalUnused > 0 && (
-            <Badge variant="secondary" className="text-[10px]" title="Surfaces with no tools or agents pointing at them">
+            <Badge
+              variant="secondary"
+              className="text-[10px]"
+              title="Surfaces with no tools or agents pointing at them"
+            >
               {totalUnused} unused
             </Badge>
           )}
         </div>
-        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        {loading && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        )}
         <Button
           size="sm"
           variant="ghost"
@@ -273,7 +297,11 @@ export function SurfacesAdminPage() {
             </Badge>
           )}
         </Button>
-        <Button size="sm" onClick={() => setCreating(true)} className="h-7 gap-1.5">
+        <Button
+          size="sm"
+          onClick={() => setCreating(true)}
+          className="h-7 gap-1.5"
+        >
           <Plus className="h-3.5 w-3.5" />
           New surface
         </Button>
@@ -290,11 +318,15 @@ export function SurfacesAdminPage() {
               </span>
             </TabsTrigger>
             {clients.map((c) => {
-              const cnt = surfaces.filter((s) => s.client_name === c.name).length;
+              const cnt = surfaces.filter(
+                (s) => s.client_name === c.name,
+              ).length;
               return (
                 <TabsTrigger key={c.name} value={c.name} className="text-xs">
                   <span className="font-mono">{c.name}</span>
-                  <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">{cnt}</span>
+                  <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
+                    {cnt}
+                  </span>
                 </TabsTrigger>
               );
             })}
@@ -315,7 +347,10 @@ export function SurfacesAdminPage() {
             style={{ fontSize: "16px" }}
           />
         </div>
-        <Select value={status} onValueChange={(v) => setStatus(v as StatusFilter)}>
+        <Select
+          value={status}
+          onValueChange={(v) => setStatus(v as StatusFilter)}
+        >
           <SelectTrigger className="h-8 w-[140px] text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -330,10 +365,20 @@ export function SurfacesAdminPage() {
             <span className="text-[11px] text-muted-foreground">
               {selected.size} selected
             </span>
-            <Button size="sm" variant="ghost" onClick={() => void onBulkSetActive(true)} className="h-6 text-xs gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void onBulkSetActive(true)}
+              className="h-6 text-xs gap-1"
+            >
               <ToggleRight className="h-3.5 w-3.5" /> Activate
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void onBulkSetActive(false)} className="h-6 text-xs gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void onBulkSetActive(false)}
+              className="h-6 text-xs gap-1"
+            >
               <ToggleLeft className="h-3.5 w-3.5" /> Deactivate
             </Button>
             <Button
@@ -344,7 +389,12 @@ export function SurfacesAdminPage() {
             >
               <Trash2 className="h-3.5 w-3.5" /> Delete
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())} className="h-6 text-xs">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelected(new Set())}
+              className="h-6 text-xs"
+            >
               Clear
             </Button>
           </div>
@@ -394,10 +444,15 @@ export function SurfacesAdminPage() {
                   )}
                 </button>
                 <h2 className="text-sm font-medium">{tier.label}</h2>
-                <Badge variant="outline" className="text-[10px]">{rows.length}</Badge>
-                <span className="text-[11px] text-muted-foreground">{tier.description}</span>
+                <Badge variant="outline" className="text-[10px]">
+                  {rows.length}
+                </Badge>
+                <span className="text-[11px] text-muted-foreground">
+                  {tier.description}
+                </span>
                 <span className="ml-auto text-[10px] text-muted-foreground tabular-nums font-mono">
-                  sort {tier.min}{tier.max === Number.MAX_SAFE_INTEGER ? "+" : `–${tier.max}`}
+                  sort {tier.min}
+                  {tier.max === Number.MAX_SAFE_INTEGER ? "+" : `–${tier.max}`}
                 </span>
               </div>
               <div className="rounded-md border border-border bg-card divide-y divide-border">
@@ -514,7 +569,8 @@ function SurfaceRow({
     } else {
       const ok = await confirm({
         title: `Delete ${row.name}?`,
-        description: "No tools or agents point at this surface. The row can be recreated later if needed.",
+        description:
+          "No tools or agents point at this surface. The row can be recreated later if needed.",
         confirmLabel: "Delete",
         variant: "destructive",
       });
@@ -533,13 +589,19 @@ function SurfaceRow({
   };
 
   return (
-    <div className={`px-3 py-2 grid grid-cols-[24px_1fr_140px_140px_120px_28px_28px] items-start gap-3 ${row.is_active ? "" : "opacity-50"}`}>
+    <div
+      className={`px-3 py-2 grid grid-cols-[24px_1fr_140px_140px_120px_28px_28px] items-start gap-3 ${row.is_active ? "" : "opacity-50"}`}
+    >
       <button
         onClick={onToggleSelect}
         className="mt-1 text-muted-foreground hover:text-foreground"
         aria-label={`Select ${row.name}`}
       >
-        {selected ? <CheckSquare className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+        {selected ? (
+          <CheckSquare className="h-3.5 w-3.5" />
+        ) : (
+          <Square className="h-3.5 w-3.5" />
+        )}
       </button>
       <div className="min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
@@ -586,7 +648,11 @@ function SurfaceRow({
                 className="h-6 w-6 p-0"
                 aria-label="Save description"
               >
-                {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                {busy ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Check className="h-3 w-3" />
+                )}
               </Button>
               <Button
                 size="sm"
@@ -676,7 +742,11 @@ function NewClientDialog({
     if (!nameValid || nameClash) return;
     setBusy(true);
     try {
-      await createUiClient({ name, description: description || null, sortOrder });
+      await createUiClient({
+        name,
+        description: description || null,
+        sortOrder,
+      });
       toast.success(`Client ${name} created`);
       onCreated();
     } catch (e) {
@@ -741,8 +811,15 @@ function NewClientDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void submit()} disabled={busy || !nameValid || nameClash}>
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create client"}
+          <Button
+            onClick={() => void submit()}
+            disabled={busy || !nameValid || nameClash}
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              "Create client"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -756,7 +833,11 @@ function NewSurfaceDialog({
   onClose,
   onCreated,
 }: {
-  clients: { name: string; description: string | null; is_active: boolean | null }[];
+  clients: {
+    name: string;
+    description: string | null;
+    is_active: boolean | null;
+  }[];
   existingNames: Set<string>;
   onClose: () => void;
   onCreated: () => void;
@@ -767,7 +848,8 @@ function NewSurfaceDialog({
   const [tier, setTier] = useState<string>("Pages");
   const [busy, setBusy] = useState(false);
 
-  const tierEntry = SURFACE_TIERS.find((t) => t.label === tier) ?? SURFACE_TIERS[1];
+  const tierEntry =
+    SURFACE_TIERS.find((t) => t.label === tier) ?? SURFACE_TIERS[1];
   const fullName = client && local ? `${client}/${local}` : "";
   const LOCAL_RE = /^[a-z0-9-/]+$/;
   const localValid = LOCAL_RE.test(local);
@@ -780,7 +862,7 @@ function NewSurfaceDialog({
       await createSurface({
         name: fullName,
         client_name: client,
-        description: description || null,
+        description: description,
         sort_order: tierEntry.min + 50,
         is_active: true,
       });
@@ -850,14 +932,18 @@ function NewSurfaceDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SURFACE_TIERS.filter((t) => t.label !== "Reserved").map((t) => (
-                  <SelectItem key={t.label} value={t.label}>
-                    <div className="flex flex-col items-start">
-                      <span>{t.label}</span>
-                      <span className="text-[10px] text-muted-foreground">{t.description}</span>
-                    </div>
-                  </SelectItem>
-                ))}
+                {SURFACE_TIERS.filter((t) => t.label !== "Reserved").map(
+                  (t) => (
+                    <SelectItem key={t.label} value={t.label}>
+                      <div className="flex flex-col items-start">
+                        <span>{t.label}</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {t.description}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
           </div>

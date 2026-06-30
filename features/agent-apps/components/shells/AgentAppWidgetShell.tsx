@@ -188,7 +188,7 @@ function WidgetDefaultVariableInput({
     <SmartAgentVariables
       conversationId={conversationId}
       compact
-      onSubmit={onSubmit}
+      onSubmit={onSubmit ?? (() => {})}
       styleOverride={config?.variableInputStyle ?? "compact"}
     />
   );

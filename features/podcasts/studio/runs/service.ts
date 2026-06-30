@@ -8,7 +8,7 @@
 // reopened at /podcast/studio/run/[id].
 
 import { supabase } from "@/utils/supabase/client";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { PcStudioRun } from "@/features/podcasts/types";
 import type { PodcastGenerateRequest } from "@/features/podcasts/generator/types";
 import type { Database } from "@/types/database.types";
@@ -43,7 +43,7 @@ export const studioRunsService = {
     const row: PcStudioRunDbInsert = {
       ...payload,
       user_id: user.id,
-      organization_id: await resolvePersonalOrgId(),
+      organization_id: await ensureOrgId(undefined),
     };
 
     const { data, error } = await supabase

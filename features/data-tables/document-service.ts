@@ -16,6 +16,7 @@
  * the other at the same time — see `features/data-tables/FEATURE.md`.
  */
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 import type {
   DocumentRow,
@@ -61,7 +62,8 @@ export async function createDocument(
       document_name: args.name,
       description: args.description ?? null,
       source: args.source ?? "created",
-      organization_id: args.organizationId ?? null,
+      // Org is NOT NULL — ride the explicit org if given, else the active org.
+      organization_id: await ensureOrgId(args.organizationId),
       project_id: args.projectId ?? null,
       task_id: args.taskId ?? null,
       is_public: args.isPublic ?? false,

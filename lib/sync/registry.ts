@@ -16,6 +16,7 @@ import type { Policy } from "./types";
 import { themePolicy } from "@/styles/themes/themeSlice";
 import { userPreferencesPolicy } from "@/lib/redux/preferences/userPreferencesSlice";
 import { userProfilePolicy } from "@/lib/redux/slices/userProfileSlice";
+import { appContextPolicy } from "@/lib/redux/slices/appContextSlice";
 
 // Uses `Policy<any>` instead of `Policy<unknown>` because `partialize: readonly (keyof TState)[]`
 // makes TState invariant — `Policy<{ mode: "dark" }>` does not assign to `Policy<unknown>`.
@@ -25,4 +26,5 @@ export const syncPolicies: readonly Policy<any>[] = [
   themePolicy,
   userPreferencesPolicy,
   userProfilePolicy,
+  appContextPolicy,
 ] as const;

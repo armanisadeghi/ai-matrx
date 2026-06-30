@@ -21,6 +21,7 @@
 "use client";
 
 import { StickyNote } from "lucide-react";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { registerVirtualSource } from "@/features/files/virtual-sources/registry";
 import { NotesInlinePreview } from "./NotesInlinePreview";
 import type {
@@ -276,7 +277,13 @@ const notesAdapter: VirtualSourceAdapter = {
       // note_folders is the materialized list — insert and return as a node.
       const { data, error } = await supabase
         .schema("workbench").from("note_folders")
-        .insert({ created_by: userId, name: args.name, path: args.name })
+        .insert({
+          created_by: userId,
+          name: args.name,
+          path: args.name,
+          // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
+          organization_id: await ensureOrgId(undefined),
+        })
         .select("id, name")
         .maybeSingle();
       if (error || !data) {
@@ -301,6 +308,8 @@ const notesAdapter: VirtualSourceAdapter = {
         label: args.name,
         content: args.content ?? "",
         folder_name: folderName,
+        // Never create a homeless note — ride the user's active org.
+        organization_id: await ensureOrgId(undefined),
         // Notes are private by default. The `notes.visibility` enum column
         // (2026 canonicalization) defaults to `'internal'` at the DB; set it
         // explicitly so a new note isn't silently org-visible.

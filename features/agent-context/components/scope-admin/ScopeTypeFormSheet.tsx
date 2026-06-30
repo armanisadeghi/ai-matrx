@@ -258,13 +258,11 @@ export function ScopeTypeFormSheet({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={NONE_VALUE}>None</SelectItem>
-                {existingTypes
-                  .filter((t) => t.id !== editingType?.id)
-                  .map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.label_singular}
-                    </SelectItem>
-                  ))}
+                {existingTypes.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.label_singular}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

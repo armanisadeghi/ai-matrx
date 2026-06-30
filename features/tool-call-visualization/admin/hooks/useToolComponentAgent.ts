@@ -52,6 +52,19 @@ interface UseToolComponentAgentReturn {
   reset: () => void;
 }
 
+type ExecuteResolve = (value: string | null) => void;
+
+/** Settle and clear the outstanding execute() promise, if any. */
+function settleExecuteResolve(
+  ref: { current: { fn: ExecuteResolve | null } },
+  value: string | null,
+): void {
+  const resolve = ref.current.fn;
+  if (!resolve) return;
+  ref.current.fn = null;
+  resolve(value);
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useToolComponentAgent(): UseToolComponentAgentReturn {
@@ -64,7 +77,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
   // Outstanding execute() promise resolver — fulfilled on stream completion
   // (or rejected on stream error). Cleared after each resolution.
   // Wrapped in an object — React 19 treats function-typed refs as callback refs.
-  const resolveRef = useRef<{ fn: ((value: string | null) => void) | null }>({
+  const resolveRef = useRef<{ fn: ExecuteResolve | null }>({
     fn: null,
   });
 
@@ -91,14 +104,12 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
   useEffect(() => {
     if (!resolveRef.current.fn) return;
     if (streamPhase === "complete") {
-      resolveRef.current.fn(accumulatedText || "");
-      resolveRef.current.fn = null;
+      settleExecuteResolve(resolveRef, accumulatedText || "");
     } else if (streamPhase === "error") {
       const message =
         requestError?.user_message || requestError?.message || "Stream error";
       setError(String(message));
-      resolveRef.current.fn(null);
-      resolveRef.current.fn = null;
+      settleExecuteResolve(resolveRef, null);
     }
   }, [streamPhase, accumulatedText, requestError]);
 
@@ -107,10 +118,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
     return () => {
       if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
       // Reject any pending promise so callers don't hang.
-      if (resolveRef.current.fn) {
-        resolveRef.current.fn(null);
-        resolveRef.current.fn = null;
-      }
+      settleExecuteResolve(resolveRef, null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -121,20 +129,14 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
     if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     setConversationId(null);
     setError(null);
-    if (resolveRef.current.fn) {
-      resolveRef.current.fn(null);
-      resolveRef.current.fn = null;
-    }
+    settleExecuteResolve(resolveRef, null);
   }, [conversationId, dispatch]);
 
   const cancel = useCallback(() => {
     if (conversationId) {
       abortConversation(conversationId);
     }
-    if (resolveRef.current.fn) {
-      resolveRef.current.fn(null);
-      resolveRef.current.fn = null;
-    }
+    settleExecuteResolve(resolveRef, null);
   }, [conversationId]);
 
   const execute = useCallback(
@@ -146,10 +148,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
       // Reset prior run — destroy the previous instance, clear local state,
       // and reject any in-flight promise to keep callers consistent.
       if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
-      if (resolveRef.current.fn) {
-        resolveRef.current.fn(null);
-        resolveRef.current.fn = null;
-      }
+      settleExecuteResolve(resolveRef, null);
       setConversationId(null);
       setError(null);
 
@@ -157,7 +156,9 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
         // Build and arm the result promise BEFORE firing the launch so a
         // synchronous resolution (e.g. immediate failure) can't race.
         const resultPromise = new Promise<string | null>((resolve) => {
-          resolveRef.current.fn = resolve;
+          resolveRef.current.fn = (value) => {
+            resolve(value);
+          };
         });
 
         await launchAgent(agentId, {
@@ -187,10 +188,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
         const message =
           err instanceof Error ? err.message : "Failed to launch agent";
         setError(message);
-        if (resolveRef.current.fn) {
-          resolveRef.current.fn(null);
-          resolveRef.current.fn = null;
-        }
+        settleExecuteResolve(resolveRef, null);
         return null;
       }
     },

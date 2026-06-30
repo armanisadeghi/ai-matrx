@@ -161,7 +161,7 @@ export const updateProjectThunk = createAsyncThunk(
     patch: {
       name?: string;
       description?: string | null;
-      organization_id?: string | null;
+      organization_id?: string;
     };
   }) => {
     const { error } = await workspaceDb(supabase)
