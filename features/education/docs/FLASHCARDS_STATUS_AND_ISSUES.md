@@ -129,6 +129,40 @@ before implementing. **This is the thing that actually needs careful engineering
 5. **Document as we go** (this file) so context limits never lose the state.
 
 ## Change log
+- **2026-06-30 (autonomous build session)** — Shipped + pushed to main across several commits:
+  - **GRADING ROOT CAUSE FIXED** (the "agent scores everything 100%"): the per-card audio never
+    reached the model. `fileHandler`'s `toJsonbContentPart` (`features/files/handler/output/target.ts`)
+    built the media part from only `{url, file_uri}` and DROPPED `file_id`; `preferIdentityLocator`
+    returns ONLY `file_id` for a fresh private clip, so the part shipped `{url:null, file_uri:null}` —
+    an empty media block. The model had no audio and hallucinated a "correct" answer from the card back.
+    Fix: carry `file_id` in the part (platform-wide — any private/file-id-only attachment was affected).
+    Proven by `agent_run` with no audio → it fabricated a perfect transcript from the back.
+  - **Grader agent hardened in the DB** (`agent.definition` id `e0449378…`, now v8): strict
+    all-or-nothing completeness (perfect ONLY if every element of the back is covered), transcribe-FIRST,
+    explicit anti-fabrication ("never copy the back into the transcript"), beep-boundary awareness, +
+    matching schema. NOTE: takes effect when the aidream Definition ORM cache refreshes (restart of the
+    local aidream server, or TTL) — `agent_run` showed `input_tokens` unchanged = cache still stale at
+    write time. Owner tunes the prompt further as desired.
+  - **Ephemeral → PERSISTENT (owner-confirmed):** grade/help/review runs are `isEphemeral:false` and
+    intentionally persist; kept out of normal chats via distinct system `source_feature`s registered in
+    the conversation source-registry (allow-list: /chat only shows chat-route/interface/quick-chat).
+    `docs/EPHEMERAL_AGENT_RUNS_SPEC.md` specifies a true stateless path for the platform (other consumers).
+  - **Scoreboard scroll fixed** (was `min-h-full` inside a fixed-height overflow-hidden route → clipped).
+  - **Step 3 connect:** set-detail = hub (Study/Fast Fire/Edit/History/Enhance); new `[setId]/edit`
+    authoring surface (`EditSetView` + `fcService.updateSet`); FastFire reads as a real entry flow.
+  - **Step 2 device setup:** Zoom/Meet-style device-check gate in FastFire setup (reuses the shared
+    `AudioDevicesPanel`, dispatch-openable from the avatar menu) + video placeholder.
+  - **Step 4:** real production set-browse replacing the demo `FlashcardsHome` (search/filter/per-row,
+    scales to hundreds; folders/tags reserved).
+  - **Step 5:** sessions CRUD + history over the shared study spine
+    (`studyService.listSessions/getSession/deleteSession` + mode-agnostic `SessionsBrowser`/
+    `SessionDetailView`/`SessionAudio` + 3 routes); cleaned up the 14 leaked `active` sessions.
+  - **Capture test:** added an auto-cut mode (seconds/card + count → auto-segments). Kept as a permanent
+    admin debug tool. Step 6 audio debug panel (live buffer/clock) shipped earlier.
+  - **REMAINING:** Step 6 live agent-stream window panel (lower priority); FE leak-hardening backstop
+    (reaper) is deferred — the abort path + the one-time cleanup cover today; a hard tab-kill mid-drill
+    could still leak until a reaper exists. Re-verify grading live once the aidream Definition cache
+    refreshes (audio now reaches the model; strict prompt is v8).
 - **2026-06-30 (core rebuild, pre-gate)** — **Step 0 + Step 1 + Step 6 audio-debug done.** (0) Removed the
   agent anti-patterns: deleted `agents/schemas.ts`, removed its imports + the `helpLive` `response_format`
   override; thunks call agents variables-only. (1) Rebuilt the audio core on Web Audio:

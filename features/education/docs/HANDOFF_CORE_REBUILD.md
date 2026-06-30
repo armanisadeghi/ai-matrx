@@ -10,15 +10,19 @@
   control layer) + create-from-topic + 10 live agents (gemini-3.5-flash, owner-tuned). See status doc.
 - **Routing: leave AS-IS for now** — owner says it looks good; a separate agent is doing a structural
   analysis + adding placeholder routes; incorporate later. Just keep building; don't fight that agent.
-- **DONE (2026-06-30, pending owner gate): Step 0 cleanup + Step 1 audio core + Step 6 audio-debug panel.**
-  Anti-patterns removed (schemas.ts deleted, overrides gone). `continuousCapture.ts` rebuilt on Web Audio
-  AudioWorklet→PCM→WAV (sample-accurate clips + full-session WAV; beeps synthesized into clips; ±2.5s pad;
-  ScriptProcessor fallback). New `lib/audio/{pcm,wav}.ts` primitives. Prove-it surface at
-  **`/education/fastfire/capture-test`** (admin) + `AudioCaptureDebugPanel`. Type+lint clean.
-  **⏸ AT THE GATE:** owner verifies the core by LISTENING (record + play back full + per-card WAVs) before
-  resuming. Execution plan: `~/.claude/plans/handoff-education-jiggly-platypus.md`.
-  **Remaining order: Step 3 (connect) → Step 2 (device setup) → Step 4 (set-browse) → Step 5 (sessions
-  CRUD) → Step 6 (agent-stream panel) → harden/finalize.**
+- **SHIPPED (2026-06-30, autonomous session — all pushed to main):**
+  - Step 0 cleanup; Step 1 audio core (Web Audio PCM→WAV) — **owner-verified PERFECT live**.
+  - **Grading root cause fixed**: audio never reached the model — `fileHandler.toJsonbContentPart` dropped
+    `file_id` (private clips have file_id ONLY). Now carried. Grader agent hardened in the DB (v8:
+    strict, transcribe-first, anti-fabrication) — effective once the aidream Definition cache refreshes.
+  - Ephemeral→persistent (owner-confirmed) + system source_feature so grade runs stay out of /chat.
+  - Scoreboard scroll fix. Step 3 connect (set-detail hub + `[setId]/edit` + FastFire entry flow).
+  - Step 2 device-check gate (reuses `AudioDevicesPanel`). Step 4 real set-browse. Step 5 sessions CRUD +
+    history (mode-agnostic over the study spine) + leaked-session cleanup. Capture-test auto-cut mode.
+  - **REMAINING:** Step 6 live agent-stream window panel (lower priority); reaper backstop (deferred);
+    re-verify grading live after the aidream Definition cache refreshes.
+  - Execution plan: `~/.claude/plans/handoff-education-jiggly-platypus.md`. Status detail + root-cause:
+    `FLASHCARDS_STATUS_AND_ISSUES.md`.
 
 ## Build order (priority)
 
