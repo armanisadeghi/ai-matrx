@@ -1,48 +1,40 @@
 // features/flashcards/fast-fire/audio/continuousCapture.ts
 //
-// PER-CARD CAPTURE — the heart of the audio model (REQUIREMENTS §6). One warm mic
-// stream for the WHOLE session (a single permission prompt), and on that stream
-// TWO MediaRecorders run side by side:
+// PER-CARD CAPTURE — rebuilt on the Web Audio API (REQUIREMENTS §6, owner
+// direction 2026-06-30). One warm mic stream for the WHOLE session (a single
+// permission prompt) feeds an AudioWorklet that taps raw PCM into ONE growing
+// Float32 buffer with a sample clock. Per-card clips and the full-session
+// recording are SAMPLE-ACCURATE SLICES of that buffer, encoded as WAV.
 //
-//   1. A FULL-SESSION recorder (continuous, 1s timeslices) whose chunks are
-//      assembled ONCE at session end into the durable session blob → uploaded to
-//      `study_session.session_audio_file_id` (REQUIREMENTS §6 full-session
-//      retention).
-//   2. A PER-CARD recorder that is stop()-ed at each card boundary and a fresh
-//      one start()-ed for the next card. Each card's blob is therefore a COMPLETE,
-//      self-contained, decodable WebM/MP4 — header (EBML/init segment) through the
-//      final Cluster — collected in that recorder's `onstop` and handed to the
-//      grading lane keyed by card id.
+// WHY PCM/WAV, NOT MediaRecorder (the bug this kills): MediaRecorder emits codec
+// containers (WebM/Opus). A continuous recorder's later timeslices are raw
+// byte-stream continuations, not self-contained clusters — concatenated slices
+// don't decode; restarting per card produced clips that were full-length or
+// silent. Raw PCM has no container: byte offset N maps to sample N at a known
+// rate, so a clip is just `buffer.slice(startSample, endSample)`. No codec
+// fragments, no chunk-arrival jitter, decodable everywhere. iOS-robust.
 //
-// WHY PER-CARD RESTART, NOT MID-STREAM SLICING (the C1 bug this kills): a single
-// continuous recorder emits ONE header chunk (chunk 0) carrying the EBML header +
-// first Cluster; every later timeslice blob is a raw byte-stream continuation, NOT
-// a self-contained Cluster. Concatenating `chunk0 + later chunks` does NOT produce
-// a valid container — only card 0 (the head of the stream) decoded; every card
-// after it sent the grader an undecodable fragment. Restarting the recorder per
-// card makes each card's blob a full container by construction — no header
-// surgery, no arrival-timestamp window math.
-//
-// Restarting the per-card recorder on the ALREADY-WARM stream causes NO permission
-// re-prompt (the mic grant is held by `acquireMicStream`; we never touch
-// getUserMedia or stop a track here).
-//
-// OVERLAP: the old ±1s cross-boundary overlap was also broken and is dropped for
-// v1 — a clean per-card clip is correct and gradeable. Sample-accurate overlap is
-// a documented fast-follow (REQUIREMENTS §14 open-decision #2: upload the whole
-// session + slice it server-side). We do NOT fake overlap here.
-//
-// WHY A MODULE SINGLETON, NOT REDUX: blobs are binary; putting them in Redux would
-// break serialization and balloon state. This store holds the two MediaRecorders,
-// the full-session chunk buffer, and the per-card blob hand-off — pure refs. Only
-// durable `file_id`s (after upload) ever reach the slice.
+// PER-CARD GRADING CONTEXT (REQUIREMENTS §6): each per-card clip includes ~2.5s
+// BEFORE the card start and ~2.5s AFTER the card stop, with an audible beep
+// SYNTHESIZED INTO the clip at the exact start/stop sample offsets. The beep is
+// mixed into the PCM at encode time (sample-accurate, immune to echo-cancellation
+// stripping a speaker beep) so the grader always hears the boundaries. The
+// learner still hears the live `playBuzzer` for UX. Because capture is
+// continuous, the +2.5s trailing pad is real audio captured during the advance —
+// so `stopCardClip` resolves a moment AFTER the card ends (grading is
+// fire-and-forget, so this delay is free).
 //
 // REUSE, DON'T REBUILD: the mic singleton (`acquireMicStream`/`releaseMicStream`
 // — one warm grant, no iOS re-prompt), the app-wide capture lock
-// (`claimCapture`/`releaseCapture` — only one recorder app-wide), and the shared
-// AudioContext (the level meter + the buzzer oscillator) all come straight from
-// `features/audio/**`. This module orchestrates them; it owns no getUserMedia,
-// no `new AudioContext`, no `track.stop()`.
+// (`claimCapture`/`releaseCapture`), the shared AudioContext, and the unified
+// Audio-panel session registry all come straight from `features/audio/**`. The
+// WAV encoding + PCM math are the reusable `lib/audio/{wav,pcm}` primitives.
+//
+// PUBLIC API is unchanged from the MediaRecorder version, so the drill
+// orchestrator / timer / slice are untouched: startContinuousCapture,
+// startCardClip, stopCardClip, playBuzzer, stopContinuousCapture, hardStopCapture,
+// subscribeLevel, fullSessionClip (+ new subscribeDebug / getCaptureDebug for the
+// admin debug panel).
 
 import {
   acquireMicStream,
@@ -55,85 +47,166 @@ import {
 import { claimCapture, releaseCapture } from "@/features/audio/captureLock";
 import { beginRecordingSession } from "@/features/audio/session/audioSessionRegistry";
 import type { PlaybackSessionHandle } from "@/features/audio/session/types";
+import { makeSineFloat32, mixInto } from "@/lib/audio/pcm";
+import { encodeWavFromFloat32 } from "@/lib/audio/wav";
 
 // The id this drill holds the app-wide capture lock under. One drill = one warm
 // stream = one capture holder for the entire session.
 const CAPTURE_ID = "fast-fire-drill";
 
-/** Full-session recorder timeslice — coarse; it's only flushing the durable buffer. */
-const FULL_TIMESLICE_MS = 1000;
+/** Per-card grading context: audio kept on each side of the card window (§6). */
+const PAD_BEFORE_SEC = 2.5;
+const PAD_AFTER_SEC = 2.5;
+
+/** Boundary beep markers synthesized into the clip (the grader hears these). */
+const BEEP_START_HZ = 880;
+const BEEP_STOP_HZ = 440;
+const BEEP_DUR_SEC = 0.15;
+const BEEP_AMP = 0.25;
+
+/** WAV target rate — speech-optimal, tiny uploads, universally decodable. */
+const WAV_TARGET_RATE = 16000;
+
+/** Initial PCM capacity (30s) before the growable buffer doubles. */
+const INITIAL_CAPACITY_SEC = 30;
+
+type CapturePath = "worklet" | "scriptprocessor";
+
+interface CardWindow {
+  startSample: number;
+  endSample: number | null;
+}
+
+interface PendingClip {
+  timer: ReturnType<typeof setTimeout> | null;
+  resolve: (blob: Blob | null) => void;
+}
 
 interface CaptureStore {
   stream: MediaStream | null;
-  mimeType: string;
-  /** The continuous full-session recorder (assembled ONCE at session end). */
-  fullRecorder: MediaRecorder | null;
-  /** Full-session chunks — the ONLY retained buffer (assembled once at finalize). */
-  fullChunks: Blob[];
-  /** The per-card recorder; stop()-ed and replaced at every card boundary. Its
-   *  chunk buffer is closure-local to each recorder (see `startCardClip`). */
-  cardRecorder: MediaRecorder | null;
-  /** The card id the live per-card recorder is capturing (convenience marker). */
-  cardId: string | null;
-  /**
-   * Where each completed per-card blob is delivered, keyed by card id. The drill
-   * registers a resolver before stopping a card; `onstop` fulfills it. Functions
-   * can't live in Redux, so the hand-off lives here in the module store.
-   */
-  cardResolvers: Map<string, (blob: Blob | null) => void>;
-  /** The unified-Audio-panel recording session handle (M1) — visible + controllable. */
-  audioSession: PlaybackSessionHandle | null;
-  /** Live audio level 0..1 for the meter (sampled by the analyser tap). */
-  level: number;
-  analyser: AnalyserNode | null;
+  capturePath: CapturePath | null;
+  /** The ONE growing PCM buffer (mono Float32 at ctx.sampleRate). */
+  pcm: Float32Array;
+  sampleCount: number;
+  sampleRate: number;
+  // Web Audio graph nodes (kept so teardown can disconnect them).
   source: MediaStreamAudioSourceNode | null;
+  workletNode: AudioWorkletNode | null;
+  scriptNode: ScriptProcessorNode | null;
+  sinkGain: GainNode | null;
+  analyser: AnalyserNode | null;
   rafId: number | null;
+  // Per-card windows + deferred clip resolvers, keyed by stable card id.
+  cards: Map<string, CardWindow>;
+  cardOrder: string[];
+  activeCardId: string | null;
+  pending: Map<string, PendingClip>;
+  // Unified Audio panel handle.
+  audioSession: PlaybackSessionHandle | null;
+  // Level meter.
+  level: number;
   levelListeners: Set<(level: number) => void>;
+  // Admin debug.
+  debugListeners: Set<(snap: CaptureDebugSnapshot) => void>;
+  lastDebugEmit: number;
 }
 
 const store: CaptureStore = {
   stream: null,
-  mimeType: "audio/webm",
-  fullRecorder: null,
-  fullChunks: [],
-  cardRecorder: null,
-  cardId: null,
-  cardResolvers: new Map(),
+  capturePath: null,
+  pcm: new Float32Array(0),
+  sampleCount: 0,
+  sampleRate: 0,
+  source: null,
+  workletNode: null,
+  scriptNode: null,
+  sinkGain: null,
+  analyser: null,
+  rafId: null,
+  cards: new Map(),
+  cardOrder: [],
+  activeCardId: null,
+  pending: new Map(),
   audioSession: null,
   level: 0,
-  analyser: null,
-  source: null,
-  rafId: null,
   levelListeners: new Set(),
+  debugListeners: new Set(),
+  lastDebugEmit: 0,
 };
 
-function pickMimeType(): string {
-  if (typeof MediaRecorder === "undefined") return "audio/webm";
-  if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
-    return "audio/webm;codecs=opus";
+// ── AudioWorklet processor (loaded once per context via a Blob URL — no public
+// asset, no Turbopack config). Posts each render quantum's mono PCM (transferred,
+// zero-copy) to the main thread. ──────────────────────────────────────────────
+const PCM_WORKLET_SOURCE = `
+class PcmRecorderProcessor extends AudioWorkletProcessor {
+  process(inputs) {
+    const input = inputs[0];
+    if (input && input.length > 0 && input[0]) {
+      const copy = new Float32Array(input[0]);
+      this.port.postMessage(copy, [copy.buffer]);
+    }
+    return true;
   }
-  if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
-  if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
-  return "audio/webm";
+}
+registerProcessor('pcm-recorder', PcmRecorderProcessor);
+`;
+
+let workletModulePromise: Promise<boolean> | null = null;
+
+/** Load the PCM worklet module once for the shared context. Returns false (so the
+ *  caller can fall back to ScriptProcessor) if AudioWorklet is unavailable. */
+async function ensureWorkletModule(ctx: AudioContext): Promise<boolean> {
+  if (!ctx.audioWorklet) return false;
+  if (!workletModulePromise) {
+    workletModulePromise = (async () => {
+      const url = URL.createObjectURL(
+        new Blob([PCM_WORKLET_SOURCE], { type: "text/javascript" }),
+      );
+      try {
+        await ctx.audioWorklet.addModule(url);
+        return true;
+      } catch (err) {
+        console.error("[fastfire.capture] worklet addModule failed:", err);
+        workletModulePromise = null; // allow a retry next session
+        return false;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    })();
+  }
+  return workletModulePromise;
 }
 
+// ── PCM buffer (growable, doubling capacity) ──────────────────────────────────
+function appendFrame(frame: Float32Array): void {
+  if (frame.length === 0) return;
+  if (store.sampleCount + frame.length > store.pcm.length) {
+    let cap = Math.max(store.pcm.length, 1);
+    while (store.sampleCount + frame.length > cap) cap *= 2;
+    const grown = new Float32Array(cap);
+    grown.set(store.pcm.subarray(0, store.sampleCount));
+    store.pcm = grown;
+  }
+  store.pcm.set(frame, store.sampleCount);
+  store.sampleCount += frame.length;
+}
+
+// ── Level meter (AnalyserNode tap, rAF) — also drives debug emission ──────────
 function emitLevel(level: number): void {
   store.level = level;
   for (const l of store.levelListeners) {
     try {
       l(level);
     } catch {
-      // never let a meter listener break capture
+      /* never let a meter listener break capture */
     }
   }
 }
 
-function startLevelMeter(): void {
-  const ctx = getSharedAudioContext();
-  if (!ctx || !store.stream) return;
+function startLevelMeter(ctx: AudioContext): void {
+  if (!store.source) return;
   store.analyser = ctx.createAnalyser();
   store.analyser.fftSize = 256;
-  store.source = ctx.createMediaStreamSource(store.stream);
   store.source.connect(store.analyser);
   const data = new Uint8Array(store.analyser.frequencyBinCount);
   const tick = () => {
@@ -142,6 +215,7 @@ function startLevelMeter(): void {
     let sum = 0;
     for (let i = 0; i < data.length; i++) sum += data[i];
     emitLevel(data.length > 0 ? sum / data.length / 255 : 0);
+    maybeEmitDebug();
     store.rafId = requestAnimationFrame(tick);
   };
   tick();
@@ -151,14 +225,6 @@ function stopLevelMeter(): void {
   if (store.rafId !== null) {
     cancelAnimationFrame(store.rafId);
     store.rafId = null;
-  }
-  if (store.source) {
-    try {
-      store.source.disconnect();
-    } catch {
-      /* ignore */
-    }
-    store.source = null;
   }
   if (store.analyser) {
     try {
@@ -173,129 +239,146 @@ function stopLevelMeter(): void {
 
 /**
  * Start the session capture: acquire the warm mic stream (single prompt), claim
- * the app-wide capture lock, register a visible recording session in the unified
- * Audio panel (M1), open the continuous FULL-SESSION recorder, and start the level
- * meter. The PER-CARD recorder is started separately at each card boundary via
- * `startCardClip`. Idempotent — a second call while already recording is a no-op.
+ * the app-wide capture lock, register a visible recording session, and wire the
+ * mic → AudioWorklet (PCM tap) + AnalyserNode (level meter). Idempotent.
  *
- * Must be called from a user gesture (the Start button) so iOS can resume the
- * shared AudioContext and grant the mic.
+ * Must be called from a user gesture (Start) so iOS can resume the AudioContext
+ * and grant the mic.
  */
 export async function startContinuousCapture(): Promise<void> {
-  if (store.fullRecorder && store.fullRecorder.state === "recording") return;
+  if (store.capturePath) return; // already capturing
 
-  // Claim the app-wide lock first (start-always-wins). `stop` here only stops
-  // CAPTURE; the drill hook handles the rest of teardown when notified.
   claimCapture({
     id: CAPTURE_ID,
     label: "FastFire drill",
-    stop: () => {
-      // Another recorder took the mic — stop ours immediately. The drill hook
-      // listens for the abandon path separately.
-      hardStopCapture();
-    },
+    stop: () => hardStopCapture(),
   });
 
   await resumeSharedAudioContext();
+  const ctx = getSharedAudioContext();
+  if (!ctx) {
+    console.error("[fastfire.capture] no AudioContext — capture unavailable");
+    releaseCapture(CAPTURE_ID);
+    return;
+  }
+
   const stream = await acquireMicStream({ channelCount: 1 });
   store.stream = stream;
-  store.mimeType = pickMimeType();
-  store.fullChunks = [];
-  store.cardId = null;
-  store.cardResolvers.clear();
+  store.sampleRate = ctx.sampleRate;
+  store.pcm = new Float32Array(Math.round(ctx.sampleRate * INITIAL_CAPACITY_SEC));
+  store.sampleCount = 0;
+  store.cards.clear();
+  store.cardOrder = [];
+  store.activeCardId = null;
+  store.pending.clear();
 
-  // Visible, controllable recording session in the unified Audio panel (M1). The
-  // mic arbiter is captureLock (already claimed) — this only surfaces the session.
+  store.source = ctx.createMediaStreamSource(stream);
+
+  // A muted gain → destination keeps the worklet/script node's process() pumping
+  // in every browser (a node connected to nothing may be culled).
+  store.sinkGain = ctx.createGain();
+  store.sinkGain.gain.value = 0;
+  store.sinkGain.connect(ctx.destination);
+
+  const haveWorklet = await ensureWorkletModule(ctx);
+  if (haveWorklet) {
+    const node = new AudioWorkletNode(ctx, "pcm-recorder", {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      channelCount: 1,
+    });
+    node.port.onmessage = (e: MessageEvent<Float32Array>) => appendFrame(e.data);
+    store.source.connect(node);
+    node.connect(store.sinkGain);
+    store.workletNode = node;
+    store.capturePath = "worklet";
+  } else {
+    // Universal fallback (older engines): ScriptProcessorNode.
+    console.warn("[fastfire.capture] AudioWorklet unavailable — ScriptProcessor fallback");
+    const node = ctx.createScriptProcessor(4096, 1, 1);
+    node.onaudioprocess = (e: AudioProcessingEvent) => {
+      appendFrame(new Float32Array(e.inputBuffer.getChannelData(0)));
+    };
+    store.source.connect(node);
+    node.connect(store.sinkGain);
+    store.scriptNode = node;
+    store.capturePath = "scriptprocessor";
+  }
+
   store.audioSession = beginRecordingSession({
     source: "recording",
     label: "FastFire drill",
     controls: { stop: () => hardStopCapture() },
   });
 
-  // The continuous full-session recorder — its chunks are the ONLY retained buffer
-  // and are assembled exactly once at finalize.
-  const full = new MediaRecorder(stream, { mimeType: store.mimeType });
-  full.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) store.fullChunks.push(e.data);
-  };
-  store.fullRecorder = full;
-  full.start(FULL_TIMESLICE_MS);
-
-  startLevelMeter();
+  startLevelMeter(ctx);
+  maybeEmitDebug(true);
 }
 
-/**
- * Open a fresh per-card recorder for `cardId`. Stops any previous per-card
- * recorder first (delivering its blob to a registered resolver), then starts a NEW
- * recorder so this card's clip is a complete, self-contained container from header
- * to final Cluster. No timeslice arg → a single blob is emitted on stop.
- *
- * No-op (and resolves the previous card cleanly) if capture isn't running.
- */
+/** Mark the start sample of `cardId`'s answer window. No recorder to start — the
+ *  continuous PCM buffer is already running; we only record the boundary. */
 export function startCardClip(cardId: string): void {
-  // Close out any still-running previous card first.
-  if (store.cardRecorder && store.cardRecorder.state !== "inactive") {
-    try {
-      store.cardRecorder.stop();
-    } catch {
-      /* the onstop handler delivers whatever it has */
-    }
-  }
-  if (!store.stream) return;
-
-  store.cardId = cardId;
-
-  // CLOSURE-LOCAL state per recorder: bind the card id and a private chunk array
-  // to THIS recorder, so the next card's `startCardClip` (which may run before
-  // this recorder's `onstop` settles) can never cross-contaminate which card a
-  // blob belongs to. The shared `store.cardId` is only a convenience marker.
-  const id = cardId;
-  const chunks: Blob[] = [];
-  const rec = new MediaRecorder(store.stream, { mimeType: store.mimeType });
-  rec.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) chunks.push(e.data);
-  };
-  rec.onstop = () => {
-    const blob =
-      chunks.length > 0 ? new Blob(chunks, { type: store.mimeType }) : null;
-    const resolve = store.cardResolvers.get(id);
-    if (resolve) {
-      store.cardResolvers.delete(id);
-      resolve(blob);
-    }
-  };
-  store.cardRecorder = rec;
-  // No timeslice: the recorder buffers internally and emits ONE complete,
-  // decodable container in `ondataavailable` right before `onstop`.
-  rec.start();
+  if (!store.capturePath) return;
+  if (!store.cards.has(cardId)) store.cardOrder.push(cardId);
+  store.cards.set(cardId, { startSample: store.sampleCount, endSample: null });
+  store.activeCardId = cardId;
+  maybeEmitDebug(true);
 }
 
 /**
- * Stop the per-card recorder for `cardId` and resolve with its COMPLETE, self-
- * contained clip (header → final Cluster), decodable on its own. Returns a promise
- * because `MediaRecorder.stop()` flushes the final blob asynchronously via
- * `ondataavailable`/`onstop`. Resolves null if no audio was captured.
- *
- * The drill calls this fire-and-forget at each card boundary; the next card's
- * `startCardClip` opens a fresh recorder.
+ * Close `cardId`'s answer window and resolve with its WAV clip — the PCM span
+ * `[start - PAD_BEFORE, end + PAD_AFTER]` with boundary beeps mixed in. Resolves
+ * ~PAD_AFTER seconds later so the trailing pad (captured during the advance) is
+ * real audio. Grading is fire-and-forget, so the delay costs nothing. Resolves
+ * null if the card was never opened or capture is gone.
  */
 export function stopCardClip(cardId: string): Promise<Blob | null> {
   return new Promise((resolve) => {
-    const rec = store.cardRecorder;
-    // The live per-card recorder must be the one for this card; if it's already
-    // gone or for a different card, there's nothing self-contained to return.
-    if (!rec || rec.state === "inactive" || store.cardId !== cardId) {
+    const win = store.cards.get(cardId);
+    if (!win || !store.capturePath) {
       resolve(null);
       return;
     }
-    store.cardResolvers.set(cardId, resolve);
-    try {
-      rec.stop();
-    } catch {
-      store.cardResolvers.delete(cardId);
-      resolve(null);
-    }
+    win.endSample = store.sampleCount;
+    if (store.activeCardId === cardId) store.activeCardId = null;
+    maybeEmitDebug(true);
+
+    // Wait for the post-card pad to be captured, then build the clip. Tracked so
+    // teardown can flush (last card) or discard (abandon) it deterministically.
+    const padMs = PAD_AFTER_SEC * 1000;
+    const timer = setTimeout(() => {
+      const pending = store.pending.get(cardId);
+      if (!pending) return; // already flushed by teardown
+      store.pending.delete(cardId);
+      resolve(buildCardClip(cardId));
+    }, padMs);
+    store.pending.set(cardId, { timer, resolve });
   });
+}
+
+/** Slice the PCM for a card window, mix in the boundary beeps, encode WAV. */
+function buildCardClip(cardId: string): Blob | null {
+  const win = store.cards.get(cardId);
+  if (!win || store.sampleCount === 0) return null;
+  const rate = store.sampleRate;
+  const end = win.endSample ?? store.sampleCount;
+  const clipStart = Math.max(0, Math.floor(win.startSample - PAD_BEFORE_SEC * rate));
+  const clipEnd = Math.min(store.sampleCount, Math.ceil(end + PAD_AFTER_SEC * rate));
+  if (clipEnd <= clipStart) return null;
+
+  const clip = store.pcm.slice(clipStart, clipEnd);
+  // Boundary beeps at the REAL card start/stop offsets within the clip.
+  mixInto(
+    clip,
+    makeSineFloat32(BEEP_START_HZ, BEEP_DUR_SEC, rate, BEEP_AMP),
+    win.startSample - clipStart,
+  );
+  mixInto(
+    clip,
+    makeSineFloat32(BEEP_STOP_HZ, BEEP_DUR_SEC, rate, BEEP_AMP),
+    end - clipStart,
+  );
+  return encodeWavFromFloat32(clip, rate, { targetRate: WAV_TARGET_RATE });
 }
 
 export function subscribeLevel(listener: (level: number) => void): () => void {
@@ -305,23 +388,21 @@ export function subscribeLevel(listener: (level: number) => void): () => void {
   };
 }
 
-/**
- * The full-session recording so far (every chunk, decodable end-to-end). Used at
- * finalize to upload as `study_session.session_audio_file_id` (§6/§8). Assembled
- * ONCE from the only retained buffer — no per-card retention, so memory is bounded
- * to one continuous recording's chunks (H2).
- */
+/** The full-session recording so far, encoded as one WAV (REQUIREMENTS §6/§8). */
 export function fullSessionClip(): Blob | null {
-  if (store.fullChunks.length === 0) return null;
-  return new Blob(store.fullChunks, { type: store.mimeType });
+  if (store.sampleCount === 0) return null;
+  return encodeWavFromFloat32(
+    store.pcm.slice(0, store.sampleCount),
+    store.sampleRate,
+    { targetRate: WAV_TARGET_RATE },
+  );
 }
 
 /**
- * Play the card-boundary buzzer through the shared AudioContext (REQUIREMENTS §6
- * — "audible buzzer markers" the grader hears as card boundaries). `start` =
- * 880Hz (a bright "go"); `stop` = 440Hz (a lower "done"). Short, ~120ms, quiet.
- * Never throws — a failed beep must never interrupt the drill. The tones land in
- * the full-session recording and the head/tail of per-card clips — fine.
+ * Play the card-boundary buzzer audibly to the LEARNER (UX) through the shared
+ * AudioContext. The grader's boundary markers are synthesized into the clip
+ * separately (buildCardClip), so this is purely for the person drilling. Never
+ * throws.
  */
 export function playBuzzer(kind: "start" | "stop"): void {
   const ctx = getSharedAudioContext();
@@ -330,8 +411,7 @@ export function playBuzzer(kind: "start" | "stop"): void {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
-    osc.frequency.value = kind === "start" ? 880 : 440;
-    // Quick attack + decay so it reads as a marker, not a sustained tone.
+    osc.frequency.value = kind === "start" ? BEEP_START_HZ : BEEP_STOP_HZ;
     const now = ctx.currentTime;
     gain.gain.setValueAtTime(0, now);
     gain.gain.linearRampToValueAtTime(0.15, now + 0.01);
@@ -341,11 +421,11 @@ export function playBuzzer(kind: "start" | "stop"): void {
     osc.start(now);
     osc.stop(now + 0.14);
   } catch {
-    // best-effort — silence is fine if Web Audio refuses
+    /* best-effort — silence is fine if Web Audio refuses */
   }
 }
 
-/** End the unified-Audio-panel recording session (M1), if one is live. */
+// ── Teardown ──────────────────────────────────────────────────────────────────
 function endAudioSession(status: "done" | "error" = "done"): void {
   if (store.audioSession) {
     try {
@@ -357,66 +437,163 @@ function endAudioSession(status: "done" | "error" = "done"): void {
   }
 }
 
-/** Stop the per-card recorder without resolving (teardown paths). */
-function stopCardRecorder(): void {
-  if (store.cardRecorder && store.cardRecorder.state !== "inactive") {
+/** Resolve every pending per-card clip. `flush` = build it from the buffer NOW
+ *  (clean finalize keeps the last card's grade); otherwise resolve null (abandon
+ *  discards in-flight clips). Always clears the pad timers. */
+function settlePending(flush: boolean): void {
+  for (const [cardId, pending] of store.pending) {
+    if (pending.timer) clearTimeout(pending.timer);
+    pending.resolve(flush ? buildCardClip(cardId) : null);
+  }
+  store.pending.clear();
+}
+
+function disconnectGraph(): void {
+  for (const node of [
+    store.workletNode,
+    store.scriptNode,
+    store.source,
+    store.sinkGain,
+  ]) {
+    if (node) {
+      try {
+        node.disconnect();
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (store.workletNode) {
     try {
-      store.cardRecorder.stop();
+      store.workletNode.port.onmessage = null;
     } catch {
       /* ignore */
     }
   }
-  store.cardRecorder = null;
-  store.cardId = null;
-  // Resolve any pending per-card waiters so callers never hang on teardown.
-  for (const [, resolve] of store.cardResolvers) resolve(null);
-  store.cardResolvers.clear();
+  if (store.scriptNode) store.scriptNode.onaudioprocess = null;
+  store.workletNode = null;
+  store.scriptNode = null;
+  store.source = null;
+  store.sinkGain = null;
 }
 
 /**
- * Stop the session capture and release the mic + lock. Returns the full-session
- * blob (captured before teardown) so the caller can upload it. Safe to call
- * multiple times.
+ * Stop the session capture and release the mic + lock. Builds + returns the
+ * full-session WAV (before teardown) so the caller can upload it. Flushes any
+ * pending last-card clip so its grade still fires. Safe to call multiple times.
  */
 export function stopContinuousCapture(): Blob | null {
+  if (!store.capturePath) return null;
   const full = fullSessionClip();
-  stopCardRecorder();
-  if (store.fullRecorder && store.fullRecorder.state !== "inactive") {
-    try {
-      store.fullRecorder.stop();
-    } catch {
-      /* ignore */
-    }
-  }
+  settlePending(true); // build last-card clips from the buffer BEFORE clearing
   stopLevelMeter();
-  store.fullRecorder = null;
+  disconnectGraph();
   endAudioSession("done");
   if (store.stream) {
-    // Never stop tracks directly (that defeats the warm-grant keepalive).
-    releaseMicStream();
+    releaseMicStream(); // never stop tracks directly (keepalive owns that)
     store.stream = null;
   }
   releaseCapture(CAPTURE_ID);
+  store.capturePath = null;
+  store.pcm = new Float32Array(0);
+  store.sampleCount = 0;
+  store.activeCardId = null;
+  maybeEmitDebug(true);
   return full;
 }
 
-/** Hard teardown for the takeover / abandon path — drops everything, no return. */
+/** Hard teardown for the takeover / abandon path — discards everything, no return. */
 export function hardStopCapture(): void {
-  stopCardRecorder();
-  if (store.fullRecorder && store.fullRecorder.state !== "inactive") {
-    try {
-      store.fullRecorder.stop();
-    } catch {
-      /* ignore */
-    }
-  }
+  if (!store.capturePath && store.sampleCount === 0 && !store.stream) return;
+  settlePending(false); // discard in-flight clips (deliberate abandon)
   stopLevelMeter();
-  store.fullRecorder = null;
-  store.fullChunks = [];
+  disconnectGraph();
   endAudioSession("done");
   if (store.stream) {
     releaseMicStream();
     store.stream = null;
   }
   releaseCapture(CAPTURE_ID);
+  store.capturePath = null;
+  store.pcm = new Float32Array(0);
+  store.sampleCount = 0;
+  store.cards.clear();
+  store.cardOrder = [];
+  store.activeCardId = null;
+  maybeEmitDebug(true);
+}
+
+// ── Admin debug (Step 6 — surface internal state; gated by the panel, not here) ─
+export interface CaptureDebugCard {
+  cardId: string;
+  startSample: number;
+  endSample: number | null;
+  durationSec: number | null;
+  clipReady: boolean;
+}
+
+export interface CaptureDebugSnapshot {
+  capturePath: CapturePath | null;
+  sampleRate: number;
+  sampleCount: number;
+  durationSec: number;
+  bufferBytes: number;
+  level: number;
+  activeCardId: string | null;
+  pendingCount: number;
+  cards: CaptureDebugCard[];
+}
+
+export function getCaptureDebug(): CaptureDebugSnapshot {
+  const rate = store.sampleRate || 1;
+  return {
+    capturePath: store.capturePath,
+    sampleRate: store.sampleRate,
+    sampleCount: store.sampleCount,
+    durationSec: store.sampleCount / rate,
+    bufferBytes: store.pcm.byteLength,
+    level: store.level,
+    activeCardId: store.activeCardId,
+    pendingCount: store.pending.size,
+    cards: store.cardOrder.flatMap((cardId) => {
+      const w = store.cards.get(cardId);
+      if (!w) return [];
+      return [
+        {
+          cardId,
+          startSample: w.startSample,
+          endSample: w.endSample,
+          durationSec:
+            w.endSample !== null ? (w.endSample - w.startSample) / rate : null,
+          clipReady: w.endSample !== null && !store.pending.has(cardId),
+        },
+      ];
+    }),
+  };
+}
+
+export function subscribeDebug(
+  listener: (snap: CaptureDebugSnapshot) => void,
+): () => void {
+  store.debugListeners.add(listener);
+  listener(getCaptureDebug());
+  return () => {
+    store.debugListeners.delete(listener);
+  };
+}
+
+/** Emit a debug snapshot, throttled to ~8Hz unless `force`d (boundary events). */
+function maybeEmitDebug(force = false): void {
+  if (store.debugListeners.size === 0) return;
+  const now = Date.now();
+  if (!force && now - store.lastDebugEmit < 125) return;
+  store.lastDebugEmit = now;
+  const snap = getCaptureDebug();
+  for (const l of store.debugListeners) {
+    try {
+      l(snap);
+    } catch {
+      /* never let a debug listener break capture */
+    }
+  }
 }

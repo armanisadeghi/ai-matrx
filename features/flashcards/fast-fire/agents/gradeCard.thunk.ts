@@ -32,6 +32,7 @@ import {
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { studyService } from "@/features/education/study/service/studyService";
+import { audioExtensionForType, normalizeAudioContentType } from "@/features/audio/utils/audio-mime";
 import { getFastFireAgentConfig } from "../config";
 import {
   gradePending,
@@ -41,7 +42,6 @@ import {
   type GradeResult,
   type GradeRubric,
 } from "../redux/fastFireSlice";
-import { FC_GRADE_SPOKEN_SCHEMA } from "./schemas";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 const FAST_FIRE_METHOD = "fast_fire";
@@ -138,8 +138,13 @@ export function gradeCard(args: GradeCardArgs) {
     let responseAudioFileId: string | null = null;
     if (clip && clip.size > 0) {
       try {
+        // The capture core emits WAV; derive the extension/mime from the blob
+        // itself rather than hard-coding a container, so the cloud-files row is
+        // stored as the real audio type (not mislabelled webm/video).
+        const mime = normalizeAudioContentType(clip.type || "audio/wav");
+        const ext = audioExtensionForType(mime);
         const uploaded = await fileHandler.upload(
-          { kind: "blob", blob: clip, fileName: `fastfire-${cardId}.webm`, mime: clip.type || "audio/webm" },
+          { kind: "blob", blob: clip, fileName: `fastfire-${cardId}.${ext}`, mime },
           { folderPath: "FastFire/responses", visibility: "private" },
         );
         responseAudioFileId = uploaded.fileId ?? null;
@@ -185,7 +190,9 @@ export function gradeCard(args: GradeCardArgs) {
           config: {
             autoRun: false,
             displayMode: "background",
-            llmOverrides: { response_format: FC_GRADE_SPOKEN_SCHEMA },
+            // No response_format override: the grader is OUR agent — its output
+            // schema lives in its DB definition (edit it there via agent_author,
+            // never a call-time override, which also wrecks the prod agent cache).
           },
           jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
         }),

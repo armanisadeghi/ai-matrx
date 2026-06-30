@@ -19,7 +19,6 @@ import {
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { getFastFireAgentConfig } from "../config";
 import { selectFastFireScoreboard } from "../redux/fastFire.selectors";
-import { FC_HELP_LIVE_SCHEMA } from "./schemas";
 
 interface HelpLiveArgs {
   front: string;
@@ -88,7 +87,9 @@ export function helpLive(args: HelpLiveArgs) {
           config: {
             autoRun: true,
             displayMode: "direct",
-            llmOverrides: { response_format: FC_HELP_LIVE_SCHEMA },
+            // No response_format override: fc_help_live is OUR agent — its output
+            // shape lives in its DB definition (edit via agent_author, never a
+            // call-time override, which also wrecks the prod agent cache).
           },
           jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
         }),

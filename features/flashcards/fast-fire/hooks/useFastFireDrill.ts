@@ -55,6 +55,10 @@ import {
   hardStopCapture,
 } from "../audio/continuousCapture";
 import { fileHandler } from "@/features/files";
+import {
+  audioExtensionForType,
+  normalizeAudioContentType,
+} from "@/features/audio/utils/audio-mime";
 import { gradeCard } from "../agents/gradeCard.thunk";
 import { reviewSession } from "../agents/reviewSession.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -231,12 +235,15 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       // Upload the durable full-session recording (best-effort).
       if (full && full.size > 0) {
         try {
+          // The capture core emits WAV; derive ext/mime from the blob itself.
+          const mime = normalizeAudioContentType(full.type || "audio/wav");
+          const ext = audioExtensionForType(mime);
           const uploaded = await fileHandler.upload(
             {
               kind: "blob",
               blob: full,
-              fileName: `fastfire-session-${sessionId ?? "anon"}.webm`,
-              mime: full.type || "audio/webm",
+              fileName: `fastfire-session-${sessionId ?? "anon"}.${ext}`,
+              mime,
             },
             { folderPath: "FastFire/sessions", visibility: "private" },
           );

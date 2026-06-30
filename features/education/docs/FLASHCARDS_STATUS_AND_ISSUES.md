@@ -43,8 +43,20 @@ Learn/Test/Match/Quiz modes · the metadata/visuals agent (not yet in `LIVE_AGEN
 
 ## PART 3 — ISSUES (must fix; CORE-FIRST order)
 
-### 🔴 A. AUDIO CORE — not functional (TOP PRIORITY, blocks everything FastFire)
-**Symptoms (owner-observed):** per-card "segments" are each ~the full length with parts muted; ALL
+### 🟢 A. AUDIO CORE — REBUILT on Web Audio PCM→WAV (pending owner playback verification)
+**Rebuilt 2026-06-30 (core-first reset).** `continuousCapture.ts` is now a Web-Audio AudioWorklet→PCM→
+WAV pipeline (was MediaRecorder dual-recorder). One warm mic stream feeds an `AudioWorklet` that taps raw
+PCM into ONE growing Float32 buffer with a sample clock; per-card clips and the full session are
+**sample-accurate slices** of that buffer, encoded as 16 kHz mono WAV (`lib/audio/wav.ts` +
+`lib/audio/pcm.ts`, new reusable primitives). Per-card clips include ~2.5s before + after the card window,
+with **beep markers synthesized into the clip** at the real start/stop offsets (sample-accurate, immune to
+echo-cancellation; the learner still hears the live buzzer). The public API is unchanged, so the (solid)
+drill orchestrator/timer/slice are untouched. `gradeCard`/`useFastFireDrill` upload now derive `.wav`
+ext/mime from the blob. **GATE — needs owner verification:** record + play back at
+**`/education/fastfire/capture-test`** (admin-only) — confirm each segment is the right (variable) length,
+real speech (non-silent), beep at boundaries, full session intact — BEFORE trusting live grading.
+ScriptProcessor fallback + auto-degrade-to-full-session-WAV are wired. Original symptoms (for reference):
+per-card "segments" are each ~the full length with parts muted; ALL
 segments are the same duration regardless of the actual answer; they are mostly silence. There is **no
 single full-session file** proving the whole session was captured. Multiple processing errors.
 **Diagnosis:** the audio capture + slicing was never made correct. The committed per-card-recorder
@@ -63,7 +75,12 @@ or (c) Web Audio API `AudioWorklet`/PCM buffering with exact sample cuts. I will
 before implementing. **This is the thing that actually needs careful engineering — do it right.**
 **Cleanup owed:** the 12 leaked `active` study_sessions (abandon/End not closing the session — H1).
 
-### 🟠 B. AGENT USAGE — anti-patterns (owner: "stop doing this")
+### 🟢 B. AGENT USAGE — anti-patterns FIXED (2026-06-30)
+- **DONE.** Deleted `agents/schemas.ts`; removed its imports (`gradeCard`) + the live `llmOverrides:
+  { response_format }` (`helpLive`); `reviewSession` comment tidied. All three thunks now call OUR agents
+  **variables-only**; `jsonExtraction: { enabled: true }` kept (FE-side extraction, NOT an override). Fix
+  agent output shape in the DB via `agent_author`, never in code.
+- Original notes (kept for context):
 - **B1 — LLM overrides on OUR agents.** Overrides exist to modify *someone else's* agent at call time.
   For our OWN agents, change behavior by **updating the agent's DB definition** (`agent_author` MCP), never
   a call-time override. Remove `llmOverrides: { response_format }` at `gradeCard.thunk.ts:188`,
@@ -112,6 +129,16 @@ before implementing. **This is the thing that actually needs careful engineering
 5. **Document as we go** (this file) so context limits never lose the state.
 
 ## Change log
+- **2026-06-30 (core rebuild, pre-gate)** — **Step 0 + Step 1 + Step 6 audio-debug done.** (0) Removed the
+  agent anti-patterns: deleted `agents/schemas.ts`, removed its imports + the `helpLive` `response_format`
+  override; thunks call agents variables-only. (1) Rebuilt the audio core on Web Audio:
+  `continuousCapture.ts` → AudioWorklet→PCM→WAV (sample-accurate per-card slices + full-session WAV; beep
+  markers synthesized into clips; ±2.5s pad; ScriptProcessor fallback + auto-degrade). New reusable
+  primitives `lib/audio/pcm.ts` + `lib/audio/wav.ts`. `gradeCard`/`useFastFireDrill` derive `.wav` ext/mime.
+  Built the prove-it surface `/education/fastfire/capture-test` (admin) — record + play back full + per-card
+  WAVs with real durations/waveforms. Built the admin `AudioCaptureDebugPanel` (live buffer/clock/windows).
+  Type-clean + lint-clean. **NEXT = the gate: owner verifies by listening, then resume Step 3+ (connect the
+  pieces) → Step 2 (device setup) → Step 4 (set-browse) → Step 5 (sessions CRUD) → Step 6 (agent stream).**
 - **2026-06-30** — Created after owner review. Logged the core reframe (audio/timing core under-built,
   AI over-built), the agent anti-patterns (overrides + hard-coded schemas), the routing convention gap +
   single-page issue, and the set-list-at-scale UI concern. No code changed this entry — documenting +

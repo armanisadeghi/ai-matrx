@@ -108,9 +108,10 @@ export function reviewSession(args: ReviewSessionArgs) {
           config: {
             autoRun: false,
             displayMode: "background",
-            // Response format has nothing to do with a SCHEMA! Also, providing it as an ovveride means partially modifying the agent setttings, but not completely, which will guarantee failures!
-            // llmOverrides: { response_format: FC_REVIEW_BATCH_SCHEMA },
-            // ADDITIONALLY: It is utterly STUPID to provide "Overrides" to modify the behavior of an agent made SPECIFCIALY for this task! If the agent settings are wrong, then modify them in the database.
+            // No response_format / llmOverrides: fc_review_batch is OUR agent.
+            // A call-time override only PARTIALLY modifies the agent's settings
+            // (guaranteed failures) and wrecks the prod agent cache. If the
+            // output shape is wrong, fix the agent in the DB via agent_author.
           },
           jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
         }),
