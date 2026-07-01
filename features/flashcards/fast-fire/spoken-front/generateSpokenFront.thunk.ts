@@ -33,17 +33,36 @@ interface SpokenFrontCard {
   front: string;
 }
 
-/** Pull the durable audio fileId out of the completed audio render block. */
+/**
+ * Pull the durable audio file_id out of the completed run. Gemini TTS streams
+ * terminate with an `audio_stream_end` event carrying the durable `file_id` (the
+ * same contract the podcast generator reads). The agent stream processor files
+ * that terminal event as an `unknown_data_event` render block tagged
+ * `_dataType: "audio_stream_end"` — that's the canonical path. A `media_block` /
+ * `audio_output` block (with `fileId`) is checked as a fallback for any deploy
+ * that emits one. Prefer the re-mintable `file_id`; last block wins.
+ */
 function readAudioFileId(state: RootState, requestId: string): string | null {
-  const blocks = selectRenderBlocksByType(requestId, "audio_output")(state);
-  if (!blocks) return null;
-  // Prefer a complete block with a durable fileId; take the last one.
-  for (let i = blocks.length - 1; i >= 0; i--) {
-    const data = blocks[i]?.data as
-      | { fileId?: string | null; file_id?: string | null; status?: string }
-      | undefined;
-    const fileId = data?.fileId ?? data?.file_id ?? null;
-    if (fileId) return fileId;
+  // Path A (canonical for streaming TTS): audio_stream_end → file_id.
+  const unknown = selectRenderBlocksByType(requestId, "unknown_data_event")(state);
+  if (unknown) {
+    for (let i = unknown.length - 1; i >= 0; i--) {
+      const d = unknown[i]?.data as
+        | { _dataType?: string; file_id?: string | null }
+        | undefined;
+      if (d?._dataType === "audio_stream_end" && d.file_id) return d.file_id;
+    }
+  }
+  // Path B (fallback): a media_block/audio_output carrying a durable id.
+  const media = selectRenderBlocksByType(requestId, "audio_output")(state);
+  if (media) {
+    for (let i = media.length - 1; i >= 0; i--) {
+      const d = media[i]?.data as
+        | { fileId?: string | null; file_id?: string | null }
+        | undefined;
+      const id = d?.fileId ?? d?.file_id ?? null;
+      if (id) return id;
+    }
   }
   return null;
 }

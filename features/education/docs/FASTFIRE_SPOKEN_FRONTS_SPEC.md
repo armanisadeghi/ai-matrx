@@ -55,6 +55,23 @@ When the "Hear the questions" option is on and a card enters `card_recording`,
 play its cached `spoken_front` audio (instant). If a card's audio isn't ready yet,
 either skip audio for that card or fall back gracefully (never block the timer).
 
+## ⚠ STATUS (2026-07-01): BUILT, audio-read corrected, NEEDS LIVE VERIFICATION
+An adversarial review caught that the first implementation read the audio from an
+`audio_output` render block — WRONG for streaming TTS. Corrected: Gemini TTS
+terminates with an **`audio_stream_end`** event carrying the durable `file_id`
+(the exact contract the podcast generator reads, `features/podcasts/generator/
+reduce.ts`); the agent stream processor files it as an `unknown_data_event` render
+block tagged `_dataType:"audio_stream_end"`. `readAudioFileId` now reads that
+(with the `audio_output` path as a fallback). Duplicate spoken_fronts are now
+structurally impossible (partial unique index `uq_fc_detail_one_spoken_front`).
+**Still to verify LIVE** (couldn't be tested headlessly — `agent_run` doesn't
+return stream events): that a real run of agent 04f69dff surfaces
+`audio_stream_end` with a non-null `file_id` in the agent pipeline (vs the podcast
+running its own stream reader). The toggle is DEFAULT OFF, so the core drill is
+unaffected until this is confirmed. iOS off-gesture `<audio autoPlay>` is a known
+follow-up (play the decoded buffer through the Start-resumed AudioContext, like
+the buzzer).
+
 ## Audio delivery — mechanism RESOLVED (one detail to confirm)
 The TTS agent's audio comes back through the agent **STREAM as an audio render
 block**, NOT via `selectFirstExtractedObject` (that's JSON-only, what the grader

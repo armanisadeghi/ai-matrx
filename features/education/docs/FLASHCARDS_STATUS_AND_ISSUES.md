@@ -129,6 +129,17 @@ before implementing. **This is the thing that actually needs careful engineering
 5. **Document as we go** (this file) so context limits never lose the state.
 
 ## Change log
+- **2026-07-01 (autonomous loop — TTS + progress + hardening)** — Built + pushed:
+  - **Spoken card fronts (TTS)** end to end (generation service, batch, toggle + Prepare-audio pre-step,
+    drill playback). **Adversarial review caught a CRITICAL read bug** (assumed `audio_output` render
+    block; streaming Gemini TTS actually terminates with `audio_stream_end` carrying the `file_id`, filed
+    as an `unknown_data_event` block — the podcast contract). FIXED the read; added a partial unique index
+    (`uq_fc_detail_one_spoken_front`, migration recorded) so re-gen can't duplicate. **Still needs LIVE
+    verification** (headless can't observe the agent stream); toggle is DEFAULT OFF so the core is safe.
+  - **Study Progress overview** (`/education/flashcards/progress`, VISION §16): mastery distribution,
+    accuracy, due-now, streak, activity — read-only over the study spine (`studyService.listMastery`).
+  - Adversarial pass also confirmed: TTS `autoRun:true` blocks to completion, concurrency pool safe,
+    request-id fallback correct; iOS `<audio autoPlay>` off-gesture is a known follow-up.
 - **2026-07-01 (owner testing feedback)** — Three items:
   1. **DONE — advance-early ("Next card"):** the drill already had a working Skip (grades + advances,
      fully audio-safe with the PCM core — the clip slices start→now +pad, captured during the advance).
