@@ -55,20 +55,25 @@ When the "Hear the questions" option is on and a card enters `card_recording`,
 play its cached `spoken_front` audio (instant). If a card's audio isn't ready yet,
 either skip audio for that card or fall back gracefully (never block the timer).
 
-## ⚠ OPEN QUESTION — resolve before building generation
-**How does the "Generate custom speech" agent deliver its AUDIO output to the FE
-so we can store it as a durable `file_id`?** The Fast Fire grader outputs JSON
-(text, read via `selectFirstExtractedObject`). A TTS agent outputs *audio*. Before
-wiring generation, confirm the contract:
-- Does `launchAgentExecution` on this agent surface the audio as a media block /
-  `file_id` in the stream (server auto-persists the WAV → returns a file_id)?
-- Or does the run return audio bytes the FE uploads via `fileHandler`?
-- Look at how the **podcast** feature / any existing TTS-agent consumer obtains a
-  stored audio file (`features/podcasts`, `features/audio`), and whether the
-  `agent_run` result for this agent carries a file reference.
-Once the delivery mechanism is known, the generation service is small: for each
-card → `pickSpokenFrontVariables` → run the agent → obtain the durable file_id →
-`fcService.addDetail(card.id, 'spoken_front', content, { audio_file_id })`.
+## Audio delivery — mechanism RESOLVED (one detail to confirm)
+The TTS agent's audio comes back through the agent **STREAM as an audio render
+block**, NOT via `selectFirstExtractedObject` (that's JSON-only, what the grader
+uses). In `features/agents/redux/execution-system/thunks/process-stream.ts` the
+server emits a `media_block` event (or legacy `audio_output`); the FE lifts it via
+`fromMediaBlock` into a `UnifiedMediaBlock` (`kind: "audio"`) and upserts it into
+the render-blocks store under `requestId`, blockId `media_block_audio_current`
+(status `streaming` → `complete`). So the generation service:
+1. `launchAgentExecution({ agentId: '04f69dff-…', runtime: { variables }, config:{ autoRun:true, displayMode:'background' } })`.
+2. Wait for the run to complete (poll stream phase, like `executeBuiltinWith*`).
+3. Read the audio block from the render-blocks store by `requestId` (kind audio).
+4. **CONFIRM (the one detail):** does that `UnifiedMediaBlock` carry a durable
+   `file_id`/CDN `url` (server already persisted the WAV) — then store it directly;
+   OR raw bytes/a transient url — then push through `fileHandler.upload` to mint a
+   durable `file_id`. (Inspect the live block shape at build time; `UnifiedMediaBlock`
+   / `fromMediaBlock` are in the agents stream layer.)
+5. `fcService.addDetail(card.id, 'spoken_front', content, { audio_file_id })`.
+The render-block selectors keyed by requestId already exist
+(`active-requests`/render-blocks selectors) — reuse them; do not re-read the stream.
 
 ## Acceptance criteria
 1. A "Hear the questions" toggle in Fast Fire setup (default OFF).
