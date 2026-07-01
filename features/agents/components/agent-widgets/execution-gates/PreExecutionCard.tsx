@@ -51,7 +51,9 @@ export function PreExecutionCard({
         className={cn(
           "relative z-10 w-full max-w-sm mx-4",
           "rounded-xl bg-card/98 backdrop-blur-md border border-border shadow-2xl",
-          "overflow-hidden",
+          // Cap + scroll: a long pre-execution message / tall input must not push the
+          // Cancel/Continue buttons (in the header) off-screen on mobile.
+          "max-h-[80dvh] overflow-y-auto overscroll-contain",
         )}
       >
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
