@@ -369,6 +369,28 @@ export const studyService = {
   },
 
   /**
+   * All of the current user's mastery rows for one item_type (RLS-scoped), for
+   * progress aggregation (mastery distribution, due count, struggling count).
+   * Capped by `limit` — a learner with more than this many studied items is well
+   * past where a client-side summary should move to an RPC.
+   */
+  async listMastery(itemType: string, limit = 2000): Promise<StudyResult<ItemMasteryRow[]>> {
+    try {
+      const { data, error } = await EDU()
+        .from("item_mastery")
+        .select("*")
+        .eq("item_type", itemType)
+        .is("deleted_at", null)
+        .order("last_attempt_at", { ascending: false })
+        .limit(limit);
+      if (error) return fail("listMastery", error);
+      return { data: (data ?? []) as ItemMasteryRow[], error: null };
+    } catch (e) {
+      return fail("listMastery", e);
+    }
+  },
+
+  /**
    * The adaptive "what's due" query: the current user's mastery rows for one
    * item_type that are due now (`due_at <= now()`), soonest-first. Uses the
    * `idx_item_mastery_due` index.

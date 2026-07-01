@@ -28,6 +28,7 @@ import {
   Search,
   FolderTree,
   AlertCircle,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -284,13 +285,27 @@ export function FlashcardsHome() {
               Flashcards
             </h1>
           </div>
-          <Button
-            onClick={newSet}
-            disabled={isPending && navigatingId === NEW_SET_NAV_ID}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            New
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isPending) return;
+                setNavigatingId("__progress__");
+                startTransition(() => router.push(`${EDU_BASE}/progress`));
+              }}
+              disabled={isPending && navigatingId === "__progress__"}
+            >
+              <TrendingUp className="mr-1.5 h-4 w-4" />
+              Progress
+            </Button>
+            <Button
+              onClick={newSet}
+              disabled={isPending && navigatingId === NEW_SET_NAV_ID}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              New
+            </Button>
+          </div>
         </div>
 
         {/* Search + filters */}

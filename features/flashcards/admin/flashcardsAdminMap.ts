@@ -93,6 +93,13 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/education/flashcards/progress",
+      label: "Study progress",
+      description: "Mastery distribution, accuracy, what's due now, and activity over the shared study spine (VISION §16). Mode-agnostic StudyProgress.",
+      filePath: "app/(core)/education/flashcards/progress/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/flashcards/admin",
       label: "This admin map",
       description: "Per-feature resource index (admin-gated).",
