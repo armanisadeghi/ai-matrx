@@ -35,7 +35,7 @@ import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { toast } from "@/components/ui/use-toast";
@@ -140,7 +140,7 @@ export default function WorkbookEditor({
 
   // Initial dark-mode value for createUniver; live changes handled by
   // useUniverDarkModeSync below (avoids a light→dark flash on boot).
-  const themeMode = useAppSelector((s) => s.theme.mode);
+  const themeMode = useThemeMode();
   const darkModeRef = useRef(themeMode === "dark");
   useEffect(() => {
     darkModeRef.current = themeMode === "dark";

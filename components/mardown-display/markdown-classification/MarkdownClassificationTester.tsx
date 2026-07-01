@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { markdownSamples, getAllMarkdownSampleIds } from "./sample-data/markdown-samples";
@@ -30,7 +30,7 @@ const MarkdownClassificationTester = ({
     initialCoordinatorId = "dynamic",
     showSelectors = true,
 }: MarkdownClassificationTesterProps) => {
-    const mode = useAppSelector((s) => s.theme.mode);
+    const mode = useThemeMode();
 
     // Main state
     const [markdown, setMarkdown] = useState<string>(initialMarkdown || "");

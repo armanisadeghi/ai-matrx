@@ -44,7 +44,7 @@ import {
   CircleDot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import CodeSidebar from "@/features/code-editor/multi-file-core/CodeSidebar";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
@@ -85,7 +85,7 @@ export function CodeEditorWindow({
   autoFormatOnOpen = false,
   onClose,
 }: CodeEditorWindowProps) {
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
 
   const {
     files,

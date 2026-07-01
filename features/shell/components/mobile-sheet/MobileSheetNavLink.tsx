@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import ShellIcon from "../ShellIcon";
 
 interface MobileSheetNavLinkProps {
@@ -20,13 +21,6 @@ export default function MobileSheetNavLink({
   isChild = false,
   external = false,
 }: MobileSheetNavLinkProps) {
-  function closeSheet() {
-    const checkbox = document.getElementById(
-      "shell-mobile-menu",
-    ) as HTMLInputElement | null;
-    if (checkbox) checkbox.checked = false;
-  }
-
   const className = isChild
     ? "shell-mobile-nav-item shell-mobile-nav-child"
     : "shell-mobile-nav-item";
@@ -38,7 +32,7 @@ export default function MobileSheetNavLink({
         target="_blank"
         rel="noopener noreferrer"
         className={className}
-        onClick={closeSheet}
+        onClick={closeShellMobileMenu}
       >
         <span className="shell-nav-icon">
           <ShellIcon
@@ -60,7 +54,7 @@ export default function MobileSheetNavLink({
       href={href}
       data-nav-href={href}
       className={className}
-      onClick={closeSheet}
+      onClick={closeShellMobileMenu}
     >
       <span className="shell-nav-icon">
         <ShellIcon

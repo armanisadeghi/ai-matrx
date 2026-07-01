@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { Editor as TuiEditorReactComp } from "@toast-ui/react-editor";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import EditorLoading from "../../text-block/editorLoading";
 
 // Import the Toast UI Editor CSS
@@ -202,7 +202,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     editMode = "wysiwyg"
  }, ref) => {
     const editorRef = useRef<TuiEditorReactComp>(null);
-    const mode = useAppSelector((s) => s.theme.mode);
+    const mode = useThemeMode();
     const [colorSyntaxPlugin, setColorSyntaxPlugin] = useState<any>(null);
     const [isClient, setIsClient] = useState(false);
     const [widgetRules, setWidgetRules] = useState<any[]>([]);

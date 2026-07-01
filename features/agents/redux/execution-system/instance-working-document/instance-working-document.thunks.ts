@@ -52,6 +52,7 @@ import {
   selectWorkingDocVersion,
 } from "./instance-working-document.selectors";
 import { selectIsCacheOnly } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   commitWorkingDocumentContent,
   getCxWorkingDocumentById,
@@ -116,7 +117,11 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
   ThunkConfig
 >(
   "instanceWorkingDocument/hydrate",
-  async ({ conversationId }, { dispatch }) => {
+  async ({ conversationId }, { dispatch, getState }) => {
+    // Guests on `/chat/new` mount RunControlsMenu with a provisional
+    // conversation id but have no persisted documents — skip quietly.
+    if (!selectUserId(getState())) return;
+
     let links;
     try {
       links = await listConversationDocuments(conversationId);
@@ -135,12 +140,15 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
         const deterministicId = reservedWorkingDocumentId(conversationId, kind);
         const kindLinks = links.filter((l) => l.kind === kind && l.enabled);
         const link =
-          kindLinks.find((l) => l.documentId === deterministicId) ?? kindLinks[0];
+          kindLinks.find((l) => l.documentId === deterministicId) ??
+          kindLinks[0];
         if (!link) return; // never used / disabled → stays off
         try {
           const doc = await getCxWorkingDocumentById(link.documentId);
           if (!doc) return; // edge points at a vanished doc — leave off
-          dispatch(setWorkingDocEnabled({ conversationId, kind, enabled: true }));
+          dispatch(
+            setWorkingDocEnabled({ conversationId, kind, enabled: true }),
+          );
           dispatch(
             setWorkingDocBinding({
               conversationId,
@@ -153,10 +161,16 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
             }),
           );
           dispatch(
-            markWorkingDocMaterialized({ conversationId, kind, version: doc.version }),
+            markWorkingDocMaterialized({
+              conversationId,
+              kind,
+              version: doc.version,
+            }),
           );
           if (doc.title) {
-            dispatch(setWorkingDocTitle({ conversationId, kind, title: doc.title }));
+            dispatch(
+              setWorkingDocTitle({ conversationId, kind, title: doc.title }),
+            );
           }
           dispatch(
             applyAgentWorkingDocContent({
@@ -221,9 +235,10 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
     }
 
     // Disable: persist enabled=false on the edge only if the row exists.
-    const materialized = selectWorkingDocMaterialized(conversationId, kind)(
-      getState(),
-    );
+    const materialized = selectWorkingDocMaterialized(
+      conversationId,
+      kind,
+    )(getState());
     if (materialized && binding.kind === "cx_working_document" && binding.id) {
       try {
         const orgId = resolveOrgId(getState(), conversationId);
@@ -299,7 +314,11 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
         content,
       });
       dispatch(
-        markWorkingDocMaterialized({ conversationId, kind, version: doc.version }),
+        markWorkingDocMaterialized({
+          conversationId,
+          kind,
+          version: doc.version,
+        }),
       );
       // CATCH-UP: the materialize captured a snapshot of `content`, but the user
       // may have typed more while it (or a concurrent dedup'd materialize) was in
@@ -309,7 +328,11 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
       const latest = selectWorkingDocContent(conversationId, kind)(getState());
       if (latest !== content) {
         try {
-          const res = await commitWorkingDocumentContent(doc.id, latest, doc.version);
+          const res = await commitWorkingDocumentContent(
+            doc.id,
+            latest,
+            doc.version,
+          );
           if (res.status === "saved") {
             dispatch(
               setWorkingDocVersion({
@@ -380,7 +403,11 @@ export const persistWorkingDocumentContentThunk = createAsyncThunk<
     if (binding.kind === "note" && binding.id) {
       try {
         await dispatch(
-          saveNoteField({ noteId: binding.id, field: "content", value: content }),
+          saveNoteField({
+            noteId: binding.id,
+            field: "content",
+            value: content,
+          }),
         ).unwrap();
       } catch (err) {
         dispatch(
@@ -396,9 +423,10 @@ export const persistWorkingDocumentContentThunk = createAsyncThunk<
     }
 
     if (binding.kind === "cx_working_document" && binding.id) {
-      const materialized = selectWorkingDocMaterialized(conversationId, kind)(
-        getState(),
-      );
+      const materialized = selectWorkingDocMaterialized(
+        conversationId,
+        kind,
+      )(getState());
       try {
         if (materialized) {
           await updateCxWorkingDocumentContent(binding.id, content);
@@ -475,7 +503,11 @@ export const linkConversationDocumentThunk = createAsyncThunk<
         }),
       );
       dispatch(
-        markWorkingDocMaterialized({ conversationId, kind, version: doc.version }),
+        markWorkingDocMaterialized({
+          conversationId,
+          kind,
+          version: doc.version,
+        }),
       );
       dispatch(
         setWorkingDocTitle({ conversationId, kind, title: doc.title ?? "" }),
@@ -544,7 +576,10 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
       const noteContent = note.content ?? "";
       let nextContent = noteContent;
       if (mode === "append") {
-        const current = selectWorkingDocContent(conversationId, kind)(getState());
+        const current = selectWorkingDocContent(
+          conversationId,
+          kind,
+        )(getState());
         if (current.trim()) {
           nextContent = noteContent.trim()
             ? `${noteContent}\n\n${current}`
@@ -560,9 +595,13 @@ export const bindWorkingDocumentToNoteThunk = createAsyncThunk<
         }),
       );
       if (note.label) {
-        dispatch(setWorkingDocTitle({ conversationId, kind, title: note.label }));
+        dispatch(
+          setWorkingDocTitle({ conversationId, kind, title: note.label }),
+        );
       }
-      dispatch(setWorkingDocContent({ conversationId, kind, content: nextContent }));
+      dispatch(
+        setWorkingDocContent({ conversationId, kind, content: nextContent }),
+      );
       dispatch(setWorkingDocEnabled({ conversationId, kind, enabled: true }));
 
       if (mode === "append" && nextContent !== noteContent) {
@@ -657,7 +696,11 @@ export const syncWorkingDocumentFromAgentThunk = createAsyncThunk<
             }),
           );
           dispatch(
-            markWorkingDocMaterialized({ conversationId, kind, version: doc.version }),
+            markWorkingDocMaterialized({
+              conversationId,
+              kind,
+              version: doc.version,
+            }),
           );
         }
       } catch (err) {

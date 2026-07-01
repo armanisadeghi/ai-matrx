@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { agentListEmptyLabel } from "@/features/agents/constants/agent-list-labels";
 import type { UseAgentConsumerReturn } from "@/features/agents/hooks/useAgentConsumer";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
 import type { RightPanel } from "./types";
@@ -55,12 +56,7 @@ export function AgentListContent({
 }: AgentListContentProps) {
   const isSystemTab = consumer.tab === "system";
 
-  const emptyLabel =
-    consumer.tab === "system"
-      ? "No system agents found"
-      : consumer.tab === "shared"
-        ? "No shared agents found"
-        : "No agents found";
+  const emptyLabel = agentListEmptyLabel(consumer.tab);
 
   return (
     <div className="flex flex-col h-full">

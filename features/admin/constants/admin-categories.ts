@@ -686,6 +686,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/database/enums",
         isNew: true,
       },
+      {
+        title: "Canonicalization Toolkit",
+        description:
+          "Live gate + audit snapshots for the DB canonicalization transition: certification summary, every FAIL/WARN finding, broken functions, migration candidates (M2M/unregistered/stale), and per-table preflight (table_impact) + verify/certify tools.",
+        iconName: "ShieldCheck",
+        link: "/administration/canonicalization",
+        isNew: true,
+      },
     ],
   },
   {

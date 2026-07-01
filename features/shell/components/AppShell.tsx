@@ -20,6 +20,7 @@ import MobileDock from "@/features/shell/components/dock/MobileDock";
 import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSideSheet";
 import GlassPortal from "@/features/shell/components/GlassPortal";
 import NavActiveSync from "@/features/shell/components/NavActiveSync";
+import MobileMenuPathSync from "@/features/shell/components/MobileMenuPathSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
 import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
 import DeferredIslands from "@/features/shell/islands/DeferredIslands";
@@ -75,6 +76,7 @@ export default function AppShell({
       </GlassPortal>
 
       <NavActiveSync />
+      <MobileMenuPathSync />
       <VisualViewportSync />
       <ShellSidebarCookieSync />
       {/* Active-organization hydration is owned by the sync engine

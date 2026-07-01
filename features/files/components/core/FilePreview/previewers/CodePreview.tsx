@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, Copy, Check } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import {
@@ -23,31 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { extname } from "../../../../utils/path";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
-
-/**
- * Lightweight theme reader. The project doesn't use next-themes — theme
- * state lives in Redux (`theme.mode`) and the dark class is mirrored onto
- * `<html>`. Reading the class is the cheapest source of truth that works
- * inside or outside StoreProvider.
- */
-function useIsDark(): boolean {
-  return useSyncExternalStore<boolean>(
-    (onChange) => {
-      if (typeof document === "undefined") return () => {};
-      const observer = new MutationObserver(onChange);
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-      return () => observer.disconnect();
-    },
-    () =>
-      typeof document !== "undefined"
-        ? document.documentElement.classList.contains("dark")
-        : false,
-    () => false,
-  );
-}
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 
 export interface CodePreviewProps {
   fileId: string;
@@ -135,7 +111,7 @@ export function CodePreview({
   maxBytes = 1024 * 1024,
   className,
 }: CodePreviewProps) {
-  const isDark = useIsDark();
+  const isDark = useThemeMode() === "dark";
   // Pulls bytes via the Python `/files/{id}/download` endpoint and gives
   // us a `blob:` URL — same-origin, JWT-authenticated, CORS-safe. The
   // S3-signed URL would 403 here because S3 bucket CORS doesn't allow

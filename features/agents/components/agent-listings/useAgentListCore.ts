@@ -1,8 +1,17 @@
 "use client";
 
-import { useState, useRef, useMemo, useTransition, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useMemo,
+  useTransition,
+  useCallback,
+  useEffect,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { shouldDefaultAgentListToPublicTab } from "@/features/agents/constants/agent-list-labels";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
 import {
   makeSelectFilteredAgents,
@@ -50,8 +59,11 @@ export function useAgentListCore({
   const [hoveredAgent, setHoveredAgent] =
     useState<AgentDefinitionRecord | null>(null);
   const hoverLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const defaultTabAppliedRef = useRef(false);
 
   const consumer = useAgentConsumer(consumerId, { unregisterOnUnmount: true });
+  const userId = useAppSelector(selectUserId);
+  const ownedCount = useAppSelector(selectTotalOwnedAgentsCount);
 
   const selectFiltered = useMemo(
     () => makeSelectFilteredAgents(consumerId),
@@ -69,6 +81,7 @@ export function useAgentListCore({
     system: useAppSelector(selectTotalBuiltinAgentsCount),
   };
   const isLoading = sliceStatus === "loading";
+  const agentsLoaded = sliceStatus === "succeeded" || sliceStatus === "failed";
 
   const ensureLoaded = useCallback(() => {
     if (!hasFetched) {
@@ -76,6 +89,34 @@ export function useAgentListCore({
       setHasFetched(true);
     }
   }, [hasFetched, dispatch]);
+
+  useEffect(() => {
+    if (defaultTabAppliedRef.current) return;
+    if (consumer.tab !== "mine") {
+      defaultTabAppliedRef.current = true;
+      return;
+    }
+
+    const wantsPublic = shouldDefaultAgentListToPublicTab({
+      userId,
+      ownedCount,
+      agentsLoaded,
+    });
+
+    if (!wantsPublic) {
+      if (!userId || agentsLoaded) {
+        defaultTabAppliedRef.current = true;
+      }
+      return;
+    }
+
+    consumer.setTab("system");
+    defaultTabAppliedRef.current = true;
+  }, [userId, ownedCount, agentsLoaded, consumer.tab, consumer.setTab]);
+
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
 
   const handleSelectAgent = useCallback(
     (agent: AgentDefinitionRecord) => {

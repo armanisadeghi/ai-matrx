@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useThemeMode } from '@/styles/themes/useThemeMode';
 
 interface LayerConfigType {
   url: string;
@@ -26,7 +26,7 @@ export default function LayerSwitcher({
   onLayerChange
 }: LayerSwitcherProps) {
   const map = useMap();
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const [activeLayer, setActiveLayer] = useState(initialLayer);
   const layerControlRef = useRef<any>(null);
   const layersRef = useRef<Record<string, L.TileLayer>>({});

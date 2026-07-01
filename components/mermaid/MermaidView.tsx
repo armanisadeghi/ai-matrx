@@ -6,14 +6,15 @@
  *  - MermaidView          — Redux-connected: user preferences + app theme,
  *                           with per-artifact metadata overrides. For app
  *                           surfaces (artifact wrapper, canvas, demos).
- *  - StandaloneMermaidView — Zero Redux: defaults + DOM dark-mode detection.
+ *  - StandaloneMermaidView — Defaults + painted DOM theme via useThemeMode().
  *                           For public share pages whose tree has no store.
  */
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 
 import { MermaidRenderer } from "./MermaidRenderer";
 import {
@@ -47,7 +48,7 @@ export function MermaidView({
   fillHeight,
 }: MermaidViewProps) {
   const prefs = useAppSelector(selectMermaidPreferences);
-  const appMode = useAppSelector((state) => state.theme.mode);
+  const appMode = useThemeMode();
 
   const options = {
     theme: resolveMermaidTheme(metadata?.theme ?? prefs.theme, appMode),
@@ -69,20 +70,6 @@ export function MermaidView({
   );
 }
 
-/** Reactively tracks the `.dark` class on <html> (theme pre-paint target). */
-function useDomDarkMode(): "light" | "dark" {
-  const [mode, setMode] = useState<"light" | "dark">("light");
-  useEffect(() => {
-    const root = document.documentElement;
-    const read = () => setMode(root.classList.contains("dark") ? "dark" : "light");
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-  return mode;
-}
-
 export function StandaloneMermaidView({
   source,
   metadata,
@@ -90,7 +77,7 @@ export function StandaloneMermaidView({
   viewportMaxHeight,
   fillHeight,
 }: Pick<MermaidViewProps, "source" | "metadata" | "className" | "viewportMaxHeight" | "fillHeight">) {
-  const mode = useDomDarkMode();
+  const mode = useThemeMode();
   const options = {
     theme: resolveMermaidTheme(metadata?.theme ?? DEFAULT_MERMAID_PREFERENCES.theme, mode),
     look: metadata?.look ?? DEFAULT_MERMAID_PREFERENCES.look,

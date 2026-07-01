@@ -10,7 +10,8 @@ import {HexColorPicker} from 'react-colorful';
 import {tailwindColors} from '@/constants/tailwind-colors';
 import {predefinedColors} from '@/constants/standard-colors';
 import {colorFormats, getColorString, isValidColor, normalizeColorInput} from '@/utils/color-utils/color-change-util';
-import {useAppSelector, useAppDispatch} from '@/lib/redux/hooks';
+import {useAppDispatch} from '@/lib/redux/hooks';
+import {useThemeMode} from '@/styles/themes/useThemeMode';
 import {setMode} from '@/styles/themes/themeSlice';
 import {Sun, Moon, CheckCircle, AlertTriangle} from 'lucide-react';
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription} from '@/components/ui/dialog';
@@ -34,7 +35,7 @@ export default function ColorInput(
         onResetColors: () => void;
     }) {
     const [inputValue, setInputValue] = useState(getColorString(color, format));
-    const theme = useAppSelector((s) => s.theme.mode);
+    const theme = useThemeMode();
     const dispatch = useAppDispatch();
     const setTheme = (t: 'light' | 'dark') => dispatch(setMode(t));
     const [mounted, setMounted] = useState(false);

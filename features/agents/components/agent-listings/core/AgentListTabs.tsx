@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-labels";
 import type { AgentTab } from "@/features/agents/redux/agent-consumers/slice";
 import type { UseAgentConsumerReturn } from "@/features/agents/hooks/useAgentConsumer";
 
@@ -19,7 +20,7 @@ const PICKER_TABS: {
   { value: "mine", label: "Mine", countKey: "mine" },
   { value: "shared", label: "Shared", countKey: "shared" },
   { value: "all", label: "All", countKey: "all" },
-  { value: "system", label: "System", countKey: "system" },
+  { value: "system", label: AGENT_PUBLIC_TAB_LABEL, countKey: "system" },
 ];
 
 interface AgentListTabsProps {

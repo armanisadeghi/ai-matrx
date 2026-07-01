@@ -89,7 +89,7 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 
 **Hand-roll the explicit Drawer branch below only when you need more than the auto-sheet** — a `vaul` drag-to-close handle, or a genuinely different mobile layout (not just a reflow). For a normal dialog, do nothing extra.
 
-**`DropdownMenuContent` and `PopoverContent` cap to the viewport and scroll** (`max-h-[var(--radix-*-content-available-height)] overflow-y-auto`), so a long menu can never grow off-screen and lock the user out. Any custom popup panel you build MUST do the same: `max-height` + `overflow-y-auto`, never an unbounded height.
+**`DropdownMenuContent` and `PopoverContent` cap to the viewport and scroll** (max-height of `var(--radix-<component>-content-available-height)` plus `overflow-y-auto` — e.g. `--radix-dropdown-menu-content-available-height`), so a long menu can never grow off-screen and lock the user out. Any custom popup panel you build MUST do the same: `max-height` + `overflow-y-auto`, never an unbounded height.
 
 ```tsx
 import { useIsMobile } from "@/hooks/use-mobile";

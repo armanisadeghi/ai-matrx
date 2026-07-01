@@ -66,6 +66,7 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       type: proposal.type,
       items: proposal.envelope.items,
       proposal_id: proposal.proposalId,
+      force: false,
     };
     try {
       const result = await confirmDirective(baseUrl, body);

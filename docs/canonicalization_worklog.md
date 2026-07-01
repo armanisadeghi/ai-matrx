@@ -9,7 +9,7 @@ Project `txzxabzwovsujtloxrus` · updated 2026-06-30
 - Relationships = rows in `platform.associations`. A new `x_y` junction is a bug.
 - Growing vocab = FK into registry (no enum/CHECK arrays). `category`/`role`/`type` → `platform.categories`.
 - Visibility = `platform.visibility` enum. Grants = rows in `iam.permissions` keyed on the **token**. RLS via `iam.apply_rls(schema,table,token,variant)` — never hand-write.
-- **GATE:** `iam.verify_canonical_ok('<schema>','<table>','<token>')` = `true`, zero WARN.
+- **GATE (complete):** `iam.canonical_certify_ok('<schema>','<table>','<token>')` = `true` (zero FAIL/WARN **and** no broken dependent fns). `iam.verify_canonical(...)` lists every failing check. See §5b.
 - Migrated rows carry `metadata.legacy_table` + `metadata.legacy_id`. Retire → `graveyard` (rename, never DROP).
 - `SET SCHEMA` is metadata-only: FKs/RLS/indexes/triggers follow; **only function bodies break** → repoint.
 
@@ -124,6 +124,36 @@ Base-entity delta (`new col | old col | notes`):
 | metadata | metadata | keep |
 | name | name (PK) | DEMOTE to UNIQUE col |
 Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_name`; register token `tool_executor`; collapse `binding` → `tool → tool_executor` (`metadata.is_active`, or drop inactive). Funcs to repoint: create_bundle_with_lister, get_tool_detail, tool_register, tool_register_mcp_discovered, tool_resolve_for_request.
+
+## 5b. Toolkit (all re-runnable) — `iam.*` gate + `audit.*` store
+**Gate is now COMPLETE — the single source of truth.** `iam.verify_canonical(schema,table,token)` → rows(check_name,status,detail). Checks EVERYTHING: registration; all 9 base cols with type+nullability (`id` uuid, `organization_id` NOT NULL, `created_at`/`updated_at` NOT NULL, `version` int NOT NULL, `metadata` jsonb NOT NULL, `created_by`/`updated_by`); FK targets (org→`iam.organizations`, created_by/updated_by→`auth.users`); `deleted_at` vs `has_soft_delete`; trigger trio (`_stamp_actor`/`_touch_row`/`_version_capture`) vs `is_versioned`; `visibility` = `platform.visibility` enum NOT NULL (conditional on listed/shareable; SKIP for components); legacy kills (`org_id`=FAIL; `user_id`/`is_public`/`is_deleted`=WARN); RLS enabled; canonical policy set; owner short-circuit + `has_access(token)`; sharing-token match; component composition.
+- `iam.verify_canonical_ok(...)` → bool (no FAIL).
+- `iam.canonical_certify(schema,table,token)` → blocking rows = conformance FAIL/WARN **+ currently-broken dependent fns**. Empty = perfect.
+- `iam.canonical_certify_ok(...)` → bool. **The loop's "done" gate.**
+
+**Audit store — `SELECT audit.refresh();` rebuilds every snapshot** (drives the complete gate over all registered live tables + `plpgsql_check` over every plpgsql fn; exclusions from `meta.excluded_schema`):
+- `audit.summary` (view) — per table `fails`/`warns`/`certified`. `WHERE NOT certified ORDER BY fails DESC` = hit list.
+- `audit.canonical_findings` — every FAIL/WARN (`check_name`,`detail`).
+- `audit.broken_functions` — `plpgsql_check` errors (`level`/`sqlstate`/`message`). plpgsql only; SQL-lang not covered.
+- `audit.function_deps` — precise fn→object dependency map (from `plpgsql_check`).
+- `audit.table_impact(schema,table)` — **PREFLIGHT**: every fn touching the table · `dependency` (precise|text-qualified) · `currently_broken` · exact `referenced_columns[]`. Run before any rename/drop to get the blast radius.
+- `audit.m2m_candidates` · `audit.unregistered_candidates` · `audit.stale_registry` · `audit.refresh_log`.
+- **Admin UI:** `/administration/canonicalization` (super-admin) surfaces every view/RPC above with sticky-header, filter/sort tables — Overview, Summary, Findings, Broken functions, Function deps, Candidates, Table impact, Verify.
+
+## 5c. Snapshot — 2026-07-01 (COMPLETE gate)
+- 199 registered live tables → **9 fully certified · 190 not**. (Old partial gate falsely implied 63 OK — it never checked triggers/FKs/version/metadata/updated_by/org-NOT-NULL. ~800 hidden FAILs.)
+- Gate: **1039 FAIL / 242 WARN**. Dependency edges mapped: **1731**.
+- Broken fns: **242 distinct** error-level. `42703` column-gone (rename fallout) e.g. `model.class`, `system_function.public_name`. `42P01` table-not-found: 68 rels → 10 MOVED · 14 graveyard · 44 gone.
+- M2M candidates: 125 (6 unregistered+payload≤3 = purest). Unregistered: 205 (62 look like entities). Stale registry: 18.
+- `fc_card`/`fc_set` = certified true (reference stays perfect under the strict gate).
+
+## 5d. Per-table flip loop — touch once, never return
+1. `SELECT * FROM iam.verify_canonical(s,t,tok);` → full fix list.
+2. `SELECT * FROM audit.table_impact(s,t);` → every dependent fn + exact columns → blast radius BEFORE editing.
+3. ONE migration: canonicalize the table (cols/FKs/triggers, RLS via `iam.apply_rls`) **+ repoint every fn from step 2**.
+4. `SELECT audit.refresh();`
+5. `SELECT iam.canonical_certify_ok(s,t,tok);` must be `true`. If not → `iam.canonical_certify(s,t,tok)` and fix.
+6. Only then touch app/client code. Log to `platform.deprecated_relations` + §6.
 
 ## 6. Done log (mirror of `platform.deprecated_relations`)
 _none migrated yet_

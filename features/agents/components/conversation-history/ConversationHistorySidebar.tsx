@@ -595,8 +595,14 @@ const ConsumerView: React.FC<
     searchTerm,
     onSearchChange,
     onLoadMore,
+    favorites,
     resolveHref,
   } = ctl;
+
+  const favoriteIds = useMemo(
+    () => new Set(favorites.map((f) => f.conversationId)),
+    [favorites],
+  );
 
   // Search — collapsed by default, summoned on click (ChatGPT/Claude style).
   const [searchOpen, setSearchOpen] = useState(initialSearchOpen);
@@ -619,50 +625,55 @@ const ConsumerView: React.FC<
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
       {headerSlot}
 
-      {(!hideSearchAffordance || surfaceId) && (
-        <div className="flex shrink-0 items-center gap-1 px-1 pt-2">
-          {!hideSearchAffordance &&
-            (searchOpen ? (
-              <div className="relative flex flex-1 items-center">
-                <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <input
-                  ref={searchInputRef}
-                  type="search"
-                  value={searchTerm}
-                  onChange={(e) => onSearchChange(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") closeSearch();
-                  }}
-                  placeholder="Search chats"
-                  className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-ring/40"
-                  aria-label="Search conversations"
-                />
-                <button
-                  type="button"
-                  onClick={closeSearch}
-                  className="absolute right-1.5 flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-                  aria-label="Close search"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
+      {surfaceId && (
+        <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2 pb-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+            Filtered Chats
+          </span>
+          <ConversationSourceFilterTree
+            scopeId={scopeId}
+            surfaceId={surfaceId}
+            align="end"
+          />
+        </div>
+      )}
+
+      {!hideSearchAffordance && (
+        <div className="flex shrink-0 items-center gap-1 px-1 pb-1">
+          {searchOpen ? (
+            <div className="relative flex flex-1 items-center">
+              <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeSearch();
+                }}
+                placeholder="Search chats"
+                className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-ring/40"
+                aria-label="Search conversations"
+              />
               <button
                 type="button"
-                onClick={openSearch}
-                className="flex h-8 flex-1 items-center gap-1.5 rounded-lg px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                aria-label="Search conversations"
+                onClick={closeSearch}
+                className="absolute right-1.5 flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                aria-label="Close search"
               >
-                <Search className="h-3.5 w-3.5" />
-                <span>Search chats</span>
+                <X className="h-3 w-3" />
               </button>
-            ))}
-          {surfaceId && (
-            <ConversationSourceFilterTree
-              scopeId={scopeId}
-              surfaceId={surfaceId}
-              align="end"
-            />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openSearch}
+              className="flex h-8 flex-1 items-center gap-1.5 rounded-lg px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              aria-label="Search conversations"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span>Search chats</span>
+            </button>
           )}
         </div>
       )}
@@ -687,20 +698,36 @@ const ConsumerView: React.FC<
           </div>
         )}
 
-        {byDate.map((bucket) => (
-          <ConsumerSection key={bucket.key} label={bucket.label}>
-            {bucket.items.map((conv) => (
-              <ConsumerRow
-                key={conv.conversationId}
-                conv={conv}
-                active={conv.conversationId === activeConversationId}
-                onOpen={onOpenConversation}
-                openInPlace={openInPlace}
-                resolveHref={resolveHref}
-              />
-            ))}
-          </ConsumerSection>
-        ))}
+        {favorites.length > 0 && (
+          <PinnedChatsSection
+            pinned={favorites}
+            activeConversationId={activeConversationId}
+            onOpen={onOpenConversation}
+            openInPlace={openInPlace}
+            resolveHref={resolveHref}
+          />
+        )}
+
+        {byDate.map((bucket) => {
+          const items = bucket.items.filter(
+            (conv) => !favoriteIds.has(conv.conversationId),
+          );
+          if (items.length === 0) return null;
+          return (
+            <ConsumerSection key={bucket.key} label={bucket.label}>
+              {items.map((conv) => (
+                <ConsumerRow
+                  key={conv.conversationId}
+                  conv={conv}
+                  active={conv.conversationId === activeConversationId}
+                  onOpen={onOpenConversation}
+                  openInPlace={openInPlace}
+                  resolveHref={resolveHref}
+                />
+              ))}
+            </ConsumerSection>
+          );
+        })}
 
         {hasMore && (
           <div className="px-3 py-2">
@@ -951,6 +978,80 @@ const Row: React.FC<RowProps> = ({
 };
 
 // ── Consumer sub-components ───────────────────────────────────────────────────
+
+/** Collapsed pin list length before "Show all" appears. */
+const PINNED_CHATS_COLLAPSED_LIMIT = 5;
+
+const PinnedChatsSection: React.FC<{
+  pinned: ConversationListItem[];
+  activeConversationId?: string | null;
+  onOpen?: (conv: ConversationListItem) => void;
+  openInPlace?: boolean;
+  resolveHref: (conv: ConversationListItem) => string;
+}> = ({
+  pinned,
+  activeConversationId,
+  onOpen,
+  openInPlace = false,
+  resolveHref,
+}) => {
+  const [open, setOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  const hasMorePins = pinned.length > PINNED_CHATS_COLLAPSED_LIMIT;
+  const visiblePins =
+    showAll || !hasMorePins
+      ? pinned
+      : pinned.slice(0, PINNED_CHATS_COLLAPSED_LIMIT);
+
+  return (
+    <div className="mb-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 hover:text-foreground"
+        aria-expanded={open}
+        aria-label="Toggle pinned chats"
+      >
+        <span className="flex items-baseline gap-1.5">
+          <span>Pinned</span>
+          <span className="text-[10px] text-muted-foreground/70 normal-case tracking-normal">
+            {pinned.length}
+          </span>
+        </span>
+        {open ? (
+          <ChevronDown className="h-3 w-3 shrink-0" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0" />
+        )}
+      </button>
+      {open && (
+        <div>
+          {visiblePins.map((conv) => (
+            <ConsumerRow
+              key={`pinned-${conv.conversationId}`}
+              conv={conv}
+              active={conv.conversationId === activeConversationId}
+              onOpen={onOpen}
+              openInPlace={openInPlace}
+              resolveHref={resolveHref}
+            />
+          ))}
+          {hasMorePins && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mx-1 flex h-7 w-[calc(100%-0.5rem)] items-center rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+              aria-expanded={showAll}
+            >
+              {showAll ? "Show less" : "Show all"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ConsumerSection: React.FC<{
   label: string;

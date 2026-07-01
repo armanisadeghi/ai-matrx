@@ -11,6 +11,7 @@ import React, {
   ReactNode,
 } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { MarkdownCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import FullScreenOverlay, {
   TabDefinition,
@@ -1011,7 +1012,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const isMobile = useIsMobile();
   const route =

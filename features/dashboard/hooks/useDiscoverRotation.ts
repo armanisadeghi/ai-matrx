@@ -3,20 +3,27 @@
 // useDiscoverRotation — picks which slice of the Discover pool to show so the
 // user sees something different over time, plus a manual "show more" cycle.
 //
-// Variation comes from three SSR-safe sources, summed:
-//   • dayIndex   — rotates the starting window once per day (computed in a
-//                  useState initializer so server + hydration agree; the only
-//                  mismatch risk is the sub-ms day boundary, negligible).
-//   • mountSeed  — a module-scoped cursor that advances on each mount, so a
+// SSR-safety is the load-bearing constraint here. The FIRST render must be
+// byte-identical on the server and during client hydration, otherwise React
+// throws a hydration mismatch. So all per-visit variation is applied AFTER
+// mount, in an effect, never during the initial render.
+//
+// Variation sources, summed into the window start:
+//   • dayIndex   — rotates the starting window once per day. Applied only after
+//                  mount so the SSR/hydration pair always agrees on day 0.
+//   • mountSeed  — a module-scoped cursor that advances once per mount, so a
 //                  second in-session visit to /dashboard shows a fresh window.
-//                  Read in a useState initializer → first page load is 0 on
-//                  both server and client, so initial HTML matches.
+//                  Also applied only after mount (the module counter is mutated
+//                  in an effect, never during render — server render must stay
+//                  pure/deterministic across requests).
 //   • bump       — user clicks of "Show more".
 // The window wraps around the pool, so cycling always lands on real items.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Survives client-side navigations within a session; resets on hard reload.
+// Only ever mutated on the client (inside an effect), so server renders stay
+// deterministic and match hydration.
 let mountCursor = 0;
 
 function windowSlice<T>(pool: T[], start: number, size: number): T[] {
@@ -39,15 +46,21 @@ export function useDiscoverRotation<T>(
   pool: T[],
   windowSize: number,
 ): DiscoverRotation<T> {
-  const [dayIndex] = useState(() => Math.floor(Date.now() / 86_400_000));
-  const [mountSeed] = useState(() => {
-    const s = mountCursor;
-    mountCursor += 1;
-    return s;
-  });
+  // Deterministic first render (server + hydration): window offset 0.
+  const [offset, setOffset] = useState(0);
   const [bump, setBump] = useState(0);
 
-  const start = (dayIndex + mountSeed + bump) * windowSize;
+  // After hydration, roll the window forward by the day index + this mount's
+  // seed. Runs once per mount, on the client only, so it can never diverge from
+  // the server-rendered HTML.
+  useEffect(() => {
+    const dayIndex = Math.floor(Date.now() / 86_400_000);
+    const mountSeed = mountCursor;
+    mountCursor += 1;
+    setOffset(dayIndex + mountSeed);
+  }, []);
+
+  const start = (offset + bump) * windowSize;
 
   return {
     items: windowSlice(pool, start, windowSize),

@@ -22,6 +22,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import dynamic from "next/dynamic";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
@@ -138,10 +139,7 @@ export function CloudFileEditor({
     [file],
   );
 
-  // Detect dark mode the same way CodePreview does — via the html.dark class.
-  const isDark =
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark");
+  const isDark = useThemeMode() === "dark";
 
   const handleSave = useCallback(async () => {
     if (!file || text === null) return;

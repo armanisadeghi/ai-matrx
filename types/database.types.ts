@@ -8154,7 +8154,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reap_stale_study_sessions: {
+        Args: { p_max_age?: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
@@ -16202,6 +16205,18 @@ export type Database = {
       }
       can_access_conversation: { Args: { p_conv: string }; Returns: boolean }
       can_access_run: { Args: { p_run: string }; Returns: boolean }
+      canonical_certify: {
+        Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: {
+          category: string
+          detail: string
+          status: string
+        }[]
+      }
+      canonical_certify_ok: {
+        Args: { p_schema: string; p_table: string; p_token: string }
+        Returns: boolean
+      }
       has_access: {
         Args: {
           p_id: string

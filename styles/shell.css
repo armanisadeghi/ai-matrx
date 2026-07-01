@@ -1398,7 +1398,7 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   flex-direction: column;
   overflow-y: auto;
   padding: 1rem 0.75rem;
-  padding-top: calc(var(--shell-safe-area-top) + 1rem);
+  padding-top: calc(var(--shell-safe-area-top) + var(--shell-header-h) + 0.5rem);
 }
 
 /* Open state */
@@ -1534,24 +1534,15 @@ details[open] > summary .shell-mobile-admin-caret {
   position: relative;
 }
 
-.shell-mobile-sheet-close {
-  position: absolute;
-  top: 0.375rem;
-  right: 0.375rem;
+.shell-mobile-sheet-hamburger {
+  position: fixed;
+  top: var(--shell-safe-area-top);
+  left: 0;
+  z-index: 55;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.375rem;
-  color: var(--shell-nav-icon);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.shell-mobile-sheet-close:hover {
-  background: var(--shell-nav-bg-hover);
-  color: var(--shell-nav-text-hover);
+  height: var(--shell-header-h);
+  pointer-events: auto;
 }
 
 .shell-mobile-sheet-brand-text {
@@ -1595,6 +1586,27 @@ details[open] > summary .shell-mobile-admin-caret {
 
 .shell-mobile-sheet[data-sidebar-view="route"] .shell-mobile-main-nav {
   display: none;
+}
+
+/* Route menus (e.g. ChatSidebarMenu) reuse desktop `.shell-nav-item` /
+   `.shell-nav-label` markup. Label visibility is normally tied to
+   `#shell-sidebar-toggle`, but the mobile sheet has no collapsed rail —
+   always show labels and expanded row spacing here. Desktop is unaffected:
+   `.shell-mobile-sheet-wrapper` is hidden at lg+. */
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-mobile-route-nav .shell-nav-label {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+  width: auto;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-mobile-route-nav .shell-nav-item {
+  gap: 0.75rem;
+  justify-content: flex-start;
+}
+
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-mobile-route-nav .shell-nav-item[title]:hover::after {
+  content: none;
 }
 
 .shell-mobile-switch {

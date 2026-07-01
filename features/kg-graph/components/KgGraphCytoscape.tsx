@@ -15,7 +15,7 @@
 import { useEffect, useId, useRef } from "react";
 import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 
 import type { GraphEdge, GraphNode } from "../types";
 import { kgChrome } from "../constants";
@@ -66,7 +66,7 @@ export default function KgGraphCytoscape({
   searchQuery,
   onAnalysis,
 }: KgGraphCytoscapeProps) {
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const chrome = kgChrome(mode);
 
   // navigator wants a string selector; useId is unique but its colons aren't

@@ -9,8 +9,11 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { setRequestStatus } from "../active-requests/active-requests.slice";
 import {
   markInputSubmitted,
+  clearUserInput,
   resetSubmissionPhase,
 } from "../instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "../instance-user-input/instance-user-input.selectors";
+import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -38,6 +41,32 @@ export const smartExecute = createAsyncThunk<
   "instances/smartExecute",
   async ({ conversationId, surfaceKey }, { getState, dispatch }) => {
     const state = getState();
+
+    // On-deck delegated tool guard. If the agent has delegated one or more
+    // client tools that are still awaiting the user (pending asks), a chat
+    // submit must NOT start a colliding new turn — the outstanding tool calls
+    // would dangle (see CLIENT_TOOL_SUSPEND_RESUME.md). Deliver the composer
+    // text as the answer to those asks instead; that resolves the tool calls
+    // and the normal `continuation_needed → resumeInstance` flow continues the
+    // conversation with the user's message embedded. No separate turn is run.
+    const composerText = selectUserInputText(conversationId)(state) ?? "";
+    const consumedByPendingAsks = dispatch(
+      resolvePendingAsksWithInput(conversationId, composerText),
+    );
+    if (consumedByPendingAsks) {
+      // Mirror the normal submit lifecycle so the composer clears cleanly:
+      // markInputSubmitted snapshots the text as lastSubmittedText, which lets
+      // clearUserInput wipe it (draft-protection only blocks clearing text that
+      // diverged from the just-submitted message).
+      const userValuesForClear =
+        state.instanceVariableValues?.byConversationId[conversationId]
+          ?.userValues ?? {};
+      dispatch(
+        markInputSubmitted({ conversationId, userValues: userValuesForClear }),
+      );
+      dispatch(clearUserInput(conversationId));
+      return;
+    }
 
     const autoClear = selectAutoClearConversation(conversationId)(state);
 

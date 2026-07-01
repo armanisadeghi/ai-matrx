@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
   canvasArtifactService,
@@ -96,7 +97,7 @@ export interface MermaidWorkbenchProps {
 
 export default function MermaidWorkbench({ source: initialSource, metadata }: MermaidWorkbenchProps) {
   const { state, dispatch } = useMermaidEditor(initialSource);
-  const appMode = useAppSelector((s) => s.theme.mode);
+  const appMode = useThemeMode();
   const userPrefs = useAppSelector(selectMermaidPreferences);
 
   const artifactMeta = (metadata?.mermaid ?? {}) as MermaidArtifactMetadata;

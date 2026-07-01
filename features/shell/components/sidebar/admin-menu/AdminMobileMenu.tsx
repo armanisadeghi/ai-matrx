@@ -15,13 +15,7 @@ import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toggleOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ERROR_INSPECTOR_OVERLAY_ID } from "@/features/admin/error-inspector/useOpenErrorInspector";
-
-function closeSheet() {
-  const checkbox = document.getElementById(
-    "shell-mobile-menu",
-  ) as HTMLInputElement | null;
-  if (checkbox) checkbox.checked = false;
-}
+import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 
 export default function AdminMobileMenu() {
   const dispatch = useAppDispatch();
@@ -34,7 +28,7 @@ export default function AdminMobileMenu() {
         href="/administration"
         data-nav-href="/administration"
         className="shell-mobile-nav-item"
-        onClick={closeSheet}
+        onClick={closeShellMobileMenu}
       >
         <span className="shell-nav-icon">
           <IconResolver iconName="ShieldCheck" className="h-5 w-5" />
@@ -47,7 +41,7 @@ export default function AdminMobileMenu() {
         className="shell-mobile-nav-item w-full"
         onClick={() => {
           dispatch(toggleOverlay({ overlayId: ERROR_INSPECTOR_OVERLAY_ID }));
-          closeSheet();
+          closeShellMobileMenu();
         }}
       >
         <span className="shell-nav-icon text-amber-500">
@@ -61,7 +55,7 @@ export default function AdminMobileMenu() {
         target="_blank"
         rel="noopener noreferrer"
         className="shell-mobile-nav-item"
-        onClick={closeSheet}
+        onClick={closeShellMobileMenu}
       >
         <span className="shell-nav-icon text-emerald-500 dark:text-emerald-400">
           <IconResolver iconName="Gauge" className="h-5 w-5" />
@@ -97,7 +91,7 @@ export default function AdminMobileMenu() {
                 href={feature.link}
                 data-nav-href={feature.link}
                 className="shell-mobile-nav-item shell-mobile-nav-child"
-                onClick={closeSheet}
+                onClick={closeShellMobileMenu}
               >
                 <span className="shell-nav-icon">
                   <IconResolver

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useMeasure } from "@uidotdev/usehooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
@@ -87,7 +88,7 @@ export default function MultiFileCodeEditor({
   const openSmartCodeEditorWindow = useOpenSmartCodeEditorWindow();
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const isMobile = useIsMobile();
   const user = useAppSelector(selectUser);
   const { open: openCanvas } = useCanvas();

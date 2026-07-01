@@ -30,6 +30,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
 import { useAutoLabel } from "@/features/notes/hooks/useAutoLabel";
@@ -274,7 +275,15 @@ export function useWorkingDocumentContextSync(
         );
       },
     );
-  }, [dispatch, conversationId, kind, enabled, binding.kind, binding.id, mountId]);
+  }, [
+    dispatch,
+    conversationId,
+    kind,
+    enabled,
+    binding.kind,
+    binding.id,
+    mountId,
+  ]);
 
   useEffect(() => {
     const { key, label, value } = contextDescriptorFor({
@@ -326,9 +335,11 @@ export function useWorkingDocumentContextSync(
  */
 export function useConversationDocumentsBridge(conversationId: string): void {
   const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
   useEffect(() => {
+    if (!userId) return;
     void dispatch(hydrateConversationDocumentsThunk({ conversationId }));
-  }, [dispatch, conversationId]);
+  }, [dispatch, conversationId, userId]);
   useWorkingDocumentContextSync(conversationId, "working");
   useWorkingDocumentContextSync(conversationId, "scratch");
 }
@@ -468,7 +479,9 @@ export function useWorkingDocument(
         } else {
           // First content → create the durable row + conversation edge, seeded
           // with the current content (materialize-on-write).
-          void dispatch(materializeWorkingDocumentThunk({ conversationId, kind }))
+          void dispatch(
+            materializeWorkingDocumentThunk({ conversationId, kind }),
+          )
             .unwrap()
             .then(done)
             .catch(fail);
@@ -585,7 +598,11 @@ export function useWorkingDocument(
       dispatch(setWorkingDocTitle({ conversationId, kind, title }));
       // Persist to the durable row only once it exists; before materialize the
       // title lives in Redux and is carried up by materializeWorkingDocument.
-      if (binding.kind === "cx_working_document" && binding.id && materialized) {
+      if (
+        binding.kind === "cx_working_document" &&
+        binding.id &&
+        materialized
+      ) {
         void updateCxWorkingDocumentTitle(binding.id, title).catch(() =>
           dispatch(
             markWorkingDocError({
@@ -636,7 +653,11 @@ export function useWorkingDocument(
           }),
         );
         dispatch(
-          setWorkingDocVersion({ conversationId, kind, version: c.agentVersion }),
+          setWorkingDocVersion({
+            conversationId,
+            kind,
+            version: c.agentVersion,
+          }),
         );
         setDraft(c.agentContent);
         editingRef.current = false;
@@ -651,7 +672,9 @@ export function useWorkingDocument(
       void commitWorkingDocumentContent(docId, mine, c.agentVersion)
         .then((res) => {
           if (res.status === "saved") {
-            dispatch(setWorkingDocContent({ conversationId, kind, content: mine }));
+            dispatch(
+              setWorkingDocContent({ conversationId, kind, content: mine }),
+            );
             dispatch(
               setWorkingDocVersion({
                 conversationId,
@@ -660,7 +683,9 @@ export function useWorkingDocument(
               }),
             );
             dispatch(clearWorkingDocConflict({ conversationId, kind }));
-            dispatch(markWorkingDocSaving({ conversationId, kind, saving: false }));
+            dispatch(
+              markWorkingDocSaving({ conversationId, kind, saving: false }),
+            );
           } else {
             dispatch(
               markWorkingDocConflict({

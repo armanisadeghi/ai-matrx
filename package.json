@@ -55,6 +55,7 @@
     "check:hatches": "tsx scripts/check-type-hatches.ts",
     "check:hatches:strict": "tsx scripts/check-type-hatches.ts --strict",
     "check:hatches:update": "tsx scripts/check-type-hatches.ts --update",
+    "generate:type-drift-hitlists": "tsx scripts/generate-type-drift-hitlists.ts",
     "fix:hatches": "tsx scripts/check-type-hatches.ts",
     "wave:split": "tsx scripts/wave-split.ts",
     "wave:batch": "tsx scripts/wave-batch.ts",

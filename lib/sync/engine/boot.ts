@@ -27,6 +27,7 @@ import { getPreset } from "../policies/presets";
 import { buildRehydrateAction } from "./rehydrate";
 import { createStaleRefreshScheduler, invokeRemoteFetch, type StaleRefreshRegistration } from "./remoteFetch";
 import { extractErrorMessage } from "@/utils/errors";
+import { setMode, type ThemeMode } from "@/styles/themes/themeSlice";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { IdentityKey, Policy } from "../types";
 
@@ -295,6 +296,22 @@ function scheduleColdBootFallbacks(
     }
 }
 
+/**
+ * Align Redux `theme.mode` with the DOM class SyncBootScript / the server
+ * cookie already painted. Slice initialState is `"dark"`, but first paint may
+ * be light (cookie, OS fallback, or localStorage read without identity match).
+ */
+function reconcileThemeFromPaintedDom(store: Store): void {
+    if (typeof document === "undefined") return;
+    const painted: ThemeMode = document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "light";
+    const state = store.getState() as { theme?: { mode?: ThemeMode } };
+    if (state.theme?.mode === painted) return;
+    store.dispatch(setMode(painted));
+    logger.debug("boot.theme.reconciledFromDom", { meta: { mode: painted } });
+}
+
 function attachChannelListener(
     channel: SyncChannel,
     policies: readonly Policy<any>[],
@@ -352,6 +369,7 @@ export async function bootSync(options: BootOptions): Promise<BootResult> {
     const channel = openChannel(identity);
     const legacyMigrated = runLegacyMigrations(policies, identity);
     const hydratedFromStorage = rehydrateFromStorage(policies, identity, store);
+    reconcileThemeFromPaintedDom(store);
     attachChannelListener(channel, policies, store);
 
     // --- Async IDB hydration (warm-cache slices) ---

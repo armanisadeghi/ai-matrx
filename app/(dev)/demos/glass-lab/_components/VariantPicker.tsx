@@ -1,6 +1,7 @@
 "use client";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { toggleMode } from "@/styles/themes/themeSlice";
 import { Moon, Sun } from "lucide-react";
 
@@ -100,7 +101,7 @@ interface Props {
 
 export function VariantPicker({ activeId, onSelect }: Props) {
   const dispatch = useAppDispatch();
-  const isDark = useAppSelector((s) => s.theme.mode === "dark");
+  const isDark = useThemeMode() === "dark";
 
   return (
     <aside className="glab-controls" aria-label="Glass lab controls">

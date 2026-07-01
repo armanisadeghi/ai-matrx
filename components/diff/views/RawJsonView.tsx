@@ -9,7 +9,7 @@
 
 import { useMemo } from "react";
 import { CodeDiff } from "@/components/diff/code/CodeDiff";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 
 interface RawJsonViewProps {
   oldValue: unknown;
@@ -24,7 +24,7 @@ export function RawJsonView({
   oldLabel,
   newLabel,
 }: RawJsonViewProps) {
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const oldJson = useMemo(() => JSON.stringify(oldValue, null, 2), [oldValue]);
   const newJson = useMemo(() => JSON.stringify(newValue, null, 2), [newValue]);
 

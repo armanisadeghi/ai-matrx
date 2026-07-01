@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Prism as SyntaxHighlighterBase } from "react-syntax-highlighter";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import {
   isJsonLanguage,
   resolvePrismSyntaxStyle,
@@ -83,7 +83,7 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   renderVariables = false,
 }) => {
   const [copied, setCopied] = useState(false);
-  const themeMode = useAppSelector((s) => s.theme.mode);
+  const themeMode = useThemeMode();
   const prismMode = themeMode === "dark" ? "dark" : "light";
   VARIABLE_RE.lastIndex = 0;
   const hasVariables = VARIABLE_RE.test(code);

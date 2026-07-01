@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import SectionCard from "@/components/official/cards/SectionCard";
 import { ComponentType } from "@/types/customAppTypes";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectFieldById } from "@/lib/redux/app-builder/selectors/fieldSelectors";
 import FieldPreviewAs from "./FieldPreviewAs";
 import { componentOptions } from "@/features/applet/constants/field-constants";
@@ -18,7 +19,7 @@ interface FieldPreviewProps {
 
 const FieldPreview: React.FC<FieldPreviewProps> = ({ fieldId, componentType = "textarea" }) => {
     const field = useAppSelector((state) => selectFieldById(state, fieldId));
-    const mode = useAppSelector((s) => s.theme.mode);
+    const mode = useThemeMode();
 
     // Memoize component type values to prevent recreation on every render
     const componentTypeValues = useMemo(() =>

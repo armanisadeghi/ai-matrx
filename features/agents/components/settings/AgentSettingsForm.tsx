@@ -5,10 +5,10 @@ import {
   selectAgentById,
   selectAllAgentsArray,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-labels";
 import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -120,7 +120,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
   // Ownership string
   let ownership = "Unknown";
   if (agent.agentType === "builtin") {
-    ownership = "System";
+    ownership = AGENT_PUBLIC_TAB_LABEL;
   } else if (agent.isOwner) {
     ownership = "Mine";
   } else {
@@ -321,7 +321,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
                     </span>
                     <span className="inline-flex items-center px-2.5 py-1.5 rounded-md text-xs font-semibold bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 max-w-fit">
                       {agent.agentType === "builtin"
-                        ? "System"
+                        ? AGENT_PUBLIC_TAB_LABEL
                         : "User Generated"}
                     </span>
                   </div>

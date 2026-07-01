@@ -25,7 +25,6 @@ import {
   useEffect,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -58,6 +57,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectFileName } from "@/features/files/redux/selectors";
 import { renameFile } from "@/features/files/redux/thunks";
 import { fileHandler } from "@/features/files/handler/handler";
@@ -1181,23 +1181,3 @@ const darkTheme = {
       'var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
   },
 };
-
-function useThemeMode(): "light" | "dark" {
-  return useSyncExternalStore<"light" | "dark">(
-    (onChange) => {
-      if (typeof document === "undefined") return () => {};
-      const obs = new MutationObserver(onChange);
-      obs.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ["class"],
-      });
-      return () => obs.disconnect();
-    },
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "light",
-    () => "dark",
-  );
-}

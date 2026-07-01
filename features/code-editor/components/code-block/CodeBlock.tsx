@@ -8,6 +8,7 @@ import CodeBlockHeader, {
   type CodeBlockMenuItem,
 } from "@/features/code-editor/components/code-block/CodeBlockHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import StickyButtons from "./StickyButtons";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
@@ -124,7 +125,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const showStickyButtons = isBottomInView && !isTopInView && !isEditing;
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const isMobile = useIsMobile();
   const user = useAppSelector(selectUser);
   const { open: openCanvas } = useCanvas();
@@ -505,10 +506,10 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
               </div>
               {isCollapsed && (
                 <div
-                  className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-neutral-900 to-transparent opacity-80 cursor-pointer"
+                  className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent opacity-80 cursor-pointer"
                   onClick={toggleCollapse}
                 >
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-neutral-400 text-sm">
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-muted-foreground text-sm">
                     Click to expand {code.split("\n").length - 3} more lines
                   </div>
                 </div>

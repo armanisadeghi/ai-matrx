@@ -22,9 +22,6 @@ export function DashboardGreeting() {
         {greeting}
         {first ? `, ${first}` : ""}
       </h1>
-      <p className="text-sm text-muted-foreground">
-        Here&apos;s what&apos;s happening in your workspace.
-      </p>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   routeMenuRegistry,
   type RouteMenuEntry,
 } from "../../constants/route-menu-registry";
+import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import ShellIcon from "../ShellIcon";
 
 type SidebarView = "main" | "route";
@@ -42,6 +43,46 @@ export default function MobileRouteMenuSlot() {
     const el = document.querySelector<HTMLElement>(".shell-mobile-route-nav");
     if (el) setRouteNavTarget(el);
   }, []);
+
+  useEffect(() => {
+    if (!routeNavTarget) return;
+
+    const handleRouteNavClick = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (target.closest("[data-keep-mobile-menu-open]")) return;
+      if (target.closest(".shell-mobile-switch")) return;
+      if (
+        target.closest(
+          "[data-radix-popover-trigger], [data-radix-dropdown-menu-trigger], [data-radix-popover-content], [data-radix-dropdown-menu-content]",
+        )
+      ) {
+        return;
+      }
+
+      const link = target.closest("a[href]");
+      if (link instanceof HTMLAnchorElement) {
+        if (link.target === "_blank") return;
+        if (event.metaKey || event.ctrlKey || event.button === 1) return;
+        closeShellMobileMenu();
+        return;
+      }
+
+      const button = target.closest("button");
+      if (
+        button &&
+        button.type === "button" &&
+        !button.closest("details > summary")
+      ) {
+        closeShellMobileMenu();
+      }
+    };
+
+    routeNavTarget.addEventListener("click", handleRouteNavClick);
+    return () =>
+      routeNavTarget.removeEventListener("click", handleRouteNavClick);
+  }, [routeNavTarget]);
 
   useEffect(() => {
     if (!match) {

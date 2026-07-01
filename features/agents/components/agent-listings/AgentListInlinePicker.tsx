@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AgentListInlinePicker — embeddable agent browser (search + Mine/Shared/System tabs).
+ * AgentListInlinePicker — embeddable agent browser (search + Mine/Shared/Public tabs).
  *
  * Reuses the same core as `AgentListDropdown` (`useAgentListCore` +
  * `AgentListContent`) without a popover/drawer shell. Intended for surfaces

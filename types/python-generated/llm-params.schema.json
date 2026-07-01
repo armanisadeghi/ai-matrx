@@ -92,7 +92,9 @@
         },
         "properties": {
           "type": "object",
-          "additionalProperties": true,
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonSchemaProperty"
+          },
           "title": "Properties"
         },
         "required": {
@@ -258,6 +260,202 @@
         "scale"
       ],
       "title": "ImageLora",
+      "type": "object"
+    },
+    "JsonSchemaObjectDocument": {
+      "additionalProperties": true,
+      "description": "Object-root JSON Schema — agent ``output_schema.schema`` and tool roots.",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "const": "object",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "object",
+          "title": "Type"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonSchemaProperty"
+          },
+          "title": "Properties"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Required"
+        },
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Additionalproperties"
+        }
+      },
+      "title": "JsonSchemaObjectDocument",
+      "type": "object"
+    },
+    "JsonSchemaProperty": {
+      "additionalProperties": true,
+      "description": "One property in a tool parameter schema or structured-output object.",
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "enum": [
+                "string",
+                "number",
+                "integer",
+                "boolean",
+                "array",
+                "object",
+                "null"
+              ],
+              "type": "string"
+            },
+            {
+              "items": {
+                "enum": [
+                  "string",
+                  "number",
+                  "integer",
+                  "boolean",
+                  "array",
+                  "object",
+                  "null"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "enum": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/JsonValue"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enum"
+        },
+        "default": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "items": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JsonSchemaProperty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "properties": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonSchemaProperty"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Properties"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Required"
+        },
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "#/$defs/JsonValue"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Additionalproperties"
+        }
+      },
+      "title": "JsonSchemaProperty",
       "type": "object"
     },
     "JsonValue": {},
@@ -434,17 +632,13 @@
         "schema": {
           "anyOf": [
             {
-              "additionalProperties": {
-                "$ref": "#/$defs/JsonValue"
-              },
-              "type": "object"
+              "$ref": "#/$defs/JsonSchemaObjectDocument"
             },
             {
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Schema"
+          "default": null
         },
         "strict": {
           "anyOf": [
@@ -511,17 +705,13 @@
         "schema": {
           "anyOf": [
             {
-              "additionalProperties": {
-                "$ref": "#/$defs/JsonValue"
-              },
-              "type": "object"
+              "$ref": "#/$defs/JsonSchemaObjectDocument"
             },
             {
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Schema"
+          "default": null
         },
         "strict": {
           "anyOf": [

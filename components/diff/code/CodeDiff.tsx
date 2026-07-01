@@ -8,7 +8,7 @@
 // which layers patch accept/reject on top. This is the reusable primitive
 // that advanced surfaces (incl. TabDiffView) can build on.
 
-import { useEffect, useState } from "react";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import dynamic from "next/dynamic";
 import type { DiffOnMount } from "@monaco-editor/react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,18 +45,9 @@ export interface CodeDiffProps {
   className?: string;
 }
 
-/** Track the app's dark-mode class without coupling to Redux. */
+/** Track the app's painted dark-mode class without coupling to Redux. */
 function useDocumentDarkMode(): boolean {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    const el = document.documentElement;
-    const read = () => setDark(el.classList.contains("dark"));
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(el, { attributes: true, attributeFilter: ["class"] });
-    return () => observer.disconnect();
-  }, []);
-  return dark;
+  return useThemeMode() === "dark";
 }
 
 export function CodeDiff({

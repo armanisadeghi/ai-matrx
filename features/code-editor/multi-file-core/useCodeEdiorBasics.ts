@@ -4,6 +4,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import { useMeasure } from "@uidotdev/usehooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
@@ -57,7 +58,7 @@ export function useCodeEditorBasics({
   const [isCreatingPage, setIsCreatingPage] = useState(false);
   const [formatTrigger, setFormatTrigger] = useState(0);
 
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const isMobile = useIsMobile();
   const user = useAppSelector(selectUser);
   const { open: openCanvas } = useCanvas();

@@ -15,7 +15,11 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AskCard } from "@/features/agents/ui-first-tools/ui/AskCard";
 import { ApprovalCard } from "@/features/agents/ui-first-tools/ui/ApprovalCard";
-import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
+import { BatchAskCard } from "@/features/agents/ui-first-tools/ui/BatchAskCard";
+import {
+  groupPendingAsks,
+  type PendingAsk,
+} from "@/features/agents/ui-first-tools/redux/pending-asks.slice";
 import { registerAskResolver } from "@/features/agents/ui-first-tools/redux/ask-resolver-registry";
 import type { AskUserResponse } from "@/features/agents/ui-first-tools/tools/schemas";
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
@@ -163,6 +167,57 @@ const SAMPLES: PendingAsk[] = [
     question:
       "I'm blocked on the login step — can you sign in, then tell me what you did?",
   }),
+  // Batched `user` ask — renders as ONE wizard with free back/forth navigation.
+  ask({
+    callId: "b1.0",
+    toolName: "user",
+    kind: "confirm",
+    header: "Omni Flash",
+    batchId: "b1",
+    batchIndex: 0,
+    batchTotal: 3,
+    question:
+      'For Gemini Omni Flash — a new video-gen model on the Interactions API — I\'ll create a new api_class "google_omni_video" and endpoint tag "google_interactions", then insert it. OK to proceed?',
+  }),
+  ask({
+    callId: "b1.1",
+    toolName: "user",
+    kind: "choice_many",
+    header: "Image models",
+    batchId: "b1",
+    batchIndex: 1,
+    batchTotal: 3,
+    question: "Which of the new GA image models should I add?",
+    options: [
+      {
+        label: "gemini-3.1-flash-lite-image",
+        description: "Nano Banana Lite (GA)",
+      },
+      {
+        label: "gemini-3.1-flash-image",
+        description: "GA — alongside preview row",
+      },
+      {
+        label: "gemini-3-pro-image",
+        description: "GA — alongside preview row",
+      },
+      {
+        label: "Deprecate the two -preview image rows",
+        description: "Docs: shut down",
+      },
+    ],
+    allowOther: true,
+  }),
+  ask({
+    callId: "b1.2",
+    toolName: "user",
+    kind: "text",
+    header: "Notes",
+    batchId: "b1",
+    batchIndex: 2,
+    batchTotal: 3,
+    question: "Any naming or tagging preferences for the new rows?",
+  }),
 ];
 
 export default function AgentCardGalleryPage() {
@@ -207,13 +262,17 @@ export default function AgentCardGalleryPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {asks.map((a) =>
-            a.kind === "approval" ? (
+          {groupPendingAsks(asks).map((group) => {
+            if (group.asks.length > 1) {
+              return <BatchAskCard key={group.key} asks={group.asks} />;
+            }
+            const a = group.asks[0];
+            return a.kind === "approval" ? (
               <ApprovalCard key={a.callId} ask={a} />
             ) : (
               <AskCard key={a.callId} ask={a} />
-            ),
-          )}
+            );
+          })}
           {asks.length === 0 && (
             <div className="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
               All cards resolved. Hit Reset to bring them back.

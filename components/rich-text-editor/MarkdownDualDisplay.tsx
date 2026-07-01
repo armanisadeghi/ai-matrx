@@ -8,7 +8,7 @@ import './remirror-editor.css';
 import { Remirror, useRemirror, EditorComponent, useCommands } from '@remirror/react';
 import { MarkdownExtension } from 'remirror/extensions';
 import { motion, MotionStyle } from 'motion/react';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useThemeMode } from '@/styles/themes/useThemeMode';
 import { Type } from 'lucide-react';
 
 const EditorContent: React.FC = () => {
@@ -36,7 +36,7 @@ const MarkdownDualDisplay: React.FC = () => {
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [lineSpacing, setLineSpacing] = useState(1);
   const [showSpacingMenu, setShowSpacingMenu] = useState(false);
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
   const { manager, state, onChange } = useRemirror({
     extensions: () => [new MarkdownExtension({})],
     content: markdown,

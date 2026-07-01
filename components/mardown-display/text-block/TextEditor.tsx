@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -180,29 +180,9 @@ const MarkdownBlock: React.FC<MarkdownBlockProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isEditing, setIsEditing] = useState(initialEditMode);
-    const [isDark, setIsDark] = useState(false);
 
     const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
     const charCount = content.length;
-
-    useEffect(() => {
-        const updateTheme = () => {
-            setIsDark(document.documentElement.classList.contains("dark"));
-        };
-        updateTheme();
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.attributeName === "class") {
-                    updateTheme();
-                }
-            });
-        });
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ["class"],
-        });
-        return () => observer.disconnect();
-    }, []);
 
     const handleCopy = async (e: React.MouseEvent) => {
         e.stopPropagation();

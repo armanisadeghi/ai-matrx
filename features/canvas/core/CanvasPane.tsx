@@ -20,6 +20,7 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowDownUp,
+  Bug,
   ChevronDown,
   Cloud,
   CloudOff,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
   closeCanvas,
   setCurrentItem,
@@ -86,7 +88,9 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const currentItemId = useAppSelector(selectCurrentItemId);
   const isSplit = useAppSelector(selectCanvasIsSplit);
 
+  const isAdmin = useAppSelector(selectIsAdmin);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  const [showArtifactDebug, setShowArtifactDebug] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -257,22 +261,48 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
           )}
         </div>
 
-        {/* CENTER: View toggle pill. Hidden when in source-only types where
-            preview/source split is meaningless. */}
-        {hasViewToggle(content.type) && (
-          <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-0.5 mx-1">
-            <ViewToggleButton
-              active={viewMode === "preview"}
-              onClick={() => setViewMode("preview")}
-              icon={<Eye className="h-3.5 w-3.5" />}
-              label="Preview"
-            />
-            <ViewToggleButton
-              active={viewMode === "source"}
-              onClick={() => setViewMode("source")}
-              icon={<Code className="h-3.5 w-3.5" />}
-              label="Source"
-            />
+        {/* CENTER: View toggle pill + admin artifact debug toggle */}
+        {(hasViewToggle(content.type) || isAdmin) && (
+          <div className="mx-1 flex items-center gap-0.5">
+            {hasViewToggle(content.type) && (
+              <div className="flex items-center gap-0.5 rounded-full bg-muted/60 p-0.5">
+                <ViewToggleButton
+                  active={viewMode === "preview"}
+                  onClick={() => setViewMode("preview")}
+                  icon={<Eye className="h-3.5 w-3.5" />}
+                  label="Preview"
+                />
+                <ViewToggleButton
+                  active={viewMode === "source"}
+                  onClick={() => setViewMode("source")}
+                  icon={<Code className="h-3.5 w-3.5" />}
+                  label="Source"
+                />
+              </div>
+            )}
+            {isAdmin && (
+              <TapTargetButton
+                icon={
+                  <Bug
+                    className={cn(
+                      "h-4 w-4",
+                      showArtifactDebug && "text-amber-600 dark:text-amber-400",
+                    )}
+                  />
+                }
+                ariaLabel={
+                  showArtifactDebug
+                    ? "Hide artifact debug"
+                    : "Show artifact debug"
+                }
+                tooltip={
+                  showArtifactDebug
+                    ? "Hide artifact debug"
+                    : "Artifact debug (admin)"
+                }
+                onClick={() => setShowArtifactDebug((visible) => !visible)}
+              />
+            )}
           </div>
         )}
 
@@ -385,7 +415,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
         </div>
       </header>
 
-      <CanvasArtifactDebugPanel item={item} />
+      {showArtifactDebug && <CanvasArtifactDebugPanel item={item} />}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">

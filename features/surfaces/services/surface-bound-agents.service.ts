@@ -13,6 +13,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-labels";
 
 export interface SurfaceBoundAgentEntry {
   agentId: string;
@@ -22,7 +23,7 @@ export interface SurfaceBoundAgentEntry {
 }
 
 export interface SurfaceBoundAgentSection {
-  /** Display label, e.g. "My agents", "System", "Acme Corp", "Default agents". */
+  /** Display label, e.g. "My agents", "Public", "Acme Corp", "Default agents". */
   label: string;
   /** Stable sort key — lower renders first. */
   sortOrder: number;
@@ -70,7 +71,8 @@ type BindingRow = {
   organization_id: string | null;
   user_id: string | null;
   agent: AgentRow | AgentRow[] | null;
-  organization: { id: string; name: string } | { id: string; name: string }[] | null;
+  organization:
+    { id: string; name: string } | { id: string; name: string }[] | null;
 };
 
 /**
@@ -91,9 +93,7 @@ type MenuSurfaceRow = {
   agent_is_active: boolean;
   /** Full safe-card object; `created_by` is the agent's owner. */
   agent: { created_by: string | null } | null;
-  organizations:
-    | { id: string; name: string }
-    | null;
+  organizations: { id: string; name: string } | null;
 };
 
 /** Map a `menu_surface` view row into the internal binding shape the bucketing
@@ -122,7 +122,9 @@ function unwrapOne<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-function dedupeAgents(entries: SurfaceBoundAgentEntry[]): SurfaceBoundAgentEntry[] {
+function dedupeAgents(
+  entries: SurfaceBoundAgentEntry[],
+): SurfaceBoundAgentEntry[] {
   const seen = new Set<string>();
   const out: SurfaceBoundAgentEntry[] = [];
   for (const e of entries) {
@@ -178,7 +180,12 @@ export async function fetchSurfaceMenuAgentsGrouped(
 ): Promise<SurfaceBoundAgentSection[]> {
   const isEditable = opts?.isEditable ?? false;
   const includeDefaults = opts?.includeDefaults ?? true;
-  const key = menuAgentsKey(surfaceName, currentUserId, isEditable, includeDefaults);
+  const key = menuAgentsKey(
+    surfaceName,
+    currentUserId,
+    isEditable,
+    includeDefaults,
+  );
   if (!opts?.force) {
     const cached = menuAgentsCache.get(key);
     if (cached) return cached;
@@ -187,10 +194,15 @@ export async function fetchSurfaceMenuAgentsGrouped(
   }
 
   // Default surfaces to merge in — minus the current surface (no self-dup).
-  const defaultNames = (includeDefaults ? qualifyingDefaultSurfaces(isEditable) : [])
-    .filter((n) => n !== surfaceName);
+  const defaultNames = (
+    includeDefaults ? qualifyingDefaultSurfaces(isEditable) : []
+  ).filter((n) => n !== surfaceName);
 
-  const request = fetchMenuAgentsFromDb(surfaceName, defaultNames, currentUserId)
+  const request = fetchMenuAgentsFromDb(
+    surfaceName,
+    defaultNames,
+    currentUserId,
+  )
     .then((sections) => {
       menuAgentsCache.set(key, sections);
       return sections;
@@ -233,7 +245,8 @@ async function fetchMenuAgentsFromDb(
   // the safe agent card, so it only returns surfaces whose agent is visible to
   // the current user — agents you can't access simply won't appear.
   const { data, error } = await supabase
-    .schema("agent").from("menu_surface")
+    .schema("agent")
+    .from("menu_surface")
     .select("*")
     .in("surface_name", allNames);
 
@@ -249,18 +262,27 @@ async function fetchMenuAgentsFromDb(
 
   // Default agents — deduped against everything already shown for the surface.
   const surfaceAgentIds = new Set<string>();
-  for (const s of sections) for (const a of s.agents) surfaceAgentIds.add(a.agentId);
+  for (const s of sections)
+    for (const a of s.agents) surfaceAgentIds.add(a.agentId);
 
   const defaultEntries: SurfaceBoundAgentEntry[] = [];
   for (const row of defaultRows) {
     const agent = unwrapOne(row.agent);
     if (!agent || !agent.is_active) continue;
     if (surfaceAgentIds.has(agent.id)) continue;
-    defaultEntries.push({ agentId: agent.id, name: agent.name, bindingId: row.id });
+    defaultEntries.push({
+      agentId: agent.id,
+      name: agent.name,
+      bindingId: row.id,
+    });
   }
   const defaultAgents = dedupeAgents(defaultEntries);
   if (defaultAgents.length > 0) {
-    sections.push({ label: "Default agents", sortOrder: 500, agents: defaultAgents });
+    sections.push({
+      label: "Default agents",
+      sortOrder: 500,
+      agents: defaultAgents,
+    });
   }
 
   return sections.sort((a, b) => a.sortOrder - b.sortOrder);
@@ -278,7 +300,10 @@ function bucketBindingRows(
   const mine: SurfaceBoundAgentEntry[] = [];
   const system: SurfaceBoundAgentEntry[] = [];
   const shared: SurfaceBoundAgentEntry[] = [];
-  const byOrg = new Map<string, { label: string; agents: SurfaceBoundAgentEntry[] }>();
+  const byOrg = new Map<
+    string,
+    { label: string; agents: SurfaceBoundAgentEntry[] }
+  >();
 
   for (const row of rows) {
     const agent = unwrapOne(row.agent);
@@ -325,12 +350,20 @@ function bucketBindingRows(
 
   const systemDeduped = dedupeAgents(system);
   if (systemDeduped.length > 0) {
-    sections.push({ label: "System", sortOrder: 20, agents: systemDeduped });
+    sections.push({
+      label: AGENT_PUBLIC_TAB_LABEL,
+      sortOrder: 20,
+      agents: systemDeduped,
+    });
   }
 
   const sharedDeduped = dedupeAgents(shared);
   if (sharedDeduped.length > 0) {
-    sections.push({ label: "Shared with me", sortOrder: 30, agents: sharedDeduped });
+    sections.push({
+      label: "Shared with me",
+      sortOrder: 30,
+      agents: sharedDeduped,
+    });
   }
 
   const orgSections = [...byOrg.entries()]

@@ -14,7 +14,7 @@ import { linter, lintGutter, type Diagnostic as CmDiagnostic } from "@codemirror
 import { EditorView } from "@codemirror/view";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 
 import { MermaidRenderer } from "../MermaidRenderer";
@@ -32,7 +32,7 @@ interface CodeModePaneProps {
 
 export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
   const isMobile = useIsMobile();
-  const isDark = useAppSelector((s) => s.theme.mode) === "dark";
+  const isDark = useThemeMode() === "dark";
   const [draft, setDraft] = useState(source);
   const [ladder, setLadder] = useState<LadderResult | null>(null);
   const [previewOpen, setPreviewOpen] = useState(true);

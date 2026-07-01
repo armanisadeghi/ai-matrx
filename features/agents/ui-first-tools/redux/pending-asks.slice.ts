@@ -71,6 +71,12 @@ export interface PendingAsk {
   /** Batched-question metadata (0-based). When set, the card shows "N of M". */
   batchIndex?: number;
   batchTotal?: number;
+  /**
+   * Parent tool callId shared by every question in a batched `user` ask. When
+   * set, `<PendingAsksZone>` groups these asks into a single `<BatchAskCard>`
+   * wizard (free back/forth navigation) instead of N separate cards.
+   */
+  batchId?: string;
   /** Wall-clock timeout. Null = no timeout. */
   expiresAtMs?: number;
   status: PendingAskStatus;
@@ -183,6 +189,40 @@ export const selectActivePendingAsksForConversation =
     if (!all || all.length === 0) return EMPTY_ASKS;
     return all.filter((x) => x.status === "pending");
   };
+
+/**
+ * A rendered unit for the asks zone: either a single ask or a batched group
+ * (multiple `user` questions sharing a `batchId`, rendered as one wizard).
+ */
+export interface PendingAskGroup {
+  key: string;
+  asks: PendingAsk[];
+}
+
+/**
+ * Fold a flat ask list into render groups, preserving first-seen order.
+ * Asks sharing a `batchId` collapse into one group (the batch wizard); every
+ * other ask (including approvals, which never carry a batchId) is its own
+ * singleton group.
+ */
+export function groupPendingAsks(asks: PendingAsk[]): PendingAskGroup[] {
+  const groups: PendingAskGroup[] = [];
+  const batchIndexByKey = new Map<string, number>();
+  for (const ask of asks) {
+    if (ask.batchId) {
+      const existing = batchIndexByKey.get(ask.batchId);
+      if (existing != null) {
+        groups[existing].asks.push(ask);
+        continue;
+      }
+      batchIndexByKey.set(ask.batchId, groups.length);
+      groups.push({ key: ask.batchId, asks: [ask] });
+    } else {
+      groups.push({ key: ask.callId, asks: [ask] });
+    }
+  }
+  return groups;
+}
 
 // Re-export the wire envelope so consumers can import from one place.
 export type { AskUserResponse };

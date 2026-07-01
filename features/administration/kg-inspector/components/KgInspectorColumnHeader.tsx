@@ -25,6 +25,7 @@ import {
   type SortDirection,
   isColumnFilterActive,
 } from "../utils/tableFilters";
+import { ValueListFilterPopover } from "./ValueListFilterPopover";
 
 export function KgSortIcon({
   active,
@@ -199,6 +200,9 @@ export function KgInspectorColumnHeader({
   columnFilter,
   onColumnFilterChange,
   enumOptions,
+  valueOptions,
+  selectedValues,
+  onValueListChange,
   sortable = true,
   filterable = true,
 }: {
@@ -217,10 +221,21 @@ export function KgInspectorColumnHeader({
   columnFilter?: ColumnFilter;
   onColumnFilterChange?: (value: ColumnFilter | undefined) => void;
   enumOptions?: string[];
+  /** Distinct known values for a `text` column — enables the value-list dropdown next to sort. Omit for unbounded/free-text columns. */
+  valueOptions?: string[];
+  /** Exact values currently selected via the value-list dropdown (text columns only). */
+  selectedValues?: string[];
+  onValueListChange?: (values: string[] | undefined) => void;
   sortable?: boolean;
   filterable?: boolean;
 }) {
   const showTextFilter = filterable && filterType === "text" && onTextChange;
+  const showValueListFilter =
+    filterable &&
+    filterType === "text" &&
+    valueOptions &&
+    valueOptions.length > 0 &&
+    onValueListChange;
   const showSelectFilter =
     filterable && filterType === "enum" && selectOptions && onSelectChange;
   const showPopoverFilter =
@@ -253,6 +268,14 @@ export function KgInspectorColumnHeader({
             value={columnFilter}
             enumOptions={enumOptions}
             onChange={onColumnFilterChange}
+          />
+        ) : null}
+        {showValueListFilter ? (
+          <ValueListFilterPopover
+            label={label}
+            options={valueOptions}
+            selected={selectedValues}
+            onApply={onValueListChange}
           />
         ) : null}
       </div>

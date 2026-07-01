@@ -82,8 +82,8 @@ export function AgentSelectorIsland({
           const className =
             "text-[0.725rem] font-semibold uppercase tracking-wider leading-none px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/10 text-destructive shrink-0 transition-colors hover:bg-destructive/20";
           const title = isOnAdmin
-            ? "System-owned agent — edits affect all users"
-            : "System-owned agent — open in admin (edits affect all users)";
+            ? "Public agent — edits affect all users"
+            : "Public agent — open in admin (edits affect all users)";
           return isOnAdmin ? (
             <span className={className} title={title}>
               Builtin

@@ -86,7 +86,10 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   );
 
   const [verb, setVerb] = useState<ActionVerb>(verbs[0] ?? "reference");
-  const [nounName, setNounName] = useState<string>(nouns[0]?.noun ?? "");
+  const initialNoun = nouns[0]?.noun;
+  const [nounName, setNounName] = useState<string>(
+    initialNoun === undefined ? "" : initialNoun,
+  );
   const [fields, setFields] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   // Bumping this commits the current fields into a live-rendered envelope.
@@ -183,7 +186,8 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   // whose required UUID ids are present + valid.
   const hasResolver = !!(nounName && getReferenceResolver(nounName));
   const requiredFilled = fieldSpecs.every((f) => {
-    const v = fields[f.key]?.trim() ?? "";
+    const raw = fields[f.key];
+    const v = raw === undefined ? "" : raw.trim();
     if (v.length === 0) return false;
     if (f.uuid && !UUID_RE.test(v)) return false;
     return true;
@@ -268,7 +272,8 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
             Identity
           </span>
           {fieldSpecs.map((f) => {
-            const value = fields[f.key] ?? "";
+            const raw = fields[f.key];
+            const value = raw === undefined ? "" : raw;
             const invalid =
               f.uuid && value.trim().length > 0 && !UUID_RE.test(value.trim());
             return (
@@ -439,7 +444,7 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
                     </span>
                   </div>
                   {r.summary && <span className="text-foreground">{r.summary}</span>}
-                  {r.resource_ids.length > 0 && (
+                  {r.resource_ids !== undefined && r.resource_ids.length > 0 && (
                     <span className="font-mono text-muted-foreground">
                       id: {r.resource_ids.join(", ")}
                     </span>

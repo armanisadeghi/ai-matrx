@@ -12,7 +12,7 @@ import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
 import { EditorView } from "@codemirror/view";
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 
@@ -53,7 +53,7 @@ export function JsonEditorPane({
   indent = 2,
   className,
 }: JsonEditorPaneProps) {
-  const themeMode = useAppSelector((s) => s.theme.mode);
+  const themeMode = useThemeMode();
   const isDark = themeMode === "dark";
 
   // Initial / external text. Recomputed only when `value` reference changes.

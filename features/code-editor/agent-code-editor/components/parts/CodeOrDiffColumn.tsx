@@ -30,7 +30,7 @@ import {
   Zap
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CodeEditorTabBar } from "@/features/window-panels/windows/code/CodeEditorTabBar";
@@ -130,7 +130,7 @@ export function CodeOrDiffColumn({
   onCopyResponse,
   onBackToInput,
 }: CodeOrDiffColumnProps) {
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background overflow-hidden">

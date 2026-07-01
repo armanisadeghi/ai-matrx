@@ -24,7 +24,12 @@ export function isColumnFilterActive(
   if (!filter) return false;
   switch (type) {
     case "text":
-      return Boolean(filter.text?.trim());
+      // Text columns can be narrowed by a free substring, an exact-value
+      // checklist (via the value-list filter popover), or both combined.
+      return (
+        Boolean(filter.text?.trim()) ||
+        (Array.isArray(filter.enumValues) && filter.enumValues.length > 0)
+      );
     case "enum":
       return Array.isArray(filter.enumValues) && filter.enumValues.length > 0;
     case "number":
@@ -45,7 +50,11 @@ export function matchesColumnFilter(
     case "text": {
       const haystack = String(raw ?? "").toLowerCase();
       const needle = (filter.text ?? "").trim().toLowerCase();
-      return haystack.includes(needle);
+      if (needle && !haystack.includes(needle)) return false;
+      if (Array.isArray(filter.enumValues) && filter.enumValues.length > 0) {
+        return filter.enumValues.includes(String(raw ?? ""));
+      }
+      return true;
     }
     case "enum": {
       const value = String(raw ?? "");

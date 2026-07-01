@@ -118,17 +118,35 @@ interface AskPresentation {
 }
 
 /** Map an ask to its shared-shell header (icon, tone, eyebrow, title). */
-function presentation(ask: PendingAsk): AskPresentation {
+export function presentation(ask: PendingAsk): AskPresentation {
   const eyebrow = ask.header ?? ask.context ?? undefined;
   const subtitle = ask.header && ask.context ? ask.context : undefined;
   switch (ask.kind) {
     case "confirm":
-      return { tone: "primary", Icon: ShieldCheck, eyebrow, subtitle, title: ask.question };
+      return {
+        tone: "primary",
+        Icon: ShieldCheck,
+        eyebrow,
+        subtitle,
+        title: ask.question,
+      };
     case "choice":
     case "choice_many":
-      return { tone: "info", Icon: ListChecks, eyebrow, subtitle, title: ask.question };
+      return {
+        tone: "info",
+        Icon: ListChecks,
+        eyebrow,
+        subtitle,
+        title: ask.question,
+      };
     case "text":
-      return { tone: "info", Icon: MessageSquare, eyebrow, subtitle, title: ask.question };
+      return {
+        tone: "info",
+        Icon: MessageSquare,
+        eyebrow,
+        subtitle,
+        title: ask.question,
+      };
     case "secret":
       return {
         tone: "warning",
@@ -231,7 +249,9 @@ export function AskCard({ ask }: AskCardProps) {
       eyebrow={p.eyebrow}
       subtitle={p.subtitle}
       title={p.title}
-      badge={showBatch ? `${ask.batchIndex! + 1} of ${ask.batchTotal}` : undefined}
+      badge={
+        showBatch ? `${ask.batchIndex! + 1} of ${ask.batchTotal}` : undefined
+      }
       onDismiss={skip}
       dismissLabel="Skip this question"
       pending={ask.status !== "pending"}
@@ -289,7 +309,7 @@ export function AskCard({ ask }: AskCardProps) {
   );
 }
 
-function WriteInsteadBody({
+export function WriteInsteadBody({
   value,
   onChange,
   onSend,
@@ -317,7 +337,12 @@ function WriteInsteadBody({
         }}
       />
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={onSend} disabled={!value.trim()} className="gap-1.5">
+        <Button
+          size="sm"
+          onClick={onSend}
+          disabled={!value.trim()}
+          className="gap-1.5"
+        >
           <Send className="size-3.5" />
           Send
         </Button>
@@ -336,21 +361,36 @@ interface AskBodyProps {
   isLast?: boolean;
 }
 
-function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
+export function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
   switch (ask.kind) {
     case "confirm":
       return <ConfirmBody ask={ask} onAnswer={onAnswer} isLast={isLast} />;
     case "choice":
       return (
-        <ChoiceBody ask={ask} multi={false} onAnswer={onAnswer} isLast={isLast} />
+        <ChoiceBody
+          ask={ask}
+          multi={false}
+          onAnswer={onAnswer}
+          isLast={isLast}
+        />
       );
     case "choice_many":
       return (
-        <ChoiceBody ask={ask} multi={true} onAnswer={onAnswer} isLast={isLast} />
+        <ChoiceBody
+          ask={ask}
+          multi={true}
+          onAnswer={onAnswer}
+          isLast={isLast}
+        />
       );
     case "text":
       return (
-        <TextBody ask={ask} secret={false} onAnswer={onAnswer} isLast={isLast} />
+        <TextBody
+          ask={ask}
+          secret={false}
+          onAnswer={onAnswer}
+          isLast={isLast}
+        />
       );
     case "secret":
       return (
@@ -362,7 +402,12 @@ function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
       return <PlanApprovalBody ask={ask} onAnswer={onAnswer} />;
     case "takeover":
       return (
-        <TextBody ask={ask} secret={false} onAnswer={onAnswer} isLast={isLast} />
+        <TextBody
+          ask={ask}
+          secret={false}
+          onAnswer={onAnswer}
+          isLast={isLast}
+        />
       );
     case "approval":
       return null;
@@ -474,7 +519,11 @@ function ChoiceBody({
     if (hasOther) {
       if (!otherText.trim()) return;
       labels.push("Other");
-      onAnswer({ ...EMPTY_ASK_RESPONSE, selected: labels, freeform: otherText });
+      onAnswer({
+        ...EMPTY_ASK_RESPONSE,
+        selected: labels,
+        freeform: otherText,
+      });
       return;
     }
     onAnswer({ ...EMPTY_ASK_RESPONSE, selected: labels });
@@ -570,8 +619,10 @@ function TextBody({
 
   function submit() {
     if (!value.trim()) return;
+    // Keep the value after submit: in a batch wizard the body stays mounted and
+    // the user may navigate back to review/edit their answer. In the single-ask
+    // flow the card resolves + unmounts immediately, so this is a no-op there.
     onAnswer({ ...EMPTY_ASK_RESPONSE, answer: value });
-    setValue("");
   }
 
   return (
@@ -610,7 +661,12 @@ function TextBody({
         />
       )}
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={submit} disabled={!value.trim()} className="gap-1.5">
+        <Button
+          size="sm"
+          onClick={submit}
+          disabled={!value.trim()}
+          className="gap-1.5"
+        >
           <Send className="size-3.5" />
           {isLast === false ? "Next" : "Send"}
         </Button>
@@ -652,14 +708,22 @@ function NotifyBody({ ask, onAnswer }: AskBodyProps) {
               {a}
             </Button>
           ))}
-          <Button size="sm" variant="outline" onClick={() => setShowOther(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowOther(true)}
+          >
             Other…
           </Button>
           <Button
             size="sm"
             variant="ghost"
             onClick={() =>
-              onAnswer({ ...EMPTY_ASK_RESPONSE, action: "dismiss", freeform: null })
+              onAnswer({
+                ...EMPTY_ASK_RESPONSE,
+                action: "dismiss",
+                freeform: null,
+              })
             }
             className="ml-auto text-muted-foreground hover:text-foreground"
           >

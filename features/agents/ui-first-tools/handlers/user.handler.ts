@@ -102,6 +102,8 @@ async function runSingle(
       question: q.question,
       header: q.header,
       context: q.context,
+      // Batched questions share the parent callId so the zone renders one wizard.
+      batchId: batch ? ctx.callId : undefined,
       options: normalizeAskOptions(q.options),
       // Always offer a freeform "Other" escape on choice/choice_many — independent of
       // what the model sent (allow_other isn't even in the canonical model schema).
@@ -153,48 +155,27 @@ async function runBatched(
   questions: UserSingleQuestion[],
   ctx: HandlerContext,
 ): Promise<BatchedAskUserResponse> {
-  const answers: AskUserResponse[] = [];
-  let cancelled = false;
-  let timed_out = false;
-  let wrote_instead = false;
-  let additional_instructions: string | null = null;
+  // Enqueue every question UP FRONT (not sequentially) so the UI can present
+  // them as one wizard with free back/forth navigation — the user is never
+  // trapped answering in strict order. `runSingle` enqueues its card + registers
+  // its resolver synchronously, then awaits; mapping over them fires all the
+  // enqueues before any await, so all cards exist at once. `<BatchAskCard>`
+  // collects drafts and resolves the whole batch together (skip / write-instead
+  // resolve every question with the matching flag). The agent still only sees a
+  // result once the batch completes — identical to the old sequential model.
+  const answers = await Promise.all(
+    questions.map((q, index) =>
+      runSingle(q, ctx, { index, total: questions.length }),
+    ),
+  );
 
-  for (let i = 0; i < questions.length; i++) {
-    const env = await runSingle(questions[i]!, ctx, {
-      index: i,
-      total: questions.length,
-    });
-    answers.push(env);
-    // Bubble the user's freeform note up to the batch result (it only renders
-    // on the final card, so this captures the last non-empty one).
-    if (env.additional_instructions) {
-      additional_instructions = env.additional_instructions;
-    }
-    // "Write message instead", cancel, or timeout each short-circuit the rest —
-    // the remaining questions come back as empty envelopes with the matching
-    // flag set so the model sees which one ended the batch.
-    if (env.wrote_instead) {
-      wrote_instead = true;
-      for (let j = i + 1; j < questions.length; j++) {
-        answers.push({ ...EMPTY_ASK_RESPONSE, wrote_instead: true });
-      }
-      break;
-    }
-    if (env.cancelled) {
-      cancelled = true;
-      for (let j = i + 1; j < questions.length; j++) {
-        answers.push({ ...EMPTY_ASK_RESPONSE, cancelled: true });
-      }
-      break;
-    }
-    if (env.timed_out) {
-      timed_out = true;
-      for (let j = i + 1; j < questions.length; j++) {
-        answers.push({ ...EMPTY_ASK_RESPONSE, timed_out: true });
-      }
-      break;
-    }
-  }
+  const cancelled = answers.some((a) => a.cancelled);
+  const timed_out = answers.some((a) => a.timed_out);
+  const wrote_instead = answers.some((a) => a.wrote_instead);
+  // The freeform note rides on the final card; fall back to the last non-empty.
+  const additional_instructions =
+    [...answers].reverse().find((a) => a.additional_instructions)
+      ?.additional_instructions ?? null;
 
   return { answers, cancelled, timed_out, wrote_instead, additional_instructions };
 }

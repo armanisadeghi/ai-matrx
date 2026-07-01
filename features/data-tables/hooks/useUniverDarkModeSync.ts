@@ -1,6 +1,6 @@
 /**
  * useUniverDarkModeSync — keep a Univer instance's dark mode in lockstep with
- * the app's Redux theme (`state.theme.mode`).
+ * the app's painted theme (`<html class="dark">` via `useThemeMode`).
  *
  * Univer owns its own theming (see https://docs.univer.ai/guides/docs/ui/themes):
  * you boot it with `theme` + `darkMode`, then flip dark mode at runtime via the
@@ -9,14 +9,14 @@
  * a wrapper (that just fights Univer's own popups/portals and breaks dark mode).
  *
  * Shared by every Univer surface (DocumentEditor, WorkbookEditor) so the
- * redux→Univer theme bridge lives in exactly one place.
+ * theme→Univer bridge lives in exactly one place.
  */
 "use client";
 
 import { useEffect } from "react";
 import type { FUniver } from "@univerjs/presets";
 
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useThemeMode } from "@/styles/themes/useThemeMode";
 
 /**
  * @param apiRef  Ref holding the Univer Facade API (set once the instance boots).
@@ -26,7 +26,7 @@ export function useUniverDarkModeSync(
   apiRef: React.RefObject<FUniver | null>,
   ready: boolean,
 ): void {
-  const mode = useAppSelector((s) => s.theme.mode);
+  const mode = useThemeMode();
 
   useEffect(() => {
     if (!ready || !apiRef.current) return;

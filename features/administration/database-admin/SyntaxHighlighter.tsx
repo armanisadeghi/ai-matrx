@@ -3,7 +3,7 @@
 import React from 'react';
 import { Prism as SyntaxHighlighterBase } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useThemeMode } from '@/styles/themes/useThemeMode';
 import { mapLanguageForPrism } from '@/features/code-editor/config/languages';
 
 const SyntaxHighlighter = ({
@@ -13,7 +13,7 @@ const SyntaxHighlighter = ({
   code: string;
   language?: string;
 }) => {
-  const resolvedTheme = useAppSelector((s) => s.theme.mode);
+  const resolvedTheme = useThemeMode();
   const isDark = resolvedTheme === 'dark';
   const style = isDark ? vscDarkPlus : vs;
   const prismLanguage = mapLanguageForPrism(language);

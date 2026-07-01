@@ -263,11 +263,7 @@ export type ContextObjectType =
  * Allowed content value shapes for the context dict.
  */
 export type ContextValue =
-  | string
-  | number
-  | boolean
-  | Record<string, unknown>
-  | unknown[];
+  string | number | boolean | Record<string, unknown> | unknown[];
 
 // =============================================================================
 // Agent start request
@@ -373,64 +369,15 @@ export interface AgentStartRequest {
 // Custom tools (inline tool definitions — not stored in the tool registry)
 // =============================================================================
 
-/**
- * JSON Schema for a custom tool's input parameters.
- * The type must be "object". Properties defines the named parameters;
- * required lists parameter names that must be present in every call.
- */
-export interface CustomToolInputSchema {
-  type: "object";
-  properties: Record<
-    string,
-    {
-      type: string;
-      description?: string;
-      enum?: unknown[];
-      [key: string]: unknown;
-    }
-  >;
-  required?: string[];
-}
+/** JSON Schema for a custom tool's input parameters — OpenAPI source of truth. */
+export type CustomToolInputSchema =
+  components["schemas"]["CustomToolInputSchema"];
 
 /**
- * An inline tool definition provided directly in the request or stored in
- * agents.custom_tools — not looked up in the tool registry.
- *
- * Follows the MCP Tool standard exactly:
- *   https://spec.modelcontextprotocol.io/specification/server/tools/
- *
- * The model sees the tool exactly as defined here. Calls are ALWAYS delegated
- * back to the caller — there is no server-side implementation. You do not need
- * to list the tool name in client_tools; it is added automatically.
- *
- * custom_tools can come from two places:
- *   1. Agent definition (agents.custom_tools column) — baked in for every
- *      request to that agent.
- *   2. Runtime request (custom_tools field below) — present for that turn only.
- *
- * Example:
- * ```json
- * {
- *   "name": "get_customer_status",
- *   "description": "Return the current subscription status for a customer.",
- *   "input_schema": {
- *     "type": "object",
- *     "properties": {
- *       "customer_id": { "type": "string", "description": "The customer UUID." }
- *     },
- *     "required": ["customer_id"]
- *   }
- * }
- * ```
+ * Inline tool definition (OpenAPI `CustomTool`) — stored in agents.custom_tools
+ * or sent per-request. Follows the MCP Tool standard; always client-delegated.
  */
-export interface CustomToolDefinition {
-  /** Unique tool name. Must match [a-zA-Z0-9_-]{1,64}. */
-  name: string;
-  /** Human-readable description shown to the model. Be specific. */
-  description?: string;
-  /** JSON Schema for the tool's input parameters. */
-  input_schema?: CustomToolInputSchema;
-}
+export type CustomToolDefinition = components["schemas"]["CustomTool"];
 
 // =============================================================================
 // Conversation continue request
@@ -602,9 +549,7 @@ export interface CtxGetSummaryResult {
 }
 
 export type CtxGetResult =
-  | CtxGetFullResult
-  | CtxGetPageResult
-  | CtxGetSummaryResult;
+  CtxGetFullResult | CtxGetPageResult | CtxGetSummaryResult;
 
 // =============================================================================
 // Stream events — re-exported from auto-generated source

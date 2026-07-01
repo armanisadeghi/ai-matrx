@@ -27,6 +27,10 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
 import { DEFAULT_AGENTS } from "@/features/cx-chat/components/agent/local-agents";
+import {
+  AGENT_PUBLIC_BADGE_LABEL,
+  AGENT_PUBLIC_TAB_LABEL,
+} from "@/features/agents/constants/agent-list-labels";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import type { AgentConfig } from "@/features/cx-chat/types/agents";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
@@ -49,7 +53,11 @@ type FilterType = "all" | "system" | "mine";
 
 const FILTERS: { id: FilterType; label: string; icon: React.ReactNode }[] = [
   { id: "all", label: "All", icon: <Globe className="h-3 w-3" /> },
-  { id: "system", label: "System", icon: <Star className="h-3 w-3" /> },
+  {
+    id: "system",
+    label: AGENT_PUBLIC_TAB_LABEL,
+    icon: <Star className="h-3 w-3" />,
+  },
   { id: "mine", label: "My Agents", icon: <User className="h-3 w-3" /> },
 ];
 
@@ -588,7 +596,7 @@ function DesktopAgentPicker({
                         });
                         onOpenChange(false);
                       }}
-                      badge="System"
+                      badge={AGENT_PUBLIC_BADGE_LABEL}
                     />
                   ))}
                   {filteredBuiltins.map((agent) => (
@@ -600,7 +608,7 @@ function DesktopAgentPicker({
                       varCount={agent.variableDefinitions?.length}
                       isSelected={selectedAgent?.promptId === agent.id}
                       onSelect={() => handleSelect(agent)}
-                      badge="System"
+                      badge={AGENT_PUBLIC_BADGE_LABEL}
                     />
                   ))}
                 </div>

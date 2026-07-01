@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-23` (added `approval` ask kind + `<ApprovalCard>` for structured agent-edit approval)
+**Last updated:** `2026-07-01` (mobile asks drawer; batched asks → free-navigation `<BatchAskCard>` wizard; full-width header; mobile height guard)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -41,11 +41,33 @@ This feature exists because:
 - `<TaskPanelChip conversationId={id} />` — header chip in
   `AgentConversationColumn` showing live task / todo counts. Hidden when
   the conversation has no lists.
-- `<PendingAsksZone conversationId={id} />` — renders pending ask cards
-  directly above the chat input. **Never disables the input.** The user
-  can answer cards, type into the input, and submit either or both
-  independently. Routes `kind:"approval"` to `<ApprovalCard>` (structured
-  agent-edit approval) and every other kind to `<AskCard>`.
+- `<PendingAsksZone conversationId={id} />` — renders pending ask cards. Two
+  presentations of one content, chosen by `useIsMobile()`:
+  - **Desktop:** cards stack inline directly above the chat input. **Never
+    disables the input** — the user can answer cards, type, and submit either or
+    both independently.
+  - **Mobile:** cards live in a bottom **Drawer** (`MobileAsksDrawer`) that
+    auto-opens the moment the agent raises an interaction (re-opens for any
+    genuinely new ask callId). Closing it (swipe / tap-out / Minimize) is
+    **non-destructive** — asks stay pending; a compact "N questions from the
+    agent" pill appears above the input to re-open. Open/closed is pure UI state,
+    never a resolve/cancel. The drawer carries its own optional note, so covering
+    the chat input while open costs nothing.
+
+  Folds asks into render groups via `groupPendingAsks`
+  (`redux/pending-asks.slice.ts`): asks sharing a `batchId` collapse into one
+  `<BatchAskCard>` wizard; `kind:"approval"` routes to `<ApprovalCard>`; every
+  other singleton routes to `<AskCard>`.
+- `<BatchAskCard asks={[...]} />` (`ui/BatchAskCard.tsx`) — the wizard for a
+  batched `user` ask (multiple questions sharing a `batchId`). **One card, free
+  back/forth navigation** so the user is never trapped answering in order: every
+  question's body is mounted at once (only the active one visible, so selections /
+  typed text survive navigation), Back/Next appear whenever a prior/next question
+  exists, and progress dots jump + show answered state. Answering records a DRAFT
+  (auto-advances); nothing reaches the agent until all questions are answered and
+  the user hits Submit. Skip cancels the whole batch; "Write message instead"
+  resolves it as a freeform reply. Reuses `AskBody` / `presentation` /
+  `WriteInsteadBody` (exported from `<AskCard>`).
 - `<ApprovalCard ask={ask} />` (`ui/ApprovalCard.tsx`) — the agent-edit
   approval surface. Renders an `ApprovalChange` (`ui/approval-types.ts`):
   verb-tinted icon + "{Verb} {entity}" eyebrow + headline, a before→after
@@ -149,12 +171,31 @@ Optional FKs for future "elevate to project / task" UX:
 2. `userHandler.run` builds a `PendingAsk` descriptor with `kind:'confirm'`,
    registers a resolver in `ask-resolver-registry`, dispatches
    `enqueuePendingAsk`.
-3. `<PendingAsksZone>` re-renders, showing a `<AskCard kind="confirm">`
-   above the chat input. **Input stays interactive.**
+3. `<PendingAsksZone>` re-renders, showing a `<AskCard kind="confirm">`.
+   Desktop: inline above the chat input (**input stays interactive**). Mobile:
+   inside the auto-opening bottom drawer.
 4. User clicks Yes → `AskCard` calls `resolveAskByCallId(callId, {confirmed: true, ...})`.
 5. Resolver fires → handler's `await` returns → handler returns the
    `AskUserResponse` envelope.
 6. Dispatcher POSTs result → stream resumes.
+
+### Flow 2b — Agent calls `user({questions:[q0,q1,q2]})` (batched)
+
+1. Same delegation path; `userHandler.run` detects the batched form and calls
+   `runBatched`, which enqueues **all** questions up front (each a `PendingAsk`
+   with `batchId = parentCallId`, distinct `callId = ${parent}.${i}`,
+   `batchIndex`/`batchTotal`) and registers all resolvers, then awaits every
+   promise via `Promise.all`. (No sequential short-circuit — all cards coexist.)
+2. `<PendingAsksZone>` groups them by `batchId` → one `<BatchAskCard>` wizard.
+3. The user navigates freely (Back/Next/dots), fills each question (drafts held
+   locally), and reviews before sending. Nothing resolves yet.
+4. On Submit, the wizard resolves every `callId` with its draft (the batch note
+   rides on the final answer); Skip cancels all; Write-instead resolves all with
+   `wrote_instead`. Each per-question timeout still resolves its own card.
+5. `runBatched` computes the batch flags from the answers and returns
+   `{answers, cancelled, timed_out, wrote_instead, additional_instructions}` →
+   dispatcher POSTs → stream resumes. **Agent-facing result is unchanged from the
+   old sequential model** — only the UX (free navigation) changed.
 
 ### Flow 3 — Agent calls `update_plan({title, steps})`
 
@@ -202,9 +243,18 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Invariants & gotchas
 
-- **The chat input is never disabled by an ask card.** The user can
-  answer cards, type into the input, and submit either independently.
-  Multiple parallel asks are supported.
+- **The chat input is never disabled by an ask card, but a submit is never
+  allowed to leave a delegated tool on deck.** The user can freely answer cards
+  or type into the composer. If they hit Send WHILE asks are still pending,
+  `smartExecute` does NOT start a colliding new turn (which would dangle the
+  outstanding `delegated` tool calls — see `docs/CLIENT_TOOL_SUSPEND_RESUME.md`).
+  Instead `resolvePendingAsksWithInput` delivers the composer text as the answer
+  to every pending ask (write-instead freeform when text is present; cancel — an
+  empty, non-error result — when empty), which resolves the tool calls and lets
+  the normal `continuation_needed → resumeInstance` flow continue the
+  conversation with the user's message embedded. For `approval`-kind asks a
+  freeform envelope maps to "instructions", so a stray Send never silently
+  approves a destructive write. Multiple parallel asks are supported.
 - **Tool name registry must agree with matrx-extend.** Both surfaces
   declare the same names; aidream's tool discovery treats them
   identically. Tested via the shared canonical list in
@@ -241,6 +291,59 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-07-01` — **On-deck submit guard + animated reopen pill.** Two related
+  polish items for the pending-ask flow:
+  - **Submit never dangles a delegated tool.** New `resolvePendingAsksWithInput`
+    thunk (`redux/resolve-asks-with-input.thunk.ts`), wired at the top of
+    `smartExecute`. If the user types in the composer and hits Send while asks are
+    pending, we no longer start a colliding new turn (which left the outstanding
+    `delegated` `cx_tool_call` rows unresolvable — a "failed tool call with no
+    result"). Instead the composer text is delivered as the answer to every
+    pending ask (write-instead freeform when present; cancel/empty result when
+    blank), resolving the tool calls so the normal `continuation_needed →
+    resumeInstance` flow continues with the user's message embedded. Approval
+    asks treat a freeform envelope as "instructions" — a stray Send never silently
+    approves a destructive write. The composer clears via the normal
+    `markInputSubmitted → clearUserInput` lifecycle (draft-protection intact).
+  - **Reopen pill draws attention.** The minimized "N questions from the agent"
+    pill (`MobileAsksDrawer`) now has an animated shimmering primary-gradient
+    border (same `--animate-shimmer` cue as the active "User >" tool-call chip) +
+    a pulsing icon, so it unmistakably reads as the next action. Honors
+    `prefers-reduced-motion`.
+- `2026-07-01` — **Mobile: asks now surface as a non-destructive bottom drawer.**
+  On mobile (`useIsMobile()`) `<PendingAsksZone>` renders the cards in a bottom
+  `Drawer` (`MobileAsksDrawer`) instead of stacked over the input — it auto-opens
+  the moment the agent raises an interaction (and re-opens for any new ask callId).
+  Closing (swipe / tap-out / Minimize) is **pure UI state**, never a resolve/cancel;
+  a "N questions from the agent" pill appears above the input to re-open, so the
+  user can read the conversation and return with one tap. Desktop keeps the inline
+  presentation unchanged.
+- `2026-07-01` — **Full-width title header (`<AgentCardShell>`).** The question no
+  longer sits boxed in a narrow middle column between the icon chip and the ×
+  (which wrapped long questions into a tall, side-padded block). Header is now a
+  compact top row (plain tone-tinted icon — no chip background/padding — + eyebrow +
+  badge + dismiss ×) with the title on its **own full-width row** below, so it uses
+  the entire card width. Applies to every ask + approval card.
+- `2026-07-01` — **Batched asks are now a free-navigation wizard (`<BatchAskCard>`).**
+  Batched `user` questions used to render one card at a time, resolved sequentially —
+  the user could never go back to review or change an earlier answer (a "trapped"
+  feeling on a disruptive surface). `runBatched` now enqueues all questions up front
+  (each tagged with a shared `batchId`) and awaits them together; `groupPendingAsks`
+  folds them and `<PendingAsksZone>` renders one `<BatchAskCard>` wizard. It mounts
+  every question's body at once (state survives navigation), shows Back/Next whenever
+  a prior/next question exists + jump dots, records drafts, and only resolves the
+  whole batch on Submit (Skip cancels all; write-instead resolves all as freeform).
+  The agent-facing `BatchedAskUserResponse` is identical to before — only the UX
+  changed. `AskBody`/`presentation`/`WriteInsteadBody` are now exported from
+  `<AskCard>` for reuse; `TextBody` no longer clears on submit (so a revisited answer
+  still shows). Demo: `/demos/agent-cards` gains a 3-question batch sample.
+- `2026-07-01` — **Mobile-friendly card height guard.** `<AgentCardShell>` is now a
+  capped flex column (`max-h-[70dvh]`): the header stays pinned, a very long
+  question title caps + scrolls (`max-h-[28dvh]`), the body region scrolls internally
+  (`flex-1 min-h-0 overflow-y-auto`), and the footer/countdown stay pinned. Long asks
+  (many `choice_many` options, long questions) no longer grow past the viewport and
+  cut off the action button on mobile — the card stops growing and scrolls instead.
+  Benefits every ask + `<ApprovalCard>` (its footer action row is now always visible).
 - `2026-06-23` — **Shared card design language + AskCard redesign.** Extracted
   the quality of `<ApprovalCard>` into two reusable primitives: `<AgentCardShell>`
   (`ui/AgentCardShell.tsx` — the rounded-2xl, tone-tinted, elevated chrome with a

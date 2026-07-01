@@ -16,6 +16,10 @@ import { useAgentCacheConsumer } from "@/features/agents/hooks/useAgentCacheCons
 import type { AgentRecord } from "@/features/agents/hooks/useAgentCacheConsumer";
 import { DEFAULT_AGENTS } from "./AgentSelector";
 import type { AgentConfig } from "../context/DEPRECATED-ChatContext";
+import {
+  AGENT_PUBLIC_BADGE_LABEL,
+  AGENT_PUBLIC_TAB_LABEL,
+} from "@/features/agents/constants/agent-list-labels";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
@@ -58,7 +62,11 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 
 const FILTERS: { id: FilterType; label: string; icon: React.ReactNode }[] = [
   { id: "all", label: "All", icon: <Globe className="h-3 w-3" /> },
-  { id: "system", label: "System", icon: <Stars className="h-3 w-3" /> },
+  {
+    id: "system",
+    label: AGENT_PUBLIC_TAB_LABEL,
+    icon: <Stars className="h-3 w-3" />,
+  },
   { id: "mine", label: "My Agents", icon: <User className="h-3 w-3" /> },
 ];
 
@@ -567,7 +575,7 @@ function DesktopAgentPicker({
                           description: agent.description,
                         })
                       }
-                      badge="System"
+                      badge={AGENT_PUBLIC_BADGE_LABEL}
                     />
                   ))}
                   {visibleBuiltins.map((agent) => (
@@ -582,7 +590,7 @@ function DesktopAgentPicker({
                       }}
                       isSelected={selectedAgent?.promptId === agent.id}
                       onSelect={() => handleSelect(agent)}
-                      badge="System"
+                      badge={AGENT_PUBLIC_BADGE_LABEL}
                     />
                   ))}
                 </div>

@@ -65,31 +65,40 @@ export function ChatRunHeader({
     router.push(`/chat/a/${encodeURIComponent(id)}`);
   };
 
-  // Desktop: `lg:w-full` makes this fill the header center slot so its contents
-  // sit at the START (left edge, right after the sidebar) — forming a fixed
-  // [collapse · agent] cluster with the sidebar's collapse toggle that never
-  // drifts to center, mirroring AgentRunHeader. Mobile keeps the shrink-to-fit
-  // centered layout (parent slot is `justify-center`) so the picker stays
-  // between the hamburger and the avatar.
+  // Full-width bar with a hard left/right split at every breakpoint: agent +
+  // context stay pinned left; canvas stays pinned right inside the center slot.
+  // (Previously `lg:w-full` + a single row let the inject zone center the
+  // shrink-wrapped cluster on mobile/tablet, which pushed controls into the
+  // avatar and broke the layout.)
   return (
-    <div className="flex min-w-0 items-center gap-1 lg:w-full">
-      <div data-chat-agent-picker-trigger className="flex min-w-0 items-center">
-        <AgentListDropdown
-          onSelect={handleAgentSelect}
-          label={label}
-          compact
-          noBorder
+    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+      <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+        <div
+          data-chat-agent-picker-trigger
+          className="flex min-w-0 items-center"
+        >
+          <AgentListDropdown
+            onSelect={handleAgentSelect}
+            label={label}
+            compact
+            noBorder
+          />
+        </div>
+        {/* Working context — sets appContextSlice, which execute-instance reads
+            and stamps onto every run. Icon-only so the header stays compact on
+            mobile; count badge shows when context is set. */}
+        <ActiveContextButton
+          size="xs"
+          iconOnly
+          className="shrink-0"
+          triggerClassName="w-auto shrink-0"
+          checkboxVariant="standard"
         />
       </div>
-      {/* Working context — sets appContextSlice, which execute-instance reads
-          and stamps onto every run. Sized to match the compact agent picker. */}
-      <ActiveContextButton
-        size="xs"
-        triggerClassName="max-w-[320px]"
-        checkboxVariant="standard"
-      />
-      {/* Canvas — the unified live workspace, one click away at the top. */}
-      <ChatCanvasButton conversationId={conversationId} />
+      <div className="flex shrink-0 items-center gap-1">
+        {/* Canvas — the unified live workspace, one click away at the top. */}
+        <ChatCanvasButton conversationId={conversationId} />
+      </div>
     </div>
   );
 }

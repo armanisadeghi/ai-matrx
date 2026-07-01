@@ -10,7 +10,6 @@
 //
 // NavActiveSync keeps .shell-root[data-pathname] live after client navigation.
 
-import ShellIcon from "../ShellIcon";
 import {
   navItemsForViewer,
   partitionNavChildren,
@@ -19,6 +18,7 @@ import {
 } from "../../constants/nav-data";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
+import MobileSheetHamburgerToggle from "./MobileSheetHamburgerToggle";
 import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
 
 interface MobileSideSheetProps {
@@ -38,20 +38,14 @@ export default function MobileSideSheet({
         aria-label="Close navigation menu"
       />
 
+      {/* Duplicate header hamburger — same screen position for open/close */}
+      <MobileSheetHamburgerToggle />
+
       {/* Sheet panel */}
       <div
         className="shell-mobile-sheet matrx-glass-thin-border"
         data-sidebar-view="main"
       >
-        {/* Close button — absolutely positioned relative to the sheet */}
-        <label
-          htmlFor="shell-mobile-menu"
-          className="shell-mobile-sheet-close"
-          aria-label="Close navigation menu"
-        >
-          <ShellIcon name="X" size={18} strokeWidth={2} />
-        </label>
-
         {/* Brand — wordmark only (no logo icon). */}
         <div className="shell-mobile-sheet-brand">
           <span className="shell-mobile-sheet-brand-text">MATRX</span>
