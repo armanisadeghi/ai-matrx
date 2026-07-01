@@ -39,7 +39,11 @@ the safety net, not the main event.
 - **Supabase** — `lib/diagnostics/supabaseErrorCapture.ts`, a transparent Proxy
   on the browser client (`utils/supabase/client.ts`). Intercepts `from`/`rpc`/
   `schema`; captures raw PostgREST `code`/`message`/`details`/`hint`/`status` +
-  operation + table/fn + a cleaned call-site.
+  operation + table/fn + a cleaned call-site. A cancelled request is normalized
+  to `name: "AbortError"` here: postgrest-js RESOLVES an aborted fetch with an
+  error object (no throw), so it takes the `supabase-postgrest` resolved-error
+  path — tagging it with the canonical abort name lets the one `request-aborted`
+  rule silence it (matching `captureApiError`'s abort handling).
 - **Global runtime** — `lib/diagnostics/globalErrorCapture.ts`,
   `installGlobalErrorCapture()`: `window` 'error' + `unhandledrejection` (passive
   listeners, every environment) and a `console.error` wrapper (noise-filtered via
@@ -163,6 +167,15 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-01 — **Aborted Supabase requests no longer show red.** postgrest-js
+  RESOLVES a cancelled request with an error object (message `"AbortError: The
+  operation was aborted."`) instead of throwing, so it took the
+  `supabase-postgrest` resolved-error path where the `request-aborted` rule (keyed
+  on `name: "AbortError"`) couldn't reach it — one cancelled RPC (e.g.
+  `get_usage_status` on `/files/all`, from `useStorageQuota`'s superseding fetch)
+  surfaced as a red error. `captureResult` now normalizes that shape to
+  `name: "AbortError"` and the `request-aborted` rule lists `supabase-postgrest`,
+  so every aborted call site across the app is silenced by the one canonical rule.
 - 2026-06-30 — Added the **`error-capture` skill** (the recipe for new sources/
   adapters/tiers). Fixed the `org-resolution` source missing its `SOURCE_LABELS`
   entry (a typecheck break).

@@ -56,6 +56,30 @@ interface PostgrestLikeResult {
   statusText?: string;
 }
 
+/**
+ * A cancelled request is NOT a failure — it's expected control flow (navigation,
+ * unmount, a superseding fetch calling `controller.abort()`). postgrest-js does
+ * not reject on abort: it RESOLVES with an error object
+ * (`{ message: "AbortError: The operation was aborted.", hint: "Request was
+ * aborted (timeout or manual cancellation)", code: "" }`), so it lands in
+ * `captureResult` (the resolved-error path), never the exception path where
+ * `err.name` would already carry "AbortError".
+ *
+ * Detect that shape and tag it with the canonical `name: "AbortError"` — the
+ * same signature `captureApiError` uses — so the single `request-aborted`
+ * downgrade rule silences aborts across every Supabase call site, not just the
+ * throwing ones. Without this, one cancelled RPC surfaces as a red error.
+ */
+function isAbortResultError(e: { message?: string; hint?: string }): boolean {
+  const msg = (e.message ?? "").toLowerCase();
+  const hint = (e.hint ?? "").toLowerCase();
+  return (
+    msg.startsWith("aborterror") ||
+    msg.includes("the operation was aborted") ||
+    hint.includes("request was aborted")
+  );
+}
+
 function isThenable(value: unknown): value is PromiseLike<unknown> {
   return (
     !!value &&
@@ -115,6 +139,9 @@ function captureResult(
     details: typeof e.details === "string" ? e.details : undefined,
     hint: typeof e.hint === "string" ? e.hint : undefined,
     status: typeof res.status === "number" ? res.status : undefined,
+    // Normalize a cancelled request to the canonical abort signature so the
+    // `request-aborted` downgrade rule silences it (see isAbortResultError).
+    name: isAbortResultError(e) ? "AbortError" : undefined,
     callSite: cleanCallSite(caller.stack),
     raw: e,
   });

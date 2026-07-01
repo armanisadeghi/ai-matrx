@@ -97,10 +97,13 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     id: "request-aborted",
     tier: "yellow",
     reason:
-      "Request cancelled by navigation / unmount — expected control flow, not a failure.",
+      "Request cancelled by navigation / unmount / superseding fetch — expected control flow, not a failure.",
     addedAt: "2026-06-28",
     match: {
-      source: ["api-network", "supabase-exception"],
+      // supabase-postgrest is included because postgrest-js RESOLVES an aborted
+      // request with an error object (no throw); the capture layer tags it with
+      // name "AbortError" so this one rule covers every Supabase call site.
+      source: ["api-network", "supabase-exception", "supabase-postgrest"],
       name: "AbortError",
     },
   },
