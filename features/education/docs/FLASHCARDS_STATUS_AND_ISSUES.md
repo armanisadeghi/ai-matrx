@@ -129,6 +129,20 @@ before implementing. **This is the thing that actually needs careful engineering
 5. **Document as we go** (this file) so context limits never lose the state.
 
 ## Change log
+- **2026-07-01 (owner testing feedback)** — Three items:
+  1. **DONE — advance-early ("Next card"):** the drill already had a working Skip (grades + advances,
+     fully audio-safe with the PCM core — the clip slices start→now +pad, captured during the advance).
+     It was a subtle muted "Skip" ghost button; relabelled to a prominent "Next card" so answering early
+     and moving on is obvious. No audio complication.
+  2. **TODO — polished production UI:** the current FastFire setup/live/results UI is test-grade, not the
+     real deal. After ALL functionality is locked, run the `ui-bakeoff` cook-off; nail core UX
+     requirements first. (Mobile-first — most usage is phones/kids.)
+  3. **TODO — optional spoken card fronts (Google Gemini TTS, cached, fast-paced):** an OPTION (default
+     off) to hear each question aloud, pre-generated on-demand (~5 concurrent, first use — NOT at
+     creation; 50-card sets get expensive), cached as `fc_detail(kind='spoken_front')` for instant
+     playback. Variation bank + deterministic picker BUILT (`fast-fire/spoken-front/variations.ts`); full
+     spec + the one open question (how the "Generate custom speech" agent 04f69dff delivers audio to
+     store) in **`features/education/docs/FASTFIRE_SPOKEN_FRONTS_SPEC.md`**.
 - **2026-06-30 (autonomous build session)** — Shipped + pushed to main across several commits:
   - **GRADING ROOT CAUSE FIXED** (the "agent scores everything 100%"): the per-card audio never
     reached the model. `fileHandler`'s `toJsonbContentPart` (`features/files/handler/output/target.ts`)

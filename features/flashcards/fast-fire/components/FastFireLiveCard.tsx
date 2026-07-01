@@ -138,15 +138,20 @@ export function FastFireLiveCard({
             )}
             I&apos;m confused
           </Button>
+          {/* Answer early → advance NOW. Mechanically this closes the card's
+              window at the current sample (PCM slice start→now +pad, with the
+              trailing pad captured during the advance), grades it, and moves on —
+              fully audio-safe with the Web-Audio core. Prominent because "move
+              ahead when you're done" is a primary action, not a rare escape. */}
           <Button
-            variant="ghost"
+            variant="secondary"
             size="sm"
-            className="gap-1.5 text-muted-foreground"
+            className="gap-1.5 font-medium"
             onClick={onSkip}
             disabled={betweenCards}
           >
             <SkipForward className="h-4 w-4" />
-            Skip
+            Next card
           </Button>
         </div>
 
