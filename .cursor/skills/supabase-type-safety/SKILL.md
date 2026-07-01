@@ -13,7 +13,7 @@ type Json = string | number | boolean | null | { [key: string]: Json | undefined
 ```
 TypeScript rejects `Json` when your interface expects `LLMParams`, `MyInterface[]`, etc. — even though the data is correct at runtime.
 
-**The rule:** Never use `as unknown` to escape this. Use the patterns below instead.
+**The rule:** Never use `as unknown` to escape this. Use the patterns below instead. Fix doctrine (what counts as a fix vs. hiding the bug): the **type-fixing-agent** skill.
 
 ---
 
@@ -25,11 +25,12 @@ Located at `@/types/supabase-rpc.ts`. Replaces all `Json` fields with `unknown` 
 
 ```ts
 import type { DbRpcRow } from "@/types/supabase-rpc";
+import type { JsonObject } from "@/types/json";
 
 export interface MyRpcResult {
   id: string;
   name: string;
-  settings: MySettingsType;   // narrows the Json field
+  settings: JsonObject;   // Json field stays open — narrow at use (Pattern 4) or Zod-parse at ingress
   tags: string[];
 }
 
@@ -42,7 +43,7 @@ true satisfies typeof _c;
 **How the guard works:**
 - DB removes a key your interface has → `false` → `true satisfies false` → **TypeScript error**
 - DB adds a key your interface doesn't declare → your interface no longer extends the DB row → **TypeScript error**
-- Json fields become `unknown` on the DB side → your interface may narrow them to any concrete type freely
+- Json fields become `unknown` on the DB side → the guard **cannot check their inner shape**. Declaring a concrete type there is an unchecked assertion — declare `JsonObject`/`unknown` and validate instead (Pattern 4, or a Zod parse at ingress for a known shape). `Json` → typed happens through validation, never assertion.
 
 ### Step 2: Cast at the call site
 

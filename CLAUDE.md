@@ -56,7 +56,7 @@ Always use the latest stable release of every package — no deprecated APIs.
 - React Compiler is on — no manual `useMemo` / `useCallback` / `React.memo`.
 - `proxy.ts` (not `middleware.ts`) — auth, route guards, redirects only.
 - **State:** Redux RTK for all global state. Extend existing slices; never spin up parallel or local state.
-- **Types:** Supabase-generated types are the source of truth. End-to-end type-safe, strict, no `any`.
+- **Types:** generated types are the source of truth — `types/database.types.ts` (Supabase) + `types/python-generated/api-types.ts` (OpenAPI). Strict, no `any`; never hand-mirror or widen a generated type. Standards: [`TYPESCRIPT_STANDARDS.md`](./TYPESCRIPT_STANDARDS.md). **Fixing a type error? Invoke the `type-fixing-agent` skill first** — silencing it (cast / suppression / shadow type) is the opposite of fixing it; a real fix changes the code and the data.
 - **Realtime:** Supabase Broadcast for ephemeral messaging/presence; Postgres Changes only when RLS-driven authorization is required.
 - **Errors:** every async op has structured error handling. Never swallow.
 

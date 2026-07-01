@@ -83,7 +83,7 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 
 1. **Small / clear case** — grep the name and likely synonyms before declaring. `rg "interface ${Name}|type ${Name} ="`, `rg "${Name}Props"`, `rg "${BaseConcept}"`. If anything plausible turns up, read it.
 2. **Larger case** — when the concept is foundational (a new message shape, a new file kind, a new entity touching multiple features), delegate enumeration to an `Explore` subagent: *"Find every type in this repo that represents `<concept>`. List file paths, the type name, and 1-line of what it carries. Don't recommend — just enumerate."* Then **you** read the list and pick the canonical one, or propose extending the closest match.
-3. **Never coerce.** `as any`, `as unknown as X`, and `as X` casts that bypass the compiler are doctrine violations. If the types don't line up, the fix is either (a) extend the canonical type, (b) write a typed adapter, or (c) raise a typed error. Coercion freezes the bug into the code.
+3. **Never coerce.** `as any`, `as unknown as X`, and `as X` casts that bypass the compiler are doctrine violations. If the types don't line up, the fix is either (a) extend the canonical type, (b) write a typed adapter, or (c) raise a typed error. Coercion freezes the bug into the code. Full fix doctrine (Reality Check, forbidden "fixes", the one sanctioned DB-guarded cast): the **`type-fixing-agent`** skill + [`TYPESCRIPT_STANDARDS.md`](./TYPESCRIPT_STANDARDS.md) §3.
 
 **Acceptance test.** *"If the Supabase schema changes tomorrow, will every relevant call site type-error correctly?"* If your new local type would shield call sites from that signal, delete it.
 

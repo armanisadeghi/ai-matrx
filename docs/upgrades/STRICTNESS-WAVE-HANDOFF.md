@@ -190,7 +190,9 @@ flipping the umbrella `strict: true` (should be a no-op if the family is fully o
 
 ## Fix rules (what every agent must obey)
 
-These are baked into each generated task file; restated here as the contract:
+These are baked into each generated task file; restated here as the contract. This is
+**batch/wave mode** of the canonical `type-fixing-agent` skill
+(`.cursor/skills/type-fixing-agent/SKILL.md`) — read it for the full fix doctrine:
 
 - **No type-check / `tsc` / build.** Work blind from the error list. (Reason above.)
 - **Edit only the one assigned file.**
