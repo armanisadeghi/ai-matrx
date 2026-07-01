@@ -56,7 +56,7 @@ Enforced as ESLint errors:
 
 - `any` — `@typescript-eslint/no-explicit-any`
 - `as Foo` casts — `@typescript-eslint/consistent-type-assertions` (except `as const` and Zod brand application)
-- `as unknown as T` — banned, with **one** exception: the compile-time DB shape-guarded Supabase RPC-row cast (`DbRpcRow` + `satisfies` guard — see the `supabase-type-safety` skill). The guard proves the structural row shape; Json fields inside stay `JsonObject`/`unknown` and become typed only through validation, never through the cast. Any other use is cheating; growth is gated by `pnpm check:hatches`.
+- `as unknown as T` — banned, with **one** exception: the compile-time DB shape-guarded Supabase RPC-row cast (`DbRpcRow` + `satisfies` guard — see the `type-safety` skill's `supabase-patterns.md`). The guard proves the structural row shape; Json fields inside stay `JsonObject`/`unknown` and become typed only through validation, never through the cast. Any other use is cheating; growth is gated by `pnpm check:hatches`.
 - `value!` non-null assertions — `@typescript-eslint/no-non-null-assertion`
 - `@ts-ignore` — `@typescript-eslint/ban-ts-comment` (use `@ts-expect-error` with description if needed)
 - `Function`, `Object`, `{}` types — meaningless, use proper signatures
@@ -167,7 +167,7 @@ Pre-commit via `husky` + `lint-staged` runs the fast subset locally. CI is the s
 
 You are operating in a partially-migrated codebase. The standards above apply to your output regardless of surrounding code.
 
-**Fixing type errors? Invoke the `type-fixing-agent` skill first** (`.cursor/skills/type-fixing-agent/SKILL.md`) — the canonical fix doctrine: a type error at a data boundary means the code or data is wrong; the fix changes code and data, never annotations. Silencing an error is the opposite of fixing it.
+**Fixing type errors? Invoke the `type-safety` skill first** (`.claude/skills/type-safety/SKILL.md`) — the canonical fix doctrine: a type error at a data boundary means the code or data is wrong; the fix changes code and data, never annotations. Silencing an error is the opposite of fixing it — escalate what you cannot fix.
 
 - **Do not reach for `as`, `!`, or `any` to silence the compiler.** Each is a sign you have not modeled the type. Read the upstream schema. If it's wrong, fix it upstream.
 - **Do not `@ts-expect-error` without a description.** Bare suppressions are violations.

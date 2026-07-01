@@ -1,9 +1,9 @@
 ---
-name: type-fixing-agent
-description: The canonical doctrine and workflow for fixing TypeScript type errors. Generated types (database.types.ts, python-generated/api-types.ts) are the source of truth — code and data must conform to them, never the reverse. Use when fixing type errors, resolving tsc failures, aligning local types with generated types, triaging type-errors files, running a type-fix pass, or whenever tempted to cast/suppress. Silencing an error is the opposite of fixing it.
+name: type-safety
+description: The canonical doctrine for fixing TypeScript type errors and writing type-safe boundary code. Generated types (database.types.ts, python-generated/api-types.ts) are the source of truth — code and data conform to them, never the reverse. Use when fixing type errors, resolving tsc failures, triaging type-errors files, running a type-fix pass, writing or editing any supabase.rpc()/.from() call, when errors mention Json/unknown/Database types, when adding DB shape guards, or whenever tempted to cast or suppress. Silencing an error is the opposite of fixing it — an error you cannot fix properly gets ESCALATED, never hidden.
 ---
 
-# Type-Fixing Agent
+# Type Safety
 
 ## Source of Truth
 
@@ -15,6 +15,8 @@ Generated types are **always correct**. Code, local types, and stored data confo
 | Python API (aidream Pydantic → OpenAPI) | `types/python-generated/api-types.ts` — alias via `components["schemas"]["..."]` | `pnpm sync-types` |
 
 Never hand-mirror, re-declare, or widen a generated type. A hand-written "compatible" copy is a violation even if it currently matches — it drifts silently and shields call sites from schema changes. Full standards: [`TYPESCRIPT_STANDARDS.md`](../../../TYPESCRIPT_STANDARDS.md). Duplicate-type doctrine: [`PRINCIPLES.md`](../../../PRINCIPLES.md) §1.
+
+**Supabase query/RPC patterns** (`DbRpcRow` guard, the one sanctioned cast, Json field narrowing, `Tables<T>`): [`supabase-patterns.md`](./supabase-patterns.md) in this skill.
 
 ---
 
@@ -29,6 +31,10 @@ A type error at a data boundary is a **signal that the code produces or accepts 
 5. **Cascading fixes** — expect the first correction to surface additional errors downstream. That is the fix working. Resolve them all so this is fixed ONCE and fixed correctly.
 
 **Silencing the type error is the exact opposite of fixing it.** A cast tells the compiler to stop checking; the malformed data still reaches the DB or Python at runtime, now with zero warning. Data typed with a duplicate wrong type is more dangerous than data not typed at all.
+
+## Trace to the terminal consumer
+
+Before deciding what shape is "correct", find where the data **ends up** — the Python endpoint that parses it, the DB column that stores it, the component that renders it. Read that code (aidream Pydantic model, table schema, wire handler). The shape question is answered at the destination, not at the error site. If the current format cannot work 100% of the time at the destination, the format is the bug — not the annotation.
 
 ## The Required Sequence — errors go UP before they go down
 
@@ -52,9 +58,28 @@ If your solution contains any of these at a data boundary, you have hidden the b
 - Re-declaring a hand-written "compatible" version of a generated schema
 - `?? {}` / `|| []` to paper over bad data — throw at the boundary instead
 
-**The ONE sanctioned cast:** `as unknown as T` on a Supabase RPC row **only** when a compile-time `DbRpcRow` shape guard validates `T` against the generated row (see **supabase-type-safety** skill). The guard proves the structural shape; it cannot check Json field interiors — those stay `JsonObject`/`unknown` in the interface and are narrowed by runtime guards or a Zod parse, never given concrete types via the cast.
+**The ONE sanctioned cast:** `as unknown as T` on a Supabase RPC row **only** when a compile-time `DbRpcRow` shape guard validates `T` against the generated row — see [`supabase-patterns.md`](./supabase-patterns.md). The guard proves the structural shape; it cannot check Json field interiors — those stay `JsonObject`/`unknown` and are narrowed by runtime guards or a Zod parse, never given concrete types via the cast.
 
 **The "cast it harder" anti-fix:** when a strictness flag surfaces an error on a line that already has a loose `as X`, the wrong move is escalating to `as unknown as X`. The right move is almost always **deleting the cast** — it was masking a signature the type system satisfies honestly.
+
+---
+
+## Escalation is success, silencing is failure
+
+Some errors cannot be fixed without a human decision: an architecture choice, a DB migration/backfill, a contract question only the Python side can answer, a product-behavior call. **Stopping and reporting these is the correct outcome** — it is worth more than any diff. Making the error disappear and claiming victory is the single worst thing you can do.
+
+Escalate with a **decision brief**, not a shrug:
+
+```
+### ESCALATION: <file>:<line> — <error code>
+**Data:** what value/shape is in question
+**Produced by:** every construction/write site found (paths)
+**Consumed by:** the terminal destination(s) — Python model / DB column / renderer (paths, incl. aidream)
+**Conflict:** what the generated contract says vs what the code/data actually does
+**Decision needed:** the specific question a human must answer (A vs B, with implications)
+```
+
+An escalation without "Consumed by" is incomplete — trace the destination first.
 
 ---
 
@@ -71,13 +96,13 @@ If your solution contains any of these at a data boundary, you have hidden the b
 
 ## Operating modes
 
-**Deep Fix (default).** You own the whole fix: the Required Sequence above, cross-feature audit, ingress validation, backfill. Stop and ask only for: a DB migration/backfill needing approval, a genuine product-behavior decision, or protected resources (`protected-resources` skill).
+**Deep Fix (default).** You own the whole fix: the Required Sequence above, cross-feature audit, ingress validation, backfill. Escalate (decision brief) for: a DB migration/backfill needing approval, an architecture or product-behavior decision, a wire-contract question needing the Python side changed, or protected resources (`protected-resources` skill).
 
 **Batch / wave mode** — only when explicitly running assigned per-file task lists (strictness waves, `type-errors/` fan-outs; see [`docs/upgrades/STRICTNESS-WAVE-HANDOFF.md`](../../../docs/upgrades/STRICTNESS-WAVE-HANDOFF.md)):
 - Edit only the assigned file; work blind from the error list.
 - **Never run `tsc` / `pnpm build` / full type-checks** — parallel agents stall everyone; the orchestrator verifies centrally.
 - No forbidden hatches, ever — a batch fix that cheats is worse than no fix.
-- An error needing cross-file/logic/data changes → **leave it and report it**; the report feeds a Deep Fix, it is not a license to cast.
+- An error needing cross-file/logic/data changes → **leave it in place and file a decision brief**; the brief feeds a Deep Fix, it is not a license to cast.
 
 ## Verification
 
@@ -90,7 +115,7 @@ If your solution contains any of these at a data boundary, you have hidden the b
 ```
 ### filename.ts
 **Fixed:** [error] → [what changed and why]
-**Escalated (needs deep fix / decision):** [error] → [what a real fix requires: code paths, validation, backfill]
+**Escalated:** [error] → decision brief (format above)
 ```
 
 ## Key files

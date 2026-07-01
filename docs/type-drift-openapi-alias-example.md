@@ -2,7 +2,7 @@
 
 Reference case for fixing duplicate hand-written API types. Pattern applies everywhere `features/**/types/*.ts` re-declares schemas that already exist in `types/python-generated/api-types.ts`.
 
-**Fix doctrine** — Reality Check (what a real fix involves), forbidden "fixes", and the required sequence (make the error count go UP before it goes down) — lives canonically in the **`type-fixing-agent`** skill (`.cursor/skills/type-fixing-agent/SKILL.md`). This document is that skill's worked example.
+**Fix doctrine** — Reality Check (what a real fix involves), forbidden "fixes", and the required sequence (make the error count go UP before it goes down) — lives canonically in the **`type-safety`** skill (`.claude/skills/type-safety/SKILL.md`). This document is that skill's worked example.
 
 ---
 

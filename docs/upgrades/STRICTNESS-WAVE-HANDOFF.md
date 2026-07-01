@@ -5,7 +5,9 @@
 > file is the short, current "where are we / what's next / how to run it" sheet so we can
 > work the remaining waves in batches over time without reloading all the context.
 >
-> **Last updated:** 2026-06-29 · **Active wave:** 5 (`strictNullChecks`) — flag **ON**, **1347 errors** surfaced. Wave 4 (`strictFunctionTypes`) **✅ 0 errors, ready to land**.
+> **Last updated:** 2026-07-01 · **Active wave:** 5 (`strictNullChecks`) — flag **ON**, ground **1347 → 7 errors**. All 7 live in `AgentToolsManager.tsx` and are the CustomTool/`JsonSchemaProperty` drift class — a **deep fix** (see `docs/type-drift-openapi-alias-example.md`), item 1 of `TYPE-DEBT-TRIAGE.md`; no more batch fan-out for this wave. Wave 4 (`strictFunctionTypes`) landed.
+>
+> **Sibling track:** `docs/upgrades/TYPE-DEBT-TRIAGE.md` — the human-in-the-loop pipeline for the debt tsc can't see (hatches + silent coercions; ratchet grew to 14 categories on 2026-07-01). Fix doctrine for both tracks: the `type-safety` skill.
 
 ---
 
@@ -139,7 +141,14 @@ The remaining ~30 genuine per-file/cluster fixes were applied directly (no fan-o
 `chore(ts): strictness Wave 4 — strictFunctionTypes` and update §5 + the change log in
 `docs/upgrades/README.md` and the table above.
 
-### Wave 5 — `strictNullChecks` (ACTIVE — 1347 errors, flag ON)
+### Wave 5 — `strictNullChecks` (flag ON — 1347 → **7 errors left**, all one deep fix)
+
+> **2026-07-01:** the grind is done except `AgentToolsManager.tsx` (7 errors, all the
+> CustomTool/`JsonSchemaProperty` class — internal `type: string` vs the OpenAPI literal
+> union). That is a Deep Fix per the `type-safety` skill + the worked example, queued as
+> item 1 in `TYPE-DEBT-TRIAGE.md`. **Post-mortem caution:** the wave-era commits added
+> untracked silent coercions (51× `?? ""`, 21× `|| []`, 8× `?? {}`) — audit queued as item 3
+> there; the ratchet now tracks these categories so this class can't recur silently.
 
 > **Why this wave matters most (Arman, 2026-06-29):** this is the **Supabase loudness
 > switch**. Every supabase-js call returns `{ data: T | null, error }` (and `.single()` →
@@ -191,8 +200,8 @@ flipping the umbrella `strict: true` (should be a no-op if the family is fully o
 ## Fix rules (what every agent must obey)
 
 These are baked into each generated task file; restated here as the contract. This is
-**batch/wave mode** of the canonical `type-fixing-agent` skill
-(`.cursor/skills/type-fixing-agent/SKILL.md`) — read it for the full fix doctrine:
+**batch/wave mode** of the canonical `type-safety` skill
+(`.claude/skills/type-safety/SKILL.md`) — read it for the full fix doctrine:
 
 - **No type-check / `tsc` / build.** Work blind from the error list. (Reason above.)
 - **Edit only the one assigned file.**
@@ -229,6 +238,8 @@ element.removeEventListener("paste", handlePaste);
 ## Quick reference
 
 - Master tracker: `docs/upgrades/README.md` (§5 = strictness plan, §8 = change log)
+- Human-decision debt track: `docs/upgrades/TYPE-DEBT-TRIAGE.md`
+- Fix doctrine: `type-safety` skill (`.claude/skills/type-safety/`)
 - Flags live in: `tsconfig.json` → `compilerOptions`
 - Type-check command: `pnpm type-check` (uses `tsconfig.typecheck.json`)
-- Anti-cheat ratchet: `pnpm check:hatches` / `pnpm fix:hatches <path>`
+- Anti-cheat ratchet: `pnpm check:hatches` / `pnpm fix:hatches <path>` (14 categories since 2026-07-01, incl. `value!`, `?? {}`, `|| []`, `?? ""`)

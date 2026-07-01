@@ -1,9 +1,6 @@
----
-name: supabase-type-safety
-description: Patterns for type-safe Supabase queries in this codebase. Covers RPC return types, table queries (.from().select()), the DbRpcRow utility, and the JsonToUnknown pattern. Use when writing or editing any supabase.rpc(), supabase.from(), or when TypeScript errors mention Json, unknown, or Database types. Also use when adding DB shape guards to new interfaces.
----
+# Supabase Type-Safety Patterns
 
-# Supabase Type Safety Patterns
+Reference for the `type-safety` skill. Covers RPC return types, table queries, the `DbRpcRow` utility, and Json field narrowing. Fix doctrine (what counts as a fix vs. hiding the bug): [`SKILL.md`](./SKILL.md).
 
 ## The Core Problem
 
@@ -13,7 +10,7 @@ type Json = string | number | boolean | null | { [key: string]: Json | undefined
 ```
 TypeScript rejects `Json` when your interface expects `LLMParams`, `MyInterface[]`, etc. — even though the data is correct at runtime.
 
-**The rule:** Never use `as unknown` to escape this. Use the patterns below instead. Fix doctrine (what counts as a fix vs. hiding the bug): the **type-fixing-agent** skill.
+**The rule:** Never use `as unknown` to escape this. Use the patterns below instead.
 
 ---
 
@@ -62,7 +59,7 @@ const result = data as unknown as MyResult;
 ```
 
 **Why `as unknown as T` instead of `as T`:**
-The Supabase-typed response still says `Json` for those fields. TypeScript rejects the single-step cast because the types don't overlap. `as unknown as T` is the correct two-step cast — the DB shape guard above is what makes it safe.
+The Supabase-typed response still says `Json` for those fields. TypeScript rejects the single-step cast because the types don't overlap. `as unknown as T` is the correct two-step cast — the DB shape guard above is what makes it safe. This is the **one sanctioned use** of `as unknown as` in the codebase (`TYPESCRIPT_STANDARDS.md` §3); without the guard it is a banned hatch.
 
 ### Which RPCs return Json directly vs typed rows?
 
@@ -134,7 +131,7 @@ const cfg = isJsonObject(row.config) ? row.config : undefined;
 const label = typeof cfg?.label === "string" ? cfg.label : null;
 ```
 
-`JsonObject` / `JsonArray` / `JsonValue` (+ `isJsonObject` / `isJsonArray` / `isJsonPrimitive` guards) are the canonical "it's just JSON, accept it" types. They are NOT `any` and NOT a whole-row `unknown` nuke. For a **known, concrete** shape, prefer a Zod parse at the boundary (TYPESCRIPT_STANDARDS.md §4); these types are for genuinely open JSON.
+`JsonObject` / `JsonArray` / `JsonValue` (+ `isJsonObject` / `isJsonArray` / `isJsonPrimitive` guards) are the canonical "it's just JSON, accept it" types. They are NOT `any` and NOT a whole-row `unknown` nuke. For a **known, concrete** shape, prefer a Zod parse at the boundary (`TYPESCRIPT_STANDARDS.md` §4); these types are for genuinely open JSON.
 
 ---
 
@@ -144,18 +141,6 @@ Skip the `satisfies`/`_Check` guard for:
 - RPCs that return `Json` directly (no row schema to enforce)
 - Table queries (use `Tables<T>["Row"]` directly — already typed)
 - Utility/legacy code with `@ts-nocheck` (fix the nocheck first)
-
----
-
-## File locations
-
-| File | Purpose |
-|------|---------|
-| `types/json.ts` | Canonical `JsonValue`/`JsonObject`/`JsonArray` + `isJsonObject`/`isJsonArray`/`isJsonPrimitive` guards (narrow the field, not the row) |
-| `types/supabase-rpc.ts` | `DbRpcRow<F>` and `JsonToUnknown<T>` utilities |
-| `types/database.types.ts` | Supabase-generated types (source of truth) |
-| `utils/supabase/client.ts` | `supabase` singleton |
-| `utils/supabase/server.ts` | `createClient()` for server components |
 
 ---
 
@@ -173,6 +158,18 @@ type _Check_MyInterface = MyInterface extends DbRpcRow<"rpc_name"> ? true : fals
 declare const _myInterface: _Check_MyInterface;
 true satisfies typeof _myInterface;
 ```
+
+---
+
+## File locations
+
+| File | Purpose |
+|------|---------|
+| `types/json.ts` | Canonical `JsonValue`/`JsonObject`/`JsonArray` + `isJsonObject`/`isJsonArray`/`isJsonPrimitive` guards (narrow the field, not the row) |
+| `types/supabase-rpc.ts` | `DbRpcRow<F>` and `JsonToUnknown<T>` utilities |
+| `types/database.types.ts` | Supabase-generated types (source of truth) |
+| `utils/supabase/client.ts` | `supabase` singleton |
+| `utils/supabase/server.ts` | `createClient()` for server components |
 
 ---
 

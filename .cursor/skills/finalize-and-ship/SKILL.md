@@ -42,7 +42,7 @@ Defaults: scope = **everything**, delivery = **commit and push**. Narrow scope o
 
 ### 1. Types — `pnpm sync-types`
 
-Regenerates Supabase DB types + Python API types, then type-checks. Must print **"Type-check passed."** Errors → fix per the **`type-fixing-agent`** skill (DB types are canonical; never `as any` / `as unknown` / `@ts-ignore` / `@ts-expect-error`). Re-run until green.
+Regenerates Supabase DB types + Python API types, then type-checks. Must print **"Type-check passed."** Errors → fix per the **`type-safety`** skill (DB types are canonical; never `as any` / `as unknown` / `@ts-ignore` / `@ts-expect-error`; escalate what you can't fix properly). Re-run until green.
 
 ### 2. Migrations — `pnpm check:migrations`
 
@@ -81,7 +81,7 @@ Halt and ask the user instead of pushing through when:
 | All-checks runner | `pnpm validate` (`scripts/validate.mjs`) |
 | Type sync | `pnpm sync-types` (`scripts/sync-types.mjs`) |
 | Migration verify + apply/record | `pnpm check:migrations`; CLAUDE.md → "Database migrations" |
-| Type-fix rules | `type-fixing-agent` skill (+ `supabase-type-safety`) |
+| Type-fix rules | `type-safety` skill (`.claude/skills/type-safety/`) |
 | Doctrine (new primitives) | `pnpm check:doctrine`; `PRINCIPLES.md` |
 | Pre-release gates | `pnpm check:release-gates` or `./scripts/release.sh` (strict; spinner + step labels) |
 | Versioned release | `pnpm ship "msg"` |

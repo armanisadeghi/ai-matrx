@@ -50,6 +50,20 @@ const CATEGORIES: Category[] = [
     { key: "tsIgnore", label: "@ts-ignore", re: /@ts-ignore\b/g, raw: true },
     { key: "tsNocheck", label: "@ts-nocheck", re: /@ts-nocheck\b/g, raw: true },
     { key: "tsExpectError", label: "@ts-expect-error", re: /@ts-expect-error\b/g, raw: true },
+    // Silent-coercion hatches (TYPESCRIPT_STANDARDS.md §1.5 "fail loud at the
+    // boundary") — the strictNullChecks-era cheats the cast categories miss.
+    // `!` postfix assertion: word/)/] before the !, then a follower that only an
+    // assertion has (`.`, `)`, `,`, `;`, `:`, `]`, `}`) — the follower whitelist
+    // keeps JSX prose ("Done!") from counting.
+    { key: "nonNullAssert", label: "value! assertion", re: /[\w)\]]!(?=[.,);:\]}])/g },
+    { key: "nullishEmptyObject", label: "?? {}", re: /\?\?\s*\{\}/g },
+    { key: "orEmptyObject", label: "|| {}", re: /\|\|\s*\{\}/g },
+    // `|| []` only — `?? []` after an error-guard is the canonical Supabase
+    // empty-result read (type-safety skill, supabase-patterns.md) and stays legal.
+    { key: "orEmptyArray", label: "|| []", re: /\|\|\s*\[\]/g },
+    // String-default coercion: quotes are stripped from `code`, so match raw.
+    { key: "nullishEmptyString", label: '?? ""', re: /\?\?\s*(?:""|'')/g, raw: true },
+    { key: "orEmptyString", label: '|| ""', re: /\|\|\s*(?:""|'')/g, raw: true },
 ];
 
 type Counts = Record<string, number>;
@@ -222,7 +236,7 @@ function main(): void {
     if (grew) {
         console.log(`${C.red}${C.bold}✗ A type-escape category GREW above baseline.${C.reset}`);
         console.log(`  New escape hatches aren't allowed — model the type, narrow honestly`);
-        console.log(`  (see TYPESCRIPT_STANDARDS.md §3 / the supabase-type-safety skill / @/types/json).`);
+        console.log(`  (see TYPESCRIPT_STANDARDS.md §3 / the type-safety skill / @/types/json).`);
         console.log(`  If a fix legitimately removed AND added in the same category, re-freeze with --update.`);
         if (strict) process.exit(1);
     } else {
