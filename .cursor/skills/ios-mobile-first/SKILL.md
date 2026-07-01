@@ -83,9 +83,11 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 
 ---
 
-## MANDATORY: Dialog = Desktop, Drawer = Mobile
+## Dialog = Desktop, Drawer = Mobile
 
-**Every dialog/modal MUST use `useIsMobile()` for conditional rendering.**
+**The base `DialogContent` (`@/components/ui/dialog`) AUTO-converts to a bottom sheet on mobile** — full width, bottom-anchored, `max-h-[90dvh]`, internally scrollable, `pb-safe`. So a plain `<Dialog>` is already mobile-safe: its confirm/submit control can never be pushed off-screen. This is the systematic guard against mobile "lockout" popups. Opt out with `<DialogContent mobileSheet={false}>` only for a surface that must stay centered on mobile.
+
+**Hand-roll the explicit Drawer branch below only when you need more than the auto-sheet** — a `vaul` drag-to-close handle, or a genuinely different mobile layout (not just a reflow). For a normal dialog, do nothing extra.
 
 ```tsx
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -203,7 +205,7 @@ function MyForm() {
 <Input className="text-sm" />
 ```
 
-Viewport config in `app/config/viewport.ts`: `maximumScale: 1`, `userScalable: false`.
+**Prevent input auto-zoom with ≥16px fonts ONLY — never by disabling pinch-zoom.** `app/config/viewport.ts` keeps `userScalable: true` (`maximumScale: 5`) on purpose: pinch-zoom is the user's universal escape hatch when any surface overflows. **Never set `userScalable: false` / `maximumScale: 1`** — it removes the only way out of a mobile lockout.
 
 ---
 

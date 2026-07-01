@@ -20,7 +20,11 @@ export default async function FastFireToolPage({
 }: FastFirePageProps) {
   const { set } = await searchParams;
   return (
-    <div className="h-[calc(100vh-2.5rem)] overflow-hidden">
+    // dvh (not vh) + scroll: the setup/scoreboard phases are taller than a phone
+    // viewport, so the shell MUST scroll — `overflow-hidden` here clipped everything
+    // below the fold on mobile and locked the user out. Full-screen drill phases use
+    // `min-h-full` and simply fill this height without adding a scrollbar.
+    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
       <FastFireClient setId={set ?? null} />
     </div>
   );
