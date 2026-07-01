@@ -94,4 +94,4 @@ Types of property 'properties' are incompatible.
 3. Update consumers; remove boundary casts.
 4. Validate at DB/import ingress (`Json` → typed), not at wire send with `as`.
 
-**Status:** documented — fix pending.
+**Status:** FIXED 2026-07-01. The aliases landed (`agent-api-types.ts:372-383` incl. a new `JsonSchemaProperty` alias); the eruption (7 errors in `AgentToolsManager.tsx`) was fixed in the code — typed `ParamRow` form state preserving advanced schema fields, `description` always sent, registry detail panel reusing the generated property type; the converter casts were replaced by ingress validation (`parse-custom-tools.ts` → Error Inspector `data-shape` source); live DB audited, all stored tools conform, no backfill. Zero casts or suppressions added. `pnpm type-check` = 0.

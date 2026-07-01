@@ -369,6 +369,9 @@ export interface AgentStartRequest {
 // Custom tools (inline tool definitions — not stored in the tool registry)
 // =============================================================================
 
+/** One property inside a tool input schema — OpenAPI source of truth. */
+export type JsonSchemaProperty = components["schemas"]["JsonSchemaProperty"];
+
 /** JSON Schema for a custom tool's input parameters — OpenAPI source of truth. */
 export type CustomToolInputSchema =
   components["schemas"]["CustomToolInputSchema"];

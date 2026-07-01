@@ -89,17 +89,43 @@ one). When a category hits 0 it graduates to a hard ESLint error and leaves the 
 
 ## Immediate queue (ordered)
 
-1. **AgentToolsManager.tsx — the 7 live errors.** The CustomTool deep fix per
-   `docs/type-drift-openapi-alias-example.md`: alias from `components["schemas"]`, type the
-   tool-builder state with the literal union, remove the boundary casts, validate ingress.
-   Closes Wave 5 (type-check → 0). Decision density: high (UI state shape) — expect briefs.
+1. ~~**AgentToolsManager.tsx — the 7 live errors.**~~ **DONE 2026-07-01** — the pilot deep
+   fix. Typed `ParamRow` form state (advanced schema fields now round-trip instead of being
+   destroyed on save), `description` always sent, converter casts → ingress validation
+   (`parse-custom-tools.ts` + Error Inspector `data-shape` source), live DB audited (4/4
+   tools conform, no backfill). Zero casts added; `pnpm type-check` = 0 → **Wave 5 closed.**
+   Human decisions needed: **zero** (the DB audit + reading the Pydantic contract answered
+   every shape question). See the pilot findings section below.
 2. **`Record<string, any>` +2 red** — net growth from Wave 5 commits (candidates:
    `BasicMarkdownContent.tsx`, `features/text-diff/service/versionService.ts`,
    `components/matrx/matrx-record-list/*`, `lib/services/fingerprint-service.ts`). Fix or
    justify; ratchet must go green.
-3. **Wave-5 additions audit** — the 51 `?? ""` / 21 `|| []` / 8 `?? {}` added in the
+3. **Post-freeze growth from `da66a98e1`** (2026-07-01 16:34, "multiple type fixes…"):
+   +7 `?? ""`, +2 `?? {}`, +1 `value!` above baseline — caught by the extended ratchet
+   within minutes of landing. Verdict each, fix, then re-freeze.
+4. **Wave-5 additions audit** — the 51 `?? ""` / 21 `|| []` / 8 `?? {}` added in the
    06-29/06-30 type-fix commits (diff-derived; regenerate with
    `git show <commits> | grep '^+'`). Verdict each: legit default vs silenced null-bug.
-4. **`@ts-nocheck` sweep** (21 files) — open the blind spots before they hide Wave 6 debt.
-5. **Wave 6 `noImplicitAny`** (~1,420 errors) per the strictness handoff; then re-measure
+5. **`@ts-nocheck` sweep** (21 files) — open the blind spots before they hide Wave 6 debt.
+6. **Wave 6 `noImplicitAny`** (~1,420 errors) per the strictness handoff; then re-measure
    `strictPropertyInitialization`; then evaluate the umbrella `strict: true`.
+
+## Pilot findings (AgentToolsManager, 2026-07-01)
+
+What the first deep fix actually involved, as evidence for calibrating human involvement:
+
+- **The eruption pattern held**: 1 hand-rolled type → 7 errors → every one was a real
+  code-vs-contract disagreement (an optional `properties` treated as required, a loose
+  `string` where the wire wants a literal union, a required `description` conditionally
+  omitted, a second lookalike type in the registry detail panel).
+- **The types exposed a latent data-loss bug**: the param form rebuilt schemas from its
+  loose rows, silently destroying `enum`/`items`/nested `properties`/union types on every
+  edit+save. Invisible under the old typing; unavoidable under the truth.
+- **Human decisions needed: none.** The two candidate decisions (what may the form edit?
+  what does the wire need?) were both answered by reading the destination (Pydantic
+  contract) and auditing the live rows (4 tools, all conforming — no backfill). The
+  agent-side rule that made this autonomous: preserve what you can't represent, validate
+  at ingress, never coerce.
+- **Where a human WOULD have been needed**: if the DB audit had found non-conforming rows
+  (backfill approval), or if the wire contract itself had been wrong (aidream change).
+  Neither occurred here; both are exactly what the decision-brief format captures.

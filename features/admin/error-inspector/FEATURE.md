@@ -167,6 +167,12 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-01 — **New `data-shape` source: stored data violated the generated
+  wire/DB contract at a read ingress.** First producer:
+  `features/agents/redux/agent-definition/parse-custom-tools.ts` (validates
+  `custom_tools` JSONB against the OpenAPI `CustomTool` schema; non-conforming
+  entries are excluded + reported, never passed through). A `data-shape` firing
+  means a write path produced a bad shape — find and fix the writer.
 - 2026-07-01 — **Aborted Supabase requests no longer show red.** postgrest-js
   RESOLVES a cancelled request with an error object (message `"AbortError: The
   operation was aborted."`) instead of throwing, so it took the

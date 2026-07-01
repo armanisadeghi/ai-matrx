@@ -95,6 +95,7 @@ import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import type {
   CustomToolDefinition,
   CustomToolInputSchema,
+  JsonSchemaProperty,
 } from "@/features/agents/types/agent-api-types";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -1793,9 +1794,8 @@ function CustomToolCard({
   onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const paramCount = tool.input_schema
-    ? Object.keys(tool.input_schema.properties).length
-    : 0;
+  const cardProps = tool.input_schema?.properties;
+  const paramCount = cardProps ? Object.keys(cardProps).length : 0;
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -1854,6 +1854,46 @@ function CustomToolCard({
   );
 }
 
+/** The scalar types the simple param builder can pick. The wire contract
+ *  (`JsonSchemaProperty["type"]`) also allows union arrays and "null" — the
+ *  form displays those as their first scalar but preserves the original via
+ *  `ParamRow.base` unless the user actively changes the Select. */
+const PARAM_TYPE_OPTIONS = [
+  "string",
+  "number",
+  "integer",
+  "boolean",
+  "array",
+  "object",
+] as const;
+
+type ParamTypeOption = (typeof PARAM_TYPE_OPTIONS)[number];
+
+function isParamTypeOption(v: unknown): v is ParamTypeOption {
+  return (
+    typeof v === "string" &&
+    (PARAM_TYPE_OPTIONS as readonly string[]).includes(v)
+  );
+}
+
+function displayType(t: JsonSchemaProperty["type"]): ParamTypeOption {
+  const single = Array.isArray(t) ? t[0] : t;
+  return isParamTypeOption(single) ? single : "string";
+}
+
+interface ParamRow {
+  name: string;
+  /** Value shown in the type Select — the only shape the form edits. */
+  type: ParamTypeOption;
+  /** True once the user changes the Select; only then does it override `base.type`. */
+  typeDirty: boolean;
+  description: string;
+  required: boolean;
+  /** Original property — advanced fields (enum, items, nested properties,
+   *  union types) round-trip through the form untouched. */
+  base: JsonSchemaProperty;
+}
+
 function CustomToolForm({
   initial,
   onSave,
@@ -1867,22 +1907,18 @@ function CustomToolForm({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [params, setParams] = useState<
-    Array<{
-      name: string;
-      type: string;
-      description: string;
-      required: boolean;
-    }>
-  >(() => {
-    if (!initial?.input_schema) return [];
-    const schema = initial.input_schema;
-    const requiredSet = new Set(schema.required ?? []);
-    return Object.entries(schema.properties).map(([pName, pDef]) => ({
+  const [params, setParams] = useState<ParamRow[]>(() => {
+    const schema = initial?.input_schema;
+    const props = schema?.properties;
+    if (!props) return [];
+    const requiredSet = new Set(schema?.required ?? []);
+    return Object.entries(props).map(([pName, pDef]) => ({
       name: pName,
-      type: pDef.type,
+      type: displayType(pDef.type),
+      typeDirty: false,
       description: pDef.description ?? "",
       required: requiredSet.has(pName),
+      base: pDef,
     }));
   });
 
@@ -1902,14 +1938,29 @@ function CustomToolForm({
   const addParam = () => {
     setParams([
       ...params,
-      { name: "", type: "string", description: "", required: false },
+      {
+        name: "",
+        type: "string",
+        typeDirty: true,
+        description: "",
+        required: false,
+        base: {},
+      },
     ]);
   };
 
-  const updateParam = (idx: number, field: string, value: string | boolean) => {
-    const next = [...params];
-    next[idx] = { ...next[idx], [field]: value };
-    setParams(next);
+  const updateParam = (idx: number, patch: Partial<ParamRow>) => {
+    setParams(
+      params.map((p, i) =>
+        i === idx
+          ? {
+              ...p,
+              ...patch,
+              ...(patch.type !== undefined ? { typeDirty: true } : {}),
+            }
+          : p,
+      ),
+    );
   };
 
   const removeParam = (idx: number) => {
@@ -1923,13 +1974,19 @@ function CustomToolForm({
         ? {
             type: "object" as const,
             properties: Object.fromEntries(
-              validParams.map((p) => [
-                p.name,
-                {
-                  type: p.type,
-                  ...(p.description ? { description: p.description } : {}),
-                },
-              ]),
+              validParams.map((p) => {
+                // Round-trip the original property; the form only overrides
+                // what the user actually edited (type Select, description).
+                const { description: _prior, ...rest } = p.base;
+                const prop: JsonSchemaProperty = {
+                  ...rest,
+                  ...(p.typeDirty ? { type: p.type } : {}),
+                  ...(p.description.trim()
+                    ? { description: p.description.trim() }
+                    : {}),
+                };
+                return [p.name, prop];
+              }),
             ),
             required: validParams.filter((p) => p.required).map((p) => p.name),
           }
@@ -1937,7 +1994,8 @@ function CustomToolForm({
 
     onSave({
       name: name.trim(),
-      ...(description.trim() ? { description: description.trim() } : {}),
+      // Required on the wire (Pydantic default "") — always send it.
+      description: description.trim(),
       ...(inputSchema ? { input_schema: inputSchema } : {}),
     });
   };
@@ -1996,27 +2054,22 @@ function CustomToolForm({
               <div key={idx} className="flex items-center gap-1.5">
                 <Input
                   value={param.name}
-                  onChange={(e) => updateParam(idx, "name", e.target.value)}
+                  onChange={(e) => updateParam(idx, { name: e.target.value })}
                   placeholder="param_name"
                   className="h-6 text-[11px] flex-1"
                   style={{ fontSize: "16px" }}
                 />
                 <Select
                   value={param.type}
-                  onValueChange={(v) => updateParam(idx, "type", v)}
+                  onValueChange={(v) => {
+                    if (isParamTypeOption(v)) updateParam(idx, { type: v });
+                  }}
                 >
                   <SelectTrigger className="h-6 text-[11px] w-24">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[
-                      "string",
-                      "number",
-                      "integer",
-                      "boolean",
-                      "array",
-                      "object",
-                    ].map((t) => (
+                    {PARAM_TYPE_OPTIONS.map((t) => (
                       <SelectItem key={t} value={t} className="text-[11px]">
                         {t}
                       </SelectItem>
@@ -2026,7 +2079,7 @@ function CustomToolForm({
                 <Input
                   value={param.description}
                   onChange={(e) =>
-                    updateParam(idx, "description", e.target.value)
+                    updateParam(idx, { description: e.target.value })
                   }
                   placeholder="Description..."
                   className="h-6 text-[11px] flex-1"
@@ -2035,7 +2088,7 @@ function CustomToolForm({
                 <div className="flex items-center gap-1">
                   <Checkbox
                     checked={param.required}
-                    onCheckedChange={(v) => updateParam(idx, "required", !!v)}
+                    onCheckedChange={(v) => updateParam(idx, { required: !!v })}
                     className="h-3.5 w-3.5"
                   />
                   <span className="text-[10px] text-muted-foreground">Req</span>
@@ -3622,7 +3675,8 @@ function McpCatalogCard({
 
 function ParameterTable({ schema }: { schema: CustomToolInputSchema }) {
   const requiredSet = new Set(schema.required ?? []);
-  const entries = Object.entries(schema.properties);
+  const tableProps = schema.properties;
+  const entries = tableProps ? Object.entries(tableProps) : [];
 
   if (entries.length === 0) {
     return (
@@ -3656,7 +3710,9 @@ function ParameterTable({ schema }: { schema: CustomToolInputSchema }) {
           } ${idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}
         >
           <span className="font-mono text-foreground truncate">{pName}</span>
-          <span className="text-muted-foreground">{pDef.type}</span>
+          <span className="text-muted-foreground">
+            {Array.isArray(pDef.type) ? pDef.type.join(" | ") : pDef.type}
+          </span>
           <span className="text-muted-foreground text-[11px] truncate">
             {pDef.description ?? "—"}
           </span>
@@ -3929,17 +3985,11 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
   }
 
   const tool = detail;
+  // Registry tool `parameters` is standard JSON Schema — same generated shape
+  // as custom tools (never a hand-rolled lookalike; see the type-safety skill).
   const params = tool.parameters as {
     type?: string;
-    properties?: Record<
-      string,
-      {
-        type: string;
-        description?: string;
-        enum?: unknown[];
-        [k: string]: unknown;
-      }
-    >;
+    properties?: Record<string, JsonSchemaProperty>;
     required?: string[];
   } | null;
 

@@ -69,6 +69,13 @@ export type CapturedErrorSource =
   /** An expiring/private media URL reached a render/store path (durability defect). */
   | "media-durability"
   /**
+   * Stored data violated the generated wire/DB contract at a read ingress
+   * (e.g. a JSONB column failed validation against the OpenAPI schema). The
+   * offending value was excluded, not passed through — this firing means a
+   * write path produced a non-conforming shape and must be found and fixed.
+   */
+  | "data-shape"
+  /**
    * The active-org single-source-of-truth was MISSING from Redux when an
    * org-scoped write needed it, so `ensureOrgId` fell back to the personal-org
    * RPC. The `appContextPolicy` sync engine is supposed to keep the org present

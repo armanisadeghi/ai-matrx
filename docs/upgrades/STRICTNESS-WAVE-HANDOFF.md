@@ -5,7 +5,7 @@
 > file is the short, current "where are we / what's next / how to run it" sheet so we can
 > work the remaining waves in batches over time without reloading all the context.
 >
-> **Last updated:** 2026-07-01 · **Active wave:** 5 (`strictNullChecks`) — flag **ON**, ground **1347 → 7 errors**. All 7 live in `AgentToolsManager.tsx` and are the CustomTool/`JsonSchemaProperty` drift class — a **deep fix** (see `docs/type-drift-openapi-alias-example.md`), item 1 of `TYPE-DEBT-TRIAGE.md`; no more batch fan-out for this wave. Wave 4 (`strictFunctionTypes`) landed.
+> **Last updated:** 2026-07-01 · **Wave 5 (`strictNullChecks`) ✅ DONE — 0 errors** (1347 → 0; the last 7 were the CustomTool deep fix, see `TYPE-DEBT-TRIAGE.md` pilot findings). Wave 4 (`strictFunctionTypes`) landed. **Next flag wave:** 6 (`noImplicitAny`, ~1420) — re-measure first; also re-measure `strictPropertyInitialization` now that null-checks are green.
 >
 > **Sibling track:** `docs/upgrades/TYPE-DEBT-TRIAGE.md` — the human-in-the-loop pipeline for the debt tsc can't see (hatches + silent coercions; ratchet grew to 14 categories on 2026-07-01). Fix doctrine for both tracks: the `type-safety` skill.
 
@@ -141,14 +141,15 @@ The remaining ~30 genuine per-file/cluster fixes were applied directly (no fan-o
 `chore(ts): strictness Wave 4 — strictFunctionTypes` and update §5 + the change log in
 `docs/upgrades/README.md` and the table above.
 
-### Wave 5 — `strictNullChecks` (flag ON — 1347 → **7 errors left**, all one deep fix)
+### Wave 5 — `strictNullChecks` (✅ DONE — 1347 → 0)
 
-> **2026-07-01:** the grind is done except `AgentToolsManager.tsx` (7 errors, all the
-> CustomTool/`JsonSchemaProperty` class — internal `type: string` vs the OpenAPI literal
-> union). That is a Deep Fix per the `type-safety` skill + the worked example, queued as
-> item 1 in `TYPE-DEBT-TRIAGE.md`. **Post-mortem caution:** the wave-era commits added
-> untracked silent coercions (51× `?? ""`, 21× `|| []`, 8× `?? {}`) — audit queued as item 3
-> there; the ratchet now tracks these categories so this class can't recur silently.
+> **2026-07-01:** closed. The last 7 errors (`AgentToolsManager.tsx`, the
+> CustomTool/`JsonSchemaProperty` class) were fixed as the pilot Deep Fix per the
+> `type-safety` skill — typed form state, ingress validation replacing converter casts,
+> live-DB conformance audit, zero casts added (`TYPE-DEBT-TRIAGE.md` → pilot findings).
+> **Post-mortem caution:** the wave-era commits added untracked silent coercions
+> (51× `?? ""`, 21× `|| []`, 8× `?? {}`) — audit queued in `TYPE-DEBT-TRIAGE.md`; the
+> ratchet now tracks these categories so this class can't recur silently.
 
 > **Why this wave matters most (Arman, 2026-06-29):** this is the **Supabase loudness
 > switch**. Every supabase-js call returns `{ data: T | null, error }` (and `.single()` →

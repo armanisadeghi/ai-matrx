@@ -44,6 +44,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "agent-stream-transport": "Stream transport error",
   "agent-stream-client-error": "Stream connection failure",
   "media-durability": "Media durability violation",
+  "data-shape": "Data-shape contract violation",
   "org-resolution": "Org resolution fallback",
   "user-toast": "User-facing error toast",
   "redux-rejected": "Rejected action (thunk)",

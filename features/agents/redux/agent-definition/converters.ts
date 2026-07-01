@@ -21,6 +21,7 @@
  */
 
 import type { Database } from "@/types/database.types";
+import { parseCustomTools } from "@/features/agents/redux/agent-definition/parse-custom-tools";
 import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
 import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
@@ -115,7 +116,10 @@ interface ToolConfigJson {
   auto_tools_disabled?: boolean;
 }
 
-function splitToolConfig(toolConfig: unknown): {
+function splitToolConfig(
+  toolConfig: unknown,
+  context: { agentId?: string; relation: string },
+): {
   tools: string[];
   customTools: AgentDefinition["customTools"];
 } | null {
@@ -123,7 +127,7 @@ function splitToolConfig(toolConfig: unknown): {
   const cfg = toolConfig as ToolConfigJson;
   if (!Array.isArray(cfg.tools)) return null;
   const tools: string[] = [];
-  const customTools: AgentDefinition["customTools"] = [];
+  const inlineSpecs: unknown[] = [];
   for (const spec of cfg.tools) {
     if (!spec || typeof spec !== "object") continue;
     const kind = spec.kind;
@@ -131,14 +135,12 @@ function splitToolConfig(toolConfig: unknown): {
       const toolId = (spec.tool_id ?? spec.name) as string | undefined;
       if (toolId) tools.push(toolId);
     } else if (kind === "inline") {
-      customTools.push(
-        spec as unknown as AgentDefinition["customTools"][number],
-      );
+      inlineSpecs.push(spec);
     }
     // kind === "agent" is per-request only (not stored on the agent row);
     // ignore here.
   }
-  return { tools, customTools };
+  return { tools, customTools: parseCustomTools(inlineSpecs, context) };
 }
 
 // ---------------------------------------------------------------------------
@@ -176,11 +178,11 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
   // Prefer tool_config (canonical) over the legacy split columns. Legacy
   // columns are still maintained backend-side, but will eventually be
   // dropped — reading from tool_config insulates us from that.
-  const fromToolConfig = splitToolConfig(row.tool_config);
+  const ingress = { agentId: row.id, relation: "agent.definition" };
+  const fromToolConfig = splitToolConfig(row.tool_config, ingress);
   const tools = fromToolConfig?.tools ?? row.tools ?? [];
   const customTools =
-    fromToolConfig?.customTools ??
-    ((row.custom_tools as unknown as AgentDefinition["customTools"]) ?? []);
+    fromToolConfig?.customTools ?? parseCustomTools(row.custom_tools, ingress);
 
   // auto_tools_disabled lives only in tool_config (no legacy column). The
   // server reads it from there (agx_manager.py); round-trip it so the Builder
