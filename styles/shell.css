@@ -1706,6 +1706,11 @@ details[open] > summary .shell-mobile-admin-caret {
     opacity var(--shell-duration-fast) var(--shell-ease-smooth),
     transform var(--shell-duration-fast) var(--shell-ease-smooth),
     visibility 0s linear var(--shell-duration-fast);
+  /* Never taller than the viewport — a long menu (admin items, etc.) must SCROLL,
+     not grow off-screen and lock the user out. */
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 @media (max-width: 1023px) {
@@ -1717,12 +1722,16 @@ details[open] > summary .shell-mobile-admin-caret {
     bottom: calc(var(--shell-dock-h) + var(--shell-dock-bottom) + env(safe-area-inset-bottom, 0px) + 0.5rem);
     margin-top: 0;
     transform: translateY(0.5rem);
+    /* Bottom-anchored sheet: cap to the space above the anchor (mirrors `bottom`)
+       minus a top gap, so the menu scrolls and always leaves a tap-out area. */
+    max-height: calc(100dvh - var(--shell-dock-h) - var(--shell-dock-bottom) - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 3.5rem);
   }
 
   /* When the dock is hidden (default), drop the user menu to the bottom of
      the visible area instead of above the (nonexistent) dock. */
   body:not(:has(.shell-show-dock)) .shell-user-menu-panel {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+    max-height: calc(100dvh - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 3.5rem);
   }
 }
 

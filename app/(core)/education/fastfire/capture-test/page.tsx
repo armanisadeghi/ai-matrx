@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function FastFireCaptureTestPage() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto">
       <CaptureTestClient />
     </div>
   );
