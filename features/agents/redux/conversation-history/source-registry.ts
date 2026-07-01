@@ -117,6 +117,7 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "fastfire-grade": { label: "Fast Fire Grading", icon: GraduationCap, system: true },
   "fastfire-help": { label: "Fast Fire Tutor", icon: GraduationCap, system: true },
   "fastfire-review": { label: "Fast Fire Review", icon: GraduationCap, system: true },
+  "fastfire-tts": { label: "Fast Fire Speech", icon: GraduationCap, system: true },
 
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
@@ -184,7 +185,7 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     id: "fastfire",
     label: "Fast Fire",
     icon: GraduationCap,
-    features: ["fastfire-grade", "fastfire-help", "fastfire-review"],
+    features: ["fastfire-grade", "fastfire-help", "fastfire-review", "fastfire-tts"],
   },
 ];
 

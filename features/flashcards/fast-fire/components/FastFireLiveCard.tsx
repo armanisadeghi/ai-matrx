@@ -34,6 +34,7 @@ import {
   selectPendingGradeCount,
 } from "../redux/fastFire.selectors";
 import { FastFireTimerBar } from "./FastFireTimerBar";
+import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
 
 interface FastFireLiveCardProps {
   subscribeProgress: (
@@ -114,6 +115,12 @@ export function FastFireLiveCard({
 
         {/* Timer bar + mic level + recording indicator */}
         <FastFireTimerBar subscribeProgress={subscribeProgress} />
+
+        {/* Optional: speak the question aloud the instant the card appears
+            (pre-generated + cached; plays only during the live recording phase). */}
+        {config.spokenFronts && !betweenCards && card.spokenFrontFileId && (
+          <SpokenFrontPlayer fileId={card.spokenFrontFileId} cardId={card.id} />
+        )}
 
         {/* The card — FRONT ONLY (you speak the back) */}
         <div className="flex min-h-[40dvh] items-center justify-center rounded-2xl border border-border bg-card p-6 text-center shadow-sm">

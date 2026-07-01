@@ -25,6 +25,9 @@ import {
   Video,
   Plus,
   History,
+  Volume2,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -38,6 +41,7 @@ import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevi
 import { updateConfig } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
+import { ensureSpokenFrontsForSet } from "../spoken-front/generateSpokenFront.thunk";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -50,6 +54,28 @@ export function FastFireSetup() {
   // drill. Open by default so the learner sees it; reuses the shared
   // AudioDevicesPanel (the same component the avatar-menu window opens).
   const [showDevices, setShowDevices] = useState(true);
+  // Spoken-front prep (TTS): generated ON-DEMAND here (a pre-step, so the mic-warm
+  // in the Start gesture stays in-gesture). Cached after — instant on later runs.
+  const [prepping, setPrepping] = useState(false);
+  const [prepProgress, setPrepProgress] = useState<{ done: number; total: number } | null>(null);
+  const [prepDone, setPrepDone] = useState(false);
+
+  const prepareAudio = async (): Promise<void> => {
+    if (!config.setId) return;
+    setPrepping(true);
+    setPrepDone(false);
+    setPrepProgress(null);
+    try {
+      await dispatch(
+        ensureSpokenFrontsForSet(config.setId, (done, total) =>
+          setPrepProgress({ done, total }),
+        ),
+      );
+      setPrepDone(true);
+    } finally {
+      setPrepping(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -210,6 +236,76 @@ export function FastFireSetup() {
               dispatch(updateConfig({ liveScore: checked }))
             }
           />
+        </section>
+
+        {/* Hear the questions (optional TTS) — generated on-demand + cached. */}
+        <section className="mb-5 rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <div className="text-sm font-medium text-foreground">
+                  Hear the questions
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  A fast-paced host reads each question aloud. Generated once, then
+                  cached for instant playback.
+                </div>
+              </div>
+            </div>
+            <Switch
+              checked={config.spokenFronts}
+              onCheckedChange={(checked) =>
+                dispatch(updateConfig({ spokenFronts: checked }))
+              }
+            />
+          </div>
+
+          {config.spokenFronts && selectedSet && (
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  Prepare the audio before you start so there&apos;s no delay
+                  mid-drill. Already-prepared cards are skipped.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={() => void prepareAudio()}
+                  disabled={prepping}
+                >
+                  {prepping ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : prepDone ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
+                  {prepping
+                    ? "Preparing…"
+                    : prepDone
+                      ? "Audio ready"
+                      : "Prepare audio"}
+                </Button>
+              </div>
+              {prepProgress && prepProgress.total > 0 && (
+                <div className="mt-2">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width]"
+                      style={{
+                        width: `${Math.round((prepProgress.done / prepProgress.total) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {prepProgress.done} / {prepProgress.total} ready
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the

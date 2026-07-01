@@ -59,15 +59,24 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
         return;
       }
 
-      // 2. Trim to the configured limit and flatten to the drill shape.
+      // 2. Trim to the configured limit and flatten to the drill shape. Carry any
+      //    already-cached spoken-front audio (fc_detail kind='spoken_front') so the
+      //    drill can play the question aloud instantly. Generation is a separate
+      //    pre-step (see FastFireSetup) so the mic-warm below stays in-gesture.
       const limited =
         config.cardLimit > 0 ? loaded.slice(0, config.cardLimit) : loaded;
-      const drillCards: DrillCard[] = limited.map((c, i) => ({
-        id: c.id,
-        front: c.front,
-        back: c.back,
-        position: c.position ?? i,
-      }));
+      const drillCards: DrillCard[] = limited.map((c, i) => {
+        const spoken = c.details.find(
+          (d) => d.kind === "spoken_front" && !!d.audio_file_id,
+        );
+        return {
+          id: c.id,
+          front: c.front,
+          back: c.back,
+          position: c.position ?? i,
+          spokenFrontFileId: spoken?.audio_file_id ?? null,
+        };
+      });
 
       // 3. Open a study session on the shared spine (best-effort — a failed
       //    session does NOT block the drill; attempts are valid session-less).

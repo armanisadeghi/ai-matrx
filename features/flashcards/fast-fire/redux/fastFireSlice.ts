@@ -91,6 +91,8 @@ export interface DrillCard {
   front: string;
   back: string;
   position: number;
+  /** Durable file_id of the pre-generated spoken front, if any (optional TTS). */
+  spokenFrontFileId?: string | null;
 }
 
 export interface FastFireConfig {
@@ -101,6 +103,8 @@ export interface FastFireConfig {
   cardLimit: number;
   /** Show running grades live, or only reveal at the scoreboard. */
   liveScore: boolean;
+  /** Speak each card's question aloud (pre-generated + cached TTS). Default off. */
+  spokenFronts: boolean;
 }
 
 /** Which subset of cards the review-playback scoreboard is showing. */
@@ -145,6 +149,7 @@ const DEFAULT_CONFIG: FastFireConfig = {
   secondsPerCard: 12,
   cardLimit: 0,
   liveScore: true,
+  spokenFronts: false,
 };
 
 const initialState: FastFireState = {

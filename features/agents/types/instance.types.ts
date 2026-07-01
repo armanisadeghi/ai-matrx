@@ -132,7 +132,8 @@ export type SourceFeature =
    *  (docs/EPHEMERAL_AGENT_RUNS_SPEC.md). */
   | "fastfire-grade"
   | "fastfire-help"
-  | "fastfire-review";
+  | "fastfire-review"
+  | "fastfire-tts";
 
 export const SOURCE_APP = "matrx-admin" as const;
 
