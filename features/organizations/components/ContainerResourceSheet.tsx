@@ -66,7 +66,10 @@ export function ContainerResourceSheet({
         const { data, error } = await q;
         if (error) throw error;
         if (cancelled) return;
-        const rows = (data as unknown as Array<Record<string, unknown>>) ?? [];
+        // MATRX-EXCEPTION: table + title column are resolved from the org
+        // resource catalogue at runtime (any cardable kind), so the row
+        // shape cannot be a compile-time DbRpcRow guard.
+        const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
         setItems(
           rows.map((r) => ({
             id: String(r.id),

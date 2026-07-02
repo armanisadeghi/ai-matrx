@@ -219,7 +219,8 @@ export async function getTaskAttachments(
       console.error("Error fetching task attachments:", error.message);
       return [];
     }
-    const bundle = (data ?? {}) as {
+    // `get_task_associations` returns Json directly (no row schema to guard).
+    const bundle: {
       files?: {
         id: string;
         filename: string;
@@ -227,7 +228,18 @@ export async function getTaskAttachments(
         storage_path: string;
         created_at: string;
       }[];
-    };
+    } =
+      data === null
+        ? {}
+        : (data as {
+            files?: {
+              id: string;
+              filename: string;
+              mime_type: string | null;
+              storage_path: string;
+              created_at: string;
+            }[];
+          });
     return (bundle.files ?? []).map((f) => ({
       id: f.id,
       task_id: taskId,
@@ -701,6 +713,10 @@ type _CheckResourcePermission =
 declare const _resourcePermission: _CheckResourcePermission;
 true satisfies typeof _resourcePermission;
 
+// `share_resource_with_user` / `make_resource_public` / `make_resource_private` /
+// `revoke_resource_access` all `Returns: Json` (no row schema to guard) — the
+// `as unknown as TaskShareResult` casts below are the sanctioned no-guard-possible
+// pattern (type-safety skill, supabase-patterns.md).
 export interface TaskShareResult {
   success: boolean;
   message?: string;

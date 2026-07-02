@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 
 import {useState, useEffect, useCallback, useRef} from "react";
@@ -180,7 +179,7 @@ export const useVoiceChatWithAutoSleep = (initialAutoSleepConfig?: Partial<AutoS
         positiveSpeechThreshold: 0.6,
         minSpeechMs: 4, // TODO: Verify correct value conversion from frames to ms
         redemptionMs: 8,
-        preSpeechPadFrames: 1,
+        preSpeechPadMs: 1, // NOTE: was `preSpeechPadFrames` (not a real vad-web option) — renamed only, value unchanged
         baseAssetPath: "https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.22/dist/",
         onnxWASMBasePath: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/",
     });
@@ -301,9 +300,10 @@ export const useVoiceChatWithAutoSleep = (initialAutoSleepConfig?: Partial<AutoS
                 setInput('');
             }
 
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error in submit:', error);
-            toast.error(error.message || "An error occurred.");
+            const message = error instanceof Error ? error.message : "An error occurred.";
+            toast.error(message);
             setProcessState({
                 recording: false,
                 processing: false,

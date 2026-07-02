@@ -13,7 +13,7 @@ import {
 import CompactTaskItem from './CompactTaskItem';
 import { ActiveScopeFilterChips } from './TaskScopeFilter';
 import { sortTasks } from '../utils/taskSorting';
-import type { TaskSortConfig, TaskWithProject } from '../types';
+import type { Project, Task, TaskSortConfig, TaskWithProject } from '../types';
 
 interface AllTasksViewProps {
   selectedTaskId: string | null;
@@ -63,35 +63,35 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
   };
 
   // Filter tasks based on current filter and showCompleted setting
-  const getFilteredTasksForProject = (project: any) => {
+  const getFilteredTasksForProject = (project: Project) => {
     // Get today's date at midnight local time for consistent comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
-    
-    let tasks = project.tasks;
-    
+
+    let tasks: Task[] = project.tasks;
+
     // Filter out completed tasks if showCompleted is false (default)
     if (!showCompleted) {
-      tasks = tasks.filter((task: any) => !task.completed);
+      tasks = tasks.filter((task) => !task.completed);
     }
-    
-    let filteredTasks: any[];
+
+    let filteredTasks: Task[];
     switch (filter) {
       case 'incomplete':
-        filteredTasks = tasks.filter((task: any) => !task.completed);
+        filteredTasks = tasks.filter((task) => !task.completed);
         break;
       case 'overdue':
-        filteredTasks = tasks.filter((task: any) => 
+        filteredTasks = tasks.filter((task) =>
           !task.completed && task.dueDate && task.dueDate < todayStr
         );
         break;
       default:
         filteredTasks = tasks;
     }
-    
+
     // Apply sorting - convert to TaskWithProject format
-    const tasksWithProject: TaskWithProject[] = filteredTasks.map((task: any) => ({
+    const tasksWithProject: TaskWithProject[] = filteredTasks.map((task) => ({
       ...task,
       projectId: project.id,
       projectName: project.name,
@@ -138,7 +138,7 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
       {projectsWithTasks.map(project => {
         const isCollapsed = collapsedProjects.has(project.id);
         const taskCount = project.filteredTasks.length;
-        const completedCount = project.filteredTasks.filter((t: any) => t.completed).length;
+        const completedCount = project.filteredTasks.filter((t) => t.completed).length;
 
         return (
           <div 
@@ -176,7 +176,7 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
             {/* Tasks List */}
             {!isCollapsed && (
               <div className="px-3 pb-3 pt-1 space-y-2 border-t border-border">
-                {project.filteredTasks.map((task: any) => (
+                {project.filteredTasks.map((task) => (
                   <CompactTaskItem
                     key={task.id}
                     task={{

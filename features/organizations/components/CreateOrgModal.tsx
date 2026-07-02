@@ -131,9 +131,11 @@ export function CreateOrgModal({
       } else {
         toast.error(result.error || "Failed to create organization");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating organization:", error);
-      toast.error(error.message || "An unexpected error occurred");
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

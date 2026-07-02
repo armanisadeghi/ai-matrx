@@ -25,7 +25,7 @@ export function useClipboard(): UseClipboardResult {
         });
     };
 
-    const handleError = (err: any, type: string) => {
+    const handleError = (err: unknown, type: string) => {
         const message = `Failed to copy ${type}`;
         setError(err instanceof Error ? err : new Error(message));
         console.error(message, err);

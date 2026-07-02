@@ -3,6 +3,13 @@ import type { AppThunk } from "@/lib/redux/store";
 import { componentDefinitionsSlice } from "../slices/componentDefinitionsSlice";
 import { CustomAppletConfig } from "@/types/customAppTypes";
 import { brokerActions } from "@/lib/redux/brokerSlice";
+import { extractErrorMessage } from "@/utils/errors";
+
+export interface LoadAppletResult {
+  success: boolean;
+  componentInstances?: { instanceId: string; brokerId: string }[];
+  error?: string;
+}
 
 export const loadApplet =
   ({
@@ -12,8 +19,8 @@ export const loadApplet =
   }: {
     appId: string;
     applet: CustomAppletConfig;
-    initialBrokerValues?: Record<string, any>;
-  }): AppThunk<Promise<any>> =>
+    initialBrokerValues?: Record<string, unknown>;
+  }): AppThunk<Promise<LoadAppletResult>> =>
   async (dispatch) => {
     try {
       dispatch(componentDefinitionsSlice.actions.setLoading(true));
@@ -86,12 +93,13 @@ export const loadApplet =
       dispatch(brokerActions.setLoading(false));
 
       return { success: true, componentInstances };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error loading applet:", error);
-      dispatch(componentDefinitionsSlice.actions.setError(error.message));
-      dispatch(brokerActions.setError(error.message));
+      const message = extractErrorMessage(error);
+      dispatch(componentDefinitionsSlice.actions.setError(message));
+      dispatch(brokerActions.setError(message));
       dispatch(componentDefinitionsSlice.actions.setLoading(false));
       dispatch(brokerActions.setLoading(false));
-      return { success: false, error: error.message };
+      return { success: false, error: message };
     }
   };

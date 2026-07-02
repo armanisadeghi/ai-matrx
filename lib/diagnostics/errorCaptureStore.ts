@@ -283,7 +283,12 @@ function makeId(): string {
   return `err_${entries.length}_${performance?.now?.() ?? 0}`;
 }
 
-/** Stable signature for dedupe — same broken query collapses to one row. */
+/**
+ * Stable signature for dedupe — same broken query collapses to one row.
+ * MATRX-EXCEPTION: `?? ""` here builds a joined dedupe KEY (not persisted
+ * data) — an absent optional field becomes an empty join segment so two
+ * captures differing only in an unset field still collapse correctly.
+ */
 function signatureOf(input: CaptureInput): string {
   return [
     input.source,

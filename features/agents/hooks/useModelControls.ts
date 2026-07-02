@@ -7,6 +7,8 @@
 
 import { LLM_PARAMS_KEYS } from "@/types/python-generated/llm-enums";
 import { UI_GATE_KEYS } from "@/lib/redux/slices/agent-settings/ui-gates";
+import type { AIModelRecord } from "@/features/ai-models/redux/modelRegistrySlice";
+import { isJsonObject } from "@/types/json";
 
 export interface ControlDefinition {
   type:
@@ -20,7 +22,7 @@ export interface ControlDefinition {
     | "object_array";
   min?: number;
   max?: number;
-  default?: any;
+  default?: unknown;
   enum?: string[];
   required?: boolean;
 }
@@ -155,11 +157,23 @@ export interface NormalizedControls {
   media?: ControlDefinition;             // Together Wan I2V {image: url}
 
   // Raw controls for debugging
-  rawControls: Record<string, any>;
+  rawControls: Record<string, unknown>;
 
   // Unmapped controls that we couldn't resolve
-  unmappedControls: Record<string, any>;
+  unmappedControls: Record<string, unknown>;
 }
+
+/**
+ * Keys of NormalizedControls whose value is a ControlDefinition — every
+ * field except the two Record<string, unknown> debug/overflow buckets.
+ * Used to type dynamic-key writes into `normalized` without widening to
+ * `ControlDefinition & Record<string, unknown>` (the intersection TS
+ * computes when the write key could also be one of the Record fields).
+ */
+type NormalizedControlKey = Exclude<
+  keyof NormalizedControls,
+  "rawControls" | "unmappedControls"
+>;
 
 /**
  * THE single canonical "does the selected model support tools?" read.
@@ -196,7 +210,10 @@ export function supportsTools(
 /**
  * Parse and normalize controls from a model's controls object
  */
-export function useModelControls(models: any[], selectedModelId: string) {
+export function useModelControls(
+  models: AIModelRecord[],
+  selectedModelId: string,
+) {
   // If no ID provided, just return empty state without error
   if (!selectedModelId) {
     return {
@@ -257,12 +274,11 @@ export function useModelControls(models: any[], selectedModelId: string) {
       };
     }
   }
-  // Guard: controls must be a plain object to iterate safely
-  if (
-    typeof controls !== "object" ||
-    controls === null ||
-    Array.isArray(controls)
-  ) {
+  // Guard: controls must be a plain object to iterate safely. `controls` is
+  // a bare JSONB column (`Json | null`, i.e. `unknown`) — narrow via
+  // isJsonObject rather than a manual typeof/Array.isArray guard so the
+  // narrowed type keeps its index signature instead of collapsing to `object`.
+  if (!isJsonObject(controls)) {
     console.error(
       "Unexpected controls shape for model:",
       selectedModel.name,
@@ -358,7 +374,7 @@ export function useModelControls(models: any[], selectedModelId: string) {
   ]);
 
   // Parse each control
-  Object.entries(controls).forEach(([key, value]: [string, any]) => {
+  Object.entries(controls).forEach(([key, value]: [string, unknown]) => {
     // Track unmapped controls first
     if (!knownKeys.has(key)) {
       normalized.unmappedControls[key] = value;
@@ -369,7 +385,7 @@ export function useModelControls(models: any[], selectedModelId: string) {
     const normalizedKey = key === "output_format" ? "response_format" : key;
 
     // Guard: skip primitive values — control definitions must be objects
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    if (!isJsonObject(value)) {
       console.warn(
         `Skipping malformed control "${key}" for model — expected object, got:`,
         typeof value,
@@ -384,16 +400,16 @@ export function useModelControls(models: any[], selectedModelId: string) {
       typeof rawDefault === "object" &&
       !Array.isArray(rawDefault) &&
       "type" in rawDefault
-        ? String(rawDefault.type)
+        ? String((rawDefault as Record<string, unknown>).type)
         : rawDefault;
 
     // Parse the control definition based on its structure
     const controlDef: ControlDefinition = {
-      type: value.type || "string",
-      min: value.min,
-      max: value.max,
+      type: (value.type as ControlDefinition["type"]) || "string",
+      min: value.min as number | undefined,
+      max: value.max as number | undefined,
       default: flatDefault,
-      required: value.required,
+      required: value.required as boolean | undefined,
     };
 
     // Handle enum types — flatten object enum entries to strings (e.g. { type: "json_object" } → "json_object")
@@ -422,15 +438,18 @@ export function useModelControls(models: any[], selectedModelId: string) {
     // Infer number types from min/max
     else if (value.min !== undefined || value.max !== undefined) {
       // Check if it's an integer or float based on default
-      if (value.default && Number.isInteger(value.default)) {
+      if (value.default && Number.isInteger(value.default as number)) {
         controlDef.type = "integer";
       } else {
         controlDef.type = "number";
       }
     }
 
-    // Store in normalized controls
-    (normalized as any)[normalizedKey] = controlDef;
+    // Store in normalized controls. `normalizedKey` is drawn from `knownKeys`
+    // (a finite set matching NormalizedControls' ControlDefinition-valued
+    // fields, never the rawControls/unmappedControls buckets), so this cast
+    // is a sound narrowing, not an escape hatch.
+    normalized[normalizedKey as NormalizedControlKey] = controlDef;
   });
 
   return {
@@ -446,15 +465,15 @@ export function useModelControls(models: any[], selectedModelId: string) {
  * UI-only flags (like tools: true) are converted to their proper submission format
  * CRITICAL: Controls with default: null are NOT included (opt-in only)
  */
-export function getModelDefaults(model: any) {
-  if (!model?.controls) {
+export function getModelDefaults(model: unknown): Record<string, unknown> {
+  if (!isJsonObject(model) || !model.controls) {
     return {};
   }
 
-  const defaults: Record<string, any> = {};
+  const defaults: Record<string, unknown> = {};
 
   // Defensively parse controls if double-encoded as a JSON string
-  let controls = model.controls;
+  let controls: unknown = model.controls;
   if (typeof controls === "string") {
     try {
       controls = JSON.parse(controls);
@@ -466,23 +485,19 @@ export function getModelDefaults(model: any) {
       return {};
     }
   }
-  if (
-    typeof controls !== "object" ||
-    controls === null ||
-    Array.isArray(controls)
-  ) {
+  if (!isJsonObject(controls)) {
     return {};
   }
 
   // Keys that represent UI capabilities, not submission values
   const uiOnlyKeys = new Set(["tools"]);
 
-  Object.entries(controls).forEach(([key, value]: [string, any]) => {
+  Object.entries(controls).forEach(([key, value]: [string, unknown]) => {
     // Remap output_format -> response_format
     const normalizedKey = key === "output_format" ? "response_format" : key;
 
     // Guard: skip primitive values
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    if (!isJsonObject(value)) {
       return;
     }
 

@@ -69,7 +69,7 @@ export default function MobileTasksList({
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
+    const defaultScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     await dispatch(

@@ -1001,6 +1001,11 @@ async function fetchScopeDisplays(
     );
   const { data, error } = scopeIds ? await base.in("id", scopeIds) : await base;
   if (error) return err(...mapPgErrorPair(error));
+  // MATRX-EXCEPTION: `scope_type:scope_types(...)` is an aliased single-object
+  // PostgREST embed; the generated client infers it as an array-shaped embed
+  // (no `!inner`/single-row hint), so it cannot structurally match
+  // ScopeWithType without a DbRpcRow-style guard (this is a table embed, not
+  // an RPC). Runtime shape is verified — one scope_types row per scope (FK).
   return ok((data ?? []) as unknown as ScopeWithType[]);
 }
 

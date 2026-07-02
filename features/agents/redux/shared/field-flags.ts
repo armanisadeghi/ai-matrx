@@ -48,3 +48,28 @@ export function forEachField<K extends string>(
     fn(key);
   }
 }
+
+/**
+ * Assign a single dynamically-keyed field on a record without an `as any`
+ * escape hatch. The generic binds `K extends keyof T` and `value: T[K]`
+ * together at the call site, so the write stays type-sound — TypeScript
+ * just can't prove `record[field] = value` is safe at a *computed* index
+ * without this indirection (a known inference gap for mapped-object writes,
+ * not an unsoundness).
+ */
+export function assignField<T, K extends keyof T>(
+  record: T,
+  field: K,
+  value: T[K],
+): void {
+  record[field] = value;
+}
+
+/**
+ * Read a single dynamically-keyed field off a record without an
+ * `as unknown as Record<string, unknown>` whole-row cast. Same generic
+ * bridging as `assignField`, for the read direction.
+ */
+export function readField<T, K extends keyof T>(record: T, field: K): T[K] {
+  return record[field];
+}

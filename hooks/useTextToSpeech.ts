@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { WebPlayer } from '@cartesia/cartesia-js';
+import type Source from '@cartesia/cartesia-js/wrapper/source';
 import cartesia from '@/lib/cartesia/client';
 import {
     VoiceSpeed,
@@ -25,9 +26,14 @@ const useTextToSpeech = (options: UseTextToSpeechOptions) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackStatus, setPlaybackStatus] = useState<'inactive' | 'playing' | 'paused' | 'finished'>('inactive');
 
+    // MATRX-EXCEPTION: `cartesia.tts` is typed as the base `Tts` class in the
+    // installed @cartesia/cartesia-js — `.websocket(...)` (used below) only
+    // exists on `StreamingTTSClient`/the runtime object, not the declared
+    // type (SDK type/version drift, see escalation brief). Typing this ref
+    // honestly is blocked on that upstream gap.
     const websocketRef = useRef<any>(null);
     const playerRef = useRef<WebPlayer | null>(null);
-    const sourceRef = useRef<any>(null);
+    const sourceRef = useRef<Source | null>(null);
     // Track whether play() has been called — WebPlayer's AudioContext is lazy-initialized on first play
     const hasPlayedRef = useRef(false);
 
@@ -76,6 +82,10 @@ const useTextToSpeech = (options: UseTextToSpeechOptions) => {
 
             const response = await websocketRef.current.send(request);
             sourceRef.current = response.source;
+
+            if (!sourceRef.current) {
+                throw new Error("No audio source returned from Cartesia");
+            }
 
             setIsPlaying(true);
             setPlaybackStatus('playing');

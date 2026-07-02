@@ -156,6 +156,12 @@ export function buildCustomComponent(
       continue;
     }
 
+    // MATRX-EXCEPTION: `value` is read out of a heterogeneous
+    // Record<StashableKey, unknown> (each key has its own value type —
+    // string[], boolean, [string,string], number). `field` is validated
+    // against the fixed STASHABLE_KEYS list above, so the write is sound,
+    // but there's no single T[K] narrowing to give `value` an honest type
+    // without a per-field type guard for each of the 6 shapes.
     if (fieldBelongsToType(field, type)) {
       (cc as unknown as Record<string, unknown>)[field] = value;
     } else {

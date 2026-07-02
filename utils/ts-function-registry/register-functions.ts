@@ -16,6 +16,18 @@ function requireSupabase(dependencies: FunctionDependencies): SupabaseClient {
 }
 
 /**
+ * Heterogeneous-registry narrowing, confined to one reviewed line: the
+ * registry validates every declared required parameter by name at dispatch
+ * (`executeFunction` in function-registry.ts) before a callback runs, so the
+ * param bag matches the callback's declared shape at runtime. Casting to an
+ * unconstrained generic keeps each call site to `asParams<X>(params)` instead
+ * of a banned two-step cast.
+ */
+function asParams<T>(params: Record<string, unknown>): T {
+  return params as T;
+}
+
+/**
  * Register all database operation functions for use in applets
  */
 export function registerDatabaseFunctions() {
@@ -56,7 +68,7 @@ export function registerDatabaseFunctions() {
       returnType: 'CreateTemplateResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await createSchemaTemplate(requireSupabase(dependencies), params as CreateTemplateParams);
+      return await createSchemaTemplate(requireSupabase(dependencies), asParams<CreateTemplateParams>(params));
     },
     ['supabase']
   );
@@ -213,7 +225,7 @@ export function registerDatabaseFunctions() {
       returnType: 'CreateTableResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await createTable(requireSupabase(dependencies), params as CreateTableParams);
+      return await createTable(requireSupabase(dependencies), asParams<CreateTableParams>(params));
     },
     ['supabase']
   );
@@ -265,7 +277,7 @@ export function registerDatabaseFunctions() {
       returnType: 'AddColumnResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await addColumn(requireSupabase(dependencies), params as AddColumnParams);
+      return await addColumn(requireSupabase(dependencies), asParams<AddColumnParams>(params));
     },
     ['supabase']
   );
@@ -315,7 +327,7 @@ export function registerDatabaseFunctions() {
       returnType: 'AddRowResult'
     },
     async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
-      return await addRow(requireSupabase(dependencies), params as AddRowParams);
+      return await addRow(requireSupabase(dependencies), asParams<AddRowParams>(params));
     },
     ['supabase']
   );

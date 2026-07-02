@@ -722,9 +722,11 @@ export function AgentSneakPeekModal({
               >
                 <ChevronRight />
               </Button>
-              <span className="text-[10px] font-medium tabular-nums text-muted-foreground ml-1">
-                {currentIndex + 1} / {navigationIds!.length}
-              </span>
+              {navigationIds && (
+                <span className="text-[10px] font-medium tabular-nums text-muted-foreground ml-1">
+                  {currentIndex + 1} / {navigationIds.length}
+                </span>
+              )}
             </div>
           )}
           <DialogTitle className="text-base font-semibold text-foreground truncate">

@@ -14,11 +14,32 @@
  * `UnsplashMethod` switch.
  */
 
+import type { Basic as UnsplashBasicPhoto } from "unsplash-js/dist/methods/photos/types";
+import type { Basic as UnsplashBasicCollection } from "unsplash-js/dist/methods/collections/types";
+import type { Basic as UnsplashBasicTopic } from "unsplash-js/dist/methods/topics/types";
+
 type UnsplashEnvelope<TResponse> =
   | { type: "success"; response: TResponse; errors?: undefined }
   | { type: "error"; response?: undefined; errors: string[] };
 
 type AnyArgs = Record<string, unknown> | undefined;
+
+// Mirrors unsplash-js's own response shapes per method group (see
+// node_modules/unsplash-js/dist/methods/*/types.d.ts) — search results carry
+// `total_pages`, plain `list`/`getPhotos` calls only carry `total`.
+type UnsplashSearchPhotosResponse = {
+  results: UnsplashBasicPhoto[];
+  total: number;
+  total_pages: number;
+};
+type UnsplashSearchCollectionsResponse = {
+  results: UnsplashBasicCollection[];
+  total: number;
+  total_pages: number;
+};
+type UnsplashPhotoListResponse = { results: UnsplashBasicPhoto[]; total: number };
+type UnsplashCollectionListResponse = { results: UnsplashBasicCollection[]; total: number };
+type UnsplashTopicListResponse = { results: UnsplashBasicTopic[]; total: number };
 
 async function call<TResponse>(
   method: string,
@@ -52,19 +73,19 @@ async function call<TResponse>(
 export const unsplashClient = {
   search: {
     getPhotos: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashSearchPhotosResponse>(
         "search.getPhotos",
         args,
       ),
     getCollections: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashSearchCollectionsResponse>(
         "search.getCollections",
         args,
       ),
   },
   photos: {
     list: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashPhotoListResponse>(
         "photos.list",
         args,
       ),
@@ -73,24 +94,24 @@ export const unsplashClient = {
   },
   collections: {
     list: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashCollectionListResponse>(
         "collections.list",
         args,
       ),
     getPhotos: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashPhotoListResponse>(
         "collections.getPhotos",
         args,
       ),
   },
   topics: {
     list: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashTopicListResponse>(
         "topics.list",
         args,
       ),
     getPhotos: (args: AnyArgs) =>
-      call<{ results: any[]; total: number; total_pages: number }>(
+      call<UnsplashPhotoListResponse>(
         "topics.getPhotos",
         args,
       ),

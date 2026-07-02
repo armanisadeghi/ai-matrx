@@ -214,8 +214,8 @@ export function NotesLayout({
       setIsSaving(true);
 
       // Call the editor's force save which captures ALL current state including unsaved content
-      if ((window as any).__noteEditorForceSave) {
-        (window as any).__noteEditorForceSave();
+      if (window.__noteEditorForceSave) {
+        window.__noteEditorForceSave();
       } else {
         // Fallback: save with current activeNote data
         await updateNote(activeNote.id, {

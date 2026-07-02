@@ -59,12 +59,7 @@ function modelDeclaresGate(
   key: UiGateEditableKey,
 ): boolean {
   if (!controls) return false;
-  const control = (controls as unknown as Record<string, unknown>)[key];
-  return (
-    !!control &&
-    typeof control === "object" &&
-    "type" in (control as Record<string, unknown>)
-  );
+  return !!controls[key];
 }
 
 export function UiGatesEditor({

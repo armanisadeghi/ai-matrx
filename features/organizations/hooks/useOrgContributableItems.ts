@@ -58,19 +58,28 @@ export function useOrgContributableItems(
   );
 
   React.useEffect(() => {
-    if (!orgId || !entry || !userId || !contributable) {
+    if (
+      !orgId ||
+      !entry ||
+      !userId ||
+      !contributable ||
+      !entry.table ||
+      !entry.titleColumn ||
+      !entry.shareKey
+    ) {
       setItems([]);
       setAlreadyShared(new Set());
       return undefined;
     }
+    const table = entry.table;
+    const titleCol = entry.titleColumn;
+    const shareKey = entry.shareKey;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setItems([]);
       setJustShared(new Set());
       try {
-        const table = entry.table!;
-        const titleCol = entry.titleColumn!;
         const db = (
           entry.schemaName ? supabase.schema(entry.schemaName as "files") : supabase
         ) as typeof supabase;
@@ -84,11 +93,15 @@ export function useOrgContributableItems(
         }
         const [{ data, error }, sharedIds] = await Promise.all([
           q,
-          listOrgSharedIdsForTable(orgId, entry.shareKey!),
+          listOrgSharedIdsForTable(orgId, shareKey),
         ]);
         if (error) throw error;
         if (cancelled) return;
-        const rows = (data as unknown as Array<Record<string, unknown>>) ?? [];
+        // MATRX-EXCEPTION: table + title column are resolved from the org
+        // resource catalogue at runtime (any contributable kind), so the row
+        // shape cannot be a compile-time DbRpcRow guard — narrowed
+        // defensively below instead of trusted structurally.
+        const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
         setItems(
           rows.map((r) => ({
             id: String(r.id),
@@ -113,13 +126,13 @@ export function useOrgContributableItems(
   }, [orgId, entry?.key, userId, contributable, reloadTick]);
 
   async function share(item: MyItem) {
-    if (!entry || !orgId) return;
+    if (!entry || !orgId || !entry.shareKey) return;
     setSharingId(item.id);
     try {
       const result = await shareWithOrg({
         // shareKey is the canonical table name; the share RPC resolver accepts
         // canonical names directly (catalogue keys on the broader DB registry).
-        resourceType: entry.shareKey! as ResourceType,
+        resourceType: entry.shareKey as ResourceType,
         resourceId: item.id,
         organizationId: orgId,
         // Level omitted on purpose → the server applies the org module's

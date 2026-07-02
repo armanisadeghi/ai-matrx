@@ -7,13 +7,13 @@ import { useSearchParams } from "next/navigation";
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { useAuditDataset } from "../hooks/useAuditDataset";
-import type { FunctionDepRow } from "../types";
+import { isFunctionDepRow, type FunctionDepRow } from "../types";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function FunctionDepsPage() {
   const searchParams = useSearchParams();
   const { rows, loading, reload } =
-    useAuditDataset<FunctionDepRow>("function-deps");
+    useAuditDataset<FunctionDepRow>("function-deps", isFunctionDepRow);
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<

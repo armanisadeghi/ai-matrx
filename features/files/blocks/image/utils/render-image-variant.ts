@@ -100,12 +100,20 @@ export async function renderImageVariant(
     );
   }
 
-  const displayUrl = variant.cdn_url ?? variant.signed_url ?? variant.url ?? "";
+  const displayUrl = variant.cdn_url ?? variant.signed_url ?? variant.url;
   const downloadUrl =
     variant.download_url ?? variant.signed_url ?? variant.cdn_url ?? displayUrl;
 
   if (!downloadUrl) {
     throw new Error(`render-image-variant: variant "${key}" has no usable URL`);
+  }
+  if (!displayUrl) {
+    // download_url can be present while cdn_url/signed_url/url are all
+    // absent — that would silently hand callers an empty <img src>. Fail
+    // loud instead of masking it (matches the downloadUrl check above).
+    throw new Error(
+      `render-image-variant: variant "${key}" has a download URL but no display URL`,
+    );
   }
 
   return {

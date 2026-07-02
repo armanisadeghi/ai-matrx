@@ -19,49 +19,57 @@ interface LiveResultsPayload {
  */
 const utteranceText = (event: LiveResultsPayload) => {
   const words = event.channel?.alternatives?.[0]?.words ?? [];
+  // MATRX-EXCEPTION: display concatenation — a word with neither field present
+  // contributes an empty segment rather than corrupting the joined sentence.
   return words
     .map((word) => word.punctuated_word ?? word.word ?? "")
     .join(" ");
 };
 
+interface RoleMessage {
+  role: string;
+  [key: string]: unknown;
+}
+
 /**
  * get user messages
- * @param {any[]} messages
- * @returns {any[]}
+ * @param messages
  */
-const getUserMessages = (messages: any[]) => {
+const getUserMessages = <T extends RoleMessage>(messages: T[]): T[] => {
   return messages.filter((message) => message.role === "user");
 };
 
 /**
  * get message we want to display in the chat
- * @param {any[]} messages
- * @returns {any[]}
+ * @param messages
  */
-const getConversationMessages = (messages: any[]) => {
+const getConversationMessages = <T extends RoleMessage>(messages: T[]): T[] => {
   return messages.filter((message) => message.role !== "system");
 };
 
-const sprintf = (template: string, ...args: any[]) => {
-  return template.replace(/%[sdf]/g, (match: any) => {
+const sprintf = (template: string, ...args: unknown[]) => {
+  return template.replace(/%[sdf]/g, (match: string) => {
     const arg = args.shift();
     switch (match) {
       case "%s":
         return String(arg);
       case "%d":
-        return parseInt(arg, 10).toString();
+        return parseInt(String(arg), 10).toString();
       case "%f":
-        return parseFloat(arg).toString();
+        return parseFloat(String(arg)).toString();
       default:
         return match;
     }
   });
 };
 
-function randomArrayValue(array: any[]): any {
+function randomArrayValue<T>(array: T[]): T {
+  if (array.length === 0) {
+    throw new Error("randomArrayValue: array is empty");
+  }
   const key = Math.floor(Math.random() * array.length);
 
-  return array[key];
+  return array[key] as T;
 };
 
 function contextualGreeting(): string {

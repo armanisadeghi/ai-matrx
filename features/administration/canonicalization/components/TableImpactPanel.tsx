@@ -20,6 +20,26 @@ import { Input } from "@/components/ui/input";
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { BoolBadge } from "./StatusBadge";
 import type { KnownTableRef, TableImpactRow } from "../types";
+import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
+
+function isKnownTableRef(v: unknown): v is KnownTableRef {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as Record<string, unknown>).schema_name === "string" &&
+    typeof (v as Record<string, unknown>).table_name === "string"
+  );
+}
+
+function isTableImpactRow(v: unknown): v is TableImpactRow {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v as Record<string, unknown>;
+  return (
+    (typeof r.function_sig === "string" || r.function_sig === null) &&
+    (typeof r.dependency === "string" || r.dependency === null) &&
+    (typeof r.currently_broken === "boolean" || r.currently_broken === null)
+  );
+}
 
 function parseSchemaTable(input: string): [string, string] | null {
   const idx = input.indexOf(".");
@@ -41,10 +61,13 @@ export function TableImpactPanel() {
 
   useEffect(() => {
     fetch("/api/admin/canonicalization/table-impact")
-      .then((r) => r.json())
-      // `audit.*` rows have no generated schema (see ../types.ts header) —
-      // cast through `unknown` per the "Json returned directly" pattern.
-      .then((data) => setTables((data.tables ?? []) as unknown as KnownTableRef[]))
+      .then(readJsonObject)
+      .then((data) => {
+        // Widen JsonValue[] -> unknown[] so the type-predicate filter overload
+        // applies (KnownTableRef doesn't extend JsonValue's index signature).
+        const tables: unknown[] = Array.isArray(data.tables) ? data.tables : [];
+        setTables(tables.filter(isKnownTableRef));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -64,11 +87,10 @@ export function TableImpactPanel() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ schema, table }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? res.statusText);
-        // `audit.*` rows have no generated schema (see ../types.ts header) —
-        // cast through `unknown` per the "Json returned directly" pattern.
-        setRows((data.rows ?? []) as unknown as TableImpactRow[]);
+        const data = await readJsonObject(res);
+        if (!res.ok) throw new Error(errorMessageFrom(data, res));
+        const rows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
+        setRows(rows.filter(isTableImpactRow));
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
         setRows([]);

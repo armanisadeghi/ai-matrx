@@ -36,12 +36,44 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { GateStatusBadge } from "./StatusBadge";
 import { RLS_VARIANTS } from "../utils/queryBuilders";
 import type { CanonicalCertifyRow, VerifyCanonicalRow } from "../types";
+import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
 
 interface VerifyResult {
   checks: VerifyCanonicalRow[];
   verifyOk: boolean;
   certifyBlocking: CanonicalCertifyRow[];
   certifyOk: boolean;
+}
+
+function isVerifyCanonicalRow(v: unknown): v is VerifyCanonicalRow {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as Record<string, unknown>).check_name === "string" &&
+    typeof (v as Record<string, unknown>).status === "string"
+  );
+}
+
+function isCanonicalCertifyRow(v: unknown): v is CanonicalCertifyRow {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as Record<string, unknown>).category === "string" &&
+    typeof (v as Record<string, unknown>).status === "string"
+  );
+}
+
+function isVerifyResult(v: unknown): v is VerifyResult {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v as Record<string, unknown>;
+  return (
+    Array.isArray(r.checks) &&
+    r.checks.every(isVerifyCanonicalRow) &&
+    typeof r.verifyOk === "boolean" &&
+    Array.isArray(r.certifyBlocking) &&
+    r.certifyBlocking.every(isCanonicalCertifyRow) &&
+    typeof r.certifyOk === "boolean"
+  );
 }
 
 interface VerifyTarget {
@@ -159,9 +191,9 @@ export function VerifyCanonicalPanel() {
       const res = await fetch(
         `/api/admin/canonicalization/verify?schema=${encodeURIComponent(schema)}&table=${encodeURIComponent(table)}`,
       );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? res.statusText);
-      if (data.token) {
+      const data = await readJsonObject(res);
+      if (!res.ok) throw new Error(errorMessageFrom(data, res));
+      if (typeof data.token === "string" && data.token) {
         setToken(data.token);
         toast.success(`Token: ${data.token}`);
       } else {
@@ -194,9 +226,10 @@ export function VerifyCanonicalPanel() {
             variant: variant === "auto" ? undefined : variant,
           }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? res.statusText);
-        setResult(data as VerifyResult);
+        const data = await readJsonObject(res);
+        if (!res.ok) throw new Error(errorMessageFrom(data, res));
+        if (!isVerifyResult(data)) throw new Error("Unexpected verify response shape");
+        setResult(data);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
         setResult(null);

@@ -43,7 +43,6 @@ import { v4 as uuidv4 } from "uuid";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectMessageContent } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { editMessage } from "@/features/agents/redux/execution-system/message-crud/edit-message.thunk";
-import type { Json } from "@/types/database.types";
 
 // =============================================================================
 // Block shape
@@ -181,7 +180,7 @@ export function useMessageBlockPersistence({
         editMessage({
           conversationId,
           messageId,
-          newContent: nextContent as unknown as Json,
+          newContent: nextContent,
         }),
       );
     },

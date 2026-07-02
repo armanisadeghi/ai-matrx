@@ -108,26 +108,26 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
             </div>
 
             {/* Live Stats Bar — real-time counters from data events */}
-            {hasLiveStats && (
+            {hasLiveStats && liveStats && (
                 <div className="flex items-center gap-4 px-4 py-2 border-b border-border/50 bg-muted/20 text-[10px] text-muted-foreground flex-wrap">
-                    {liveStats!.sourcesFound > 0 && (
+                    {liveStats.sourcesFound > 0 && (
                         <span className="flex items-center gap-1">
                             <Search className="h-3 w-3 text-blue-400" />
-                            <span className="tabular-nums font-medium text-foreground">{liveStats!.sourcesFound}</span> sources found
+                            <span className="tabular-nums font-medium text-foreground">{liveStats.sourcesFound}</span> sources found
                         </span>
                     )}
-                    {liveStats!.scraped > 0 && (
+                    {liveStats.scraped > 0 && (
                         <span className="flex items-center gap-1">
                             <Download className="h-3 w-3 text-green-400" />
-                            <span className="tabular-nums font-medium text-foreground">{liveStats!.scrapeGood}/{liveStats!.scraped}</span> scraped
+                            <span className="tabular-nums font-medium text-foreground">{liveStats.scrapeGood}/{liveStats.scraped}</span> scraped
                         </span>
                     )}
-                    {liveStats!.analyzed > 0 && (
+                    {liveStats.analyzed > 0 && (
                         <span className="flex items-center gap-1">
                             <Brain className="h-3 w-3 text-purple-400" />
-                            <span className="tabular-nums font-medium text-foreground">{liveStats!.analyzed}</span> analyzed
-                            {liveStats!.analysisFailed > 0 && (
-                                <span className="text-destructive/70">({liveStats!.analysisFailed} failed)</span>
+                            <span className="tabular-nums font-medium text-foreground">{liveStats.analyzed}</span> analyzed
+                            {liveStats.analysisFailed > 0 && (
+                                <span className="text-destructive/70">({liveStats.analysisFailed} failed)</span>
                             )}
                         </span>
                     )}

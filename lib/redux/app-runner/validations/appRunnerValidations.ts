@@ -6,7 +6,8 @@ export interface ValidationIssue {
   code: string;
   message: string;
   severity: 'info' | 'warning' | 'error';
-  data?: any;
+  // Debug metadata attached per-issue — shape varies by validator (see call sites below).
+  data?: Record<string, unknown>;
 }
 
 export interface ValidationResult {

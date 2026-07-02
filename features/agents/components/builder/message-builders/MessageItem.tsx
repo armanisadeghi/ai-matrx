@@ -155,7 +155,11 @@ export function MessageItem({
     variableDefinitions != null && variableDefinitions.length > 0;
   const variableNames = variableDefinitions?.map((v) => v.name) ?? [];
 
-  // Derive content from blocks
+  // Derive content from blocks. The block editor (AddBlockButton/BlockList)
+  // deliberately works on loose records so a single generic UI can edit any
+  // block type by field; only the write-back below re-narrows to the
+  // concrete discriminated union.
+  // MATRX-EXCEPTION: generic multi-type block editor, narrowed at write-back only.
   const rawBlocks: Record<string, unknown>[] = message
     ? (message.content as unknown as Record<string, unknown>[])
     : [];
@@ -182,18 +186,21 @@ export function MessageItem({
       const idx = findPrimaryIndex(rawBlocks);
       let updatedContent: AgentDefinitionMessage["content"];
       if (idx >= 0) {
+        // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
         updatedContent = rawBlocks.map((b, i) =>
           i === idx
             ? ({ type: "text", text: value } as Record<string, unknown>)
             : b,
         ) as unknown as AgentDefinitionMessage["content"];
       } else if (value) {
+        // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
         updatedContent = [
           { type: "text", text: value },
           ...rawBlocks,
         ] as unknown as AgentDefinitionMessage["content"];
       } else {
         // No primary, empty value — leave content untouched.
+        // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
         updatedContent =
           rawBlocks as unknown as AgentDefinitionMessage["content"];
       }
@@ -221,6 +228,7 @@ export function MessageItem({
       if (!allMessages || !message) return;
       const primary = findPrimaryIndex(rawBlocks);
       let extraCount = -1;
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const newContent = rawBlocks.filter((_, i) => {
         if (i === primary) return true;
         extraCount++;
@@ -237,6 +245,7 @@ export function MessageItem({
   const handleAddBlock = useCallback(
     (block: Record<string, unknown>) => {
       if (!allMessages || !message) return;
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const newContent = [
         ...rawBlocks,
         block,
@@ -254,6 +263,7 @@ export function MessageItem({
       if (!allMessages || !message) return;
       const primary = findPrimaryIndex(rawBlocks);
       let extraCount = -1;
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const newContent = rawBlocks.map((b, i) => {
         if (i === primary) return b;
         extraCount++;
@@ -704,7 +714,7 @@ export function MessageItem({
             sourceFeature="agent-builder"
             surfaceName="matrx-user/agent-builder"
             getTextarea={() => textareaRef.current}
-            contextData={contextMenuData as unknown as Record<string, unknown>}
+            contextData={contextMenuData}
             enableFloatingIcon={true}
             onTextReplace={handleTextReplace}
             onTextInsertBefore={handleTextInsertBefore}

@@ -142,3 +142,97 @@ export interface KnownTableRef {
   schema_name: string;
   table_name: string;
 }
+
+// ─── Runtime shape guards ────────────────────────────────────────────────
+// These rows never touch the Supabase-generated types (the `audit` schema is
+// intentionally hidden from PostgREST — see the file header), so there is no
+// `DbRpcRow` compile-time guard available. They arrive over the wire from
+// `/api/admin/canonicalization` as a plain JSON object; the guards below let
+// call sites validate the actual field count/type instead of trusting a
+// network response uncritically (TYPESCRIPT_STANDARDS.md §4).
+
+function isRec(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isStrOrNull(v: unknown): v is string | null {
+  return v === null || typeof v === "string";
+}
+
+export function isAuditSummaryRow(v: unknown): v is AuditSummaryRow {
+  return (
+    isRec(v) &&
+    typeof v.schema_name === "string" &&
+    typeof v.table_name === "string" &&
+    typeof v.token === "string" &&
+    typeof v.fails === "number" &&
+    typeof v.warns === "number" &&
+    typeof v.certified === "boolean"
+  );
+}
+
+export function isCanonicalFindingRow(v: unknown): v is CanonicalFindingRow {
+  return (
+    isRec(v) &&
+    isStrOrNull(v.schema_name) &&
+    isStrOrNull(v.table_name) &&
+    isStrOrNull(v.token) &&
+    isStrOrNull(v.source) &&
+    isStrOrNull(v.check_name) &&
+    isStrOrNull(v.status) &&
+    isStrOrNull(v.detail)
+  );
+}
+
+export function isBrokenFunctionRow(v: unknown): v is BrokenFunctionRow {
+  return (
+    isRec(v) &&
+    isStrOrNull(v.schema_name) &&
+    isStrOrNull(v.function_name) &&
+    isStrOrNull(v.signature) &&
+    (v.lineno === null || typeof v.lineno === "number") &&
+    isStrOrNull(v.level) &&
+    isStrOrNull(v.sqlstate) &&
+    isStrOrNull(v.message) &&
+    isStrOrNull(v.context)
+  );
+}
+
+export function isFunctionDepRow(v: unknown): v is FunctionDepRow {
+  return (
+    isRec(v) &&
+    isStrOrNull(v.function_schema) &&
+    isStrOrNull(v.function_name) &&
+    isStrOrNull(v.signature) &&
+    isStrOrNull(v.dep_type) &&
+    isStrOrNull(v.dep_schema) &&
+    isStrOrNull(v.dep_name)
+  );
+}
+
+export function isM2mCandidateRow(v: unknown): v is M2mCandidateRow {
+  return (
+    isRec(v) &&
+    isStrOrNull(v.schema_name) &&
+    isStrOrNull(v.table_name) &&
+    (v.registered === null || typeof v.registered === "boolean") &&
+    (v.entity_fk_count === null || typeof v.entity_fk_count === "number") &&
+    isStrOrNull(v.fk_targets) &&
+    (v.payload_cols === null || typeof v.payload_cols === "number")
+  );
+}
+
+export function isUnregisteredCandidateRow(v: unknown): v is UnregisteredCandidateRow {
+  return (
+    isRec(v) &&
+    isStrOrNull(v.schema_name) &&
+    isStrOrNull(v.table_name) &&
+    (v.base_col_score === null || typeof v.base_col_score === "number") &&
+    (v.has_id_uuid === null || typeof v.has_id_uuid === "boolean") &&
+    (v.has_created_at === null || typeof v.has_created_at === "boolean")
+  );
+}
+
+export function isStaleRegistryRow(v: unknown): v is StaleRegistryRow {
+  return isRec(v) && isStrOrNull(v.token) && isStrOrNull(v.schema_name) && isStrOrNull(v.table_name);
+}

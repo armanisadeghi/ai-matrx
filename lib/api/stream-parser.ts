@@ -227,6 +227,8 @@ async function* _parseNdjsonStream(
 
       if (item instanceof BackendApiError) {
         // Transport-level stream failure → Error Inspector, then propagate.
+        // MATRX-EXCEPTION: `ctx` is optional (default context); "" (no
+        // requestId/conversationId) is honest, not a masked failure.
         captureStreamTransportError(item, ctx ?? {});
         throw item;
       }

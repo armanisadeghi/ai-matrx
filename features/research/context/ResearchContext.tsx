@@ -151,7 +151,7 @@ export function TopicProvider({
       }
     } catch (err) {
       if (!hadInitialData) {
-        s.setError((err as Error).message ?? "");
+        s.setError((err as Error).message);
       }
     } finally {
       s.setIsLoading(false);

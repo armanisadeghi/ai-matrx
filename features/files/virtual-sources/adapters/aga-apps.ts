@@ -23,23 +23,25 @@ import type {
   VirtualNode,
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
+import type { Database } from "@/types/database.types";
 
 const TAB_ID_PREFIX = "aga-app:";
 
 const COLUMNS =
   "id,name,slug,component_code,component_language,updated_at,status,description,version";
 
-interface AgaAppRow {
-  id: string;
-  name: string;
-  slug: string;
-  component_code: string;
-  component_language: string | null;
-  updated_at: string;
-  status: string | null;
-  description: string | null;
-  version: number | null;
-}
+type AgaAppRow = Pick<
+  Database["app"]["Tables"]["definition"]["Row"],
+  | "id"
+  | "name"
+  | "slug"
+  | "component_code"
+  | "component_language"
+  | "updated_at"
+  | "status"
+  | "description"
+  | "version"
+>;
 
 function mapLanguage(raw: string | null | undefined): string {
   const v = (raw ?? "tsx").toLowerCase();
@@ -85,7 +87,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       .order("updated_at", { ascending: false })
       .limit(args.limit ?? 200);
     if (error) return [];
-    return ((data ?? []) as unknown as AgaAppRow[]).map((row) => ({
+    return ((data ?? []) as AgaAppRow[]).map((row) => ({
       id: row.id,
       kind: "file" as const,
       name: row.name,
@@ -111,7 +113,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       .eq("id", id)
       .maybeSingle();
     if (error || !data) throw new Error(`Agent App not found: ${id}`);
-    const row = data as unknown as AgaAppRow;
+    const row = data as AgaAppRow;
     const language = mapLanguage(row.component_language);
     return {
       id: row.id,
@@ -119,7 +121,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
       path: `aga-app:/${row.slug || row.id}.tsx`,
       language,
       mimeType: "text/typescript",
-      content: row.component_code ?? "",
+      content: row.component_code,
       updatedAt: row.updated_at,
     };
   },

@@ -71,17 +71,15 @@ function splitUserContent(content: unknown): {
   text: string;
   parts: MessagePart[];
 } {
-  const rawBlocks = Array.isArray(content)
-    ? (content as unknown as MessagePart[])
-    : [];
+  const rawBlocks = Array.isArray(content) ? (content as MessagePart[]) : [];
   let text = "";
   const parts: MessagePart[] = [];
   const ASSISTANT_ONLY_TYPES = new Set(["tool_call", "tool_result", "thinking"]);
   for (const block of rawBlocks) {
-    const type = (block as { type?: string }).type ?? "";
+    const type = block.type ?? "";
     if (ASSISTANT_ONLY_TYPES.has(type)) continue;
     if (type === "text") {
-      const t = (block as { text?: unknown }).text;
+      const t = "text" in block ? block.text : undefined;
       if (typeof t === "string" && t.length > 0) {
         text = text ? `${text}\n${t}` : t;
       }
@@ -101,9 +99,9 @@ export const retryConversationTurn = createAsyncThunk<
   async ({ conversationId }, { dispatch, getState, rejectWithValue }) => {
     const state = getState();
     const entry = state.messages.byConversationId[conversationId];
-    const ordered = (entry?.orderedIds ?? [])
-      .map((id) => entry!.byId[id])
-      .filter(Boolean);
+    const ordered = entry
+      ? entry.orderedIds.map((id) => entry.byId[id]).filter(Boolean)
+      : [];
 
     // Walk back to the most recent non-deleted user message — the turn we are
     // recovering. (Retry re-runs the last turn; we only read this message to

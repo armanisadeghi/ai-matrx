@@ -7,7 +7,29 @@
 > so the pipeline is triage → decision briefs → Arman decides → fix waves.
 > Doctrine: the **`type-safety`** skill (`.claude/skills/type-safety/SKILL.md`).
 >
-> **Last updated:** 2026-07-01 · **Status:** pipeline defined, inventory not started.
+> **Last updated:** 2026-07-01 · **Status:** first fleet run complete (see "Fleet run" below).
+
+## Fleet run 2026-07-01 (wf_c21078c7-29c) — the pipeline works
+
+14 Sonnet agents over disjoint scopes, in the `type-fleet` worktree, each under the
+type-safety contract (fix mechanical, brief decisions, no tsc, no new hatches).
+Results, independently verified by the ratchet:
+
+- **~900 hatches removed** (total 7,753 → 6,851), **every category green**, zero growth.
+  Biggest cuts: `: any` −261, `value!` −184, `as unknown as` −127, `as any` −101,
+  `?? {}` −54, `Record<string, any>` −44 (the +2 red cleared).
+- **27 decision briefs** escalated instead of silenced →
+  [`type-debt/2026-07-01-fleet-briefs.md`](./type-debt/2026-07-01-fleet-briefs.md)
+  (**PENDING Arman review**). Standouts: a hook calling two service methods that don't
+  exist (`useContextItems` → phantom `contextService` contract), `useWakeWord` referencing
+  an uninstalled Picovoice package (runtime ReferenceError, 3 live consumers), selectors
+  reading a `brokerValues` Redux slice that is registered nowhere, and three RPCs tangled
+  under one type alias in the legacy entity middleware.
+- **Cost of blind fixing:** 61 residual tsc errors from ~906 fixes (~7%), repaired by a
+  10-agent follow-up wave with exact error text; `@ts-nocheck` removals that didn't hold
+  were reverted per the deletion-backlog policy.
+- One agent (`ts-ignore-sweep`) lost to a provider rate-limit — its category was
+  deprioritized to deletion-backlog anyway.
 
 ## The contract (non-negotiable)
 
@@ -19,21 +41,15 @@
   where the data ends up (read the aidream code if that's the destination). A brief without
   "Consumed by" is incomplete. The shape question is answered at the destination.
 
-## Current state (2026-07-01)
+## Current state (2026-07-01, post-fleet)
 
-- `pnpm type-check`: **7 errors**, all in `features/agents/components/tools-management/AgentToolsManager.tsx`
-  — all the CustomTool / `JsonSchemaProperty` drift class (`type: string` vs the OpenAPI
-  literal union). This is the worked example (`docs/type-drift-openapi-alias-example.md`)
-  surfacing exactly as predicted after the api-types refresh. Wave 5 (`strictNullChecks`)
-  is otherwise done: 1347 → 7.
-- Ratchet (`pnpm check:hatches`, baseline 2026-07-01) — total **7,753**:
-  cast/suppression categories 2,965 (flat-to-down through Wave 5), plus the six new
-  silent-coercion categories frozen this date: `value!` 641 · `?? {}` 619 · `|| {}` 101 ·
-  `|| []` 460 · `?? ""` 2,071 · `|| ""` 896.
-- **Known red:** `Record<string, any>` 240 vs baseline 238 (+2 net added during Wave 5) —
-  first fix item below.
-- Wave-5-era additions to audit (from the 06-29/06-30 "type fixes" commits): 51× `?? ""`,
-  21× `|| []`, 8× `?? {}`, 70× `: unknown` — some legitimate, each needs a verdict.
+- `pnpm type-check`: **0 errors** (Wave 5 closed by the pilot deep fix; fleet residue
+  repaired by the follow-up wave).
+- Ratchet: total **~6,850** across 14 categories, baseline re-frozen post-fleet
+  (down-only). Run `pnpm check:hatches` for live numbers.
+- **Open:** 27 fleet briefs PENDING review (`type-debt/2026-07-01-fleet-briefs.md`);
+  Wave-5-era `?? ""`/`|| []` additions partially audited by the regression agent —
+  remainder rides future feature-scoped passes.
 
 ## Pipeline
 
@@ -79,7 +95,7 @@ one). When a category hits 0 it graduates to a hard ESLint error and leaves the 
 
 | Category | Count | Strategy |
 |---|---|---|
-| `@ts-nocheck` 21 / `@ts-ignore` 51 / `@ts-expect-error` 6 | 78 | Small — full sweep first. Every `@ts-nocheck` file is a blind spot hiding unknown debt. |
+| `@ts-nocheck` 21 / `@ts-ignore` 51 / `@ts-expect-error` 6 | 78 | **Do NOT fix (Arman, 2026-07-01): deliberate markers on known-dead old code awaiting deletion.** The debt is the code's existence, not its types — the fix is deletion (Arman's call, per the no-legacy-code rule). The ratchet still blocks NEW ones; grinding existing ones is wasted effort. |
 | `as any` 314 / `<any>` 175 | 489 | Full sweep, mostly mechanical; decision briefs for the rest. |
 | `as unknown as` 685 | 685 | **Guard-aware triage**: DB-guarded RPC casts are sanctioned (supabase-patterns.md); whole-row Json nukes are the #1 target (→ Pattern 4). |
 | `: any` 1,473 / `Record<string, any>` 240 | 1,713 | Feature-scoped sweeps; registries/handler maps may earn a documented `MATRX-EXCEPTION`. |
@@ -106,7 +122,8 @@ one). When a category hits 0 it graduates to a hard ESLint error and leaves the 
 4. **Wave-5 additions audit** — the 51 `?? ""` / 21 `|| []` / 8 `?? {}` added in the
    06-29/06-30 type-fix commits (diff-derived; regenerate with
    `git show <commits> | grep '^+'`). Verdict each: legit default vs silenced null-bug.
-5. **`@ts-nocheck` sweep** (21 files) — open the blind spots before they hide Wave 6 debt.
+5. ~~**`@ts-nocheck` sweep**~~ **DROPPED (Arman, 2026-07-01)** — directive-marked files are
+   deletion backlog, not repair backlog (see category strategy).
 6. **Wave 6 `noImplicitAny`** (~1,420 errors) per the strictness handoff; then re-measure
    `strictPropertyInitialization`; then evaluate the umbrella `strict: true`.
 

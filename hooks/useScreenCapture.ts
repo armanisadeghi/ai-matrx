@@ -50,9 +50,10 @@ export async function captureTabViaCanvas(
 ): Promise<ScreenCaptureResult> {
   const htmlToImage = await import("html-to-image");
 
-  const filter = opts.ignoreSelector
+  const ignoreSelector = opts.ignoreSelector;
+  const filter = ignoreSelector
     ? (node: HTMLElement) => {
-        if (node?.matches && node.matches(opts.ignoreSelector!)) {
+        if (node?.matches && node.matches(ignoreSelector)) {
           return false;
         }
         return true;
@@ -103,7 +104,10 @@ export async function captureViaDisplayMedia(
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Failed to get 2D canvas context");
+  }
   ctx.drawImage(video, 0, 0);
 
   video.pause();

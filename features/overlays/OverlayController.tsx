@@ -3074,20 +3074,29 @@ export default function OverlayController() {
       {/* scopeEditWindow */}
       {(() => {
         const isOpen = isOpenById.scopeEditWindow;
-        const data = dataById.scopeEditWindow as
+        const raw = dataById.scopeEditWindow as
           | Record<string, unknown>
           | null
           | undefined;
         if (!isOpen) return null;
+        // Narrow the two required fields; everything else stays optional.
+        const data: ScopeEditWindowData | undefined =
+          raw && typeof raw.scopeTypeId === "string" && typeof raw.organizationId === "string"
+            ? {
+                scopeTypeId: raw.scopeTypeId,
+                organizationId: raw.organizationId,
+                scopeId: typeof raw.scopeId === "string" ? raw.scopeId : null,
+                parentScopeId:
+                  typeof raw.parentScopeId === "string" ? raw.parentScopeId : undefined,
+              }
+            : undefined;
         return (
           <ScopeEditWindow
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "scopeEditWindow" }))
             }
-            data={
-              (data ?? undefined) as unknown as ScopeEditWindowData | undefined
-            }
+            data={data}
           />
         );
       })()}

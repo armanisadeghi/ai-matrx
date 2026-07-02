@@ -85,7 +85,10 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
     );
   }
 
-  const handleUpdate = (field: keyof AgentDefinition, value: any) => {
+  const handleUpdate = <K extends keyof AgentDefinition>(
+    field: K,
+    value: AgentDefinition[K],
+  ) => {
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -93,10 +96,12 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
     // Diff and dispatch
     for (const key of Object.keys(draft) as Array<keyof AgentDefinition>) {
       if (key === "tags") continue;
-      if (draft[key] !== agent[key]) {
-        dispatch(
-          saveAgentField({ agentId, field: key, value: draft[key] as any }),
-        );
+      const draftValue = draft[key];
+      // `draft` is a Partial<AgentDefinition>; `undefined` here only means the
+      // key was never populated in the draft (no AgentDefinition field is
+      // itself `| undefined`), so there's nothing real to persist.
+      if (draftValue !== undefined && draftValue !== agent[key]) {
+        dispatch(saveAgentField({ agentId, field: key, value: draftValue }));
       }
     }
     // Save tags
@@ -107,7 +112,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
     const currentTags = agent.tags || [];
     if (JSON.stringify(draftTags) !== JSON.stringify(currentTags)) {
       dispatch(
-        saveAgentField({ agentId, field: "tags", value: draftTags as any }),
+        saveAgentField({ agentId, field: "tags", value: draftTags }),
       );
     }
   };

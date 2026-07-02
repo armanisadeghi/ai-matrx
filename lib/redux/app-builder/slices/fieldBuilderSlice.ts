@@ -161,7 +161,7 @@ export const fieldBuilderSlice = createSlice({
                 isDirty: true,
             };
         },
-        setDefaultValue: (state, action: PayloadAction<{ id: string; defaultValue?: any }>) => {
+        setDefaultValue: (state, action: PayloadAction<{ id: string; defaultValue?: unknown }>) => {
             const { id, defaultValue } = action.payload;
             if (!checkFieldExists(state, id)) return;
             
@@ -423,9 +423,10 @@ export const fieldBuilderSlice = createSlice({
         updateOption: (state, action: PayloadAction<{ id: string; optionId: string; changes: Partial<FieldOption> }>) => {
             const { id, optionId, changes } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
-            if (state.fields[id].options) {
-                const options = state.fields[id].options!.map((opt) =>
+
+            const existingOptions = state.fields[id].options;
+            if (existingOptions) {
+                const options = existingOptions.map((opt) =>
                     opt.id === optionId ? { ...opt, ...changes } : opt
                 );
                 state.fields[id] = { ...state.fields[id], options, isDirty: true };
@@ -434,9 +435,10 @@ export const fieldBuilderSlice = createSlice({
         deleteOption: (state, action: PayloadAction<{ id: string; optionId: string }>) => {
             const { id, optionId } = action.payload;
             if (!checkFieldExists(state, id)) return;
-            
-            if (state.fields[id].options) {
-                const options = state.fields[id].options!.filter(opt => opt.id !== optionId);
+
+            const existingOptions = state.fields[id].options;
+            if (existingOptions) {
+                const options = existingOptions.filter(opt => opt.id !== optionId);
                 state.fields[id] = { ...state.fields[id], options, isDirty: true };
             }
         },

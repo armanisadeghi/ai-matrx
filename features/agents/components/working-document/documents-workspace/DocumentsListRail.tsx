@@ -89,13 +89,16 @@ export function DocumentsListRail({
   }, []);
 
   const q = query.trim().toLowerCase();
-  const filtered = (docs ?? []).filter((d) => {
-    if (!d.conversationId) return false; // conversation-scoped open only
-    if (!q) return true;
-    return (
-      d.title.toLowerCase().includes(q) || d.preview.toLowerCase().includes(q)
-    );
-  });
+  const filtered = (docs ?? []).filter(
+    (d): d is CxWorkingDocumentSummary & { conversationId: string } => {
+      if (!d.conversationId) return false; // conversation-scoped open only
+      if (!q) return true;
+      return (
+        d.title.toLowerCase().includes(q) ||
+        d.preview.toLowerCase().includes(q)
+      );
+    },
+  );
   // Current conversation's docs first, then the rest (already newest-first).
   const pinned = filtered.filter(
     (d) => d.conversationId === currentConversationId,
@@ -159,7 +162,7 @@ export function DocumentsListRail({
         )}
         {ordered.map((d) => {
           const isScratch = d.kind === "scratch";
-          const key = railTabKey(d.conversationId!, d.kind);
+          const key = railTabKey(d.conversationId, d.kind);
           const isOpen = openKeys?.has(key) ?? false;
           const isActive = activeKey != null && key === activeKey;
           const canDetach = (closableKeys?.has(key) ?? false) && !!onDetach;
@@ -167,7 +170,7 @@ export function DocumentsListRail({
             d.title?.trim() || (isScratch ? "Scratchpad" : "Working document");
           const open = () =>
             onOpen({
-              conversationId: d.conversationId!,
+              conversationId: d.conversationId,
               kind: d.kind,
               documentId: d.id,
               title: d.title,

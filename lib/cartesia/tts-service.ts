@@ -194,7 +194,15 @@ const CartesiaTTSService =
         }, [pushFrame, pushError, stopMetrics, mergedParams.sample_rate]);
 
         const buildMessage = useCallback((text: string, continueTranscript: boolean = true, addTimestamps: boolean = true) => {
-            const voiceConfig: any = {mode: 'id', id: voiceId};
+            interface VoiceConfig {
+                mode: 'id';
+                id: string;
+                __experimental_controls?: {
+                    speed?: string | number;
+                    emotion?: string[];
+                };
+            }
+            const voiceConfig: VoiceConfig = {mode: 'id', id: voiceId};
 
             if (mergedParams.speed || mergedParams.emotion.length > 0) {
                 voiceConfig.__experimental_controls = {};

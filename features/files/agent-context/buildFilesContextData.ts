@@ -56,7 +56,6 @@ export function buildFilesContextData(
 ): Record<string, unknown> {
   const { activeFile = null, activeFolder = null, selectedFiles = [] } = args;
 
-  const hasActiveFile = Boolean(activeFile);
   const selectedFileIds = selectedFiles.map((f) => f.id);
   const selectedFileNames = selectedFiles.map((f) => f.fileName);
   const selectedCount = selectedFileIds.length;
@@ -92,9 +91,9 @@ export function buildFilesContextData(
 
   const scope = createFilesScope({
     // ── Active file ──────────────────────────────────────────────────────
-    active_file_id: hasActiveFile ? activeFile!.id : undefined,
-    active_file_name: hasActiveFile ? activeFile!.fileName : undefined,
-    active_file_path: hasActiveFile ? activeFile!.filePath : undefined,
+    active_file_id: activeFile ? activeFile.id : undefined,
+    active_file_name: activeFile ? activeFile.fileName : undefined,
+    active_file_path: activeFile ? activeFile.filePath : undefined,
     active_file_mime_type: activeFile?.mimeType ?? undefined,
     active_file_size: activeFile?.fileSize ?? undefined,
 

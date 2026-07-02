@@ -6,6 +6,8 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 export interface GuestLimitStatus {
   allowed: boolean;
@@ -30,17 +32,24 @@ export interface GuestExecutionResult {
  * @returns Status indicating if execution is allowed
  */
 export async function checkGuestLimit(
-  supabaseOrFingerprint: any | string,
+  supabaseOrFingerprint: SupabaseClient<Database> | string,
   fingerprint?: string,
   maxExecutions: number = 5,
 ): Promise<GuestLimitStatus> {
   try {
     // Support both client-side and server-side usage
-    const isServerSide =
-      typeof supabaseOrFingerprint === "object" &&
-      supabaseOrFingerprint !== null;
-    const supabaseClient = isServerSide ? supabaseOrFingerprint : supabase;
-    const fp = isServerSide ? fingerprint! : supabaseOrFingerprint;
+    let supabaseClient: SupabaseClient<Database>;
+    let fp: string;
+    if (typeof supabaseOrFingerprint === "string") {
+      supabaseClient = supabase;
+      fp = supabaseOrFingerprint;
+    } else {
+      if (!fingerprint) {
+        throw new Error("checkGuestLimit: fingerprint is required when passing a Supabase client");
+      }
+      supabaseClient = supabaseOrFingerprint;
+      fp = fingerprint;
+    }
 
     const { data, error } = await supabaseClient.rpc(
       "check_guest_execution_limit",
@@ -89,34 +98,52 @@ export async function checkGuestLimit(
  * @param params - Execution details (only if first param is supabase client)
  * @returns Log ID if successful
  */
+interface RecordGuestExecutionParams {
+  fingerprint: string;
+  resourceType: "prompt_app" | "chat" | "voice" | "other";
+  resourceId?: string;
+  resourceName?: string;
+  taskId?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  referer?: string;
+}
+
+function isRecordGuestExecutionParams(
+  value: SupabaseClient<Database> | RecordGuestExecutionParams,
+): value is RecordGuestExecutionParams {
+  return typeof (value as RecordGuestExecutionParams).fingerprint === "string";
+}
+
 export async function recordGuestExecution(
-  supabaseOrParams: any,
-  params?: {
-    fingerprint: string;
-    resourceType: "prompt_app" | "chat" | "voice" | "other";
-    resourceId?: string;
-    resourceName?: string;
-    taskId?: string;
-    ipAddress?: string;
-    userAgent?: string;
-    referer?: string;
-  },
+  supabaseOrParams: SupabaseClient<Database> | RecordGuestExecutionParams,
+  params?: RecordGuestExecutionParams,
 ): Promise<GuestExecutionResult> {
   try {
     // Support both client-side and server-side usage
-    const isServerSide = params !== undefined;
-    const supabaseClient = isServerSide ? supabaseOrParams : supabase;
-    const execParams = isServerSide ? params! : supabaseOrParams;
+    let supabaseClient: SupabaseClient<Database>;
+    let execParams: RecordGuestExecutionParams;
+    if (isRecordGuestExecutionParams(supabaseOrParams)) {
+      supabaseClient = supabase;
+      execParams = supabaseOrParams;
+    } else if (params !== undefined) {
+      supabaseClient = supabaseOrParams;
+      execParams = params;
+    } else {
+      throw new Error("recordGuestExecution: params are required");
+    }
 
     const { data, error } = await supabaseClient.rpc("record_guest_execution", {
       p_fingerprint: execParams.fingerprint,
       p_resource_type: execParams.resourceType,
-      p_resource_id: execParams.resourceId || null,
-      p_resource_name: execParams.resourceName || null,
-      p_task_id: execParams.taskId || null,
-      p_ip_address: execParams.ipAddress || null,
-      p_user_agent: execParams.userAgent || null,
-      p_referer: execParams.referer || null,
+      // supabase-js types optional RPC args as `string | undefined`; `|| undefined`
+      // omits the arg so the DB default (null) applies.
+      p_resource_id: execParams.resourceId || undefined,
+      p_resource_name: execParams.resourceName || undefined,
+      p_task_id: execParams.taskId || undefined,
+      p_ip_address: execParams.ipAddress || undefined,
+      p_user_agent: execParams.userAgent || undefined,
+      p_referer: execParams.referer || undefined,
     });
 
     if (error) {
@@ -173,7 +200,7 @@ export async function getGuestHistory(fingerprint: string) {
       return { guest, logs: [] };
     }
 
-    return { guest, logs: logs || [] };
+    return { guest, logs: logs ?? [] };
   } catch (error) {
     console.error("Failed to get guest history:", error);
     return null;

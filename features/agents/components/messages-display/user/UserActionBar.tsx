@@ -28,9 +28,8 @@ import {
 } from "@/components/icons/TapTargetButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/openers/fullScreenEditor";
-import type { Json } from "@/types/database.types";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toast } from "sonner";
@@ -109,6 +108,7 @@ export function UserActionBar({
   surfaceKey,
 }: UserActionBarProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const openEditor = useOpenFullScreenMarkdownEditorBridge();
 
   const [isCopied, setIsCopied] = useState(false);
@@ -223,17 +223,13 @@ export function UserActionBar({
       // resolving. The user message we want to edit was at `messagePosition`
       // in the source; the duplicated row sits at the same position on the
       // fork with a fresh id. Look it up via a thunk-style read.
-      const findEditedMessageId = dispatch(((
-        _: unknown,
-        getState: () => import("@/lib/redux/store").RootState,
-      ) => {
-        const entry = getState().messages.byConversationId[newConversationId];
-        if (!entry) return null;
-        const userMsg = Object.values(entry.byId).find(
-          (m) => m.role === "user" && m.position === (messagePosition ?? 0),
-        );
-        return userMsg?.id ?? null;
-      }) as never) as unknown as string | null;
+      const forkedMessagesEntry =
+        store.getState().messages.byConversationId[newConversationId];
+      const findEditedMessageId = forkedMessagesEntry
+        ? (Object.values(forkedMessagesEntry.byId).find(
+            (m) => m.role === "user" && m.position === (messagePosition ?? 0),
+          )?.id ?? null)
+        : null;
 
       if (typeof findEditedMessageId !== "string") {
         toast.error("Couldn't find the edited message on the new fork");
@@ -242,13 +238,9 @@ export function UserActionBar({
 
       const { mergeEditedText } =
         await import("@/features/agents/redux/execution-system/message-crud/content-blocks.util");
-      const forkedExisting = dispatch(((
-        _: unknown,
-        getState: () => import("@/lib/redux/store").RootState,
-      ) =>
-        getState().messages.byConversationId[newConversationId]?.byId?.[
-          findEditedMessageId
-        ]?.content) as never) as unknown as Json | undefined;
+      const forkedExisting = store.getState().messages.byConversationId[
+        newConversationId
+      ]?.byId?.[findEditedMessageId]?.content;
 
       await dispatch(
         editMessage({
@@ -359,17 +351,13 @@ export function UserActionBar({
       const newConversationId = forkResult.conversationId;
 
       // Find the duplicated user message on the fork at the same position.
-      const findCopiedId = dispatch(((
-        _: unknown,
-        getState: () => import("@/lib/redux/store").RootState,
-      ) => {
-        const entry = getState().messages.byConversationId[newConversationId];
-        if (!entry) return null;
-        const match = Object.values(entry.byId).find(
-          (m) => m.position === (messagePosition ?? 0),
-        );
-        return match?.id ?? null;
-      }) as never) as unknown as string | null;
+      const forkedEntry =
+        store.getState().messages.byConversationId[newConversationId];
+      const findCopiedId = forkedEntry
+        ? (Object.values(forkedEntry.byId).find(
+            (m) => m.position === (messagePosition ?? 0),
+          )?.id ?? null)
+        : null;
 
       if (typeof findCopiedId === "string") {
         await dispatch(

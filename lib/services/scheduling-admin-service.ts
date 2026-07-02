@@ -69,6 +69,12 @@ export async function fetchAllTasksAdmin(
   const { data, error } = await q;
   if (error) throw pgErrorToError(error);
 
+  // MATRX-EXCEPTION: PostgREST aliased-embed select (agent:sch_agent_task(...),
+  // trigger:sch_trigger(...)) — supabase-js cannot infer the joined shape from
+  // the select() string literal, and SchTaskRow/SchAgentTaskRow/SchTriggerRow
+  // are the feature's FE-facing projection types (features/scheduling/types.ts),
+  // not generated rows, so no DbRpcRow guard applies. The embed alias names and
+  // selected columns are verified against the query above.
   const rows = (data ?? []) as unknown as Array<
     SchTaskRow & {
       agent: SchAgentTaskRow[] | null;
@@ -97,12 +103,7 @@ async function emailsForUserIds(
       user_ids: userIds,
     });
     if (Array.isArray(data)) {
-      return new Map(
-        (data as { id: string; email: string }[]).map((row) => [
-          row.id,
-          row.email,
-        ]),
-      );
+      return new Map(data.map((row) => [row.id, row.email]));
     }
   } catch {
     /* fall through */

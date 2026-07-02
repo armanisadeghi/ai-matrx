@@ -18,8 +18,11 @@ function extractText(msg: MessageLike): string {
   if (typeof msg.content === "string") return msg.content;
   if (!Array.isArray(msg.content)) return "";
   return msg.content
-    .filter((b) => b.type === "text" && b.text)
-    .map((b) => b.text!)
+    .filter(
+      (b): b is { type: string; text: string } =>
+        b.type === "text" && !!b.text,
+    )
+    .map((b) => b.text)
     .join("\n");
 }
 

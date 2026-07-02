@@ -70,8 +70,10 @@ export class BackendClient {
       );
     }
     this.baseUrl = resolvedBaseUrl;
-    this.auth = config.auth || { type: "anonymous" };
-    this.scope = config.scope || {};
+    this.auth = config.auth ?? { type: "anonymous" };
+    // MATRX-EXCEPTION: `scope` is genuinely optional config (all ContextScope
+    // fields are optional) — `{}` is a valid, honest empty scope.
+    this.scope = config.scope ?? {};
   }
 
   // ========================================================================

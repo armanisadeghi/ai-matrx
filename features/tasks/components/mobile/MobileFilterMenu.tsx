@@ -17,28 +17,19 @@ import {
   selectTaskFilter,
   selectShowCompleted,
   selectSortBy,
+  selectSortOrder,
   selectShowAllProjects,
   selectActiveProject,
   selectFilterScopeIds,
   setFilter,
   setShowCompleted,
   setSortBy,
+  setSortOrder,
   setShowAllProjects,
   setActiveProject,
 } from "@/features/tasks/redux/taskUiSlice";
 import { TaskFilterType } from "@/features/tasks/types";
-import { TaskSortField } from "@/features/tasks/types/sort";
-
-type TaskSortOption =
-  | `${TaskSortField}-${"asc" | "desc"}`
-  | "title-asc"
-  | "title-desc"
-  | "due-date-asc"
-  | "due-date-desc"
-  | "priority-asc"
-  | "priority-desc"
-  | "created-asc"
-  | "created-desc";
+import type { TaskSortField, TaskSortDirection } from "@/features/tasks/types/sort";
 import { Button } from "@/components/ui/ButtonMine";
 import {
   DropdownMenu,
@@ -56,6 +47,23 @@ import MobileProjectSelector from "./MobileProjectSelector";
 import TaskScopeFilter from "../TaskScopeFilter";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { Filter as FilterIcon } from "lucide-react";
+
+interface SortMenuOption {
+  field: TaskSortField;
+  direction: TaskSortDirection;
+  label: string;
+}
+
+const SORT_MENU_OPTIONS: SortMenuOption[] = [
+  { field: "dueDate", direction: "asc", label: "Due Date (Earliest)" },
+  { field: "dueDate", direction: "desc", label: "Due Date (Latest)" },
+  { field: "priority", direction: "desc", label: "Priority (High to Low)" },
+  { field: "priority", direction: "asc", label: "Priority (Low to High)" },
+  { field: "created", direction: "desc", label: "Created (Newest)" },
+  { field: "created", direction: "asc", label: "Created (Oldest)" },
+  { field: "title", direction: "asc", label: "Title (A-Z)" },
+  { field: "title", direction: "desc", label: "Title (Z-A)" },
+];
 
 const Circle = ({ size }: { size: number }) => (
   <svg
@@ -75,6 +83,7 @@ export default function MobileFilterMenu() {
   const filter = useAppSelector(selectTaskFilter);
   const showCompleted = useAppSelector(selectShowCompleted);
   const sortBy = useAppSelector(selectSortBy);
+  const sortOrder = useAppSelector(selectSortOrder);
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const activeProject = useAppSelector(selectActiveProject);
 
@@ -93,18 +102,11 @@ export default function MobileFilterMenu() {
     }
   };
 
-  const getSortLabel = (sort: TaskSortOption) => {
-    const labels: Partial<Record<TaskSortOption, string>> = {
-      "due-date-asc": "Due Date (Earliest)",
-      "due-date-desc": "Due Date (Latest)",
-      "priority-desc": "Priority (High to Low)",
-      "priority-asc": "Priority (Low to High)",
-      "created-desc": "Created (Newest)",
-      "created-asc": "Created (Oldest)",
-      "title-asc": "Title (A-Z)",
-      "title-desc": "Title (Z-A)",
-    };
-    return labels[sort] || sort;
+  const getSortLabel = (field: TaskSortField, direction: TaskSortDirection) => {
+    const match = SORT_MENU_OPTIONS.find(
+      (opt) => opt.field === field && opt.direction === direction,
+    );
+    return match?.label ?? field;
   };
 
   const handleFilterSelect = (filterType: TaskFilterType) => {
@@ -176,47 +178,25 @@ export default function MobileFilterMenu() {
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <ArrowUpDown size={18} className="mr-2" />
-              {getSortLabel(sortBy as TaskSortOption)}
+              {getSortLabel(sortBy, sortOrder)}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="w-56">
-              {(
-                [
-                  "due-date-asc",
-                  "due-date-desc",
-                  "priority-desc",
-                  "priority-asc",
-                  "created-desc",
-                  "created-asc",
-                  "title-asc",
-                  "title-desc",
-                ] as TaskSortOption[]
-              ).map((sort) => {
-                // Extract field from TaskSortOption (e.g., 'priority-asc' -> 'priority')
-                const field =
-                  sort.split("-")[0] === "due"
-                    ? "dueDate"
-                    : sort.split("-")[0] === "priority"
-                      ? "priority"
-                      : sort.split("-")[0] === "created"
-                        ? "created"
-                        : sort.split("-")[0] === "title"
-                          ? "title"
-                          : "lastUpdated";
-
-                return (
-                  <DropdownMenuItem
-                    key={sort}
-                    onClick={() => {
-                      // @ts-ignore - COMPLEX: setSortBy expects TaskSortField but receives TaskSortOption, may need refactor
-                      dispatch(setSortBy(field as TaskSortField));
-                    }}
-                    // @ts-ignore - COMPLEX: Comparison between TaskSortField and TaskSortOption types
-                    className={sortBy === field ? "bg-primary/10" : ""}
-                  >
-                    {getSortLabel(sort)}
-                  </DropdownMenuItem>
-                );
-              })}
+              {SORT_MENU_OPTIONS.map((opt) => (
+                <DropdownMenuItem
+                  key={`${opt.field}-${opt.direction}`}
+                  onClick={() => {
+                    dispatch(setSortBy(opt.field));
+                    dispatch(setSortOrder(opt.direction));
+                  }}
+                  className={
+                    sortBy === opt.field && sortOrder === opt.direction
+                      ? "bg-primary/10"
+                      : ""
+                  }
+                >
+                  {opt.label}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
 

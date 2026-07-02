@@ -97,10 +97,9 @@ export function useCanvasShare() {
       queryClient.invalidateQueries({ queryKey: ["user-canvases"] });
       queryClient.invalidateQueries({ queryKey: ["discover-canvases"] });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       console.error("💥 Share mutation error:", err);
-      const errorMessage = err?.message || "Failed to create share";
-      setError(errorMessage);
+      setError(err.message || "Failed to create share");
       setShareUrl(null);
     },
   });

@@ -76,6 +76,7 @@ export default function TopicSettingsPage() {
   }, [topic]);
 
   const handleSave = async () => {
+    if (!topic) return;
     if (!name.trim()) {
       toast.error("Topic name is required.");
       return;
@@ -86,7 +87,7 @@ export default function TopicSettingsPage() {
     }
     setSaving(true);
     try {
-      await updateTopic(topic!.id, {
+      await updateTopic(topic.id, {
         name: name.trim(),
         description: description.trim() || null,
         tone_profile: toneProfile.trim() || null,

@@ -1,4 +1,11 @@
 // lib/refs/types.ts
+// MATRX-EXCEPTION: heterogeneous imperative-ref registry — components register
+// methods of arbitrary arity/parameter types under a string key and are called
+// dynamically by name (manager.call(componentId, methodName, ...args)).
+// `(...args: unknown[]) => unknown` would reject assigning any concrete method
+// with typed parameters (e.g. `(x: string) => void`) under strictFunctionTypes,
+// which is exactly the case this registry exists to support — `any` here is
+// the same relaxation React's own imperative-handle typing relies on.
 export type RefMethod = (...args: any[]) => any;
 
 export interface RefCollection {

@@ -16,6 +16,11 @@
 
 import type { Store } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
+// MATRX-EXCEPTION: `Policy<any>` throughout this file — same invariant-TState
+// reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
+// TState invariant, so `Policy<unknown>` cannot accept the registry's
+// heterogeneous `readonly Policy<any>[]`). Every use here only reads
+// non-generic fields (config.sliceName/.version/.preset/.remote/.deserialize).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FallbackContext, IdentityKey, Policy } from "../types";
 import { buildRehydrateAction } from "./rehydrate";

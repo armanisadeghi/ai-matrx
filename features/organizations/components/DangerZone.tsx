@@ -63,9 +63,11 @@ export function DangerZone({ organization }: DangerZoneProps) {
       } else {
         toast.error(result.error || "Failed to delete organization");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting organization:", error);
-      toast.error(error.message || "An unexpected error occurred");
+      const message =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      toast.error(message);
     } finally {
       setIsDeleting(false);
     }

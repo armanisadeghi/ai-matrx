@@ -1,3 +1,4 @@
+import type { Json } from '@/types/database.types';
 import type { ResearchTemplate, AutonomyLevel } from '../types';
 
 export const AGENT_CONFIG_KEYS = [
@@ -94,4 +95,18 @@ export interface PromptBuiltinRef {
 
 export interface TemplateWithAgentNames extends ResearchTemplate {
     agent_names?: Record<string, string>;
+}
+
+/**
+ * Narrow `rs_template.agent_config` (raw JSONB) into a `role_key -> agent id`
+ * string map. Non-object rows and non-string values are dropped rather than
+ * assumed — the honest empty state for a template with no wiring yet.
+ */
+export function jsonToAgentConfigStrings(value: Json | null): Record<string, string> {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(value)) {
+        if (typeof v === 'string') out[k] = v;
+    }
+    return out;
 }

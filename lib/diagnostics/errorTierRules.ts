@@ -239,6 +239,8 @@ export function classifyTier(e: CapturedError): TierClassification {
 
 // ── Rule-stub builder (the "Copy for AI" closes the loop) ─────────────────
 
+// MATRX-EXCEPTION: `?? ""` is the honest default for an explicitly-optional
+// slug input (pure string derivation for a rule-stub id, not a boundary write).
 function slug(s: string | undefined, fallback: string): string {
   const base = (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return base || fallback;

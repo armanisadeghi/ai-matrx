@@ -52,7 +52,10 @@ function getLines(text: string): LineInfo[] {
 }
 
 function previewOf(s: string): string {
-  const firstLine = s.split("\n")[0]?.trim() ?? "";
+  // split("\n") always returns at least one element, so [0] is always defined
+  // at runtime; noUncheckedIndexedAccess still types it as possibly undefined.
+  const [firstLineRaw = ""] = s.split("\n");
+  const firstLine = firstLineRaw.trim();
   const collapsed = firstLine.replace(/\s+/g, " ");
   return collapsed.length > 80 ? `${collapsed.slice(0, 79)}…` : collapsed;
 }

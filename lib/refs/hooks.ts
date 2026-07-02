@@ -29,6 +29,9 @@ export const useComponentRef = (
     manager.register(componentId, {
       ...methods,
       // Wrap methods to always use latest version
+      // MATRX-EXCEPTION: same registry rationale as RefMethod (lib/refs/types.ts)
+      // — wrapping an arbitrary-arity method by name to always dispatch to the
+      // latest ref.
       ...Object.keys(methods).reduce(
         (acc, key) => ({
           ...acc,

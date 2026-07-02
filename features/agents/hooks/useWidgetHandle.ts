@@ -82,5 +82,14 @@ export function useWidgetHandle(handle: WidgetHandle): string {
     };
   }, []);
 
-  return idRef.current!;
+  // idRef.current is set synchronously above on first render (registration is
+  // unconditional whenever it was still null) and is only ever cleared on
+  // unmount, after which this hook can't be called again for the same handle.
+  const id = idRef.current;
+  if (!id) {
+    throw new Error(
+      "[useWidgetHandle] id was not registered — this should be unreachable.",
+    );
+  }
+  return id;
 }

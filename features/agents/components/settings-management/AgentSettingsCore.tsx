@@ -810,7 +810,7 @@ function ModelConfigViewer({
   }, [normalizedControls]);
 
   const unmapped = useMemo(
-    () => Object.entries(normalizedControls.unmappedControls ?? {}),
+    () => Object.entries(normalizedControls.unmappedControls),
     [normalizedControls],
   );
 
@@ -1178,8 +1178,13 @@ export function AgentSettingsCore({
     setPendingModelChange(null);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSettingChange = (key: keyof FeLlmParams, value: any) => {
+  // `key` is a runtime-selected keyof FeLlmParams (driven by control.type at
+  // each call site — string/boolean/number/string[] depending on which
+  // branch rendered the control), so `value`'s concrete type can't be tied
+  // to FeLlmParams[K] without narrowing per call site. unknown is the
+  // honest type for this dynamic-key setter (was `any`).
+  // MATRX-EXCEPTION: dynamic per-key settings setter; each render branch supplies the right shape.
+  const handleSettingChange = (key: keyof FeLlmParams, value: unknown) => {
     if (!enabledSettings.has(key)) {
       setEnabledSettings(new Set(enabledSettings).add(key));
     }
@@ -1206,17 +1211,31 @@ export function AgentSettingsCore({
     dispatch(
       setAgentSettings({
         id: agentId,
-        settings: { ...currentSettings, [key]: value },
+        // Same FeLlmParams -> LLMParams cast used at every setAgentSettings
+        // call site in this file (see cleaned/rest/next above) — the FE
+        // superset isn't structurally identical to the backend contract.
+        settings: { ...currentSettings, [key]: value } as LLMParams,
       }),
     );
   };
 
-  const getControl = (key: string): ControlDefinition | undefined =>
-    normalizedControls
-      ? (normalizedControls as unknown as Record<string, ControlDefinition>)[
-          key
-        ]
-      : undefined;
+  // NormalizedControls has ~50 individually-optional named fields (plus two
+  // Record<string, unknown> escape-hatch fields that are never controls) and
+  // no index signature — `key in normalizedControls` proves a runtime key is
+  // actually one of the named control fields before indexing.
+  const getControl = (key: string): ControlDefinition | undefined => {
+    if (
+      !normalizedControls ||
+      key === "rawControls" ||
+      key === "unmappedControls" ||
+      !(key in normalizedControls)
+    ) {
+      return undefined;
+    }
+    return normalizedControls[
+      key as Exclude<keyof NormalizedControls, "rawControls" | "unmappedControls">
+    ];
+  };
 
   const handleToggleSetting = (key: keyof FeLlmParams, enabled: boolean) => {
     const newEnabled = new Set(enabledSettings);
@@ -1354,7 +1373,10 @@ export function AgentSettingsCore({
     value: unknown,
     isEnabled: boolean,
   ) => {
-    let actualValue =
+    // Explicit `unknown` annotation: inferring from `value ?? control.default ?? ...`
+    // degenerates through `NonNullable<unknown>` (`{}`), which then rejects the
+    // `.type` narrowing reassignment below.
+    let actualValue: unknown =
       value ??
       control.default ??
       (control.type === "number" || control.type === "integer"
@@ -1748,8 +1770,11 @@ export function AgentSettingsCore({
     // NormalizedControls has no string index signature (typed optional keys
     // alongside two required `Record<string, any>` escape-hatch fields), so
     // it has no structural overlap with `Record<string, unknown>`.
-    // buildSettingsRows takes a loose bag-of-controls contract on purpose; we
-    // use the canonical `as unknown as` two-step the compiler asks for.
+    // buildSettingsRows takes a loose bag-of-controls contract on purpose and
+    // validates each candidate internally (lookupControl checks `"type" in`
+    // before trusting it) — the compiler's two-step cast is the documented,
+    // deliberate contract here.
+    // MATRX-EXCEPTION: buildSettingsRows validates each field at read time; see lookupControl.
     normalizedControls as unknown as Record<string, unknown> | null,
     currentSettings as Record<string, unknown>,
   );

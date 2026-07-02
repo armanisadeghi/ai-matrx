@@ -81,7 +81,7 @@ export function createStructuredError(
     };
 
     // Add error stack if available
-    if ('stack' in error) {
+    if ('stack' in error && typeof error.stack === 'string') {
         details['errorStack'] = cleanErrorStack(error.stack);
     }
 

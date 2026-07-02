@@ -231,10 +231,10 @@ export function filterUserTypeAgents(
       return false;
 
     if (includedCats.length > 0) {
-      const isUncategorized = !agent.category;
-      if (isUncategorized) {
+      const category = agent.category;
+      if (!category) {
         if (!includedCats.includes(AGENT_NONE_SENTINEL)) return false;
-      } else if (!includedCats.includes(agent.category!)) {
+      } else if (!includedCats.includes(category)) {
         return false;
       }
     }

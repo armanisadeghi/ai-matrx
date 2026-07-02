@@ -48,11 +48,10 @@ function buildAllText(
   return (messages ?? [])
     .flatMap((m) =>
       (m.content ?? []).flatMap((b) => {
-        const block = b as unknown as Record<string, unknown>;
-        if (b.type === "text") return [(block.text as string) ?? ""];
-        return Object.values(block).filter(
-          (v) => typeof v === "string" && v !== b.type,
-        ) as string[];
+        if (b.type === "text") return [b.text];
+        return Object.values(b).filter(
+          (v): v is string => typeof v === "string" && v !== b.type,
+        );
       }),
     )
     .join(" ");

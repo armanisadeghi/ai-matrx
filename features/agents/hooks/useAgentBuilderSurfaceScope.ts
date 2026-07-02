@@ -78,8 +78,7 @@ export function useAgentBuilderSurfaceScope(
       agent_variable_definitions:
         selectAgentVariableDefinitions(state, agentId) ?? undefined,
       agent_output_schema:
-        (outputSchema as unknown as Record<string, unknown> | null) ??
-        undefined,
+        (outputSchema as Record<string, unknown> | null) ?? undefined,
       agent_settings: (settings as Record<string, unknown> | null) ?? undefined,
       agent_json: definition ? JSON.stringify(definition) : undefined,
       is_dirty: selectAgentIsDirty(state, agentId),

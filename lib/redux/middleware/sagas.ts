@@ -2,8 +2,8 @@ import { call, put, takeEvery, all } from "redux-saga/effects";
 import { extractErrorMessage } from "@/utils/errors";
 import type {
   FetchOneThunkArgs,
-  PaginatedResponse,
   FeatureName,
+  PaginatedResponse,
 } from "@/types/reduxTypes";
 import {
   fetchWithFk,
@@ -14,20 +14,59 @@ import {
 import { createFeatureActions } from "@/lib/redux/actions/featureActions";
 import * as z from "zod";
 
-// Generic saga handler
-function* fetchWithSaga(
-  action: ReturnType<any>,
-  apiCall: any,
-  fulfilledAction: any,
-  rejectedAction: any,
+// Maps the thunk-level `FetchOneThunkArgs` payload (`{ featureName, id, tableList? }`)
+// carried by fetchWithFksPending/fetchWithIFKsPending onto the `{ p_id, p_table_name }`
+// shape the fetch_with_fk / fetch_with_ifk RPCs actually take (mirrors the mapping
+// already established in apiThunks.ts).
+const mapToFkArgs = (args: FetchOneThunkArgs) => ({
+  p_id: args.id,
+  p_table_name: args.featureName,
+});
+
+// fetch_all_fk_ifk takes `p_primary_key_values` (Json) instead of `p_id`.
+const mapToFkIfkArgs = (args: FetchOneThunkArgs) => ({
+  p_primary_key_values: args.id,
+  p_table_name: args.featureName,
+});
+
+// fetch_custom_rels additionally requires p_table_list (non-optional on the RPC).
+const mapToCustomRelsArgs = (args: FetchOneThunkArgs) => ({
+  p_id: args.id,
+  p_table_name: args.featureName,
+  p_table_list: args.tableList ?? [],
+});
+
+// Generic saga handler. `apiCall` is one of fetchWithFk/fetchWithIfk/fetchWithFkIfk/
+// fetchCustomRels (each `(args: Args) => Promise<unknown>` for that RPC's own arg
+// shape); `mapArgs` converts the thunk's `FetchOneThunkArgs` payload into `Args`;
+// `fulfilledAction`/`rejectedAction` are the corresponding createAction creators
+// from createFeatureActions.
+// The fulfilled creators from createFeatureActions carry PaginatedResponse
+// payloads; the RPC result arrives as `unknown`, so narrow it honestly before
+// dispatching instead of widening the creators' parameter.
+function isPaginatedResponse(v: unknown): v is PaginatedResponse<unknown> {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "paginatedData" in v &&
+    Array.isArray(v.paginatedData)
+  );
+}
+
+function* fetchWithSaga<Args>(
+  action: { payload: FetchOneThunkArgs },
+  apiCall: (args: Args) => Promise<unknown>,
+  mapArgs: (args: FetchOneThunkArgs) => Args,
+  fulfilledAction: (payload: PaginatedResponse<unknown>) => {
+    type: string;
+    payload: PaginatedResponse<unknown>;
+  },
+  rejectedAction: (payload: string) => { type: string; payload: string },
 ) {
   try {
-    const response: PaginatedResponse<any> = yield call(
-      apiCall,
-      action.payload,
-    );
+    const response: unknown = yield call(apiCall, mapArgs(action.payload));
 
-    if (response) {
+    if (isPaginatedResponse(response)) {
       yield put(fulfilledAction(response));
     } else {
       throw new Error("Failed to fetch data");
@@ -65,6 +104,7 @@ export function createFeatureSagas(
           yield fetchWithSaga(
             action,
             fetchWithFk,
+            mapToFkArgs,
             fetchWithFksFulfilled,
             fetchWithFksRejected,
           );
@@ -76,6 +116,7 @@ export function createFeatureSagas(
           yield fetchWithSaga(
             action,
             fetchWithIfk,
+            mapToFkArgs,
             fetchWithIFKsFulfilled,
             fetchWithIFKsRejected,
           );
@@ -87,6 +128,7 @@ export function createFeatureSagas(
           yield fetchWithSaga(
             action,
             fetchWithFkIfk,
+            mapToFkIfkArgs,
             fetchWithFkIfkFulfilled,
             fetchWithFkIfkRejected,
           );
@@ -98,6 +140,7 @@ export function createFeatureSagas(
           yield fetchWithSaga(
             action,
             fetchCustomRels,
+            mapToCustomRelsArgs,
             fetchCustomRelsFulfilled,
             fetchCustomRelsRejected,
           );
@@ -136,6 +179,7 @@ export function createSchemaSagas(
           yield fetchWithSaga(
             action,
             fetchWithFk,
+            mapToFkArgs,
             fetchWithFksFulfilled,
             fetchWithFksRejected,
           );
@@ -147,6 +191,7 @@ export function createSchemaSagas(
           yield fetchWithSaga(
             action,
             fetchWithIfk,
+            mapToFkArgs,
             fetchWithIFKsFulfilled,
             fetchWithIFKsRejected,
           );
@@ -158,6 +203,7 @@ export function createSchemaSagas(
           yield fetchWithSaga(
             action,
             fetchWithFkIfk,
+            mapToFkIfkArgs,
             fetchWithFkIfkFulfilled,
             fetchWithFkIfkRejected,
           );
@@ -169,6 +215,7 @@ export function createSchemaSagas(
           yield fetchWithSaga(
             action,
             fetchCustomRels,
+            mapToCustomRelsArgs,
             fetchCustomRelsFulfilled,
             fetchCustomRelsRejected,
           );

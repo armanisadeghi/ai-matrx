@@ -176,15 +176,12 @@ function EventRow({
 }) {
   const [open, setOpen] = useState(false);
 
-  const data = event.data;
-  const isChunk = event.event === "chunk";
-  const isHeartbeat = event.event === "heartbeat";
-
   // Collapse repetitive chunk events by default
-  if (isChunk || isHeartbeat) {
-    const preview = isChunk
-      ? `"${String((data as { text?: string })?.text ?? "").slice(0, 40)}"`
-      : `ts: ${(data as { timestamp?: number })?.timestamp ?? ""}`;
+  if (event.event === "chunk" || event.event === "heartbeat") {
+    const preview =
+      event.event === "chunk"
+        ? `"${event.data.text.slice(0, 40)}"`
+        : `ts: ${event.data.timestamp ?? ""}`;
 
     return (
       <div
@@ -211,7 +208,7 @@ function EventRow({
         <span className="shrink-0 font-semibold">{event.event}</span>
         {!open && (
           <span className="text-zinc-600 truncate text-[9px]">
-            {JSON.stringify(data).slice(0, 80)}
+            {JSON.stringify(event.data).slice(0, 80)}
           </span>
         )}
         <span className="ml-auto shrink-0 text-zinc-600">
@@ -220,7 +217,7 @@ function EventRow({
       </button>
       {open && (
         <pre className="text-[9px] font-mono text-zinc-400 px-2 pb-2 whitespace-pre-wrap break-all leading-relaxed">
-          {JSON.stringify(data, null, 2)}
+          {JSON.stringify(event.data, null, 2)}
         </pre>
       )}
     </div>

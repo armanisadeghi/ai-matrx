@@ -72,7 +72,7 @@ export async function computeSHA256Batch(
     while (true) {
       const i = cursor++;
       if (i >= files.length) return;
-      results[i] = await computeSHA256(files[i]!);
+      results[i] = await computeSHA256(files[i]);
     }
   }
   await Promise.all(
@@ -85,7 +85,7 @@ function bufferToHex(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let out = "";
   for (let i = 0; i < bytes.length; i++) {
-    out += bytes[i]!.toString(16).padStart(2, "0");
+    out += bytes[i].toString(16).padStart(2, "0");
   }
   return out;
 }

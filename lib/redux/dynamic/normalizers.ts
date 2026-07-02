@@ -28,7 +28,7 @@ export const createFeatureNormalizer = <T extends z.ZodTypeAny>(
       return normalizedData;
     },
 
-    denormalizeOne: (featureId: string, features: Record<string, any>) => {
+    denormalizeOne: (featureId: string, features: Record<string, unknown>) => {
       console.log(`--- Start Denormalizing One ---`);
       console.log(`Feature: ${featureName}`);
       console.log("Feature ID:", featureId);
@@ -40,7 +40,7 @@ export const createFeatureNormalizer = <T extends z.ZodTypeAny>(
       return denormalizedData;
     },
 
-    denormalizeMany: (featureIds: string[], features: Record<string, any>) => {
+    denormalizeMany: (featureIds: string[], features: Record<string, unknown>) => {
       console.log(`--- Start Denormalizing Many ---`);
       console.log(`Feature: ${featureName}`);
       console.log("Feature IDs:", featureIds);

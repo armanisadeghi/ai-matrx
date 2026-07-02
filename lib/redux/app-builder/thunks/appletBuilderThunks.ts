@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { extractErrorMessage } from "@/utils/errors";
 import type { AppletsState } from "../types";
 import {
   createCustomAppletConfig,
@@ -83,17 +84,17 @@ export const setActiveAppletWithFetchThunk = createAsyncThunk<
               `Applet with ID ${appletId} not found on server`,
             );
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(
-            `Failed to fetch applet with ID ${appletId}: ${error.message}`,
+            `Failed to fetch applet with ID ${appletId}: ${extractErrorMessage(error)}`,
           );
           dispatch(setActiveApplet(null));
-          return rejectWithValue(error.message || "Failed to fetch applet");
+          return rejectWithValue(extractErrorMessage(error) || "Failed to fetch applet");
         }
       }
-    } catch (error: any) {
-      console.error(`Error in setActiveAppletWithFetchThunk: ${error.message}`);
-      return rejectWithValue(error.message || "Failed to set active applet");
+    } catch (error: unknown) {
+      console.error(`Error in setActiveAppletWithFetchThunk: ${extractErrorMessage(error)}`);
+      return rejectWithValue(extractErrorMessage(error) || "Failed to set active applet");
     }
   },
 );
@@ -119,9 +120,9 @@ export const addAppletToAppThunk = createAsyncThunk<
       const result = await updateCustomAppletConfig(appletId, updatedApplet);
 
       return toAppletBuilder(result, { appId });
-    } catch (error: any) {
+    } catch (error: unknown) {
       return rejectWithValue(
-        error.message || "Failed to associate applet with app",
+        extractErrorMessage(error) || "Failed to associate applet with app",
       );
     }
   },
@@ -154,8 +155,8 @@ export const saveAppletThunk = createAsyncThunk<
 
       // Return consistently formatted result
       return toAppletBuilder(savedApplet);
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to save applet");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to save applet");
     }
   },
 );
@@ -173,8 +174,8 @@ export const createAppletThunk = createAsyncThunk<AppletBuilder, AppletBuilder>(
       };
       const savedApplet = await createCustomAppletConfig(appletData);
       return toAppletBuilder(savedApplet);
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to create applet");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to create applet");
     }
   },
 );
@@ -193,8 +194,8 @@ export const updateAppletThunk = createAsyncThunk<
       const updatedApplet = { ...currentApplet, ...changes };
       const result = await updateCustomAppletConfig(id, updatedApplet);
       return toAppletBuilder(result);
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to update applet");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to update applet");
     }
   },
 );
@@ -205,8 +206,8 @@ export const deleteAppletThunk = createAsyncThunk<void, string>(
     try {
       await deleteCustomAppletConfig(id);
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to delete applet");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to delete applet");
     }
   },
 );
@@ -238,8 +239,8 @@ export const addContainerThunk = createAsyncThunk<
       }
 
       return toAppletBuilder(updatedApplet, { isDirty: true });
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to add container");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to add container");
     }
   },
 );
@@ -263,8 +264,8 @@ export const removeContainerThunk = createAsyncThunk<
         containers: updatedContainers,
       });
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to remove container");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to remove container");
     }
   },
 );
@@ -303,8 +304,8 @@ export const recompileContainerThunk = createAsyncThunk<
         );
       }
       return { appletId, containerId, updatedContainer };
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to recompile container");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to recompile container");
     }
   },
 );
@@ -319,8 +320,8 @@ export const recompileAppletThunk = createAsyncThunk<AppletBuilder, string>(
         throw new Error("Failed to fetch recompiled applet");
       }
       return toAppletBuilder(updatedApplet);
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to recompile applet");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to recompile applet");
     }
   },
 );
@@ -331,8 +332,8 @@ export const fetchAppletsThunk = createAsyncThunk<AppletBuilder[], void>(
     try {
       const applets = await getAllCustomAppletConfigs();
       return applets.map((applet) => toAppletBuilder(applet));
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to fetch applets");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to fetch applets");
     }
   },
 );
@@ -347,9 +348,9 @@ export const checkAppletSlugUniqueness = createAsyncThunk<
     try {
       const isAvailable = await isAppletSlugAvailable(slug, appletId);
       return isAvailable;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return rejectWithValue(
-        error.message || "Failed to check slug uniqueness",
+        extractErrorMessage(error) || "Failed to check slug uniqueness",
       );
     }
   },

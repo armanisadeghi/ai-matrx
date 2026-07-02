@@ -1,6 +1,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
+import { isJsonObject } from "@/types/json";
 import type {
   ResearchTopic,
   ResearchProgress,
@@ -23,6 +24,7 @@ import type {
   SourceTagRequest,
   MediaUpdate,
 } from "./types";
+import { rowToResearchSource } from "./types";
 import {
   summarizeImportance,
   type KeywordRank,
@@ -141,7 +143,10 @@ export async function appendTopicOutput(
       asset as Database["research"]["Tables"]["rs_topic"]["Row"]["outputs"],
   });
   if (error) throw error;
-  return (data ?? {}) as Record<string, unknown>;
+  if (!isJsonObject(data)) {
+    throw new Error("rs_topic_append_output returned a non-object outputs value");
+  }
+  return data;
 }
 
 // ============================================================================
@@ -215,13 +220,13 @@ export async function updateTopicMeta(
 ): Promise<void> {
   const update: { name?: string; description?: string | null } = {};
   if (patch.name !== undefined) {
-    const trimmed = (patch.name ?? "").trim();
+    const trimmed = patch.name?.trim();
     if (!trimmed) throw new Error("Topic name cannot be empty");
     update.name = trimmed;
   }
   if (patch.description !== undefined) {
-    const trimmed = (patch.description ?? "").trim();
-    update.description = trimmed.length > 0 ? trimmed : null;
+    const trimmed = patch.description?.trim();
+    update.description = trimmed && trimmed.length > 0 ? trimmed : null;
   }
   if (Object.keys(update).length === 0) return;
   const { error } = await supabase
@@ -249,10 +254,7 @@ export async function getSource(
     if (error.code === "PGRST116") return null;
     throw error;
   }
-  // `page_analysis` is raw JSONB on the row but typed `PageAnalysis` on
-  // `ResearchSource`; consumers narrow it via `pageAnalysisFromJson`. Cast
-  // through `unknown` at this single boundary (mirrors the topic path).
-  return data as unknown as ResearchSource;
+  return rowToResearchSource(data);
 }
 
 export async function getSources(
@@ -326,9 +328,7 @@ export async function getSources(
 
     const offset = filters?.offset ?? 0;
     const limit = filters?.limit ?? 50;
-    // `page_analysis` raw JSONB → `PageAnalysis` on `ResearchSource`; narrowed
-    // by consumers via `pageAnalysisFromJson`. Cast through `unknown` here.
-    return rows.slice(offset, offset + limit) as unknown as ResearchSource[];
+    return rows.slice(offset, offset + limit).map(rowToResearchSource);
   }
 
   // Topic-wide source list: no keyword filter, so use the global search
@@ -368,8 +368,7 @@ export async function getSources(
 
   const { data, error } = await query;
   if (error) throw error;
-  // See note above: cast the raw rows (JSONB `page_analysis`) to ResearchSource.
-  return (data ?? []) as unknown as ResearchSource[];
+  return (data ?? []).map(rowToResearchSource);
 }
 
 export async function updateSource(
@@ -395,7 +394,7 @@ export async function updateSource(
     .select()
     .single();
   if (error) throw error;
-  return data as unknown as ResearchSource;
+  return rowToResearchSource(data);
 }
 
 export async function bulkUpdateSources(
@@ -772,9 +771,7 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
     .select("*")
     .eq("topic_id", topicId);
   if (srcErr) throw srcErr;
-  // Raw rows carry JSONB `page_analysis`; ResearchSource types it as
-  // PageAnalysis (narrowed by consumers). Cast through `unknown` at the boundary.
-  const sources = (srcRows ?? []) as unknown as ResearchSource[];
+  const sources = (srcRows ?? []).map(rowToResearchSource);
 
   // Tags + source⇄tag links
   const { data: tagRows } = await supabase

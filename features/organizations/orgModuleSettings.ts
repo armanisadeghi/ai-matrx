@@ -11,6 +11,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { PermissionLevel } from "@/utils/permissions";
+import { isJsonObject } from "@/types/json";
 
 // Re-exported so consumers can import the level type alongside the settings type.
 export type { PermissionLevel };
@@ -88,8 +89,12 @@ export async function setOrgModuleSetting(
       p_is_scopeable: setting.isScopeable,
     });
     if (error) throw error;
-    const parsed = (data ?? {}) as { success?: boolean; error?: string };
-    if (!parsed.success) return { success: false, error: parsed.error ?? "Failed to save" };
+    const parsed = isJsonObject(data) ? data : {};
+    const success = parsed.success === true;
+    if (!success) {
+      const parsedError = typeof parsed.error === "string" ? parsed.error : "Failed to save";
+      return { success: false, error: parsedError };
+    }
     return { success: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to save module setting";

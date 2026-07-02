@@ -261,7 +261,7 @@ export function useWorkingDocumentContextSync(
           applyAgentWorkingDocContent({
             conversationId,
             kind,
-            content: doc.content ?? "",
+            content: doc.content,
           }),
         );
         // A realtime echo proves the row exists — latch version + materialized so
@@ -465,7 +465,7 @@ export function useWorkingDocument(
                     conversationId,
                     kind,
                     agentVersion: res.document.version,
-                    agentContent: res.document.content ?? "",
+                    agentContent: res.document.content,
                   }),
                 );
                 console.warn(
@@ -692,7 +692,7 @@ export function useWorkingDocument(
                 conversationId,
                 kind,
                 agentVersion: res.document.version,
-                agentContent: res.document.content ?? "",
+                agentContent: res.document.content,
               }),
             );
           }

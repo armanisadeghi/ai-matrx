@@ -75,9 +75,11 @@ function normalizePromptSettingsFromDb(
 interface FullPromptOptimizerProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPromptObject: any;
-  onAccept: (optimizedObject: any) => void;
-  onAcceptAsCopy?: (optimizedObject: any) => void;
+  // Opaque object — only ever JSON.stringify'd for display or handed back to
+  // the caller verbatim; never parsed against a concrete shape here.
+  currentPromptObject: unknown;
+  onAccept: (optimizedObject: unknown) => void;
+  onAcceptAsCopy?: (optimizedObject: unknown) => void;
 }
 
 const FULL_OPTIMIZER_PROMPT_ID = "8b7a674a-07ba-43fc-a750-f189c242e70b";
@@ -95,7 +97,7 @@ export function FullPromptOptimizer({
   const [showGuidanceInput, setShowGuidanceInput] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
-  const [extractedJson, setExtractedJson] = useState<any>(null);
+  const [extractedJson, setExtractedJson] = useState<unknown>(null);
   const [extractionError, setExtractionError] = useState<string | null>(null);
 
   // Watch streaming text

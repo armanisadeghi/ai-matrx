@@ -162,7 +162,7 @@ const contextStateSlice = createSlice({
         // Narrow wire-shape Record<string, unknown> → CacheState. The
         // CacheState interface has only optional fields so unknown extras
         // don't break anything — they just don't get a typed accessor.
-        cacheState: (p.cache_state ?? {}) as unknown as CacheState,
+        cacheState: (p.cache_state ?? {}) as CacheState,
         measuredAt: p.measured_at,
       };
     },
@@ -188,9 +188,9 @@ const contextStateSlice = createSlice({
         lastRequestOutputTokens: p.last_request_output_tokens ?? 0,
         totalCharsVisibleToModel: p.total_chars_visible_to_model ?? 0,
         messageCountVisible: p.message_count_visible ?? 0,
-        cacheState: (p.cache_state ?? {}) as unknown as CacheState,
+        cacheState: (p.cache_state ?? {}) as CacheState,
         measuredAt: p.measured_at,
-        lastTrimSummary: p.last_trim_summary as unknown as TrimSummary | null,
+        lastTrimSummary: p.last_trim_summary as TrimSummary | null,
         lastRawUsage: p.last_raw_usage,
       };
     },
@@ -212,8 +212,10 @@ const contextStateSlice = createSlice({
         ...prior,
         // Wire shape is Record<string, unknown>; the runtime contents match
         // TrimSummary (matrx_ai writes to_dict() of the TrimReport dataclass).
-        // Narrow at the slice boundary — selectors can read typed fields off
-        // it from here on.
+        // TrimSummary has required fields, so it doesn't structurally overlap
+        // with Record<string, unknown> enough for a direct cast — narrow via
+        // `unknown` at the slice boundary; selectors can read typed fields
+        // off it from here on.
         lastTrimSummary: p.trim_summary as unknown as TrimSummary,
       };
     },

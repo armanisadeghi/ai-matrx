@@ -1,6 +1,4 @@
-// @ts-nocheck
-
-import type { FieldsState } from "../types";
+import type { AppletsState, FieldsState } from "../types";
 import { createSelector } from "@reduxjs/toolkit";
 import { FieldBuilder } from "../types";
 import { selectAppletBrokerMappings } from "@/lib/redux/app-builder/selectors/appletSelectors";
@@ -11,6 +9,11 @@ import { BrokerMapping, ComponentType } from "@/types/customAppTypes";
 type WithFieldBuilder = { fieldBuilder: FieldsState };
 export const getFieldBuilderState = (state: WithFieldBuilder) =>
   state.fieldBuilder;
+
+// `selectFieldsByBrokerMappings` / `selectFieldByBrokerId` below also reach
+// into the appletBuilder slice (via `selectAppletBrokerMappings`) — needs
+// both slices, matching `appletSelectors.ts#WithAppletBuilder`.
+type WithFieldAndAppletBuilder = WithFieldBuilder & { appletBuilder: AppletsState };
 
 // Memoized selector for all fields
 export const selectAllFields = createSelector(
@@ -437,7 +440,7 @@ export const selectHasFieldUnsavedChanges = createSelector(
 // Memoized selector to get all fields mapped to brokers for a specific applet
 export const selectFieldsByBrokerMappings = createSelector(
   [
-    (state: WithFieldBuilder, appletId: string) =>
+    (state: WithFieldAndAppletBuilder, appletId: string) =>
       selectAppletBrokerMappings(state, appletId),
     getFieldBuilderState,
   ],
@@ -455,7 +458,7 @@ export const selectFieldsByBrokerMappings = createSelector(
 // Memoized selector to get the field mapped to a specific broker ID for a specific applet
 export const selectFieldByBrokerId = createSelector(
   [
-    (state: WithFieldBuilder, appletId: string, brokerId: string) => ({
+    (state: WithFieldAndAppletBuilder, appletId: string, brokerId: string) => ({
       brokerMappings: selectAppletBrokerMappings(state, appletId),
       brokerId,
     }),

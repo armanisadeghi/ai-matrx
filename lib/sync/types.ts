@@ -159,13 +159,13 @@ export interface AutoSaveConfig<TState = unknown> {
      * Should this record save now? Default: `record._dirty === true`.
      * Use this for read-only guards, "saving in progress" guards, etc.
      */
-    shouldSave?: (record: any, recordId: string) => boolean;
+    shouldSave?: (record: unknown, recordId: string) => boolean;
     /**
      * Constant or content-adaptive debounce in ms. Default: 1500.
      * Function form receives the record so policies can size by content
      * length — notes uses 3s/5s/10s tiers based on body length.
      */
-    debounceMs?: number | ((record: any, recordId: string) => number);
+    debounceMs?: number | ((record: unknown, recordId: string) => number);
     /**
      * Per-record write. The engine awaits this. Returning a value (the saved
      * row, etc.) is forwarded to `optimistic.onSuccess` if defined.
@@ -173,7 +173,7 @@ export interface AutoSaveConfig<TState = unknown> {
      * The engine catches throws and forwards them to `optimistic.onError`.
      * No retry storm — the next change to that record schedules a fresh save.
      */
-    write: (ctx: AutoSaveWriteContext<any>) => Promise<unknown>;
+    write: (ctx: AutoSaveWriteContext<unknown>) => Promise<unknown>;
     /**
      * Optimistic-state action creators. Engine dispatches these around the
      * `write` call so consumers can avoid hand-rolling timer-aware reducers.

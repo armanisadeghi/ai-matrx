@@ -11,7 +11,7 @@ export const loadSchemaForContext = createAsyncThunk<
 
 // Async thunk to load data based on schema
 export const loadDataForSchema = createAsyncThunk<
-  Record<string, any>[],
+  Record<string, unknown>[],
   string,
 >("ui/loadDataForSchema", async (context, { getState }) => {
   const schemaSlice = getState().globalCache;

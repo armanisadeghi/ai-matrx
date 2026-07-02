@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import isEqual from "lodash/isEqual";
+import { isJsonObject } from "@/types/json";
 import type {
   AgentDefinition,
   AgentDefinitionRecord,
@@ -17,6 +18,7 @@ import {
 } from "../../types/agent-definition.types";
 import {
   addField,
+  assignField,
   createFieldFlags,
   fieldFlagsSize,
   hasField,
@@ -127,18 +129,19 @@ function normalizeMessages(
       return {
         ...msg,
         content: rawContent.map((block) => {
-          const raw = block as unknown as Record<string, unknown>;
           if (
-            raw.type === "text" &&
-            raw.text === undefined &&
-            raw.content !== undefined
+            isJsonObject(block) &&
+            block.type === "text" &&
+            block.text === undefined &&
+            block.content !== undefined &&
+            typeof block.content === "string"
           ) {
             console.error(
               "[AgentDefinition] Malformed TextBlock: field is 'content' but should be 'text'. " +
                 "Fix the database record. Block:",
-              raw,
+              block,
             );
-            return { type: "text" as const, text: raw.content as string };
+            return { type: "text" as const, text: block.content };
           }
           return block;
         }),
@@ -159,9 +162,9 @@ function mergeAndTrack(
       ? { ...partial, messages: normalizeMessages(partial.messages) }
       : partial;
   (Object.keys(normalized) as (keyof AgentDefinition)[]).forEach((key) => {
-    if (normalized[key] !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[key] = normalized[key];
+    const value = normalized[key];
+    if (value !== undefined) {
+      assignField(record, key, value);
       addField(record._loadedFields, key);
     }
   });
@@ -292,8 +295,7 @@ function applyFieldEdit<K extends keyof AgentDefinition>(
 
   pushUndoEntry(record, field, previousValue);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (record as any)[field] = value;
+  assignField(record, field, value);
 
   // Reconcile dirty state against the saved baseline. If the user edited the
   // field back to its original value, the record is no longer dirty on this
@@ -710,8 +712,7 @@ export const agentDefinitionSlice = createSlice({
 
       const original = record._fieldHistory[field];
       if (original !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (record as any)[field] = original;
+        assignField(record, field, original);
       }
       removeField(record._dirtyFields, field);
       delete record._fieldHistory[field];
@@ -726,8 +727,7 @@ export const agentDefinitionSlice = createSlice({
         (field) => {
           const original = record._fieldHistory[field];
           if (original !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (record as any)[field] = original;
+            assignField(record, field, original);
           }
         },
       );
@@ -752,8 +752,7 @@ export const agentDefinitionSlice = createSlice({
       (Object.keys(snapshot) as (keyof AgentDefinition)[]).forEach((field) => {
         const value = snapshot[field];
         if (value !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (record as any)[field] = value;
+          assignField(record, field, value);
         }
       });
       record._dirty = fieldFlagsSize(record._dirtyFields) > 0;
@@ -769,7 +768,8 @@ export const agentDefinitionSlice = createSlice({
       const record = state.agents[action.payload.id];
       if (!record || record._undoPast.length === 0) return;
 
-      const entry = record._undoPast.pop()!;
+      const entry = record._undoPast.pop();
+      if (!entry) return;
       const currentValue = record[
         entry.field
       ] as AgentDefinition[keyof AgentDefinition];
@@ -780,8 +780,7 @@ export const agentDefinitionSlice = createSlice({
         byteEstimate: estimateBytes(currentValue),
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[entry.field] = entry.value;
+      assignField(record, entry.field, entry.value);
 
       // Recalculate dirty state: compare against _fieldHistory (the clean baseline)
       const originalValue = record._fieldHistory[entry.field];
@@ -802,7 +801,8 @@ export const agentDefinitionSlice = createSlice({
       const record = state.agents[action.payload.id];
       if (!record || record._undoFuture.length === 0) return;
 
-      const entry = record._undoFuture.pop()!;
+      const entry = record._undoFuture.pop();
+      if (!entry) return;
       const currentValue = record[
         entry.field
       ] as AgentDefinition[keyof AgentDefinition];
@@ -813,8 +813,7 @@ export const agentDefinitionSlice = createSlice({
         byteEstimate: estimateBytes(currentValue),
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[entry.field] = entry.value;
+      assignField(record, entry.field, entry.value);
 
       addField(record._dirtyFields, entry.field);
       record._dirty = true;

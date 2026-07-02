@@ -17,6 +17,11 @@
  * `features/shell/components/ThemeScript.tsx` (manifest items 2, 3).
  */
 
+// MATRX-EXCEPTION: `Policy<any>` — same invariant-TState reason as
+// lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes TState
+// invariant, so `Policy<unknown>` cannot accept the registry's heterogeneous
+// `readonly Policy<any>[]`). Only non-generic fields are read here
+// (config.preset, storageKey, prePaintDescriptors).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Policy, PrePaintDescriptor } from "../types";
 import { getPreset } from "../policies/presets";

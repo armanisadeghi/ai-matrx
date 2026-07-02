@@ -135,7 +135,7 @@ export class MessagingService {
     // Currently subscribing - queue the callback
     if (this.subscribingChannels.has(channelName)) {
       if (onSubscribed) {
-        const callbacks = this.subscribeCallbacks.get(channelName) || [];
+        const callbacks = this.subscribeCallbacks.get(channelName) ?? [];
         callbacks.push(onSubscribed);
         this.subscribeCallbacks.set(channelName, callbacks);
       }
@@ -154,7 +154,7 @@ export class MessagingService {
         onSubscribed?.();
 
         // Call all queued callbacks
-        const callbacks = this.subscribeCallbacks.get(channelName) || [];
+        const callbacks = this.subscribeCallbacks.get(channelName) ?? [];
         callbacks.forEach((cb) => cb());
         this.subscribeCallbacks.delete(channelName);
       } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
@@ -210,8 +210,9 @@ export class MessagingService {
   private getOrCreateChannel(conversationId: string): RealtimeChannel {
     const channelName = `conversation:${conversationId}`;
 
-    if (this.channels.has(channelName)) {
-      return this.channels.get(channelName)!;
+    const existing = this.channels.get(channelName);
+    if (existing) {
+      return existing;
     }
 
     // Create channel with presence config - REQUIRED for typing indicators
@@ -430,24 +431,26 @@ export class MessagingService {
       .set(subscriberId, onTypingUpdate);
 
     // Check if we already have this presence channel
-    let presenceChannel = this.channels.get(presenceChannelName);
+    const existingPresenceChannel = this.channels.get(presenceChannelName);
+    let channel: RealtimeChannel;
 
-    if (!presenceChannel) {
+    if (!existingPresenceChannel) {
       // Create a NEW channel specifically for presence
-      presenceChannel = this.supabase.channel(presenceChannelName, {
+      const newPresenceChannel = this.supabase.channel(presenceChannelName, {
         config: {
           presence: {
             key: conversationId,
           },
         },
       });
-      this.channels.set(presenceChannelName, presenceChannel);
+      this.channels.set(presenceChannelName, newPresenceChannel);
+      channel = newPresenceChannel;
 
       // Attach handlers BEFORE subscribing (this is crucial!)
       // Use callback registry so all subscribers get updates
-      presenceChannel.on("presence", { event: "sync" }, () => {
+      newPresenceChannel.on("presence", { event: "sync" }, () => {
         const presenceState =
-          presenceChannel!.presenceState() as RealtimePresenceState<TypingUser>;
+          newPresenceChannel.presenceState() as RealtimePresenceState<TypingUser>;
         const typingUsers: TypingUser[] = [];
 
         Object.values(presenceState).forEach((presences) => {
@@ -481,10 +484,10 @@ export class MessagingService {
       });
 
       // NOW subscribe (after handlers are attached)
-      presenceChannel.subscribe(async (status) => {
+      newPresenceChannel.subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           // Track initial presence
-          await presenceChannel!.track({
+          await newPresenceChannel.track({
             user_id: currentUserId,
             display_name: displayName,
             is_typing: false,
@@ -494,16 +497,14 @@ export class MessagingService {
       });
     } else {
       // Channel exists, just track presence
-      presenceChannel.track({
+      channel = existingPresenceChannel;
+      channel.track({
         user_id: currentUserId,
         display_name: displayName,
         is_typing: false,
         last_typed_at: Date.now(),
       });
     }
-
-    // Function to broadcast typing status
-    const channel = presenceChannel; // Capture reference
     const setTyping = async (isTyping: boolean) => {
       if (typingTimeout) {
         clearTimeout(typingTimeout);
@@ -578,22 +579,24 @@ export class MessagingService {
     const channelName = `presence:${conversationId}`;
 
     // Create a separate presence channel (not the message channel)
-    let channel = this.channels.get(channelName);
-    if (!channel) {
-      channel = this.supabase.channel(channelName, {
+    const existingChannel = this.channels.get(channelName);
+    const channel: RealtimeChannel =
+      existingChannel ??
+      this.supabase.channel(channelName, {
         config: {
           presence: {
             key: currentUserId,
           },
         },
       });
+    if (!existingChannel) {
       this.channels.set(channelName, channel);
     }
 
     // Listen to presence sync events
     channel.on("presence", { event: "sync" }, () => {
       const presenceState =
-        channel!.presenceState() as RealtimePresenceState<OnlineUser>;
+        channel.presenceState() as RealtimePresenceState<OnlineUser>;
       const onlineUsers: OnlineUser[] = [];
 
       Object.values(presenceState).forEach((presences) => {
@@ -615,7 +618,7 @@ export class MessagingService {
     channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
         this.subscribedChannels.add(channelName);
-        await channel!.track({
+        await channel.track({
           user_id: currentUserId,
           display_name: displayName,
           online_at: Date.now(),
@@ -726,10 +729,12 @@ export class MessagingService {
     // First subscriber on this channel attaches the handler to Supabase.
     // Subsequent subscribers just bump the ref count and register their
     // own callback in a per-channel listener set.
-    if (!this.bridgeListeners.has(channelName)) {
-      this.bridgeListeners.set(channelName, new Set());
+    let listenerSet = this.bridgeListeners.get(channelName);
+    if (!listenerSet) {
+      listenerSet = new Set();
+      this.bridgeListeners.set(channelName, listenerSet);
     }
-    this.bridgeListeners.get(channelName)!.add(onMessage);
+    listenerSet.add(onMessage);
 
     if (!this.messageHandlersAdded.has(handlersKey)) {
       this.messageHandlersAdded.add(handlersKey);

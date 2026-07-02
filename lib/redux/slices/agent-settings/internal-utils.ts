@@ -314,9 +314,7 @@ export function detectConflicts(
     if (skipKeys.has(key)) continue;
     if (currentValue === undefined || currentValue === null) continue;
 
-    const controlDef = (
-      newControls as unknown as Record<string, ControlDefinition | undefined>
-    )[key as string];
+    const controlDef = newControls[key];
 
     // Key not in new model's controls at all — check for aliases
     if (!controlDef) {

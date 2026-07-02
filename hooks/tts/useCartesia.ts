@@ -15,6 +15,8 @@ import {
 } from '@/lib/cartesia/cartesia.types';
 import {WebPlayer} from "@cartesia/cartesia-js";
 import Source from '@cartesia/cartesia-js/wrapper/source';
+import type CartesiaWebsocket from '@cartesia/cartesia-js/wrapper/Websocket';
+import type {TtsRequestVoiceSpecifier} from '@cartesia/cartesia-js/api/resources/tts/types/TtsRequestVoiceSpecifier';
 import {
     buildGenerationConfig,
     READING_VOICE_ID,
@@ -29,6 +31,18 @@ const VOICE_SPEED_TO_NUMBER: Record<VoiceSpeed, number> = {
     [VoiceSpeed.FAST]: 1.35,
     [VoiceSpeed.FASTEST]: 1.5,
 };
+
+// The SDK's wire type requires a literal, non-optional `mode` ("id" | "embedding"),
+// while our app-facing `VoiceOptions` leaves `mode` optional (defaults to "id").
+// Normalize at the send boundary instead of widening the app-facing type.
+function toVoiceSpecifier(voice: VoiceOptions): TtsRequestVoiceSpecifier {
+    // `mode` is optional on both variants, so it can't discriminate the union
+    // when undefined — the presence of `embedding` can.
+    if ("embedding" in voice) {
+        return {mode: "embedding", embedding: voice.embedding};
+    }
+    return {mode: "id", id: voice.id};
+}
 
 interface UseCartesiaProps {
     container?: OutputContainer;
@@ -45,7 +59,7 @@ interface UseCartesiaResult {
         emotion: EmotionName,
         intensity?: EmotionLevel
     }>) => Promise<void>;
-    messages: any[];
+    messages: string[];
     isConnected: boolean;
     error: Error | null;
     pausePlayback: () => Promise<void>;
@@ -67,9 +81,14 @@ export function useCartesia(
         language = Language.EN,
         bufferDuration = 1,
     }: UseCartesiaProps = {}): UseCartesiaResult {
-    const [websocket, setWebsocket] = useState<any>(null);
+    // MATRX-EXCEPTION: `cartesia.tts` is typed as the base `Tts` class in the
+    // installed @cartesia/cartesia-js — `.websocket(...)` (called below) only
+    // exists on `StreamingTTSClient`/the runtime object, not the declared
+    // type (SDK type/version drift). Once past that call, the resolved
+    // handle is the fully-typed `Websocket` class.
+    const [websocket, setWebsocket] = useState<CartesiaWebsocket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
-    const [messages, setMessages] = useState<any[]>([]);
+    const [messages, setMessages] = useState<string[]>([]);
     const [error, setError] = useState<Error | null>(null);
     const [isAudioInitialized, setIsAudioInitialized] = useState(false);
     const [config, setConfig] = useState<UseCartesiaProps>({
@@ -90,7 +109,9 @@ export function useCartesia(
 
     // Initialize websocket connection
     useEffect(() => {
-        const ws = cartesia.tts.websocket({
+        // MATRX-EXCEPTION: see the `websocket` state declaration above —
+        // `.websocket(...)` isn't on the declared `Tts` type.
+        const ws: CartesiaWebsocket = cartesia.tts.websocket({
             container: config.container,
             encoding: config.encoding,
             sampleRate: config.sampleRate ?? 44100,
@@ -139,7 +160,7 @@ export function useCartesia(
                 // Create a tiny silent audio buffer
                 const silentResponse = await websocket.send({
                     modelId: modelId,
-                    voice: config.voice,
+                    voice: toVoiceSpecifier(config.voice ?? {mode: "id", id: READING_VOICE_ID}),
                     transcript: " ", // Just a space - minimal audio
                     language,
                 });
@@ -194,7 +215,7 @@ export function useCartesia(
             // emotion go through the latest generation_config format.
             const response = await websocket.send({
                 modelId,
-                voice,
+                voice: toVoiceSpecifier(voice),
                 transcript,
                 language,
                 generationConfig: buildGenerationConfig({
@@ -203,7 +224,7 @@ export function useCartesia(
                 }),
             });
             
-            response.on("message", (message: any) => {
+            response.on("message", (message: string) => {
                 setMessages((prevMessages) => [...prevMessages, message]);
             });
             

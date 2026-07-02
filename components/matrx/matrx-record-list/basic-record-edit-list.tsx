@@ -3,16 +3,19 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { ComponentDensity, ComponentSize } from "@/types/componentConfigTypes";
+import type { JsonObject } from "@/types/json";
 
 interface FieldComponentConfig {
   name: string;
   displayName?: string;
-  component: React.ComponentType<any>;
-  props?: Record<string, any>;
+  /** Field editor component — receives `value` (the raw field value) plus caller-supplied `props`; shape is per-field, not fixed. */
+  component: React.ComponentType<{ value: unknown; size?: ComponentSize; [key: string]: unknown }>;
+  props?: Record<string, unknown>;
 }
 
 interface MatrxRecordEditListProps {
-  records: Record<string, any>;
+  /** Keyed by record id; each value is an arbitrary, uniformly-shaped JSON record — a generic "render any JSON record" primitive with no fixed schema. */
+  records: Record<string, JsonObject>;
   fields: FieldComponentConfig[];
   density?: ComponentDensity;
   size?: ComponentSize;

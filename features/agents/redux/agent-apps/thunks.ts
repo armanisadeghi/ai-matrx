@@ -19,19 +19,13 @@ import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { fieldFlagsKeys } from "@/features/agents/redux/shared/field-flags";
+import { assignField, fieldFlagsKeys } from "@/features/agents/redux/shared/field-flags";
 import type { AgentApp } from "./types";
 import { agentAppActions } from "./slice";
 
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
-}
-
-// supabase types are not yet generated for `aga_apps`; cast at the call site
-// rather than scattering `as any` through every thunk body.
-function db(): any {
-  return supabase as unknown as any;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,7 +42,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
     dispatch(agentAppActions.setAppsStatus("loading"));
     dispatch(agentAppActions.setAppsError(null));
 
-    const { data, error } = await db()
+    const { data, error } = await supabase
       .schema("app").from("definition")
       .select("*")
       .order("updated_at", { ascending: false });
@@ -77,7 +71,7 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
     dispatch(agentAppActions.setAppLoading({ id: appId, loading: true }));
     dispatch(agentAppActions.setAppError({ id: appId, error: null }));
 
-    const { data, error } = await db()
+    const { data, error } = await supabase
       .schema("app").from("definition")
       .select("*")
       .eq("id", appId)
@@ -119,18 +113,21 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
 
     const patch: Partial<AgentApp> = {};
     for (const k of dirtyKeys) {
-      // record extends AgentApp, so all keys are valid; explicit any avoids
-      // the keyof-mapped-write headache.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (patch as any)[k] = (record as any)[k];
+      assignField(patch, k, record[k]);
     }
 
     dispatch(agentAppActions.setAppLoading({ id: appId, loading: true }));
     dispatch(agentAppActions.setAppError({ id: appId, error: null }));
 
-    const { error } = await db()
+    // `organization_id` is NOT NULL on the `app.definition` table (the DB
+    // Update type has no `null` variant), but the domain type allows null
+    // before the field is set. A dirty patch should never carry a null org
+    // id — omit it rather than send a value the column will reject.
+    const dbPatch = { ...patch, organization_id: patch.organization_id ?? undefined };
+
+    const { error } = await supabase
       .schema("app").from("definition")
-      .update(patch)
+      .update(dbPatch)
       .eq("id", appId);
 
     if (error) {
@@ -155,9 +152,14 @@ export const saveAppField = createAsyncThunk<
   { appId: string; field: keyof AgentApp; value: AgentApp[keyof AgentApp] },
   ThunkApi
 >("agentApp/saveField", async ({ appId, field, value }, { dispatch }) => {
-  const { error } = await db()
+  const patch: Partial<AgentApp> = {};
+  assignField(patch, field, value);
+  // See saveApp: organization_id is NOT NULL in the DB; never send null.
+  const dbPatch = { ...patch, organization_id: patch.organization_id ?? undefined };
+
+  const { error } = await supabase
     .schema("app").from("definition")
-    .update({ [field]: value })
+    .update(dbPatch)
     .eq("id", appId);
 
   if (error) {
@@ -176,11 +178,18 @@ export const saveAppField = createAsyncThunk<
 /**
  * Insert a new app. Returns the new id so callers can route to the edit page.
  * Most fields fall back to DB defaults; the caller must supply at least
- * `name`, `slug`, `agent_id`, `component_code`.
+ * `name`, `slug`, `agent_id`, `component_code`, `organization_id`
+ * (`organization_id` is NOT NULL on `app.definition` — there is no DB default).
  */
 export const createApp = createAsyncThunk<
   string,
-  Partial<AgentApp> & { name: string; slug: string; agent_id: string; component_code: string },
+  Partial<AgentApp> & {
+    name: string;
+    slug: string;
+    agent_id: string;
+    component_code: string;
+    organization_id: string;
+  },
   ThunkApi
 >("agentApp/create", async (payload, { dispatch }) => {
   const insert = {
@@ -195,7 +204,7 @@ export const createApp = createAsyncThunk<
     ...payload,
   };
 
-  const { data, error } = await db()
+  const { data, error } = await supabase
     .schema("app").from("definition")
     .insert(insert)
     .select()
@@ -219,11 +228,11 @@ export const createApp = createAsyncThunk<
 export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
   "agentApp/delete",
   async (appId, { dispatch }) => {
-    const { data: userData } = await db().auth.getUser();
+    const { data: userData } = await supabase.auth.getUser();
     const userId = userData?.user?.id;
     if (!userId) throw new Error("Not authenticated");
 
-    const { error } = await db()
+    const { error } = await supabase
       .schema("app").from("definition")
       .delete()
       .eq("id", appId)

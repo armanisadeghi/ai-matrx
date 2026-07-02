@@ -96,6 +96,9 @@ export function useContainerInventory({
           { p_column: column, p_container_id: value } as never,
         );
         if (!error) {
+          // MATRX-EXCEPTION: container_resource_counts is intentionally not in
+          // the generated types mid-reorg (see comment above) — no DbRpcRow
+          // guard is possible; every row is runtime-validated below instead.
           for (const row of (data ?? []) as unknown as ContainerCountRow[]) {
             // Guard the untyped RPC rows: a future signature change would
             // otherwise silently yield NaN counts. Skip anything malformed.

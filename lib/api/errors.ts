@@ -54,6 +54,8 @@ export class BackendApiError extends Error {
         this.detail = data.detail;
         this.userMessage = data.userMessage;
         this.details = data.details ?? null;
+        // MATRX-EXCEPTION: requestId is genuinely optional (constructor param);
+        // "" means "no request id available" — a display/log field, not persisted.
         this.requestId = data.requestId ?? '';
         this.status = data.status ?? null;
     }
@@ -122,7 +124,7 @@ export async function parseHttpError(response: Response): Promise<BackendApiErro
             detail: (body.message as string) || `HTTP ${status}`,
             userMessage: body.user_message as string,
             details: body.details ?? null,
-            requestId: (body.request_id as string) || '',
+            requestId: typeof body.request_id === 'string' ? body.request_id : undefined,
             status,
         });
     }
@@ -139,7 +141,7 @@ export async function parseHttpError(response: Response): Promise<BackendApiErro
                 (errorObj.message as string) ||
                 `Request failed (${status})`,
             details: errorObj.details ?? null,
-            requestId: (errorObj.request_id as string) || '',
+            requestId: typeof errorObj.request_id === 'string' ? errorObj.request_id : undefined,
             status,
         });
     }
@@ -159,7 +161,7 @@ export async function parseHttpError(response: Response): Promise<BackendApiErro
             (body.detail as string) ||
             `Request failed (${status})`,
         details: body.details ?? null,
-        requestId: (body.request_id as string) || '',
+        requestId: typeof body.request_id === 'string' ? body.request_id : undefined,
         status,
     });
 }
@@ -191,7 +193,7 @@ export function parseStreamError(data: unknown): BackendApiError {
             (obj.message as string) ||
             'Something went wrong',
         details: obj.details ?? null,
-        requestId: (obj.request_id as string) || '',
+        requestId: typeof obj.request_id === 'string' ? obj.request_id : undefined,
     });
 }
 

@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import {
   addField,
+  assignField,
   createFieldFlags,
   fieldFlagsSize,
   hasField,
@@ -49,9 +50,9 @@ function mergeAndTrack(
   partial: Partial<AgentContentBlockDef>,
 ): void {
   (Object.keys(partial) as (keyof AgentContentBlockDef)[]).forEach((key) => {
-    if (partial[key] !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[key] = partial[key];
+    const value = partial[key];
+    if (value !== undefined) {
+      assignField(record, key, value);
       addField(record._loadedFields, key);
     }
   });
@@ -67,8 +68,7 @@ function applyFieldEdit<K extends keyof AgentContentBlockDef>(
       field
     ] as AgentContentBlockDef[K];
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (record as any)[field] = value;
+  assignField(record, field, value);
   addField(record._dirtyFields, field);
   record._dirty = true;
 }
@@ -208,8 +208,7 @@ export const agentContentBlockSlice = createSlice({
       if (!record || !hasField(record._dirtyFields, field)) return;
       const original = record._fieldHistory[field];
       if (original !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (record as any)[field] = original;
+        assignField(record, field, original);
       }
       removeField(record._dirtyFields, field);
       delete record._fieldHistory[field];
@@ -224,8 +223,7 @@ export const agentContentBlockSlice = createSlice({
       ).forEach((field) => {
         const original = record._fieldHistory[field];
         if (original !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (record as any)[field] = original;
+          assignField(record, field, original);
         }
       });
       markRecordClean(record);
@@ -253,8 +251,7 @@ export const agentContentBlockSlice = createSlice({
         (field) => {
           const value = snapshot[field];
           if (value !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (record as any)[field] = value;
+            assignField(record, field, value);
           }
         },
       );

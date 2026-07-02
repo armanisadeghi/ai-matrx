@@ -35,7 +35,7 @@ export default function ListManagerWindow({
   */
   return (
     <WindowPanel
-      id={id!}
+      id={id}
       title={title}
       onClose={onClose}
       minWidth={600}

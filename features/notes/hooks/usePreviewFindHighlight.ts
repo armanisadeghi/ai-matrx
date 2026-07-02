@@ -15,12 +15,12 @@
 import { useEffect } from "react";
 import type { FindMatch } from "../utils/findMatches";
 
-type HighlightRegistry = Map<string, Highlight>;
-
 function getHighlights(): HighlightRegistry | null {
-  if (typeof CSS === "undefined") return null;
-  const g = (CSS as unknown as { highlights?: HighlightRegistry }).highlights;
-  return g ?? null;
+  // The CSS Custom Highlight API is declared in lib.dom.d.ts (always typed as
+  // present), but real support varies by engine — guard both `CSS` itself and
+  // its `highlights` registry at runtime rather than trusting the type.
+  if (typeof CSS === "undefined" || !CSS.highlights) return null;
+  return CSS.highlights;
 }
 
 interface Options {
@@ -177,17 +177,12 @@ export function usePreviewFindHighlight({
         : allRanges;
 
       if (nonActive.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        highlights.set(
-          "notes-find-match",
-          new (window as any).Highlight(...nonActive),
-        );
+        highlights.set("notes-find-match", new Highlight(...nonActive));
       }
       if (activeRange) {
         highlights.set(
           "notes-find-match-active",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          new (window as any).Highlight(activeRange),
+          new Highlight(activeRange),
         );
       }
 

@@ -190,7 +190,7 @@ function NestedFolderList({
     .map((id) => foldersById[id])
     .filter((f) => f && !f.deletedAt)
     .sort((a, b) =>
-      a!.folderName.localeCompare(b!.folderName, undefined, {
+      a.folderName.localeCompare(b.folderName, undefined, {
         sensitivity: "base",
       }),
     );
@@ -239,7 +239,7 @@ function DroppableNestedFolder({
   });
   return (
     <button
-      ref={setNodeRef as unknown as React.Ref<HTMLButtonElement>}
+      ref={setNodeRef}
       type="button"
       onClick={onSelect}
       className={cn(

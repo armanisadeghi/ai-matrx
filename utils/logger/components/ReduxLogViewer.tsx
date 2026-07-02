@@ -184,11 +184,11 @@ const ReduxLogViewer: React.FC<ReduxLogViewerProps> = ({ maxLogs = 100 }) => {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto p-2 bg-background">
-        {configs && (
+        {configs ? (
           <CollapsibleCard title="Configs" icon={Settings}>
             <DataDisplay data={configs} />
           </CollapsibleCard>
-        )}
+        ) : null}
         {Object.keys(state).length > 0 && (
           <CollapsibleCard title="State" icon={Database} defaultExpanded={true}>
             <JsonDataDisplay data={state} />

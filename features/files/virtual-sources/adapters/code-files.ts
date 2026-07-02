@@ -30,27 +30,27 @@ import type {
   VirtualNode,
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
+import type { Database } from "@/types/database.types";
 
 const TAB_ID_PREFIX = "code-file:";
 
-interface CodeFileRow {
-  id: string;
-  name: string;
-  language: string;
-  folder_id: string | null;
-  updated_at: string;
-  is_deleted: boolean;
-  s3_key: string | null;
-  s3_bucket: string | null;
-  content: string;
-}
+type CodeFileRow = Pick<
+  Database["code"]["Tables"]["code_files"]["Row"],
+  | "id"
+  | "name"
+  | "language"
+  | "folder_id"
+  | "updated_at"
+  | "is_deleted"
+  | "s3_key"
+  | "s3_bucket"
+  | "content"
+>;
 
-interface CodeFolderRow {
-  id: string;
-  name: string;
-  parent_folder_id: string | null;
-  updated_at: string;
-}
+type CodeFolderRow = Pick<
+  Database["code"]["Tables"]["code_file_folders"]["Row"],
+  "id" | "name" | "parent_folder_id" | "updated_at"
+>;
 
 const FILE_LIST_COLUMNS =
   "id,name,language,folder_id,updated_at,is_deleted,s3_key,s3_bucket";
@@ -204,8 +204,8 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     if (error || !data) {
       throw new Error(`Code file not found: ${id}`);
     }
-    const row = data as unknown as CodeFileRow;
-    let content = row.content ?? "";
+    const row = data as CodeFileRow;
+    let content = row.content;
     if (!content && row.s3_key) {
       // S3-backed snippet — fetch via the universal handler. The s3_key
       // is a cld_files UUID for new rows.
@@ -339,7 +339,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
       if (error || !data) {
         throw new Error(error?.message ?? "Folder create failed");
       }
-      const row = data as unknown as CodeFolderRow;
+      const row = data as CodeFolderRow;
       return {
         id: row.id,
         kind: "folder" as const,
@@ -362,7 +362,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     if (error || !data) {
       throw new Error(error?.message ?? "Code file create failed");
     }
-    const row = data as unknown as CodeFileRow;
+    const row = data as CodeFileRow;
     return {
       id: row.id,
       kind: "file" as const,

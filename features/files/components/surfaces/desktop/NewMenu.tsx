@@ -179,7 +179,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
         multiple
         hidden
         onChange={handleUploadFolder}
-        // @ts-expect-error — non-standard but widely supported
+        // @ts-expect-error — non-standard but widely supported. MATRX-EXCEPTION: webkitdirectory isn't in React's InputHTMLAttributes typing; a global JSX augmentation is out of this feature's scope.
         webkitdirectory="true"
         directory=""
       />

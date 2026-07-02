@@ -45,7 +45,7 @@ import {
   getUserRole,
   getOrganizationMembers,
 } from "@/features/organizations/service";
-import type { OrganizationMemberWithUser } from "@/features/organizations/types";
+import type { Organization, OrganizationMemberWithUser } from "@/features/organizations/types";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
 import { InlineMediaRef } from "@/features/files";
@@ -84,7 +84,7 @@ export function OrgWorkspace() {
   const dispatch = useAppDispatch();
   const orgId = params.orgId as string;
 
-  const [organization, setOrganization] = React.useState<any>(null);
+  const [organization, setOrganization] = React.useState<Organization | null>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
   const [members, setMembers] = React.useState<OrganizationMemberWithUser[]>(
     [],
@@ -225,7 +225,7 @@ export function OrgWorkspace() {
     );
   }
 
-  const slug = organization.slug as string;
+  const slug = organization.slug;
   const totalScopes = orgScopes.length;
 
   return (
@@ -366,7 +366,7 @@ export function OrgWorkspace() {
         {/* ─── Knowledge graph (live preview card → full org-filtered graph) ── */}
         <KgGraphCard
           variant="org"
-          id={organization.id as string}
+          id={organization.id}
           orgSlugOrId={slug}
           title={`${organization.name} · knowledge graph`}
         />

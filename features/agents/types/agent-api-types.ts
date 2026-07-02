@@ -134,40 +134,19 @@ export type ChatRequestPayload = NonNullableFields<
 // the structured form without a type error.
 
 /**
- * Structured system instruction — full capability map for the server's
- * SystemInstruction builder. All fields are optional.
+ * Structured system instruction — the server's SystemInstruction builder,
+ * OpenAPI source of truth (never re-declare; the Pydantic model marks the
+ * list/bool fields required because the server supplies field defaults, so a
+ * full construction must too — build via the wire-defaults literal in
+ * execute-manual-instance.thunk.ts, or use Partial<SystemInstruction> for
+ * user-override fragments).
  *
  * Rendered order on the server:
  *   intro → date → prepend_sections → base_instruction → tools_list
  *   → actions_guidance → code_guidelines → safety_guidelines → content_blocks
  *   → append_sections → outro
  */
-export interface SystemInstruction {
-  base_instruction?: string;
-  content?: string;
-  intro?: string;
-  outro?: string;
-  prepend_sections?: string[];
-  append_sections?: string[];
-  content_blocks?: string[];
-  tools_list?: string[];
-  include_date?: boolean;
-  include_code_guidelines?: boolean;
-  include_safety_guidelines?: boolean;
-  /** Auto-include a Matrx Actions guidance section. The server derives the
-   *  agent's available action type(s) from its output_directive output_schema
-   *  and renders an "## Available Matrx Actions" section (like tools_list).
-   *  Non-chat models drop it automatically. */
-  include_actions_guidance?: boolean;
-  /** Auto-injected context-awareness block (`<deferred_context_available>` +
-   *  scope/labels). Default true. Turn off for agents that should never receive
-   *  the deferred-context preamble. (Non-chat TTS/image/video models drop it
-   *  automatically server-side regardless of this flag.) */
-  include_context_block?: boolean;
-  version?: string;
-  category?: string;
-  [key: string]: unknown;
-}
+export type SystemInstruction = components["schemas"]["SystemInstructionInput"];
 
 /**
  * Pass a plain string for simple system prompts, or a structured object

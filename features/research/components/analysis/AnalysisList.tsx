@@ -45,7 +45,7 @@ import type { SourceImportance } from "../../ranking";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 /** A string with real (non-whitespace) content. */
-const hasText = (s: string | null | undefined): boolean =>
+const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;
 
 /** Analysis that genuinely produced content (success + non-empty result). */
@@ -371,7 +371,7 @@ function DetailPanel({
                 reason={analysis.error || "Analysis stopped early."}
               />
             )}
-            <MarkdownStream content={analysis.result!} />
+            <MarkdownStream content={analysis.result} />
           </article>
         ) : isFailed ? (
           <div className="p-6 flex flex-col items-center justify-center min-h-[300px] gap-4 text-center">

@@ -122,13 +122,14 @@ export const makeSelectGroupedByDate = (scopeId: string) => {
       if (arr) arr.push(item);
       else buckets.set(key, [item]);
     }
-    return ORDERED_KEYS.filter((k) => (buckets.get(k)?.length ?? 0) > 0).map(
-      (k) => ({
-        key: k,
-        label: DATE_LABELS[k],
-        items: buckets.get(k)!,
-      }),
-    );
+    const result: DateBucket[] = [];
+    for (const k of ORDERED_KEYS) {
+      const items = buckets.get(k);
+      if (items && items.length > 0) {
+        result.push({ key: k, label: DATE_LABELS[k], items });
+      }
+    }
+    return result;
   });
 };
 

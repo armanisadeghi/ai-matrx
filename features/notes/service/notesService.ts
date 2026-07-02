@@ -31,7 +31,7 @@ export async function fetchNotes(): Promise<Note[]> {
     throw error;
   }
 
-  return data || [];
+  return data ?? [];
 }
 
 /**
@@ -375,7 +375,7 @@ export async function fetchSharedNotes(userId: string): Promise<Note[]> {
     return [];
   }
 
-  return data || [];
+  return data ?? [];
 }
 
 /**
@@ -461,8 +461,11 @@ export async function createFolder(name: string): Promise<string> {
     console.error("Error creating folder:", error);
     throw error;
   }
+  if (!data) {
+    throw new Error("Folder insert returned no row");
+  }
 
-  return data!.id;
+  return data.id;
 }
 
 /**

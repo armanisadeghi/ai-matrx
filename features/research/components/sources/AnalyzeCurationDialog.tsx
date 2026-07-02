@@ -39,7 +39,7 @@ export function AnalyzeCurationDialog({
   onAnalyze,
   busy,
 }: Props) {
-  const original = content ?? "";
+  const original = content;
   const len = original.length;
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);

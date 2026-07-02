@@ -54,9 +54,11 @@ interface SystemPromptOptimizerProps {
   onClose: () => void;
   currentSystemMessage: string;
   onAccept: (optimizedText: string) => void;
-  fullPromptObject?: any;
-  onAcceptFullPrompt?: (optimizedObject: any) => void;
-  onAcceptAsCopy?: (optimizedObject: any) => void;
+  // Opaque passthrough to <FullPromptOptimizer> — never a typed prompt shape
+  // here (JSON.stringify'd for display, never parsed as a specific record).
+  fullPromptObject?: unknown;
+  onAcceptFullPrompt?: (optimizedObject: unknown) => void;
+  onAcceptAsCopy?: (optimizedObject: unknown) => void;
 }
 
 // New agent system: this optimizer is powered by a system shortcut (the
@@ -223,7 +225,7 @@ export function SystemPromptOptimizer({
   };
 
   const hasOptimizedText = streamingText.trim().length > 0;
-  const showExperimentalButton = fullPromptObject && onAcceptFullPrompt;
+  const showExperimentalButton = Boolean(fullPromptObject) && Boolean(onAcceptFullPrompt);
 
   // Review-before-accept: current prompt = baseline, optimized = new. Opens the
   // canonical diff window (word-level, markdown) so the user sees exactly what

@@ -45,8 +45,12 @@ function groupByVersion(
   const map = new Map<number, ConversationListItem[]>();
   for (const conv of conversations) {
     const v = conv.agentVersionNumber ?? 0;
-    if (!map.has(v)) map.set(v, []);
-    map.get(v)!.push(conv);
+    let bucket = map.get(v);
+    if (!bucket) {
+      bucket = [];
+      map.set(v, bucket);
+    }
+    bucket.push(conv);
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => b - a)

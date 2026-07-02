@@ -10,6 +10,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   addField,
+  assignField,
   createFieldFlags,
   hasField,
   removeField,
@@ -123,9 +124,9 @@ function mergeFileIntoRecord(
   partial: Partial<CloudFile>,
 ): void {
   (Object.keys(partial) as (keyof CloudFile)[]).forEach((key) => {
-    if (partial[key] !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[key] = partial[key];
+    const value = partial[key];
+    if (value !== undefined) {
+      assignField(record, key, value);
       addField(record._loadedFields, key);
     }
   });
@@ -136,9 +137,9 @@ function mergeFolderIntoRecord(
   partial: Partial<CloudFolder>,
 ): void {
   (Object.keys(partial) as (keyof CloudFolder)[]).forEach((key) => {
-    if (partial[key] !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (record as any)[key] = partial[key];
+    const value = partial[key];
+    if (value !== undefined) {
+      assignField(record, key, value);
       addField(record._loadedFields, key);
     }
   });
@@ -164,8 +165,7 @@ function applyFileFieldEdit<K extends keyof CloudFile>(
       ] = record[field as keyof CloudFileFieldSnapshot] as never;
     }
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (record as any)[field] = value;
+  assignField(record, field, value);
   addField(record._dirtyFields, field);
   record._dirty = true;
 }
@@ -188,8 +188,7 @@ function applyFolderFieldEdit<K extends keyof CloudFolder>(
       ] = record[field as keyof CloudFolderFieldSnapshot] as never;
     }
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (record as any)[field] = value;
+  assignField(record, field, value);
   addField(record._dirtyFields, field);
   record._dirty = true;
 }
@@ -325,11 +324,11 @@ const slice = createSlice({
       const { id, field } = action.payload;
       const record = state.filesById[id];
       if (!record) return;
-      const snap = record._fieldHistory as Record<string, unknown>;
-      if (field in snap) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (record as any)[field] = snap[field as string];
-        delete snap[field as string];
+      const snapKey = field as keyof CloudFileFieldSnapshot;
+      const snapshotValue = record._fieldHistory[snapKey];
+      if (snapKey in record._fieldHistory && snapshotValue !== undefined) {
+        assignField(record, snapKey, snapshotValue);
+        delete record._fieldHistory[snapKey];
         removeField(record._dirtyFields, field);
       }
       if (Object.keys(record._dirtyFields).length === 0) {
@@ -353,8 +352,7 @@ const slice = createSlice({
       const { id, snapshot } = action.payload;
       const record = state.filesById[id];
       if (!record) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Object.assign(record as any, snapshot);
+      Object.assign(record, snapshot);
       record._dirty = false;
       record._dirtyFields = createFieldFlags<keyof CloudFile>();
       record._fieldHistory = {};
@@ -466,8 +464,7 @@ const slice = createSlice({
       const { id, snapshot } = action.payload;
       const record = state.foldersById[id];
       if (!record) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Object.assign(record as any, snapshot);
+      Object.assign(record, snapshot);
       record._dirty = false;
       record._dirtyFields = createFieldFlags<keyof CloudFolder>();
       record._fieldHistory = {};

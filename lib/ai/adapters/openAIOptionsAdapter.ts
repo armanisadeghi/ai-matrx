@@ -54,7 +54,7 @@ export default class OpenAIOptionsAdapter implements BaseOptionsAdapter {
         });
 
         for await (const part of stream) {
-            const chunk = part.choices[0]?.delta?.content || '';
+            const chunk = part.choices[0]?.delta?.content;
             if (chunk) {
                 if (typeof onChunkOrUserMessage === 'function') {
                     onChunkOrUserMessage(chunk);

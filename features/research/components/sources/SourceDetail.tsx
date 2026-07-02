@@ -69,7 +69,6 @@ import { SourceVerdictBadge } from "./SourceVerdictBadge";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
 import type {
-  ResearchSource,
   ResearchContent,
   ResearchAnalysis,
   ResearchDataEvent,
@@ -350,10 +349,9 @@ function PageAnalysisDocument({
   analysis: PageAnalysis;
   finalScore: number | null;
 }) {
-  const activeBias = analysis.bias_and_risk_signals
-    ? BIAS_SIGNAL_LABELS.filter(
-        ({ key }) => analysis.bias_and_risk_signals![key],
-      )
+  const biasSignals = analysis.bias_and_risk_signals;
+  const activeBias = biasSignals
+    ? BIAS_SIGNAL_LABELS.filter(({ key }) => biasSignals[key])
     : [];
   const entityCount = entitiesTotal(analysis.entities_mentioned);
   const dates = analysis.dates;
@@ -597,17 +595,17 @@ function PageAnalysisDocument({
       )}
 
       {/* Dates */}
-      {hasAnyDate && (
+      {hasAnyDate && dates && (
         <AnalysisBlock icon={<Calendar className="h-3 w-3" />} title="Dates">
           <div className="space-y-0 rounded-xl border border-border/60 bg-card/40 px-4 py-1">
-            {dates!.published_date && (
-              <DateRow label="Published" value={dates!.published_date} />
+            {dates.published_date && (
+              <DateRow label="Published" value={dates.published_date} />
             )}
-            {dates!.updated_date && (
-              <DateRow label="Updated" value={dates!.updated_date} />
+            {dates.updated_date && (
+              <DateRow label="Updated" value={dates.updated_date} />
             )}
-            {dates!.content_timeframe && (
-              <DateRow label="Content timeframe" value={dates!.content_timeframe} />
+            {dates.content_timeframe && (
+              <DateRow label="Content timeframe" value={dates.content_timeframe} />
             )}
           </div>
         </AnalysisBlock>
@@ -739,8 +737,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   // contains the source being viewed (a stale/empty order, or one from before
   // this source existed, falls back to the raw fetched order — never crashes).
   const sourceIds = useMemo(() => {
-    const fallback =
-      (allSources as ResearchSource[] | null)?.map((s) => s.id) ?? [];
+    const fallback = allSources?.map((s) => s.id) ?? [];
     const saved = getSourceNavOrder(topicId);
     if (saved.length > 0 && saved.includes(sourceId)) return saved;
     return fallback;
@@ -972,7 +969,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     }
   };
 
-  const typedSource = source as ResearchSource | null | undefined;
+  const typedSource = source;
   const extraSnippets = typedSource
     ? stringArrayFromJson(typedSource.extra_snippets)
     : [];

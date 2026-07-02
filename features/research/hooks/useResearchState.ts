@@ -78,7 +78,10 @@ function useServiceQuery<T>(
 
 export function useTopicsForProject(projectId: string | undefined) {
   return useServiceQuery<ResearchTopic[]>(
-    () => service.getTopicsForProject(projectId!),
+    () => {
+      if (!projectId) return Promise.resolve([]);
+      return service.getTopicsForProject(projectId);
+    },
     [projectId],
     !!projectId,
   );
@@ -108,7 +111,10 @@ export function useAllTopics(enabled = true) {
 
 export function useTopic(topicId: string | undefined) {
   return useServiceQuery<ResearchTopic | null>(
-    () => service.getTopic(topicId!),
+    () => {
+      if (!topicId) return Promise.resolve(null);
+      return service.getTopic(topicId);
+    },
     [topicId],
     !!topicId,
   );
@@ -132,7 +138,10 @@ export function useResearchKeywords(topicId: string) {
 
 export function useResearchSource(sourceId: string | undefined) {
   return useServiceQuery<ResearchSource | null>(
-    () => service.getSource(sourceId!),
+    () => {
+      if (!sourceId) return Promise.resolve(null);
+      return service.getSource(sourceId);
+    },
     [sourceId],
     !!sourceId,
   );
@@ -168,7 +177,10 @@ export function useSourceContent(sourceId: string) {
 
 export function useSourceAnalysis(contentId: string | undefined) {
   return useServiceQuery<ResearchAnalysis[]>(
-    () => service.getSourceAnalysis(contentId!),
+    () => {
+      if (!contentId) return Promise.resolve([]);
+      return service.getSourceAnalysis(contentId);
+    },
     [contentId],
     !!contentId,
   );
@@ -176,7 +188,10 @@ export function useSourceAnalysis(contentId: string | undefined) {
 
 export function useAnalysisForSource(sourceId: string | undefined) {
   return useServiceQuery<ResearchAnalysis[]>(
-    () => service.getAnalysisForSource(sourceId!),
+    () => {
+      if (!sourceId) return Promise.resolve([]);
+      return service.getAnalysisForSource(sourceId);
+    },
     [sourceId],
     !!sourceId,
   );
@@ -230,7 +245,10 @@ export function useTopicSourceTags(topicId: string) {
 
 export function useSourceTags(sourceId: string | undefined) {
   return useServiceQuery<SourceTag[]>(
-    () => service.getSourceTags(sourceId!),
+    () => {
+      if (!sourceId) return Promise.resolve([]);
+      return service.getSourceTags(sourceId);
+    },
     [sourceId],
     !!sourceId,
   );

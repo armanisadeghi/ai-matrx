@@ -20,11 +20,12 @@ interface Suggestion {
 /** Normalize the `suggest_tags_complete` result into typed suggestions. The
  * backend returns `[{name, confidence, reason}]` under `result.suggestions`. */
 function parseSuggestions(result: Record<string, unknown> | undefined): Suggestion[] {
-  const raw = Array.isArray(result?.suggestions)
-    ? (result!.suggestions as unknown[])
-    : Array.isArray(result)
-      ? (result as unknown[])
-      : [];
+  const raw =
+    result && Array.isArray(result.suggestions)
+      ? result.suggestions
+      : Array.isArray(result)
+        ? result
+        : [];
   const out: Suggestion[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;

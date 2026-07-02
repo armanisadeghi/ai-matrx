@@ -2,6 +2,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import { ComponentToBrokerMapping } from "../types";
+import type { FieldDefinition } from "@/types/customAppTypes";
 
 const EMPTY_RECORD: Record<string, never> = {};
 const EMPTY_STRING_ARRAY: string[] = [];
@@ -115,7 +116,7 @@ export const selectComponentInstancesForContainer = createSelector(
     const result = container.fields
       .map((field) =>
         Object.values(instances[appId] ?? EMPTY_RECORD).filter(
-          (instance: any) =>
+          (instance: FieldDefinition) =>
             instance?.id && field?.id && instance.id.startsWith(field.id),
         ),
       )

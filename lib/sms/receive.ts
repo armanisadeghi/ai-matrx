@@ -117,7 +117,7 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
   await supabase.schema('communication').from('sms_webhook_logs').insert({
     webhook_type: 'inbound_sms',
     twilio_sid: payload.MessageSid,
-    raw_payload: payload as unknown as Record<string, unknown>,
+    raw_payload: payload,
     processed: false,
   });
 
@@ -139,6 +139,10 @@ export async function processInboundSms(payload: InboundSmsPayload): Promise<{
       direction: 'inbound',
       from_number: payload.From,
       to_number: payload.To,
+      // MATRX-EXCEPTION: InboundSmsPayload declares Body as required, but the
+      // route casts the raw Twilio form body straight into this type without
+      // a runtime parse (app/api/webhooks/twilio/sms/route.ts) — an untrusted
+      // webhook can genuinely omit it, so "" is the honest wire default.
       body: payload.Body || '',
       status: 'received',
       num_segments: parseInt(payload.NumSegments || '1', 10),

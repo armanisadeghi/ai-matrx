@@ -29,7 +29,29 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
-import type { CanonicalizationOverview as OverviewData } from "../types";
+import type { CanonicalizationOverview as OverviewData, RefreshLogRow } from "../types";
+import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
+
+function isRefreshLogRow(v: unknown): v is RefreshLogRow {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    typeof (v as Record<string, unknown>).run_at === "string"
+  );
+}
+
+function isOverviewData(v: unknown): v is OverviewData {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v as Record<string, unknown>;
+  return (
+    typeof r.totalTables === "number" &&
+    typeof r.certifiedTables === "number" &&
+    typeof r.notCertifiedTables === "number" &&
+    typeof r.totalFails === "number" &&
+    typeof r.totalWarns === "number" &&
+    (r.lastRefresh === null || isRefreshLogRow(r.lastRefresh))
+  );
+}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "Never";
@@ -85,9 +107,10 @@ export function CanonicalizationOverview() {
     setError(null);
     try {
       const res = await fetch("/api/admin/canonicalization?dataset=overview");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? res.statusText);
-      setOverview(data.overview as OverviewData);
+      const data = await readJsonObject(res);
+      if (!res.ok) throw new Error(errorMessageFrom(data, res));
+      if (!isOverviewData(data.overview)) throw new Error("Unexpected overview response shape");
+      setOverview(data.overview);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -109,12 +132,12 @@ export function CanonicalizationOverview() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "refresh" }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? res.statusText);
+      const data = await readJsonObject(res);
+      if (!res.ok) throw new Error(errorMessageFrom(data, res));
+      const durationMs = typeof data.durationMs === "number" ? data.durationMs : 0;
+      const note = typeof data.note === "string" ? data.note : "";
       toast.success(
-        `Audit store refreshed in ${(data.durationMs / 1000).toFixed(1)}s${
-          data.note ? ` — ${data.note}` : ""
-        }`,
+        `Audit store refreshed in ${(durationMs / 1000).toFixed(1)}s${note ? ` — ${note}` : ""}`,
       );
       setRefreshOpen(false);
       await load();

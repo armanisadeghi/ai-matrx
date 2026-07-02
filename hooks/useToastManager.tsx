@@ -5,12 +5,13 @@ import { useContext } from "react";
 import { toast } from "@/lib/toast-service";
 import { ToastContext } from "@/providers/toast-context";
 import type { ToastOptions, ToastDefaults } from "@/types/toast.types";
+import type { MatrxVariant } from "@/components/ui/types";
 
 export const useToastManager = (moduleKey?: string) => {
     const toastContext = useContext(ToastContext);
 
     return {
-        show: (title: string, description: string, variant: any, options?: ToastOptions) =>
+        show: (title: string, description: string, variant: MatrxVariant, options?: ToastOptions) =>
             toast.show(title, description, variant, options),
         success: (message?: string, options?: ToastOptions) =>
             toast.success(message, moduleKey, options),

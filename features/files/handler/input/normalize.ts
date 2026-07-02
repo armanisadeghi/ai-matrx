@@ -492,7 +492,7 @@ function bufferToBlob(
     return new Blob([copy.buffer], { type: mime });
   }
   if (buffer instanceof ArrayBuffer) return new Blob([buffer], { type: mime });
-  const view = new Uint8Array(buffer as unknown as ArrayBufferLike);
+  const view = new Uint8Array(buffer);
   const copy = new Uint8Array(view.byteLength);
   copy.set(view);
   return new Blob([copy.buffer], { type: mime });

@@ -361,6 +361,9 @@ export async function getActiveSandboxBinding(
   // right after `/sandboxes/`. This is the id matrx-ai needs to log /
   // surface; tools never use it for routing (base_url is enough).
   const sandboxIdMatch = baseUrl.match(/\/sandboxes\/([^/]+)/);
+  // MATRX-EXCEPTION: sandboxId is informational only (logging/surfacing); a
+  // failed match falling back to "" doesn't affect routing — baseUrl is what
+  // tools actually use.
   const sandboxId = sandboxIdMatch?.[1] ?? "";
 
   const token = await fetchAccessToken(ref.rowId);

@@ -52,6 +52,7 @@ import type {
   PersonalCopyResult,
 } from "../../types/agent-definition.types";
 import { isSyntheticAgentId } from "./synthetic-id";
+import { assignField } from "@/features/agents/redux/shared/field-flags";
 import {
   upsertAgent,
   mergePartialAgent,
@@ -574,8 +575,7 @@ export const saveAgent = createAsyncThunk<void, string, ThunkApi>(
     for (const field of Object.keys(
       record._dirtyFields,
     ) as (keyof AgentDefinition)[]) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (dirtyPartial as any)[field] = record[field];
+      assignField(dirtyPartial, field, record[field]);
     }
 
     const snapshot = { ...record._fieldHistory };

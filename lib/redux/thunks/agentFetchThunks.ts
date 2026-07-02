@@ -45,21 +45,19 @@ export const AGENT_PAGE_SIZE = 50;
 // ── Internal freshness helpers ────────────────────────────────────────────────
 
 function isOwnedFresh(state: RootState): boolean {
-  const { fetchStatus, lastFetchedAt } = state.agentCache ?? {};
+  const { fetchStatus, lastFetchedAt } = state.agentCache;
   if (
-    !fetchStatus ||
     fetchStatus.owned === "idle" ||
     fetchStatus.owned === "error"
   )
     return false;
   if (fetchStatus.owned === "loading") return true; // in-flight counts as fresh
-  if (!lastFetchedAt?.owned) return false;
+  if (!lastFetchedAt.owned) return false;
   return Date.now() - lastFetchedAt.owned < OWNED_TTL_MS;
 }
 
 function isBuiltinsFresh(state: RootState): boolean {
-  const { fetchStatus } = state.agentCache ?? {};
-  if (!fetchStatus) return false;
+  const { fetchStatus } = state.agentCache;
   // Builtins are session-long — once loaded, never re-fetch unless forced
   return (
     fetchStatus.builtins === "success" || fetchStatus.builtins === "loading"
@@ -67,21 +65,19 @@ function isBuiltinsFresh(state: RootState): boolean {
 }
 
 function isSharedFresh(state: RootState): boolean {
-  const { fetchStatus, lastFetchedAt } = state.agentCache ?? {};
+  const { fetchStatus, lastFetchedAt } = state.agentCache;
   if (
-    !fetchStatus ||
     fetchStatus.shared === "idle" ||
     fetchStatus.shared === "error"
   )
     return false;
   if (fetchStatus.shared === "loading") return true;
-  if (!lastFetchedAt?.shared) return false;
+  if (!lastFetchedAt.shared) return false;
   return Date.now() - lastFetchedAt.shared < SHARED_TTL_MS;
 }
 
 export function isTabStale(state: RootState): boolean {
-  const { lastFetchedAt } = state.agentCache ?? {};
-  if (!lastFetchedAt) return true;
+  const { lastFetchedAt } = state.agentCache;
   const oldest = Math.min(
     lastFetchedAt.owned ?? 0,
     lastFetchedAt.shared ?? 0,
@@ -169,7 +165,10 @@ function mapCoreRow(row: CoreRow): AgentRecord {
 }
 
 function mapOperationalRow(row: OperationalRow): AgentRecord {
-  const settings = row.settings ?? {};
+  const settings =
+    row.settings && Object.keys(row.settings).length > 0
+      ? row.settings
+      : undefined;
   return {
     id: row.id,
     source: row.source as AgentSource,
@@ -179,7 +178,7 @@ function mapOperationalRow(row: OperationalRow): AgentRecord {
       ? row.variable_defaults
       : [],
     dynamicModel: row.dynamic_model ?? false,
-    settings: Object.keys(settings).length > 0 ? settings : undefined,
+    settings,
   };
 }
 
@@ -282,7 +281,7 @@ export const fetchAgentCoreBatch = createAsyncThunk<
   { dispatch: AppDispatch; state: RootState }
 >("agentCache/fetchCoreBatch", async ({ agents }, { dispatch, getState }) => {
   const state = getState();
-  const byId = state.agentCache?.byId ?? {};
+  const byId = state.agentCache.byId;
 
   // Filter to only agents that need upgrading
   const toFetch = agents.filter(({ id }) => {

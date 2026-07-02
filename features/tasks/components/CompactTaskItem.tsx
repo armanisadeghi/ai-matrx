@@ -14,9 +14,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
+import type { TaskWithProject } from "@/features/tasks/types";
 
 interface CompactTaskItemProps {
-  task: any;
+  task: TaskWithProject;
   isSelected: boolean;
   onSelect: () => void;
   onToggleComplete: () => void;
@@ -36,7 +37,7 @@ export default function CompactTaskItem({
   const todayStr = today.toISOString().split("T")[0];
   const isPastDue = task.dueDate && task.dueDate < todayStr && !task.completed;
 
-  const getPriorityColor = (priority: string | null) => {
+  const getPriorityColor = (priority: string | null | undefined) => {
     switch (priority) {
       case "high":
         return "bg-destructive/10 text-destructive border-destructive/30";

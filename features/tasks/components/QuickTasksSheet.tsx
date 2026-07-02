@@ -232,7 +232,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   const handleAddTask = useCallback(async () => {
     if (!newTaskTitle.trim() || !selectedProjectForTask) return;
 
-    const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
+    const defaultScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
 

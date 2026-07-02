@@ -7,6 +7,7 @@ import type {
   TemplateFormData,
   AgentConfigKey,
 } from "./types";
+import { jsonToAgentConfigStrings } from "./types";
 
 const supabase = createClient();
 
@@ -117,11 +118,7 @@ export async function updateTemplateAgentConfig(
   const template = await fetchTemplateById(templateId);
   if (!template) throw new Error("Template not found");
 
-  const currentConfig = (template.agent_config ?? {}) as Record<
-    string,
-    unknown
-  >;
-  const updatedConfig = { ...currentConfig };
+  const updatedConfig = jsonToAgentConfigStrings(template.agent_config);
 
   if (value) {
     updatedConfig[key] = value;
@@ -130,7 +127,7 @@ export async function updateTemplateAgentConfig(
   }
 
   return updateTemplate(templateId, {
-    agent_config: updatedConfig as Record<string, string>,
+    agent_config: updatedConfig,
   });
 }
 

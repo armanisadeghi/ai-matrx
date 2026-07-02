@@ -9,6 +9,7 @@
  */
 
 import { extractVariablesFromPrompt } from '@/lib/services/functionality-helpers';
+import type { BasePromptSnapshot } from '@/lib/services/functionality-helpers';
 
 export interface UIContext {
   // Text context
@@ -34,18 +35,18 @@ export interface UIContext {
   query?: string;
   
   // Custom
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
-interface PromptSnapshot {
-  messages?: any[];
+interface PromptVariableDefault {
+  name: string;
+  defaultValue?: unknown;
+  customComponent?: unknown;
+}
+
+interface PromptSnapshot extends BasePromptSnapshot {
   variables?: string[];
-  variableDefaults?: Array<{
-    name: string;
-    defaultValue?: any;
-    customComponent?: any;
-  }>;
-  [key: string]: any;
+  variableDefaults?: PromptVariableDefault[];
 }
 
 export class PromptContextResolver {
@@ -65,10 +66,10 @@ export class PromptContextResolver {
     functionalityId: string,
     placementType: string,
     uiContext: UIContext
-  ): Record<string, any> {
+  ): Record<string, unknown> {
     const variables = this.getVariables(promptSnapshot);
-    const variableDefaults = promptSnapshot.variableDefaults || [];
-    const resolved: Record<string, any> = {};
+    const variableDefaults = promptSnapshot.variableDefaults ?? [];
+    const resolved: Record<string, unknown> = {};
 
     // Create a map of defaults for quick lookup
     const defaultsMap = new Map(
@@ -112,7 +113,7 @@ export class PromptContextResolver {
     uiContext: UIContext
   ): { canResolve: boolean; missingVariables: string[]; resolvedVariables: string[] } {
     const variables = this.getVariables(promptSnapshot);
-    const variableDefaults = promptSnapshot.variableDefaults || [];
+    const variableDefaults = promptSnapshot.variableDefaults ?? [];
     
     // Create a map of variables with defaults for quick lookup
     const defaultsMap = new Map(
@@ -157,7 +158,7 @@ export class PromptContextResolver {
     functionalityId: string,
     placementType: string,
     uiContext: UIContext
-  ): any {
+  ): unknown {
     // Functionality-specific resolution
     switch (functionalityId) {
       // ===== CONTENT CARDS =====

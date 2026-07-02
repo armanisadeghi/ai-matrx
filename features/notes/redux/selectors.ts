@@ -447,8 +447,12 @@ export const selectNotesGroupedByScope = createSelector(
       const note = noteMap.get(a.entity_id);
       if (!note) continue;
       const key = `${a.scope_type}: ${a.scope_name}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(note);
+      let bucket = map.get(key);
+      if (!bucket) {
+        bucket = [];
+        map.set(key, bucket);
+      }
+      bucket.push(note);
     }
 
     // Add "Unassigned" group for notes with no scope assignments
@@ -472,8 +476,12 @@ export const selectNotesGroupedBy = createSelector(
       const map = new Map<string, NoteRecord[]>();
       for (const n of notes) {
         const key = n.folder_name || "Draft";
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(n);
+        let bucket = map.get(key);
+        if (!bucket) {
+          bucket = [];
+          map.set(key, bucket);
+        }
+        bucket.push(n);
       }
       return map;
     },
@@ -481,8 +489,12 @@ export const selectNotesGroupedBy = createSelector(
       const map = new Map<string, NoteRecord[]>();
       for (const n of notes) {
         const key = n.organization_id || "__none__";
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(n);
+        let bucket = map.get(key);
+        if (!bucket) {
+          bucket = [];
+          map.set(key, bucket);
+        }
+        bucket.push(n);
       }
       return map;
     },
@@ -490,8 +502,12 @@ export const selectNotesGroupedBy = createSelector(
       const map = new Map<string, NoteRecord[]>();
       for (const n of notes) {
         const key = n.project_id || "__none__";
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(n);
+        let bucket = map.get(key);
+        if (!bucket) {
+          bucket = [];
+          map.set(key, bucket);
+        }
+        bucket.push(n);
       }
       return map;
     },
@@ -499,8 +515,12 @@ export const selectNotesGroupedBy = createSelector(
       const map = new Map<string, NoteRecord[]>();
       for (const n of notes) {
         const key = n.task_id || "__none__";
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(n);
+        let bucket = map.get(key);
+        if (!bucket) {
+          bucket = [];
+          map.set(key, bucket);
+        }
+        bucket.push(n);
       }
       return map;
     },

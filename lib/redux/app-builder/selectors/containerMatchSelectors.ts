@@ -96,8 +96,8 @@ const getFieldDifferences = (
 // Types for field differences
 interface FieldDifferenceDetail {
   match: boolean;
-  coreValue: any;
-  appletValue: any;
+  coreValue: string | number;
+  appletValue: string | number;
 }
 
 interface FieldDifferences {
@@ -111,7 +111,7 @@ interface FieldDifferences {
 }
 
 // Utility function to normalize string values for comparison
-const normalizeString = (value: any): string => {
+const normalizeString = (value: string | null | undefined): string => {
   if (value === null || value === undefined || value === "") {
     return "";
   }
@@ -123,7 +123,7 @@ const compareStringProperties = (
   container1: AppletContainer | ContainerBuilder,
   container2: AppletContainer | ContainerBuilder,
 ): boolean => {
-  const stringProps: (keyof AppletContainer)[] = [
+  const stringProps: ("label" | "shortLabel" | "description" | "helpText")[] = [
     "label",
     "shortLabel",
     "description",

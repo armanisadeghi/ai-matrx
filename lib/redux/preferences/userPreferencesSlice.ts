@@ -808,16 +808,25 @@ const userPreferencesSlice = createSlice({
   name: "userPreferences",
   initialState: initializeUserPreferencesState(),
   reducers: {
-    setPreference: (
+    // MATRX-EXCEPTION: generic single-field setter dispatched by string key across 20+
+    // heterogeneous preference module shapes (UserPreferences[keyof UserPreferences]).
+    // A fully-typed version needs a per-module mapped-type overload set threaded through
+    // every setPreference callsite (features/settings, code/chat, organizations, etc.) —
+    // an architecture change, not a boundary fix. See setModulePreferences below for the
+    // typed alternative used where the caller knows the module at the call site.
+    setPreference: <T extends keyof UserPreferences>(
       state,
       action: PayloadAction<{
-        module: keyof UserPreferences;
+        module: T;
         preference: string;
-        value: any;
+        value: unknown;
       }>,
     ) => {
       const { module, preference, value } = action.payload;
-      (state[module] as any)[preference] = value;
+      state[module] = {
+        ...state[module],
+        [preference]: value,
+      } as UserPreferences[T];
       // Persistence is engine-managed (definePolicy → debounced 250ms remote
       // upsert + pagehide flush). The flag was leftover from a pre-engine
       // manual-save workflow; setting it produced a "Unsaved changes" banner

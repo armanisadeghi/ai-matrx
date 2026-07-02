@@ -28,7 +28,11 @@ export function safeStringifyDepthLimit(obj: unknown, space: number = 2, maxDept
             }
             seen.add(value);
 
-            const result: Record<string | number, unknown> = Array.isArray(value) ? [] : {};
+            if (Array.isArray(value)) {
+                return value.map((v) => stringifyHelper(v, depth + 1));
+            }
+
+            const result: Record<string, unknown> = {};
             for (const key in value) {
                 if (Object.hasOwn(value, key)) {
                     result[key] = stringifyHelper((value as Record<string, unknown>)[key], depth + 1);

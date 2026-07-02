@@ -160,6 +160,12 @@ export const editMessage = createAsyncThunk<
     // ── 3. Patch with authoritative row from the RPC return ─────────────
     // The RPC returns the full cx_message row after the edit (including the
     // updated `content_history` with the prior content archived).
+    // MATRX-EXCEPTION: the generated Returns type for cx_message_edit resolves
+    // to `Database["graveyard"]["Tables"]["message"]["Row"]` — a stale/wrong
+    // reference from the schema reorg (that table has no content_history,
+    // agent_id, is_visible_to_model, etc.). The actual RPC returns the current
+    // chat.message row; a DbRpcRow guard can't be used here since it would
+    // check against the wrong generated shape. See ESCALATION brief.
     if (data) {
       const row = data as unknown as {
         content: Json;

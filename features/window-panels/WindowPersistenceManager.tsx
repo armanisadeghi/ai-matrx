@@ -294,7 +294,7 @@ export function WindowPersistenceManager({
           dispatch(
             openOverlay({
               overlayId,
-              data: (session.data ?? {}) as Record<string, unknown>,
+              data: session.data,
             }),
           );
 
@@ -366,11 +366,8 @@ export function WindowPersistenceManager({
 
       // Prefer requestIdleCallback so the sweep never steals paint time.
       // Fall back to a microtask on Safari (no rIC support yet).
-      const w = window as unknown as {
-        requestIdleCallback?: (cb: () => void) => number;
-      };
-      if (typeof w.requestIdleCallback === "function") {
-        w.requestIdleCallback(idleRun);
+      if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(idleRun);
       } else {
         setTimeout(idleRun, 0);
       }

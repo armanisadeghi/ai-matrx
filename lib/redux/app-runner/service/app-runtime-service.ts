@@ -6,11 +6,17 @@ import {
   AppletSourceConfig,
   CustomAppConfig,
   CustomAppletConfig,
+  KnownMethod,
 } from "@/types/customAppTypes";
 import {
   fetchAppById as clientFetchAppById,
   fetchAppBySlug as clientFetchAppBySlug,
 } from "@/utils/api/appFetcher";
+
+const KNOWN_ACTION_TYPES = ["button", "link", "redux", "none"] as const;
+type KnownActionType = (typeof KNOWN_ACTION_TYPES)[number];
+
+const KNOWN_METHODS = ["renderChat", "changeApplet", "renderModal", "renderSampleApplet", "none"] as const satisfies readonly KnownMethod[];
 
 // Type for the app configuration
 interface DbResponseAppConfig {
@@ -88,7 +94,7 @@ export async function fetchAppAndAppletConfig(
     }
 
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in fetchAppAndAppletConfig:", error);
     throw error;
   }
@@ -204,15 +210,20 @@ export function transformAppWithApplets(rawConfig: AppAndAppletConfig): {
       config.extra_buttons !== null && Array.isArray(config.extra_buttons)
         ? config.extra_buttons
             .filter(
-              (btn: any) =>
-                typeof btn?.label === "string" &&
-                typeof btn?.actionType === "string" &&
-                typeof btn?.knownMethod === "string" &&
-                btn.label.trim() !== "" &&
-                btn.actionType.trim() !== "" &&
-                btn.knownMethod.trim() !== "",
+              (btn: unknown): btn is { label: string; actionType: KnownActionType; knownMethod: KnownMethod } => {
+                if (!btn || typeof btn !== "object") return false;
+                const b = btn as Record<string, unknown>;
+                return (
+                  typeof b.label === "string" &&
+                  b.label.trim() !== "" &&
+                  typeof b.actionType === "string" &&
+                  (KNOWN_ACTION_TYPES as readonly string[]).includes(b.actionType) &&
+                  typeof b.knownMethod === "string" &&
+                  (KNOWN_METHODS as readonly string[]).includes(b.knownMethod)
+                );
+              },
             )
-            .map((btn: any) => ({
+            .map((btn) => ({
               label: btn.label,
               actionType: btn.actionType,
               knownMethod: btn.knownMethod,

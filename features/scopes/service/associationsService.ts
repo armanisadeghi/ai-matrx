@@ -64,7 +64,7 @@ function toEdge(row: AssocForEntityRow): AssociationEdge {
     role: row.role ?? null,
     label: row.label ?? null,
     position: row.position ?? null,
-    metadata: (row.metadata ?? {}) as Json,
+    metadata: row.metadata ?? {},
     orgId: row.organization_id ?? null,
     createdAt: row.created_at,
   };
@@ -93,7 +93,7 @@ function toTargetEdge(row: AssocForTargetsRow): AssociationTargetEdge {
     role: row.role ?? null,
     label: row.label ?? null,
     position: row.position ?? null,
-    metadata: (row.metadata ?? {}) as Json,
+    metadata: row.metadata ?? {},
     orgId: row.organization_id ?? null,
     createdAt: row.created_at,
   };
@@ -122,7 +122,7 @@ function toSourceEdge(row: AssocForSourcesRow): AssociationSourceEdge {
     role: row.role ?? null,
     label: row.label ?? null,
     position: row.position ?? null,
-    metadata: (row.metadata ?? {}) as Json,
+    metadata: row.metadata ?? {},
     orgId: row.organization_id ?? null,
     createdAt: row.created_at,
   };

@@ -37,10 +37,12 @@ export function getAllowedEmailDomains(): string[] {
 }
 
 /**
- * Get the default from address
+ * Get the default from address. Undefined when EMAIL_FROM is not configured —
+ * callers must handle that case explicitly rather than silently sending with
+ * an empty/malformed From header.
  */
-export function getDefaultFromAddress(): string {
-  return process.env.EMAIL_FROM || "";
+export function getDefaultFromAddress(): string | undefined {
+  return process.env.EMAIL_FROM;
 }
 
 /**

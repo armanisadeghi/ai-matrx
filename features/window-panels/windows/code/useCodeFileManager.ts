@@ -64,8 +64,12 @@ function buildFolderTree(
   const byParent = new Map<string | null, CodeFolder[]>();
   for (const f of folders) {
     const parent = f.parent_folder_id ?? null;
-    if (!byParent.has(parent)) byParent.set(parent, []);
-    byParent.get(parent)!.push(f);
+    const group = byParent.get(parent);
+    if (group) {
+      group.push(f);
+    } else {
+      byParent.set(parent, [f]);
+    }
   }
   // Count files per folder (null = root/"unfiled").
   const fileCounts = new Map<string | null, number>();

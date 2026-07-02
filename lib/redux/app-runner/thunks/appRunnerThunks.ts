@@ -27,6 +27,7 @@ import {
   BrokerMapping,
 } from "@/types/customAppTypes";
 import type { RootState } from "@/lib/redux/store";
+import { extractErrorMessage } from "@/utils/errors";
 
 // Object to store validation results for retrieval later
 const validationStore: Record<string, ValidationResult> = {};
@@ -35,8 +36,8 @@ const validationStore: Record<string, ValidationResult> = {};
  * Runs validations asynchronously without blocking the main thread
  */
 function runDeferredValidations(
-  appConfig: any,
-  applets: any[],
+  appConfig: CustomAppConfig,
+  applets: CustomAppletConfig[],
   options: ValidationOptions,
   storeKey: string,
 ): void {
@@ -224,18 +225,22 @@ export const fetchAppWithApplets = createAsyncThunk(
         applets,
         activeAppletId,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         `[THUNK-DEBUG ${requestId}] Error in fetchAppWithApplets thunk:`,
         error,
       );
 
       // Detailed error for debugging
+      const errorObj = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
       const errorDetails = {
-        message: error.message || "Unknown error",
-        code: error.code,
-        status: error.status,
-        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        message: extractErrorMessage(error) || "Unknown error",
+        code: errorObj.code,
+        status: errorObj.status,
+        stack:
+          process.env.NODE_ENV === "development" && error instanceof Error
+            ? error.stack
+            : undefined,
         requestId,
       };
 
@@ -252,8 +257,8 @@ export const fetchAppWithApplets = createAsyncThunk(
  * Helper function to determine which applet should be active initially
  */
 function determineActiveAppletId(
-  appConfig: any,
-  applets: any[],
+  appConfig: CustomAppConfig,
+  applets: CustomAppletConfig[],
   defaultAppletId: string | null,
 ): string | null {
   // If a specific applet ID was requested, use that if it exists

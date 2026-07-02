@@ -200,11 +200,12 @@ const windowManagerSlice = createSlice({
       const win = state.windows[action.payload];
       if (!win) return;
       // Free tray slot
-      if (win.traySlot !== null) {
+      const freedTraySlot = win.traySlot;
+      if (freedTraySlot !== null) {
         state.trayCount = Math.max(0, state.trayCount - 1);
         // Compact remaining tray slots
         Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > win.traySlot!) {
+          if (w.traySlot !== null && w.traySlot > freedTraySlot) {
             w.traySlot -= 1;
           }
         });
@@ -238,10 +239,11 @@ const windowManagerSlice = createSlice({
     restoreWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      if (win.traySlot !== null) {
+      const restoredTraySlot = win.traySlot;
+      if (restoredTraySlot !== null) {
         state.trayCount = Math.max(0, state.trayCount - 1);
         Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > win.traySlot!) {
+          if (w.traySlot !== null && w.traySlot > restoredTraySlot) {
             w.traySlot -= 1;
           }
         });
@@ -288,10 +290,11 @@ const windowManagerSlice = createSlice({
       if (!win) return;
       if (state.windowsHidden) state.windowsHidden = false;
       if (win.popoutMode !== null) return; // OS frame owns popout visibility
-      if (win.traySlot !== null) {
+      const revealedTraySlot = win.traySlot;
+      if (revealedTraySlot !== null) {
         state.trayCount = Math.max(0, state.trayCount - 1);
         Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > win.traySlot!) {
+          if (w.traySlot !== null && w.traySlot > revealedTraySlot) {
             w.traySlot -= 1;
           }
         });
@@ -317,10 +320,11 @@ const windowManagerSlice = createSlice({
     maximizeWindow(state, action: PayloadAction<string>) {
       const win = state.windows[action.payload];
       if (!win) return;
-      if (win.traySlot !== null) {
+      const maximizedTraySlot = win.traySlot;
+      if (maximizedTraySlot !== null) {
         state.trayCount = Math.max(0, state.trayCount - 1);
         Object.values(state.windows).forEach((w) => {
-          if (w.traySlot !== null && w.traySlot > win.traySlot!) {
+          if (w.traySlot !== null && w.traySlot > maximizedTraySlot) {
             w.traySlot -= 1;
           }
         });
@@ -515,8 +519,9 @@ const windowManagerSlice = createSlice({
       );
       if (minimized.length === 0) return;
       minimized.forEach((win) => {
+        if (win.traySlot === null) return;
         win.windowed = traySlotRect(
-          win.traySlot!,
+          win.traySlot,
           viewportWidth,
           viewportHeight,
         );

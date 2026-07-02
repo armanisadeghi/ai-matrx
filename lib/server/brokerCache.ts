@@ -33,7 +33,7 @@ class ServerBrokerCache {
   }
 
   // Set broker value
-  async setValue(idArgs: BrokerIdentifier, value: any, sessionId?: string) {
+  async setValue(idArgs: BrokerIdentifier, value: unknown, sessionId?: string) {
     const key = this.getBrokerKey(idArgs, sessionId);
     await this.ensureConnection();
     
@@ -53,13 +53,24 @@ class ServerBrokerCache {
       const baseKey = `${idArgs.source}:${idArgs.mappedItemId}`;
       return sessionId ? `session:${sessionId}:${baseKey}` : `global:${baseKey}`;
     }
-    // Fallback for compatibility
-    const baseKey = (idArgs as any).brokerId || `${(idArgs as any).source}:${(idArgs as any).mappedItemId || (idArgs as any).itemId}`;
+    // MATRX-EXCEPTION: fallback for compatibility — historical callers could
+    // send extra untyped fields (`brokerId`/`itemId`) beyond the current
+    // BrokerIdentifier shape (source/mappedItemId/sourceId); read those
+    // defensively rather than assume the narrower current type is exhaustive
+    // at runtime for every caller.
+    const legacy = idArgs as unknown as {
+      brokerId?: string;
+      source?: string;
+      mappedItemId?: string;
+      itemId?: string;
+    };
+    const baseKey =
+      legacy.brokerId || `${legacy.source}:${legacy.mappedItemId || legacy.itemId}`;
     return sessionId ? `session:${sessionId}:${baseKey}` : `global:${baseKey}`;
   }
 
   // Sync multiple brokers at once
-  async syncBrokers(brokers: Array<{ idArgs: BrokerIdentifier; value: any }>, sessionId?: string) {
+  async syncBrokers(brokers: Array<{ idArgs: BrokerIdentifier; value: unknown }>, sessionId?: string) {
     await this.ensureConnection();
     
     const multi = this.redis.multi();

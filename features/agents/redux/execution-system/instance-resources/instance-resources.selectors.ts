@@ -280,7 +280,7 @@ export const selectResourcePayloads = (conversationId: string) =>
               break;
           }
 
-          return payload as unknown as MessagePart;
+          return payload as MessagePart;
         });
 
       return arr.length === 0 ? EMPTY_PAYLOADS : arr;

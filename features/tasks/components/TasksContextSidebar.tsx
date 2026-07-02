@@ -79,6 +79,10 @@ function resolveIcon(name: string | undefined): LucideIcon {
     .split(/[-_\s]+/)
     .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
     .join("");
+  // MATRX-EXCEPTION: dynamic Lucide icon-by-name lookup — `import * as icons`
+  // is the full module namespace (icon components + non-component exports),
+  // so there is no narrower structural type to guard against; same pattern
+  // used codebase-wide (e.g. features/scope-system/utils/resolveIcon.ts).
   const Icon = (icons as unknown as Record<string, LucideIcon>)[pascal];
   return Icon ?? CircleDashed;
 }

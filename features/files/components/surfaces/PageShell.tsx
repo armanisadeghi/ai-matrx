@@ -902,7 +902,7 @@ function PageShellDesktop({
            * visible behind the resize handle — clicking it (e.g. picking a
            * different file) just swaps the previewed file. autoSave keeps the
            * preferred width across mounts. */}
-          {showPreviewPane && (
+          {showPreviewPane && activeFile && (
             <>
               <ResizableHandle
                 disabled={previewMaximized}
@@ -930,8 +930,8 @@ function PageShellDesktop({
                 >
                   <div className="flex h-full min-h-0 flex-col">
                     <PreviewPane
-                      key={activeFile!.id}
-                      fileId={activeFile!.id}
+                      key={activeFile.id}
+                      fileId={activeFile.id}
                       isMaximized={previewMaximized}
                       onToggleMaximize={togglePreviewMaximize}
                     />

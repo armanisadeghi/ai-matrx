@@ -68,7 +68,7 @@ function asStringArray(v: unknown): string[] {
 /** Read the typed podcast media off a persisted asset's free-form `meta`,
  *  tolerating older assets that predate full-media persistence. */
 export function podcastMediaFrom(asset: OutputAsset): PodcastMedia {
-  const m = (asset.meta ?? {}) as Record<string, unknown>;
+  const m = asset.meta ?? {};
   return {
     host_count: typeof m.host_count === "number" ? m.host_count : undefined,
     podcast_type: typeof m.podcast_type === "string" ? m.podcast_type : undefined,
@@ -130,5 +130,10 @@ export function appendAsset(
 export function serializeOutputs(
   outputs: ResearchOutputs,
 ): Record<string, unknown> {
-  return outputs as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const kind of OUTPUT_KINDS) {
+    const slot = outputs[kind];
+    if (slot) out[kind] = slot;
+  }
+  return out;
 }

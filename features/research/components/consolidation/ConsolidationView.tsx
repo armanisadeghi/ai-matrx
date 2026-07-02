@@ -18,7 +18,7 @@ interface ConsolidationViewProps {
 }
 
 /** A string with real (non-whitespace) content. */
-const hasText = (s: string | null | undefined): boolean => !!s && s.trim().length > 0;
+const hasText = (s: string | null | undefined): s is string => !!s && s.trim().length > 0;
 
 /** Render structured JSON output as a fenced code block — bounded + crash-safe. */
 const structuredToMarkdown = (data: unknown): string => {
@@ -125,10 +125,10 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                             {consolidation.status === 'failed' && (
                                 <StoppedEarlyNote reason={consolidation.error || 'Consolidation stopped early.'} />
                             )}
-                            <MarkdownStream content={consolidation.result!} />
+                            <MarkdownStream content={consolidation.result} />
                             <div className="flex justify-end">
                                 <ContentActionBar
-                                    content={consolidation.result!}
+                                    content={consolidation.result}
                                     title={tag ? `${tag.name} — consolidation` : 'Tag consolidation'}
                                     instanceKey={`consolidation-${consolidation.id}`}
                                     metadata={{

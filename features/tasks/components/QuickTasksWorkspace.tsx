@@ -181,7 +181,7 @@ export function QuickTasksMain() {
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim() || !selectedProjectId) return;
-    const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
+    const defaultScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     const newId = await dispatch(

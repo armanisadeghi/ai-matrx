@@ -272,7 +272,7 @@ export default function AppletBuilder() {
                       value={
                         typeof step.parameters[param.name] === "object"
                           ? JSON.stringify(step.parameters[param.name], null, 2)
-                          : step.parameters[param.name] || ""
+                          : String(step.parameters[param.name] ?? "")
                       }
                       onChange={(e) => {
                         try {
@@ -296,7 +296,7 @@ export default function AppletBuilder() {
                   ) : (
                     <input
                       type={param.type === "number" ? "number" : "text"}
-                      value={step.parameters[param.name] || ""}
+                      value={String(step.parameters[param.name] ?? "")}
                       onChange={(e) =>
                         updateStepParameter(
                           step.id,

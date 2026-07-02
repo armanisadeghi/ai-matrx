@@ -4,6 +4,7 @@ import {
   createSlice,
   PayloadAction,
   ActionReducerMapBuilder,
+  SliceCaseReducers,
 } from "@reduxjs/toolkit";
 import type {
   FeatureName,
@@ -18,7 +19,7 @@ export const createFeatureSlice = <T extends z.ZodTypeAny>(
   featureName: FeatureName,
   featureSchema: T,
   staleTime: number = 600000, // 10 minutes
-  additionalReducers: Record<string, any> = {},
+  additionalReducers: SliceCaseReducers<SliceState<z.infer<T>>> = {},
 ) => {
   type FeatureType = z.infer<T>;
 

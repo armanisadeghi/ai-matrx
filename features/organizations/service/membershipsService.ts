@@ -119,7 +119,7 @@ function toMembership(row: MbrListRow): Membership {
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? null,
     createdBy: row.created_by ?? null,
-    metadata: (row.metadata ?? {}) as Json,
+    metadata: row.metadata ?? {},
   };
 }
 

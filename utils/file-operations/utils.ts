@@ -240,6 +240,16 @@ interface FileFilterConfig {
   disallowedFileTypes: string[];
 }
 
+/** Intermediate pipeline item from processCoreStructure — a storage row
+ *  enriched with bucket/name/contentType/extension; becomes a real
+ *  NodeStructure only inside buildTreeNode. */
+type PipelineItem = BucketStructureContent & {
+  bucket: string;
+  name: string;
+  contentType: "FOLDER" | "FILE";
+  extension: string;
+};
+
 class FileNodeManager {
   private static instance: FileNodeManager;
   private config: FileFilterConfig = {
@@ -358,21 +368,21 @@ class FileNodeManager {
     return this.config.hiddenFolders.has(name);
   }
 
-  private processFiles(items: NodeStructure[]): NodeStructure[] {
+  private processFiles(items: PipelineItem[]): PipelineItem[] {
     return items.filter((item) => {
       if (item.contentType !== "FILE") return true;
       return !this.shouldHideFile(item.name);
     });
   }
 
-  private processFolders(items: NodeStructure[]): NodeStructure[] {
+  private processFolders(items: PipelineItem[]): PipelineItem[] {
     return items.filter((item) => {
       if (item.contentType !== "FOLDER") return true;
       return !this.shouldHideFolder(item.name);
     });
   }
 
-  private sortItems(items: NodeStructure[]): NodeStructure[] {
+  private sortItems(items: PipelineItem[]): PipelineItem[] {
     return [...items].sort((a, b) => {
       if (a.contentType === "FOLDER" && b.contentType !== "FOLDER") return -1;
       if (a.contentType !== "FOLDER" && b.contentType === "FOLDER") return 1;
@@ -382,7 +392,7 @@ class FileNodeManager {
 
   private buildTreeNode(
     bucketName: string,
-    sortedItems: NodeStructure[],
+    sortedItems: PipelineItem[],
   ): NodeStructure[] {
     const nodeMap = new Map<string, NodeStructure>();
     const rootNodes: NodeStructure[] = [];
@@ -453,9 +463,12 @@ class FileNodeManager {
     return rootNodes;
   }
 
-  processCoreStructure(contents: BucketStructureContent[], bucketName: string) {
+  processCoreStructure(
+    contents: BucketStructureContent[],
+    bucketName: string,
+  ): PipelineItem[] {
     return contents
-      .map((item) => {
+      .map((item): PipelineItem | null => {
         if (
           ["emptyfolder", "emptyfolderplaceholder", "folder"].includes(
             item.type.toLowerCase(),

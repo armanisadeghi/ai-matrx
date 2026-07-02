@@ -268,8 +268,23 @@ export async function assembleManualRequest(
         const textContent = extractSystemText(msg.content);
         const userOverrides = advancedSettings?.structuredInstruction ?? {};
         structuredSystemInstruction = {
-          content: textContent,
+          // Wire defaults matching the server's SystemInstructionInput
+          // Pydantic model (see aidream-chat-endpoint.md) — the generated
+          // OpenAPI schema marks these required because the server always
+          // supplies them via field defaults, so the client must too.
+          intro: "",
+          outro: "",
+          append_sections: [],
+          prepend_sections: [],
+          content_blocks: [],
+          tools_list: [],
+          action_types: [],
           include_date: true,
+          include_code_guidelines: false,
+          include_safety_guidelines: false,
+          include_actions_guidance: false,
+          include_context_block: true,
+          content: textContent,
           ...userOverrides,
         };
       } else {
@@ -409,8 +424,10 @@ export async function assembleManualRequest(
       request.sandbox = sandboxBinding as ChatRequestPayload["sandbox"];
   }
   if (structuredSystemInstruction) {
-    request.system_instruction =
-      structuredSystemInstruction as unknown as string;
+    // ChatRequest.system_instruction accepts `string | SystemInstructionInput`
+    // (SystemInstructionInput = string | SystemInstruction) — the structured
+    // object is a valid value here directly, no string coercion needed.
+    request.system_instruction = structuredSystemInstruction;
   }
   // Matrx Actions: carry the agent's action repertoire so the server injects the
   // "## Available Matrx Actions" guidance at runtime (additive — never edits the

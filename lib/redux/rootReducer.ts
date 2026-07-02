@@ -12,7 +12,7 @@
 // See `~/.claude/plans/the-entity-system-which-bubbly-wind.md` for the
 // migration that produced this split.
 
-import { combineReducers } from "@reduxjs/toolkit";
+import { combineReducers, type Reducer } from "@reduxjs/toolkit";
 import { featureSchemas } from "./dynamic/featureSchema";
 import { createFeatureSlice } from "./slices/featureSliceCreator";
 import { createModuleSlice } from "./slices/moduleSliceCreator";
@@ -173,30 +173,28 @@ import userMarkdownSamplesReducer from "@/lib/redux/slices/userMarkdownSamples/s
 import richDocumentActionSurfacesReducer from "@/features/rich-document/redux/actionSurfacesSlice";
 import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
 
-const featureReducers = Object.keys(featureSchemas).reduce(
-  (acc, featureName) => {
-    const featureSchema =
-      featureSchemas[featureName as keyof typeof featureSchemas];
-    const featureSlice = createFeatureSlice(featureName as any, featureSchema);
-    acc[featureName] = featureSlice.reducer;
-    return acc;
-  },
-  {} as Record<string, any>,
-);
+const featureReducers = Object.keys(featureSchemas).reduce<
+  Record<string, Reducer>
+>((acc, featureName) => {
+  const featureSchema =
+    featureSchemas[featureName as keyof typeof featureSchemas];
+  const featureSlice = createFeatureSlice(featureName, featureSchema);
+  acc[featureName] = featureSlice.reducer;
+  return acc;
+}, {});
 
-const moduleReducers = Object.keys(moduleSchemas).reduce(
-  (acc, moduleName) => {
-    const moduleSchema =
-      moduleSchemas[moduleName as keyof typeof moduleSchemas];
-    const moduleSlice = createModuleSlice(
-      moduleName as ModuleName,
-      moduleSchema,
-    );
-    acc[moduleName] = moduleSlice.reducer;
-    return acc;
-  },
-  {} as Record<string, any>,
-);
+const moduleReducers = Object.keys(moduleSchemas).reduce<
+  Record<string, Reducer>
+>((acc, moduleName) => {
+  const moduleSchema =
+    moduleSchemas[moduleName as keyof typeof moduleSchemas];
+  const moduleSlice = createModuleSlice(
+    moduleName as ModuleName,
+    moduleSchema,
+  );
+  acc[moduleName] = moduleSlice.reducer;
+  return acc;
+}, {});
 
 /**
  * Slice map for the slim store. Every key here is a non-entity slice — safe

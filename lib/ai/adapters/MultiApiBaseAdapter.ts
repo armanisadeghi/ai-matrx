@@ -33,9 +33,9 @@ export type StreamOptions = {
     user?: string;
     systemPrompt?: string;
     messageHistory?: Message[];
-    functions?: any[];
+    functions?: Record<string, unknown>[];
     functionCall?: string | { name: string };
-    [key: string]: any;
+    [key: string]: unknown;
 };
 
 type OnChunkFunction = (chunk: string) => void;

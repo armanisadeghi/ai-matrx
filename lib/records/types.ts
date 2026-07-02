@@ -5,7 +5,7 @@
  * contract documented in
  * `docs/concepts/full-sync-boardcast-storage/durable-records-contract.md`.
  *
- * The model in one line: any feature record is `T & RecordTracking`, edited
+ * The model in one line — every feature record is `T & RecordTracking`, edited
  * live in the ONE canonical Redux slice; `_dirty` means "differs from server";
  * recovery re-pulls from the server (single source of truth).
  */

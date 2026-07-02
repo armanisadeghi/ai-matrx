@@ -137,7 +137,7 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
   const [labels, setLabels] = useState<TaskLabel[]>(
-    (task as any).settings?.labels || [],
+    (task.settings?.labels as TaskLabel[] | undefined) || [],
   );
   const [showDescPreview, setShowDescPreview] = useState(false);
 
@@ -205,7 +205,8 @@ export default function TaskDetailPage({ task }: TaskDetailPageProps) {
         await dispatch(
           updateTaskFieldThunk({ taskId: task.id, patch: { priority } }),
         );
-      const prevLabels: TaskLabel[] = (task as any).settings?.labels || [];
+      const prevLabels: TaskLabel[] =
+        (task.settings?.labels as TaskLabel[] | undefined) || [];
       if (JSON.stringify(labels) !== JSON.stringify(prevLabels))
         await taskService.updateTaskLabels(task.id, labels);
       await refresh();

@@ -452,9 +452,9 @@ const unsupportedByModel: ValidationRule = {
     // zero declared controls is a data gap, not a real incompatibility — those
     // settings surface via the inline "unknown" caution dot instead of a hard
     // issue, so we don't flood the IssueTable with false positives.
-    const declaredKeys = Object.keys(
-      controls as unknown as Record<string, unknown>,
-    ).filter((k) => k !== "rawControls" && k !== "unmappedControls");
+    const declaredKeys = Object.keys(controls).filter(
+      (k) => k !== "rawControls" && k !== "unmappedControls",
+    );
     if (declaredKeys.length === 0) return [];
 
     const issues: ValidationIssue[] = [];

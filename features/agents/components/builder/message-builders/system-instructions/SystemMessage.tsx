@@ -121,7 +121,11 @@ export function SystemMessage({
   // console.log("[AGENT SYSTEM MESSAGE] messages", messages);
   // console.log("[AGENT SYSTEM MESSAGE] systemMessage", systemMessage);
 
-  // All blocks as plain objects so we can read any field regardless of TS types
+  // All blocks as plain objects so we can read any field regardless of TS
+  // types. The block editor (AddBlockButton/BlockList) deliberately works on
+  // loose records so a single generic UI can edit any block type by field;
+  // only the write-backs below re-narrow to the concrete discriminated union.
+  // MATRX-EXCEPTION: generic multi-type block editor, narrowed at write-back only.
   const rawBlocks: Record<string, unknown>[] = systemMessage
     ? (systemMessage.content as unknown as Record<string, unknown>[])
     : [];
@@ -141,6 +145,7 @@ export function SystemMessage({
       const nonSystemMessages = messages.filter((m) => m.role !== "system");
 
       // Rebuild non-text blocks from raw (round-trip them untouched)
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const preservedNonText = rawBlocks.filter(
         (b) => b.type !== "text",
       ) as unknown as AgentDefinitionMessage["content"];
@@ -165,6 +170,7 @@ export function SystemMessage({
       const nonSystemMessages = messages.filter((m) => m.role !== "system");
 
       const newNonText = nonTextBlocks.filter((_, i) => i !== indexInNonText);
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const newContent: AgentDefinitionMessage["content"] = [
         ...(developerMessage.trim()
           ? [{ type: "text" as const, text: developerMessage }]
@@ -186,6 +192,7 @@ export function SystemMessage({
     (block: Record<string, unknown>) => {
       if (!messages) return;
       const nonSystemMessages = messages.filter((m) => m.role !== "system");
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const newContent: AgentDefinitionMessage["content"] = [
         ...(developerMessage.trim()
           ? [{ type: "text" as const, text: developerMessage }]
@@ -209,6 +216,7 @@ export function SystemMessage({
       const updatedNonText = nonTextBlocks.map((b, i) =>
         i === index ? block : b,
       );
+      // MATRX-EXCEPTION: generic block editor, narrowed at write-back only.
       const newContent: AgentDefinitionMessage["content"] = [
         ...(developerMessage.trim()
           ? [{ type: "text" as const, text: developerMessage }]
@@ -707,9 +715,7 @@ export function SystemMessage({
               getTextarea={() =>
                 textareaRefs.current[systemMessageIndex] || null
               }
-              contextData={
-                contextMenuData as unknown as Record<string, unknown>
-              }
+              contextData={contextMenuData}
               enableFloatingIcon={true}
               onTextReplace={handleTextReplace}
               onTextInsertBefore={handleTextInsertBefore}

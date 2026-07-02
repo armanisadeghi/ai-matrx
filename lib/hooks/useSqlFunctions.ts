@@ -26,12 +26,14 @@ export function useSqlFunctions({
   defaultSort = { field: "name", direction: "asc" },
 }: UseSqlFunctionsProps = {}) {
   // State
-  const [functions, setFunctions] = useState<SqlFunction[]>(initialData || []);
+  const [functions, setFunctions] = useState<SqlFunction[]>(initialData ?? []);
   const [filteredFunctions, setFilteredFunctions] =
     useState<SqlFunction[]>(functions);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<Error | null>(null);
-  const [filter, setFilter] = useState<SqlFunctionFilter>(defaultFilter || {});
+  // MATRX-EXCEPTION: React state initializer default for a genuinely optional
+  // hook prop (no filters applied) — not a boundary write.
+  const [filter, setFilter] = useState<SqlFunctionFilter>(defaultFilter ?? {});
   const [sort, setSort] = useState<SqlFunctionSort>(defaultSort);
   const [selectedFunction, setSelectedFunction] = useState<SqlFunction | null>(
     null,
@@ -170,20 +172,23 @@ export function useSqlFunctions({
 
     // Apply filters
     if (filter.name) {
+      const nameFilter = filter.name.toLowerCase();
       result = result.filter((func) =>
-        func.name.toLowerCase().includes(filter.name!.toLowerCase()),
+        func.name.toLowerCase().includes(nameFilter),
       );
     }
 
     if (filter.schema) {
+      const schemaFilter = filter.schema.toLowerCase();
       result = result.filter((func) =>
-        func.schema.toLowerCase().includes(filter.schema!.toLowerCase()),
+        func.schema.toLowerCase().includes(schemaFilter),
       );
     }
 
     if (filter.returnType) {
+      const returnTypeFilter = filter.returnType.toLowerCase();
       result = result.filter((func) =>
-        func.returns.toLowerCase().includes(filter.returnType!.toLowerCase()),
+        func.returns.toLowerCase().includes(returnTypeFilter),
       );
     }
 

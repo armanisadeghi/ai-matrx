@@ -22,6 +22,10 @@ export type LucideIconName = string;
 
 export type ToolsCategory = string;
 
+// MATRX-EXCEPTION: heterogeneous registry of lazy window components — each
+// entry's dynamically-imported component has an entirely different prop
+// shape (rendered generically by overlayId via OverlayController), so there
+// is no single concrete prop type to declare here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ComponentImport = () => Promise<{ default: ComponentType<any> }>;
 
@@ -47,8 +51,8 @@ export interface WindowSessionRow {
   label: string | null;
   panel_state: PanelState;
   data: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 // ─── Tray preview ─────────────────────────────────────────────────────────────

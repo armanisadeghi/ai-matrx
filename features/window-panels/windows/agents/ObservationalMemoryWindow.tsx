@@ -225,8 +225,8 @@ function MemorySidebar({
     const sortByRecent = (a: string, b: string) => {
       const ae = byConversationId[a]?.events ?? [];
       const be = byConversationId[b]?.events ?? [];
-      const at = ae.length > 0 ? ae[ae.length - 1]!.receivedAt : "";
-      const bt = be.length > 0 ? be[be.length - 1]!.receivedAt : "";
+      const at = ae.at(-1)?.receivedAt ?? "";
+      const bt = be.at(-1)?.receivedAt ?? "";
       return bt.localeCompare(at);
     };
     enabledList.sort(sortByRecent);

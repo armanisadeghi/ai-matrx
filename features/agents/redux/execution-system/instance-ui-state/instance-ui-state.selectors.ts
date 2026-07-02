@@ -597,8 +597,12 @@ export const selectUIStateInstancesByAgent = createSelector(
 
     for (const conversationId of Object.keys(byUIConversationId)) {
       const agentId = byExecConversationId[conversationId]?.agentId ?? null;
-      if (!groupMap.has(agentId)) groupMap.set(agentId, []);
-      groupMap.get(agentId)!.push(conversationId);
+      const existing = groupMap.get(agentId);
+      if (existing) {
+        existing.push(conversationId);
+      } else {
+        groupMap.set(agentId, [conversationId]);
+      }
     }
 
     const result: InstanceAgentGroup[] = [];
@@ -613,18 +617,21 @@ export const selectUIStateInstancesByAgent = createSelector(
       });
 
     for (const agentId of namedAgentIds) {
+      const conversationIds = groupMap.get(agentId);
+      if (!conversationIds) continue;
       result.push({
         agentId,
         agentName: agents?.[agentId]?.name,
-        conversationIds: groupMap.get(agentId)!,
+        conversationIds,
       });
     }
 
-    if (groupMap.has(null)) {
+    const unassignedConversationIds = groupMap.get(null);
+    if (unassignedConversationIds) {
       result.push({
         agentId: null,
         agentName: undefined,
-        conversationIds: groupMap.get(null)!,
+        conversationIds: unassignedConversationIds,
       });
     }
 

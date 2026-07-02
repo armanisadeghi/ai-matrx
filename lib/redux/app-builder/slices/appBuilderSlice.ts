@@ -432,13 +432,18 @@ export const appBuilderSlice = createSlice({
 
         // Handle fetchAppByIdSuccess (used by setActiveAppWithFetchThunk)
         builder.addCase("appBuilder/fetchAppByIdSuccess", (state, action: FetchAppByIdSuccessAction) => {
-            state.apps[action.payload.id!] = { 
-                ...action.payload, 
+            const { id } = action.payload;
+            if (!id) {
+                console.error("fetchAppByIdSuccess: payload is missing id", action.payload);
+                return;
+            }
+            state.apps[id] = {
+                ...action.payload,
                 isDirty: false,
                 isLocal: false,
                 slugStatus: 'unique'
             };
-            state.activeAppId = action.payload.id!;
+            state.activeAppId = id;
             state.isLoading = false;
         });
     },

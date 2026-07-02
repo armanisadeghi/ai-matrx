@@ -127,14 +127,14 @@ function buildEntries(
         secondary,
       });
     } else if (evt.event === "error") {
-      const data = evt.data as unknown as Record<string, unknown>;
+      const data = evt.data;
       out.push({
         id: baseId,
         timestamp: Date.now(),
         kind: "error",
         level: "error",
         stage: null,
-        primary: String(data.user_message ?? data.message ?? "Error"),
+        primary: data.user_message ?? data.message ?? "Error",
       });
     } else if (evt.event === "end") {
       out.push({

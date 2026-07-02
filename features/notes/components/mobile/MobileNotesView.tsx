@@ -77,7 +77,7 @@ export default function MobileNotesView() {
 
   // Called from the header save button — delegates to editor via window ref
   const handleSave = useCallback(async () => {
-    const editorState = (window as any).__mobileNoteEditorState;
+    const editorState = window.__mobileNoteEditorState;
     if (!editorState?.handleSave) return;
     setIsSaving(true);
     try {
@@ -94,7 +94,7 @@ export default function MobileNotesView() {
   React.useEffect(() => {
     if (currentView !== "editor") return undefined;
     const id = setInterval(() => {
-      const editorState = (window as any).__mobileNoteEditorState;
+      const editorState = window.__mobileNoteEditorState;
       if (editorState) setIsDirty(editorState.isDirty ?? false);
     }, 500);
     return () => clearInterval(id);

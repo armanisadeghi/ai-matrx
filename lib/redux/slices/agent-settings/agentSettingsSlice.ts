@@ -38,9 +38,55 @@ import {
   resolveConflicts,
   sanitizeSettings,
 } from "./internal-utils";
-import type { Json } from "@/types/database.types";
+import { isJsonArray, isJsonObject } from "@/types/json";
+import { VARIABLE_COMPONENT_TYPES } from "@/features/agents/types/agent-definition.types";
 
 // ── Initial State ──────────────────────────────────────────────────────────────
+
+/** Type predicate so `type` narrows into a real `VariableCustomComponent`, not just a runtime check. */
+function isCustomComponentShape(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & { type: (typeof VARIABLE_COMPONENT_TYPES)[number] } {
+  return typeof value.type === "string" && (VARIABLE_COMPONENT_TYPES as readonly string[]).includes(value.type);
+}
+
+/**
+ * Narrows a variable's `customComponent` JSON field to `VariableCustomComponent`,
+ * validating only the required discriminant (`type`) — the rest of the shape
+ * (picklist/toggle/min/max/etc.) is deep and mostly-optional; deeper validation
+ * belongs to whichever component actually reads each nested field.
+ */
+function parseCustomComponent(raw: unknown): AgentVariable["customComponent"] {
+  if (!isJsonObject(raw)) return undefined;
+  const cc = raw as Record<string, unknown>;
+  return isCustomComponentShape(cc) ? (cc as AgentVariable["customComponent"]) : undefined;
+}
+
+/**
+ * Narrows a `variable_definitions`/`variable_defaults` JSONB column to
+ * `AgentVariable[]`, dropping malformed entries rather than asserting the
+ * whole column's shape (Pattern 4 field narrowing — the column is only ever
+ * validated shallowly here since deeper validation is out of this slice's scope).
+ */
+function parseAgentVariables(raw: unknown): AgentVariable[] {
+  if (!isJsonArray(raw)) return [];
+  const result: AgentVariable[] = [];
+  for (const item of raw) {
+    if (!isJsonObject(item)) continue;
+    if (typeof item.name !== "string") continue;
+    result.push({
+      name: item.name,
+      defaultValue: typeof item.defaultValue === "string" ? item.defaultValue : "",
+      required: typeof item.required === "boolean" ? item.required : undefined,
+      helpText: typeof item.helpText === "string" ? item.helpText : undefined,
+      // customComponent is a deep, mostly-optional shape (picklist/toggle/min/max/etc.) —
+      // only `type` (the required discriminant) is validated here; deeper validation
+      // belongs to whichever component actually reads each nested field.
+      customComponent: parseCustomComponent(item.customComponent),
+    });
+  }
+  return result;
+}
 
 function makeEmptyEntry(
   agentId: string,
@@ -166,9 +212,9 @@ export const loadAgentSettings = createAsyncThunk(
       const rawSettings = data.settings as AgentSettings;
       // `variable_defaults` is a JSONB column (typed `Json | null` by Supabase).
       // Narrow at the boundary so downstream code can rely on AgentVariable[].
-      const rawVariableDefaults = data.variable_defaults as unknown as
-        | AgentVariable[]
-        | null;
+      const rawVariableDefaults: AgentVariable[] | null = parseAgentVariables(
+        data.variable_defaults,
+      );
 
       return {
         agentId,
@@ -342,8 +388,8 @@ export const saveAgentSettings = createAsyncThunk(
           .schema("agent")
           .from("definition")
           .update({
-            settings: settingsToSave as unknown as Json,
-            variable_definitions: entry.variable_defaults as unknown as Json,
+            settings: settingsToSave,
+            variable_definitions: entry.variable_defaults,
             updated_at: now,
           })
           .eq("id", agentId);
@@ -355,8 +401,8 @@ export const saveAgentSettings = createAsyncThunk(
           .schema("agent")
           .from("definition")
           .update({
-            settings: settingsToSave as unknown as Json,
-            variable_definitions: entry.variable_defaults as unknown as Json,
+            settings: settingsToSave,
+            variable_definitions: entry.variable_defaults,
             updated_at: now,
           })
           .eq("id", agentId)

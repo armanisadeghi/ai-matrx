@@ -70,6 +70,8 @@ interface PostgrestLikeResult {
  * downgrade rule silences aborts across every Supabase call site, not just the
  * throwing ones. Without this, one cancelled RPC surfaces as a red error.
  */
+// MATRX-EXCEPTION: `?? ""` defaults two explicitly-optional string fields
+// before a substring match — pure classification logic, not a boundary write.
 function isAbortResultError(e: { message?: string; hint?: string }): boolean {
   const msg = (e.message ?? "").toLowerCase();
   const hint = (e.hint ?? "").toLowerCase();
@@ -114,9 +116,10 @@ function serializeThrown(err: unknown): unknown {
       message: err.message,
       stack: err.stack,
     };
-    for (const key of Object.keys(err)) {
-      out[key] = (err as unknown as Record<string, unknown>)[key];
-    }
+    // Copy the instance's own enumerable props (custom error subclasses often
+    // attach fields like `code`/`status`/`details`) — Object.assign does the
+    // reflection without needing a cast on the non-indexable Error type.
+    Object.assign(out, err);
     return out;
   }
   return err;

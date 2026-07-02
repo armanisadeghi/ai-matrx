@@ -26,10 +26,10 @@ export function UsageGroupList({ rows, scope, showOwner, onNotify }: UsageGroupL
       arr.push(r);
       byType.set(r.usageType, arr);
     }
-    return USAGE_TYPE_ORDER.filter((t) => byType.has(t)).map((t) => ({
-      type: t,
-      items: byType.get(t)!,
-    }));
+    return USAGE_TYPE_ORDER.flatMap((t) => {
+      const items = byType.get(t);
+      return items ? [{ type: t, items }] : [];
+    });
   }, [rows]);
 
   if (groups.length === 0) {

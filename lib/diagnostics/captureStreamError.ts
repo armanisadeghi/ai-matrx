@@ -32,6 +32,7 @@ import {
   type TypedStreamEvent,
 } from "@/types/python-generated/stream-events";
 import type { BackendApiError } from "@/lib/api/errors";
+import { isJsonObject } from "@/types/json";
 
 export interface StreamErrorContext {
   requestId?: string | null;
@@ -97,13 +98,15 @@ export function captureStreamEvent(
     // ── Tool error (tool_event / tool_error) ───────────────────────────────
     if (isToolEventEvent(event) && event.data.event === "tool_error") {
       const d = event.data;
-      const errData = (d.data ?? {}) as { error_type?: string; detail?: string };
+      const errData = isJsonObject(d.data) ? d.data : {};
+      const errType = typeof errData.error_type === "string" ? errData.error_type : undefined;
+      const errDetail = typeof errData.detail === "string" ? errData.detail : undefined;
       captureError({
         source: "agent-stream-tool-error",
         relation: `tool:${d.tool_name}`,
-        code: errData.error_type ?? "tool_error",
-        message: d.message || errData.detail || `Tool "${d.tool_name}" failed`,
-        details: errData.detail ?? undefined,
+        code: errType ?? "tool_error",
+        message: d.message || errDetail || `Tool "${d.tool_name}" failed`,
+        details: errDetail,
         ...base,
         raw: d,
       });
@@ -139,16 +142,15 @@ export function captureStreamEvent(
     // ── Record persistence failure (a reservation never committed) ─────────
     if (isRecordUpdateEvent(event) && event.data.status === "failed") {
       const d = event.data;
-      const recErr = (d.metadata?.error ?? {}) as {
-        type?: string;
-        message?: string;
-      };
+      const recErr = isJsonObject(d.metadata?.error) ? d.metadata.error : {};
+      const recErrType = typeof recErr.type === "string" ? recErr.type : undefined;
+      const recErrMessage = typeof recErr.message === "string" ? recErr.message : undefined;
       captureError({
         source: "agent-stream-record-failed",
         relation: d.table,
-        code: recErr.type ?? "record_failed",
+        code: recErrType ?? "record_failed",
         message:
-          recErr.message || `Failed to persist ${d.table} (${d.record_id})`,
+          recErrMessage || `Failed to persist ${d.table} (${d.record_id})`,
         details: str({ table: d.table, record_id: d.record_id }),
         ...base,
         raw: d,
@@ -158,8 +160,12 @@ export function captureStreamEvent(
 
     // ── Data events that carry an error (search/memory/context/function) ───
     if (isTypedDataEvent(event)) {
-      const d = event.data as Record<string, unknown>;
-      const type = String(d.type ?? "");
+      // `event.data` is a large discriminated union (TypedDataPayload) plus an
+      // open-ended fallback (UntypedDataPayload); the fields checked below
+      // (`error`/`success`/`traceback`) only exist on some variants, so this
+      // reads it duck-typed via a JsonObject narrow rather than one variant.
+      const d = isJsonObject(event.data) ? event.data : {};
+      const type = typeof d.type === "string" ? d.type : "";
       const errText =
         typeof d.error === "string" && d.error ? d.error : undefined;
       const failed = d.success === false;

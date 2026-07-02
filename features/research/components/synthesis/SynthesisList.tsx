@@ -37,7 +37,7 @@ import {
 // MenuContent lazy-loads on first open.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
-const hasText = (s: string | null | undefined): boolean =>
+const hasText = (s: string | null | undefined): s is string =>
   !!s && s.trim().length > 0;
 
 /** A status that means the work is done (so an empty body is final, not pending). */
@@ -157,12 +157,12 @@ function SynthesisCard({
                 contextData={synthesisContextData}
               >
                 <div>
-                  <MarkdownStream content={synthesis.result!} />
+                  <MarkdownStream content={synthesis.result} />
                 </div>
               </NonEditableContextMenu>
               <div className="flex justify-end">
                 <ContentActionBar
-                  content={synthesis.result!}
+                  content={synthesis.result}
                   title={label}
                   instanceKey={`synthesis-${synthesis.id}`}
                   metadata={{

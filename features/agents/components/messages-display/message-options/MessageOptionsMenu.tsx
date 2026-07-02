@@ -16,7 +16,7 @@
 
 import React, { useEffect } from "react";
 import AdvancedMenu from "@/components/official/AdvancedMenu";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectUser, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectAgentIsConfirmedOwner } from "@/features/agents/redux/agent-definition/selectors";
@@ -83,6 +83,7 @@ export function MessageOptionsMenu({
   contentHistoryCount = 0,
 }: MessageOptionsMenuProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const user = useAppSelector(selectUser);
   const isAuthenticated = !!user?.email;
   // Gates the "Server API (test)" menu section that exposes the new
@@ -125,6 +126,7 @@ export function MessageOptionsMenu({
     conversationId,
     metadata,
     dispatch,
+    getState: store.getState,
     onClose,
     showFullPrint,
     onFullPrint,

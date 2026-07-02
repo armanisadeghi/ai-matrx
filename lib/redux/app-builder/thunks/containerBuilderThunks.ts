@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   createComponentGroup,
   updateComponentGroup,
@@ -65,8 +66,8 @@ export const saveContainerThunk = createAsyncThunk<
         isDirty: false,
         isLocal: false,
       };
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to save container");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to save container");
     }
   },
 );
@@ -105,9 +106,9 @@ export const saveContainerAndUpdateAppletThunk = createAsyncThunk.withTypes<{
         container: saveResult,
         appletId,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return rejectWithValue(
-        error.message || "Failed to save container and update applet",
+        extractErrorMessage(error) || "Failed to save container and update applet",
       );
     }
   },
@@ -136,9 +137,9 @@ export const createContainerThunk = createAsyncThunk<
         isDirty: false,
         isLocal: false,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating container:", error);
-      return rejectWithValue(error.message || "Failed to create container");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to create container");
     }
   },
 );
@@ -172,9 +173,9 @@ export const updateContainerThunk = createAsyncThunk<
         isDirty: false,
         isLocal: false,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating container:", error);
-      return rejectWithValue(error.message || "Failed to update container");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to update container");
     }
   },
 );
@@ -190,9 +191,9 @@ export const deleteContainerThunk = createAsyncThunk<
     try {
       await deleteComponentGroup(containerId);
       return undefined;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting container:", error);
-      return rejectWithValue(error.message || "Failed to delete container");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to delete container");
     }
   },
 );
@@ -219,10 +220,10 @@ export const addFieldAndCompileContainerThunk = createAsyncThunk<
       // await refreshFieldInGroup(containerId, fieldWithId.id);
 
       return { containerId, field: fieldWithId };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding field to container:", error);
       return rejectWithValue(
-        error.message || "Failed to add field to container",
+        extractErrorMessage(error) || "Failed to add field to container",
       );
     }
   },
@@ -239,10 +240,10 @@ export const removeFieldThunk = createAsyncThunk<
     try {
       await removeFieldFromGroup(containerId, fieldId);
       return undefined;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error removing field from container:", error);
       return rejectWithValue(
-        error.message || "Failed to remove field from container",
+        extractErrorMessage(error) || "Failed to remove field from container",
       );
     }
   },
@@ -291,9 +292,9 @@ export const updateFieldThunk = createAsyncThunk<
       );
 
       return { containerId, fieldId, updatedField, updatedContainer };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating field:", error);
-      return rejectWithValue(error.message || "Failed to update field");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to update field");
     }
   },
 );
@@ -323,9 +324,9 @@ export const recompileContainerThunk = createAsyncThunk<
       }
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error recompiling container:", error);
-      return rejectWithValue(error.message || "Failed to recompile container");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to recompile container");
     }
   },
 );
@@ -339,9 +340,9 @@ export const fetchContainersThunk = createAsyncThunk<
   try {
     const containers = await getAllComponentGroups();
     return containers;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching containers:", error);
-    return rejectWithValue(error.message || "Failed to fetch containers");
+    return rejectWithValue(extractErrorMessage(error) || "Failed to fetch containers");
   }
 });
 
@@ -361,9 +362,9 @@ export const fetchContainerByIdThunk = createAsyncThunk<
       }
 
       return container;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching container:", error);
-      return rejectWithValue(error.message || "Failed to fetch container");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to fetch container");
     }
   },
 );
@@ -392,9 +393,9 @@ export const saveOrUpdateContainerToAppletThunk = createAsyncThunk<
         // console.log("saveOrUpdateContainerToAppletThunk container is dirty, saving it first");
         try {
           await dispatch(saveContainerThunk(containerId)).unwrap();
-        } catch (error: any) {
+        } catch (error: unknown) {
           throw new Error(
-            `Failed to save container before adding to applet: ${error.message}`,
+            `Failed to save container before adding to applet: ${extractErrorMessage(error)}`,
           );
         }
       } else {
@@ -405,8 +406,8 @@ export const saveOrUpdateContainerToAppletThunk = createAsyncThunk<
       if (recompileAllFields) {
         try {
           await dispatch(recompileContainerThunk(containerId)).unwrap();
-        } catch (error: any) {
-          throw new Error(`Failed to recompile container: ${error.message}`);
+        } catch (error: unknown) {
+          throw new Error(`Failed to recompile container: ${extractErrorMessage(error)}`);
         }
       }
 
@@ -437,10 +438,10 @@ export const saveOrUpdateContainerToAppletThunk = createAsyncThunk<
       }
 
       return { appletId, updatedApplet: updatedApplet.containers ?? null };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving container to applet:", error);
       return rejectWithValue(
-        error.message || "Failed to save container to applet",
+        extractErrorMessage(error) || "Failed to save container to applet",
       );
     }
   },
@@ -483,9 +484,9 @@ export const moveFieldUpThunk = createAsyncThunk<
       newFieldsOrder[fieldIndex - 1] = temp;
 
       return { containerId, newFieldsOrder };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error moving field up:", error);
-      return rejectWithValue(error.message || "Failed to move field up");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to move field up");
     }
   },
 );
@@ -527,9 +528,9 @@ export const moveFieldDownThunk = createAsyncThunk<
       newFieldsOrder[fieldIndex + 1] = temp;
 
       return { containerId, newFieldsOrder };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error moving field down:", error);
-      return rejectWithValue(error.message || "Failed to move field down");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to move field down");
     }
   },
 );
@@ -588,20 +589,20 @@ export const setActiveContainerWithFetchThunk = createAsyncThunk<
             );
             dispatch({ type: 'containerBuilder/setActiveContainer', payload: null });
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(
-            `Failed to fetch container with ID ${containerId}: ${error.message}`,
+            `Failed to fetch container with ID ${containerId}: ${extractErrorMessage(error)}`,
           );
           dispatch({ type: 'containerBuilder/setActiveContainer', payload: null });
-          return rejectWithValue(error.message || "Failed to fetch container");
+          return rejectWithValue(extractErrorMessage(error) || "Failed to fetch container");
         }
       }
       return undefined;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
-        `Error in setActiveContainerWithFetchThunk: ${error.message}`,
+        `Error in setActiveContainerWithFetchThunk: ${extractErrorMessage(error)}`,
       );
-      return rejectWithValue(error.message || "Failed to set active container");
+      return rejectWithValue(extractErrorMessage(error) || "Failed to set active container");
     }
   },
 );

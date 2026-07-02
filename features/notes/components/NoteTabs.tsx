@@ -18,7 +18,7 @@ interface NoteTabsProps {
     onDeleteNote: (noteId: string) => void;
     onCopyNote: (noteId: string) => void;
     onShareNote: (noteId: string) => void;
-    onUpdateNote: (noteId: string, updates: any) => void;
+    onUpdateNote: (noteId: string, updates: Partial<Note>) => void;
     onSaveNote: () => void;
     isDirty: boolean;
     isSaving: boolean;

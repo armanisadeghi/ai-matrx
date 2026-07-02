@@ -2,8 +2,9 @@ import React from 'react';
 import TaskItem from './TaskItem';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectTasksLoading } from '@/features/tasks/redux/taskUiSlice';
+import type { TaskWithProject } from '../types';
 
-export default function TaskList({ tasks }) {
+export default function TaskList({ tasks }: { tasks: TaskWithProject[] }) {
   const loading = useAppSelector(selectTasksLoading);
 
   // Don't show empty state while loading - show skeleton tasks

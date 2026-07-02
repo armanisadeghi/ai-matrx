@@ -127,12 +127,12 @@ export function PicklistBindingEditor({
         />
       </div>
 
-      {bound && (
+      {bound && binding && (
         <div className="space-y-2 pt-1.5 border-t border-border">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label className="text-xs text-muted-foreground">List</Label>
-              {binding?.listId && (
+              {binding.listId && (
                 <a
                   href={`/lists/${binding.listId}`}
                   target="_blank"
@@ -145,8 +145,8 @@ export function PicklistBindingEditor({
               )}
             </div>
             <Select
-              value={binding?.listId || ""}
-              onValueChange={(v) => onChange({ ...binding!, listId: v })}
+              value={binding.listId || ""}
+              onValueChange={(v) => onChange({ ...binding, listId: v })}
               disabled={readonly}
             >
               <SelectTrigger>
@@ -166,10 +166,10 @@ export function PicklistBindingEditor({
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Group</Label>
               <Select
-                value={binding?.groupName ?? ALL_GROUPS}
+                value={binding.groupName ?? ALL_GROUPS}
                 onValueChange={(v) =>
                   onChange({
-                    ...binding!,
+                    ...binding,
                     groupName: v === ALL_GROUPS ? undefined : v,
                   })
                 }
@@ -195,9 +195,9 @@ export function PicklistBindingEditor({
               Allow multiple selections
             </Label>
             <Switch
-              checked={!!binding?.multiple}
+              checked={!!binding.multiple}
               onCheckedChange={(v) =>
-                onChange({ ...binding!, multiple: v || undefined })
+                onChange({ ...binding, multiple: v || undefined })
               }
               disabled={readonly}
             />

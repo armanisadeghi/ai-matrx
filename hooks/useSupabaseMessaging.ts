@@ -110,7 +110,7 @@ export function useMessages(
         const data = rawData ? [...rawData].reverse() : [];
 
         // Fetch sender info for each unique sender
-        const senderIds = [...new Set((data || []).map((m) => m.sender_id))];
+        const senderIds = [...new Set(data.map((m) => m.sender_id))];
         const senderInfoMap = new Map<string, UserBasicInfo>();
 
         for (const senderId of senderIds) {
@@ -123,7 +123,7 @@ export function useMessages(
         }
 
         // Attach sender info to messages
-        const messagesWithSender = (data || []).map((m) => ({
+        const messagesWithSender = data.map((m) => ({
           ...m,
           sender: senderInfoMap.get(m.sender_id) || null,
         })) as MessageWithSender[];
@@ -348,7 +348,7 @@ export function useMessages(
       }
 
       // Fetch sender info
-      const senderIds = [...new Set((data || []).map((m) => m.sender_id))];
+      const senderIds = [...new Set(data.map((m) => m.sender_id))];
       const senderInfoMap = new Map<string, UserBasicInfo>();
 
       for (const senderId of senderIds) {
@@ -360,7 +360,7 @@ export function useMessages(
         }
       }
 
-      const messagesWithSender = (data || []).map((m) => ({
+      const messagesWithSender = data.map((m) => ({
         ...m,
         sender: senderInfoMap.get(m.sender_id) || null,
       })) as MessageWithSender[];
@@ -588,17 +588,24 @@ export function useConversations(
 
       // Fetch participants for each conversation
       const conversationsWithParticipants = await Promise.all(
-        (data || []).map(async (conv: DmConversationRpcRow) => {
+        data.map(async (conv: DmConversationRpcRow) => {
           const conversationId = conv.conversation_id;
 
-          const { data: participants } = await supabase
+          const { data: participants, error: participantsError } = await supabase
             .schema("communication").from("dm_conversation_participants")
             .select("*")
             .eq("conversation_id", conversationId);
 
+          if (participantsError) {
+            console.error(
+              "[Messaging] Error loading participants:",
+              participantsError.message,
+            );
+          }
+
           // Fetch user info for each participant
           const participantsWithUser = await Promise.all(
-            (participants || []).map(async (p) => {
+            (participants ?? []).map(async (p) => {
               const { data: userInfo } = await supabase.rpc(
                 "get_dm_user_info",
                 { p_user_id: p.user_id },
@@ -626,7 +633,7 @@ export function useConversations(
             created_by: null,
             created_at: conv.conversation_created_at,
             updated_at: conv.conversation_updated_at,
-            participants: participantsWithUser || [],
+            participants: participantsWithUser,
             last_message: conv.last_message_content
               ? {
                   id: "",

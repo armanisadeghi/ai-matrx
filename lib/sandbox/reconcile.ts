@@ -106,6 +106,9 @@ export async function probeAndReconcileSandboxRow(
       aliveness = "gone";
     } else if (resp.ok) {
       const body = (await resp.json().catch(() => ({}))) as { status?: string };
+      // MATRX-EXCEPTION: `?? ""` is a Set-membership sentinel — an absent
+      // status never matches ORCHESTRATOR_DEAD_STATUSES, correctly falling
+      // through to "alive" (the same as the response carrying no status at all).
       aliveness = ORCHESTRATOR_DEAD_STATUSES.has(body.status ?? "")
         ? "gone"
         : "alive";

@@ -312,7 +312,7 @@ export const executeInstance = createAsyncThunk<
       if (
         !retry &&
         userInputEntry?.submissionPhase === "idle" &&
-        (userInputEntry.text ?? "").length > 0
+        userInputEntry.text.length > 0
       ) {
         const submittedUserValues =
           state.instanceVariableValues.byConversationId[conversationId]
@@ -451,9 +451,9 @@ export const executeInstance = createAsyncThunk<
         // would falsely display the current context. See AgentUserMessage.
         const contextSnapshot =
           selectInstanceContextEntries(conversationId)(stateAtSubmit);
-        const userMessageMetadata =
+        const userMessageMetadata: Json | undefined =
           contextSnapshot.length > 0
-            ? ({ context_snapshot: contextSnapshot } as unknown as Json)
+            ? { context_snapshot: contextSnapshot }
             : undefined;
         dispatch(
           addOptimisticUserMessage({
@@ -566,6 +566,13 @@ export const executeInstance = createAsyncThunk<
       // since the last outbound call, this ships `cache_bypass` so the
       // server's agent cache rebuilds from the authoritative DB state.
       // One-shot: the flags are cleared inside the consumer.
+      // MATRX-EXCEPTION: this thunk's createAsyncThunk config only declares
+      // `{ state: RootState }`, not `dispatch: AppDispatch` — so `dispatch`
+      // here is typed as the base Dispatch<AnyAction> and doesn't know how
+      // to type a plain (non-createAsyncThunk) thunk function's return value.
+      // See ESCALATION brief: widening the config to include `dispatch:
+      // AppDispatch` is the real fix but touches every dispatch() call in
+      // this large thunk — too wide a blast radius to verify without tsc.
       const { consumePendingCacheBypass } =
         await import("../message-crud/cache-bypass.slice");
       const pendingBypass = dispatch(

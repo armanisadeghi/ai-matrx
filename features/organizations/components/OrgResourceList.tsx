@@ -108,8 +108,10 @@ export function OrgResourceList({
             .from(physicalTable as never)
             .select(selectColumns)
             .in("id", sharedIds);
-          sharedRows =
-            (res.data as unknown as Array<Record<string, unknown>>) ?? [];
+          // MATRX-EXCEPTION: physical table + projection are resolved from
+          // the shareable-resource registry at runtime (any resource type),
+          // so the row shape cannot be a compile-time DbRpcRow guard.
+          sharedRows = (res.data ?? []) as unknown as Array<Record<string, unknown>>;
         }
 
         if (cancelled) return;

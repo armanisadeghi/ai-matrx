@@ -16,6 +16,7 @@ import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import type {
   PermissionWithDetails,
   PermissionLevel,
+  ShareActionResult,
 } from "@/utils/permissions";
 import {
   AlertDialog,
@@ -34,12 +35,12 @@ interface PermissionsListProps {
   onUpdateLevel: (
     options: { userId?: string; organizationId?: string; isPublic?: boolean },
     newLevel: PermissionLevel,
-  ) => Promise<any>;
+  ) => Promise<ShareActionResult>;
   onRevoke: (options: {
     userId?: string;
     organizationId?: string;
     isPublic?: boolean;
-  }) => Promise<any>;
+  }) => Promise<ShareActionResult>;
   loading?: boolean;
 }
 

@@ -16,6 +16,14 @@ import {
   type OrchestratorTarget,
 } from "@/lib/sandbox/orchestrator-routing";
 
+/**
+ * Node's undici fetch implementation requires `duplex: "half"` on the init
+ * when streaming a body, but the DOM lib's `RequestInit` type doesn't declare
+ * it (browser fetch has no such option). This intersection extends the real
+ * type instead of suppressing the error at the assignment site.
+ */
+type RequestInitWithDuplex = RequestInit & { duplex?: "half" };
+
 const HOP_BY_HOP_HEADERS = new Set([
   "host",
   "content-length",
@@ -56,7 +64,7 @@ export async function forwardToOrchestrator(
   target: OrchestratorTarget,
   options: { stream?: boolean; timeoutMs?: number } = {},
 ): Promise<Response> {
-  const init: RequestInit = {
+  const init: RequestInitWithDuplex = {
     method: request.method,
     headers: buildUpstreamHeaders(request, target),
   };
@@ -65,7 +73,6 @@ export async function forwardToOrchestrator(
   // duplex: 'half' on the fetch init to opt into streaming.
   if (request.method !== "GET" && request.method !== "HEAD") {
     init.body = request.body;
-    // @ts-expect-error — duplex is required by Node's undici when streaming a body
     init.duplex = "half";
   }
 

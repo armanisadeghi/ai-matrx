@@ -149,7 +149,7 @@ export function useContextTemplates() {
 export function useContextTemplatesByIndustry(industryCategory: string) {
   return useQuery({
     queryKey: KEYS.templatesByIndustry(industryCategory),
-    queryFn: () => contextService.fetchTemplatesByIndustry(industryCategory),
+    queryFn: () => contextService.fetchTemplatesByCategory(industryCategory),
     enabled: !!industryCategory,
     staleTime: 5 * 60 * 1000,
   });
@@ -189,7 +189,7 @@ export function useCreateContextItem(
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (formData: ContextItemFormData) =>
-      contextService.createItem(scopeType, formData),
+      contextService.createItem(formData.scope_type_id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: KEYS.manifest(scopeType, scopeId),

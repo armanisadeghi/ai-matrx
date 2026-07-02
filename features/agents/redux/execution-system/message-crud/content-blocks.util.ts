@@ -38,9 +38,9 @@ export function mergeEditedText(existingContent: unknown, newText: string): Json
   const textBlock = { type: "text", text: newText };
 
   if (!Array.isArray(existingContent)) {
-    return [textBlock] as unknown as Json;
+    return [textBlock];
   }
 
   const preserved = existingContent.filter((block) => !isTextBlock(block));
-  return [textBlock, ...preserved] as unknown as Json;
+  return [textBlock, ...preserved];
 }

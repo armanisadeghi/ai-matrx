@@ -7,10 +7,16 @@ import { ExternalLink, ArrowUpRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AuthorityTierBadge } from "../sources/AuthorityTierBadge";
 import { SourceFavicon } from "./SourceFavicon";
-import { resolveTier, TIER_VISUALS } from "./resultsShared";
+import { resolveTier, TIER_VISUALS, type AuthorityTier } from "./resultsShared";
 import type { ResearchSource } from "../../types";
 
 const MAX_CARDS = 8;
+
+interface RankedTopSource {
+  source: ResearchSource;
+  score: number;
+  tier: AuthorityTier;
+}
 
 /**
  * Section c — the highest-authority sources as rich cards. Each card shows the
@@ -24,15 +30,16 @@ export function TopSourcesGrid({
   sources: ResearchSource[];
   topicId: string;
 }) {
-  const top = useMemo(() => {
+  const top = useMemo<RankedTopSource[]>(() => {
     return sources
-      .filter(
-        (s) =>
-          (s.is_included ?? false) &&
-          s.authority_score != null &&
-          resolveTier(s.authority_tier, s.authority_score) != null,
-      )
-      .sort((a, b) => (b.authority_score ?? 0) - (a.authority_score ?? 0))
+      .filter((s) => s.is_included ?? false)
+      .map((source) => ({
+        source,
+        score: source.authority_score,
+        tier: resolveTier(source.authority_tier, source.authority_score),
+      }))
+      .filter((r): r is RankedTopSource => r.score != null && r.tier != null)
+      .sort((a, b) => b.score - a.score)
       .slice(0, MAX_CARDS);
   }, [sources]);
 
@@ -49,10 +56,12 @@ export function TopSourcesGrid({
       </header>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {top.map((source, index) => (
+        {top.map((ranked, index) => (
           <TopSourceCard
-            key={source.id}
-            source={source}
+            key={ranked.source.id}
+            source={ranked.source}
+            score={ranked.score}
+            tier={ranked.tier}
             index={index}
             topicId={topicId}
           />
@@ -64,15 +73,17 @@ export function TopSourcesGrid({
 
 function TopSourceCard({
   source,
+  score,
+  tier,
   index,
   topicId,
 }: {
   source: ResearchSource;
+  score: number;
+  tier: AuthorityTier;
   index: number;
   topicId: string;
 }) {
-  const score = source.authority_score as number;
-  const tier = resolveTier(source.authority_tier, score)!;
   const visual = TIER_VISUALS[tier];
 
   return (

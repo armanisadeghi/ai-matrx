@@ -36,6 +36,11 @@ interface TrayChipPreviewProps {
  */
 const DEFAULT_INSTANCE_ID = "default";
 
+/** Narrow persisted overlay `data` (stored as `unknown`) to a plain object. */
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export const TrayChipPreview = memo(function TrayChipPreview({
   windowId,
   title,
@@ -61,7 +66,7 @@ export const TrayChipPreview = memo(function TrayChipPreview({
   // ── 1. Custom render mode ────────────────────────────────────────────────
   if (trayPreview?.renderTrayPreview && staticEntry) {
     const ctx: TrayPreviewContext = {
-      data: (overlayData as Record<string, unknown> | null) ?? {},
+      data: isPlainRecord(overlayData) ? overlayData : {},
       overlayId: staticEntry.overlayId,
       instanceId: DEFAULT_INSTANCE_ID,
       title,

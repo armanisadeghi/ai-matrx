@@ -76,8 +76,12 @@ export function OrgShareReviewCard({
     // Hydrate titles in one query per table.
     const byTable = new Map<string, string[]>();
     for (const g of raw) {
-      if (!byTable.has(g.resourceTable)) byTable.set(g.resourceTable, []);
-      byTable.get(g.resourceTable)!.push(g.resourceId);
+      const ids = byTable.get(g.resourceTable);
+      if (ids) {
+        ids.push(g.resourceId);
+      } else {
+        byTable.set(g.resourceTable, [g.resourceId]);
+      }
     }
     const titleMaps = new Map<string, Map<string, string>>();
     await Promise.all(
@@ -113,7 +117,12 @@ export function OrgShareReviewCard({
             return;
           }
           const map = new Map<string, string>();
-          for (const row of (data as unknown as Array<Record<string, unknown>>) ?? []) {
+          // MATRX-EXCEPTION: table + title column are resolved from the
+          // shareable-resource registry at runtime (any cardable resource
+          // type), so the row shape cannot be a compile-time DbRpcRow guard —
+          // narrowed defensively below instead of trusted structurally.
+          const rows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+          for (const row of rows) {
             map.set(String(row.id), String(row[titleCol] ?? "").trim());
           }
           titleMaps.set(table, map);

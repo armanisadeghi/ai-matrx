@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { assignField } from "../shared/field-flags";
 import {
   buildScopeQueryString,
   resolveRowScope,
@@ -126,8 +127,7 @@ export const updateContentBlock = createAsyncThunk<
   const snapshot: ContentBlockFieldSnapshot = existing
     ? (Object.keys(patch) as (keyof AgentContentBlockDef)[]).reduce(
         (acc, field) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (acc as any)[field] = (existing as any)[field];
+          assignField(acc, field, existing[field]);
           return acc;
         },
         {} as ContentBlockFieldSnapshot,

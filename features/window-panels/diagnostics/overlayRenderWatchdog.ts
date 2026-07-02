@@ -46,6 +46,11 @@ const OPEN_TYPE = "overlays/openOverlay";
 const TOGGLE_TYPE = "overlays/toggleOverlay";
 const DEFAULT_INSTANCE_ID = "default";
 
+/** Narrow a dispatched action's `payload` (declared `unknown`) to a plain object. */
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /** How long after an open we wait before declaring the panel a no-show. Must
  *  exceed worst-case lazy-chunk load for a first-time open. */
 const CHECK_DELAY_MS = 2500;
@@ -219,19 +224,23 @@ export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
     const typed = action as { type?: string; payload?: unknown };
     if (typed.type !== OPEN_TYPE && typed.type !== TOGGLE_TYPE) return result;
 
-    const payload = (typed.payload ?? {}) as {
-      overlayId?: string;
-      instanceId?: string;
-    };
-    const overlayId = payload.overlayId;
+    const payload = typed.payload;
+    const overlayId =
+      isPlainRecord(payload) && typeof payload.overlayId === "string"
+        ? payload.overlayId
+        : undefined;
     if (!overlayId) return result;
+    const instanceIdRaw =
+      isPlainRecord(payload) && typeof payload.instanceId === "string"
+        ? payload.instanceId
+        : undefined;
 
     // Only windows participate in the geometry/visibility model.
     const meta = getStaticEntryByOverlayId(overlayId);
     if (!meta || meta.kind !== "window") return result;
 
     // Multi-instance windows use per-instance ids we don't track here.
-    const instanceId = payload.instanceId ?? DEFAULT_INSTANCE_ID;
+    const instanceId = instanceIdRaw ?? DEFAULT_INSTANCE_ID;
     if (instanceId !== DEFAULT_INSTANCE_ID) return result;
 
     const state = store.getState();

@@ -7,14 +7,14 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { GateStatusBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
-import type { CanonicalFindingRow } from "../types";
+import { isCanonicalFindingRow, type CanonicalFindingRow } from "../types";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function FindingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { rows, loading, reload } =
-    useAuditDataset<CanonicalFindingRow>("findings");
+    useAuditDataset<CanonicalFindingRow>("findings", isCanonicalFindingRow);
 
   const statusParam = searchParams.get("status");
   const initialColumnFilters = useMemo<

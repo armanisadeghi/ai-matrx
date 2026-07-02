@@ -110,7 +110,9 @@ export const fetchTaskAssociations = createAsyncThunk<
     p_task_id: taskId,
   });
   if (error) throw error;
-  const raw = (data ?? {}) as Partial<TaskAssociationsBundle>;
+  // `get_task_associations` returns Json directly (no row schema to guard).
+  const raw: Partial<TaskAssociationsBundle> =
+    data === null ? {} : (data as Partial<TaskAssociationsBundle>);
   return {
     task_id: taskId,
     notes: raw.notes ?? [],
@@ -136,7 +138,9 @@ export const fetchTasksForEntity = createAsyncThunk<
     p_entity_id: entityId,
   });
   if (error) throw error;
-  const raw = (data ?? {}) as { tasks?: TaskForEntityRef[] };
+  // `get_tasks_for_entity` returns Json directly (no row schema to guard).
+  const raw: { tasks?: TaskForEntityRef[] } =
+    data === null ? {} : (data as { tasks?: TaskForEntityRef[] });
   return {
     key: entityKey(entityType, entityId),
     tasks: raw.tasks ?? [],
@@ -382,7 +386,9 @@ export const createTasksBulk = createAsyncThunk<
     });
     throw error;
   }
-  const payload = (data ?? {}) as { tasks?: Record<string, unknown>[] };
+  // `create_tasks_bulk` returns Json directly (no row schema to guard).
+  const payload: { tasks?: Record<string, unknown>[] } =
+    data === null ? {} : (data as { tasks?: Record<string, unknown>[] });
   const tasks: TaskRecord[] = (payload.tasks ?? []).map((t) => {
     const r = t as {
       id: string;

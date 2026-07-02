@@ -44,6 +44,7 @@ import {
   NOTES_EDITOR_CONTEXT_MENU_PROPS,
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
+import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 
 // Dynamic imports for heavy components (only load when needed)
 const TuiEditorContent = dynamic(
@@ -65,6 +66,14 @@ const TuiEditorContent = dynamic(
 // the read-only preview uses NonEditableContextMenu.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+
+declare global {
+  interface Window {
+    // Escape hatch so NotesLayout can force-save the active editor without a
+    // prop-drilled ref (editor and layout mount at different levels).
+    __noteEditorForceSave?: () => void;
+  }
+}
 
 type EditorMode = "plain" | "wysiwyg" | "markdown" | "matrx-split" | "preview";
 
@@ -116,7 +125,7 @@ export function NoteEditor({
   // what the user is acting on (matches NotesDemoPanel's selection sync).
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
-  const tuiEditorRef = useRef<any>(null);
+  const tuiEditorRef = useRef<TuiEditorContentRef>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const toast = useToastManager("notes");
@@ -344,11 +353,11 @@ export function NoteEditor({
       };
 
       // Store reference for parent to call
-      (window as any).__noteEditorForceSave = handleForceSave;
+      window.__noteEditorForceSave = handleForceSave;
     }
 
     return () => {
-      delete (window as any).__noteEditorForceSave;
+      delete window.__noteEditorForceSave;
     };
   }, [onForceSave, note, updateWithAutoSave, forceSave]);
 

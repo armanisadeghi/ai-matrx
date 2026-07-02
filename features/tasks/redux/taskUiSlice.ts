@@ -328,15 +328,7 @@ const slice = createSlice({
     ) {
       const { taskId, patch } = action.payload;
       const current = state.taskEdits[taskId] ?? {};
-      const next: TaskEditDraft = { ...current };
-      for (const [k, v] of Object.entries(patch) as [
-        keyof TaskEditDraft,
-        TaskEditDraft[keyof TaskEditDraft],
-      ][]) {
-        // @ts-expect-error — keyof narrowing across union
-        next[k] = v;
-      }
-      state.taskEdits[taskId] = next;
+      state.taskEdits[taskId] = { ...current, ...patch };
     },
     clearTaskEdit(state, action: PayloadAction<string>) {
       delete state.taskEdits[action.payload];

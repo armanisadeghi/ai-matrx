@@ -12,7 +12,7 @@
  * a display mode is clicked.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import Link from "next/link";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Loader2, TestTube, ChevronDown, Rocket } from "lucide-react";
@@ -206,9 +206,9 @@ export function AgentWidgetsPage({
     .filter((m) => m !== "direct" && m !== "background")
     .map((displayMode) => {
       const meta = getDisplayMeta(displayMode);
-      const IconComponent = (props: any) => (
-        <DynamicIcon name={meta.icon} {...props} />
-      );
+      const IconComponent = (
+        props: Omit<ComponentProps<typeof DynamicIcon>, "name">,
+      ) => <DynamicIcon name={meta.icon} {...props} />;
       return {
         name: meta.label,
         icon: IconComponent,

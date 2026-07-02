@@ -68,6 +68,11 @@ interface MemberData {
 // ─── nodes ──────────────────────────────────────────────────────────────
 
 function OrchestratorNode({ data }: NodeProps) {
+  // MATRX-EXCEPTION: React Flow's NodeProps.data is generically typed
+  // Record<string, unknown> (the library's node-data bag); it has no index
+  // signature overlap with our concrete OrchestratorData, so the two-step
+  // cast is required. The shape is set by this file's own `nodes` builder
+  // below, so it's safe.
   const d = data as unknown as OrchestratorData;
   const a = accentClasses(d.accent);
   const agent = useAppSelector((s) => selectAgentById(s, d.agentId));
@@ -105,6 +110,7 @@ function OrchestratorNode({ data }: NodeProps) {
 }
 
 function MemberNode({ data }: NodeProps) {
+  // MATRX-EXCEPTION: same React Flow generic-data-bag cast as OrchestratorNode.
   const d = data as unknown as MemberData;
   const dispatch = useAppDispatch();
   const a = accentClasses(d.accent);
@@ -229,7 +235,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
         agentId: orchestratorId,
         accent,
         memberCount: members.length,
-      } as unknown as Record<string, unknown>,
+      } as Record<string, unknown>,
     };
     const memberNodes: Node[] = members.map((m, i) => ({
       id: m.agentId,
@@ -243,7 +249,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
         roleTitle: m.roleTitle,
         gap: m.gap,
         onEdit: onEditMember,
-      } as unknown as Record<string, unknown>,
+      } as Record<string, unknown>,
     }));
     return [orch, ...memberNodes];
   }, [orchestratorId, accent, members, config.orchestratorPos, overrides, onEditMember]);

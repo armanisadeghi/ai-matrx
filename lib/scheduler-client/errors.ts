@@ -18,6 +18,8 @@ export function isClaimRaceLoss(error: unknown): boolean {
     if (typeof error !== "object" || error === null) return false;
     const err = error as { code?: string; message?: string; details?: string };
     if (err.code === "23505") return true;
+    // MATRX-EXCEPTION: `?? ""` builds a substring-match haystack from two
+    // optional error fields — not persisted/sent anywhere.
     const haystack = `${err.message ?? ""} ${err.details ?? ""}`.toLowerCase();
     if (haystack.includes("23505")) return true;
     if (haystack.includes("sch_run_unique_active_per_task")) return true;

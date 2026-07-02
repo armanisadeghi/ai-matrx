@@ -350,8 +350,8 @@ const notesAdapter: VirtualSourceAdapter = {
     });
     return (data ?? []).map((row) => ({
       id: row.id,
-      versionNumber: row.version_number ?? 0,
-      createdAt: row.created_at ?? "",
+      versionNumber: row.version_number,
+      createdAt: row.created_at,
       createdBy: null,
       changeSummary: row.label ?? null,
     }));

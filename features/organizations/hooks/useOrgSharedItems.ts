@@ -69,7 +69,11 @@ export function useOrgSharedItems(
             .limit(500);
           if (entry.archivedColumn) q = q.eq(entry.archivedColumn as never, false);
           const { data } = await q;
-          for (const row of (data as unknown as Array<Record<string, unknown>>) ?? []) {
+          // MATRX-EXCEPTION: table + title column are resolved from the org
+          // resource catalogue at runtime (any cardable kind), so the row
+          // shape cannot be a compile-time DbRpcRow guard.
+          const ownedRows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+          for (const row of ownedRows) {
             const id = String(row.id);
             ownedById.set(id, {
               id,
@@ -96,7 +100,9 @@ export function useOrgSharedItems(
               .select(`id, ${titleCol}`)
               .in("id", sharedIds);
             const titleById = new Map<string, string>();
-            for (const row of (data as unknown as Array<Record<string, unknown>>) ?? []) {
+            // MATRX-EXCEPTION: same runtime-resolved table/column as above.
+            const sharedRows = (data ?? []) as unknown as Array<Record<string, unknown>>;
+            for (const row of sharedRows) {
               titleById.set(String(row.id), String(row[titleCol] ?? "").trim());
             }
             for (const id of sharedIds) {

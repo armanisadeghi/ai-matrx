@@ -23,6 +23,7 @@ import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { assignField } from "@/features/agents/redux/shared/field-flags";
 import type {
   AgentShortcut,
   AgentShortcutMenuResult,
@@ -511,8 +512,7 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
     for (const field of Object.keys(
       record._dirtyFields,
     ) as (keyof AgentShortcut)[]) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (dirtyPartial as any)[field] = record[field];
+      assignField(dirtyPartial, field, record[field]);
     }
 
     const snapshot = { ...record._fieldHistory };
@@ -1047,8 +1047,7 @@ export const updateShortcut = createAsyncThunk<
     ? (
         Object.keys(patch) as (keyof AgentShortcut)[]
       ).reduce<ShortcutFieldSnapshot>((acc, field) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (acc as any)[field] = (existing as any)[field];
+        assignField(acc, field, existing[field]);
         return acc;
       }, {})
     : {};

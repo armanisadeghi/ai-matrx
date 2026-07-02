@@ -43,6 +43,11 @@ const registry = new Map<ClientCapabilityName, ClientCapabilityProvider>();
 export function registerClientCapability<TName extends ClientCapabilityName>(
   provider: ClientCapabilityProvider<TName>,
 ): void {
+  // MATRX-EXCEPTION: the registry is a heterogeneous collection — each
+  // provider is generic over its own TName/payload shape, but the Map has to
+  // hold every provider under one widened type. TName is preserved at the
+  // call site (registerClientCapability<TName>) and getRegisteredCapabilities
+  // callers dispatch by `.name`, so this doesn't lose type safety in practice.
   registry.set(
     provider.name,
     provider as unknown as ClientCapabilityProvider,

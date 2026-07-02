@@ -23,7 +23,43 @@ interface RecentChangeOverlayProps {
   flashKey: number;
 }
 
-const COPIED_STYLES: Array<keyof CSSStyleDeclaration> = [
+// Typed as a Pick over the settable string properties (not
+// `keyof CSSStyleDeclaration`, which also includes methods like
+// `getPropertyValue`) so indexed get/set both type-check honestly.
+const COPIED_STYLES: Array<
+  keyof Pick<
+    CSSStyleDeclaration,
+    | "fontFamily"
+    | "fontSize"
+    | "fontWeight"
+    | "fontStyle"
+    | "fontVariant"
+    | "letterSpacing"
+    | "lineHeight"
+    | "textTransform"
+    | "textIndent"
+    | "tabSize"
+    | "wordSpacing"
+    | "whiteSpace"
+    | "wordBreak"
+    | "wordWrap"
+    | "overflowWrap"
+    | "paddingTop"
+    | "paddingRight"
+    | "paddingBottom"
+    | "paddingLeft"
+    | "borderTopWidth"
+    | "borderRightWidth"
+    | "borderBottomWidth"
+    | "borderLeftWidth"
+    | "borderTopStyle"
+    | "borderRightStyle"
+    | "borderBottomStyle"
+    | "borderLeftStyle"
+    | "boxSizing"
+    | "direction"
+  >
+> = [
   "fontFamily",
   "fontSize",
   "fontWeight",
@@ -58,7 +94,6 @@ const COPIED_STYLES: Array<keyof CSSStyleDeclaration> = [
 function syncStyles(overlay: HTMLDivElement, textarea: HTMLTextAreaElement) {
   const cs = window.getComputedStyle(textarea);
   for (const prop of COPIED_STYLES) {
-    // @ts-expect-error — string-indexed style assignment
     overlay.style[prop] = cs[prop];
   }
   overlay.style.whiteSpace = "pre-wrap";

@@ -10,8 +10,26 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { PanelState, WindowSessionRow } from "../registry/windowRegistryTypes";
+
+// ─── DB row shape guard ────────────────────────────────────────────────────────
+
+type WindowSessionDbRow = Database["public"]["Tables"]["window_sessions"]["Row"];
+
+// Structural guard: WindowSessionRow's non-Json fields must line up with the
+// generated table row (panel_state/data stay narrower than `Json` here by
+// design — narrowed via the write/read casts below, per the type-safety
+// skill's Pattern 4). Breaks at compile time if the DB adds/drops/retypes a
+// column this interface also declares.
+type _CheckWindowSessionRow = Omit<WindowSessionRow, "panel_state" | "data"> extends Omit<
+  WindowSessionDbRow,
+  "panel_state" | "data" | "metadata" | "organization_id" | "created_by" | "updated_by" | "deleted_at" | "version"
+>
+  ? true
+  : false;
+declare const _checkWindowSessionRow: _CheckWindowSessionRow;
+true satisfies typeof _checkWindowSessionRow;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,11 +61,15 @@ export async function saveWindowSession(
 ): Promise<string> {
   const { sessionId, userId, windowType, label, panelState, data } = params;
 
-  // Both panel_state and data are JSONB columns in Supabase; the generated
-  // schema types them as `Json` (a recursive primitive/object/array union).
-  // Our caller-side payload uses the looser PanelState / Record<string,
-  // unknown> shapes for ergonomics, so we cast at the boundary. Safe at
-  // runtime because the values are JSON-serializable plain objects.
+  // MATRX-EXCEPTION: both panel_state and data are JSONB columns in
+  // Supabase; the generated schema types them as `Json` (a recursive
+  // primitive/object/array union) that TypeScript cannot structurally
+  // verify a concrete object shape against. Our caller-side payload uses
+  // the narrower PanelState / Record<string, unknown> shapes for
+  // ergonomics — this is the accepted write-direction cast (mirrors the
+  // read-side DbRpcRow-guard exception, but in reverse: we're asserting a
+  // concrete, JSON-serializable object satisfies the wide `Json` union on
+  // write, not narrowing an already-Json value on read).
   const row = {
     ...(sessionId ? { id: sessionId } : {}),
     user_id: userId,
@@ -94,6 +116,9 @@ export async function loadWindowSessions(
     );
   }
 
+  // Guarded by _CheckWindowSessionRow above — panel_state/data stay `Json`
+  // on the DB side and are narrowed at the call site (Pattern 4), never
+  // given a concrete shape via this cast.
   return (data ?? []) as unknown as WindowSessionRow[];
 }
 

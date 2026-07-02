@@ -85,11 +85,18 @@ export function cleanContent(
     });
   }
 
-  // Restore protected regions verbatim.
+  // Restore protected regions verbatim. A missing placeholder here would mean
+  // silently deleting protected content — exactly the corruption this module
+  // exists to prevent — so a bad index throws loudly instead of defaulting to "".
   const unmaskRe = new RegExp(`${PH_OPEN}(\\d+)${PH_CLOSE}`, "g");
   const cleaned = working.replace(unmaskRe, (_, idx: string) => {
     const original = placeholders[Number(idx)];
-    return original ?? "";
+    if (original === undefined) {
+      throw new Error(
+        `Content cleanup: protected-region placeholder ${idx} missing during unmask — refusing to silently drop content.`,
+      );
+    }
+    return original;
   });
 
   const protectedChars = protectedRegions.reduce(

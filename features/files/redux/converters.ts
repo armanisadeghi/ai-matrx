@@ -328,6 +328,14 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
   const id = str(row, "id");
   if (!id) return null;
 
+  // `owner_id` drives ownership/RLS decisions downstream (`decideForOwnedFile`
+  // compares it against the current user). A missing owner_id is a malformed
+  // row, not "no owner" — defaulting to "" would silently misclassify
+  // ownership rather than just dropping the bad row (matches this parser's
+  // documented "skip malformed rows" contract).
+  const ownerId = str(row, "owner_id");
+  if (!ownerId) return null;
+
   const explicitKind = str(row, "kind");
   const hasFolderName = typeof row.folder_name === "string";
   const hasFileName = typeof row.file_name === "string";
@@ -386,7 +394,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
       parent_id: str(row, "parent_id"),
       visibility,
       effective_permission: effPerm ? toPermissionLevel(effPerm) : null,
-      owner_id: str(row, "owner_id") ?? "",
+      owner_id: ownerId,
       created_at: created,
       updated_at: updated,
       deleted_at: str(row, "deleted_at"),
@@ -404,7 +412,7 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
     visibility,
     current_version: num(row, "current_version") ?? 1,
     effective_permission: effPerm ? toPermissionLevel(effPerm) : null,
-    owner_id: str(row, "owner_id") ?? "",
+    owner_id: ownerId,
     created_at: created,
     updated_at: updated,
     deleted_at: str(row, "deleted_at"),

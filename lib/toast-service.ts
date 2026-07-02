@@ -20,9 +20,18 @@ const DEFAULT_TOAST_STYLE = {
     className: "max-w-xs" // This will make toasts smaller
 };
 
+/** Shape passed to the toast-library-backed function registered via setFunctions. */
+export interface ToastFnProps {
+    title: string;
+    description: string;
+    variant: MatrxVariant;
+    duration: number;
+    options: ToastOptions;
+}
+
 class ToastService {
     private static instance: ToastService;
-    private toastFn: ((props: any) => string) | null = null;
+    private toastFn: ((props: ToastFnProps) => string) | null = null;
     private dismissFn: ((toastId: string) => void) | null = null;
     private defaults: Record<string, ToastDefaults> = {};
 
@@ -35,7 +44,7 @@ class ToastService {
         return ToastService.instance;
     }
 
-    public setFunctions(toastFn: (props: any) => string, dismissFn: (toastId: string) => void) {
+    public setFunctions(toastFn: (props: ToastFnProps) => string, dismissFn: (toastId: string) => void) {
         this.toastFn = toastFn;
         this.dismissFn = dismissFn;
     }
