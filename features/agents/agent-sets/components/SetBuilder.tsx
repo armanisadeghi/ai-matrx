@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -25,8 +25,9 @@ import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
 import { useAgentSet } from "../hooks/useAgentSet";
+import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
+import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatus";
 import { addAgentToSet, createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
 import { syncOrchestratorPrompt } from "../orchestrator/thunks";
 import { AgentLibraryRail } from "./AgentLibraryRail";
@@ -51,11 +52,10 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
-  useEffect(() => {
-    dispatch(fetchAgentsList());
-  }, [dispatch]);
+  useEnsureAgentsLoaded();
 
   const memberIds = useMemo(() => members.map((m) => m.agentId), [members]);
+  const promptStatus = useOrchestratorPromptStatus(orchestratorId, memberIds);
   // Derived — when a member is removed it simply resolves to null and the
   // inspector unmounts (no setState-in-effect cleanup needed).
   const editingMember = editingId ? members.find((m) => m.agentId === editingId) ?? null : null;
@@ -170,21 +170,31 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
             </button>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={handleSyncPrompt}
-            disabled={syncing || members.length === 0}
-            title="Regenerate the orchestrator's <available_agents> prompt section from the current members"
-          >
-            {syncing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            Sync prompt
-          </Button>
+          {/* Only for TEMPLATE orchestrators (their prompt has the <available_agents>
+              section our system fills). The amber pulse flags "listings ≠ members". */}
+          {promptStatus.isTemplate && (
+            <Button
+              variant={promptStatus.outOfSync ? "default" : "outline"}
+              size="sm"
+              className="relative gap-1.5"
+              onClick={handleSyncPrompt}
+              disabled={syncing || members.length === 0}
+              title="Regenerate the orchestrator's <available_agents> prompt to match the current members"
+            >
+              {syncing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Sync agent listings
+              {promptStatus.outOfSync && !syncing && (
+                <span className="absolute -right-1 -top-1 flex h-2.5 w-2.5" aria-hidden>
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
+                </span>
+              )}
+            </Button>
+          )}
           <Link href={`/agents/${orchestratorId}/build`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" /> Orchestrator

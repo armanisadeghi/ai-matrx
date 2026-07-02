@@ -6,8 +6,6 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
-import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
 import type { AgentSetDetailEntry } from "./slice";
 import type { AgentSetMember, AgentSetSummary } from "@/features/agents/agent-sets/types";
 
@@ -74,16 +72,3 @@ export function makeSelectAgentSetStatus(orchestratorId: string) {
     (s) => s.byId[orchestratorId]?.status ?? "idle",
   );
 }
-
-/**
- * Live (non-version, non-archived) agents the user can choose as an orchestrator
- * or drag into a set, sorted by name. Sourced from the shared agentDefinition
- * registry (populated by `fetchAgentsList`).
- */
-export const selectPickableAgents = createSelector(
-  selectAllAgents,
-  (agents): AgentDefinitionRecord[] =>
-    Object.values(agents)
-      .filter((a): a is AgentDefinitionRecord => Boolean(a) && !a.isVersion && !a.isArchived)
-      .sort((x, y) => (x.name ?? "").localeCompare(y.name ?? "")),
-);
