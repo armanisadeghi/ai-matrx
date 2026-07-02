@@ -8,7 +8,7 @@
 // optional word/char-level highlighting. Drop it into a route, window,
 // modal, sheet, or any region of a page — it fills its container.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Columns2,
   Rows3,
@@ -16,6 +16,11 @@ import {
   Hash,
   Highlighter,
   ArrowLeftRight,
+  ArrowUp,
+  ArrowDown,
+  FoldVertical,
+  UnfoldVertical,
+  ChevronsDownUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { computeTextDiff, summarizeTextDiff } from "./engine/computeTextDiff";
@@ -128,6 +133,33 @@ function renderHighlightLine(
   });
 }
 
+/** Unchanged lines to keep around each change when folding. */
+const CONTEXT_LINES = 3;
+
+/** Which indices are visible when collapsed: every changed row + `ctx` rows
+ * on each side of it. */
+function computeVisibility(changed: boolean[], ctx: number): boolean[] {
+  const n = changed.length;
+  const vis = new Array<boolean>(n).fill(false);
+  for (let i = 0; i < n; i++) {
+    if (changed[i]) {
+      for (let j = Math.max(0, i - ctx); j <= Math.min(n - 1, i + ctx); j++) {
+        vis[j] = true;
+      }
+    }
+  }
+  return vis;
+}
+
+/** Start index of each contiguous run of changed rows — the nav targets. */
+function groupStarts(changed: boolean[]): number[] {
+  const starts: number[] = [];
+  for (let i = 0; i < changed.length; i++) {
+    if (changed[i] && (i === 0 || !changed[i - 1])) starts.push(i);
+  }
+  return starts;
+}
+
 function LineNumber({ n, show }: { n: number | null; show: boolean }) {
   if (!show) return null;
   return (
@@ -160,8 +192,25 @@ export function TextDiff({
   };
 
   const [lineNumbers, setLineNumbers] = useState(showLineNumbers);
-  const [internalWrap, setInternalWrap] = useState(wrapProp ?? false);
+  // Wrap is ON by default (long lines soft-wrap instead of scrolling off-screen);
+  // the user can toggle it off. A `wrap` prop still forces the value.
+  const [internalWrap, setInternalWrap] = useState(wrapProp ?? true);
   const wrap = wrapProp ?? internalWrap;
+
+  // Collapse unchanged context (fold), so large files show only the changes with
+  // a few lines around each — expandable. Split/inline only.
+  const [collapse, setCollapse] = useState(true);
+  const [expandedRuns, setExpandedRuns] = useState<Set<number>>(new Set());
+  const [flashRow, setFlashRow] = useState<number | null>(null);
+  const rowRefs = useRef<Record<number, HTMLElement | null>>({});
+  const navCursor = useRef(-1);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    },
+    [],
+  );
 
   // Swap which side is the baseline (old) vs. the incoming version (new).
   // Lets the user flip the comparison without re-opening it — e.g. clipboard
@@ -182,6 +231,72 @@ export function TextDiff({
     ? "whitespace-pre-wrap break-words"
     : "whitespace-pre";
   const summary = summarizeTextDiff(result.stats);
+
+  // Fold + navigation data for the active line-grid view (split uses rows,
+  // inline uses inline lines). Computed from the single `result` — no re-diff.
+  const changed = useMemo(
+    () =>
+      (view === "split" ? result.rows : result.inline).map(
+        (it) => it.type !== "unchanged",
+      ),
+    [view, result],
+  );
+  const visible = useMemo(
+    () => (collapse ? computeVisibility(changed, CONTEXT_LINES) : null),
+    [changed, collapse],
+  );
+  const changeStarts = useMemo(() => groupStarts(changed), [changed]);
+
+  // Reset fold/nav state when the inputs or view change.
+  useEffect(() => {
+    setExpandedRuns(new Set());
+    navCursor.current = -1;
+  }, [result, view]);
+
+  const gotoChange = (dir: 1 | -1) => {
+    if (changeStarts.length === 0) return;
+    navCursor.current =
+      dir === 1
+        ? (navCursor.current + 1) % changeStarts.length
+        : (navCursor.current - 1 + changeStarts.length) % changeStarts.length;
+    const idx = changeStarts[navCursor.current];
+    rowRefs.current[idx]?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setFlashRow(idx);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlashRow(null), 1200);
+  };
+
+  const expandRun = (start: number) =>
+    setExpandedRuns((prev) => new Set(prev).add(start));
+
+  // Render body with folding: walk the items, collapse maximal hidden runs into
+  // a single "expand N lines" control (unless that run has been expanded).
+  function foldedBody(
+    length: number,
+    renderItem: (i: number) => React.ReactNode,
+    renderFold: (runStart: number, count: number) => React.ReactNode,
+  ): React.ReactNode[] {
+    const out: React.ReactNode[] = [];
+    let i = 0;
+    while (i < length) {
+      if (visible && !visible[i]) {
+        let j = i;
+        while (j < length && !visible[j]) j++;
+        if (expandedRuns.has(i)) {
+          for (let k = i; k < j; k++) out.push(renderItem(k));
+        } else {
+          out.push(renderFold(i, j - i));
+        }
+        i = j;
+      } else {
+        out.push(renderItem(i));
+        i++;
+      }
+    }
+    return out;
+  }
+
+  const isChangeStart = (i: number) => changeStarts.includes(i);
 
   return (
     <div className={cn("flex flex-col h-full min-h-0 bg-card", className)}>
@@ -279,6 +394,47 @@ export function TextDiff({
               >
                 <WrapText className="w-3.5 h-3.5" />
               </button>
+              <button
+                type="button"
+                onClick={() => setCollapse((v) => !v)}
+                className={cn(
+                  "inline-flex items-center justify-center w-7 h-7 rounded-md border border-border transition-colors",
+                  collapse
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+                title={
+                  collapse
+                    ? "Showing changes only — click to show all unchanged lines"
+                    : "Showing all lines — click to collapse unchanged context"
+                }
+              >
+                {collapse ? (
+                  <FoldVertical className="w-3.5 h-3.5" />
+                ) : (
+                  <UnfoldVertical className="w-3.5 h-3.5" />
+                )}
+              </button>
+              {changeStarts.length > 0 && (
+                <div className="inline-flex items-center rounded-md border border-border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => gotoChange(-1)}
+                    className="inline-flex items-center justify-center w-7 h-7 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    title="Previous change"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => gotoChange(1)}
+                    className="inline-flex items-center justify-center w-7 h-7 border-l border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    title={`Next change (${changeStarts.length} total)`}
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </>
           )}
 
@@ -341,93 +497,158 @@ export function TextDiff({
               </tr>
             </thead>
             <tbody>
-              {result.rows.map((row, i) => {
-                const leftTint = splitTint(row, "left");
-                const rightTint = splitTint(row, "right");
-                return (
-                  <tr key={i}>
-                    <td
-                      className={cn(
-                        "align-top px-1 border-r border-border/40",
-                        leftTint,
-                      )}
+              {foldedBody(
+                result.rows.length,
+                (i) => {
+                  const row = result.rows[i];
+                  const leftTint = splitTint(row, "left");
+                  const rightTint = splitTint(row, "right");
+                  const start = isChangeStart(i);
+                  const flash = flashRow === i;
+                  return (
+                    <tr
+                      key={i}
+                      ref={
+                        start
+                          ? (el) => {
+                              rowRefs.current[i] = el;
+                            }
+                          : undefined
+                      }
                     >
-                      <LineNumber n={row.left.lineNumber} show={lineNumbers} />
-                    </td>
-                    <td
-                      className={cn(
-                        "align-top pr-3 pl-1 border-r border-border w-1/2",
-                        leftTint,
-                        whitespace,
-                      )}
-                    >
-                      {renderSegments(row.left, "left")}
-                    </td>
-                    <td
-                      className={cn(
-                        "align-top px-1 border-r border-border/40",
-                        rightTint,
-                      )}
-                    >
-                      <LineNumber n={row.right.lineNumber} show={lineNumbers} />
-                    </td>
-                    <td
-                      className={cn(
-                        "align-top pr-3 pl-1 w-1/2",
-                        rightTint,
-                        whitespace,
-                      )}
-                    >
-                      {renderSegments(row.right, "right")}
+                      <td
+                        className={cn(
+                          "align-top px-1 border-r border-border/40",
+                          leftTint,
+                          flash && "!bg-primary/20",
+                        )}
+                      >
+                        <LineNumber n={row.left.lineNumber} show={lineNumbers} />
+                      </td>
+                      <td
+                        className={cn(
+                          "align-top pr-3 pl-1 border-r border-border w-1/2",
+                          leftTint,
+                          flash && "!bg-primary/20",
+                          whitespace,
+                        )}
+                      >
+                        {renderSegments(row.left, "left")}
+                      </td>
+                      <td
+                        className={cn(
+                          "align-top px-1 border-r border-border/40",
+                          rightTint,
+                          flash && "!bg-primary/20",
+                        )}
+                      >
+                        <LineNumber n={row.right.lineNumber} show={lineNumbers} />
+                      </td>
+                      <td
+                        className={cn(
+                          "align-top pr-3 pl-1 w-1/2",
+                          rightTint,
+                          flash && "!bg-primary/20",
+                          whitespace,
+                        )}
+                      >
+                        {renderSegments(row.right, "right")}
+                      </td>
+                    </tr>
+                  );
+                },
+                (runStart, count) => (
+                  <tr key={`fold-${runStart}`}>
+                    <td colSpan={4} className="p-0">
+                      <button
+                        type="button"
+                        onClick={() => expandRun(runStart)}
+                        className="flex w-full items-center gap-1.5 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        title="Expand hidden unchanged lines"
+                      >
+                        <ChevronsDownUp className="w-3 h-3" />
+                        Expand {count} unchanged line{count === 1 ? "" : "s"}
+                      </button>
                     </td>
                   </tr>
-                );
-              })}
+                ),
+              )}
             </tbody>
           </table>
         ) : (
           <div>
-            {result.inline.map((line, i) => (
-              <div
-                key={i}
-                className={cn("flex items-start", INLINE_BG[line.type])}
-              >
-                {lineNumbers && (
-                  <>
-                    <span className="select-none shrink-0 w-10 pr-1 text-right text-muted-foreground/50 tabular-nums">
-                      {line.oldLineNumber ?? ""}
+            {foldedBody(
+              result.inline.length,
+              (i) => {
+                const line = result.inline[i];
+                const start = isChangeStart(i);
+                const flash = flashRow === i;
+                return (
+                  <div
+                    key={i}
+                    ref={
+                      start
+                        ? (el) => {
+                            rowRefs.current[i] = el;
+                          }
+                        : undefined
+                    }
+                    className={cn(
+                      "flex items-start",
+                      INLINE_BG[line.type],
+                      flash && "!bg-primary/20",
+                    )}
+                  >
+                    {lineNumbers && (
+                      <>
+                        <span className="select-none shrink-0 w-10 pr-1 text-right text-muted-foreground/50 tabular-nums">
+                          {line.oldLineNumber ?? ""}
+                        </span>
+                        <span className="select-none shrink-0 w-10 pr-2 text-right text-muted-foreground/50 tabular-nums">
+                          {line.newLineNumber ?? ""}
+                        </span>
+                      </>
+                    )}
+                    <span
+                      className={cn(
+                        "select-none shrink-0 w-4 text-center",
+                        line.type === "added" && GUTTER.added,
+                        line.type === "removed" && GUTTER.removed,
+                        line.type === "unchanged" && "text-transparent",
+                      )}
+                    >
+                      {line.type === "added"
+                        ? "+"
+                        : line.type === "removed"
+                          ? "-"
+                          : " "}
                     </span>
-                    <span className="select-none shrink-0 w-10 pr-2 text-right text-muted-foreground/50 tabular-nums">
-                      {line.newLineNumber ?? ""}
+                    <span className={cn("flex-1 pr-3", whitespace)}>
+                      {renderSegments(
+                        {
+                          lineNumber: null,
+                          content: line.content,
+                          segments: line.segments,
+                        },
+                        line.type === "added" ? "right" : "left",
+                      )}
                     </span>
-                  </>
-                )}
-                <span
-                  className={cn(
-                    "select-none shrink-0 w-4 text-center",
-                    line.type === "added" && GUTTER.added,
-                    line.type === "removed" && GUTTER.removed,
-                    line.type === "unchanged" && "text-transparent",
-                  )}
+                  </div>
+                );
+              },
+              (runStart, count) => (
+                <button
+                  key={`fold-${runStart}`}
+                  type="button"
+                  onClick={() => expandRun(runStart)}
+                  className="flex w-full items-center gap-1.5 bg-muted/30 px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  title="Expand hidden unchanged lines"
                 >
-                  {line.type === "added"
-                    ? "+"
-                    : line.type === "removed"
-                      ? "-"
-                      : " "}
-                </span>
-                <span className={cn("flex-1 pr-3", whitespace)}>
-                  {renderSegments(
-                    {
-                      lineNumber: null,
-                      content: line.content,
-                      segments: line.segments,
-                    },
-                    line.type === "added" ? "right" : "left",
-                  )}
-                </span>
-              </div>
-            ))}
+                  <ChevronsDownUp className="w-3 h-3" />
+                  Expand {count} unchanged line{count === 1 ? "" : "s"}
+                </button>
+              ),
+            )}
           </div>
         )}
       </div>
