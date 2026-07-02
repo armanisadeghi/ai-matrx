@@ -13,13 +13,13 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 
 - `GET /actions/catalog` on the Python brain. In-app path is **bare** (`/actions/catalog`); the public URL adds `/api` (stripped server-side). Non-sensitive, unauthenticated GET.
 - Base URL is resolved from the canonical `apiConfigSlice` (`selectResolvedBaseUrl`) — the admin server toggle routes this too. NEVER hardcoded.
-- Response shape mirrored byte-for-byte in `types.ts` (`ActionCatalog` / `NounActions`; states `"yes" | "planned" | "no"`).
+- Response shape aliased from OpenAPI in `types.ts` (`components["schemas"]["ActionCatalog"]` / `NounActions`; states `"yes" | "planned" | "no"`).
 
 ## Parts
 
 | Part | File |
 |---|---|
-| Types (server mirror) | `types.ts` |
+| Types (OpenAPI aliases + guards) | `types.ts` |
 | Endpoint path | `endpoints.ts` |
 | Fetch (one path) | `service.ts` |
 | Live hook (fetch + 30s poll + refresh) | `hooks/useActionCatalog.ts` |
@@ -47,6 +47,10 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 
 ## Change Log
 
+- 2026-07-01 — Type-safety: replaced 7 hand-written API interfaces with OpenAPI aliases
+  (`components["schemas"]` in `types.ts`); derived `ActionState` / `ActionVerb` from
+  `NounActions`; removed `?? ""` form-default hatches in `ActionBuilderPanel`; confirm
+  consumer now passes required `force: false` on `DirectiveConfirmRequest`.
 - 2026-06-24 — Added the `ask`-policy **confirm round-trip**: `confirmDirective` +
   `POST /actions/confirm` (`service.ts` / `endpoints.ts` / `types.ts`). When a directive's
   resolved apply policy is `ask`, the brain streams `directive_apply.proposed`;

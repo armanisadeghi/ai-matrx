@@ -344,6 +344,12 @@
     "webpack-filter-warnings-plugin": "^1.2.1"
   },
   "pnpm": {
+    "overrides": {
+      "react": "19.2.7",
+      "react-dom": "19.2.7",
+      "@types/react": "19.2.17",
+      "@types/react-dom": "19.2.3"
+    },
     "ignoredBuiltDependencies": [
       "@tsparticles/engine",
       "bufferutil",

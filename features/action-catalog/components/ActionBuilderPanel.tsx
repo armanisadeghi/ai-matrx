@@ -117,18 +117,27 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
 
   // The write payload, parsed. A reference has no payload (its ids drive it).
   // `error` is null when valid; `value` is always an object (empty on error).
-  const parsed = useMemo<{ value: Record<string, unknown>; error: string | null }>(() => {
+  const parsed = useMemo<{
+    value: Record<string, unknown>;
+    error: string | null;
+  }>(() => {
     if (isReference) return { value: {}, error: null };
     const text = writePayload.trim();
     if (text.length === 0) return { value: {}, error: null };
     try {
       const v: unknown = JSON.parse(text);
       if (typeof v !== "object" || v === null || Array.isArray(v)) {
-        return { value: {}, error: "Payload must be a JSON object (the row's fields)." };
+        return {
+          value: {},
+          error: "Payload must be a JSON object (the row's fields).",
+        };
       }
       return { value: v as Record<string, unknown>, error: null };
     } catch (e) {
-      return { value: {}, error: e instanceof Error ? e.message : "Invalid JSON" };
+      return {
+        value: {},
+        error: e instanceof Error ? e.message : "Invalid JSON",
+      };
     }
   }, [isReference, writePayload]);
 
@@ -340,14 +349,15 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
           </Button>
           {state !== "yes" && (
             <p className="text-xs text-muted-foreground">
-              This reference is{" "}
-              <span className="font-medium">{state}</span> — live resolution is
-              only available for wired (&quot;Yes&quot;) references.
+              This reference is <span className="font-medium">{state}</span> —
+              live resolution is only available for wired (&quot;Yes&quot;)
+              references.
             </p>
           )}
           {state === "yes" && !requiredFilled && (
             <p className="text-xs text-muted-foreground">
-              Enter the identity ids above (valid UUIDs) to render the live chip.
+              Enter the identity ids above (valid UUIDs) to render the live
+              chip.
             </p>
           )}
           {canLiveRender && renderNonce > 0 && envelope && (
@@ -380,7 +390,9 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
               )}
               placeholder={'{ "label": "My note", "content": "..." }'}
             />
-            {payloadError && <p className="text-xs text-red-500">{payloadError}</p>}
+            {payloadError && (
+              <p className="text-xs text-red-500">{payloadError}</p>
+            )}
           </div>
 
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -420,8 +432,8 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
           )}
           {state === "planned" && verb !== "delete" && (
             <p className="text-xs text-muted-foreground">
-              This write is <span className="font-medium">planned</span> — only wired
-              (&quot;Yes&quot;) nouns execute today.
+              This write is <span className="font-medium">planned</span> — only
+              wired (&quot;Yes&quot;) nouns execute today.
             </p>
           )}
 
@@ -443,12 +455,15 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
                       {r.verb}:{r.noun}
                     </span>
                   </div>
-                  {r.summary && <span className="text-foreground">{r.summary}</span>}
-                  {r.resource_ids !== undefined && r.resource_ids.length > 0 && (
-                    <span className="font-mono text-muted-foreground">
-                      id: {r.resource_ids.join(", ")}
-                    </span>
+                  {r.summary && (
+                    <span className="text-foreground">{r.summary}</span>
                   )}
+                  {r.resource_ids !== undefined &&
+                    r.resource_ids.length > 0 && (
+                      <span className="font-mono text-muted-foreground">
+                        id: {r.resource_ids.join(", ")}
+                      </span>
+                    )}
                   {r.error && <span className="text-red-500">{r.error}</span>}
                 </div>
               ))}

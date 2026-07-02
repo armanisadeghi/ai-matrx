@@ -32,7 +32,9 @@ interface ProposedDirectivesZoneProps {
   conversationId: string;
 }
 
-export function ProposedDirectivesZone({ conversationId }: ProposedDirectivesZoneProps) {
+export function ProposedDirectivesZone({
+  conversationId,
+}: ProposedDirectivesZoneProps) {
   const proposals = useAppSelector(selectProposedDirectives(conversationId));
   if (proposals.length === 0) return null;
   return (
@@ -56,7 +58,12 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
   const itemLabel = `${proposal.itemCount} item${proposal.itemCount === 1 ? "" : "s"}`;
 
   const dismiss = () =>
-    dispatch(removeProposal({ conversationId: proposal.conversationId, proposalId: proposal.proposalId }));
+    dispatch(
+      removeProposal({
+        conversationId: proposal.conversationId,
+        proposalId: proposal.proposalId,
+      }),
+    );
 
   const onApprove = async () => {
     setBusy(true);
@@ -74,7 +81,9 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
       if (result.failed > 0 && result.applied === 0) {
         toast.error(`Could not apply ${title}${failedSuffix}`);
       } else {
-        toast.success(`Applied ${title}: ${result.applied} done${failedSuffix}`);
+        toast.success(
+          `Applied ${title}: ${result.applied} done${failedSuffix}`,
+        );
       }
       dismiss();
     } catch (err) {
@@ -89,7 +98,9 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
         <div className="flex min-w-0 items-center gap-2">
           <Sparkles className="size-4 shrink-0 text-primary" />
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium capitalize text-foreground">{title}</div>
+            <div className="truncate text-sm font-medium capitalize text-foreground">
+              {title}
+            </div>
             <div className="truncate text-xs text-muted-foreground">
               {proposal.summary ?? `${proposal.type} (${itemLabel})`}
             </div>
@@ -105,7 +116,11 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
           Decline
         </Button>
         <Button size="sm" onClick={onApprove} disabled={busy}>
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Check className="size-4" />
+          )}
           Approve
         </Button>
       </div>
