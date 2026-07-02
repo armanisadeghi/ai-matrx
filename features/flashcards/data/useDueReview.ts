@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { CardWithDetails } from "./types";
@@ -42,13 +42,17 @@ function clampIndex(index: number, length: number): number {
   return index;
 }
 
-function mapResult(last: string | null): ReviewResult | undefined {
-  if (last === "correct" || last === "partial" || last === "incorrect") return last;
-  return undefined;
+/** Distinct cards graded this session (a defined result). */
+function progressDone(
+  results: Record<string, ReviewResult | undefined>,
+): number {
+  return Object.values(results).filter((r) => r !== undefined).length;
 }
 
 export function useDueReview(options: { limit?: number } = {}): UseDueReviewResult {
-  const { limit = 40 } = options;
+  // Generous per-session cap; a due session studies a batch, more resurface next
+  // visit. (Kept close to the progress-page "N due" count to avoid a big mismatch.)
+  const { limit = 100 } = options;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,13 +104,12 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
       }
       setCards(cardsRes.data ?? []);
 
-      // Seed prior results from the mastery rows we already have.
-      const seeded: Record<string, ReviewResult | undefined> = {};
-      for (const m of due) {
-        const r = mapResult(m.last_result);
-        if (r) seeded[m.item_id] = r;
-      }
-      setResultsByCard(seeded);
+      // CRITICAL: do NOT seed from prior results. Every due card has a prior
+      // last_result (that's WHY due_at is set and it's in the queue) — counting
+      // those as "done" would make progress.done === total on the first render
+      // and instantly show "Review complete" with zero cards studied.
+      // resultsByCard holds ONLY this session's grades.
+      setResultsByCard({});
 
       // 3. Open an adaptive session tagging every attempt.
       const sessionRes = await studyService.createSession({
@@ -126,6 +129,41 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
       cancelled = true;
     };
   }, [limit]);
+
+  // ── Close the adaptive session (don't leak it 'active'; the reaper is only a
+  //    6h backstop). A ref holds the close flag so the completion + unmount
+  //    effects coordinate without set-state-in-effect. Mirrors FastFire's
+  //    finish/abort close. (The classic set-study path has a pre-existing leak
+  //    this doesn't touch.)
+  const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
+  useEffect(() => {
+    closeRef.current = session ? { id: session.id, closed: false } : null;
+  }, [session]);
+
+  useEffect(() => {
+    const ref = closeRef.current;
+    if (!ref || ref.closed || !session) return;
+    if (cards.length > 0 && progressDone(resultsByCard) >= cards.length) {
+      ref.closed = true;
+      void studyService.updateSession(session.id, {
+        status: "completed",
+        ended_at: new Date().toISOString(),
+      });
+    }
+  }, [session, cards.length, resultsByCard]);
+
+  useEffect(() => {
+    return () => {
+      const ref = closeRef.current;
+      if (ref && !ref.closed) {
+        ref.closed = true;
+        void studyService.updateSession(ref.id, {
+          status: "abandoned",
+          ended_at: new Date().toISOString(),
+        });
+      }
+    };
+  }, []);
 
   const flip = (): void => setIsFlipped((f) => !f);
 
