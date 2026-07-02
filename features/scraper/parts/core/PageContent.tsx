@@ -84,7 +84,7 @@ const PageContent: React.FC<PageContentProps> = ({
           : "";
 
       // Process organized data for removal details display
-      const allRemovals = contentFilterDetails.map((item) => ({
+      const allRemovals = contentFilterDetails.map((item: Record<string, unknown>) => ({
         ...item,
         remover: "Content Filter",
       }));
@@ -173,7 +173,7 @@ const PageContent: React.FC<PageContentProps> = ({
   );
 
   // Function to enable a specific feature when requested from the placeholder
-  const enableFeature = (feature) => {
+  const enableFeature = (feature: keyof typeof featureToggles) => {
     setFeatureToggles((prev) => ({
       ...prev,
       [feature]: true,

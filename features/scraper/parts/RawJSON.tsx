@@ -8,7 +8,7 @@ import { CopyIcon } from "lucide-react";
 /**
  * Component for displaying raw JSON data
  */
-const RawJSON = ({ pageData }) => {
+const RawJSON = ({ pageData }: { pageData: unknown }) => {
   if (!pageData) {
     return (
       <div className="p-4 text-gray-500 dark:text-gray-400">

@@ -2,11 +2,21 @@
 import React from "react";
 import { processOrganizedData } from "../utils/scraper-utils";
 
+type OrganizedContentItem =
+  | { type: "paragraph"; content: string }
+  | { type: "list"; items: unknown[] }
+  | { type: "unknown"; keys: string[] };
+
+interface OrganizedSection {
+  heading: { level: number; text: string };
+  content: OrganizedContentItem[];
+}
+
 /**
  * Component for displaying organized content
  */
-const OrganizedContent = ({ organizedData }) => {
-  const processedData = processOrganizedData(organizedData);
+const OrganizedContent = ({ organizedData }: { organizedData: Record<string, unknown> | null | undefined }) => {
+  const processedData = processOrganizedData(organizedData) as OrganizedSection[];
 
   if (processedData.length === 0) {
     return (
@@ -50,8 +60,10 @@ const OrganizedContent = ({ organizedData }) => {
                       key={contentIndex}
                       className="list-disc pl-5 text-foreground/90"
                     >
-                      {item.items.map((listItem, itemIndex) => (
-                        <li key={itemIndex}>{listItem}</li>
+                      {item.items.map((listItem: unknown, itemIndex: number) => (
+                        <li key={itemIndex}>
+                          {typeof listItem === "string" ? listItem : String(listItem)}
+                        </li>
                       ))}
                     </ul>
                   );

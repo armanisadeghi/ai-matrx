@@ -3,14 +3,20 @@ import React from "react";
 import { LightbulbIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+interface FeatureDisabledPlaceholderProps {
+  featureName: string;
+  description?: string;
+  onEnable: () => void;
+}
+
 /**
  * Component shown when a feature is disabled, providing an option to enable it
  */
-const FeatureDisabledPlaceholder = ({ 
-  featureName, 
-  description, 
-  onEnable
-}) => {
+const FeatureDisabledPlaceholder = ({
+  featureName,
+  description,
+  onEnable,
+}: FeatureDisabledPlaceholderProps) => {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8">
       <div className="bg-gradient-to-br from-gray-50/90 to-white dark:from-gray-900/90 dark:to-gray-800 rounded-xl shadow-md p-10 max-w-md border-border">

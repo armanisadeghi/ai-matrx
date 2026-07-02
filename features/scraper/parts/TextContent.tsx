@@ -6,7 +6,7 @@ import { formatTextData, copyToClipboard } from "../utils/scraper-utils";
 /**
  * Component for displaying text content
  */
-const TextContent = ({ textData }) => {
+const TextContent = ({ textData }: { textData: string | null | undefined }) => {
   const lines = formatTextData(textData);
 
   if (lines.length === 0) {

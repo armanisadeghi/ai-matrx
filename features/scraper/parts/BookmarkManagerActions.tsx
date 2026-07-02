@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/ButtonMine";
 import { SettingsIcon } from "lucide-react";
 import BookmarkManager from "./BookmarkManager";
 
-const BookmarkManagerActions = ({ jsonStr }) => {
+const BookmarkManagerActions = ({ jsonStr }: { jsonStr: string }) => {
   const [isManagerOpen, setIsManagerOpen] = useState(false);
 
   return (

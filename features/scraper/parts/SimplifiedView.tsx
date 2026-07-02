@@ -4,10 +4,26 @@ import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { processOrganizedData, copyToClipboard } from "../utils/scraper-utils";
 
+type OrganizedContentItem =
+  | { type: "paragraph"; content: string }
+  | { type: "list"; items: unknown[] }
+  | { type: "unknown"; keys: string[] };
+
+interface OrganizedSection {
+  heading: { level: number; text: string };
+  content: OrganizedContentItem[];
+}
+
+interface SimplifiedViewData {
+  overview?: { page_title?: string; url?: string } | null;
+  textData?: string;
+  organizedData?: Record<string, unknown>;
+}
+
 /**
  * Component for displaying content in a simplified reader-friendly format
  */
-const SimplifiedView = ({ pageData }) => {
+const SimplifiedView = ({ pageData }: { pageData: SimplifiedViewData | null | undefined }) => {
   if (!pageData) {
     return (
       <div className="p-4 text-muted-foreground">No content available</div>
@@ -16,9 +32,9 @@ const SimplifiedView = ({ pageData }) => {
 
   const { overview, textData, organizedData } = pageData;
 
-  const processedContent = processOrganizedData(organizedData);
+  const processedContent = processOrganizedData(organizedData) as OrganizedSection[];
 
-  const handleCopy = (text) => {
+  const handleCopy = (text: string | undefined) => {
     copyToClipboard(text);
   };
 
@@ -76,18 +92,18 @@ const SimplifiedView = ({ pageData }) => {
                         )}
                         {item.type === "list" && (
                           <ul className="list-disc pl-5 space-y-1 text-foreground/90">
-                            {item.items.map((listItem, k) => (
+                            {item.items.map((listItem: unknown, k: number) => (
                               <li key={k} className="leading-relaxed">
                                 {typeof listItem === "string" ? (
                                   listItem
                                 ) : Array.isArray(listItem) ? (
                                   <div>
-                                    {listItem[0]}
+                                    {String(listItem[0])}
                                     {listItem[1] &&
                                       Array.isArray(listItem[1]) && (
                                         <ul className="list-circle pl-5 mt-1">
-                                          {listItem[1].map((subItem, l) => (
-                                            <li key={l}>{subItem}</li>
+                                          {listItem[1].map((subItem: unknown, l: number) => (
+                                            <li key={l}>{String(subItem)}</li>
                                           ))}
                                         </ul>
                                       )}

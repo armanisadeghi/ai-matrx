@@ -27,7 +27,7 @@ interface PathBookmark {
 /**
  * A component that displays values from a JSON object using saved bookmarks
  */
-const BookmarkViewer = ({ pageData }) => {
+const BookmarkViewer = ({ pageData }: { pageData: unknown }) => {
   const [bookmarks, setBookmarks] = useState<PathBookmark[]>([]);
   const [importText, setImportText] = useState("");
   const [showImport, setShowImport] = useState(false);
@@ -52,7 +52,7 @@ const BookmarkViewer = ({ pageData }) => {
   };
 
   // Extract and display a value using a bookmark
-  const renderBookmarkValue = (bookmark) => {
+  const renderBookmarkValue = (bookmark: PathBookmark) => {
     if (!pageData)
       return <div className="text-muted-foreground">No data available</div>;
 

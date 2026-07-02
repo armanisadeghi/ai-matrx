@@ -22,6 +22,11 @@ interface Overview {
   char_count: number;
 }
 
+type HeaderTag = "H1" | "H2" | "H3" | "H4" | "H5" | "H6";
+
+const isHeaderTag = (tag: string): tag is HeaderTag =>
+  tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6";
+
 const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
   const [activeTab, setActiveTab] = useState("headers");
 
@@ -188,24 +193,26 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
               </h2>
 
               <div className="space-y-4">
-                {Object.entries(headerDistribution).map(([tag, stats]) => (
-                  <div key={tag} className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        {tag}
-                      </span>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {stats.count}
-                      </span>
+                {Object.entries(headerDistribution).map(([tag, stats]) =>
+                  isHeaderTag(tag) ? (
+                    <div key={tag} className="relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                          {tag}
+                        </span>
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          {stats.count}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                        <div
+                          className={`${headerColors[tag].bg} rounded-full h-3`}
+                          style={{ width: `${stats.percentage}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                      <div
-                        className={`${headerColors[tag].bg} rounded-full h-3`}
-                        style={{ width: `${stats.percentage}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
+                  ) : null,
+                )}
               </div>
             </div>
 
@@ -290,7 +297,8 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                 <div className="px-2 pb-6">
                   <Accordion type="multiple" className="w-full space-y-3">
                     {Object.entries(headerAnalysis.groupedHeaders).map(
-                      ([tag, texts], index) => (
+                      ([tag, texts], index) =>
+                        !isHeaderTag(tag) ? null : (
                         <AccordionItem
                           key={tag}
                           value={`item-${index}`}
