@@ -24,6 +24,10 @@ interface MarkdownClassificationTesterProps {
 
 const isClient = typeof window !== "undefined";
 
+function isMarkdownSampleId(id: string): id is keyof typeof markdownSamples {
+    return Object.prototype.hasOwnProperty.call(markdownSamples, id);
+}
+
 
 const MarkdownClassificationTester = ({
     initialMarkdown,
@@ -94,7 +98,7 @@ const MarkdownClassificationTester = ({
                 setSelectedSampleId(sampleIds[0]);
                 // Only load sample data if no initialMarkdown was provided or coordinator was explicitly changed
                 if (!initialMarkdown || selectedCoordinatorId !== initialCoordinatorId) {
-                    if (markdownSamples[sampleIds[0]]) {
+                    if (isMarkdownSampleId(sampleIds[0])) {
                         const sampleText = markdownSamples[sampleIds[0]];
                         setMarkdown(sampleText);
                         setParsedMarkdown(sampleText);
@@ -141,7 +145,7 @@ const MarkdownClassificationTester = ({
     function handleSampleSelect(sampleKey: string) {
         setProcessedData(null);
         setSelectedSampleId(sampleKey);
-        if (markdownSamples[sampleKey]) {
+        if (isMarkdownSampleId(sampleKey)) {
             const newMarkdown = markdownSamples[sampleKey];
             setMarkdown(newMarkdown);
             setParsedMarkdown(newMarkdown);

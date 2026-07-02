@@ -15,6 +15,7 @@ import {
   generatePathDescription,
 } from "./json-utils";
 import { PathArray, Bookmark } from "./types";
+import { isJsonArray, isJsonObject, isJsonPrimitive, type JsonValue } from "@/types/json";
 
 // Import extracted components
 import BookmarkDialog from "./BookmarkDialog";
@@ -25,7 +26,7 @@ import ActionButtons from "./ActionButtons";
 import CopyPathObjectDialog from "./CopyPathObjectDialog";
 
 interface RawJsonExplorerProps {
-  pageData: any;
+  pageData: unknown;
   ignorePrefix?: string;
   withSelect?: boolean;
   onPathCopy?: (path: string) => void;
@@ -38,9 +39,9 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
   onPathCopy = undefined,
 }) => {
   // Initialize with cleaned data
-  const [originalData, setOriginalData] = useState(null);
+  const [originalData, setOriginalData] = useState<JsonValue | null>(null);
   const [currentPath, setCurrentPath] = useState<PathArray>([[0, "All"]]); // [[rowIndex, selectedKey], ...]
-  const [displayData, setDisplayData] = useState(null);
+  const [displayData, setDisplayData] = useState<JsonValue | null>(null);
 
   // Bookmark-related state
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -96,19 +97,19 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
 
   // Process data with hidden paths
   const processDataWithHiddenPaths = useCallback(
-    (data, currentFullPath = "data") => {
+    (data: JsonValue | undefined, currentFullPath = "data"): JsonValue => {
       // Check if the current path itself should be hidden
       if (hiddenPaths.includes(currentFullPath)) {
         return Array.isArray(data)
           ? [{ hidden: true }]
           : typeof data === "object" && data !== null
             ? { hidden: true }
-            : data;
+            : (data ?? null);
       }
 
       // Handle primitive values
       if (typeof data !== "object" || data === null) {
-        return data;
+        return data ?? null;
       }
 
       // For arrays and objects, process each item
@@ -119,24 +120,25 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
           return processDataWithHiddenPaths(item, childPath);
         });
       } else {
-        const result = {};
+        const result: Record<string, JsonValue> = {};
 
         // Process object properties
         for (const key in data) {
           // For object properties, use dot notation
           const childPath = `${currentFullPath}.${key}`;
+          const value = data[key];
 
           // Check if this specific property is hidden
           if (hiddenPaths.includes(childPath)) {
             // Replace with placeholder indicating content is hidden
-            result[key] = Array.isArray(data[key])
+            result[key] = Array.isArray(value)
               ? [{ hidden: true }]
-              : typeof data[key] === "object" && data[key] !== null
+              : typeof value === "object" && value !== null
                 ? { hidden: true }
-                : data[key];
+                : (value ?? null);
           } else {
             // Process recursively
-            result[key] = processDataWithHiddenPaths(data[key], childPath);
+            result[key] = processDataWithHiddenPaths(value, childPath);
           }
         }
         return result;
@@ -177,7 +179,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
   };
 
   // Context menu handlers
-  const handleContextMenu = (e, path) => {
+  const handleContextMenu = (e: React.MouseEvent, path: PathArray) => {
     e.preventDefault();
 
     // Get the key name from the path
@@ -294,13 +296,13 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
   };
 
   // Jump to a bookmarked path
-  const jumpToBookmark = (bookmark) => {
+  const jumpToBookmark = (bookmark: Bookmark) => {
     if (!originalData) return;
 
     try {
       // Get the value at the bookmarked path
       const value = getValueByBookmark(originalData, bookmark);
-      if (value !== undefined) {
+      if (value !== undefined && (isJsonObject(value) || isJsonArray(value) || isJsonPrimitive(value))) {
         setDisplayData(value);
         const newPath: PathArray = [[0, "All"]];
         if (bookmark.segments.length > 0) {
@@ -326,7 +328,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
     setBookmarksDialogOpen(false);
   };
 
-  const deleteBookmark = (index) => {
+  const deleteBookmark = (index: number) => {
     const updatedBookmarks = [...bookmarks];
     updatedBookmarks.splice(index, 1);
     setBookmarks(updatedBookmarks);
@@ -357,10 +359,10 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
 
   // Use the normalized paths for processing
   const processDataWithNormalizedPaths = useCallback(
-    (data, currentFullPath = "data") => {
+    (data: JsonValue | undefined, currentFullPath = "data"): JsonValue => {
       // Handle primitive values
       if (typeof data !== "object" || data === null) {
-        return data;
+        return data ?? null;
       }
 
       // Check if this path or any parent path should be hidden
@@ -390,7 +392,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
           return processDataWithNormalizedPaths(item, childPath);
         });
       } else {
-        const result = {};
+        const result: Record<string, JsonValue> = {};
 
         // Process object properties
         for (const key in data) {
@@ -417,7 +419,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
     : "";
 
   // Check if a path is hidden
-  const isPathHidden = (path) => {
+  const isPathHidden = (path: PathArray) => {
     if (!path || path.length === 0) return false;
 
     // Get the key name from the path
@@ -492,7 +494,7 @@ const RawJsonExplorer: React.FC<RawJsonExplorerProps> = ({
             className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200"
             onClick={handleHideToggle}
           >
-            {isPathHidden(contextMenu.path) ? "Show content" : "Hide content"}
+            {contextMenu.path && hiddenPaths.includes(contextMenu.path) ? "Show content" : "Hide content"}
           </button>
         </div>
       )}

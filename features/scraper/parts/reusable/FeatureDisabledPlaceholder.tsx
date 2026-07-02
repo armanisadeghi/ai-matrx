@@ -15,7 +15,7 @@ interface FeatureDisabledPlaceholderProps {
 const FeatureDisabledPlaceholder = ({
   featureName,
   description,
-  onEnable,
+  onEnable
 }: FeatureDisabledPlaceholderProps) => {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8">

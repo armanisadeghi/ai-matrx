@@ -2,14 +2,17 @@
  * Fact Checker — useAgentApp() hook contract reference.
  *
  * This is the same UX as fact-checker.tsx but written against the
- * Tier-3 idiomatic contract. Every prop the component receives is the
- * output of useAgentApp() — no separate `onExecute` callback, no
- * shaped `error` object. Variables flow through `setVariable`/
- * `submit({ variables })`; the conversation is hydrated by the hook.
+ * Tier-3 idiomatic contract: variables flow through `setVariable`/
+ * `submit({ variables })` and the conversation is hydrated by the hook.
  *
- * The legacy contract (onExecute, error: { type, message }, etc.) is
- * still passed alongside as compat aliases, so apps that haven't
- * migrated yet keep working — but new apps should follow this pattern.
+ * NOTE on `error`: AgentAppFullyCustomShell spreads `{...hookProps}
+ * {...legacyProps}` (legacy last, so it wins), and legacyProps always
+ * shapes `error` as `{ type, message } | null` for back-compat with
+ * apps written against the old callback contract — even for apps using
+ * this Tier-3 pattern. So `error` here is the legacy shape, not the raw
+ * `string | null` that `useAgentApp()` itself returns; render
+ * `error.message`, not `error` directly (a bare `{error}` would print
+ * "[object Object]").
  */
 import React, { useState, useCallback, useMemo } from "react";
 import {
@@ -23,6 +26,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+
+interface FactCheckerHookedProps {
+  variables: Record<string, unknown>;
+  setVariable: (name: string, value: unknown) => void;
+  submit: (args?: { text?: string; variables?: Record<string, unknown> }) => Promise<void>;
+  response: string;
+  isStreaming: boolean;
+  isExecuting: boolean;
+  error?: { type: string; message: string } | null;
+  agent?: AgentDefinition;
+}
 
 export default function FactCheckerHooked({
   // ── useAgentApp() output (Tier-3 contract) ─────────────────────────
@@ -34,7 +49,7 @@ export default function FactCheckerHooked({
   isExecuting,
   error,
   agent,
-}) {
+}: FactCheckerHookedProps) {
   const claim = (variables?.claim ?? "") as string;
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showFullForm, setShowFullForm] = useState(true);
@@ -94,7 +109,7 @@ export default function FactCheckerHooked({
           {error && (
             <div className="flex items-start gap-2 px-1">
               <AlertCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
-              <p className="text-xs text-destructive leading-snug">{error}</p>
+              <p className="text-xs text-destructive leading-snug">{error.message}</p>
             </div>
           )}
 

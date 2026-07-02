@@ -275,7 +275,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
       }
 
       const cleaned: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      for (const [key, value] of Object.entries(obj)) {
         if (typeof value === 'string') {
           try {
             // Try to parse stringified JSON and recurse
@@ -312,7 +312,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
    * @param {Function} [options.onShowHtmlPreview] - Callback to show HTML preview
    * @returns {Promise<boolean>} - Whether the copy was successful
    */
-  export async function copyToClipboard(content: string | object, options: CopyOptions = {}) {
+  export async function copyToClipboard(content: any, options: CopyOptions = {}) {
     const {
       isMarkdown = false,
       formatForGoogleDocs = false,
@@ -324,11 +324,11 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
       onError = (err) => console.error("Copy failed:", err),
       onShowHtmlPreview = () => {}
     } = options;
-
+    
     try {
       // Process content based on type and formatting option
-      let textToCopy: string;
-
+      let textToCopy;
+      
       if (typeof content === 'object' && content !== null && formatJson) {
         textToCopy = formatJsonForClipboard(content);
       } else if (typeof content === 'string' && formatJson) {
@@ -344,18 +344,23 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
         // Use string conversion for non-JSON or when formatting is disabled
         textToCopy = typeof content === 'string' ? content : JSON.stringify(content);
       }
-
+      
       // Remove thinking content from text unless explicitly requested to include it
-      if (!includeThinking) {
+      if (typeof textToCopy === 'string' && !includeThinking) {
         textToCopy = removeThinkingContent(textToCopy);
       }
-
+      
       // Check if we need to handle this as markdown with special formatting
-      if (isMarkdown && (formatForGoogleDocs || formatForWordPress)) {
-        // Convert markdown to HTML for Google Docs or WordPress
-        const htmlContent = formatForGoogleDocs
-          ? markdownToGoogleDocsHTML(textToCopy, includeThinking)
-          : markdownToWordPressHTML(textToCopy, includeThinking);
+      if (isMarkdown && (formatForGoogleDocs || formatForWordPress) && typeof textToCopy === 'string') {
+        let htmlContent: string = '';
+
+        if (formatForGoogleDocs) {
+          // Convert markdown to HTML for Google Docs
+          htmlContent = markdownToGoogleDocsHTML(textToCopy, includeThinking);
+        } else if (formatForWordPress) {
+          // Convert markdown to HTML for WordPress
+          htmlContent = markdownToWordPressHTML(textToCopy, includeThinking);
+        }
 
         // If showHtmlPreview is requested, call the callback instead of copying
         if (showHtmlPreview && onShowHtmlPreview) {
@@ -369,7 +374,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
           'text/html': new Blob([htmlContent], { type: 'text/html' }),
           'text/plain': new Blob([textToCopy], { type: 'text/plain' })
         });
-
+        
         await navigator.clipboard.write([clipboardItem]);
       } else {
         // Use the ClipboardItem API with plain text format to ensure no styling is copied

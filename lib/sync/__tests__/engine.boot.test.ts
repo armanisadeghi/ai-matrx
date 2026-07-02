@@ -59,7 +59,7 @@ function makeThemeSetup() {
     const store = configureStore({
         reducer: { theme: slice.reducer },
         middleware: (gDM) =>
-            gDM().concat(() => (next) => (action) => {
+            gDM().concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                 dispatched.push(action);
                 return next(action);
             }),

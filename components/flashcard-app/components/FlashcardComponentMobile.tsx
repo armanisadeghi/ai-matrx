@@ -34,7 +34,7 @@ function isFlashcardRow(row: TableData): row is TableData & Flashcard {
   );
 }
 
-const FlashcardComponentMobile: React.FC<{ dataSetId }> = ({ dataSetId }) => {
+const FlashcardComponentMobile: React.FC<{ dataSetId: string }> = ({ dataSetId }) => {
   const initialFlashcards = getFlashcardSet(dataSetId);
   const flashcardHook = useFlashcard(initialFlashcards);
   const {

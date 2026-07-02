@@ -129,18 +129,22 @@ const spacingOptions = {
     }
 };
 
+type CardColor = keyof typeof colorSpecificStyles;
+type CardSpacing = keyof typeof spacingOptions;
+
 export interface CreateCardStylesProps {
     color: string;
     spacing?: string;
 }
 
 export const createCardStyles = ({ color, spacing = 'default' }: CreateCardStylesProps) => {
-    const selectedSpacing = spacingOptions[spacing] || spacingOptions.default;
-    
+    const selectedSpacing = spacingOptions[spacing as CardSpacing] || spacingOptions.default;
+    const selectedColor = colorSpecificStyles[color as CardColor];
+
     return {
-        card: `${baseCardStyles.card} ${colorSpecificStyles[color]?.card || ''} ${selectedSpacing.card}`,
-        cardHeader: `${baseCardStyles.cardHeader} ${colorSpecificStyles[color]?.cardHeader || ''} ${selectedSpacing.cardHeader}`,
-        cardTitle: `${baseCardStyles.cardTitle} ${colorSpecificStyles[color]?.cardTitle || ''}`,
+        card: `${baseCardStyles.card} ${selectedColor?.card || ''} ${selectedSpacing.card}`,
+        cardHeader: `${baseCardStyles.cardHeader} ${selectedColor?.cardHeader || ''} ${selectedSpacing.cardHeader}`,
+        cardTitle: `${baseCardStyles.cardTitle} ${selectedColor?.cardTitle || ''}`,
         cardDescription: baseCardStyles.cardDescription,
         cardDescriptionNode: baseCardStyles.cardDescriptionNode,
         cardContent: `${baseCardStyles.cardContent} ${selectedSpacing.cardContent}`,
@@ -149,7 +153,10 @@ export const createCardStyles = ({ color, spacing = 'default' }: CreateCardStyle
 };
 
 // For backward compatibility, maintain the existing classColorOptions
-export const classColorOptions = Object.keys(colorSpecificStyles).reduce((acc, color) => {
-    acc[color] = createCardStyles({ color });
-    return acc;
-}, {});
+export const classColorOptions: Record<string, ReturnType<typeof createCardStyles>> = Object.keys(colorSpecificStyles).reduce(
+    (acc: Record<string, ReturnType<typeof createCardStyles>>, color) => {
+        acc[color] = createCardStyles({ color });
+        return acc;
+    },
+    {}
+);

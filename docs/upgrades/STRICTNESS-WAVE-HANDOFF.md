@@ -5,7 +5,9 @@
 > file is the short, current "where are we / what's next / how to run it" sheet so we can
 > work the remaining waves in batches over time without reloading all the context.
 >
-> **Last updated:** 2026-07-01 · **Wave 5 (`strictNullChecks`) ✅ DONE — 0 errors** (1347 → 0; the last 7 were the CustomTool deep fix, see `TYPE-DEBT-TRIAGE.md` pilot findings). Wave 4 (`strictFunctionTypes`) landed. **Next flag wave:** 6 (`noImplicitAny`, ~1420) — re-measure first; also re-measure `strictPropertyInitialization` now that null-checks are green.
+> **Last updated:** 2026-07-02 · **Wave 6 (`noImplicitAny`) ✅ DONE — 0 errors** (817 at flip → 0; 19-agent runtime-bug-hunting fleet + repair wave + orchestrator finish; **24 evidenced runtime bugs** → `docs/upgrades/type-debt/2026-07-02-wave6-runtime-bugs.md`). Wave 5 (`strictNullChecks`) ✅ (1347 → 0). **Remaining:** re-measure `strictPropertyInitialization`, then evaluate the umbrella `strict: true` (should be near-no-op).
+>
+> **Fleet ops note:** ~19 concurrent agents trip the provider's server-side rate limiter — chunk fleets into groups of ≤6 with barriers between groups.
 >
 > **Sibling track:** `docs/upgrades/TYPE-DEBT-TRIAGE.md` — the human-in-the-loop pipeline for the debt tsc can't see (hatches + silent coercions; ratchet grew to 14 categories on 2026-07-01). Fix doctrine for both tracks: the `type-safety` skill.
 

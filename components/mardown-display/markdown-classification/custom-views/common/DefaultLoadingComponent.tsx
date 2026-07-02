@@ -9,8 +9,20 @@ import {
 } from "lucide-react";
 
 // ======== CONFIGURATION ========
+interface LoadingConfigEntry {
+  title: string;
+  subtitle?: string;
+  stages: string[];
+  placeholderItems?: number;
+  baseColor?: string;
+  accentColor?: string;
+}
+
 // Predefined loading configs for different components
-const LOADING_CONFIGS = {
+const LOADING_CONFIGS: Record<
+  "default" | "appSuggestions" | "analytics" | "userProfile" | "contentFeed",
+  LoadingConfigEntry
+> = {
   // Generic default config
   default: {
     title: "Loading Content",
@@ -160,6 +172,28 @@ const COLOR_SCHEMES = {
  * @param {number} [props.placeholderItems=2] - Number of placeholder items to show
  * @param {number} [props.duration=10000] - Total loading animation duration in ms
  */
+type LoadingConfigKey = keyof typeof LOADING_CONFIGS;
+type BaseColorKey = keyof typeof COLOR_SCHEMES.base;
+type AccentColorKey = keyof typeof COLOR_SCHEMES.accent;
+
+const isBaseColorKey = (value: string | undefined): value is BaseColorKey =>
+  value !== undefined && value in COLOR_SCHEMES.base;
+
+const isAccentColorKey = (value: string | undefined): value is AccentColorKey =>
+  value !== undefined && value in COLOR_SCHEMES.accent;
+
+interface FlexibleLoadingComponentProps {
+  configKey?: LoadingConfigKey;
+  size?: "small" | "medium" | "large" | "xl";
+  baseColor?: BaseColorKey;
+  accentColor?: AccentColorKey;
+  title?: string;
+  subtitle?: string;
+  stages?: string[];
+  placeholderItems?: number;
+  duration?: number;
+}
+
 const FlexibleLoadingComponent = ({
   configKey = "default",
   size = "medium",
@@ -170,15 +204,17 @@ const FlexibleLoadingComponent = ({
   stages: propStages,
   placeholderItems: propPlaceholderItems,
   duration = 10000,
-}) => {
+}: FlexibleLoadingComponentProps) => {
   // Merge configuration (props override config)
   const config = LOADING_CONFIGS[configKey] || LOADING_CONFIGS.default;
   const title = propTitle || config.title;
   const subtitle = propSubtitle || config.subtitle;
   const stages = propStages || config.stages || LOADING_CONFIGS.default.stages;
   const placeholderItems = propPlaceholderItems || config.placeholderItems || 2;
-  const baseColor = propBaseColor || config.baseColor || "slate";
-  const accentColor = propAccentColor || config.accentColor || "indigo";
+  const configBaseColor = isBaseColorKey(config.baseColor) ? config.baseColor : undefined;
+  const configAccentColor = isAccentColorKey(config.accentColor) ? config.accentColor : undefined;
+  const baseColor = propBaseColor || configBaseColor || "slate";
+  const accentColor = propAccentColor || configAccentColor || "indigo";
 
   // Get color schemes
   const baseTheme = COLOR_SCHEMES.base[baseColor] || COLOR_SCHEMES.base.slate;

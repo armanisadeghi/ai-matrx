@@ -1,4 +1,4 @@
-import combinedProcessor from "../custom/combined-processor";
+import combinedProcessor, { OutputNode } from "../custom/combined-processor";
 import { AstNode } from "../types";
 
 // Configuration type for structured output
@@ -32,12 +32,12 @@ export interface StructuredOutput {
 }
 
 // Processor function to create structured output
-export function processStructuredAST(nodes: any[], config: StructuredConfig): StructuredOutput {
+export function processStructuredAST(nodes: OutputNode[], config: StructuredConfig): StructuredOutput {
     const output: StructuredOutput = { groups: [] };
     let currentGroup: { [key: string]: string | string[] } | null = null;
 
     // Recursive function to collect all child content
-    function collectAllChildContent(node: any, content: string[] = []): string[] {
+    function collectAllChildContent(node: OutputNode, content: string[] = []): string[] {
         if (node.content) {
             content.push(node.content);
         }
@@ -48,11 +48,11 @@ export function processStructuredAST(nodes: any[], config: StructuredConfig): St
     }
 
     // Recursive function to process a single node
-    function processNode(node: any, depth: number) {
+    function processNode(node: OutputNode, depth: number) {
         // Check if this node triggers a new group
         if (
             node.type === config.groupTrigger.type &&
-            node.content.match(config.groupTrigger.contentPattern) &&
+            node.content?.match(config.groupTrigger.contentPattern) &&
             (!config.groupTrigger.depth || node.depth === config.groupTrigger.depth)
         ) {
             // Save previous group if exists
@@ -73,7 +73,14 @@ export function processStructuredAST(nodes: any[], config: StructuredConfig): St
         if (currentGroup) {
             for (const [fieldKey, fieldConfig] of Object.entries(config.fields)) {
                 // Handle collectAllChildren
-                if (fieldConfig.collectAllChildren && node !== currentGroup && fieldConfig.trigger) {
+                // NOTE: this previously also checked `node !== currentGroup`, comparing an
+                // OutputNode (AST node) against the StructuredOutput group accumulator — two
+                // structurally disjoint types that can never be reference-equal, so the check
+                // was vacuously always true and never filtered anything (dead code since the
+                // original 2025-05-21 commit). Removed rather than guessed-at, since this
+                // function (processStructuredASTWithConfig) has no call sites anywhere in the
+                // codebase to verify intended behavior against.
+                if (fieldConfig.collectAllChildren && fieldConfig.trigger) {
                     const trigger = fieldConfig.trigger;
                     if (
                         trigger.type === node.type &&

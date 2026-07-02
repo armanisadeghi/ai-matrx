@@ -3,7 +3,7 @@
 // which imports `userPreferencesPolicy` back from this file. Routing through
 // the barrel creates a runtime initialization cycle under Turbopack/Next
 // ("Cannot access 'userPreferencesPolicy' before initialization").
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction, Draft } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import {
   REHYDRATE_ACTION_TYPE,
@@ -815,7 +815,7 @@ const userPreferencesSlice = createSlice({
     // an architecture change, not a boundary fix. See setModulePreferences below for the
     // typed alternative used where the caller knows the module at the call site.
     setPreference: <T extends keyof UserPreferences>(
-      state,
+      state: Draft<UserPreferencesState>,
       action: PayloadAction<{
         module: T;
         preference: string;
@@ -826,7 +826,7 @@ const userPreferencesSlice = createSlice({
       state[module] = {
         ...state[module],
         [preference]: value,
-      } as UserPreferences[T];
+      } as Draft<UserPreferencesState>[T];
       // Persistence is engine-managed (definePolicy → debounced 250ms remote
       // upsert + pagehide flush). The flag was leftover from a pre-engine
       // manual-save workflow; setting it produced a "Unsaved changes" banner
@@ -836,7 +836,7 @@ const userPreferencesSlice = createSlice({
       state._meta.error = null;
     },
     setModulePreferences: <T extends keyof UserPreferences>(
-      state,
+      state: Draft<UserPreferencesState>,
       action: PayloadAction<{
         module: T;
         preferences: Partial<UserPreferences[T]>;
@@ -846,18 +846,18 @@ const userPreferencesSlice = createSlice({
       state[module] = {
         ...state[module],
         ...preferences,
-      } as UserPreferences[T];
+      } as Draft<UserPreferencesState>[T];
       // See note in `setPreference` — auto-save handles persistence.
       state._meta.error = null;
     },
     resetModulePreferences: <T extends keyof UserPreferences>(
-      state,
+      state: Draft<UserPreferencesState>,
       action: PayloadAction<T>,
     ) => {
       const moduleKey = action.payload;
       state[moduleKey] = initializeUserPreferencesState()[
         moduleKey
-      ] as UserPreferences[T];
+      ] as Draft<UserPreferencesState>[T];
       // See note in `setPreference` — auto-save handles persistence.
       state._meta.error = null;
     },

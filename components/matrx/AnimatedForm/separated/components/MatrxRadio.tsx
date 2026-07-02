@@ -35,8 +35,9 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
   const densityStyles = densityConfig[density];
   const animationProps = useComponentAnimation(animation, disableAnimation);
 
-  const radioSize: Record<ComponentSize, string> = {
-    default: "h-4 w-4",
+  const radioSizeMap: Record<ComponentSize, string> = {
+    default: "h-5 w-5",
+    icon: "h-5 w-5",
     xs: "h-3 w-3",
     sm: "h-4 w-4",
     md: "h-5 w-5",
@@ -44,11 +45,12 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
     xl: "h-7 w-7",
     "2xl": "h-8 w-8",
     "3xl": "h-9 w-9",
-    icon: "h-4 w-4",
-  }[size];
+  };
+  const radioSize = radioSizeMap[size];
 
-  const indicatorSize: Record<ComponentSize, string> = {
-    default: "after:w-2 after:h-2",
+  const indicatorSizeMap: Record<ComponentSize, string> = {
+    default: "after:w-2.5 after:h-2.5",
+    icon: "after:w-2.5 after:h-2.5",
     xs: "after:w-1.5 after:h-1.5",
     sm: "after:w-2 after:h-2",
     md: "after:w-2.5 after:h-2.5",
@@ -56,8 +58,8 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
     xl: "after:w-3.5 after:h-3.5",
     "2xl": "after:w-4 after:h-4",
     "3xl": "after:w-4.5 after:h-4.5",
-    icon: "after:w-1.5 after:h-1.5",
-  }[size];
+  };
+  const indicatorSize = indicatorSizeMap[size];
 
   if (!field) {
     return null;
@@ -118,58 +120,57 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
         )}
 
         {field.options?.map((rawOption) => {
-          const option =
-            typeof rawOption === "string"
-              ? { value: rawOption, label: rawOption, disabled: undefined }
-              : rawOption;
-
+          const optionValue =
+            typeof rawOption === "string" ? rawOption : rawOption.value;
+          const optionLabel =
+            typeof rawOption === "string" ? rawOption : rawOption.label;
           return (
-          <motion.div
-            key={option.value}
-            className={cn("flex items-center", optionClassName)}
-            whileHover={!disabled ? { x: 5 } : undefined}
-          >
-            <RadixRadioGroup.Item
-              id={`${field.name}-${option.value}`}
-              value={option.value}
-              disabled={disabled || option.disabled}
-              className={cn(
-                radioSize,
-                "rounded-full",
-                getComponentStyles({
-                  size,
-                  density,
-                  variant: error ? "destructive" : variant,
-                  state,
-                }),
-                "border-2 border-input",
-                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                "data-[state=checked]:border-primary",
-              )}
+            <motion.div
+              key={optionValue}
+              className={cn("flex items-center", optionClassName)}
+              whileHover={!disabled ? { x: 5 } : undefined}
             >
-              <RadixRadioGroup.Indicator
+              <RadixRadioGroup.Item
+                id={`${field.name}-${optionValue}`}
+                value={optionValue}
+                disabled={disabled}
                 className={cn(
-                  "flex items-center justify-center w-full h-full relative",
-                  "after:content-[''] after:block after:rounded-full after:bg-primary",
-                  indicatorSize,
+                  radioSize,
+                  "rounded-full",
+                  getComponentStyles({
+                    size,
+                    density,
+                    variant: error ? "destructive" : variant,
+                    state,
+                  }),
+                  "border-2 border-input",
+                  "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                  "data-[state=checked]:border-primary",
                 )}
-              />
-            </RadixRadioGroup.Item>
-            <Label
-              htmlFor={`${field.name}-${option.value}`}
-              className={cn(
-                "ml-2",
-                densityStyles.fontSize,
-                "font-medium",
-                disabled
-                  ? "text-muted-foreground cursor-not-allowed"
-                  : "text-foreground cursor-pointer",
-                "select-none",
-              )}
-            >
-              {option.label}
-            </Label>
-          </motion.div>
+              >
+                <RadixRadioGroup.Indicator
+                  className={cn(
+                    "flex items-center justify-center w-full h-full relative",
+                    "after:content-[''] after:block after:rounded-full after:bg-primary",
+                    indicatorSize,
+                  )}
+                />
+              </RadixRadioGroup.Item>
+              <Label
+                htmlFor={`${field.name}-${optionValue}`}
+                className={cn(
+                  "ml-2",
+                  densityStyles.fontSize,
+                  "font-medium",
+                  disabled
+                    ? "text-muted-foreground cursor-not-allowed"
+                    : "text-foreground cursor-pointer",
+                  "select-none",
+                )}
+              >
+                {optionLabel}
+              </Label>
+            </motion.div>
           );
         })}
       </RadixRadioGroup.Root>

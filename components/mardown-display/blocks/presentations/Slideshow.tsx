@@ -98,13 +98,13 @@ const Slideshow = (
     }
   };
 
-  const goToSlide = (index) => {
+  const goToSlide = (index: number) => {
     setDirection(index > currentSlide ? "next" : "prev");
     applyCurrentSlide(index);
   };
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") goToPrevious();
       if (e.key === "ArrowRight") goToNext();
     };

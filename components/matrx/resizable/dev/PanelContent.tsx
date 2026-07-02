@@ -4,12 +4,19 @@ import { Card } from '@/components/ui/card';
 import { Maximize2, Minimize2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type PanelPosition = 'left' | 'right' | 'top' | 'bottom';
+
 const PanelContent = ({
                           position,
                           header,
                           headerProps,
                           children
-                      }) => {
+                      }: {
+    position?: PanelPosition;
+    header?: React.ReactNode;
+    headerProps?: object;
+    children?: React.ReactNode;
+}) => {
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
 

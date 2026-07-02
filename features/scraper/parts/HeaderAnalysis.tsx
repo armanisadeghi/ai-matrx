@@ -22,11 +22,6 @@ interface Overview {
   char_count: number;
 }
 
-type HeaderTag = "H1" | "H2" | "H3" | "H4" | "H5" | "H6";
-
-const isHeaderTag = (tag: string): tag is HeaderTag =>
-  tag === "H1" || tag === "H2" || tag === "H3" || tag === "H4" || tag === "H5" || tag === "H6";
-
 const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
   const [activeTab, setActiveTab] = useState("headers");
 
@@ -41,7 +36,16 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
     );
   }, [headerAnalysis.groupedHeaders]);
 
-  const headerColors = {
+  const defaultHeaderColor = {
+    bg: "bg-gradient-to-r from-gray-500 to-slate-500",
+    text: "text-white",
+    hover: "hover:from-gray-600 hover:to-slate-600",
+  };
+
+  const headerColors: Record<
+    string,
+    { bg: string; text: string; hover: string }
+  > = {
     H1: {
       bg: "bg-gradient-to-r from-purple-600 to-indigo-600",
       text: "text-white",
@@ -74,7 +78,9 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
     },
   };
 
-  const headerSizes = {
+  const defaultHeaderSize = "text-sm font-normal";
+
+  const headerSizes: Record<string, string> = {
     H1: "text-2xl font-bold",
     H2: "text-xl font-semibold",
     H3: "text-lg font-medium",
@@ -193,26 +199,24 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
               </h2>
 
               <div className="space-y-4">
-                {Object.entries(headerDistribution).map(([tag, stats]) =>
-                  isHeaderTag(tag) ? (
-                    <div key={tag} className="relative">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                          {tag}
-                        </span>
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                          {stats.count}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                        <div
-                          className={`${headerColors[tag].bg} rounded-full h-3`}
-                          style={{ width: `${stats.percentage}%` }}
-                        ></div>
-                      </div>
+                {Object.entries(headerDistribution).map(([tag, stats]) => (
+                  <div key={tag} className="relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        {tag}
+                      </span>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        {stats.count}
+                      </span>
                     </div>
-                  ) : null,
-                )}
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div
+                        className={`${(headerColors[tag] ?? defaultHeaderColor).bg} rounded-full h-3`}
+                        style={{ width: `${stats.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -297,19 +301,18 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                 <div className="px-2 pb-6">
                   <Accordion type="multiple" className="w-full space-y-3">
                     {Object.entries(headerAnalysis.groupedHeaders).map(
-                      ([tag, texts], index) =>
-                        !isHeaderTag(tag) ? null : (
+                      ([tag, texts], index) => (
                         <AccordionItem
                           key={tag}
                           value={`item-${index}`}
                           className="border-none px-4"
                         >
                           <AccordionTrigger
-                            className={`${headerColors[tag].bg} ${headerColors[tag].hover} rounded-lg px-4 py-3 transition-all duration-200 shadow-sm`}
+                            className={`${(headerColors[tag] ?? defaultHeaderColor).bg} ${(headerColors[tag] ?? defaultHeaderColor).hover} rounded-lg px-4 py-3 transition-all duration-200 shadow-sm`}
                           >
                             <div className="flex items-center">
                               <span
-                                className={`${headerColors[tag].text} ${headerSizes[tag]}`}
+                                className={`${(headerColors[tag] ?? defaultHeaderColor).text} ${headerSizes[tag] ?? defaultHeaderSize}`}
                               >
                                 {tag}
                               </span>
@@ -327,7 +330,7 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                                 className="p-4 rounded-lg bg-textured shadow-sm border-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                               >
                                 <span
-                                  className={`${headerSizes[tag]} text-gray-800 dark:text-gray-200`}
+                                  className={`${headerSizes[tag] ?? defaultHeaderSize} text-gray-800 dark:text-gray-200`}
                                 >
                                   {text}
                                 </span>

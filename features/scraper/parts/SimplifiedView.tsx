@@ -4,26 +4,37 @@ import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { processOrganizedData, copyToClipboard } from "../utils/scraper-utils";
 
-type OrganizedContentItem =
-  | { type: "paragraph"; content: string }
-  | { type: "list"; items: unknown[] }
-  | { type: "unknown"; keys: string[] };
-
-interface OrganizedSection {
-  heading: { level: number; text: string };
-  content: OrganizedContentItem[];
+interface SimplifiedViewOverview {
+  page_title?: string;
+  url?: string;
 }
 
-interface SimplifiedViewData {
-  overview?: { page_title?: string; url?: string } | null;
-  textData?: string;
-  organizedData?: Record<string, unknown>;
+interface SimplifiedViewContentItem {
+  type: string;
+  content?: string;
+  items?: unknown[];
+}
+
+interface SimplifiedViewSection {
+  heading: {
+    level: number;
+    text: string;
+  };
+  content: SimplifiedViewContentItem[];
+}
+
+interface SimplifiedViewProps {
+  pageData: {
+    overview?: SimplifiedViewOverview;
+    textData?: string;
+    organizedData?: Record<string, unknown>;
+  } | null | undefined;
 }
 
 /**
  * Component for displaying content in a simplified reader-friendly format
  */
-const SimplifiedView = ({ pageData }: { pageData: SimplifiedViewData | null | undefined }) => {
+const SimplifiedView = ({ pageData }: SimplifiedViewProps) => {
   if (!pageData) {
     return (
       <div className="p-4 text-muted-foreground">No content available</div>
@@ -32,10 +43,13 @@ const SimplifiedView = ({ pageData }: { pageData: SimplifiedViewData | null | un
 
   const { overview, textData, organizedData } = pageData;
 
-  const processedContent = processOrganizedData(organizedData) as OrganizedSection[];
+  const processedContent: SimplifiedViewSection[] = organizedData
+    ? processOrganizedData(organizedData)
+    : [];
 
   const handleCopy = (text: string | undefined) => {
-    copyToClipboard(text);
+    // Guard: copyToClipboard(undefined) would copy the literal string "undefined".
+    if (text) copyToClipboard(text);
   };
 
   return (
@@ -83,7 +97,7 @@ const SimplifiedView = ({ pageData }: { pageData: SimplifiedViewData | null | un
                     </h4>
                   )}
                   <div className="space-y-3">
-                    {section.content.map((item, j) => (
+                    {section.content.map((item: SimplifiedViewContentItem, j: number) => (
                       <div key={j} className="text-muted-foreground">
                         {item.type === "paragraph" && (
                           <p className="leading-relaxed text-foreground/90">
@@ -92,18 +106,18 @@ const SimplifiedView = ({ pageData }: { pageData: SimplifiedViewData | null | un
                         )}
                         {item.type === "list" && (
                           <ul className="list-disc pl-5 space-y-1 text-foreground/90">
-                            {item.items.map((listItem: unknown, k: number) => (
+                            {(item.items ?? []).map((listItem: unknown, k: number) => (
                               <li key={k} className="leading-relaxed">
                                 {typeof listItem === "string" ? (
                                   listItem
                                 ) : Array.isArray(listItem) ? (
                                   <div>
-                                    {String(listItem[0])}
+                                    {listItem[0]}
                                     {listItem[1] &&
                                       Array.isArray(listItem[1]) && (
                                         <ul className="list-circle pl-5 mt-1">
-                                          {listItem[1].map((subItem: unknown, l: number) => (
-                                            <li key={l}>{String(subItem)}</li>
+                                          {listItem[1].map((subItem, l) => (
+                                            <li key={l}>{subItem}</li>
                                           ))}
                                         </ul>
                                       )}

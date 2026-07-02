@@ -10,6 +10,7 @@ import ReactFlow, {
     Controls,
     type Node,
     type Edge,
+    type NodeChange,
     ConnectionMode,
     Panel,
     applyNodeChanges,
@@ -39,7 +40,7 @@ export default function SchemaVisualizer() {
     }, [overview]);
 
     const onNodesChange = useCallback(
-        (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+        (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
         [setNodes],
     );
 

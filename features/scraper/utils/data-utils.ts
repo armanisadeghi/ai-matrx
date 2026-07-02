@@ -571,18 +571,15 @@ class ScraperDataUtils {
   /**
    * Extracts organized data by headings
    */
-  static getOrganizedData(organizedData: unknown): Record<string, unknown> {
+  static getOrganizedData(organizedData: unknown): object {
     if (!organizedData || typeof organizedData !== "object") {
       return {};
     }
     const source = organizedData as Record<string, unknown>;
-    return Object.keys(source).reduce(
-      (acc, key) => {
-        acc[key] = source[key];
-        return acc;
-      },
-      {} as Record<string, unknown>,
-    );
+    return Object.keys(source).reduce((acc: Record<string, unknown>, key) => {
+      acc[key] = source[key];
+      return acc;
+    }, {});
   }
 
   /**

@@ -3,7 +3,7 @@
  * @param {string} text - Text to copy
  * @returns {boolean} Success status
  */
-export const copyToClipboard = (text) => {
+export const copyToClipboard = (text: string) => {
     if (!text) return false;
     try {
       navigator.clipboard.writeText(text);

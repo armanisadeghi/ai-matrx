@@ -142,6 +142,7 @@ const MatrxAccordionTrigger = React.forwardRef<
     fullWidth?: boolean;
     iconPosition?: 'left' | 'right';
     size?: 'sm' | 'md' | 'lg';
+    'data-state'?: 'open' | 'closed';
 }
 >(({ className, children, icon, animationLevel = 'enhanced', fullWidth, iconPosition = 'right', size = 'md', ...props }, ref) => {
     const sizeClasses = {

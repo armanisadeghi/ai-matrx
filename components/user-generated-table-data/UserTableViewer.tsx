@@ -693,7 +693,7 @@ const UserTableViewer = ({
   }, [tableInfo?.row_ordering_config?.default_sort]);
 
   // Handle page change
-  const handlePageChange = (page) => {
+  const handlePageChange = (page: number) => {
     setCurrentPage(page);
 
     // When column filters are active, pagination is purely client-side over
@@ -713,7 +713,7 @@ const UserTableViewer = ({
   };
 
   // Handle rows per page change
-  const handleLimitChange = (newLimit) => {
+  const handleLimitChange = (newLimit: string) => {
     const numLimit = parseInt(newLimit, 10);
     setLimit(numLimit);
     // Reset to first page when changing limit
@@ -811,7 +811,7 @@ const UserTableViewer = ({
 
   // Handle sorting. Pass an explicit direction to set it directly (used by the
   // per-column header menu); omit it to toggle asc/desc on repeated clicks.
-  const handleSort = async (field, explicitDirection?: "asc" | "desc") => {
+  const handleSort = async (field: string, explicitDirection?: "asc" | "desc") => {
     const newDirection =
       explicitDirection ??
       (field === sortField && sortDirection === "asc" ? "desc" : "asc");
@@ -905,7 +905,7 @@ const UserTableViewer = ({
   };
 
   // Handle search
-  const handleSearch = (e) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // Clear sorted data cache when searching (server-side search + sort needed)
     setAllSortedData(null);
@@ -921,14 +921,14 @@ const UserTableViewer = ({
   };
 
   // Handle edit row
-  const handleEditRow = (rowId, rowData) => {
+  const handleEditRow = (rowId: string, rowData: Record<string, unknown>) => {
     setSelectedRowId(rowId);
     setSelectedRowData(rowData);
     setShowEditModal(true);
   };
 
   // Handle delete row
-  const handleDeleteRow = (rowId) => {
+  const handleDeleteRow = (rowId: string) => {
     setSelectedRowId(rowId);
     setShowDeleteModal(true);
   };

@@ -5,7 +5,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import {cn} from "@/utils/cn";
-import { AnimatedCheckboxProps } from "@/types/componentConfigTypes";
+import { AnimatedCheckboxProps, ComponentSize } from "@/types/componentConfigTypes";
 import {densityConfig, getComponentStyles, useComponentAnimation } from "@/config/ui/FlexConfig";
 import * as RadixCheckbox from "@radix-ui/react-checkbox";
 import {Check} from "lucide-react";
@@ -31,21 +31,31 @@ const MatrxCheckbox: React.FC<AnimatedCheckboxProps> = (
     const animationProps = useComponentAnimation(animation, disableAnimation);
     const densityStyles = densityConfig[density];
 
-    const checkboxSize = {
+    const checkboxSizeMap: Record<ComponentSize, string> = {
+        default: 'h-5 w-5',
+        icon: 'h-5 w-5',
         xs: 'h-3 w-3',
         sm: 'h-4 w-4',
         md: 'h-5 w-5',
         lg: 'h-6 w-6',
-        xl: 'h-7 w-7'
-    }[size];
+        xl: 'h-7 w-7',
+        '2xl': 'h-8 w-8',
+        '3xl': 'h-9 w-9',
+    };
+    const checkboxSize = checkboxSizeMap[size];
 
-    const iconSize = {
+    const iconSizeMap: Record<ComponentSize, number> = {
+        default: 16,
+        icon: 16,
         xs: 12,
         sm: 14,
         md: 16,
         lg: 18,
-        xl: 20
-    }[size];
+        xl: 20,
+        '2xl': 24,
+        '3xl': 28,
+    };
+    const iconSize = iconSizeMap[size];
 
     if (!field) {
         return null;

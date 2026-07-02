@@ -5,7 +5,9 @@ import { CartesiaClient } from "@cartesia/cartesia-js";
 
 import {v4 as uuidv4} from 'uuid';
 import {Buffer} from 'buffer';
-import { WebSocket } from 'ws';
+// This hook runs client-side (React hooks + DOM WebSocket handlers below), so
+// it must use the browser's native `WebSocket` global — not Node's `ws`
+// package, which has no browser build and would fail to bundle/run here.
 import {
     Language,
 } from './cartesia.types';
@@ -133,7 +135,7 @@ const CartesiaTTSService =
             //     handleMessage(msg);
             // };
 
-            wsRef.current.onerror = (error) => {
+            wsRef.current.onerror = (error: Event) => {
                 console.error('WebSocket error:', error);
                 pushError(`WebSocket error: ${error}`);
             };

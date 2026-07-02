@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { extractErrorMessage } from '@/utils/errors';
 import { cache } from 'react';
-import { isJsonObject, type JsonObject } from '@/types/json';
+import { isJsonObject } from '@/types/json';
 
 // Define types for app data
 interface AppConfig {
@@ -30,13 +30,17 @@ interface AppData {
   applets: AppletConfig[];
 }
 
-/** Runtime guard: does this JSON object carry the required AppConfig fields? */
-function isAppConfig(value: JsonObject): value is JsonObject & AppConfig {
-  return typeof value.id === 'string' && typeof value.name === 'string' && typeof value.slug === 'string';
+function isAppConfig(value: unknown): value is AppConfig {
+  return (
+    isJsonObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.slug === 'string' &&
+    typeof value.creator === 'string'
+  );
 }
 
-/** Runtime guard: does this JSON object carry the required AppletConfig fields? */
-function isAppletConfig(value: unknown): value is JsonObject & AppletConfig {
+function isAppletConfig(value: unknown): value is AppletConfig {
   return (
     isJsonObject(value) &&
     typeof value.id === 'string' &&
@@ -91,25 +95,26 @@ export const getAppData = cache(async (slug: string | null = null, id: string | 
     }
 
     // Validate the data structure
-    if (!data.app_config || !isJsonObject(data.app_config) || !isAppConfig(data.app_config)) {
+    if (!isJsonObject(data) || !isAppConfig(data.app_config)) {
       console.error(`[CACHE-DEBUG ${requestId}] Invalid data structure - missing app_config:`, data);
       return null;
     }
 
     const rawApplets = data.applets;
-    const appletCandidates = Array.isArray(rawApplets) ? rawApplets : rawApplets ? [rawApplets] : [];
+    // unknown[] so the isAppletConfig type-predicate filter overload applies
+    // (AppletConfig doesn't extend JsonValue's index signature).
+    const appletList: unknown[] = Array.isArray(rawApplets) ? rawApplets : rawApplets ? [rawApplets] : [];
+
     if (!Array.isArray(rawApplets)) {
       console.error(`[CACHE-DEBUG ${requestId}] Invalid data structure - applets is not an array:`, data);
     }
-    const applets = appletCandidates.filter(isAppletConfig);
-    if (applets.length !== appletCandidates.length) {
-      console.error(`[CACHE-DEBUG ${requestId}] Some applet entries are malformed and were dropped:`, data);
+
+    const applets = appletList.filter(isAppletConfig);
+    if (applets.length !== appletList.length) {
+      console.error(`[CACHE-DEBUG ${requestId}] Some applets failed shape validation and were dropped:`, appletList);
     }
 
-    return {
-      app_config: data.app_config,
-      applets,
-    };
+    return { app_config: data.app_config, applets };
   } catch (error) {
     const endTime = Date.now();
     console.error(`[CACHE-DEBUG ${requestId}] Unexpected error in getAppData (${endTime - startTime}ms):`, error);

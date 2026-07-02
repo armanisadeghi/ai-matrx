@@ -321,7 +321,7 @@ export default function AppletBuilder() {
               ))}
 
               {/* Dependency Requirements Display */}
-              {fnDetails?.requiredDependencies.length > 0 && (
+              {fnDetails && fnDetails.requiredDependencies.length > 0 && (
                 <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
                   Required dependencies:{" "}
                   {fnDetails.requiredDependencies.join(", ")}

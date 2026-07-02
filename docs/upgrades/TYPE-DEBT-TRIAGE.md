@@ -7,7 +7,24 @@
 > so the pipeline is triage → decision briefs → Arman decides → fix waves.
 > Doctrine: the **`type-safety`** skill (`.claude/skills/type-safety/SKILL.md`).
 >
-> **Last updated:** 2026-07-01 · **Status:** first fleet run complete (see "Fleet run" below).
+> **Last updated:** 2026-07-02 · **Status:** two fleet runs complete; Wave 6 closed with 24
+> evidenced runtime bugs (see below).
+
+## Fleet run 2026-07-02 (Wave 6, wf_46d63e4a-b8d) — the runtime-bug hunt
+
+19 Sonnet agents flipped `noImplicitAny` (817 errors / 171 files) under a reframed contract:
+success = REAL bugs evidenced, not errors silenced ("a padded runtimeBugs list is worse than
+empty"). Results:
+
+- **24 evidenced runtime bugs** → [`type-debt/2026-07-02-wave6-runtime-bugs.md`](./type-debt/2026-07-02-wave6-runtime-bugs.md).
+  Live ones: the flashcard AI chat read the wrong Redux path (history never shown, never sent
+  to OpenAI); every app save wiped applet associations (`appletIds` vs `appletList`); AI-help
+  screenshots broke on `'full'` vs `'fullSize'`; a 7-component `ComponentSize` partial-map
+  class silently dropped sizing; recipe messages lost their `type: 'text'` discriminator.
+- **12 dead files deleted** under the standing no-legacy authority (zero-importer proof each).
+- `pnpm type-check` = 0 with the flag ON; ratchet re-frozen (net −200 vs pre-wave).
+- 5 new briefs → `type-debt/2026-07-02-wave6-briefs.md` (PENDING).
+- Ops: 19-agent bursts trip the provider rate limiter — chunk to ≤6.
 
 ## Fleet run 2026-07-01 (wf_c21078c7-29c) — the pipeline works
 

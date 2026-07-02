@@ -192,8 +192,13 @@ export default function GenericDataTable<T>({
         const isDirtyKey = statusBadge.isDirtyKey;
         const isLocalKey = statusBadge.isLocalKey;
         const isPublicKey = statusBadge.isPublicKey;
-        
-        if (isDirtyKey && item[isDirtyKey]) {
+        // Status keys are declared as `keyof any` because this table is generic
+        // over an unconstrained `T` — read them through a dynamic-key view
+        // rather than indexing `T` directly (which cannot statically prove the
+        // key exists on every instantiation of T).
+        const itemFields = item as Record<PropertyKey, unknown>;
+
+        if (isDirtyKey && itemFields[isDirtyKey]) {
             return (
                 <Badge
                     variant="outline"
@@ -202,7 +207,7 @@ export default function GenericDataTable<T>({
                     Unsaved
                 </Badge>
             );
-        } else if (isLocalKey && item[isLocalKey]) {
+        } else if (isLocalKey && itemFields[isLocalKey]) {
             return (
                 <Badge
                     variant="outline"
@@ -211,7 +216,7 @@ export default function GenericDataTable<T>({
                     Local
                 </Badge>
             );
-        } else if (isPublicKey && item[isPublicKey]) {
+        } else if (isPublicKey && itemFields[isPublicKey]) {
             return (
                 <Badge
                     variant="outline"

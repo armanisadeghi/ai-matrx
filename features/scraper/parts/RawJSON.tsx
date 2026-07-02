@@ -5,10 +5,14 @@ import { safeStringify, copyToClipboard } from "../utils/scraper-utils";
 import { formatJson } from "@/utils/json/json-cleaner-utility";
 import { CopyIcon } from "lucide-react";
 
+interface RawJSONProps {
+  pageData: unknown;
+}
+
 /**
  * Component for displaying raw JSON data
  */
-const RawJSON = ({ pageData }: { pageData: unknown }) => {
+const RawJSON = ({ pageData }: RawJSONProps) => {
   if (!pageData) {
     return (
       <div className="p-4 text-gray-500 dark:text-gray-400">

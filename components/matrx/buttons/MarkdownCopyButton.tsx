@@ -25,6 +25,10 @@ export function SimpleCopyButton({
   markdownContent,
   label = "Copy",
   className = "",
+}: {
+  markdownContent: string;
+  label?: string;
+  className?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -62,6 +66,10 @@ export function MarkdownCopyButton({
   markdownContent,
   className = "",
   iconOnly = false,
+}: {
+  markdownContent: string;
+  className?: string;
+  iconOnly?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -260,6 +268,19 @@ export function MarkdownCopyButton({
 /**
  * Inline Copy Button with smart positioning
  */
+type InlineCopyButtonPosition =
+  | "top-right"
+  | "top-left"
+  | "top-center"
+  | "bottom-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "center-left"
+  | "center-right"
+  | "center";
+
+type InlineCopyButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
+
 export function InlineCopyButton({
   markdownContent,
   position = "top-right",
@@ -268,6 +289,14 @@ export function InlineCopyButton({
   tooltipText = "Copy to clipboard",
   isMarkdown = false,
   constrainToParent = false,
+}: {
+  markdownContent: string;
+  position?: InlineCopyButtonPosition;
+  size?: InlineCopyButtonSize;
+  className?: string;
+  tooltipText?: string;
+  isMarkdown?: boolean;
+  constrainToParent?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);

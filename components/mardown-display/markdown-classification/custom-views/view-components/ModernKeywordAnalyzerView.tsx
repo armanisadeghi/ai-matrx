@@ -14,16 +14,37 @@ import {
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
+import type { OutputNode } from "@/components/mardown-display/markdown-classification/processors/combined-processor-config-system/combined-processor";
 
-const ModernKeywordAnalyzerDisplay = ({ data }) => {
-  const extracted = data?.extracted || {};
+interface KeywordSections {
+  primaryKeyword: string;
+  parentLSIs: string[];
+  childLSIs: string[];
+  longTailVariations: string[];
+  naturalLSIs: string[];
+}
+
+type KeywordSection = Exclude<keyof KeywordSections, "primaryKeyword">;
+
+interface KeywordAnalyzerExtracted {
+  parsedContent?: OutputNode[];
+  [key: string]: unknown;
+}
+
+interface KeywordAnalyzerData {
+  extracted?: KeywordAnalyzerExtracted;
+  [key: string]: unknown;
+}
+
+const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | OutputNode[] }) => {
+  const extracted = (!Array.isArray(data) && data?.extracted) || {};
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [newKeyword, setNewKeyword] = useState("");
-  const [keywordData, setKeywordData] = useState({
+  const [keywordData, setKeywordData] = useState<KeywordSections>({
     primaryKeyword: "",
     parentLSIs: [],
     childLSIs: [],
@@ -34,11 +55,11 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
   // Parse the structured data on mount
   useEffect(() => {
     // Handle both data.extracted.parsedContent and direct data array
-    const contentArray = data?.extracted?.parsedContent || data;
+    const contentArray = (!Array.isArray(data) && data?.extracted?.parsedContent) || data;
 
     if (contentArray && Array.isArray(contentArray)) {
-      const parseStructuredData = (content) => {
-        const sections = {
+      const parseStructuredData = (content: OutputNode[]): KeywordSections => {
+        const sections: KeywordSections = {
           primaryKeyword: "",
           parentLSIs: [],
           childLSIs: [],
@@ -49,7 +70,7 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
         content.forEach((item) => {
           if (item.type === "heading" && item.depth === 1) {
             // Extract primary keyword
-            const match = item.content.match(/Primary Keyword:\s*(.+)/i);
+            const match = item.content?.match(/Primary Keyword:\s*(.+)/i);
             if (match) {
               sections.primaryKeyword = match[1].trim();
             }
@@ -59,18 +80,18 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
             item.children
           ) {
             // Map section names to our data structure
-            const sectionMap = {
+            const sectionMap: Record<string, KeywordSection> = {
               "Parent LSIs": "parentLSIs",
               "Child LSIs": "childLSIs",
               "Long-Tail Variations": "longTailVariations",
               "Natural LSIs": "naturalLSIs",
             };
 
-            const sectionKey = sectionMap[item.content];
+            const sectionKey = item.content ? sectionMap[item.content] : undefined;
             if (sectionKey) {
               sections[sectionKey] = item.children
                 .filter((child) => child.type === "listItem - text - paragraph")
-                .map((child) => child.content);
+                .map((child) => child.content ?? "");
             }
           }
         });
@@ -82,22 +103,22 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
     }
   }, [data]);
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: KeywordSection) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const updateKeyword = (section, index, value) => {
+  const updateKeyword = (section: KeywordSection | "primaryKeyword", index: number | null, value: string) => {
     const newData = { ...keywordData };
     if (section === "primaryKeyword") {
       newData.primaryKeyword = value;
-    } else {
+    } else if (index !== null) {
       newData[section][index] = value;
     }
     setKeywordData(newData);
     setEditingItem(null);
   };
 
-  const addKeyword = (section) => {
+  const addKeyword = (section: KeywordSection) => {
     if (newKeyword.trim()) {
       const newData = { ...keywordData };
       newData[section].push(newKeyword.trim());
@@ -106,7 +127,7 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
     }
   };
 
-  const removeKeyword = (section, index) => {
+  const removeKeyword = (section: KeywordSection, index: number) => {
     const newData = { ...keywordData };
     newData[section].splice(index, 1);
     setKeywordData(newData);
@@ -127,7 +148,6 @@ const ModernKeywordAnalyzerDisplay = ({ data }) => {
     naturalLSIs: "Natural LSIs",
   } as const;
 
-  type KeywordSection = keyof typeof sectionLabels;
   const keywordSections: KeywordSection[] = [
     "parentLSIs",
     "childLSIs",
@@ -466,7 +486,7 @@ export default function ModernKeywordAnalyzerView({
     return (
       <FlexibleLoadingComponent
         baseColor="blue"
-        accentColor="purple"
+        accentColor="indigo"
         title="Keyword Analysis"
         subtitle="Processing semantic keyword intelligence"
         stages={[

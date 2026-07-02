@@ -6,31 +6,31 @@ import { formatJson } from "@/utils/json/json-cleaner-utility";
 import { CopyIcon, RefreshCw } from "lucide-react";
 
 // Helper functions for JSON navigation and display
-const getObjectKeys = (obj) => {
+const getObjectKeys = (obj: unknown): string[] => {
   if (!obj || typeof obj !== 'object') return [];
   return Object.keys(obj);
 };
 
-const getValueType = (value) => {
+const getValueType = (value: unknown): string => {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
   return typeof value;
 };
 
-const isNavigable = (value) => {
+const isNavigable = (value: unknown): boolean => {
   return value !== null && (typeof value === 'object' || Array.isArray(value));
 };
 
-const renderNavigationKeys = (keys, onKeyClick) => {
+const renderNavigationKeys = (keys: string[], onKeyClick: (key: string) => void) => {
   if (!keys || keys.length === 0) return null;
-  
+
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       {keys.map((key) => (
-        <Button 
-          key={key} 
-          size="sm" 
-          variant="outline" 
+        <Button
+          key={key}
+          size="sm"
+          variant="outline"
           onClick={() => onKeyClick(key)}
           className="text-xs"
         >
@@ -41,7 +41,7 @@ const renderNavigationKeys = (keys, onKeyClick) => {
   );
 };
 
-const formatDisplayValue = (value) => {
+const formatDisplayValue = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `${value.length} Items`;
   } else if (value === null) {
@@ -53,8 +53,12 @@ const formatDisplayValue = (value) => {
   }
 };
 
-const FancyJsonExplorer = ({ pageData }) => {
-  const [currentData, setCurrentData] = useState(pageData);
+interface FancyJsonExplorerProps {
+  pageData: unknown;
+}
+
+const FancyJsonExplorer = ({ pageData }: FancyJsonExplorerProps) => {
+  const [currentData, setCurrentData] = useState<unknown>(pageData);
   const [navigationPath, setNavigationPath] = useState<string[]>([]);
   const [currentKeys, setCurrentKeys] = useState<string[]>([]);
   
@@ -73,11 +77,14 @@ const FancyJsonExplorer = ({ pageData }) => {
   };
   
   const handleKeyClick = (key: string) => {
-    if (currentData && currentData[key] !== undefined) {
-      const newValue = currentData[key];
-      setNavigationPath([...navigationPath, key]);
-      setCurrentData(newValue);
-      setCurrentKeys(getObjectKeys(newValue));
+    if (currentData && typeof currentData === "object") {
+      const currentRecord = currentData as Record<string, unknown>;
+      if (currentRecord[key] !== undefined) {
+        const newValue = currentRecord[key];
+        setNavigationPath([...navigationPath, key]);
+        setCurrentData(newValue);
+        setCurrentKeys(getObjectKeys(newValue));
+      }
     }
   };
   

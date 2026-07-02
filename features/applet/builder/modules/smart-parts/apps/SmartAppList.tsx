@@ -245,6 +245,10 @@ const SmartAppList = forwardRef<
             setSortBy(value);
         };
 
+        // Helpers to resolve color-variant classes for an arbitrary color name
+        const buttonBgVariants: Record<string, string> = COLOR_VARIANTS.buttonBg;
+        const textColorVariants: Record<string, string> = COLOR_VARIANTS.text;
+
         // Renders skeleton cards during loading state
         const renderSkeletons = () => {
             return Array(6)
@@ -523,7 +527,7 @@ const SmartAppList = forwardRef<
                                                 <div className={`flex w-full gap-2 ${viewMode === "list" ? "flex-col" : ""}`}>
                                                     {onSelectApp && (
                                                         <Button
-                                                            className={`flex-1 ${COLOR_VARIANTS.buttonBg[app.accentColor || "blue"]}`}
+                                                            className={`flex-1 ${buttonBgVariants[app.accentColor || "blue"] || buttonBgVariants.blue}`}
                                                             size="sm"
                                                             onClick={() => onSelectApp(app)}
                                                         >
@@ -533,7 +537,7 @@ const SmartAppList = forwardRef<
                                                     {onEditApp && (
                                                         <Button
                                                             className={`flex-1 bg-transparent border border-current hover:bg-opacity-10 font-bold ${
-                                                                COLOR_VARIANTS.text[app.accentColor || "blue"]
+                                                                textColorVariants[app.accentColor || "blue"] || textColorVariants.blue
                                                             }`}
                                                             size="sm"
                                                             variant="outline"

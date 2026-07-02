@@ -146,7 +146,9 @@ class MultiApiBaseAdapter {
         const variables: string[] = [];
 
         recipe.forEach(message => {
-            const content = Array.isArray(message.content) ? message.content : [{ text: message.content }];
+            const content: ContentBlock[] = Array.isArray(message.content)
+                ? message.content
+                : [{ type: 'text', text: message.content }];
             content.forEach(contentPart => {
                 let match;
                 while ((match = variableRegex.exec(contentPart.text)) !== null) {
@@ -161,7 +163,13 @@ class MultiApiBaseAdapter {
     replaceVariablesInRecipe(recipe: Message[], variableValues: { [key: string]: string }): Message[] {
         return recipe.map(message => {
             const newMessage = { ...message };
-            const content = Array.isArray(message.content) ? message.content : [{ text: message.content }];
+            // Must include `type: 'text'` — `ContentBlock` is a discriminated union
+            // on `type`; omitting it here silently produced blocks that satisfied
+            // `.text` access but violated the `ContentBlock[]` contract for any
+            // consumer that switches on `.type`.
+            const content: ContentBlock[] = Array.isArray(message.content)
+                ? message.content
+                : [{ type: 'text', text: message.content }];
             newMessage.content = content.map(contentPart => {
                 let newText = contentPart.text;
                 Object.keys(variableValues).forEach(variable => {

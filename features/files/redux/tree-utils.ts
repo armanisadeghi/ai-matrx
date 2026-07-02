@@ -47,7 +47,7 @@ export function getFolderAncestors(
   let current: string | null = folderId;
   while (current && !seen.has(current)) {
     seen.add(current);
-    const folder = foldersById[current];
+    const folder: CloudFolderRecord | undefined = foldersById[current];
     if (!folder) break;
     chain.unshift(folder);
     current = folder.parentId;

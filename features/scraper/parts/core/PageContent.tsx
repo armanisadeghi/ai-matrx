@@ -84,10 +84,12 @@ const PageContent: React.FC<PageContentProps> = ({
           : "";
 
       // Process organized data for removal details display
-      const allRemovals = contentFilterDetails.map((item: Record<string, unknown>) => ({
-        ...item,
-        remover: "Content Filter",
-      }));
+      const allRemovals = contentFilterDetails.map(
+        (item: { text: string; type: string; details: string }) => ({
+          ...item,
+          remover: "Content Filter",
+        }),
+      );
 
       const images = links.images || [];
 

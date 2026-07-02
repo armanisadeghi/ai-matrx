@@ -1,4 +1,4 @@
-export function cleanHTML(htmlText) {
+export function cleanHTML(htmlText: string): string {
     // Replace entire <svg> elements, leaving a placeholder
     htmlText = htmlText.replace(/<svg[\s\S]*?<\/svg>/gi, "<svg><!-- SVG content removed --></svg>");
 

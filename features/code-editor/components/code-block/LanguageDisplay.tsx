@@ -31,178 +31,188 @@ import { TwoColorPythonIcon } from "@/features/code/styles/custom-icons";
 const DEFAULT_ICON_SIZE = 18;
 const MOBILE_ICON_SIZE = 14;
 
-export const languageMap = {
+type IconProps = { size?: number; className?: string };
+
+interface LanguageInfo {
+  name: string;
+  icon: React.FC<IconProps>;
+  color: string;
+  /** null → icon has its own fixed size (e.g. custom SVGs). */
+  size: number | null;
+}
+
+export const languageMap: Record<string, LanguageInfo> = {
   code: {
     name: "Code",
-    icon: (props) => <Code2 {...props} />,
+    icon: (props: IconProps) => <Code2 {...props} />,
     color: "text-blue-500",
     size: DEFAULT_ICON_SIZE,
   },
   diff: {
     name: "Updates",
-    icon: (props) => <GitCompare {...props} />,
+    icon: (props: IconProps) => <GitCompare {...props} />,
     color: "text-emerald-500",
     size: DEFAULT_ICON_SIZE,
   },
   javascript: {
     name: "JavaScript",
-    icon: (props) => <SiJavascript {...props} />,
+    icon: (props: IconProps) => <SiJavascript {...props} />,
     color: "text-yellow-500",
     size: DEFAULT_ICON_SIZE,
   },
   typescript: {
     name: "TypeScript",
-    icon: (props) => <SiTypescript {...props} />,
+    icon: (props: IconProps) => <SiTypescript {...props} />,
     color: "text-blue-500",
     size: DEFAULT_ICON_SIZE,
   },
   jsx: {
     name: "JavaScript",
-    icon: (props) => <SiJavascript {...props} />,
+    icon: (props: IconProps) => <SiJavascript {...props} />,
     color: "text-yellow-500",
     size: DEFAULT_ICON_SIZE,
   },
   tsx: {
     name: "TypeScript",
-    icon: (props) => <SiTypescript {...props} />,
+    icon: (props: IconProps) => <SiTypescript {...props} />,
     color: "text-blue-500",
     size: DEFAULT_ICON_SIZE,
   },
   python: {
     name: "Python",
-    icon: (props) => <TwoColorPythonIcon />, // Python icon already has perfect size
+    icon: () => <TwoColorPythonIcon />, // Python icon already has perfect size
     color: "text-green-500",
     size: null, // null means use the icon's default size
   },
   java: {
     name: "Java",
-    icon: (props) => <Coffee {...props} />,
+    icon: (props: IconProps) => <Coffee {...props} />,
     color: "text-red-500",
     size: DEFAULT_ICON_SIZE,
   },
   csharp: {
     name: "C#",
-    icon: (props) => <Hash {...props} />,
+    icon: (props: IconProps) => <Hash {...props} />,
     color: "text-purple-500",
     size: DEFAULT_ICON_SIZE,
   },
   cpp: {
     name: "C++",
-    icon: (props) => <Code2 {...props} />,
+    icon: (props: IconProps) => <Code2 {...props} />,
     color: "text-blue-600",
     size: DEFAULT_ICON_SIZE,
   },
   sql: {
     name: "SQL",
-    icon: (props) => <PiFileSqlBold {...props} />,
+    icon: (props: IconProps) => <PiFileSqlBold {...props} />,
     color: "text-orange-500",
     size: DEFAULT_ICON_SIZE,
   },
   html: {
     name: "HTML",
-    icon: (props) => <Globe {...props} />,
+    icon: (props: IconProps) => <Globe {...props} />,
     color: "text-orange-600",
     size: DEFAULT_ICON_SIZE,
   },
   css: {
     name: "CSS",
-    icon: (props) => <FileCode {...props} />,
+    icon: (props: IconProps) => <FileCode {...props} />,
     color: "text-blue-400",
     size: DEFAULT_ICON_SIZE,
   },
   php: {
     name: "PHP",
-    icon: (props) => <File {...props} />,
+    icon: (props: IconProps) => <File {...props} />,
     color: "text-indigo-500",
     size: DEFAULT_ICON_SIZE,
   },
   bash: {
     name: "Bash",
-    icon: (props) => <Terminal {...props} />,
+    icon: (props: IconProps) => <Terminal {...props} />,
     color: "text-green-600",
     size: DEFAULT_ICON_SIZE,
   },
   shell: {
     name: "Shell",
-    icon: (props) => <Terminal {...props} />,
+    icon: (props: IconProps) => <Terminal {...props} />,
     color: "text-gray-500",
     size: DEFAULT_ICON_SIZE,
   },
   powershell: {
     name: "PowerShell",
-    icon: (props) => <Terminal {...props} />,
+    icon: (props: IconProps) => <Terminal {...props} />,
     color: "text-blue-700",
     size: DEFAULT_ICON_SIZE,
   },
   ruby: {
     name: "Ruby",
-    icon: (props) => <SiRuby {...props} />,
+    icon: (props: IconProps) => <SiRuby {...props} />,
     color: "text-red-600",
     size: DEFAULT_ICON_SIZE,
   },
   go: {
     name: "Go",
-    icon: (props) => <SiGo {...props} />,
+    icon: (props: IconProps) => <SiGo {...props} />,
     color: "text-cyan-500",
     size: DEFAULT_ICON_SIZE,
   },
   rust: {
     name: "Rust",
-    icon: (props) => <SiRust {...props} />,
+    icon: (props: IconProps) => <SiRust {...props} />,
     color: "text-orange-700",
     size: DEFAULT_ICON_SIZE,
   },
   json: {
     name: "JSON",
-    icon: (props) => <Braces {...props} />,
+    icon: (props: IconProps) => <Braces {...props} />,
     color: "text-yellow-600",
     size: DEFAULT_ICON_SIZE,
   },
   yaml: {
     name: "YAML",
-    icon: (props) => <FileText {...props} />,
+    icon: (props: IconProps) => <FileText {...props} />,
     color: "text-purple-400",
     size: DEFAULT_ICON_SIZE,
   },
   xml: {
     name: "XML",
-    icon: (props) => <FileCode {...props} />,
+    icon: (props: IconProps) => <FileCode {...props} />,
     color: "text-blue-300",
     size: DEFAULT_ICON_SIZE,
   },
   markdown: {
     name: "Markdown",
-    icon: (props) => <FileText {...props} />,
+    icon: (props: IconProps) => <FileText {...props} />,
     color: "text-gray-600",
     size: DEFAULT_ICON_SIZE,
   },
   r: {
     name: "R",
-    icon: (props) => <SiR {...props} />,
+    icon: (props: IconProps) => <SiR {...props} />,
     color: "text-blue-800",
     size: DEFAULT_ICON_SIZE,
   },
   swift: {
     name: "Swift",
-    icon: (props) => <SiSwift {...props} />,
+    icon: (props: IconProps) => <SiSwift {...props} />,
     color: "text-orange-500",
     size: DEFAULT_ICON_SIZE,
   },
   kotlin: {
     name: "Kotlin",
-    icon: (props) => <SiKotlin {...props} />,
+    icon: (props: IconProps) => <SiKotlin {...props} />,
     color: "text-purple-600",
     size: DEFAULT_ICON_SIZE,
   },
   docker: {
     name: "Dockerfile",
-    icon: (props) => <SiDocker {...props} />,
+    icon: (props: IconProps) => <SiDocker {...props} />,
     color: "text-blue-500",
     size: DEFAULT_ICON_SIZE,
   },
   graphql: {
     name: "GraphQL",
-    icon: (props) => <SiGraphql {...props} />,
+    icon: (props: IconProps) => <SiGraphql {...props} />,
     color: "text-pink-600",
     size: DEFAULT_ICON_SIZE,
   },

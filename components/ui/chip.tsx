@@ -3,12 +3,13 @@ import {X, Star, Heart, Flame, Gem, Zap, Award, Crown, Diamond, Shield} from 'lu
 import { MatrxVariant } from "./types";
 import { cn } from '@/utils/cn';
 
-type ChipVariants = MatrxVariant | 'warning' | 'danger' | 'purple' | 'pink' | 'indigo' | 'teal' | 'orange'  | string;
+type ChipVariants = MatrxVariant | 'warning' | 'info' | 'purple' | 'pink' | 'indigo' | 'teal' | 'orange';
+type ChipSize = 'xs' | 'sm' | 'default' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 
 type ChipProps = {
     children: React.ReactNode;
     variant?: ChipVariants;
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | string;
+    size?: ChipSize;
     onRemove?: (() => void) | null;
     gradient?: boolean;
 };
@@ -16,10 +17,10 @@ type ChipProps = {
 type EnhancedChipProps = {
     children: React.ReactNode;
     variant?: ChipVariants;
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | string;
+    size?: ChipSize;
     onRemove?: (() => void) | null;
     gradient?: boolean;
-    icon?: React.ComponentType<any>;
+    icon?: React.ComponentType<{ size?: number }>;
     animated?: boolean;
     glow?: boolean;
 };
@@ -283,13 +284,13 @@ export const EnhancedChip = ({
 
 
 const EnhancedChipExamples = () => {
-    const [chips, setChips] = useState([
+    const [chips, setChips] = useState<{ id: number; label: string; variant: ChipVariants }[]>([
         {id: 1, label: 'Removable', variant: 'default'},
         {id: 2, label: 'Awesome', variant: 'primary'},
         {id: 3, label: 'Beautiful', variant: 'success'}
     ]);
 
-    const handleRemove = (id) => {
+    const handleRemove = (id: number) => {
         setChips(chips.filter(chip => chip.id !== id));
     };
 
@@ -302,7 +303,7 @@ const EnhancedChipExamples = () => {
                     <EnhancedChip variant="primary" icon={Heart}>Primary</EnhancedChip>
                     <EnhancedChip variant="success" icon={Gem}>Success</EnhancedChip>
                     <EnhancedChip variant="warning" icon={Flame}>Warning</EnhancedChip>
-                    <EnhancedChip variant="danger" icon={Zap}>Danger</EnhancedChip>
+                    <EnhancedChip variant="destructive" icon={Zap}>Danger</EnhancedChip>
                 </div>
             </div>
 
@@ -425,7 +426,7 @@ const ChipExamples = () => {
                     <Chip variant="primary">Primary</Chip>
                     <Chip variant="success">Success</Chip>
                     <Chip variant="warning">Warning</Chip>
-                    <Chip variant="danger">Danger</Chip>
+                    <Chip variant="destructive">Danger</Chip>
                     <Chip variant="purple">Purple</Chip>
                     <Chip variant="pink">Pink</Chip>
                     <Chip variant="indigo">Indigo</Chip>
@@ -441,7 +442,7 @@ const ChipExamples = () => {
                     <Chip variant="primary" gradient>Primary</Chip>
                     <Chip variant="success" gradient>Success</Chip>
                     <Chip variant="warning" gradient>Warning</Chip>
-                    <Chip variant="danger" gradient>Danger</Chip>
+                    <Chip variant="destructive" gradient>Danger</Chip>
                     <Chip variant="purple" gradient>Purple</Chip>
                     <Chip variant="pink" gradient>Pink</Chip>
                     <Chip variant="indigo" gradient>Indigo</Chip>

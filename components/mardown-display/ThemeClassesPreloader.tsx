@@ -8,7 +8,7 @@ const ThemeClassesPreloader = () => {
   const allClasses: string[] = [];
   
   // Recursively find all string values (classes) in the themes object
-  const extractClasses = (obj) => {
+  const extractClasses = (obj: Record<string, unknown>) => {
     for (const key in obj) {
       const value = obj[key];
       if (typeof value === 'string') {
@@ -19,7 +19,7 @@ const ThemeClassesPreloader = () => {
           }
         });
       } else if (typeof value === 'object' && value !== null) {
-        extractClasses(value);
+        extractClasses(value as Record<string, unknown>);
       }
     }
   };

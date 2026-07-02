@@ -228,13 +228,13 @@ export default function ImportTableModal({
 
     try {
       // Parse TSV/CSV data (tab or comma separated)
-      Papa.parse(pasteData.trim(), {
+      Papa.parse<Record<string, any>>(pasteData.trim(), {
         header: true,
         skipEmptyLines: true,
         delimiter: "", // Auto-detect
         complete: (results) => {
           try {
-            const data = results.data as Record<string, any>[];
+            const data = results.data;
             if (data.length === 0) {
               setPasteError("No valid data found");
               setLoading(false);
@@ -254,7 +254,8 @@ export default function ImportTableModal({
             setLoading(false);
           }
         },
-        error: (err) => {
+        // Papa's string-input overload types the error callback as (Error, string).
+        error: (err: Error) => {
           setPasteError(`Error parsing data: ${err.message}`);
           setLoading(false);
         },

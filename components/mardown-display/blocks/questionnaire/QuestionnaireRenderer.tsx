@@ -43,6 +43,14 @@ type QuestionnaireStatePayload = {
   formState: Record<string, unknown>;
 };
 
+type QuestionMeta = {
+  type: string;
+  question: string;
+  options: QuestionOption[];
+  intro?: string;
+  customSettings: Record<string, unknown>;
+};
+
 interface QuestionnaireRendererProps {
   data: QuestionnaireData;
   theme?: keyof typeof THEMES;
@@ -144,7 +152,7 @@ const getQuestionType = (typeString = "") => {
   return "TEXT";
 };
 
-const processQuestionTitle = (title, questionIndex) => {
+const processQuestionTitle = (title: string, questionIndex: number) => {
   // Extract existing question number if present
   const existingNumberMatch = title.match(/^Q(\d+):\s*/i);
   if (existingNumberMatch) {
@@ -168,7 +176,7 @@ const getDefaultValue = (
       return false;
     case "CHECKBOX": {
       // Initialize checkbox with all options as "Not Selected"
-      const checkboxData = {};
+      const checkboxData: Record<string, string> = {};
       options.forEach((option) => {
         if (isOtherOption(option)) {
           checkboxData["Other"] = "Not Selected";
@@ -180,7 +188,7 @@ const getDefaultValue = (
     }
     case "DROPDOWN": {
       // Initialize dropdown with all options as "Not Selected"
-      const dropdownData = {};
+      const dropdownData: Record<string, string> = {};
       options.forEach((option) => {
         if (isOtherOption(option)) {
           dropdownData["Other"] = "Not Selected";
@@ -732,7 +740,15 @@ const QuestionComponent = ({
   );
 };
 
-const DebugDisplay = ({ debugMode, formState, questionData }) => {
+const DebugDisplay = ({
+  debugMode,
+  formState,
+  questionData,
+}: {
+  debugMode: boolean;
+  formState: Record<string, unknown>;
+  questionData: Record<string, unknown>;
+}) => {
   if (!debugMode) return null;
 
   const debugData = {
@@ -775,7 +791,13 @@ const DebugDisplay = ({ debugMode, formState, questionData }) => {
 
 const DEBUG_RESPONSES = true;
 
-const DebugToggle = ({ active, onClick }) => {
+const DebugToggle = ({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) => {
   if (!DEBUG_RESPONSES) return null;
 
   return (
@@ -793,12 +815,12 @@ const DebugToggle = ({ active, onClick }) => {
   );
 };
 
-const cleanQuestionTitle = (title) => {
+const cleanQuestionTitle = (title: string) => {
   return title.replace(/^Q\d*:\s*|^Question:\s*/i, "");
 };
 
 // Helper function to extract questionnaire header from data
-const extractQuestionnaireHeader = (data) => {
+const extractQuestionnaireHeader = (data: QuestionnaireData) => {
   let title = "";
   let description = "";
 
@@ -851,7 +873,15 @@ const extractQuestionnaireHeader = (data) => {
 };
 
 // Header component for questionnaire title and intro
-const QuestionnaireHeader = ({ title, description, theme }) => {
+const QuestionnaireHeader = ({
+  title,
+  description,
+  theme,
+}: {
+  title: string;
+  description: string;
+  theme: ThemeColors;
+}) => {
   // Only show header if we have description (title is optional)
   if (!description) return null;
 
@@ -914,7 +944,7 @@ const QuestionnaireRenderer = ({
 
   const { getFormState, setFormState, updateFormData, initializeQuestions } =
     useQuestionnaireContext();
-  const [questionData, setQuestionData] = useState({});
+  const [questionData, setQuestionData] = useState<Record<string, QuestionMeta>>({});
   const [debugMode, setDebugMode] = useState(false);
   const themeColors = THEMES[theme];
 
@@ -966,7 +996,7 @@ const QuestionnaireRenderer = ({
       initializeQuestions(uniqueId, sections);
 
       // Initialize question data for reference
-      const questions = sections.reduce((acc, section, index) => {
+      const questions = sections.reduce<Record<string, QuestionMeta>>((acc, section, index) => {
         if (section.intro?.includes("Type:")) {
           // Use the same numbering logic as in context
           let questionIndex = 0;

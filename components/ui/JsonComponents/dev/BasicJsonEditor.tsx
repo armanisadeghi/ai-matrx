@@ -5,12 +5,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const JsonEditor = () => {
   const [jsonInput, setJsonInput] = useState('');
-  const [parsedData, setParsedData] = useState(null);
+  const [parsedData, setParsedData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
 
   // Helper function to safely stringify JSON with formatting
-  const safeStringify = (obj) => {
+  const safeStringify = (obj: unknown) => {
     try {
       return JSON.stringify(obj, null, 2);
     } catch (err) {
@@ -19,7 +19,7 @@ const JsonEditor = () => {
   };
 
   // Helper function to safely parse JSON
-  const safeParse = (str) => {
+  const safeParse = (str: string) => {
     try {
       // Handle empty input
       if (!str.trim()) {
@@ -55,7 +55,7 @@ const JsonEditor = () => {
   }, [jsonInput]);
 
   // Handle input changes
-  const handleInputChange = (e) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     setJsonInput(newValue);
     
@@ -108,14 +108,14 @@ const JsonEditor = () => {
         </Alert>
       )}
 
-      {parsedData && isValid && (
+      {parsedData != null && isValid ? (
         <div className="mt-4">
           <h3 className="text-lg font-semibold mb-2">Parsed Data Preview:</h3>
           <pre className="p-4 bg-gray-100 rounded overflow-auto max-h-60">
             {safeStringify(parsedData)}
           </pre>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

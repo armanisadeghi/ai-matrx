@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 /**
  * Component for displaying metadata
  */
-const MetadataContent = ({ overview }: { overview: Record<string, unknown> | null | undefined }) => {
+const MetadataContent = ({ overview }: { overview: Record<string, unknown> }) => {
   if (!overview || Object.keys(overview).length === 0) {
     return (
       <div className="p-4 text-gray-500 dark:text-gray-400">

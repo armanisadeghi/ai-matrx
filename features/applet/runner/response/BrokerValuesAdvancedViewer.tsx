@@ -28,8 +28,13 @@ const copyToClipboard = async (text: string) => {
   }
 };
 
+interface CopyButtonProps {
+  text: string;
+  size?: "default" | "icon" | "sm" | "lg";
+}
+
 // Reusable copy button component
-const CopyButton = ({ text, size = "sm" }) => {
+const CopyButton = ({ text, size = "sm" }: CopyButtonProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -43,7 +48,7 @@ const CopyButton = ({ text, size = "sm" }) => {
   return (
     <Button
       variant="ghost"
-      size={size as "default" | "icon" | "sm" | "lg"}
+      size={size}
       className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
       onClick={handleCopy}
       title="Copy to clipboard"

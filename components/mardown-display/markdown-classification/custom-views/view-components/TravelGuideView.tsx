@@ -94,14 +94,21 @@ const getIconForTitle = (title: string) => {
 };
 
 // Component for rendering a collapsible section
-const CollapsibleSection = ({ title, children, icon, depth = 2 }) => {
+interface CollapsibleSectionProps {
+  title: string;
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  depth?: number;
+}
+
+const CollapsibleSection = ({ title, children, icon, depth = 2 }: CollapsibleSectionProps) => {
   const [isOpen, setIsOpen] = useState(true);
 
   const toggleSection = () => {
     setIsOpen(!isOpen);
   };
 
-  const headingClasses = {
+  const headingClasses: Record<number, string> = {
     2: "text-2xl font-bold",
     3: "text-xl font-semibold",
     4: "text-lg font-semibold",

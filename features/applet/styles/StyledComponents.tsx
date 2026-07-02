@@ -495,7 +495,8 @@ export const COLOR_VARIANTS = {
 
 
 export const getColorClasses = (usage: keyof typeof COLOR_VARIANTS, color: string) => {
-    const colorClasses = COLOR_VARIANTS[usage][color];
+    const colorGroup: Record<string, string> = COLOR_VARIANTS[usage];
+    const colorClasses = colorGroup[color];
     if (!colorClasses) {
         console.error(`Color '${color}' not found for usage '${usage}'`);
         return "";
@@ -530,10 +531,21 @@ export const COMPONENT_STYLES = {
     // Add more component types as needed
 };
 
+export interface GetComponentProps {
+    type?: string;
+    color?: string;
+    primaryColor?: string;
+    icon?: string;
+    size?: number;
+    className?: string;
+    children?: React.ReactNode;
+}
+
 // Main function to generate components
-export const getComponent = ({ type = "submitButton", color = "rose", primaryColor = "gray", icon = "Search", size = 24, className = "", children = null }) => {
+export const getComponent = ({ type = "submitButton", color = "rose", primaryColor = "gray", icon = "Search", size = 24, className = "", children = null }: GetComponentProps) => {
     // Get component style configuration
-    const componentConfig = COMPONENT_STYLES[type];
+    const componentStyles: Record<string, { base: string; colorType: string; bgColorType?: string }> = COMPONENT_STYLES;
+    const componentConfig = componentStyles[type];
 
     if (!componentConfig) {
         console.error(`Component type '${type}' not found`);
@@ -541,7 +553,9 @@ export const getComponent = ({ type = "submitButton", color = "rose", primaryCol
     }
 
     // Get the appropriate color variant based on component type
-    const colorClasses = COLOR_VARIANTS[componentConfig.colorType][color.toLowerCase()];
+    const colorVariants: Record<string, Record<string, string>> = COLOR_VARIANTS;
+    const colorGroup = colorVariants[componentConfig.colorType];
+    const colorClasses = colorGroup?.[color.toLowerCase()];
 
     if (!colorClasses) {
         console.error(`Color '${color}' not found for component type '${type}'`);
@@ -551,11 +565,13 @@ export const getComponent = ({ type = "submitButton", color = "rose", primaryCol
     // Handle background color for components that use it (like appIconWithBg)
     let bgColorClasses = "";
     if (componentConfig.bgColorType && primaryColor) {
-        bgColorClasses = COLOR_VARIANTS[componentConfig.bgColorType][primaryColor.toLowerCase()] || "";
+        const bgColorGroup = colorVariants[componentConfig.bgColorType];
+        bgColorClasses = bgColorGroup?.[primaryColor.toLowerCase()] || "";
     }
 
     // Get the icon component
-    const IconComponent = ICON_OPTIONS[icon];
+    const iconOptions: Record<string, React.ComponentType<{ size?: number }>> = ICON_OPTIONS;
+    const IconComponent = iconOptions[icon];
 
     if (!IconComponent && icon) {
         console.error(`Icon '${icon}' not found`);
@@ -575,12 +591,12 @@ export const getComponent = ({ type = "submitButton", color = "rose", primaryCol
 };
 
 // Named exports for specific component types (convenience wrappers)
-export const getSubmitButton = (props) => getComponent({ type: "submitButton", ...props });
-export const getAppIcon = (props) => getComponent({ type: "appIcon", ...props });
-export const getAppIconWithBg = (props) => getComponent({ type: "appIconWithBg", ...props });
-export const getActionButton = (props) => getComponent({ type: "actionButton", ...props });
-export const getOutlineButton = (props) => getComponent({ type: "outlineButton", ...props });
-export const getAppletIcon = (props) => getComponent({ type: "appIcon", ...props });
+export const getSubmitButton = (props: Omit<GetComponentProps, "type">) => getComponent({ type: "submitButton", ...props });
+export const getAppIcon = (props: Omit<GetComponentProps, "type">) => getComponent({ type: "appIcon", ...props });
+export const getAppIconWithBg = (props: Omit<GetComponentProps, "type">) => getComponent({ type: "appIconWithBg", ...props });
+export const getActionButton = (props: Omit<GetComponentProps, "type">) => getComponent({ type: "actionButton", ...props });
+export const getOutlineButton = (props: Omit<GetComponentProps, "type">) => getComponent({ type: "outlineButton", ...props });
+export const getAppletIcon = (props: Omit<GetComponentProps, "type">) => getComponent({ type: "appIcon", ...props });
 
 // Utility function to get a list of recommended app icons
 export const getAppIconOptions = () => {
@@ -688,8 +704,9 @@ export const getAppIconOptions = () => {
     ];
 
     // Return the list of icons with their components
+    const iconOptions: Record<string, React.ComponentType<{ size?: number }>> = ICON_OPTIONS;
     return appIconNames.map(iconName => ({
         name: iconName,
-        component: ICON_OPTIONS[iconName]
+        component: iconOptions[iconName]
     }));
 };

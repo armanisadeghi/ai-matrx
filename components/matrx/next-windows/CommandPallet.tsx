@@ -2,7 +2,15 @@ import {AnimatePresence, motion} from "motion/react";
 import {X} from "lucide-react";
 import React from "react";
 
-const CommandPalette = ({isOpen, onClose, onCommand}) => (
+const CommandPalette = ({
+    isOpen,
+    onClose,
+    onCommand,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onCommand: (command: string) => void;
+}) => (
     <AnimatePresence>
         {isOpen && (
             <motion.div

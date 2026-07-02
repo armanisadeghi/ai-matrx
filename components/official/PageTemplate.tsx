@@ -242,8 +242,10 @@ export const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, text }
 };
 
 // Header Group Component (for grouped headers as in the example)
+type HeaderTag = 'H1' | 'H2' | 'H3' | 'H4' | 'H5' | 'H6';
+
 interface HeaderGroupProps {
-  tag: string;
+  tag: HeaderTag;
   items: string[];
 }
 

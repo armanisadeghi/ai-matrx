@@ -3,8 +3,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SquareFunction, Check, RefreshCw } from "lucide-react";
+import type { DatabaseFunction } from "./types";
 
-export const FunctionsList = ({ functions, loading, isRefreshing, onRefresh, onViewDetails }) => (
+interface FunctionsListProps {
+    functions: DatabaseFunction[];
+    loading: boolean;
+    isRefreshing: boolean;
+    onRefresh: () => void;
+    onViewDetails: (func: DatabaseFunction) => void;
+}
+
+export const FunctionsList = ({ functions, loading, isRefreshing, onRefresh, onViewDetails }: FunctionsListProps) => (
     <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">

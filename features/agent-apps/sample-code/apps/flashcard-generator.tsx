@@ -6,8 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import MarkdownStream from '@/components/MarkdownStream';
+import type { AgentAppComponentProps } from '../../types';
 
-export default function FlashcardGenerator({ onExecute, response, isExecuting, isStreaming, error, rateLimitInfo }) {
+export default function FlashcardGenerator({ onExecute, response, isExecuting, isStreaming, error, rateLimitInfo }: AgentAppComponentProps) {
   const [variables, setVariables] = useState({
     topic_or_data: '',
     count: 30

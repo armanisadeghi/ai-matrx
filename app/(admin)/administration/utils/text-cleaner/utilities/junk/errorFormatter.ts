@@ -10,7 +10,7 @@ export class ErrorFormatter {
         return `Error Code: ${parsed.errorCode}
 Type: ${parsed.errorType}
 ${parsed.summary}
-${parsed.suggestions ? '\nSuggestions:\n' + parsed.suggestions.map(s => `- ${s}`).join('\n') : ''}`;
+${parsed.suggestions ? '\nSuggestions:\n' + parsed.suggestions.map((s: string) => `- ${s}`).join('\n') : ''}`;
     }
 
     static formatVerbose(parsed: ParsedError): string {

@@ -31,11 +31,11 @@ const PermissionsList = ({ permissions = [], loading = false, isRefreshing = fal
 
     const privilegeTypes = ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"];
 
-    const handleFilterChange = (e) => {
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilter(e.target.value);
     };
 
-    const handleTypeSelect = (type) => {
+    const handleTypeSelect = (type: string) => {
         setSelectedType(String(type));
     };
 

@@ -1,14 +1,15 @@
 // Import your existing utilities
 import { parseMatrxMetadata, MATRX_PATTERN } from '@/features/rich-text-editor/utils/patternUtils'; // adjust import path
+import type { WidgetRule } from '@toast-ui/editor';
 
 // Create a widget-specific pattern WITHOUT 'gs' flags (Toast UI needs this)
 const WIDGET_MATRX_PATTERN = /<<<MATRX_START>>>(.*?)<<<MATRX_END>>>/;
 
-export const matrxWidgetRules = [
+export const matrxWidgetRules: WidgetRule[] = [
     {
         // Use the pattern without 'gs' flags for widget rules
         rule: WIDGET_MATRX_PATTERN,
-        toDOM(text) {
+        toDOM(text: string) {
             try {
                 console.log('MATRX Widget processing:', text);
                 
@@ -63,13 +64,13 @@ export const matrxWidgetRules = [
                 
                 // Apply styling based on status or use default
                 const baseColor = metadata.color || '#4f46e5';
-                const statusColors = {
+                const statusColors: Record<string, string> = {
                     'new': '#10b981',
-                    'active': '#3b82f6', 
+                    'active': '#3b82f6',
                     'disconnected': '#f59e0b',
                     'deleted': '#ef4444'
                 };
-                
+
                 const bgColor = statusColors[metadata.status] || baseColor;
                 
                 pill.style.cssText = `

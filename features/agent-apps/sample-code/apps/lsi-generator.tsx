@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Zap,
 } from "lucide-react";
+import type { AgentAppComponentProps } from "../../types";
 
 export default function LSIMarkdownGenerator({
   onExecute,
@@ -30,7 +31,7 @@ export default function LSIMarkdownGenerator({
   isExecuting,
   error,
   rateLimitInfo,
-}) {
+}: AgentAppComponentProps) {
   const [variables, setVariables] = useState({
     primary_keyword: "Bike Shop",
   });
@@ -60,11 +61,11 @@ export default function LSIMarkdownGenerator({
       if (!match) return;
 
       const content = match[1];
-      const lines = content.split("\n").filter((line) => line.trim());
+      const lines = content.split("\n").filter((line: string) => line.trim());
       const data: ParsedData = { keyword: "", categories: {} };
       let currentCategory: string | null = null;
 
-      lines.forEach((line) => {
+      lines.forEach((line: string) => {
         const trimmed = line.trim();
         if (trimmed.startsWith("## ")) {
           data.keyword = trimmed.replace("## ", "");
@@ -109,14 +110,14 @@ export default function LSIMarkdownGenerator({
     setEditValues({});
   };
 
-  const copyToClipboard = (text, categoryName) => {
+  const copyToClipboard = (text: string, categoryName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedCategory(categoryName);
     setTimeout(() => setCopiedCategory(null), 2000);
   };
 
-  const copyCategory = (categoryName, keywords) => {
-    const text = `${categoryName}\n${keywords.map((k) => `- ${k}`).join("\n")}`;
+  const copyCategory = (categoryName: string, keywords: string[]) => {
+    const text = `${categoryName}\n${keywords.map((k: string) => `- ${k}`).join("\n")}`;
     copyToClipboard(text, categoryName);
   };
 
@@ -258,8 +259,12 @@ export default function LSIMarkdownGenerator({
     setEditMode({ ...editMode, [key]: false });
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
+  const getCategoryColor = (category: string) => {
+    // Category names come from parsing the agent's streamed markdown
+    // response (`### <category>` headings), so they are arbitrary
+    // strings, not a fixed literal union — hence the `Partial` lookup
+    // + fallback rather than a `keyof typeof colors` index.
+    const colors: Partial<Record<string, string>> = {
       "Parent LSIs":
         "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300",
       "Child LSIs":
@@ -272,7 +277,7 @@ export default function LSIMarkdownGenerator({
     return colors[category] || "bg-muted border-border text-foreground";
   };
 
-  const getCategoryIcon = (category) => {
+  const getCategoryIcon = (category: string) => {
     if (category.includes("Parent")) return "↑";
     if (category.includes("Child")) return "↓";
     if (category.includes("Natural")) return "≈";

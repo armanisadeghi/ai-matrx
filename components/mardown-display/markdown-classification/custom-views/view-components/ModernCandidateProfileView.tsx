@@ -4,14 +4,36 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
 import FlexibleLoadingComponent from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent';
 
-const CandidateProfileWithCollapseDisplay = ({ data }) => {
+interface CandidateExperience {
+  company?: string;
+  details?: string[];
+  [key: string]: unknown;
+}
+
+interface CandidateExtracted {
+  name?: string;
+  intro?: string;
+  key_experiences?: CandidateExperience[];
+  additional_accomplishments?: string[];
+  location?: string[];
+  compensation?: string[];
+  availability?: string[];
+  [key: string]: unknown;
+}
+
+interface CandidateProfileData {
+  extracted?: CandidateExtracted;
+  [key: string]: unknown;
+}
+
+const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileData }) => {
   // Handle missing or malformed data gracefully
   const extracted = data?.extracted || {};
   const [expandedSections, setExpandedSections] = useState(new Set(['experience-0']));
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
-  
-  const toggleSection = (section) => {
+
+  const toggleSection = (section: string) => {
     setExpandedSections(prev => {
       const newSet = new Set(prev);
       if (newSet.has(section)) {
@@ -50,7 +72,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }) => {
           
           {extracted.key_experiences && extracted.key_experiences.length > 0 ? (
             <div className="space-y-4">
-              {extracted.key_experiences.map((experience, index) => (
+              {extracted.key_experiences.map((experience: CandidateExperience, index: number) => (
                 <div 
                   key={index} 
                   className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 border border-slate-100 dark:border-slate-700"
@@ -76,7 +98,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }) => {
                     <div className="mt-4 pl-2 animate-fadeIn">
                       {experience.details && experience.details.length > 0 ? (
                         <ul className="space-y-3">
-                          {experience.details.map((detail, detailIndex) => (
+                          {experience.details.map((detail: string, detailIndex: number) => (
                             <li key={detailIndex} className="flex items-start gap-3">
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 mt-2"></span>
                               <span className="text-slate-700 dark:text-slate-300">{detail}</span>
@@ -98,7 +120,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }) => {
         
         {/* Additional Info Sections with Lucide Icons */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {['additional_accomplishments', 'location', 'compensation', 'availability'].map((section) => {
+          {(['additional_accomplishments', 'location', 'compensation', 'availability'] as const).map((section) => {
             const sectionData = extracted[section];
             const hasData = sectionData && Array.isArray(sectionData) && sectionData.length > 0;
             
@@ -129,9 +151,9 @@ const CandidateProfileWithCollapseDisplay = ({ data }) => {
                 
                 {expandedSections.has(section) && (
                   <div className="p-4 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 animate-fadeIn">
-                    {hasData ? (
+                    {hasData && sectionData ? (
                       <ul className="space-y-3">
-                        {sectionData.map((item, index) => (
+                        {sectionData.map((item: string, index: number) => (
                           <li key={index} className="flex items-start gap-3">
                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 mt-2"></span>
                             <span className="text-slate-700 dark:text-slate-300">{item}</span>
@@ -227,7 +249,7 @@ export default function CandidateProfileWithCollapseView({ data, isLoading = fal
 
   if (isLoading) {
     return <FlexibleLoadingComponent 
-      baseColor="indigo"
+      baseColor="blue"
       accentColor="violet"
       title="Candidate Profile"
       subtitle="Loading profile information"

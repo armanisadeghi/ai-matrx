@@ -160,7 +160,7 @@ export function getAdminCrumbs(
   for (let i = 1; i < segments.length; i++) {
     const segment = segments[i];
     accumulated = `${accumulated}/${segment}`;
-    const node = cursor ? findChild(cursor, segment) : null;
+    const node: AdminTreeNode | null = cursor ? findChild(cursor, segment) : null;
     const isLast = i === segments.length - 1;
 
     crumbs.push({

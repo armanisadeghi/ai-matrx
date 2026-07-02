@@ -28,7 +28,7 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
   const chatMessages = useSelector(
     (state: RootState) =>
       flashcardId
-        ? state.flashcardChat[flashcardId]?.chat || []
+        ? state.flashcardChat.flashcards[flashcardId]?.chat || []
         : [],
   );
   const [chatInput, setChatInput] = useState("");
@@ -86,7 +86,7 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           >
             <div className="flex flex-col h-full">
               <div className="flex-grow overflow-auto p-4">
-                {chatMessages.map((msg, index) => (
+                {chatMessages.map((msg: ChatMessage, index: number) => (
                   <div
                     key={index}
                     className={`mb-4 ${msg.role === "user" ? "text-right" : "text-left"}`}

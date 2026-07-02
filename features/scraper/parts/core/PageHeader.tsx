@@ -16,9 +16,9 @@ interface FeatureToggles {
 }
 
 interface PageHeaderProps {
-  title: string | undefined;
-  url: string | undefined;
-  status: string | undefined;
+  title?: string | null;
+  url?: string | null;
+  status?: string;
   featureToggles?: FeatureToggles;
   setFeatureToggles: React.Dispatch<React.SetStateAction<FeatureToggles>>;
 }

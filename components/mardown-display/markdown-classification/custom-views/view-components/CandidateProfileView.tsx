@@ -13,8 +13,30 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import DefaultErrorFallback from '@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback';
 
 
+interface CandidateExperience {
+  company?: string;
+  details?: string[];
+  [key: string]: unknown;
+}
+
+interface CandidateExtracted {
+  name?: string;
+  intro?: string;
+  key_experiences?: CandidateExperience[];
+  additional_accomplishments?: string[];
+  location?: string[];
+  compensation?: string[];
+  availability?: string[];
+  [key: string]: unknown;
+}
+
+interface CandidateProfileData {
+  extracted?: CandidateExtracted;
+  [key: string]: unknown;
+}
+
 interface CandidateProfileDisplayProps {
-  data: any;
+  data: CandidateProfileData;
   isLoading?: boolean;
 }
 
@@ -48,7 +70,7 @@ const CandidateProfileDisplay = ({ data, isLoading = false }: CandidateProfileDi
           
           {extracted.key_experiences && extracted.key_experiences.length > 0 ? (
             <div className="space-y-6">
-              {extracted.key_experiences.map((experience, index) => (
+              {extracted.key_experiences.map((experience: CandidateExperience, index: number) => (
                 <div 
                   key={index} 
                   className="bg-white dark:bg-slate-700 rounded-lg p-5 shadow-sm border border-slate-100 dark:border-slate-600"
@@ -56,7 +78,7 @@ const CandidateProfileDisplay = ({ data, isLoading = false }: CandidateProfileDi
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">{experience.company || 'Unknown Company'}</h3>
                   {experience.details && experience.details.length > 0 ? (
                     <ul className="space-y-2">
-                      {experience.details.map((detail, detailIndex) => (
+                      {experience.details.map((detail: string, detailIndex: number) => (
                         <li key={detailIndex} className="flex items-start">
                           <ChevronRight className="text-slate-400 dark:text-slate-500 mr-2 mt-1 flex-shrink-0" size={16} />
                           <span className="text-slate-600 dark:text-slate-300">{detail}</span>
@@ -84,7 +106,7 @@ const CandidateProfileDisplay = ({ data, isLoading = false }: CandidateProfileDi
           {extracted.additional_accomplishments && extracted.additional_accomplishments.length > 0 ? (
             <div className="bg-white dark:bg-slate-700 rounded-lg p-5 shadow-sm border border-slate-100 dark:border-slate-600">
               <ul className="space-y-2">
-                {extracted.additional_accomplishments.map((accomplishment, index) => (
+                {extracted.additional_accomplishments.map((accomplishment: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <ChevronRight className="text-slate-400 dark:text-slate-500 mr-2 mt-1 flex-shrink-0" size={16} />
                     <span className="text-slate-600 dark:text-slate-300">{accomplishment}</span>
@@ -107,7 +129,7 @@ const CandidateProfileDisplay = ({ data, isLoading = false }: CandidateProfileDi
             </div>
             {extracted.location && extracted.location.length > 0 ? (
               <ul className="space-y-2">
-                {extracted.location.map((item, index) => (
+                {extracted.location.map((item: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <ChevronRight className="text-slate-400 dark:text-slate-500 mr-2 mt-1 flex-shrink-0" size={16} />
                     <span className="text-slate-600 dark:text-slate-300">{item}</span>
@@ -127,7 +149,7 @@ const CandidateProfileDisplay = ({ data, isLoading = false }: CandidateProfileDi
             </div>
             {extracted.compensation && extracted.compensation.length > 0 ? (
               <ul className="space-y-2">
-                {extracted.compensation.map((item, index) => (
+                {extracted.compensation.map((item: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <ChevronRight className="text-slate-400 dark:text-slate-500 mr-2 mt-1 flex-shrink-0" size={16} />
                     <span className="text-slate-600 dark:text-slate-300">{item}</span>
@@ -147,7 +169,7 @@ const CandidateProfileDisplay = ({ data, isLoading = false }: CandidateProfileDi
             </div>
             {extracted.availability && extracted.availability.length > 0 ? (
               <ul className="space-y-2">
-                {extracted.availability.map((item, index) => (
+                {extracted.availability.map((item: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <ChevronRight className="text-slate-400 dark:text-slate-500 mr-2 mt-1 flex-shrink-0" size={16} />
                     <span className="text-slate-600 dark:text-slate-300">{item}</span>
@@ -174,7 +196,7 @@ export const CandidateProfileSkeleton = () => {
   };
 
   // Array of section keys for mapping
-  const sectionKeys = ['additional_accomplishments', 'location', 'compensation', 'availability'];
+  const sectionKeys: (keyof typeof sectionIcons)[] = ['additional_accomplishments', 'location', 'compensation', 'availability'];
   
   return (
     <div className="max-w-5xl mx-auto overflow-hidden rounded-xl shadow-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 relative">

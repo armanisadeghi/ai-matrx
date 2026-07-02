@@ -775,7 +775,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             onInnerContentChange={
               isStreamActive
                 ? undefined
-                : (inner) => replaceBlockContent(block.content, inner)
+                : (inner: string) => replaceBlockContent(block.content, inner)
             }
           />
         );
@@ -854,7 +854,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           onCodeChange={
             isStreamActive
               ? undefined
-              : (newCode) => replaceBlockContent(block.content, newCode)
+              : (newCode: string) => replaceBlockContent(block.content, newCode)
           }
           isStreamActive={isStreamActive}
         />
@@ -871,7 +871,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           onContentChange={
             isStreamActive
               ? undefined
-              : (updatedTable) =>
+              : (updatedTable: string) =>
                   replaceBlockContent(block.content, updatedTable)
           }
         />

@@ -8,7 +8,18 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const ThreeDotMenu = ({ items, itemId }) => {
+interface ThreeDotMenuItem {
+    text: string;
+    onClick: (itemId: string) => void;
+}
+
+const ThreeDotMenu = ({
+    items,
+    itemId,
+}: {
+    items: ThreeDotMenuItem[];
+    itemId: string;
+}) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -8,7 +8,7 @@ import { FunctionsList } from "./FunctionsList";
 import { SQLEditor } from "./SQLEditor";
 import FunctionDetails from "./functionDetails";
 import PermissionsList from "./PermissionsList";
-import type { DatabasePermission } from "./types";
+import type { DatabaseFunction, DatabasePermission } from "./types";
 
 function toDatabasePermissions(data: unknown): DatabasePermission[] {
   if (!Array.isArray(data)) return [];
@@ -27,14 +27,35 @@ function toDatabasePermissions(data: unknown): DatabasePermission[] {
   );
 }
 
+function toDatabaseFunctions(data: unknown): DatabaseFunction[] {
+  if (!Array.isArray(data)) return [];
+  return data.filter(
+    (row): row is DatabaseFunction =>
+      typeof row === "object" &&
+      row !== null &&
+      "name" in row &&
+      typeof row.name === "string" &&
+      "schema" in row &&
+      typeof row.schema === "string" &&
+      "security_type" in row &&
+      typeof row.security_type === "string" &&
+      "arguments" in row &&
+      typeof row.arguments === "string" &&
+      "returns" in row &&
+      typeof row.returns === "string" &&
+      "definition" in row &&
+      typeof row.definition === "string",
+  );
+}
+
 // Started: https://claude.ai/chat/ca16ca5d-adc0-4e6b-b81c-5347948fd86d (Brains)
 // Cleanup: https://claude.ai/chat/aec2fe7a-e732-4162-a679-e7d05f303374
 
 const DatabaseAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("functions");
-  const [functions, setFunctions] = useState<unknown[]>([]);
+  const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [permissions, setPermissions] = useState<DatabasePermission[]>([]);
-  const [selectedFunction, setSelectedFunction] = useState(null);
+  const [selectedFunction, setSelectedFunction] = useState<DatabaseFunction | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -61,7 +82,7 @@ const DatabaseAdminDashboard = () => {
   const loadFunctions = async () => {
     try {
       const functionsData = await fetchFunctions();
-      setFunctions(functionsData || []);
+      setFunctions(toDatabaseFunctions(functionsData));
     } catch (err) {
       console.error("Failed to load functions:", err);
     }
@@ -98,7 +119,7 @@ const DatabaseAdminDashboard = () => {
     }
   };
 
-  const handleExecuteQuery = async (query) => {
+  const handleExecuteQuery = async (query: string) => {
     try {
       const result = await executeQuery(query);
       return result;
@@ -139,7 +160,7 @@ const DatabaseAdminDashboard = () => {
               loading={loading}
               isRefreshing={isRefreshing}
               onRefresh={refreshData}
-              onViewDetails={(func) => {
+              onViewDetails={(func: DatabaseFunction) => {
                 setSelectedFunction(func);
                 setIsDetailsOpen(true);
               }}

@@ -85,7 +85,7 @@ export function FileGrid({
       let cursor: string | null = folderId;
       let depth = 0;
       while (cursor && depth < 32) {
-        const folder = foldersById[cursor];
+        const folder: CloudFolderRecord | undefined = foldersById[cursor];
         if (!folder) break;
         segments.unshift(folder.folderName);
         cursor = folder.parentId;

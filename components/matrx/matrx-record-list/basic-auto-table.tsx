@@ -21,13 +21,17 @@ const densityMap = {
     comfortable: 'py-3'
 } as const;
 
-const sizeMap = {
+const sizeMap: Record<ComponentSize, string> = {
+    default: 'text-base',
+    icon: 'text-base',
     xs: 'text-xs',
     sm: 'text-sm',
     md: 'text-base',
     lg: 'text-lg',
-    xl: 'text-xl'
-} as const;
+    xl: 'text-xl',
+    '2xl': 'text-2xl',
+    '3xl': 'text-3xl',
+};
 
 export function MatrxBasicAutoTable({
                                         data,

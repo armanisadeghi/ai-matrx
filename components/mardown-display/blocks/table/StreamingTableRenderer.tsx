@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
 import { useToastManager } from "@/hooks/useToastManager";
-import { THEMES } from "../../themes";
+import { THEMES, type DisplayTheme } from "../../themes";
 import SaveTableModal from "../../tables/SaveTableModal";
 import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -94,7 +94,7 @@ interface StreamingTableRendererProps {
   isStreamActive?: boolean;
   className?: string;
   fontSize?: number;
-  theme?: string;
+  theme?: DisplayTheme;
   onSave?: (tableData: { headers: string[]; rows: string[][] }) => void;
   onContentChange?: (updatedMarkdown: string) => void;
   /**

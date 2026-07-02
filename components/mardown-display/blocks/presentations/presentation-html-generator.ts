@@ -28,7 +28,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
             const bulletsHTML = slide.bullets && slide.bullets.length > 0
                 ? `
                     <div class="bullets-container">
-                        ${slide.bullets.map(bullet => `
+                        ${slide.bullets.map((bullet: string) => `
                             <div class="bullet-item">
                                 <div class="bullet-dot" style="background-color: ${theme.primaryColor};"></div>
                                 <div class="bullet-text">${parseMarkdownAndEscape(bullet)}</div>
