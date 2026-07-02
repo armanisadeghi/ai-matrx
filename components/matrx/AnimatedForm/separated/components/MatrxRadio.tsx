@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { cn } from "@/utils/cn";
 import * as RadixRadioGroup from "@radix-ui/react-radio-group";
 import { Label } from "@/components/ui/label";
-import { MatrxRadioProps } from "@/types/componentConfigTypes";
+import { ComponentSize, MatrxRadioProps } from "@/types/componentConfigTypes";
 import {
   getComponentStyles,
   useComponentAnimation,
@@ -35,20 +35,28 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
   const densityStyles = densityConfig[density];
   const animationProps = useComponentAnimation(animation, disableAnimation);
 
-  const radioSize = {
+  const radioSize: Record<ComponentSize, string> = {
+    default: "h-4 w-4",
     xs: "h-3 w-3",
     sm: "h-4 w-4",
     md: "h-5 w-5",
     lg: "h-6 w-6",
     xl: "h-7 w-7",
+    "2xl": "h-8 w-8",
+    "3xl": "h-9 w-9",
+    icon: "h-4 w-4",
   }[size];
 
-  const indicatorSize = {
+  const indicatorSize: Record<ComponentSize, string> = {
+    default: "after:w-2 after:h-2",
     xs: "after:w-1.5 after:h-1.5",
     sm: "after:w-2 after:h-2",
     md: "after:w-2.5 after:h-2.5",
     lg: "after:w-3 after:h-3",
     xl: "after:w-3.5 after:h-3.5",
+    "2xl": "after:w-4 after:h-4",
+    "3xl": "after:w-4.5 after:h-4.5",
+    icon: "after:w-1.5 after:h-1.5",
   }[size];
 
   if (!field) {
@@ -109,16 +117,22 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
           </motion.div>
         )}
 
-        {field.options?.map((option) => (
+        {field.options?.map((rawOption) => {
+          const option =
+            typeof rawOption === "string"
+              ? { value: rawOption, label: rawOption, disabled: undefined }
+              : rawOption;
+
+          return (
           <motion.div
-            key={option}
+            key={option.value}
             className={cn("flex items-center", optionClassName)}
             whileHover={!disabled ? { x: 5 } : undefined}
           >
             <RadixRadioGroup.Item
-              id={`${field.name}-${option}`}
-              value={option}
-              disabled={disabled}
+              id={`${field.name}-${option.value}`}
+              value={option.value}
+              disabled={disabled || option.disabled}
               className={cn(
                 radioSize,
                 "rounded-full",
@@ -142,7 +156,7 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
               />
             </RadixRadioGroup.Item>
             <Label
-              htmlFor={`${field.name}-${option}`}
+              htmlFor={`${field.name}-${option.value}`}
               className={cn(
                 "ml-2",
                 densityStyles.fontSize,
@@ -153,10 +167,11 @@ const MatrxRadio: React.FC<MatrxRadioProps> = ({
                 "select-none",
               )}
             >
-              {option}
+              {option.label}
             </Label>
           </motion.div>
-        ))}
+          );
+        })}
       </RadixRadioGroup.Root>
 
       {error && (

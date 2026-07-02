@@ -12,7 +12,7 @@
 
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 // eslint-disable-next-line no-restricted-syntax -- The ONE sanctioned React Flow import; this module is loaded only via the SetBuilderCanvas next/dynamic({ ssr:false }) wrapper (code-splitting skill + reactFlowStaticImportBan).
 import {
   ReactFlow,
@@ -24,13 +24,14 @@ import {
   Handle,
   Position,
   useReactFlow,
+  useNodesState,
+  useEdgesState,
   type Node,
   type Edge,
-  type NodeChange,
-  type NodeProps,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./set-builder-canvas.css";
 import dagre from "dagre";
 import { Network, Webhook, GitFork, CircleDot, LayoutGrid, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -220,42 +221,68 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
   const { screenToFlowPosition, fitView } = useReactFlow();
   const a = accentClasses(accent);
 
-  // Live drag positions — updated ONLY from onNodesChange (an event handler), so
-  // nodes derive from props without a setState-in-effect sync. Saved positions
-  // (member.pos / config.orchestratorPos) seed the layout; the radial fallback
-  // places anything unplaced.
-  const [overrides, setOverrides] = useState<Record<string, { x: number; y: number }>>({});
+  // Build the RF node list from props, preserving the live position + z-order of
+  // nodes that already exist (so a drag or bring-to-front survives a reconcile).
+  const buildNodes = useCallback(
+    (prev: Node[] = []): Node[] => {
+      const prevById = new Map(prev.map((n) => [n.id, n]));
+      const op = prevById.get(ORCH_ID);
+      const orch: Node = {
+        id: ORCH_ID,
+        type: "orchestrator",
+        position: op?.position ?? config.orchestratorPos ?? { x: 0, y: 0 },
+        zIndex: op?.zIndex,
+        data: {
+          agentId: orchestratorId,
+          accent,
+          memberCount: members.length,
+        } as Record<string, unknown>,
+      };
+      const memberNodes: Node[] = members.map((m, i) => {
+        const p = prevById.get(m.agentId);
+        return {
+          id: m.agentId,
+          type: "member",
+          position: p?.position ?? m.pos ?? defaultMemberPos(i, members.length),
+          zIndex: p?.zIndex,
+          data: {
+            orchestratorId,
+            agentId: m.agentId,
+            accent,
+            index: i + 1,
+            roleTitle: m.roleTitle,
+            gap: m.gap,
+            onEdit: onEditMember,
+          } as Record<string, unknown>,
+        };
+      });
+      return [orch, ...memberNodes];
+    },
+    [members, config.orchestratorPos, accent, orchestratorId, onEditMember],
+  );
 
-  const nodes = useMemo<Node[]>(() => {
-    const orch: Node = {
-      id: ORCH_ID,
-      type: "orchestrator",
-      position: overrides[ORCH_ID] ?? config.orchestratorPos ?? { x: 0, y: 0 },
-      data: {
-        agentId: orchestratorId,
-        accent,
-        memberCount: members.length,
-      } as Record<string, unknown>,
-    };
-    const memberNodes: Node[] = members.map((m, i) => ({
-      id: m.agentId,
-      type: "member",
-      position: overrides[m.agentId] ?? m.pos ?? defaultMemberPos(i, members.length),
-      data: {
-        orchestratorId,
-        agentId: m.agentId,
-        accent,
-        index: i + 1,
-        roleTitle: m.roleTitle,
-        gap: m.gap,
-        onEdit: onEditMember,
-      } as Record<string, unknown>,
-    }));
-    return [orch, ...memberNodes];
-  }, [orchestratorId, accent, members, config.orchestratorPos, overrides, onEditMember]);
+  // React Flow OWNS node state — a drag mutates only the dragged node (no
+  // whole-graph re-render, which was the bug). External (Redux) changes are
+  // pushed in by the reconcile effect below, keyed on a content signature (NOT
+  // every `members` ref change), so persisting a dragged position never rebuilds.
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(buildNodes());
+  const [edges, setEdges] = useEdgesState<Edge>([]);
+  const zSeq = useRef(1);
 
-  const edges = useMemo<Edge[]>(
+  const sig = useMemo(
     () =>
+      members.map((m) => `${m.agentId}:${m.roleTitle ?? ""}:${m.gap ?? ""}`).join("|") +
+      `#${accent}#${JSON.stringify(config.orchestratorPos ?? null)}`,
+    [members, accent, config.orchestratorPos],
+  );
+
+  useEffect(() => {
+    // Sync external membership/label/accent changes into RF-owned state, keyed on
+    // `sig`, preserving live positions/z-order. See buildNodes note above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNodes((cur) => buildNodes(cur));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEdges(
       members.map((m) => ({
         id: `e-${m.agentId}`,
         source: ORCH_ID,
@@ -264,21 +291,19 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
         type: "smoothstep",
         style: { stroke: a.stroke, strokeWidth: 2 },
       })),
-    [members, a.stroke],
-  );
+    );
+  }, [sig]);
 
-  const onNodesChange = useCallback((changes: NodeChange[]) => {
-    setOverrides((prev) => {
-      let next = prev;
-      for (const c of changes) {
-        if (c.type === "position" && c.position) {
-          if (next === prev) next = { ...prev };
-          next[c.id] = c.position;
-        }
-      }
-      return next;
-    });
-  }, []);
+  /** Raise a node above the rest (most-recently-active on top). Only that node's
+   *  object changes, so no other node re-renders. Fires on click / drag-start. */
+  const bringToFront = useCallback(
+    (id: string) => {
+      zSeq.current += 1;
+      const z = zSeq.current;
+      setNodes((nds) => nds.map((n) => (n.id === id ? { ...n, zIndex: z } : n)));
+    },
+    [setNodes],
+  );
 
   const onNodeDragStop = useCallback(
     (_e: unknown, node: Node) => {
@@ -329,10 +354,16 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
   const applyLayout = useCallback(
     (kind: LayoutKind) => {
       const layout = computeLayout(kind, members.map((m) => m.agentId));
-      setOverrides({ [ORCH_ID]: layout.orch, ...layout.members });
-      dispatch(
-        saveSetConfig({ orchestratorId, config: { ...config, orchestratorPos: layout.orch } }),
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === ORCH_ID
+            ? { ...n, position: layout.orch }
+            : layout.members[n.id]
+              ? { ...n, position: layout.members[n.id] }
+              : n,
+        ),
       );
+      dispatch(saveSetConfig({ orchestratorId, config: { ...config, orchestratorPos: layout.orch } }));
       members.forEach((m) =>
         dispatch(
           saveMemberMeta({ orchestratorId, agentId: m.agentId, meta: { pos: layout.members[m.agentId] } }),
@@ -343,7 +374,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
         requestAnimationFrame(() => fitView({ padding: 0.25, maxZoom: 1, duration: 400 })),
       );
     },
-    [members, dispatch, orchestratorId, config, fitView],
+    [members, dispatch, orchestratorId, config, fitView, setNodes],
   );
 
   return (
@@ -353,6 +384,8 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
+        onNodeDragStart={(_e, node) => bringToFront(node.id)}
+        onNodeClick={(_e, node) => bringToFront(node.id)}
         onNodeDragStop={onNodeDragStop}
         nodesConnectable={false}
         edgesFocusable={false}
@@ -360,7 +393,7 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
         fitView
         fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
-        className="bg-textured"
+        className="agent-set-flow bg-textured"
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="opacity-50" />
         <Controls showInteractive={false} className="!shadow-md" />

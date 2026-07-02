@@ -261,21 +261,21 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
   
   /**
    * Formats JSON data for clipboard
-   * @param {any} data - The JSON data to format
+   * @param {unknown} data - The JSON data to format
    * @returns {string} - Formatted JSON string
    */
-  export function formatJsonForClipboard(data) {
-    const cleanObject = (obj) => {
+  export function formatJsonForClipboard(data: unknown): string {
+    const cleanObject = (obj: unknown): unknown => {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
       }
-      
+
       if (Array.isArray(obj)) {
         return obj.map(cleanObject);
       }
-      
-      const cleaned = {};
-      for (const [key, value] of Object.entries(obj)) {
+
+      const cleaned: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
         if (typeof value === 'string') {
           try {
             // Try to parse stringified JSON and recurse
@@ -291,7 +291,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
       }
       return cleaned;
     };
-    
+
     // Clean the data first, then stringify without extra escapes
     const cleanedData = cleanObject(data);
     return JSON.stringify(cleanedData, null, 2);
@@ -312,7 +312,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
    * @param {Function} [options.onShowHtmlPreview] - Callback to show HTML preview
    * @returns {Promise<boolean>} - Whether the copy was successful
    */
-  export async function copyToClipboard(content: any, options: CopyOptions = {}) {
+  export async function copyToClipboard(content: string | object, options: CopyOptions = {}) {
     const {
       isMarkdown = false,
       formatForGoogleDocs = false,
@@ -324,11 +324,11 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
       onError = (err) => console.error("Copy failed:", err),
       onShowHtmlPreview = () => {}
     } = options;
-    
+
     try {
       // Process content based on type and formatting option
-      let textToCopy;
-      
+      let textToCopy: string;
+
       if (typeof content === 'object' && content !== null && formatJson) {
         textToCopy = formatJsonForClipboard(content);
       } else if (typeof content === 'string' && formatJson) {
@@ -344,37 +344,32 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
         // Use string conversion for non-JSON or when formatting is disabled
         textToCopy = typeof content === 'string' ? content : JSON.stringify(content);
       }
-      
+
       // Remove thinking content from text unless explicitly requested to include it
-      if (typeof textToCopy === 'string' && !includeThinking) {
+      if (!includeThinking) {
         textToCopy = removeThinkingContent(textToCopy);
       }
-      
+
       // Check if we need to handle this as markdown with special formatting
-      if (isMarkdown && (formatForGoogleDocs || formatForWordPress) && typeof textToCopy === 'string') {
-        let htmlContent;
-        
-        if (formatForGoogleDocs) {
-          // Convert markdown to HTML for Google Docs
-          htmlContent = markdownToGoogleDocsHTML(textToCopy, includeThinking);
-        } else if (formatForWordPress) {
-          // Convert markdown to HTML for WordPress
-          htmlContent = markdownToWordPressHTML(textToCopy, includeThinking);
-        }
-        
+      if (isMarkdown && (formatForGoogleDocs || formatForWordPress)) {
+        // Convert markdown to HTML for Google Docs or WordPress
+        const htmlContent = formatForGoogleDocs
+          ? markdownToGoogleDocsHTML(textToCopy, includeThinking)
+          : markdownToWordPressHTML(textToCopy, includeThinking);
+
         // If showHtmlPreview is requested, call the callback instead of copying
         if (showHtmlPreview && onShowHtmlPreview) {
           onShowHtmlPreview(htmlContent);
           onSuccess();
           return true;
         }
-        
+
         // Create clipboard item with both HTML and plain text formats
         const clipboardItem = new ClipboardItem({
           'text/html': new Blob([htmlContent], { type: 'text/html' }),
           'text/plain': new Blob([textToCopy], { type: 'text/plain' })
         });
-        
+
         await navigator.clipboard.write([clipboardItem]);
       } else {
         // Use the ClipboardItem API with plain text format to ensure no styling is copied
@@ -408,25 +403,25 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
    * @param {string} content - The content to convert to a blob
    * @returns {Blob} - A text/plain blob
    */
-  export function createPlainTextBlob(content) {
+  export function createPlainTextBlob(content: string): Blob {
     return new Blob([content], { type: 'text/plain' });
   }
-  
+
   /**
    * Creates an HTML blob from content
    * @param {string} html - The HTML content to convert to a blob
    * @returns {Blob} - A text/html blob
    */
-  export function createHtmlBlob(html) {
+  export function createHtmlBlob(html: string): Blob {
     return new Blob([html], { type: 'text/html' });
   }
-  
+
   /**
    * Strips HTML tags from a string
    * @param {string} html - The HTML to strip tags from
    * @returns {string} - Text without HTML tags
    */
-  export function stripHtmlTags(html) {
+  export function stripHtmlTags(html: string): string {
     const tempElement = document.createElement('div');
     tempElement.innerHTML = html;
     return tempElement.textContent || tempElement.innerText || '';

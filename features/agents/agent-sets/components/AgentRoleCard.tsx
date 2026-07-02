@@ -32,8 +32,6 @@ export interface AgentRoleCardProps {
   variant?: "node" | "tile";
   onRemove?: () => void;
   onEdit?: () => void;
-  /** Ordered ids for the peek modal's prev/next. */
-  peekNavIds?: string[];
   /** Render a drag handle (for sortable lists). */
   showDragHandle?: boolean;
   className?: string;
@@ -48,7 +46,6 @@ export function AgentRoleCard({
   variant = "tile",
   onRemove,
   onEdit,
-  peekNavIds,
   showDragHandle,
   className,
 }: AgentRoleCardProps) {
