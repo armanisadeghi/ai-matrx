@@ -16,8 +16,10 @@ import {
   ChevronUp,
   Info,
   Zap,
-  Globe
+  Globe,
+  GitCompareArrows
 } from 'lucide-react';
+import { useOpenDiffViewerWindow } from '@/features/overlays/openers/diffViewerWindow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -126,6 +128,25 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
 
   const changeSummaryRequired = isEdit && hasExistingValue;
   const changeSummaryError = changeSummaryRequired && changeSummaryTouched && !changeSummary.trim();
+
+  // Compare the saved value with the current draft so the required change
+  // summary is accurate and the user sees exactly what the AI context will
+  // change. Text-valued types only. Saved = baseline, draft = new.
+  const openDiff = useOpenDiffViewerWindow();
+  const canCompareValue =
+    hasExistingValue && (valueType === 'string' || valueType === 'document');
+  const handleCompareSaved = useCallback(() => {
+    const draft = valueType === 'document' ? valueDocSummary : valueText;
+    openDiff({
+      original: value?.value_text ?? '',
+      modified: draft,
+      originalLabel: 'Saved',
+      modifiedLabel: 'New',
+      title: `${displayName || 'Context value'} — compare`,
+      engine: 'light',
+      defaultView: 'split',
+    });
+  }, [openDiff, valueType, valueDocSummary, valueText, value, displayName]);
 
   const buildValueData = (): ContextValueFormData => {
     const base = { change_summary: changeSummary || null };
@@ -364,6 +385,17 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
                     What changed?
                     {changeSummaryRequired && <span className="text-destructive ml-0.5">*</span>}
                   </Label>
+                  {canCompareValue && (
+                    <button
+                      type="button"
+                      onClick={handleCompareSaved}
+                      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      title="Compare the saved value with your new value"
+                    >
+                      <GitCompareArrows className="h-3 w-3" />
+                      Compare with saved
+                    </button>
+                  )}
                 </div>
                 <Input
                   value={changeSummary}
