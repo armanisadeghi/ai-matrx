@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 217 active entity tokens. A token here is FK-valid for
+// 221 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -48,6 +48,11 @@ export type EntityTypeToken =
   | "agent_template"
   | "agent_usage"
   | "agent_user_kv"
+  | "ai_model"
+  | "ai_offering"
+  | "ai_provider"
+  | "ai_service"
+  | "ai_setting"
   | "app"
   | "app_definition_version"
   | "app_error"
@@ -84,6 +89,7 @@ export type EntityTypeToken =
   | "context_item"
   | "context_item_suggestion"
   | "conversation"
+  | "conversation_value"
   | "custom_app_config"
   | "custom_applet_config"
   | "cx_agent_memory"
@@ -161,10 +167,8 @@ export type EntityTypeToken =
   | "research_content"
   | "research_document"
   | "research_keyword"
-  | "research_keyword_source"
   | "research_media"
   | "research_source"
-  | "research_source_tag"
   | "research_synthesis"
   | "research_tag"
   | "research_template"
@@ -270,6 +274,7 @@ export type ComponentEntityToken =
   | "cmp_entry"
   | "code_file_version"
   | "component_group"
+  | "conversation_value"
   | "cx_agent_plan"
   | "cx_agent_task"
   | "cx_code_edit"
@@ -298,10 +303,8 @@ export type ComponentEntityToken =
   | "research_content"
   | "research_document"
   | "research_keyword"
-  | "research_keyword_source"
   | "research_media"
   | "research_source"
-  | "research_source_tag"
   | "research_synthesis"
   | "research_tag"
   | "sch_agent_task"
@@ -342,6 +345,11 @@ export type ScopeableEntityToken =
   | "agent_template"
   | "agent_usage"
   | "agent_user_kv"
+  | "ai_model"
+  | "ai_offering"
+  | "ai_provider"
+  | "ai_service"
+  | "ai_setting"
   | "app"
   | "app_definition_version"
   | "app_error"
@@ -439,10 +447,8 @@ export type ScopeableEntityToken =
   | "research_content"
   | "research_document"
   | "research_keyword"
-  | "research_keyword_source"
   | "research_media"
   | "research_source"
-  | "research_source_tag"
   | "research_synthesis"
   | "research_tag"
   | "research_template"
@@ -534,6 +540,9 @@ export type ScopeableEntityToken =
 /** Tokens flagged `is_listed` — surfaced in list/nav UIs. */
 export type ListedEntityToken =
   | "agent"
+  | "ai_model"
+  | "ai_provider"
+  | "ai_setting"
   | "dataset"
   | "workbook";
 
@@ -561,6 +570,11 @@ export const ENTITY_TYPE_METADATA = {
   "agent_template": { token: "agent_template", schema: "agent", table: "template", label: "Agent Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents" },
   "agent_usage": { token: "agent_usage", schema: "agent", table: "usage", label: "Agent Usage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents" },
   "agent_user_kv": { token: "agent_user_kv", schema: "public", table: "agent_user_kv", label: "Agent User KV", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "ai_model": { token: "ai_model", schema: "ai", table: "model_definition", label: "AI Model", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "ai_offering": { token: "ai_offering", schema: "ai", table: "offering", label: "AI Offering", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "ai_provider": { token: "ai_provider", schema: "ai", table: "provider", label: "AI Provider", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "ai_service": { token: "ai_service", schema: "ai", table: "service", label: "AI Service", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "ai_setting": { token: "ai_setting", schema: "ai", table: "setting", label: "AI Setting", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "app": { token: "app", schema: "app", table: "definition", label: "App", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Apps" },
   "app_definition_version": { token: "app_definition_version", schema: "app", table: "definition_version", label: "App Definition Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps" },
   "app_error": { token: "app_error", schema: "app", table: "error", label: "App Error", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Apps" },
@@ -597,6 +611,7 @@ export const ENTITY_TYPE_METADATA = {
   "context_item": { token: "context_item", schema: "context", table: "context_items", label: "Context Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "context_item_suggestion": { token: "context_item_suggestion", schema: "reg", table: "context_item_suggestions", label: "Context Item Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "conversation": { token: "conversation", schema: "chat", table: "conversation", label: "Conversation", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Outputs" },
+  "conversation_value": { token: "conversation_value", schema: "chat", table: "conversation_value", label: "Conversation Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: null },
   "custom_app_config": { token: "custom_app_config", schema: "public", table: "custom_app_configs", label: "Custom App Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "custom_applet_config": { token: "custom_applet_config", schema: "public", table: "custom_applet_configs", label: "Custom Applet Config", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "cx_agent_memory": { token: "cx_agent_memory", schema: "chat", table: "agent_memory", label: "Agent Memory", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
@@ -604,7 +619,7 @@ export const ENTITY_TYPE_METADATA = {
   "cx_agent_task": { token: "cx_agent_task", schema: "chat", table: "agent_task", label: "Agent Task", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "cx_code_edit": { token: "cx_code_edit", schema: "chat", table: "code_edit", label: "Code Edit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "cx_code_message_file": { token: "cx_code_message_file", schema: "chat", table: "code_message_file", label: "Code Message File", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
-  "cx_conversation_documents": { token: "cx_conversation_documents", schema: "chat", table: "conversation_documents", label: "Conversation Documents", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
+  "cx_conversation_documents": { token: "cx_conversation_documents", schema: "graveyard", table: "conversation_documents", label: "Conversation Documents", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "cx_media": { token: "cx_media", schema: "chat", table: "media", label: "Media", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "cx_observational_memory": { token: "cx_observational_memory", schema: "chat", table: "observational_memory", label: "Observational Memory", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "cx_observational_memory_event": { token: "cx_observational_memory_event", schema: "chat", table: "observational_memory_event", label: "Observational Memory Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
@@ -674,10 +689,8 @@ export const ENTITY_TYPE_METADATA = {
   "research_content": { token: "research_content", schema: "research", table: "rs_content", label: "Research Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_document": { token: "research_document", schema: "research", table: "rs_document", label: "Research Document", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_keyword": { token: "research_keyword", schema: "research", table: "rs_keyword", label: "Research Keyword", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
-  "research_keyword_source": { token: "research_keyword_source", schema: "research", table: "rs_keyword_source", label: "Research Keyword Source", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_media": { token: "research_media", schema: "research", table: "rs_media", label: "Research Media", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_source": { token: "research_source", schema: "research", table: "rs_source", label: "Research Source", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
-  "research_source_tag": { token: "research_source_tag", schema: "research", table: "rs_source_tag", label: "Research Source Tag", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_synthesis": { token: "research_synthesis", schema: "research", table: "rs_synthesis", label: "Research Synthesis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_tag": { token: "research_tag", schema: "research", table: "rs_tag", label: "Research Tag", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "research_template": { token: "research_template", schema: "research", table: "rs_template", label: "Research Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -782,6 +795,11 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_template",
   "agent_usage",
   "agent_user_kv",
+  "ai_model",
+  "ai_offering",
+  "ai_provider",
+  "ai_service",
+  "ai_setting",
   "app",
   "app_definition_version",
   "app_error",
@@ -818,6 +836,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "context_item",
   "context_item_suggestion",
   "conversation",
+  "conversation_value",
   "custom_app_config",
   "custom_applet_config",
   "cx_agent_memory",
@@ -895,10 +914,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "research_content",
   "research_document",
   "research_keyword",
-  "research_keyword_source",
   "research_media",
   "research_source",
-  "research_source_tag",
   "research_synthesis",
   "research_tag",
   "research_template",
