@@ -322,10 +322,19 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     pricing: null,
     guest_fallback_id: null,
     mid_fallback_id: null,
-    organization_id: null,
+    organization_id: "",
     created_by: null,
     deleted_at: null,
     visibility: "private",
+    // Canonical base columns (2026-07-02 AI-catalog reshape)
+    is_system: false,
+    created_at: "",
+    updated_at: "",
+    updated_by: null,
+    version: 0,
+    metadata: {},
+    description: null,
+    release_date: null,
   };
 }
 
