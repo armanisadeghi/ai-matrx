@@ -129,6 +129,14 @@ before implementing. **This is the thing that actually needs careful engineering
 5. **Document as we go** (this file) so context limits never lose the state.
 
 ## Change log
+- **2026-07-01 (loop 3 — adaptive Review-due, the north-star)** — Built + pushed in small chunks:
+  `fcService.getCardsByIds` (cross-set, caller-ordered) · extracted the shared **StudyDeck** primitive
+  from StudySurface (set-study path verified unchanged) · **useDueReview** (FSRS due queue via
+  `listDue`→`getCardsByIds`, grades method='adaptive') · **ReviewDueSurface** + `/education/flashcards/review`
+  + "Review due" on the home + "Review N due" CTA on progress. **Adversarial review caught a CRITICAL
+  dead-on-arrival bug** (seeded progress from prior results → instant "complete"); FIXED (only this
+  session's grades count) + added session close on completion/unmount (was leaking 'active'). Verified:
+  the RPC advances `due_at = now()+interval` so the queue drains; source_kind/mode/method accept 'adaptive'.
 - **2026-07-01 (autonomous loop — TTS + progress + hardening)** — Built + pushed:
   - **Spoken card fronts (TTS)** end to end (generation service, batch, toggle + Prepare-audio pre-step,
     drill playback). **Adversarial review caught a CRITICAL read bug** (assumed `audio_output` render
