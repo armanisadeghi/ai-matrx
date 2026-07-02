@@ -29,6 +29,7 @@ import {
   FolderTree,
   AlertCircle,
   TrendingUp,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -286,6 +287,18 @@ export function FlashcardsHome() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isPending) return;
+                setNavigatingId("__review__");
+                startTransition(() => router.push(`${EDU_BASE}/review`));
+              }}
+              disabled={isPending && navigatingId === "__review__"}
+            >
+              <CalendarClock className="mr-1.5 h-4 w-4" />
+              Review due
+            </Button>
             <Button
               variant="outline"
               onClick={() => {

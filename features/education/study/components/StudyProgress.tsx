@@ -22,6 +22,7 @@ import {
   Layers,
   AlertCircle,
 } from "lucide-react";
+// (CalendarClock already imported above; used for both the "Due now" stat and the Review CTA)
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -77,10 +78,13 @@ export function StudyProgress({
   itemType = "fc_card",
   title = "Your progress",
   backHref,
+  reviewHref,
 }: {
   itemType?: string;
   title?: string;
   backHref?: string;
+  /** When set + cards are due, shows a "Review N due" CTA linking here. */
+  reviewHref?: string;
 }) {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -129,9 +133,17 @@ export function StudyProgress({
           Back
         </Button>
 
-        <div className="mb-5 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+        <div className="mb-5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+          </div>
+          {reviewHref && summary && summary.dueNow > 0 && (
+            <Button size="sm" className="gap-1.5" onClick={() => router.push(reviewHref)}>
+              <CalendarClock className="h-4 w-4" />
+              Review {summary.dueNow} due
+            </Button>
+          )}
         </div>
 
         {loading ? (

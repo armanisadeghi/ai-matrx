@@ -13,6 +13,7 @@ export default function FlashcardProgressPage() {
       itemType="fc_card"
       title="Your flashcard progress"
       backHref="/education/flashcards"
+      reviewHref="/education/flashcards/review"
     />
   );
 }

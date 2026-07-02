@@ -93,6 +93,13 @@ export const flashcardsAdminMap: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/education/flashcards/review",
+      label: "Review due (adaptive)",
+      description: "Adaptive cross-set study of the FSRS due queue (VISION §2/§16). useDueReview → getCardsByIds + listDue; grades method='adaptive'. Renders the shared StudyDeck.",
+      filePath: "app/(core)/education/flashcards/review/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/flashcards/progress",
       label: "Study progress",
       description: "Mastery distribution, accuracy, what's due now, and activity over the shared study spine (VISION §16). Mode-agnostic StudyProgress.",
