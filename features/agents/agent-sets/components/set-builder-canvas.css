@@ -1,0 +1,25 @@
+/* Theme React Flow's built-in Controls (zoom / fit) with the app's semantic
+ * tokens so they read correctly in BOTH light and dark. Scoped to the Agent Set
+ * canvas via the `.agent-set-flow` class on the ReactFlow root. Higher specificity
+ * than React Flow's single-class defaults + imported after its stylesheet. */
+
+.agent-set-flow .react-flow__controls {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+}
+
+.agent-set-flow .react-flow__controls-button {
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.agent-set-flow .react-flow__controls-button:hover {
+  background-color: hsl(var(--muted));
+}
+
+.agent-set-flow .react-flow__controls-button svg {
+  fill: currentColor;
+}

@@ -30,7 +30,7 @@ const SidebarSearchLayout: React.FC<SidebarSearchLayoutProps> = ({
     const appletIconName = useAppSelector((state) => selectAppletRuntimeAppletIcon(state, appletId));
     const appletAccentColor = useAppSelector((state) => selectAppletRuntimeAccentColor(state, appletId));
     const appletName = useAppSelector((state) => selectAppletRuntimeName(state, appletId));
-    const appletIcon = getAppletIcon({ appletIconName, size: 28, appletAccentColor });
+    const appletIcon = getAppletIcon({ icon: appletIconName, color: appletAccentColor, size: 28 });
     const [hoveredContainerId, setHoveredContainerId] = useState<string | null>(null);
     
     // Find current container index to determine if it's the last one

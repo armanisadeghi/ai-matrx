@@ -67,6 +67,8 @@ import {
   FeedConfigEditor,
   feedTypeMeta,
   feedTypeTone,
+  feedSourceLink,
+  OpenSourceLink,
   asFeedConfig,
   type FeedType,
   type FeedConfig,
@@ -765,6 +767,7 @@ function FeedCell({ item }: { item: SystemContextItem }) {
   const cfg = asFeedConfig(item.feed_config);
   const datasetName =
     typeof cfg.data_store_name === "string" ? cfg.data_store_name : null;
+  const sourceLink = feedSourceLink(item.feed_type, cfg);
   return (
     <div className="space-y-0.5">
       <span
@@ -779,6 +782,7 @@ function FeedCell({ item }: { item: SystemContextItem }) {
           → {datasetName}
         </div>
       )}
+      {sourceLink && <OpenSourceLink link={sourceLink} />}
       {item.feed_status && item.feed_type !== "manual" && (
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
           {item.feed_status}

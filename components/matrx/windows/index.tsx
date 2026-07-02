@@ -2,13 +2,12 @@ import React, {useState, useEffect} from 'react';
 import {motion, AnimatePresence, useMotionValue, useTransform} from 'motion/react';
 import {X, Minus, Maximize2, Minimize2, Command} from 'lucide-react';
 
-// Shape per the one consumer: app/(dev)/demos/tests/windows/page.dev.tsx
 interface WindowData {
     id: number;
     title: string;
-    content?: string;
-    CustomComponent: React.ComponentType;
+    content: string;
     minimized?: boolean;
+    CustomComponent: React.ComponentType;
 }
 
 interface WindowProps extends WindowData {
@@ -85,15 +84,13 @@ const Window = ({id, title, content, onClose, onMinimize, onMaximize, onClick, i
     );
 };
 
-const CommandPalette = ({
-    isOpen,
-    onClose,
-    onCommand,
-}: {
+interface CommandPaletteProps {
     isOpen: boolean;
     onClose: () => void;
     onCommand: (command: string) => void;
-}) => (
+}
+
+const CommandPalette = ({isOpen, onClose, onCommand}: CommandPaletteProps) => (
     <AnimatePresence>
         {isOpen && (
             <motion.div
@@ -126,7 +123,11 @@ const CommandPalette = ({
     </AnimatePresence>
 );
 
-const WindowManager = ({windows: initialWindows}: {windows: WindowData[]}) => {
+interface WindowManagerProps {
+    windows: WindowData[];
+}
+
+const WindowManager = ({windows: initialWindows}: WindowManagerProps) => {
     const [windows, setWindows] = useState<WindowData[]>(initialWindows);
     const [fullScreenWindow, setFullScreenWindow] = useState<number | null>(null);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);

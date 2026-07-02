@@ -56,6 +56,10 @@ import {
 } from "../utils/organizationNames";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import {
+  useOpenCitation,
+  shouldOpenInNewTab,
+} from "@/features/rag/components/source-inspector/useOpenCitation";
+import {
   listKgEntities,
   listKgEntityMentions,
   listKgTopEdges,
@@ -620,6 +624,7 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const openCitation = useOpenCitation();
 
   useEffect(() => {
     setOffset(0);
@@ -706,15 +711,26 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
                     </span>
                   ) : null}
                   {href ? (
-                    <Link
+                    <a
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => {
+                        if (shouldOpenInNewTab(e)) return;
+                        e.preventDefault();
+                        openCitation({
+                          sourceKind: m.source_kind ?? "",
+                          sourceId: m.source_id ?? "",
+                          href,
+                          chunkId: m.chunk_id,
+                          snippet: m.snippet,
+                        });
+                      }}
                       className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                       Open source
                       <ExternalLink className="h-3 w-3" />
-                    </Link>
+                    </a>
                   ) : (
                     <span className="ml-auto text-xs text-muted-foreground">
                       {m.source_kind ?? "unknown"}:{m.source_id ?? "—"}

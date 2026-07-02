@@ -32,8 +32,6 @@ export interface AgentRoleCardProps {
   variant?: "node" | "tile";
   onRemove?: () => void;
   onEdit?: () => void;
-  /** Ordered ids for the peek modal's prev/next. */
-  peekNavIds?: string[];
   /** Render a drag handle (for sortable lists). */
   showDragHandle?: boolean;
   className?: string;
@@ -48,7 +46,6 @@ export function AgentRoleCard({
   variant = "tile",
   onRemove,
   onEdit,
-  peekNavIds,
   showDragHandle,
   className,
 }: AgentRoleCardProps) {
@@ -81,7 +78,7 @@ export function AgentRoleCard({
 
       {/* floating hover actions over a backdrop, so they never eat name width */}
       <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/role:opacity-100">
-        <AgentPeekButton agentId={agentId} navigationIds={peekNavIds} />
+        <AgentPeekButton agentId={agentId} />
         {onEdit && (
           <button
             type="button"
