@@ -15,7 +15,7 @@
  * throw `notFound()` so the route's `not-found.tsx` boundary handles it.
  */
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { filesDb } from "@/features/files/filesDb";
 import { SingleFileShell } from "@/features/files/components/surfaces/single-file/SingleFileShell";
@@ -35,9 +35,26 @@ export default async function CloudFileDetailPage({ params }: PageProps) {
     .is("deleted_at", null)
     .maybeSingle();
 
-  if (error || !data) {
-    notFound();
+  if (data) {
+    return <SingleFileShell fileId={data.id} />;
   }
 
-  return <SingleFileShell fileId={data.id} />;
+  // No direct file access — but this may be a processed library document the
+  // user can read read-only via a Shared-Knowledge grant (org/industry/global),
+  // which is exactly the content RAG search already surfaced to them. Rather
+  // than dead-end at 404, resolve the readable processed doc and send them to
+  // the canonical read-only viewer. The RPC (and the viewer's own endpoints)
+  // enforce `can_read_library_document` server-side, so a non-entitled user
+  // still gets nothing — this only rescues legitimately-entitled readers.
+  if (!error) {
+    const { data: docId } = await supabase.rpc(
+      "readable_processed_doc_for_file",
+      { p_file: fileId },
+    );
+    if (typeof docId === "string" && docId) {
+      redirect(`/rag/viewer/${docId}`);
+    }
+  }
+
+  notFound();
 }

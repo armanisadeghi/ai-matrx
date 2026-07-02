@@ -11091,6 +11091,30 @@ export type Database = {
         }
         Relationships: []
       }
+      bundle_member: {
+        Row: {
+          bundle_id: string
+          created_at: string
+          local_alias: string
+          sort_order: number
+          tool_id: string
+        }
+        Insert: {
+          bundle_id: string
+          created_at?: string
+          local_alias?: string
+          sort_order?: number
+          tool_id: string
+        }
+        Update: {
+          bundle_id?: string
+          created_at?: string
+          local_alias?: string
+          sort_order?: number
+          tool_id?: string
+        }
+        Relationships: []
+      }
       category_legacy: {
         Row: {
           created_at: string
@@ -14238,6 +14262,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rs_keyword_source: {
+        Row: {
+          created_at: string | null
+          id: string
+          keyword_id: string
+          rank_for_keyword: number | null
+          source_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          keyword_id: string
+          rank_for_keyword?: number | null
+          source_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          keyword_id?: string
+          rank_for_keyword?: number | null
+          source_id?: string
+        }
+        Relationships: []
+      }
+      rs_source_tag: {
+        Row: {
+          assigned_by: string | null
+          confidence: number | null
+          created_at: string | null
+          id: string
+          is_primary_source: boolean | null
+          source_id: string
+          tag_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          is_primary_source?: boolean | null
+          source_id: string
+          tag_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          is_primary_source?: boolean | null
+          source_id?: string
+          tag_id?: string
+        }
+        Relationships: []
       }
       schema_migrations: {
         Row: {
@@ -26645,6 +26723,10 @@ export type Database = {
         Returns: boolean
       }
       rag_user_can_see_note: { Args: { p_note_id: string }; Returns: boolean }
+      readable_processed_doc_for_file: {
+        Args: { p_file: string }
+        Returns: string
+      }
       record_guest_execution: {
         Args: {
           p_fingerprint: string
@@ -30429,52 +30511,6 @@ export type Database = {
           },
         ]
       }
-      rs_keyword_source: {
-        Row: {
-          created_at: string | null
-          id: string
-          keyword_id: string
-          rank_for_keyword: number | null
-          source_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          keyword_id: string
-          rank_for_keyword?: number | null
-          source_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          keyword_id?: string
-          rank_for_keyword?: number | null
-          source_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rs_keyword_source_keyword_id_fkey"
-            columns: ["keyword_id"]
-            isOneToOne: false
-            referencedRelation: "rs_keyword"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rs_keyword_source_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "rs_source"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rs_keyword_source_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "rs_source_keywords"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       rs_media: {
         Row: {
           alt_text: string | null
@@ -30702,58 +30738,6 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "rs_topic"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rs_source_tag: {
-        Row: {
-          assigned_by: string | null
-          confidence: number | null
-          created_at: string | null
-          id: string
-          is_primary_source: boolean | null
-          source_id: string
-          tag_id: string
-        }
-        Insert: {
-          assigned_by?: string | null
-          confidence?: number | null
-          created_at?: string | null
-          id?: string
-          is_primary_source?: boolean | null
-          source_id: string
-          tag_id: string
-        }
-        Update: {
-          assigned_by?: string | null
-          confidence?: number | null
-          created_at?: string | null
-          id?: string
-          is_primary_source?: boolean | null
-          source_id?: string
-          tag_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rs_source_tag_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "rs_source"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rs_source_tag_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "rs_source_keywords"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rs_source_tag_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "rs_tag"
             referencedColumns: ["id"]
           },
         ]
@@ -34391,45 +34375,6 @@ export type Database = {
           {
             foreignKeyName: "tool_bundle_lister_tool_id_fkey"
             columns: ["lister_tool_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      bundle_member: {
-        Row: {
-          bundle_id: string
-          created_at: string
-          local_alias: string
-          sort_order: number
-          tool_id: string
-        }
-        Insert: {
-          bundle_id: string
-          created_at?: string
-          local_alias?: string
-          sort_order?: number
-          tool_id: string
-        }
-        Update: {
-          bundle_id?: string
-          created_at?: string
-          local_alias?: string
-          sort_order?: number
-          tool_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tool_bundle_member_bundle_id_fkey"
-            columns: ["bundle_id"]
-            isOneToOne: false
-            referencedRelation: "bundle"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tool_bundle_member_tool_id_fkey"
-            columns: ["tool_id"]
             isOneToOne: false
             referencedRelation: "definition"
             referencedColumns: ["id"]
