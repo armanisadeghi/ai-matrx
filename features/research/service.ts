@@ -30,6 +30,45 @@ import {
   type KeywordRank,
   type SourceImportance,
 } from "./ranking";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import type { ScopesRpcResult } from "@/features/scopes/types";
+
+// ── Research M2M edges live in platform.associations ─────────────────────────
+// The rs_source_tag / rs_keyword_source junctions were collapsed into the
+// canonical association edge (canonicalization_worklog.md §4.1 / §4.2). Reads
+// and writes go through `associationsService` (the sole platform.associations
+// chokepoint), never a direct table read. Tag props ride in edge `metadata`;
+// the per-keyword search rank rides in edge `position`.
+const RESEARCH_SOURCE = "research_source";
+const RESEARCH_TAG = "research_tag";
+const RESEARCH_KEYWORD = "research_keyword";
+
+/** Unwrap a never-throwing associations result into the research service's throwing contract. */
+function assocData<T>(r: ScopesRpcResult<T>): T {
+  if (!r.ok) throw new Error(r.error.message);
+  return r.data;
+}
+
+/** Reconstruct the legacy SourceTag shape from a research_source→research_tag edge. */
+function edgeToSourceTag(e: {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  metadata: unknown;
+  createdAt: string;
+}): SourceTag {
+  const m = isJsonObject(e.metadata) ? e.metadata : {};
+  return {
+    id: e.id,
+    source_id: e.sourceId,
+    tag_id: e.targetId,
+    is_primary_source:
+      typeof m.is_primary_source === "boolean" ? m.is_primary_source : null,
+    confidence: typeof m.confidence === "number" ? m.confidence : null,
+    assigned_by: typeof m.assigned_by === "string" ? m.assigned_by : null,
+    created_at: e.createdAt,
+  };
+}
 
 // ============================================================================
 // Topic Overview (lightweight RPC for counts)
@@ -264,22 +303,25 @@ export async function getSources(
   // When filtering by a single keyword, source order MUST be the search
   // engine rank for THAT keyword (e.g. Google position 1 vs 60). The same
   // source can appear under multiple keywords with different ranks, so
-  // rs_source.rank is ambiguous and must not be used here. Instead, pull
-  // ranks from rs_keyword_source.rank_for_keyword and order client-side.
+  // rs_source.rank is ambiguous and must not be used here. Instead, pull the
+  // per-keyword rank from the research_source→research_keyword edge (position)
+  // and order client-side.
   if (filters?.keyword_id) {
-    const { data: links, error: linkErr } = await supabase
-      .schema("research")
-      .from("rs_keyword_source")
-      .select("source_id, rank_for_keyword")
-      .eq("keyword_id", filters.keyword_id)
-      .order("rank_for_keyword", { ascending: true, nullsFirst: false });
-    if (linkErr) throw linkErr;
+    const { edges } = assocData(
+      await associationsService.listForTargets(RESEARCH_KEYWORD, [
+        filters.keyword_id,
+      ]),
+    );
     const orderedIds: string[] = [];
-    const rankBySourceId = new Map<string, number | null>();
-    for (const r of links ?? []) {
-      if (!rankBySourceId.has(r.source_id)) {
-        orderedIds.push(r.source_id);
-        rankBySourceId.set(r.source_id, r.rank_for_keyword);
+    const seen = new Set<string>();
+    for (const e of [...edges].sort(
+      (a, b) =>
+        (a.position ?? Number.POSITIVE_INFINITY) -
+        (b.position ?? Number.POSITIVE_INFINITY),
+    )) {
+      if (!seen.has(e.sourceId)) {
+        seen.add(e.sourceId);
+        orderedIds.push(e.sourceId);
       }
     }
     if (orderedIds.length === 0) return [];
@@ -540,21 +582,18 @@ export async function getTopicSourceTags(
   if (tags.length === 0) return {};
   const tagName = new Map(tags.map((t) => [t.id, t.name]));
 
-  const { data: stRows, error: stErr } = await supabase
-    .schema("research")
-    .from("rs_source_tag")
-    .select("source_id, tag_id")
-    .in(
-      "tag_id",
+  const { edges } = assocData(
+    await associationsService.listForTargets(
+      RESEARCH_TAG,
       tags.map((t) => t.id),
-    );
-  if (stErr) throw stErr;
+    ),
+  );
 
   const out: Record<string, { id: string; name: string }[]> = {};
-  for (const st of stRows ?? []) {
-    (out[st.source_id] ??= []).push({
-      id: st.tag_id,
-      name: tagName.get(st.tag_id) ?? "Tag",
+  for (const e of edges) {
+    (out[e.sourceId] ??= []).push({
+      id: e.targetId,
+      name: tagName.get(e.targetId) ?? "Tag",
     });
   }
   return out;
@@ -617,29 +656,40 @@ export async function assignTagsToSource(
   sourceId: string,
   body: SourceTagRequest,
 ): Promise<SourceTag[]> {
-  const rows = body.tag_ids.map((tagId) => ({
-    source_id: sourceId,
-    tag_id: tagId,
-    assigned_by: "manual" as const,
-  }));
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_source_tag")
-    .upsert(rows, { onConflict: "source_id,tag_id" })
-    .select();
-  if (error) throw error;
-  return data ?? [];
+  const results: SourceTag[] = [];
+  for (const tagId of body.tag_ids) {
+    const { id } = assocData(
+      await associationsService.add({
+        sourceType: RESEARCH_SOURCE,
+        sourceId,
+        targetType: RESEARCH_TAG,
+        targetId: tagId,
+        metadata: { assigned_by: "manual" },
+      }),
+    );
+    results.push({
+      id,
+      source_id: sourceId,
+      tag_id: tagId,
+      is_primary_source: null,
+      confidence: null,
+      assigned_by: "manual",
+      created_at: null,
+    });
+  }
+  return results;
 }
 
 /** Current tag assignments for a source (so a picker can show what's on). */
 export async function getSourceTags(sourceId: string): Promise<SourceTag[]> {
-  const { data, error } = await supabase
-    .schema("research")
-    .from("rs_source_tag")
-    .select("*")
-    .eq("source_id", sourceId);
-  if (error) throw error;
-  return data ?? [];
+  const { edges } = assocData(
+    await associationsService.listForSources(
+      RESEARCH_SOURCE,
+      [sourceId],
+      RESEARCH_TAG,
+    ),
+  );
+  return edges.map(edgeToSourceTag);
 }
 
 /** Remove one tag assignment from a source (the un-toggle side of assignment). */
@@ -647,13 +697,14 @@ export async function removeSourceTag(
   sourceId: string,
   tagId: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_source_tag")
-    .delete()
-    .eq("source_id", sourceId)
-    .eq("tag_id", tagId);
-  if (error) throw error;
+  assocData(
+    await associationsService.remove({
+      sourceType: RESEARCH_SOURCE,
+      sourceId,
+      targetType: RESEARCH_TAG,
+      targetId: tagId,
+    }),
+  );
 }
 
 /** Assign one tag to many sources at once (batch tagging in the curation table). */
@@ -662,16 +713,17 @@ export async function addTagToSources(
   sourceIds: string[],
 ): Promise<void> {
   if (sourceIds.length === 0) return;
-  const rows = sourceIds.map((source_id) => ({
-    source_id,
-    tag_id: tagId,
-    assigned_by: "manual" as const,
-  }));
-  const { error } = await supabase
-    .schema("research")
-    .from("rs_source_tag")
-    .upsert(rows, { onConflict: "source_id,tag_id" });
-  if (error) throw error;
+  for (const sourceId of sourceIds) {
+    assocData(
+      await associationsService.add({
+        sourceType: RESEARCH_SOURCE,
+        sourceId,
+        targetType: RESEARCH_TAG,
+        targetId: tagId,
+        metadata: { assigned_by: "manual" },
+      }),
+    );
+  }
 }
 
 /**
@@ -694,22 +746,22 @@ export async function getSourceImportance(
   );
   if (kwText.size === 0) return new Map();
 
-  const { data: links, error: linkErr } = await supabase
-    .schema("research")
-    .from("rs_keyword_source")
-    .select("source_id, keyword_id, rank_for_keyword")
-    .in("keyword_id", Array.from(kwText.keys()));
-  if (linkErr) throw linkErr;
+  const { edges } = assocData(
+    await associationsService.listForTargets(
+      RESEARCH_KEYWORD,
+      Array.from(kwText.keys()),
+    ),
+  );
 
   const bySource = new Map<string, KeywordRank[]>();
-  for (const l of links ?? []) {
-    const arr = bySource.get(l.source_id) ?? [];
+  for (const e of edges) {
+    const arr = bySource.get(e.sourceId) ?? [];
     arr.push({
-      keyword_id: l.keyword_id,
-      keyword: kwText.get(l.keyword_id) ?? "Keyword",
-      rank: l.rank_for_keyword,
+      keyword_id: e.targetId,
+      keyword: kwText.get(e.targetId) ?? "Keyword",
+      rank: e.position,
     });
-    bySource.set(l.source_id, arr);
+    bySource.set(e.sourceId, arr);
   }
 
   const out = new Map<string, SourceImportance>();
@@ -783,41 +835,37 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   const tagName = new Map(tags.map((t) => [t.id, t.name]));
   const tagsBySource = new Map<string, { id: string; name: string }[]>();
   if (tags.length > 0) {
-    const { data: stRows } = await supabase
-      .schema("research")
-      .from("rs_source_tag")
-      .select("source_id, tag_id")
-      .in(
-        "tag_id",
+    const { edges } = assocData(
+      await associationsService.listForTargets(
+        RESEARCH_TAG,
         tags.map((t) => t.id),
-      );
-    for (const st of stRows ?? []) {
-      const arr = tagsBySource.get(st.source_id) ?? [];
-      arr.push({ id: st.tag_id, name: tagName.get(st.tag_id) ?? "Tag" });
-      tagsBySource.set(st.source_id, arr);
+      ),
+    );
+    for (const e of edges) {
+      const arr = tagsBySource.get(e.sourceId) ?? [];
+      arr.push({ id: e.targetId, name: tagName.get(e.targetId) ?? "Tag" });
+      tagsBySource.set(e.sourceId, arr);
     }
   }
 
   // Importance from per-keyword ranks
   const importanceBySource = new Map<string, SourceImportance>();
   if (keywords.length > 0) {
-    const { data: links } = await supabase
-      .schema("research")
-      .from("rs_keyword_source")
-      .select("source_id, keyword_id, rank_for_keyword")
-      .in(
-        "keyword_id",
+    const { edges } = assocData(
+      await associationsService.listForTargets(
+        RESEARCH_KEYWORD,
         keywords.map((k) => k.id),
-      );
+      ),
+    );
     const perSource = new Map<string, KeywordRank[]>();
-    for (const l of links ?? []) {
-      const arr = perSource.get(l.source_id) ?? [];
+    for (const e of edges) {
+      const arr = perSource.get(e.sourceId) ?? [];
       arr.push({
-        keyword_id: l.keyword_id,
-        keyword: kwText.get(l.keyword_id) ?? "Keyword",
-        rank: l.rank_for_keyword,
+        keyword_id: e.targetId,
+        keyword: kwText.get(e.targetId) ?? "Keyword",
+        rank: e.position,
       });
-      perSource.set(l.source_id, arr);
+      perSource.set(e.sourceId, arr);
     }
     for (const [sid, pk] of perSource) {
       importanceBySource.set(sid, summarizeImportance(pk));

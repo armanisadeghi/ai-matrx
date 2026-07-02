@@ -138,7 +138,6 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 - `audit.function_deps` — precise fn→object dependency map (from `plpgsql_check`).
 - `audit.table_impact(schema,table)` — **PREFLIGHT**: every fn touching the table · `dependency` (precise|text-qualified) · `currently_broken` · exact `referenced_columns[]`. Run before any rename/drop to get the blast radius.
 - `audit.m2m_candidates` · `audit.unregistered_candidates` · `audit.stale_registry` · `audit.refresh_log`.
-- **Admin UI:** `/administration/canonicalization` (super-admin) surfaces every view/RPC above with sticky-header, filter/sort tables — Overview, Summary, Findings, Broken functions, Function deps, Candidates, Table impact, Verify.
 
 ## 5c. Snapshot — 2026-07-01 (COMPLETE gate)
 - 199 registered live tables → **9 fully certified · 190 not**. (Old partial gate falsely implied 63 OK — it never checked triggers/FKs/version/metadata/updated_by/org-NOT-NULL. ~800 hidden FAILs.)
@@ -149,14 +148,20 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 
 ## 5d. Per-table flip loop — touch once, never return
 1. `SELECT * FROM iam.verify_canonical(s,t,tok);` → full fix list.
-2. `SELECT * FROM audit.table_impact(s,t);` → every dependent fn + exact columns → blast radius BEFORE editing.
-3. ONE migration: canonicalize the table (cols/FKs/triggers, RLS via `iam.apply_rls`) **+ repoint every fn from step 2**.
+2. `SELECT * FROM audit.table_impact(s,t);` → every dependent **DB fn** + exact columns → blast radius BEFORE editing.
+2b. **FE blast radius (`table_impact` does NOT cover this).** `table_impact` maps Postgres fn deps only — NOT the frontend. A collapse/move also breaks every `supabase.schema('<s>').from('<t>')` / `.rpc()` in the app. `grep -rn '"<table>"' features/ lib/ app/ components/` BEFORE the flip; repoint those reads/writes onto the canonical path (M2M → `associationsService`, the `platform.associations` chokepoint) as PART of the flip, never after. (rs_source_tag/rs_keyword_source had 0 DB fns but 9 FE `.from()` callsites — the collapse broke research until repointed.)
+3. ONE migration: canonicalize the table (cols/FKs/triggers, RLS via `iam.apply_rls`) **+ repoint every fn from step 2**. Data migration guards: idempotent (guard on the source still existing), atomic count-verify (`RAISE`→rollback on mismatch), de-register the token + drop its `entity_relationships` rows before `SET SCHEMA graveyard`.
 4. `SELECT audit.refresh();`
 5. `SELECT iam.canonical_certify_ok(s,t,tok);` must be `true`. If not → `iam.canonical_certify(s,t,tok)` and fix.
-6. Only then touch app/client code. Log to `platform.deprecated_relations` + §6.
+6. Repoint app/client code (step 2b) + `pnpm db-types` + aidream `python db/generate.py`. Log to `platform.deprecated_relations` + §6. Ledger the migration file.
 
 ## 6. Done log (mirror of `platform.deprecated_relations`)
-_none migrated yet_
+| date | old_ref | new edge | rows | migration | FE repoint |
+|---|---|---|---|---|---|
+| 2026-07-02 | `research.rs_source_tag` | `research_source → research_tag` | 46 | `research_m2m_collapse_source_tag_keyword.sql` | `features/research/service.ts` (7 fns → `associationsService`); `research_tag` added to `ASSOCIATION_TARGET_TYPES` |
+| 2026-07-02 | `research.rs_keyword_source` | `research_source → research_keyword` (rank→`position`) | 3023 | (same migration) | (same file; keyword ranks via `listForTargets`) |
+
+Both verified: edge counts match junctions, tables retired to `graveyard` (data intact), tokens de-registered, FE type-clean. PENDING batch-finalize: `pnpm db-types` + aidream `python db/generate.py` (drop the two research-schema junction models). Runtime-test route: `/research` topic view → tag a source, filter by keyword (rank order), source-importance panel.
 
 ## 7. Open flags
 - RLS disabled on `platform.entity_relationships`, `platform.deprecated_relations` (internal metadata; anon-exposed — decide intentionally).

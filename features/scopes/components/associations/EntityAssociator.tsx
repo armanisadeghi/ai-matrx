@@ -83,6 +83,7 @@ const TYPE_LABEL_PLURAL: Record<AssociationTargetType, string> = {
   file: "Files",
   quiz_session: "Quizzes",
   agent: "Agents",
+  research_tag: "Research tags",
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────

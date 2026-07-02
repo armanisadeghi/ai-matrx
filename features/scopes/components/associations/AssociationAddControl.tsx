@@ -69,6 +69,7 @@ const TARGET_LABEL: Record<AssociationTargetType, string> = {
   file: "file",
   quiz_session: "quiz",
   agent: "agent",
+  research_tag: "research tag",
 };
 
 export function AssociationAddControl(props: AssociationAddControlProps) {
