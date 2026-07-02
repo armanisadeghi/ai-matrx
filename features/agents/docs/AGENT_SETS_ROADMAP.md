@@ -61,6 +61,16 @@ Today membership is flat (`orchestrator → member`). Real orchestration needs s
 
 ---
 
+## Shipped — Generate an orchestrator (template → descriptions → injection → set)
+
+Users without an orchestrator get one generated: copy the "Agent Orchestrator" template, run the Agent Description Generator on the selected agents, inject the `<agent>` blocks into `<available_agents>`, wire the set. Details + injection invariants in [`AGENT_SETS.md`](./AGENT_SETS.md) ("Generating an orchestrator"). A **Sync prompt** builder action keeps the prompt in step with membership.
+
+**Future — auto-add agents (NOT built).** The inverse automation: when a user creates a member agent (esp. FROM a template), auto-produce that agent's `<agent>` XML entry and **append it to every orchestrator set the agent joins**, instead of a full re-generate of all members. Design notes:
+- Reuse `runAgentDescriptionGenerator` but for a SINGLE agent → one `<agent>` block; splice it into the orchestrator's `<available_agents>` (append, not replace) via a new `appendAvailableAgent(orchestratorId, block)` alongside the existing `injectAvailableAgents`.
+- Trigger points: `addAgentToSet` (a member joined → append its block) and the agent-create-from-template flow (a new specialist → offer to add it to a set).
+- Keep a per-member marker (`data-agent-id`) in each `<agent>` block so append/remove can target one member without a full regenerate — the durable path once sets get large.
+- Idempotency: dedupe by agent id before appending; on member removal, strip that agent's block.
+
 ## Cross-repo apply order (any phase touching the DB or backend)
 
 Same discipline as the rest of the platform: **Supabase MCP `apply_migration` → `pnpm db-types` → aidream `python db/generate.py` → both repos commit.** Most of P1–P2's data changes are jsonb `metadata` shape (no DDL). The real backend work is aidream's executor + the server-side set reader (P0).

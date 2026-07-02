@@ -34,9 +34,16 @@ export interface CreateSetDialogProps {
   onOpenChange: (open: boolean) => void;
   /** When set, this agent is added as the set's first member after creation. */
   seedMemberId?: string;
+  /** Switch to the "generate a new orchestrator" flow (for users without one). */
+  onGenerateInstead?: () => void;
 }
 
-export function CreateSetDialog({ open, onOpenChange, seedMemberId }: CreateSetDialogProps) {
+export function CreateSetDialog({
+  open,
+  onOpenChange,
+  seedMemberId,
+  onGenerateInstead,
+}: CreateSetDialogProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const agents = useAppSelector(selectPickableAgents);
@@ -115,6 +122,20 @@ export function CreateSetDialog({ open, onOpenChange, seedMemberId }: CreateSetD
           <DialogDescription>
             Pick the agent that presides over this set as its orchestrator, then
             drag in the members it coordinates.
+            {onGenerateInstead && (
+              <>
+                {" "}
+                Don&apos;t have one?{" "}
+                <button
+                  type="button"
+                  onClick={onGenerateInstead}
+                  className="font-medium text-primary hover:underline"
+                >
+                  Generate an orchestrator
+                </button>
+                .
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 

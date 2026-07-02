@@ -17,15 +17,18 @@ import {
   Loader2,
   MousePointerClick,
   Network,
+  RefreshCw,
   Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsList } from "@/features/agents/redux/agent-definition/thunks";
 import { useAgentSet } from "../hooks/useAgentSet";
 import { addAgentToSet, createAgentSet } from "@/features/agents/redux/agent-sets/thunks";
+import { syncOrchestratorPrompt } from "../orchestrator/thunks";
 import { AgentLibraryRail } from "./AgentLibraryRail";
 import SetBuilderCanvas from "./SetBuilderCanvas";
 import { SetMemberGrid } from "./SetMemberGrid";
@@ -46,6 +49,7 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAgentsList());
@@ -58,6 +62,14 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
   const title = label?.trim() || orchestrator?.name || "Agent Set";
 
   const handleAdd = (agentId: string) => dispatch(addAgentToSet({ orchestratorId, agentId }));
+
+  const handleSyncPrompt = async () => {
+    setSyncing(true);
+    const res = await dispatch(syncOrchestratorPrompt({ orchestratorId, memberIds }));
+    setSyncing(false);
+    if (res.ok) toast.success("Orchestrator prompt synced with the current members.");
+    else toast.error(res.error ?? "Could not sync the orchestrator prompt.");
+  };
 
   const loading = status === "idle" || (status === "loading" && members.length === 0 && !exists);
 
@@ -158,6 +170,21 @@ export function SetBuilder({ orchestratorId }: { orchestratorId: string }) {
             </button>
           </div>
 
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleSyncPrompt}
+            disabled={syncing || members.length === 0}
+            title="Regenerate the orchestrator's <available_agents> prompt section from the current members"
+          >
+            {syncing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Sync prompt
+          </Button>
           <Link href={`/agents/${orchestratorId}/build`} target="_blank">
             <Button variant="outline" size="sm" className="gap-1.5">
               <ExternalLink className="h-3.5 w-3.5" /> Orchestrator

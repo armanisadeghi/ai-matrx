@@ -7,7 +7,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Network, Plus, Search } from "lucide-react";
+import { ArrowLeft, Network, Plus, Search, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAgentSetsList } from "../hooks/useAgentSetsList";
 import { AgentSetCard } from "./AgentSetCard";
 import { CreateSetDialog } from "./CreateSetDialog";
+import { GenerateOrchestratorDialog } from "./GenerateOrchestratorDialog";
 
 export function AgentSetsBrowser() {
   const router = useRouter();
   const { sets, status } = useAgentSetsList();
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -70,9 +72,13 @@ export function AgentSetsBrowser() {
             className="h-9 w-56 pl-8"
           />
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+        <Button variant="outline" onClick={() => setCreateOpen(true)} className="gap-1.5">
           <Plus className="h-4 w-4" />
           New set
+        </Button>
+        <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
+          <Workflow className="h-4 w-4" />
+          Generate orchestrator
         </Button>
       </div>
 
@@ -95,13 +101,20 @@ export function AgentSetsBrowser() {
               Build your first agent set
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Choose one agent to be the orchestrator, then drag in the specialists
-              it coordinates. Each member fills a gap in the bigger picture.
+              Don&apos;t have an orchestrator yet? Pick the specialists you want and
+              we&apos;ll generate one for you — an agent that knows each member and
+              coordinates them. Or use an agent you already have.
             </p>
-            <Button onClick={() => setCreateOpen(true)} className="mt-5 gap-1.5">
-              <Plus className="h-4 w-4" />
-              New set
-            </Button>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
+                <Workflow className="h-4 w-4" />
+                Generate an orchestrator
+              </Button>
+              <Button variant="outline" onClick={() => setCreateOpen(true)} className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                Use an existing agent
+              </Button>
+            </div>
           </div>
         )}
 
@@ -119,7 +132,15 @@ export function AgentSetsBrowser() {
         )}
       </div>
 
-      <CreateSetDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateSetDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onGenerateInstead={() => {
+          setCreateOpen(false);
+          setGenerateOpen(true);
+        }}
+      />
+      <GenerateOrchestratorDialog open={generateOpen} onOpenChange={setGenerateOpen} />
     </div>
   );
 }
