@@ -19,17 +19,17 @@ interface InlineCopyButtonProps {
 }
 
 // Utility function for formatting JSON
-const formatJsonForClipboard = (data: any): string => {
-  const cleanObject = (obj: any): any => {
+const formatJsonForClipboard = (data: unknown): string => {
+  const cleanObject = (obj: unknown): unknown => {
     if (typeof obj !== 'object' || obj === null) {
       return obj;
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.map(cleanObject);
     }
-    
-    const cleaned: Record<string, any> = {};
+
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {
         try {

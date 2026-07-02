@@ -9,7 +9,7 @@
 
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SOURCE_OPTIONS } from "@/features/podcasts/generator/constants";
+import { SOURCE_OPTIONS, findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import type { PodcastSourceKind } from "@/features/podcasts/generator/types";
 
 // Group the flat source list into meaningful buckets by their control type.
@@ -40,7 +40,7 @@ export function SourceRail({
             </p>
             <ul className="space-y-0.5">
               {group.kinds.map((kind) => {
-                const opt = SOURCE_OPTIONS.find((o) => o.kind === kind)!;
+                const opt = findOptionOrFirst(SOURCE_OPTIONS, kind, (o) => o.kind);
                 const Icon = opt.icon;
                 const selected = value === kind;
                 return (

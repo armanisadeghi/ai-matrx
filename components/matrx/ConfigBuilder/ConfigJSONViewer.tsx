@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface ConfigJSONViewerProps {
-  data: any;
+  data: unknown;
   copied: boolean;
   onCopy: () => void;
   className?: string;
 }
 
-const cleanJsonData = (data: any): any => {
+const cleanJsonData = (data: unknown): unknown => {
   if (typeof data === 'string') {
     try {
       return JSON.parse(data);

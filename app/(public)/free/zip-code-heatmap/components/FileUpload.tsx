@@ -18,7 +18,7 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
   const [success, setSuccess] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [showColumnMapper, setShowColumnMapper] = useState(false);
-  const [rawData, setRawData] = useState<any[]>([]);
+  const [rawData, setRawData] = useState<Record<string, unknown>[]>([]);
   const [availableColumns, setAvailableColumns] = useState<string[]>([]);
 
   const handleFileSelect = (file: File) => {
@@ -41,12 +41,12 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
 
     if (isCSV) {
       // Handle CSV files
-      Papa.parse(file, {
+      Papa.parse<Record<string, unknown>>(file, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
           try {
-            const data = results.data as any[];
+            const data = results.data;
             if (data.length === 0) {
               setError('CSV file is empty');
               onLoadingChange(false);
@@ -79,7 +79,7 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
           const workbook = XLSX.read(data, { type: 'binary' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
 
           if (jsonData.length === 0) {
             setError('Excel file is empty');
@@ -87,8 +87,8 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
             return;
           }
 
-          const columns = Object.keys(jsonData[0] as any);
-          setRawData(jsonData as any[]);
+          const columns = Object.keys(jsonData[0]);
+          setRawData(jsonData);
           setAvailableColumns(columns);
           setShowColumnMapper(true);
           onLoadingChange(false);

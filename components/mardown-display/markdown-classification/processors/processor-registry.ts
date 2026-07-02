@@ -184,10 +184,19 @@ export const getProcessorFunction = (processorId: string) => {
     const processorEntry = getProcessorEntry(processorId);
     if (!processorEntry) return null;
 
-    // Return a function that handles the dynamic import and calling internally
+    // Return a function that handles the dynamic import and calling internally.
+    // `processorEntry.processor()` resolves to whichever specific processor
+    // module matched `processorId` — each has its own narrow parameter shape
+    // (`{ast, config}`, `{ast}`, or a raw markdown string), so the resolved
+    // value is a union of incompatible call signatures that TypeScript cannot
+    // statically apply a single argument shape to. Dispatch through
+    // `Function.prototype.apply` (an ordinary JS mechanism, not a type
+    // assertion) since the caller-side `execute*` helpers below are what
+    // guarantee each id is invoked with the input shape that specific
+    // processor actually expects.
     return async (input: ProcessorDynamicInput) => {
         const processorModule = await processorEntry.processor();
-        return processorModule(input);
+        return Function.prototype.apply.call(processorModule, null, [input]);
     };
 };
 

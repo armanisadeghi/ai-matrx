@@ -13,13 +13,13 @@ import { ExternalLink, LayoutGrid, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
-import type { AgentApp } from "@/features/agent-apps/types";
+import type { AgentAppSummary } from "@/features/agent-apps/types";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 
 interface AgentAppsPanelProps {
   agentId: string;
   agentName: string;
-  apps: AgentApp[];
+  apps: AgentAppSummary[];
 }
 
 export function AgentAppsPanel({

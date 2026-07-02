@@ -1,10 +1,13 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import type { Database } from "@/types/database.types";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
 } from "../_lib/categoryRow";
+
+type CategoryUpdate = Database["platform"]["Tables"]["categories"]["Update"];
 
 export async function GET(
   _request: NextRequest,
@@ -87,17 +90,46 @@ export async function PATCH(
       );
     }
 
-    const topLevel: Record<string, unknown> = {};
+    const topLevel: CategoryUpdate = {};
     const metadataUpdates: Record<string, unknown> = {};
     let hasUpdates = false;
+    const typeErrors: string[] = [];
 
-    if ("label" in body) { topLevel.name = body.label; hasUpdates = true; }
-    if ("icon_name" in body) { topLevel.icon = body.icon_name; hasUpdates = true; }
-    if ("color" in body) { topLevel.color = body.color; hasUpdates = true; }
-    if ("placement_type" in body) { topLevel.placement_type = body.placement_type; hasUpdates = true; }
-    if ("parent_category_id" in body) { topLevel.parent_id = body.parent_category_id; hasUpdates = true; }
-    if ("sort_order" in body) { topLevel.position = body.sort_order; hasUpdates = true; }
-    if ("organization_id" in body) { topLevel.organization_id = body.organization_id; hasUpdates = true; }
+    if ("label" in body) {
+      if (typeof body.label === "string") { topLevel.name = body.label; hasUpdates = true; }
+      else typeErrors.push("label must be a string");
+    }
+    if ("icon_name" in body) {
+      if (typeof body.icon_name === "string" || body.icon_name === null) { topLevel.icon = body.icon_name; hasUpdates = true; }
+      else typeErrors.push("icon_name must be a string or null");
+    }
+    if ("color" in body) {
+      if (typeof body.color === "string" || body.color === null) { topLevel.color = body.color; hasUpdates = true; }
+      else typeErrors.push("color must be a string or null");
+    }
+    if ("placement_type" in body) {
+      if (typeof body.placement_type === "string" || body.placement_type === null) { topLevel.placement_type = body.placement_type; hasUpdates = true; }
+      else typeErrors.push("placement_type must be a string or null");
+    }
+    if ("parent_category_id" in body) {
+      if (typeof body.parent_category_id === "string" || body.parent_category_id === null) { topLevel.parent_id = body.parent_category_id; hasUpdates = true; }
+      else typeErrors.push("parent_category_id must be a string or null");
+    }
+    if ("sort_order" in body) {
+      if (typeof body.sort_order === "number" || body.sort_order === null) { topLevel.position = body.sort_order; hasUpdates = true; }
+      else typeErrors.push("sort_order must be a number or null");
+    }
+    if ("organization_id" in body) {
+      if (typeof body.organization_id === "string") { topLevel.organization_id = body.organization_id; hasUpdates = true; }
+      else typeErrors.push("organization_id must be a string");
+    }
+
+    if (typeErrors.length > 0) {
+      return NextResponse.json(
+        { error: "Invalid field types", details: typeErrors },
+        { status: 400 },
+      );
+    }
 
     if ("description" in body) { metadataUpdates.description = body.description; hasUpdates = true; }
     if ("is_active" in body) { metadataUpdates.is_active = body.is_active; hasUpdates = true; }
@@ -131,7 +163,7 @@ export async function PATCH(
     const { data, error } = await supabase
       .schema("platform")
       .from("categories")
-      .update(topLevel as never)
+      .update(topLevel)
       .eq("dimension", "shortcut")
       .eq("id", id)
       .select(PLATFORM_CATEGORY_SELECT)

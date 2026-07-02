@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireEnv } from "@/utils/supabase/env";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_URL = requireEnv(
+  "NEXT_PUBLIC_SUPABASE_URL",
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+);
 const UPSTREAM = `${SUPABASE_URL}/auth/v1/oauth/userinfo`;
 
 /**

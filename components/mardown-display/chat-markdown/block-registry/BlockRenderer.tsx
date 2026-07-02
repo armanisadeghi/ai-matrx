@@ -856,7 +856,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         <BlockComponents.CodeBlock
           key={index}
           code={block.content}
-          language={block.language}
+          language={block.language || "typescript"}
           fontSize={16}
           className="my-3"
           onCodeChange={
@@ -995,7 +995,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         );
       }
 
-      const rawXml = block.metadata?.rawXml ?? block.content;
+      const metadataRawXml = block.metadata?.rawXml;
+      const rawXml = typeof metadataRawXml === "string" ? metadataRawXml : block.content;
 
       return (
         <BlockComponents.InlineDecisionBlock

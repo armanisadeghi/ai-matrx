@@ -60,13 +60,13 @@ export async function GET() {
       data: data,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error:", error);
     return NextResponse.json({
       success: false,
-      error: error.message,
-      stack: error.stack,
-      details: error,
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      details: error instanceof Error ? { name: error.name, message: error.message } : error,
     }, { status: 500 });
   }
 }

@@ -13,59 +13,53 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const client = supabase as unknown as {
-      from: (name: string) => any;
-      rpc: (name: string, args?: any) => any;
-      schema: (name: string) => { from: (name: string) => any };
-    };
+    // Split into two smaller Promise.all groups (rather than one 8-way tuple)
+    // to keep TypeScript's inferred tuple type for this many distinct
+    // schema/table query builders from exceeding its instantiation depth
+    // limit (TS2589).
+    const [categoriesCount, shortcutsCount, contentBlocksCount, agxAgentCount] =
+      await Promise.all([
+        supabase
+          .schema("platform")
+          .from("categories")
+          .select("*", { count: "exact", head: true })
+          .eq("dimension", "shortcut"),
+        supabase
+          .schema("agent")
+          .from("shortcut")
+          .select("*", { count: "exact", head: true }),
+        supabase.from("content_blocks").select("*", { count: "exact", head: true }),
+        supabase
+          .schema("agent")
+          .from("definition")
+          .select("*", { count: "exact", head: true }),
+      ]);
 
-    const [
-      categoriesCount,
-      shortcutsCount,
-      contentBlocksCount,
-      agxAgentCount,
-      categoriesSample,
-      shortcutsSample,
-      contentBlocksSample,
-      viewRows,
-    ] = await Promise.all([
-      client
-        .schema("platform")
-        .from("categories")
-        .select("*", { count: "exact", head: true })
-        .eq("dimension", "shortcut"),
-      client
-        .schema("agent")
-        .from("shortcut")
-        .select("*", { count: "exact", head: true }),
-      client.from("content_blocks").select("*", { count: "exact", head: true }),
-      client
-        .schema("agent")
-        .from("definition")
-        .select("*", { count: "exact", head: true }),
-      client
-        .schema("platform")
-        .from("categories")
-        .select(
-          "id,label:name,placement_type,parent_category_id:parent_id,is_active:metadata->>is_active,user_id:metadata->>user_id,organization_id",
-        )
-        .eq("dimension", "shortcut")
-        .limit(10),
-      client
-        .schema("agent")
-        .from("shortcut")
-        .select(
-          "id,label,category_id,agent_id,is_active,user_id,organization_id",
-        )
-        .limit(10),
-      client
-        .from("content_blocks")
-        .select(
-          "id,label,block_id,category_id,is_active,user_id,organization_id",
-        )
-        .limit(10),
-      client.schema("agent").from("context_menu_view").select("*"),
-    ]);
+    const [categoriesSample, shortcutsSample, contentBlocksSample, viewRows] =
+      await Promise.all([
+        supabase
+          .schema("platform")
+          .from("categories")
+          .select(
+            "id,label:name,placement_type,parent_category_id:parent_id,is_active:metadata->>is_active,user_id:metadata->>user_id,organization_id",
+          )
+          .eq("dimension", "shortcut")
+          .limit(10),
+        supabase
+          .schema("agent")
+          .from("shortcut")
+          .select(
+            "id,label,category_id,agent_id,is_active,user_id,organization_id",
+          )
+          .limit(10),
+        supabase
+          .from("content_blocks")
+          .select(
+            "id,label,block_id,category_id,is_active,user_id,organization_id",
+          )
+          .limit(10),
+        supabase.schema("agent").from("context_menu_view").select("*"),
+      ]);
 
     const result = {
       user: {

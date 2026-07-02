@@ -8,7 +8,8 @@ import { parseMarkdownTable } from "@/components/mardown-display/markdown-classi
 import MarkdownTable from "./tables/TableWithSeparatedControls";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
-import type { Components } from "react-markdown";
+import type { ComponentPropsWithoutRef } from "react";
+import type { Components, ExtraProps } from "react-markdown";
 
 const ReactMarkdown = dynamic(() => import("react-markdown"), {
   ssr: false,
@@ -53,27 +54,17 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         {...props}
       />
     ),
-    li: ({ node, children, ordered, index, ...props }: any) => {
-      if (ordered && typeof index === "number") {
-        return (
-          <li className="mb-0" style={{ fontSize: `${fontSize}px` }} {...props}>
-            <span className="inline-block w-full">
-              <span className="inline-block w-3 mr-2 text-right">
-                {index + 1}.
-              </span>
-              <span className="inline-block w-[calc(100%-1.5rem)]">
-                {children}
-              </span>
-            </span>
-          </li>
-        );
-      }
-      return (
-        <li className="mb-0" style={{ fontSize: `${fontSize}px` }} {...props}>
-          {children}
-        </li>
-      );
-    },
+    // react-markdown v10 does not pass `ordered`/`index` to the `li` override
+    // (removed upstream in the v9 rewrite) — the previous custom-numbering
+    // branch destructured them via `: any` and always took the `else` path,
+    // since `ordered` was always `undefined`. Native `<ol>` numbering (from
+    // the `ol` override below) already renders correctly; the dead branch is
+    // removed rather than kept as unreachable code.
+    li: ({ node, children, ...props }: ComponentPropsWithoutRef<"li"> & ExtraProps) => (
+      <li className="mb-0" style={{ fontSize: `${fontSize}px` }} {...props}>
+        {children}
+      </li>
+    ),
     a: ({ node, ...props }) => (
       <a
         className="text-blue-500 underline font-medium"
@@ -145,10 +136,14 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         {...props}
       />
     ),
-    code: ({ node, inline, className, children, ...props }: any) => {
-      const match = /language-(\w+)/.exec(className || "");
+    // react-markdown v10 does not pass an `inline` prop to the `code`
+    // override (removed upstream) — code vs inline-code is distinguished
+    // purely by the presence of a `language-*` className, which is what the
+    // `match`/`language` check below already does.
+    code: ({ node, className, children, ...props }: ComponentPropsWithoutRef<"code"> & ExtraProps) => {
+      const match = /language-(\w+)/.exec(className ?? "");
       const language = match ? match[1] : "";
-      if (!inline && language) {
+      if (language) {
         // DATA CONTRACT: render the code exactly as received. The previous
         // `.replace(/\n$/, "")` stripped trailing newlines, which breaks
         // round-tripping (user edit → save → re-render would lose the

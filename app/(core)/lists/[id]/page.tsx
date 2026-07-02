@@ -29,6 +29,9 @@ const loadList = cache(
         p_list_id: listId,
       });
       if (error || !data) return null;
+      // get_user_list_with_items returns Json directly (no row schema in
+      // database.types.ts to guard against) — this is the sanctioned
+      // Json-direct RPC cast per the type-safety skill's supabase-patterns.
       return data as unknown as UserListWithItems;
     } catch {
       return null;

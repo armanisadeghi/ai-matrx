@@ -30,7 +30,7 @@
         "name": "next"
       }
     ],
-    "strict": false,
+    "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "noUnusedLocals": false,
@@ -38,7 +38,7 @@
     "allowUnreachableCode": false,
     "noErrorTruncation": true,
     "strictFunctionTypes": true,
-    "strictPropertyInitialization": false,
+    "strictPropertyInitialization": true,
     "forceConsistentCasingInFileNames": false,
     "strictBindCallApply": true,
     "alwaysStrict": true,

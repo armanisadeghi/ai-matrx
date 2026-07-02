@@ -90,7 +90,7 @@ const MatrxTextarea: React.FC<MatrxTextareaProps> = ({
     onChange?.(newValue);
   };
 
-  const stringValue = (value ?? "") as string;
+  const stringValue = typeof value === "string" ? value : "";
   const characterCount = stringValue.length;
   const wordCount = stringValue.split(/\s+/).filter(Boolean).length;
 

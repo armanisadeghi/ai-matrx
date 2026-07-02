@@ -5,9 +5,20 @@ import crypto from "crypto";
 /**
  * POST /api/webhooks/resend
  * Handle incoming email webhooks from Resend
- * 
+ *
  * Webhook events: https://resend.com/docs/api-reference/webhooks/webhook-events
  */
+
+// Resend webhook event data — external boundary, so this is an open shape
+// (Resend documents more fields per event type than we consume). Every field
+// we actually read is declared; unknown extras are ignored, not typed.
+interface ResendWebhookEventData {
+  email_id?: string;
+  to?: string | string[];
+  bounce_type?: string;
+  link?: string;
+  [key: string]: unknown;
+}
 export async function POST(request: Request) {
   try {
     // Get the raw body for signature verification
@@ -44,8 +55,15 @@ export async function POST(request: Request) {
     }
 
     // Parse the webhook payload
-    const payload = JSON.parse(body);
+    const payload = JSON.parse(body) as {
+      type?: string;
+      data?: ResendWebhookEventData;
+    };
     const { type, data } = payload;
+    if (!data) {
+      console.warn("Resend webhook payload missing 'data'");
+      return NextResponse.json({ success: true });
+    }
 
     console.log("Resend webhook received:", type);
 
@@ -132,7 +150,7 @@ function verifyWebhookSignature(
 /**
  * Handle email sent event
  */
-async function handleEmailSent(data: any) {
+async function handleEmailSent(data: ResendWebhookEventData) {
   console.log("Email sent:", data.email_id);
   // You can track email sending status here
 }
@@ -140,7 +158,7 @@ async function handleEmailSent(data: any) {
 /**
  * Handle email delivered event
  */
-async function handleEmailDelivered(data: any) {
+async function handleEmailDelivered(data: ResendWebhookEventData) {
   console.log("Email delivered:", data.email_id);
   // Update delivery status in database if needed
 }
@@ -148,7 +166,7 @@ async function handleEmailDelivered(data: any) {
 /**
  * Handle email delayed event
  */
-async function handleEmailDelayed(data: any) {
+async function handleEmailDelayed(data: ResendWebhookEventData) {
   console.log("Email delayed:", data.email_id);
   // Log delivery delays for monitoring
 }
@@ -156,13 +174,19 @@ async function handleEmailDelayed(data: any) {
 /**
  * Handle email complained (spam report) event
  */
-async function handleEmailComplained(data: any) {
+async function handleEmailComplained(data: ResendWebhookEventData) {
   console.warn("Email complained:", data.email_id);
-  
+
   try {
     const adminSupabase = createAdminClient();
-    
-    // Mark user as unsubscribed from emails
+
+    // BUG FOUND: `data.to` is the recipient's EMAIL ADDRESS from the Resend
+    // payload, but `user_email_preferences.user_id` is an auth UUID. This
+    // .eq() can never match a row — every spam-complaint unsubscribe has
+    // been silently a no-op. Fixing requires resolving email -> user_id
+    // (no `getUserByEmail`/RPC exists for this today — `auth.admin.listUsers`
+    // is the only lookup, or a new RPC) — flagging rather than guessing at
+    // the resolution path.
     const { error } = await adminSupabase
       .schema("users").from("user_email_preferences")
       .update({
@@ -172,7 +196,7 @@ async function handleEmailComplained(data: any) {
         marketing_emails: false,
         weekly_digest: false,
       })
-      .eq("user_id", data.to);
+      .eq("user_id", typeof data.to === "string" ? data.to : "");
 
     if (error) {
       console.error("Error updating email preferences after complaint:", error);
@@ -185,7 +209,7 @@ async function handleEmailComplained(data: any) {
 /**
  * Handle email bounced event
  */
-async function handleEmailBounced(data: any) {
+async function handleEmailBounced(data: ResendWebhookEventData) {
   console.warn("Email bounced:", data.email_id, data.bounce_type);
   
   try {
@@ -204,7 +228,7 @@ async function handleEmailBounced(data: any) {
 /**
  * Handle email opened event
  */
-async function handleEmailOpened(data: any) {
+async function handleEmailOpened(data: ResendWebhookEventData) {
   console.log("Email opened:", data.email_id);
   // Track email opens for analytics if needed
 }
@@ -212,7 +236,7 @@ async function handleEmailOpened(data: any) {
 /**
  * Handle email clicked event
  */
-async function handleEmailClicked(data: any) {
+async function handleEmailClicked(data: ResendWebhookEventData) {
   console.log("Email link clicked:", data.email_id, data.link);
   // Track link clicks for analytics if needed
 }

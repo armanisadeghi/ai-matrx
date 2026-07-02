@@ -5,10 +5,11 @@ import { cn } from "@/lib/utils";
 import { ArmaniCollapsibleGroup } from "@/components/matrx/matrx-collapsible/collapsible-group";
 import MatrxRecordList from "@/components/matrx/matrx-record-list/basic-record-list";
 import MatrxBasicAutoTable from "@/components/matrx/matrx-record-list/basic-auto-table";
+import type { JsonValue, JsonObject } from "@/types/json";
 
 interface JsonToCollapsibleProps {
   title: string | React.ReactNode;
-  data: any;
+  data: JsonValue;
   level?: number; // Changed from baseLevel
   className?: string;
   defaultExpanded?: boolean;
@@ -28,12 +29,12 @@ type ArrayRenderResult = {
 const getStringTitle = (title: string | React.ReactNode): string => {
   if (typeof title === "string") return title;
   if (typeof title === "number") return String(title);
-  if (React.isValidElement(title)) {
+  if (React.isValidElement<{ children?: React.ReactNode }>(title)) {
     // If it's a React element, try to get text content
     // This is a simple approach - you might want to enhance this
     // based on your specific needs
-    const props = title.props as any;
-    return props.children || "Data";
+    const { children } = title.props;
+    return typeof children === "string" && children ? children : "Data";
   }
   return "Data";
 };
@@ -45,21 +46,19 @@ export function MatrxJsonToCollapsible({
   className,
   defaultExpanded = false,
 }: JsonToCollapsibleProps) {
-  const isSimpleArray = (arr: any[]): boolean =>
+  const isSimpleArray = (arr: JsonValue[]): boolean =>
     Array.isArray(arr) &&
     arr.every(
       (item) => item === null || item === undefined || typeof item !== "object",
     );
 
-  const isObjectArray = (arr: any[]): boolean =>
-    Array.isArray(arr) &&
-    arr.length > 0 &&
-    arr.every(
-      (item) =>
-        item !== null && typeof item === "object" && !Array.isArray(item),
-    );
+  const isPlainObject = (item: JsonValue): item is JsonObject =>
+    item !== null && typeof item === "object" && !Array.isArray(item);
 
-  const isFlatObjectArray = (arr: any[]): boolean =>
+  const isObjectArray = (arr: JsonValue[]): arr is JsonObject[] =>
+    Array.isArray(arr) && arr.length > 0 && arr.every(isPlainObject);
+
+  const isFlatObjectArray = (arr: JsonValue[]): arr is JsonObject[] =>
     isObjectArray(arr) &&
     arr.every((item) =>
       Object.values(item).every(
@@ -67,7 +66,7 @@ export function MatrxJsonToCollapsible({
       ),
     );
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: JsonValue): string => {
     if (value === null || value === undefined) return "No Data";
     if (typeof value === "object") {
       if (!value || Object.keys(value).length === 0) {
@@ -82,7 +81,7 @@ export function MatrxJsonToCollapsible({
     return String(value);
   };
 
-  const renderArray = (arr: any[], title: string): ArrayRenderResult => {
+  const renderArray = (arr: JsonValue[], title: string): ArrayRenderResult => {
     if (!arr || arr.length === 0) {
       return {
         content: (
@@ -142,7 +141,7 @@ export function MatrxJsonToCollapsible({
   };
 
   const processContent = (
-    currentData: any,
+    currentData: JsonValue,
     currentTitle: string,
   ): CollapsibleItem => {
     // Handle null/undefined
@@ -190,8 +189,8 @@ export function MatrxJsonToCollapsible({
     }
 
     // For objects
-    const flatData: Record<string, any> = {};
-    const complexData: Array<[string, any]> = [];
+    const flatData: JsonObject = {};
+    const complexData: Array<[string, JsonValue]> = [];
 
     Object.entries(currentData).forEach(([key, value]) => {
       if (value && typeof value === "object") {

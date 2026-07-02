@@ -64,7 +64,7 @@ const MatrxJsonItem: React.FC<MatrxJsonItemProps> = (
             (typeof item === 'object' && Object.keys(item).length === 0)
         );
 
-    const renderArrayItem = (item: any, itemPath: string, index: number, isLastItem: boolean) => {
+    const renderArrayItem = (item: unknown, itemPath: string, index: number, isLastItem: boolean) => {
         if (typeof item === 'object' && item !== null) {
             const entries = Object.entries(item);
             const shouldTruncate = entries.length > 4;
@@ -134,7 +134,7 @@ const MatrxJsonItem: React.FC<MatrxJsonItemProps> = (
         );
     };
 
-    const renderInlineArray = (arr: any[]) => {
+    const renderInlineArray = (arr: unknown[]) => {
         return (
             <span className="text-blue-500">
                 [
@@ -346,15 +346,15 @@ export const MatrxJsonViewer: React.FC<MatrxJsonViewerProps> = (
     }, [data]);
 
     // getAllKeys definition moved up
-    const getAllKeys = useCallback((obj: any, currentPath = ''): string[] => {
+    const getAllKeys = useCallback((obj: unknown, currentPath = ''): string[] => {
         let keys: string[] = [];
         if (!obj || typeof obj !== 'object') return keys;
 
-        for (const key in obj) {
+        for (const [key, value] of Object.entries(obj)) {
             const fullPath = currentPath ? `${currentPath}.${key}` : key;
-            if (typeof obj[key] === 'object' && obj[key] !== null && Object.keys(obj[key]).length > 0) {
+            if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
                 keys.push(fullPath);
-                keys = keys.concat(getAllKeys(obj[key], fullPath));
+                keys = keys.concat(getAllKeys(value, fullPath));
             }
         }
         return keys;
@@ -434,7 +434,7 @@ export const MatrxJsonViewer: React.FC<MatrxJsonViewerProps> = (
     }, [disabled, expandAll, collapseAll, onExpandChange]);
 
 
-    const hasExpandableItems = useCallback((obj: any): boolean => {
+    const hasExpandableItems = useCallback((obj: unknown): boolean => {
         if (typeof obj !== 'object' || obj === null) return false;
         return Object.values(obj).some(value =>
             typeof value === 'object' && value !== null && Object.keys(value).length > 0

@@ -418,15 +418,16 @@ export function processMarkdownWithConfig({ ast, config }: MarkdownProcessor): M
             // Handle nested extraction
             if (section.extraction.type === 'nested') {
               if (Array.isArray(extractedData) && extractedData.length > 0) {
-                if (!result.extracted[section.key]) {
-                  result.extracted[section.key] = [];
-                }
-                if (!Array.isArray(result.extracted[section.key])) {
-                  result.extracted[section.key] = [result.extracted[section.key]];
-                }
+                const existing = result.extracted[section.key];
+                const targetArray: JsonValue[] = Array.isArray(existing)
+                  ? existing
+                  : existing !== undefined
+                    ? [existing]
+                    : [];
                 extractedData.forEach(item => {
-                  result.extracted[section.key].push(item);
+                  targetArray.push(item);
                 });
+                result.extracted[section.key] = targetArray;
               }
             } else {
               result.extracted[section.key] = extractedData;
@@ -448,13 +449,15 @@ export function processMarkdownWithConfig({ ast, config }: MarkdownProcessor): M
       const rawContent = extractTextFromNode(node).trim();
       if (rawContent !== '') {
         if (config.fallback && config.fallback.appendTo) {
-          if (!result.extracted[config.fallback.appendTo]) {
-            result.extracted[config.fallback.appendTo] = [];
-          }
-          if (!Array.isArray(result.extracted[config.fallback.appendTo])) {
-            result.extracted[config.fallback.appendTo] = [result.extracted[config.fallback.appendTo]];
-          }
-          result.extracted[config.fallback.appendTo].push(rawContent);
+          const appendKey = config.fallback.appendTo;
+          const existingFallback = result.extracted[appendKey];
+          const fallbackArray: JsonValue[] = Array.isArray(existingFallback)
+            ? existingFallback
+            : existingFallback !== undefined
+              ? [existingFallback]
+              : [];
+          fallbackArray.push(rawContent);
+          result.extracted[appendKey] = fallbackArray;
         } else {
           result.miscellaneous.push(rawContent);
         }

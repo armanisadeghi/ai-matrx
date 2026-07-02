@@ -12,7 +12,7 @@ interface TabbedDemoWrapperProps {
 export interface TabbedComponentConfig {
   id: string;
   label: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType;
   codeExample: string;
   description?: string;
 }

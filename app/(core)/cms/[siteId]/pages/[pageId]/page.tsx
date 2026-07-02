@@ -22,8 +22,8 @@ export default function EditPageRoute() {
     try {
       const data = await CmsPageService.getPage(pageId);
       setPage(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load page");
     } finally {
       setIsLoading(false);
     }
@@ -40,8 +40,8 @@ export default function EditPageRoute() {
       const updated = await CmsPageService.updatePage(id, updates);
       setPage(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save page");
       throw err;
     } finally {
       setIsSaving(false);
@@ -58,8 +58,8 @@ export default function EditPageRoute() {
       const updated = await CmsPageService.saveDraft(id, draft);
       setPage(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save draft");
       throw err;
     } finally {
       setIsSaving(false);
@@ -73,8 +73,8 @@ export default function EditPageRoute() {
       const updated = await CmsPageService.publishDraft(id);
       setPage(updated);
       return updated;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to publish page");
       throw err;
     } finally {
       setIsSaving(false);
@@ -86,8 +86,8 @@ export default function EditPageRoute() {
     try {
       await CmsPageService.discardDraft(id);
       await fetchPage();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to discard draft");
     } finally {
       setIsSaving(false);
     }

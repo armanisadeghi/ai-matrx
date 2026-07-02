@@ -44,12 +44,12 @@ const MatrxButtonGroup: React.FC<MatrxButtonGroupProps> = (
             {...props}
         >
             {React.Children.map(children, (child) => {
-                if (React.isValidElement(child)) {
-                    return React.cloneElement(child as any, {
+                if (React.isValidElement<Record<string, unknown>>(child)) {
+                    return React.cloneElement(child, {
                         size,
                         variant,
                         density,
-                        ...(child.props as object)
+                        ...child.props,
                     });
                 }
                 return child;

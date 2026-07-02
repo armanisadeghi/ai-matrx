@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { headers } from "next/headers";
+import { requireEnv } from "@/utils/supabase/env";
 
 // Check API key availability without logging sensitive values
 console.log("Module-level GROQ_API_KEY:", process.env.GROQ_API_KEY ? '✓ Available' : '✗ Missing');
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
 		headers: {
 			"Cartesia-Version": "2024-06-30",
 			"Content-Type": "application/json",
-			"X-API-Key": process.env.CARTESIA_API_KEY!,
+			"X-API-Key": requireEnv("CARTESIA_API_KEY", process.env.CARTESIA_API_KEY),
 		},
 		body: JSON.stringify({
 			model_id: "sonic-english",
@@ -98,11 +99,16 @@ export async function POST(request: Request) {
 	});
 }
 
-function isValidMessage(msg: any): boolean {
-	return !(typeof msg !== "object" ||
-		typeof msg.content !== "string" ||
-		(msg.role !== "user" && msg.role !== "assistant"));
-
+function isValidMessage(
+	msg: unknown,
+): msg is { content: string; role: "user" | "assistant" } {
+	return (
+		typeof msg === "object" &&
+		msg !== null &&
+		typeof (msg as Record<string, unknown>).content === "string" &&
+		((msg as Record<string, unknown>).role === "user" ||
+			(msg as Record<string, unknown>).role === "assistant")
+	);
 }
 
 async function location() {

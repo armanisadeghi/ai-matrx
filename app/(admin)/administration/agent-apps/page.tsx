@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
+import type { AgentApp } from "@/features/agent-apps/types";
 import {
   fetchAgentAppCategories,
   fetchAgentAppsAdmin,
@@ -270,7 +271,11 @@ export default function AgentAppsAdminDashboardPage() {
               </Card>
             ) : (
               <AgentAppsGrid
-                apps={featuredApps as any}
+                // fetchAgentAppsAdmin() selects("*") from app.definition, so
+                // AgentAppAdminView rows carry every AgentApp field at
+                // runtime even though the hand-narrowed view type omits
+                // component_code/variable_schema/etc.
+                apps={featuredApps as unknown as AgentApp[]}
                 hrefFor={getAppHref}
                 emptyLabel="No featured apps."
               />
@@ -302,7 +307,7 @@ export default function AgentAppsAdminDashboardPage() {
               </div>
             ) : (
               <AgentAppsGrid
-                apps={recentlyUpdated as any}
+                apps={recentlyUpdated as unknown as AgentApp[]}
                 hrefFor={getAppHref}
                 emptyLabel="No agent apps yet."
               />

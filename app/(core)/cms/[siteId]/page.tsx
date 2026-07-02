@@ -24,8 +24,8 @@ export default function SiteDashboardPage() {
     try {
       const data = await CmsPageService.listPages(siteId);
       setPages(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load pages");
     } finally {
       setIsLoading(false);
     }
@@ -39,8 +39,8 @@ export default function SiteDashboardPage() {
     try {
       await CmsPageService.deletePage(pageId);
       setPages((prev) => prev.filter((p) => p.id !== pageId));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete page");
     }
   };
 

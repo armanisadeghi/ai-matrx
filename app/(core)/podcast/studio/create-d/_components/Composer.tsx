@@ -40,6 +40,7 @@ import {
   TOPIC_SUGGESTIONS,
   languageLabel,
 } from "./options";
+import { findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import { ConsoleRail } from "./ConsoleRail";
 import type { MockShow } from "../_mock/shows";
 
@@ -65,7 +66,7 @@ export function Composer({ shows }: ComposerProps) {
   const [showId, setShowId] = useState<string | null>(null);
   const [fullLength, setFullLength] = useState(false);
 
-  const active = SOURCE_TILES.find((t) => t.kind === sourceKind)!;
+  const active = findOptionOrFirst(SOURCE_TILES, sourceKind, (t) => t.kind);
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
 
   const hasSource =

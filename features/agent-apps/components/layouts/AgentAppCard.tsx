@@ -3,12 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight, Gem } from "lucide-react";
-import type { AgentApp, PublicAgentApp } from "../../types";
+import type { AgentApp, AgentAppSummary, PublicAgentApp } from "../../types";
+
+type CardApp = AgentApp | PublicAgentApp | AgentAppSummary;
 
 interface AgentAppCardProps {
-  app: AgentApp | PublicAgentApp;
+  app: CardApp;
   href?: string;
-  onClick?: (app: AgentApp | PublicAgentApp) => void;
+  onClick?: (app: CardApp) => void;
 }
 
 export function AgentAppCard({ app, href, onClick }: AgentAppCardProps) {

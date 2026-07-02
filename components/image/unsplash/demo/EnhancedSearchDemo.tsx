@@ -9,6 +9,29 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Grid2X2, LayoutGrid } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { EnhancedImageViewer } from '../desktop/EnhancedImageViewer';
+import type { Photo } from '../desktop/EnhancedUnsplashGallery';
+
+/**
+ * `useUnsplashSearch`/`useUnsplashGallery` type their photo state with the
+ * minimal `UnsplashPhoto` shape (id/tags/links), but the underlying
+ * unsplash-js SDK response actually carries the full photo record (urls,
+ * user, exif, ...) that `EnhancedImageViewer` needs. Validate the shape here
+ * at the boundary rather than casting past it.
+ */
+function isFullPhoto(value: unknown): value is Photo {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.id !== 'string') return false;
+  const urls = candidate.urls;
+  if (typeof urls !== 'object' || urls === null) return false;
+  if (typeof (urls as Record<string, unknown>).regular !== 'string') return false;
+  const user = candidate.user;
+  if (typeof user !== 'object' || user === null) return false;
+  if (typeof (user as Record<string, unknown>).name !== 'string') return false;
+  const links = candidate.links;
+  if (typeof links !== 'object' || links === null) return false;
+  return typeof (links as Record<string, unknown>).download_location === 'string';
+}
 
 export function EnhancedSearchDemo() {
   const [viewMode, setViewMode] = React.useState<'grid' | 'natural'>('grid');
@@ -37,7 +60,11 @@ export function EnhancedSearchDemo() {
     query,
     handleSearch
   } = useUnsplashSearch({ initialQuery: 'nature' });
-  
+
+  // The viewer needs the full photo record (urls/user/exif); filter out any
+  // entry that doesn't actually carry it rather than asserting the type.
+  const fullPhotos = photos.filter(isFullPhoto);
+
   // Setup infinite scrolling
   const observer = useRef<IntersectionObserver | null>(null);
   
@@ -56,7 +83,7 @@ export function EnhancedSearchDemo() {
   );
   
   // Handle sharing
-  const handleShare = async (photo: any) => {
+  const handleShare = async (photo: Photo) => {
     try {
       const imageUrl = photo.urls.full || photo.urls.regular;
       await navigator.clipboard.writeText(imageUrl);
@@ -77,7 +104,7 @@ export function EnhancedSearchDemo() {
   };
   
   // Show image info
-  const handleImageInfo = (photo: any) => {
+  const handleImageInfo = (photo: Photo) => {
     toast({
       title: 'Image Information',
       description: `Taken with ${photo.exif?.make || 'Unknown make'} ${
@@ -143,8 +170,8 @@ export function EnhancedSearchDemo() {
       <AnimatePresence>
         {selectedPhoto && (
           <EnhancedImageViewer
-            photos={photos}
-            initialIndex={photos.findIndex((photo) => photo.id === selectedPhoto.id)}
+            photos={fullPhotos}
+            initialIndex={fullPhotos.findIndex((photo) => photo.id === selectedPhoto.id)}
             onClose={closePhotoView}
             onDownload={downloadImage}
             onFavorite={toggleFavorite}

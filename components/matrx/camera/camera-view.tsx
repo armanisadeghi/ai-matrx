@@ -40,11 +40,11 @@ export const CameraView = React.forwardRef<unknown, CameraProps>(
             >
                 <div className="absolute left-0 top-0 h-svh w-full">
                     <WarningMessage
-                        message={errorMessages.noCameraAccessible!}
+                        message={errorMessages.noCameraAccessible ?? defaultErrorMessages.noCameraAccessible ?? ""}
                         show={notSupported}
                     />
                     <WarningMessage
-                        message={errorMessages.permissionDenied!}
+                        message={errorMessages.permissionDenied ?? defaultErrorMessages.permissionDenied ?? ""}
                         show={permissionDenied}
                     />
                     <video

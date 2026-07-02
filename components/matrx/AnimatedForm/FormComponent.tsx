@@ -61,10 +61,11 @@ const AnimatedForm: React.FC<AnimatedFormProps & { className?: string }> = (
   }, [currentStep, fields]);
 
     const renderField = (field: FormField) => {
+        const rawValue = formState[field.name];
         const commonProps = {
             field,
-            value: formState[field.name] || '',
-            onChange: (value: any) => onUpdateField(field.name, value),
+            value: typeof rawValue === 'string' ? rawValue : '',
+            onChange: (value: string) => onUpdateField(field.name, value),
         };
 
         switch (field.type) {
@@ -89,7 +90,7 @@ const AnimatedForm: React.FC<AnimatedFormProps & { className?: string }> = (
                 return (
                     <AnimatedCheckbox
                         field={field}
-                        checked={formState[field.name] || false}
+                        checked={typeof rawValue === 'boolean' ? rawValue : false}
                         onChange={(checked) => onUpdateField(field.name, checked)}
                     />
                 );

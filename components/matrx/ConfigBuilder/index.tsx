@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Inter } from "next/font/google";
 import { AlertCircle, AlignLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -59,7 +59,16 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
     const [copied, setCopied] = useState(false);
 
     const typeSelectRef = useRef<HTMLSelectElement>(null);
-    const valueInputRef = useRef<HTMLDivElement>(null);
+    // Bound to whichever concrete element renderValueInput() mounts for the
+    // current field type (RadioGroup -> div, Textarea, or Input) - only
+    // `.focus()` is ever called on it, which all three share.
+    const valueInputRef = useRef<HTMLDivElement | HTMLInputElement | HTMLTextAreaElement | null>(null);
+    const setValueInputRef = useCallback(
+        (el: HTMLDivElement | HTMLInputElement | HTMLTextAreaElement | null) => {
+            valueInputRef.current = el;
+        },
+        [],
+    );
     const addButtonRef = useRef<HTMLButtonElement>(null);
 
     const types: ConfigType[] = ["string", "number", "boolean", "object", "list"];
@@ -224,7 +233,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                         defaultValue={value}
                         onValueChange={setValue}
                         className="flex gap-3 pl-1"
-                        ref={valueInputRef}
+                        ref={setValueInputRef}
                         onKeyDown={(e) => handleKeyDown(e, "value")}
                     >
                         <div className="flex items-center space-x-1">
@@ -246,7 +255,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                 return (
                     <div className="relative">
                         <Textarea
-                            ref={valueInputRef as unknown as React.RefObject<HTMLTextAreaElement>}
+                            ref={setValueInputRef}
                             value={value}
                             onChange={(e) => setValue(e.target.value)}
                             onBlur={handleBlur}
@@ -267,7 +276,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
             default:
                 return (
                     <Input
-                        ref={valueInputRef as React.RefObject<HTMLInputElement>}
+                        ref={setValueInputRef}
                         type="text"
                         value={value}
                         onChange={(e) => setValue(e.target.value)}

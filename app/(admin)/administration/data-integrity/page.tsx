@@ -404,7 +404,7 @@ export default function DataIntegrityPage() {
         </Alert>
       )}
 
-      {t && (
+      {report && t && (
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <SummaryChip
             label="Errors"
@@ -424,7 +424,7 @@ export default function DataIntegrityPage() {
             <SummaryChip label="Skipped" value={t.skipped} tone="neutral" />
           )}
           <span className="text-muted-foreground ml-1">
-            {new Date(report!.generatedAt).toLocaleString()}
+            {new Date(report.generatedAt).toLocaleString()}
           </span>
         </div>
       )}
@@ -435,11 +435,11 @@ export default function DataIntegrityPage() {
             <Skeleton key={i} className="h-12 w-full rounded-md" />
           ))}
         </div>
-      ) : !report ? (
+      ) : !report || !grouped ? (
         <EmptyState checks={checks} />
       ) : (
         <div className="space-y-5">
-          {grouped!.map(([category, results]) => (
+          {grouped.map(([category, results]) => (
             <section key={category} className="space-y-2">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {category}

@@ -30,7 +30,7 @@ interface AnimatedRevealCardProps {
   containerClassOverride?: string;
   colorsOverride?: string[];
   link?: string;
-  component?: React.ComponentType<any>;
+  component?: React.ComponentType;
   variant?: VariantKey;
 }
 
@@ -61,7 +61,7 @@ const StandardAnimatedRevealCard: React.FC<AnimatedRevealCardProps> = ({
     : presetStyle.colors;
 
   // Get the Lucide icon component
-  const IconComponent = (props: any) => (
+  const IconComponent = (props: Omit<React.ComponentProps<typeof DynamicIcon>, "name" | "fallbackIcon">) => (
     <DynamicIcon name={icon} fallbackIcon="HelpCircle" {...props} />
   );
 
@@ -116,10 +116,7 @@ const StandardAnimatedRevealCard: React.FC<AnimatedRevealCardProps> = ({
 
       <div className="relative z-20 flex flex-col items-center justify-center h-full">
         <div className="text-center group-hover:-translate-y-4 group-hover:opacity-0 transition duration-200">
-          <IconComponent
-            className="h-12 w-12 text-black dark:text-white group-hover:text-white"
-            strokeWidth={1}
-          />
+          <IconComponent className="h-12 w-12 text-black dark:text-white group-hover:text-white" />
         </div>
         <h2 className="dark:text-white text-xl opacity-0 group-hover:opacity-100 relative z-10 text-black mt-4 font-bold group-hover:text-white group-hover:-translate-y-2 transition duration-200 text-center px-4">
           {title}

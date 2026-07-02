@@ -269,8 +269,9 @@ export default function FeedbackDetailDialog({
           setUploading(true);
           try {
             const result = await uploadFeedbackImage(namedFile);
-            if (result.url) {
-              setImages((prev) => [...prev, result.url!]);
+            const { url } = result;
+            if (url) {
+              setImages((prev) => [...prev, url]);
               toast.success("Image attached");
             } else {
               toast.error("Couldn't upload image: no URL returned");
@@ -326,8 +327,9 @@ export default function FeedbackDetailDialog({
           for (const file of files) {
             try {
               const result = await uploadFeedbackImage(file);
-              if (result.url) {
-                setImages((prev) => [...prev, result.url!]);
+              const { url } = result;
+              if (url) {
+                setImages((prev) => [...prev, url]);
                 attached += 1;
               }
             } catch (err) {
@@ -1218,14 +1220,16 @@ export default function FeedbackDetailDialog({
                         <button
                           type="button"
                           onClick={() => {
+                            const parentId = item.parent_id;
+                            if (!parentId) return;
                             const parent = allFeedbackItems.find(
-                              (f) => f.id === item.parent_id,
+                              (f) => f.id === parentId,
                             );
                             if (parent)
                               toast.info(
                                 `Parent: ${parent.id.slice(0, 8)} — ${parent.description.slice(0, 60)}`,
                               );
-                            navigator.clipboard.writeText(item.parent_id!);
+                            navigator.clipboard.writeText(parentId);
                             toast.success("Parent ID copied");
                           }}
                           className="flex items-center gap-2 text-xs px-2 py-1.5 rounded bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors w-full text-left"

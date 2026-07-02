@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ImageManager, ImageManagerProps } from "@/components/image/ImageManager";
-import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
+import { useSelectedImages, type ImageSource } from "@/components/image/context/SelectedImagesProvider";
 import { Image, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +40,7 @@ export interface ImageManagerIconProps extends Omit<React.HTMLAttributes<HTMLDiv
   /**
    * Callback when selected images change
    */
-  onChange?: (images: any[]) => void;
+  onChange?: (images: ImageSource[]) => void;
   
   /**
    * Callback when the manager is opened

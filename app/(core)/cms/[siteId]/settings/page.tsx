@@ -42,8 +42,8 @@ export default function SiteSettingsPage() {
       await refreshSite();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
       setIsSaving(false);
     }

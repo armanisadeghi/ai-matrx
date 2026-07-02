@@ -90,7 +90,9 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
           variant="outline"
           size="sm"
           className="h-7 text-xs"
-          onClick={() => exportToJSON(detail as any, "request-detail")}
+          onClick={() =>
+            exportToJSON([detail.user_request, ...detail.requests], "request-detail")
+          }
         >
           <Download className="w-3 h-3 mr-1" />
           Export

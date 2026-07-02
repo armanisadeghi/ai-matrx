@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-
+import { requireEnv } from "@/utils/supabase/env";
 
 // TODO: This route has missing imports and needs to be fixed before enabling edge runtime
 // Optional, but recommended: run on the edge runtime.
@@ -7,7 +7,7 @@ import OpenAI from "openai";
 // export const runtime = "edge";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: requireEnv("OPENAI_API_KEY", process.env.OPENAI_API_KEY),
 });
 
 export async function POST(req: Request) {

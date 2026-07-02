@@ -27,12 +27,12 @@ function createBackupIdentifier(ip: string, userAgent: string): string {
  * for maximum speed (~10-20ms response time).
  * 
  * Body: {
- *   app_id: string                     // App ID
- *   variables_provided: Record<string, any>  // Original variables from user
- *   variables_used: Record<string, any>      // Validated/processed variables
- *   chat_config: object                // Pre-built chat config (from client)
- *   fingerprint: string                // REQUIRED - Browser fingerprint
- *   metadata?: Record<string, any>     // Additional metadata
+ *   app_id: string                          // App ID
+ *   variables_provided: Record<string, unknown>  // Original variables from user
+ *   variables_used: Record<string, unknown>      // Validated/processed variables
+ *   chat_config: object                     // Pre-built chat config (from client)
+ *   fingerprint: string                     // REQUIRED - Browser fingerprint
+ *   metadata?: Record<string, unknown>      // Additional metadata
  * }
  * 
  * Returns: {
@@ -278,33 +278,6 @@ export async function POST(
         }, { status: 500 });
     }
 }
-
-// ============================================================================
-// Helper Functions (DEPRECATED - moved to client-side for performance)
-// ============================================================================
-
-// OPTIMIZATION NOTE: Variable validation and resolution now happen CLIENT-SIDE
-// for maximum speed. These functions are kept here commented out for reference
-// in case we need to add server-side validation back for security.
-
-/*
-function validateVariables(
-    providedVariables: Record<string, any>,
-    schema: any[]
-): {
-    validVariables: Record<string, any>;
-    validationErrors: string[];
-} {
-    // ... moved to client-side ...
-}
-
-function resolveVariablesInMessages(
-    messages: any[],
-    variables: Record<string, any>
-): any[] {
-    // ... moved to client-side ...
-}
-*/
 
 // ============================================================================
 // PATCH endpoint to update execution failure status

@@ -181,9 +181,8 @@ export async function POST(request: NextRequest) {
 
     if (!validation.success) {
       const firstErrorMessage =
-        Array.isArray((validation.error as any).issues) &&
-        (validation.error as any).issues.length > 0
-          ? (validation.error as any).issues[0].message
+        validation.error.issues.length > 0
+          ? validation.error.issues[0].message
           : "Invalid request body";
 
       return NextResponse.json(

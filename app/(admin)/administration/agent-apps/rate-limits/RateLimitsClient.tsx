@@ -142,7 +142,7 @@ export function RateLimitsClient() {
 
     // Sort
     filtered.sort((a, b) => {
-      let aVal: any, bVal: any;
+      let aVal: string | number, bVal: string | number;
 
       switch (sortField) {
         case 'app_name':
@@ -201,7 +201,10 @@ export function RateLimitsClient() {
     setColumnFilters((prev) => ({ ...prev, [field]: value }));
   };
 
-  const updateDropdownFilter = (field: 'identifierType' | 'blocked', value: any) => {
+  const updateDropdownFilter = (
+    field: 'identifierType' | 'blocked',
+    value: ColumnFilters['identifierType'] | ColumnFilters['blocked'],
+  ) => {
     setColumnFilters((prev) => ({ ...prev, [field]: value }));
   };
 

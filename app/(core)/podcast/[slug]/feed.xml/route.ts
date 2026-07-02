@@ -14,7 +14,7 @@
 // Resolves the show by slug OR id. Returns 404 (plain Response) when missing.
 
 import { createClient } from '@/utils/supabase/server';
-import type { PcShow, PcEpisode, PcShowRssSettings } from '@/features/podcasts/types';
+import { mapPcShowRow, mapPcEpisodeRow } from '@/features/podcasts/types';
 
 export const revalidate = 3600;
 
@@ -94,7 +94,7 @@ export async function GET(
         });
     }
 
-    const show = showRow as PcShow;
+    const show = mapPcShowRow(showRow);
 
     // Published episodes, newest-first: episode_number desc (nulls last), then created_at desc.
     const { data: episodeRows } = await supabase
@@ -105,11 +105,11 @@ export async function GET(
         .order('episode_number', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
 
-    const episodes = (episodeRows ?? []) as PcEpisode[];
+    const episodes = (episodeRows ?? []).map(mapPcEpisodeRow);
 
-    // Owner-authored distribution settings. Guard with `?? {}` — the
-    // `rss_settings` column may be null or absent until its migration is applied.
-    const rss = (show.rss_settings ?? {}) as PcShowRssSettings;
+    // Owner-authored distribution settings — parsed + validated by mapPcShowRow
+    // (null when rss_settings is absent or not an object, e.g. pre-migration rows).
+    const rss = show.rss_settings ?? {};
     const channelCategory = rss.category ?? DEFAULT_CATEGORY;
     const channelLanguage = rss.language ?? DEFAULT_LANGUAGE;
     const channelExplicit = rss.explicit === true;

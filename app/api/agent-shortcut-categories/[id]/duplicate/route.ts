@@ -108,6 +108,21 @@ export async function POST(
           ? source.is_active === "true"
           : Boolean(source.is_active);
 
+    // BUG FOUND: `organization_id` is NOT-NULL on platform.categories (Insert
+    // requires a string, never null) — the previous payload fell back to
+    // `null` and forced the insert through with `as never`, which would have
+    // thrown a NOT-NULL constraint violation at the DB the moment
+    // `source.organization_id` was actually missing. The source row is a
+    // fetched platform.categories row, so its organization_id is always a
+    // real string in practice; guard it honestly instead of asserting past
+    // the type system.
+    if (!source.organization_id) {
+      return NextResponse.json(
+        { error: "Source category has no organization_id — cannot duplicate" },
+        { status: 500 },
+      );
+    }
+
     const insertPayload = {
       dimension: "shortcut" as const,
       name: nextLabel,
@@ -116,7 +131,7 @@ export async function POST(
       placement_type: nextPlacementType,
       parent_id: nextParentCategoryId,
       position: nextSortOrder ?? null,
-      organization_id: source.organization_id ?? null,
+      organization_id: source.organization_id,
       created_by: user.id,
       metadata: {
         ...((source.metadata as Record<string, unknown> | null) ?? {}),
@@ -133,7 +148,7 @@ export async function POST(
     const { data, error } = await supabase
       .schema("platform")
       .from("categories")
-      .insert(insertPayload as never)
+      .insert(insertPayload)
       .select(PLATFORM_CATEGORY_SELECT)
       .single();
 

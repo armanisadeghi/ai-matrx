@@ -3,16 +3,17 @@ import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
 import { Button } from "@/components/ui/button";
 import { X, Download, Heart, Share2, Info, Check } from "lucide-react";
+import type { UnsplashDisplayPhoto } from "./MobileUnsplashGallery";
 
 interface MobileUnsplashViewerProps {
-  photos: any[];
+  photos: UnsplashDisplayPhoto[];
   initialIndex: number;
   onClose: () => void;
-  onDownload: (photo: any) => void;
-  onFavorite: (photo: any) => void;
-  onShare: (photo: any) => void;
-  onInfo: (photo: any) => void;
-  isFavorite: (photo: any) => boolean;
+  onDownload: (photo: UnsplashDisplayPhoto) => void;
+  onFavorite: (photo: UnsplashDisplayPhoto) => void;
+  onShare: (photo: UnsplashDisplayPhoto) => void;
+  onInfo: (photo: UnsplashDisplayPhoto) => void;
+  isFavorite: (photo: UnsplashDisplayPhoto) => boolean;
   isSharing?: boolean;
 }
 
@@ -138,7 +139,7 @@ export function MobileUnsplashViewer({
           >
             <img
               src={buffer[preloadCount] || photos[imageIndex]?.urls.regular}
-              alt={photos[imageIndex]?.alt_description}
+              alt={photos[imageIndex]?.alt_description ?? undefined}
               className="w-full h-full object-contain"
             />
           </motion.div>

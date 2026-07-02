@@ -3,7 +3,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { extractErrorMessage } from "@/utils/errors";
-import { isJsonObject } from "@/types/json";
+import { isJsonObject, type JsonObject } from "@/types/json";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +54,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
   ...props
 }) => {
   const [originalValue, setOriginalValue] = useState<object | string | null | undefined>(data);
-  const [parsedData, setParsedData] = useState<Record<string, unknown>>({});
+  const [parsedData, setParsedData] = useState<JsonObject>({});
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [isCopied, setIsCopied] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
@@ -107,6 +107,9 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
         if (error) {
           throw new Error(error);
         }
+        if (!isJsonObject(parsed)) {
+          throw new Error("Parsed JSON is not an object");
+        }
         setParsedData(parsed);
         setBasicJsonText(
           typeof data === "string" ? data : jsonUtils.stringify(parsed),
@@ -128,7 +131,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     initializeData();
   }, [data]);
 
-  const handleChange = (newData: Record<string, unknown>) => {
+  const handleChange = (newData: JsonObject) => {
     try {
       setParsedData(newData);
       const stringified = jsonUtils.stringify(newData);
@@ -152,7 +155,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     setBasicJsonText(newValue);
 
     const { data: parsed, error } = jsonUtils.parse(newValue);
-    if (!error) {
+    if (!error && isJsonObject(parsed)) {
       setParsedData(parsed);
       onChange(typeof originalValue === "string" ? newValue : parsed);
       setValidationErrors([]);
@@ -166,7 +169,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
       setBasicJsonText(jsonUtils.stringify(parsedData));
     } else {
       const { data: parsed, error } = jsonUtils.parse(basicJsonText);
-      if (!error) {
+      if (!error && isJsonObject(parsed)) {
         setParsedData(parsed);
         onChange(typeof originalValue === "string" ? basicJsonText : parsed);
       }
@@ -230,9 +233,11 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     const { data: newData } = jsonUtils.parse(
       typeof sampleEntry === "string"
         ? sampleEntry
-        : jsonUtils.stringify(sampleEntry),
+        : jsonUtils.stringify(isJsonObject(sampleEntry) ? sampleEntry : {}),
     );
-    handleChange(newData);
+    if (isJsonObject(newData)) {
+      handleChange(newData);
+    }
   };
   const IconButton = ({
     icon: Icon,

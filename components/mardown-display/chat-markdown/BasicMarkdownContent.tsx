@@ -190,9 +190,12 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
   // Memoize LinkComponent wrapper to prevent recreation during streaming
   const LinkWrapper: NonNullable<Components["a"]> = useMemo(() => {
-    return ({ node, href, children, ...props }) => (
-      <LinkComponent href={href}>{children}</LinkComponent>
-    );
+    return ({ node, href, children, ...props }) =>
+      href ? (
+        <LinkComponent href={href}>{children}</LinkComponent>
+      ) : (
+        <>{children}</>
+      );
   }, []); // Empty deps - this doesn't need to change
 
   const preprocessContent = (rawContent: string): string => {
@@ -839,7 +842,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             </span>
           );
         },
-        "matrx-variable": ({ node, ...props }) => (
+        "matrx-variable": ({ node, ...props }: React.HTMLAttributes<HTMLElement> & ExtraProps) => (
           <MatrxVariableInline {...(props as React.ComponentProps<typeof MatrxVariableInline>)} />
         ),
         table: ({ node, children, ...props }) => (

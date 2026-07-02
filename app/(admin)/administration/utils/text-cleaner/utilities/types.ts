@@ -10,7 +10,12 @@ export interface ParsedError {
     verbose: string;
     details: Record<string, unknown>;
     severity: ErrorSeverity;
-    [key: string]: any;
+    // Each TS-error-code parser (parseTS2740Error, parseTS2554Error, etc. in
+    // errorProcessors.ts) adds its own extra diagnostic fields on top of the
+    // required ones above (providedType, expectedType, missingProperties,
+    // interfaceName, ...) — this is a genuinely open, per-variant record, not
+    // a lazily-typed `any`.
+    [key: string]: unknown;
 }
 
 export interface DetailedError {

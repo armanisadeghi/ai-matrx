@@ -115,7 +115,10 @@ const AnimatedTabModal: React.FC<AnimatedTabModalProps & { className?: string }>
 
     return (
         <>
-            {triggerButton && React.cloneElement(triggerButton as React.ReactElement, {onClick: openModal} as any)}
+            {triggerButton &&
+                React.cloneElement(triggerButton as React.ReactElement<{ onClick?: () => void }>, {
+                    onClick: openModal,
+                })}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div

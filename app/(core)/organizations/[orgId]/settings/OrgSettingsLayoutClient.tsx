@@ -44,7 +44,7 @@ export default function OrgSettingsLayoutClient({
   }, [orgId]);
 
   const { refresh: refreshLayoutOrganization } = useOrganization(
-    resolvedOrgId ?? "",
+    resolvedOrgId ?? undefined,
   );
 
   // Passthrough — no own scroll container. Each page underneath owns its single

@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const supabase = (await createClient()) as unknown as any;
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -54,7 +54,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await context.params;
-    const supabase = (await createClient()) as unknown as any;
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -98,7 +98,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-    const supabase = (await createClient()) as unknown as any;
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -149,7 +149,7 @@ export async function DELETE(
       const { createAdminClient } = await import(
         "@/utils/supabase/adminClient"
       );
-      const admin = createAdminClient() as unknown as any;
+      const admin = createAdminClient();
       const { error } = await admin.schema("app").from("definition").delete().eq("id", id);
       if (error) {
         return NextResponse.json(

@@ -1,7 +1,7 @@
 'use client';
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useUnsplashGallery } from '@/hooks/images/useUnsplashGallery';
+import { useUnsplashGallery, type SortOrder, type ImageOrientation, type PremiumFilter } from '@/hooks/images/useUnsplashGallery';
 import { DesktopImageCard } from '../../shared/DesktopImageCard';
 import { EnhancedImageViewer } from './EnhancedImageViewer';
 import { useToast } from '@/components/ui/use-toast';
@@ -12,8 +12,10 @@ import { UnsplashSearch } from '../UnsplashSearch';
 export interface Photo {
     id: string;
     alt_description?: string;
+    description?: string | null;
     links: {
         html: string;
+        download_location: string;
     };
     user: {
         name: string;
@@ -111,7 +113,10 @@ export function EnhancedUnsplashGallery({ initialSearchTerm }: EnhancedUnsplashG
         });
     };
 
-    const handleSearchChange = (query: string, options: any = {}) => {
+    const handleSearchChange = (
+        query: string,
+        options: { sortOrder?: SortOrder; orientation?: ImageOrientation; premiumFilter?: PremiumFilter } = {},
+    ) => {
         setSearchQuery(query);
         handleSearch(query, options);
     };
@@ -200,8 +205,16 @@ export function EnhancedUnsplashGallery({ initialSearchTerm }: EnhancedUnsplashG
 
             <AnimatePresence>
                 {selectedPhoto && (
+                    // useUnsplashGallery() declares `photos` as `UnsplashPhoto[]` (a minimal
+                    // {id, tags?, links.download_location} shape), but the Unsplash search API
+                    // it actually calls returns the full `Basic` photo object (urls, user,
+                    // links.html, exif, ...) - see unsplash-js's methods/photos/types.d.ts and
+                    // hooks/images/useUnsplashGallery.ts's `setPhotos(result.response.results)`.
+                    // The hook's declared type is narrower than its real return data; `Photo`
+                    // here models the real shape. Widening `UnsplashPhoto` is an out-of-scope
+                    // hook fix - tracked as a decision brief rather than papered over with `any`.
                     <EnhancedImageViewer
-                        photos={photos}
+                        photos={photos as Photo[]}
                         initialIndex={photos.findIndex((photo) => photo.id === selectedPhoto.id)}
                         onClose={closePhotoView}
                         onDownload={downloadImage}

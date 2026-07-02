@@ -22,8 +22,9 @@ export async function getZipCodeCoordinates(zipCode: string): Promise<ZipCodeCoo
   const cleanZip = zipCode.trim().padStart(5, '0');
   
   // Check cache first
-  if (zipCodeCache.has(cleanZip)) {
-    return zipCodeCache.get(cleanZip)!;
+  const cached = zipCodeCache.get(cleanZip);
+  if (cached) {
+    return cached;
   }
 
   try {

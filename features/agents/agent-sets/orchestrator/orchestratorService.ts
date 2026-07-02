@@ -78,7 +78,7 @@ export const orchestratorService = {
   /** JSON dump of the selected agents' {id,name,description,output_schema,variable_definitions}. */
   async fetchAgentDump(memberIds: string[]): Promise<ScopesRpcResult<string>> {
     try {
-      if (memberIds.length === 0) return err("invalid", "No agents selected");
+      if (memberIds.length === 0) return err("invalid_argument", "No agents selected");
       const { data, error } = await supabase
         .schema("agent")
         .from("definition")
@@ -147,15 +147,15 @@ export const orchestratorService = {
 
       const messages = (data?.messages ?? []) as unknown as AgentDefinitionMessage[];
       const sysIdx = messages.findIndex((m) => m.role === "system");
-      if (sysIdx === -1) return err("invalid", "Orchestrator has no system message");
+      if (sysIdx === -1) return err("invalid_argument", "Orchestrator has no system message");
       const sys = messages[sysIdx];
       const textIdx = sys.content.findIndex((b) => b.type === "text");
-      if (textIdx === -1) return err("invalid", "Orchestrator system message has no text");
+      if (textIdx === -1) return err("invalid_argument", "Orchestrator system message has no text");
       const textBlock = sys.content[textIdx];
-      if (textBlock.type !== "text") return err("invalid", "Unexpected content block");
+      if (textBlock.type !== "text") return err("invalid_argument", "Unexpected content block");
       if (!AVAILABLE_AGENTS_RE.test(textBlock.text)) {
         return err(
-          "invalid",
+          "invalid_argument",
           "This agent's prompt has no <available_agents> section to fill",
         );
       }

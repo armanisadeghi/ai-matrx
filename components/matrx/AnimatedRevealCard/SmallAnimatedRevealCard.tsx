@@ -20,7 +20,7 @@ interface SmallAnimatedRevealCardProps {
   containerClassOverride?: string;
   colorsOverride?: string[];
   link?: string;
-  component?: React.ComponentType<any>;
+  component?: React.ComponentType;
 }
 
 const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
@@ -47,7 +47,7 @@ const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
     : presetStyle.colors;
 
   // Update the IconComponent type
-  const IconComponent = (props: any) => (
+  const IconComponent = (props: Omit<React.ComponentProps<typeof DynamicIcon>, "name" | "fallbackIcon">) => (
     <DynamicIcon name={icon} fallbackIcon="HelpCircle" {...props} />
   );
 
@@ -102,10 +102,7 @@ const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
 
       <div className="relative z-20 flex flex-col items-center justify-center h-full">
         <div className="text-center group-hover:-translate-y-2 group-hover:opacity-0 transition duration-200">
-          <IconComponent
-            className="h-8 w-8 text-black dark:text-white group-hover:text-white"
-            strokeWidth={1}
-          />
+          <IconComponent className="h-8 w-8 text-black dark:text-white group-hover:text-white" />
         </div>
         <h3 className="dark:text-white text-sm opacity-0 group-hover:opacity-100 relative z-10 text-black mt-2 font-bold group-hover:text-white group-hover:-translate-y-1 transition duration-200 text-center">
           {title}

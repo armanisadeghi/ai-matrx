@@ -1,6 +1,7 @@
 // FlexField.tsx
 import React from "react";
 import { motion } from "motion/react";
+import { Colord } from "colord";
 import { cn } from "@/utils/cn";
 import AnimatedInput from "../AnimatedInput";
 import AnimatedTextarea from "../AnimatedTextarea";
@@ -17,6 +18,7 @@ import ColorPicker from "@/components/ui/color-picker";
 import ImageDisplay from "@/components/ui/image-display";
 import StarRating from "@/components/ui/star-rating";
 import { FlexFormField, FormState } from "@/types/componentConfigTypes";
+import type { FormField, FormFieldType } from "@/types/AnimatedFormTypes";
 
 export type FlexDensity = "compact" | "normal" | "comfortable";
 
@@ -56,7 +58,7 @@ const densityConfig: Record<
 interface FlexFieldProps {
   field: FlexFormField;
   formState: FormState;
-  onUpdateField: (name: string, value: any) => void;
+  onUpdateField: (name: string, value: unknown) => void;
   density?: FlexDensity;
 }
 
@@ -81,12 +83,21 @@ export const FlexField: React.FC<FlexFieldProps> = ({
     </div>
   );
 
-  const commonProps = {
-    field: field as any,
-    value: (formState[field.name] || "") as any,
-    onChange: (value: any) => onUpdateField(field.name, value),
-    className: styles.input,
-  };
+  const rawValue = formState[field.name];
+  const stringValue = typeof rawValue === "string" ? rawValue : "";
+
+  // Adapts the locally-typed FlexFormField (loose `type: string`) into the strict
+  // FormField shape the Animated* leaf components require, for a `type` already
+  // narrowed to a known FormFieldType literal by the switch below.
+  const toFormField = (type: FormFieldType): FormField => ({
+    name: field.name,
+    label: field.label,
+    type,
+    options: field.options?.filter((o): o is string => typeof o === "string"),
+    placeholder: field.placeholder,
+    required: field.required,
+    disabled: field.disabled,
+  });
 
   const renderField = () => {
     switch (field.type) {
@@ -96,43 +107,73 @@ export const FlexField: React.FC<FlexFieldProps> = ({
       case "password":
       case "tel":
       case "url":
-        // @ts-ignore - size prop type mismatch, removing from commonProps
-        return <AnimatedInput {...commonProps} />;
+        return (
+          <AnimatedInput
+            field={toFormField(field.type)}
+            value={stringValue}
+            onChange={(value) => onUpdateField(field.name, value)}
+            className={styles.input}
+          />
+        );
 
       case "textarea":
-        return <AnimatedTextarea {...commonProps} />;
+        return (
+          <AnimatedTextarea
+            field={toFormField(field.type)}
+            value={stringValue}
+            onChange={(value) => onUpdateField(field.name, value)}
+            className={styles.input}
+          />
+        );
 
       case "select":
-        return <AnimatedSelect {...commonProps} />;
+        return (
+          <AnimatedSelect
+            field={toFormField(field.type)}
+            value={stringValue}
+            onChange={(value) => onUpdateField(field.name, value)}
+            className={styles.input}
+          />
+        );
 
       case "checkbox":
         return (
           <AnimatedCheckbox
-            field={field as any}
-            checked={(formState[field.name] || false) as boolean}
+            field={toFormField(field.type)}
+            checked={typeof rawValue === "boolean" ? rawValue : false}
             onChange={(checked) => onUpdateField(field.name, checked)}
           />
         );
 
       case "radio":
-        return <AnimatedRadioGroup {...commonProps} layout="vertical" />;
+        return (
+          <AnimatedRadioGroup
+            field={toFormField(field.type)}
+            value={stringValue}
+            onChange={(value) => onUpdateField(field.name, value)}
+            className={styles.input}
+            layout="vertical"
+          />
+        );
 
-      case "slider":
+      case "slider": {
+        const sliderValue = typeof rawValue === "number" ? rawValue : field.min;
         return (
           <Slider
             min={field.min}
             max={field.max}
             step={field.step}
-            value={[(formState[field.name] ?? field.min) as number]}
+            value={[sliderValue ?? 0]}
             onValueChange={(value) => onUpdateField(field.name, value[0])}
             className={cn("mt-2", styles.fieldSpacing)}
           />
         );
+      }
 
       case "switch":
         return (
           <Switch
-            checked={(formState[field.name] || false) as boolean}
+            checked={typeof rawValue === "boolean" ? rawValue : false}
             onCheckedChange={(checked) => onUpdateField(field.name, checked)}
           />
         );
@@ -140,7 +181,7 @@ export const FlexField: React.FC<FlexFieldProps> = ({
       case "date":
         return (
           <DatePicker
-            value={formState[field.name] as Date | undefined}
+            value={rawValue instanceof Date ? rawValue : undefined}
             onChange={(date) => onUpdateField(field.name, date)}
             placeholder={field.placeholder || "Select a date"}
             formatString={"MM/dd/yyyy"}
@@ -151,7 +192,7 @@ export const FlexField: React.FC<FlexFieldProps> = ({
       case "time":
         return (
           <TimePicker
-            value={formState[field.name] as string | undefined}
+            value={typeof rawValue === "string" ? rawValue : undefined}
             onChange={(time) => onUpdateField(field.name, time)}
             className={styles.input}
           />
@@ -160,7 +201,7 @@ export const FlexField: React.FC<FlexFieldProps> = ({
       case "color":
         return (
           <ColorPicker
-            color={formState[field.name] as any}
+            color={rawValue instanceof Colord ? rawValue : undefined}
             onChange={(color) => onUpdateField(field.name, color)}
           />
         );
@@ -169,7 +210,11 @@ export const FlexField: React.FC<FlexFieldProps> = ({
         return (
           <FullEditableJsonViewer
             title={field.label}
-            data={formState[field.name] as object | string}
+            data={
+              typeof rawValue === "string" || (typeof rawValue === "object" && rawValue !== null)
+                ? rawValue
+                : null
+            }
             onChange={(json) => onUpdateField(field.name, json)}
             initialExpanded={true}
             maxHeight={
@@ -194,7 +239,7 @@ export const FlexField: React.FC<FlexFieldProps> = ({
       case "image":
         return (
           <ImageDisplay
-            src={(field.src || formState[field.name]) as string}
+            src={field.src || stringValue}
             alt={field.alt || field.label}
             className={styles.input}
           />
@@ -203,7 +248,7 @@ export const FlexField: React.FC<FlexFieldProps> = ({
       case "rating":
         return (
           <StarRating
-            rating={(formState[field.name] || 0) as number}
+            rating={typeof rawValue === "number" ? rawValue : 0}
             onChange={(rating) => onUpdateField(field.name, rating)}
             color={"amber"}
             size={styles.controlSize}

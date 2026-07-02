@@ -26,15 +26,13 @@ export default function ExperimentalRoutesPage() {
         searchResults.forEach(route => {
             const section = experimentalRoutes.find(s => s.name === route.section);
             if (!section) return;
-            
-            if (!sectionMap.has(section.name)) {
-                sectionMap.set(section.name, {
-                    ...section,
-                    routes: []
-                });
+
+            let mappedSection = sectionMap.get(section.name);
+            if (!mappedSection) {
+                mappedSection = { ...section, routes: [] };
+                sectionMap.set(section.name, mappedSection);
             }
-            
-            const mappedSection = sectionMap.get(section.name)!;
+
             mappedSection.routes.push(route);
         });
         

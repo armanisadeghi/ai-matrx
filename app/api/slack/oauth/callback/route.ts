@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
     // Redirect back to the Slack page with the token
     const botToken = result.access_token;
     return NextResponse.redirect(new URL(`${redirectBase}?token=${botToken}`, origin));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('OAuth error:', error);
     // Include more detailed error info for debugging
-    const errorMsg = error?.message ? encodeURIComponent(error.message) : 'oauth_failure';
+    const errorMsg = error instanceof Error ? encodeURIComponent(error.message) : 'oauth_failure';
     return NextResponse.redirect(new URL(`${redirectBase}?error=${errorMsg}`, origin));
   }
 }

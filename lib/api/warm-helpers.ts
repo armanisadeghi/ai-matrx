@@ -22,8 +22,13 @@
 import { ENDPOINTS } from "@/lib/api/endpoints";
 
 interface WarmOptions {
-  /** Resolved backend URL. Required server-side; client hooks pass it from the picker. */
-  baseUrl: string;
+  /**
+   * Resolved backend URL. Server callers typically pass `BACKEND_URLS.production`,
+   * which is `string | undefined` when the env var isn't configured — accepted
+   * here (not coerced to `""` at the call site) because the warm functions
+   * below already no-op on a falsy `baseUrl`.
+   */
+  baseUrl: string | undefined;
   /** Optional callback for telemetry; warm failures never throw. */
   onError?: (err: unknown) => void;
 }

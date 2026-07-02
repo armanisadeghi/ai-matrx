@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   // Get auth token from broker cache
   const authToken = await brokerCache.getValue(
-    { source: 'api', mappedItemId: 'auth_token' } as any,
+    { source: 'api', mappedItemId: 'auth_token' },
     user.id
   );
 

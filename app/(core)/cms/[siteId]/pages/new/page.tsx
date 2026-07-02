@@ -24,8 +24,8 @@ export default function NewPageRoute() {
       // Navigate to the new page's editor
       router.push(`/cms/${siteId}/pages/${newPage.id}`);
       return newPage;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create page");
       throw err;
     } finally {
       setIsSaving(false);
@@ -37,7 +37,7 @@ export default function NewPageRoute() {
   };
 
   // Stub handlers — create mode doesn't use save/draft/publish
-  const noop = async () => {
+  const notCreatedYet = (): never => {
     throw new Error("Page must be created first");
   };
 
@@ -47,10 +47,10 @@ export default function NewPageRoute() {
       page={null}
       isSaving={isSaving}
       error={error}
-      onSave={noop as any}
-      onSaveDraft={noop as any}
-      onPublish={noop as any}
-      onDiscardDraft={noop as any}
+      onSave={() => notCreatedYet()}
+      onSaveDraft={() => notCreatedYet()}
+      onPublish={() => notCreatedYet()}
+      onDiscardDraft={() => notCreatedYet()}
       onCreate={handleCreate}
       onClose={handleClose}
     />

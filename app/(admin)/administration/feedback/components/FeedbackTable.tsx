@@ -440,11 +440,12 @@ export default function FeedbackTable() {
     setLoading(true);
     const result = await getAllFeedback();
     if (result.success && result.data) {
-      setFeedback(result.data);
+      const { data } = result;
+      setFeedback(data);
       // Keep selectedFeedback fresh from the reloaded list
       setSelectedFeedback((prev) => {
         if (!prev) return prev;
-        const fresh = result.data!.find((f) => f.id === prev.id);
+        const fresh = data.find((f) => f.id === prev.id);
         return fresh ?? prev;
       });
     }
@@ -1426,8 +1427,9 @@ export default function FeedbackTable() {
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           {item.category_id ? (
                             (() => {
+                              const categoryId = item.category_id;
                               const cat = categories.find(
-                                (c) => c.id === item.category_id,
+                                (c) => c.id === categoryId,
                               );
                               if (!cat)
                                 return (
@@ -1443,7 +1445,7 @@ export default function FeedbackTable() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setFilterCategory(item.category_id!);
+                                    setFilterCategory(categoryId);
                                   }}
                                   className={cn(
                                     "inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border hover:opacity-80 transition-opacity",
@@ -1531,16 +1533,15 @@ export default function FeedbackTable() {
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           {item.assigned_to ? (
                             (() => {
-                              const admin = adminById.get(item.assigned_to);
+                              const assignedTo = item.assigned_to;
+                              const admin = adminById.get(assignedTo);
                               const label =
                                 admin?.display_name ||
                                 admin?.email ||
-                                item.assigned_to.slice(0, 8);
+                                assignedTo.slice(0, 8);
                               return (
                                 <button
-                                  onClick={() =>
-                                    setFilterAssignee(item.assigned_to!)
-                                  }
+                                  onClick={() => setFilterAssignee(assignedTo)}
                                   className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-colors max-w-[120px]"
                                   title={`Filter by ${label}`}
                                 >

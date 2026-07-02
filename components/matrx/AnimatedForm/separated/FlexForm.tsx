@@ -45,7 +45,7 @@ const densityConfig: Record<FlexDensity, {
 interface FlexFormProps {
     fields: FlexFormField[];
     formState: FormState;
-    onUpdateField: (name: string, value: any) => void;
+    onUpdateField: (name: string, value: unknown) => void;
     onSubmit: () => void;
     currentStep?: number;
     onNextStep?: () => void;
@@ -206,7 +206,6 @@ const FlexForm: React.FC<FlexFormProps> = (
                         <AnimatedButton
                             type="submit"
                             className="bg-primary text-primary-foreground"
-                            // @ts-ignore - size prop type mismatch, removing from commonProps
                             size={density === 'compact' ? 'sm' : density === 'comfortable' ? 'lg' : 'default'}
                         >
                             Submit
@@ -217,7 +216,6 @@ const FlexForm: React.FC<FlexFormProps> = (
                                  if (currentStep < fields.length - 1) onNextStep();
                              }}
                              className="bg-primary text-primary-foreground"
-                             // @ts-ignore - size prop type mismatch, removing from commonProps
                              size={density === 'compact' ? 'sm' : density === 'comfortable' ? 'lg' : 'default'}
                          >
                              Next

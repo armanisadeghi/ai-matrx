@@ -14,7 +14,7 @@ import { SelectOption } from "@/types/componentConfigTypes";
 
 interface BaseControlProps {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     children: React.ReactNode;
     onClick?: () => void;
     interactive?: boolean;
@@ -50,7 +50,7 @@ BaseControl.displayName = "BaseControl";
 
 interface CompactSelectProps<T extends string | number> {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: T;
     options: SelectOption<T>[];
     onChange: (value: T) => void;
@@ -105,7 +105,7 @@ export const CompactSelect = <T extends string | number>({ label, icon, value, o
 
 interface CompactSwitchProps {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     checked: boolean;
     onCheckedChange: (checked: boolean) => void;
     className?: string;
@@ -123,7 +123,7 @@ export const CompactSwitch: React.FC<CompactSwitchProps> = ({ label, icon, check
 
 interface CompactSliderProps {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: number;
     onChange: (value: number) => void;
     min: number;
@@ -164,7 +164,7 @@ export const CompactSlider: React.FC<CompactSliderProps> = ({ label, icon, value
 
 interface CompactNumberProps {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: number;
     onChange: (value: number) => void;
     min?: number;
@@ -190,7 +190,7 @@ export const CompactNumber: React.FC<CompactNumberProps> = ({ label, icon, value
 
 interface CompactTextProps {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
@@ -218,7 +218,7 @@ export const CompactText: React.FC<CompactTextProps> = ({ label, icon, value, on
 
 interface CompactRadioProps<T extends string> {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: T;
     options: SelectOption<T>[];
     onChange: (value: T) => void;
@@ -255,7 +255,7 @@ export const CompactRadio = <T extends string>({ label, icon, value, options, on
 
 interface CompactMultiSelectProps<T extends string> {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: T[];
     options: SelectOption<T>[];
     onChange: (value: T[]) => void;
@@ -313,7 +313,7 @@ export const CompactMultiSelect = <T extends string>({ label, icon, value, optio
 
 interface CompactTimeProps {
     label: string;
-    icon: React.ComponentType<any>;
+    icon: React.ComponentType<{ className?: string }>;
     value: string;
     onChange: (value: string) => void;
     className?: string;

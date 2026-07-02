@@ -34,7 +34,7 @@ export default async function ConversationPage({
     const { id } = await params;
 
     // Fire-and-forget: warm the conversation on the Python backend.
-    warmConversation(id, { baseUrl: BACKEND_URLS.production ?? '' });
+    warmConversation(id, { baseUrl: BACKEND_URLS.production });
     console.log('[ConversationPage] warmed conversation:', id);
 
     return (

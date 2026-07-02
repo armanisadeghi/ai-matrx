@@ -47,6 +47,7 @@ import {
   HOST_COUNT_OPTIONS,
   PRE_SCRIPT_PROCESSING_OPTIONS,
   POST_SCRIPT_PROCESSING_OPTIONS,
+  findOptionOrFirst,
 } from "@/features/podcasts/generator/constants";
 import type {
   PodcastSourceKind,
@@ -74,12 +75,12 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
   const [firstShowInfo, setFirstShowInfo] = useState("");
   const [truncate, setTruncate] = useState(true);
 
-  const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind)!;
+  const activeSource = findOptionOrFirst(SOURCE_OPTIONS, sourceKind, (o) => o.kind);
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
   const isRtl = isRtlLanguage(language);
-  const langOpt = LANGUAGE_OPTIONS.find((l) => l.code === language)!;
-  const fmtOpt = FORMAT_OPTIONS.find((f) => f.value === format)!;
-  const hostOpt = HOST_COUNT_OPTIONS.find((h) => h.value === hostCount)!;
+  const langOpt = findOptionOrFirst(LANGUAGE_OPTIONS, language, (l) => l.code);
+  const fmtOpt = findOptionOrFirst(FORMAT_OPTIONS, format, (f) => f.value);
+  const hostOpt = findOptionOrFirst(HOST_COUNT_OPTIONS, hostCount, (h) => h.value);
 
   const canGenerate =
     activeSource.control === "urls"

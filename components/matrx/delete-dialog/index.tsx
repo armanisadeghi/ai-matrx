@@ -8,7 +8,7 @@ interface MatrixDeleteDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
-    item: Record<string, any> | null;
+    item: Record<string, unknown> | null;
     fields: Record<string, {
         type: 'text' | 'textarea' | 'select';
         label: string;
@@ -34,9 +34,18 @@ export const MatrixDeleteDialog: React.FC<MatrixDeleteDialogProps> = (
                     Are you sure you want to delete this item?
                     {item && (
                         <div className="mt-2">
-                            {Object.entries(fields).map(([key, config]) => (
-                                <p key={key}><strong>{config.label}:</strong> {item[key]}</p>
-                            ))}
+                            {Object.entries(fields).map(([key, config]) => {
+                                const rawValue = item[key];
+                                const displayValue =
+                                    rawValue === null || rawValue === undefined
+                                        ? ""
+                                        : typeof rawValue === "string" || typeof rawValue === "number"
+                                          ? rawValue
+                                          : String(rawValue);
+                                return (
+                                    <p key={key}><strong>{config.label}:</strong> {displayValue}</p>
+                                );
+                            })}
                         </div>
                     )}
                 </div>

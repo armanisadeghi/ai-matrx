@@ -31,6 +31,7 @@ import {
   LANGUAGE_OPTIONS,
   FORMAT_OPTIONS,
   HOST_COUNT_OPTIONS,
+  findOptionOrFirst,
 } from "@/features/podcasts/generator/constants";
 import type {
   PodcastLanguageCode,
@@ -119,9 +120,9 @@ export function SettingsTray({
   hostCount,
   onHostCount,
 }: SettingsTrayProps) {
-  const fmt = FORMAT_OPTIONS.find((f) => f.value === format)!;
-  const lang = LANGUAGE_OPTIONS.find((l) => l.code === language)!;
-  const hosts = HOST_COUNT_OPTIONS.find((h) => h.value === hostCount)!;
+  const fmt = findOptionOrFirst(FORMAT_OPTIONS, format, (f) => f.value);
+  const lang = findOptionOrFirst(LANGUAGE_OPTIONS, language, (l) => l.code);
+  const hosts = findOptionOrFirst(HOST_COUNT_OPTIONS, hostCount, (h) => h.value);
 
   return (
     <div className="flex flex-wrap items-center gap-2">

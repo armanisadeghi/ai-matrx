@@ -1,4 +1,5 @@
 import type { PathBookmark } from "@/features/scraper/utils/json-path-navigation-util";
+import type { JsonValue } from "@/types/json";
 
 export type PathSegment = [number, string]; // [rowIndex, selectedKey]
 export type PathArray = PathSegment[];
@@ -37,7 +38,7 @@ export interface BookmarksDialogProps {
 }
 
 export interface NavigationRowsProps {
-  originalData: unknown;
+  originalData: JsonValue | null | undefined;
   currentPath: PathArray;
   onKeySelect: (rowIndex: number, key: string) => void;
   onContextMenu?: (e: React.MouseEvent, path: PathArray) => void;

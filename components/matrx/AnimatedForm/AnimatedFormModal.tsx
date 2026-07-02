@@ -59,7 +59,7 @@ const AnimatedFormModal: React.FC<AnimatedFormModalProps & { className?: string 
         closeModal();
     };
 
-    const handleUpdateField = (name: string, value: any) => {
+    const handleUpdateField = (name: string, value: unknown) => {
         const newState = { ...internalFormState, [name]: value };
         setInternalFormState(newState);
         if (externalOnUpdateField) {
@@ -69,7 +69,10 @@ const AnimatedFormModal: React.FC<AnimatedFormModalProps & { className?: string 
 
     return (
         <>
-            {triggerButton && React.cloneElement(triggerButton as React.ReactElement, { onClick: openModal } as any)}
+            {triggerButton &&
+                React.cloneElement(triggerButton as React.ReactElement<{ onClick?: () => void }>, {
+                    onClick: openModal,
+                })}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div

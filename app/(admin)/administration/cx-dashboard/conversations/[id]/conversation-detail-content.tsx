@@ -99,9 +99,7 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() =>
-              exportToJSON(messages as any[], "conversation-messages")
-            }
+            onClick={() => exportToJSON(messages, "conversation-messages")}
           >
             <Download className="w-3 h-3 mr-1" />
             Export
@@ -268,13 +266,19 @@ function MessageRow({ message }: { message: CxMessage }) {
     : [];
 
   const textContent = contentBlocks
-    .filter((block) => block.type === "text" && block.text)
-    .map((block) => block.text!)
+    .filter(
+      (block): block is { type?: string; text: string } =>
+        block.type === "text" && !!block.text,
+    )
+    .map((block) => block.text)
     .join("\n\n");
 
   const thinkingContent = contentBlocks
-    .filter((block) => block.type === "thinking" && block.text)
-    .map((block) => block.text!)
+    .filter(
+      (block): block is { type?: string; text: string } =>
+        block.type === "thinking" && !!block.text,
+    )
+    .map((block) => block.text)
     .join("\n\n");
 
   return (

@@ -13,7 +13,7 @@ import {
 
 interface ColumnMapperProps {
   columns: string[];
-  previewData: any[];
+  previewData: Record<string, unknown>[];
   onConfirm: (mapping: { zipColumn: string; countColumn: string }) => void;
   onCancel: () => void;
 }
@@ -129,8 +129,8 @@ export default function ColumnMapper({ columns, previewData, onConfirm, onCancel
                     <tbody className="divide-y">
                       {previewData.slice(0, 5).map((row, idx) => (
                         <tr key={idx} className="hover:bg-muted/50">
-                          <td className="px-3 py-2">{row[zipColumn]}</td>
-                          <td className="px-3 py-2">{row[countColumn]}</td>
+                          <td className="px-3 py-2">{String(row[zipColumn] ?? '')}</td>
+                          <td className="px-3 py-2">{String(row[countColumn] ?? '')}</td>
                         </tr>
                       ))}
                     </tbody>

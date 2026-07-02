@@ -156,7 +156,12 @@ async function consumeNdjsonWithMonitor(
   heartbeatTimeoutMs: number,
   maxLifetimeMs: number,
 ): Promise<number> {
-  const reader = response.body!.getReader();
+  if (!response.body) {
+    throw new Error(
+      "consumeNdjsonWithMonitor: response has no body (null ReadableStream) — cannot stream NDJSON",
+    );
+  }
+  const reader = response.body.getReader();
   const decoder = new TextDecoder();
 
   async function* rawEvents(): AsyncGenerator<unknown> {

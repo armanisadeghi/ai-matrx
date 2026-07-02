@@ -28,10 +28,12 @@ export function categorizePatterns(patterns: Record<string, PatternConfig>): Pat
             category = 'Other Patterns';
         }
 
-        if (!categories.has(category)) {
-            categories.set(category, []);
+        let categoryKeys = categories.get(category);
+        if (!categoryKeys) {
+            categoryKeys = [];
+            categories.set(category, categoryKeys);
         }
-        categories.get(category)!.push(key);
+        categoryKeys.push(key);
     });
 
     return Array.from(categories.entries())

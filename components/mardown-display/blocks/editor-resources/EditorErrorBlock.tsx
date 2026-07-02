@@ -76,11 +76,11 @@ export default function EditorErrorBlock({
   content,
   metadata,
 }: EditorErrorBlockProps) {
-  const file = (metadata?.file as string) ?? "";
-  const line = metadata?.line as string | undefined;
-  const severity = (metadata?.severity as string) ?? "error";
-  const source = metadata?.source as string | undefined;
-  const code = metadata?.code as string | undefined;
+  const file = typeof metadata?.file === "string" ? metadata.file : "";
+  const line = typeof metadata?.line === "string" ? metadata.line : undefined;
+  const severity = typeof metadata?.severity === "string" ? metadata.severity : "error";
+  const source = typeof metadata?.source === "string" ? metadata.source : undefined;
+  const code = typeof metadata?.code === "string" ? metadata.code : undefined;
 
   const { message, surrounding } = extractMessage(content);
   const style = SEVERITY_STYLE[severity] ?? SEVERITY_STYLE.error;

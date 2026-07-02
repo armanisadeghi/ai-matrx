@@ -23,9 +23,9 @@ export function aggregateByZip3(data: ZipCodeData[]): AggregatedData[] {
 
   data.forEach(item => {
     const zip3 = getZip3(item.zipCode);
-    
-    if (grouped.has(zip3)) {
-      const existing = grouped.get(zip3)!;
+    const existing = grouped.get(zip3);
+
+    if (existing) {
       existing.count += item.count;
       existing.zipCodes.push(item.zipCode);
     } else {
@@ -110,9 +110,9 @@ export async function aggregateByCounty(data: ZipCodeData[]): Promise<Aggregated
     
     if (countyInfo) {
       const countyKey = `${countyInfo.county}, ${countyInfo.state}`;
-      
-      if (grouped.has(countyKey)) {
-        const existing = grouped.get(countyKey)!;
+      const existing = grouped.get(countyKey);
+
+      if (existing) {
         existing.count += item.count;
         existing.zipCodes.push(item.zipCode);
       } else {
@@ -127,8 +127,9 @@ export async function aggregateByCounty(data: ZipCodeData[]): Promise<Aggregated
     } else {
       // If county unknown, group under "Unknown"
       const unknownKey = 'Unknown County';
-      if (grouped.has(unknownKey)) {
-        const existing = grouped.get(unknownKey)!;
+      const existing = grouped.get(unknownKey);
+
+      if (existing) {
         existing.count += item.count;
         existing.zipCodes.push(item.zipCode);
       } else {

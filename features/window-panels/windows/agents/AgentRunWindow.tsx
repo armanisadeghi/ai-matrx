@@ -6,11 +6,10 @@
  * Floating-window equivalent of `/agents/[id]/run`.
  *
  *   ┌──────────────────────────────────────────────────────────────┐
- *   │  ▼ Agent ▾     Run · Agent Name              ⚙  ⋯  ✕         │   ← WindowPanel title bar
+ *   │  ▼ Agent ▾     Run · Agent Name              ⊕  ✕         │   ← WindowPanel title bar
  *   ├──────────────┬───────────────────────────────────────────────┤
- *   │ Conversations│ mode controller · new run · save · options   │   ← body strip
- *   │ (sidebar)    │ ── AgentConversationColumn (main experience) │
- *   │              │                                               │
+ *   │ Conversations│ AgentConversationColumn (main experience)     │
+ *   │ (sidebar)    │                                               │
  *   └──────────────┴───────────────────────────────────────────────┘
  *
  * Compared to `/agents/[id]/run`:
@@ -26,20 +25,8 @@
  * the launcher-managed `conversationId` to switch to the loaded one.
  */
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  AlertTriangle,
-  Brain,
-  Loader2,
-  MessageSquare,
-  RotateCw,
-} from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -50,9 +37,8 @@ import {
   selectAgentName,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
-import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import { selectLatestConversationId } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -65,31 +51,16 @@ import {
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { AgentModeController } from "@/features/agents/components/shared/AgentModeController";
-import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
-import { AgentOptionsMenu } from "@/features/agents/components/shared/AgentOptionsMenu";
-import { PlusTapButton } from "@/components/icons/tap-buttons";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import { ItemRow } from "@/components/official/item/ItemRow";
-import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 
 const SOURCE_FEATURE: SourceFeature = "agent-run-window";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const AGENT_RUN_SIDEBAR_DEFAULT_SIZE = Math.round(220 * 0.85);
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
-  if (diffDays === 0)
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return d.toLocaleDateString([], { month: "short", day: "numeric" });
-}
+/** Header-scale primary disc — must stay ≤ traffic-light row height (see WindowPanel `WindowHeader`). */
+const HEADER_NEW_RUN_BTN =
+  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary p-0 text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40 [&_svg]:h-2.5 [&_svg]:w-2.5";
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -102,149 +73,99 @@ function AgentRunWindowSidebar({
   activeConversationId: string | null;
   onSelect: (conversationId: string) => void;
 }) {
-  const dispatch = useAppDispatch();
-
   const canonicalAgentId = useAppSelector((state: RootState) => {
     if (!agentId) return null;
     const agent = selectAgentById(state, agentId);
     return agent?.parentAgentId ?? agent?.id ?? agentId;
   });
 
-  const agentName = useAppSelector((state: RootState) =>
-    agentId ? (selectAgentName(state, agentId) ?? null) : null,
+  const surfaceKey = agentId ? `${SOURCE_FEATURE}:${agentId}` : undefined;
+
+  const handleOpenConversation = useCallback(
+    (conv: ConversationListItem) => {
+      onSelect(conv.conversationId);
+    },
+    [onSelect],
   );
 
-  const selectConversations = useMemo(
-    () =>
-      canonicalAgentId
-        ? makeSelectAgentConversations(canonicalAgentId, null)
-        : null,
-    [canonicalAgentId],
+  const getConversationHref = useCallback(
+    (conv: ConversationListItem) => {
+      const targetAgentId = conv.agentId ?? agentId;
+      return targetAgentId
+        ? `/agents/${targetAgentId}/run?conversationId=${conv.conversationId}`
+        : `/chat/${conv.conversationId}`;
+    },
+    [agentId],
   );
 
-  const conversationState = useAppSelector((state) =>
-    selectConversations ? selectConversations(state) : null,
-  );
-  const status = conversationState?.status ?? "idle";
-  const conversations = conversationState?.conversations ?? [];
-  const error = conversationState?.error ?? null;
-
-  useEffect(() => {
-    if (canonicalAgentId && status === "idle") {
-      dispatch(
-        fetchAgentConversations({
-          agentId: canonicalAgentId,
-          versionFilter: null,
-        }),
-      );
-    }
-  }, [canonicalAgentId, status, dispatch]);
+  if (!agentId || !canonicalAgentId) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-3 py-10 text-center">
+          <Brain className="h-6 w-6 text-muted-foreground opacity-25" />
+          <p className="text-xs text-muted-foreground">
+            Select an agent from the header to see its history.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <div className="px-2 py-1 border-b border-border/50 shrink-0 flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide truncate">
-          {agentName ? `${agentName} History` : "Conversations"}
-        </span>
-        {status === "loading" && (
-          <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-        )}
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        {!agentId && (
-          <div className="flex flex-col items-center justify-center py-10 px-3 text-center gap-2">
-            <Brain className="w-6 h-6 text-muted-foreground opacity-25" />
-            <p className="text-xs text-muted-foreground">
-              Select an agent from the header to see its history.
-            </p>
-          </div>
-        )}
-
-        {agentId && status === "failed" && (
-          <p className="px-3 py-2 text-[10px] text-destructive">
-            {error ?? "Failed to load"}
-          </p>
-        )}
-
-        {agentId && status === "succeeded" && conversations.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 px-3 text-center gap-2">
-            <MessageSquare className="w-5 h-5 text-muted-foreground opacity-40" />
-            <p className="text-xs text-muted-foreground">
-              No conversations yet
-            </p>
-          </div>
-        )}
-
-        {agentId &&
-          conversations.map((conv) => (
-            <ConversationListRow
-              key={conv.conversationId}
-              conv={conv}
-              fallbackAgentId={agentId}
-              isActive={conv.conversationId === activeConversationId}
-              onSelect={() => onSelect(conv.conversationId)}
-            />
-          ))}
-      </div>
-    </div>
+    <ConversationHistorySidebar
+      variant="consumer"
+      scopeId={`agent-run-window:${canonicalAgentId}`}
+      agentIds={[canonicalAgentId]}
+      surfaceId="chat"
+      activeConversationId={activeConversationId}
+      onOpenConversation={handleOpenConversation}
+      openInPlace
+      surfaceKey={surfaceKey}
+      getConversationHref={getConversationHref}
+      className="bg-transparent"
+    />
   );
 }
 
-function ConversationListRow({
-  conv,
-  fallbackAgentId,
-  isActive,
-  onSelect,
+// ─── Header actions ───────────────────────────────────────────────────────────
+
+function AgentRunWindowNewRunButton({
+  agentId,
+  onNewRunCleared,
 }: {
-  conv: ConversationListItem;
-  fallbackAgentId: string | null;
-  isActive: boolean;
-  onSelect: () => void;
+  agentId: string;
+  onNewRunCleared: () => void;
 }) {
   const dispatch = useAppDispatch();
-  const date = formatDate(conv.updatedAt);
-  const targetAgentId = conv.agentId ?? fallbackAgentId;
-  const href = targetAgentId
-    ? `/agents/${targetAgentId}/run?conversationId=${conv.conversationId}`
-    : "";
+  const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
+  const conversationId = useAppSelector(selectFocusedConversation(surfaceKey));
+
+  const handleNewRun = useCallback(() => {
+    if (!conversationId) return;
+    dispatch(
+      startNewConversation({
+        currentConversationId: conversationId,
+        surfaceKey,
+      }),
+    )
+      .unwrap()
+      .then(() => onNewRunCleared())
+      .catch((err) =>
+        console.error("[AgentRunWindow] Failed to start new run:", err),
+      );
+  }, [conversationId, dispatch, onNewRunCleared, surfaceKey]);
+
   return (
-    <ItemRow
-      label={conv.title?.trim() || "Untitled"}
-      active={isActive}
-      size="sm"
-      onOpen={onSelect}
-      menu={() =>
-        buildConversationMenu({
-          conversationId: conv.conversationId,
-          title: conv.title,
-          isFavorite: conv.isFavorite ?? false,
-          isArchived: conv.status === "archived",
-          excludeFromKg: conv.excludeFromKg ?? false,
-          isOwner: true,
-          href,
-          dispatch,
-        })
-      }
-      rename={{
-        value: conv.title ?? "",
-        emptyFallback: "Untitled",
-        onCommit: (next) =>
-          void dispatch(
-            renameConversation({
-              conversationId: conv.conversationId,
-              title: next,
-            }),
-          ),
-      }}
-      trailing={
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
-          <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
-          {conv.messageCount}
-          {date ? ` · ${date}` : ""}
-        </span>
-      }
-    />
+    <button
+      type="button"
+      onClick={handleNewRun}
+      disabled={!conversationId}
+      title="New run"
+      aria-label="New run"
+      className={HEADER_NEW_RUN_BTN}
+    >
+      <Plus strokeWidth={2.5} />
+    </button>
   );
 }
 
@@ -279,17 +200,10 @@ function WindowTitleContent({
 
 interface AgentRunBodyProps {
   agentId: string;
-  currentPath: string;
   selectedConversationId: string | null;
-  onNewRunCleared: () => void;
 }
 
-function AgentRunBody({
-  agentId,
-  currentPath,
-  selectedConversationId,
-  onNewRunCleared,
-}: AgentRunBodyProps) {
+function AgentRunBody({ agentId, selectedConversationId }: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
@@ -360,6 +274,12 @@ function AgentRunBody({
   // ── Sync selectedConversationId → load + focus (replaces URL sync) ─────────
   const lastLoadedRef = useRef<string | null>(null);
   useEffect(() => {
+    if (!selectedConversationId) {
+      lastLoadedRef.current = null;
+    }
+  }, [selectedConversationId]);
+
+  useEffect(() => {
     if (!selectedConversationId || isInitializing) return;
     if (selectedConversationId === lastLoadedRef.current) return;
     if (selectedConversationId === conversationId) return;
@@ -398,24 +318,6 @@ function AgentRunBody({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversationId, isInitializing, conversationId]);
 
-  const handleNewRun = useCallback(() => {
-    if (!conversationId) return;
-    dispatch(
-      startNewConversation({
-        currentConversationId: conversationId,
-        surfaceKey,
-      }),
-    )
-      .unwrap()
-      .then(() => {
-        lastLoadedRef.current = null;
-        onNewRunCleared();
-      })
-      .catch((err) =>
-        console.error("[AgentRunWindow] Failed to start new run:", err),
-      );
-  }, [conversationId, surfaceKey, dispatch, onNewRunCleared]);
-
   if (initError && !isInitializing) {
     return (
       <div className="flex items-center justify-center h-full p-6">
@@ -452,22 +354,9 @@ function AgentRunBody({
   }
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
       <DebugSessionActivator />
-
-      {/* Thin control strip: mode + actions (replaces AgentRunHeader) */}
-      <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-border/50 shrink-0">
-        <div className="flex items-center gap-1">
-          <PlusTapButton onClick={handleNewRun} />
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <AgentSaveStatus agentId={agentId} />
-          <AgentOptionsMenu agentId={agentId} />
-        </div>
-      </div>
-
-      {/* Main conversation column */}
-      <div className="flex-1 overflow-hidden flex justify-center min-w-0">
+      <div className="flex min-h-0 flex-1 justify-center overflow-hidden">
         <AgentConversationColumn
           conversationId={conversationId}
           surfaceKey={surfaceKey}
@@ -594,6 +483,14 @@ function AgentRunWindowInner({
       minHeight={420}
       overlayId="agentRunWindow"
       onCollectData={collectData}
+      actionsRight={
+        agentId ? (
+          <AgentRunWindowNewRunButton
+            agentId={agentId}
+            onNewRunCleared={handleNewRunCleared}
+          />
+        ) : undefined
+      }
       sidebar={
         <AgentRunWindowSidebar
           agentId={agentId}
@@ -601,18 +498,16 @@ function AgentRunWindowInner({
           onSelect={handleConversationSelect}
         />
       }
-      sidebarDefaultSize={220}
+      sidebarDefaultSize={AGENT_RUN_SIDEBAR_DEFAULT_SIZE}
       sidebarMinSize={160}
       defaultSidebarOpen
-      bodyClassName="p-0"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       {agentId ? (
         <AgentRunBody
           key={agentId}
           agentId={agentId}
-          currentPath={window.location.pathname}
           selectedConversationId={selectedConversationId}
-          onNewRunCleared={handleNewRunCleared}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">

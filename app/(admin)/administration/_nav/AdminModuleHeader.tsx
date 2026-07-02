@@ -23,7 +23,9 @@ interface AdminModuleHeaderProps {
  */
 function AdminModuleHeaderContent(props: AdminModuleHeaderProps) {
   const { width } = useWindowSize();
-  const [DesktopContent, setDesktopContent] = useState<any>(null);
+  const [DesktopContent, setDesktopContent] = useState<React.ComponentType<AdminModuleHeaderProps> | null>(
+    null,
+  );
 
   useEffect(() => {
     import("./AdminModuleHeaderDesktopContent").then((module) => {

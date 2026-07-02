@@ -47,29 +47,30 @@ export async function GET(
           'x-processing-time': `${endTime - startTime}ms`
         }
       });
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
       console.error(`[API-DEBUG ${requestId}] Error fetching app data:`, fetchError);
-      
+
+      const message = fetchError instanceof Error ? fetchError.message : 'Unknown error';
       return NextResponse.json(
-        { 
-          error: `Error fetching app data: ${fetchError.message || 'Unknown error'}`,
-          details: fetchError.toString(),
+        {
+          error: `Error fetching app data: ${message}`,
+          details: String(fetchError),
           requestId
         },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     const endTime = Date.now();
     console.error(`[API-DEBUG ${requestId}] Unhandled error in API route (${endTime - startTime}ms):`, error);
-    
+
     return NextResponse.json(
-      { 
-        error: error.message || 'An unhandled error occurred', 
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      {
+        error: error instanceof Error ? error.message : 'An unhandled error occurred',
+        stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
         requestId
       },
-      { 
+      {
         status: 500,
         headers: {
           'x-request-id': requestId,

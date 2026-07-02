@@ -209,13 +209,13 @@ const MarkdownClassifier: React.FC<MarkdownClassifierProps> = ({
         {/* Right Side: Processing Results */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Custom View Component */}
-          {ViewComponent && processedData && (
+          {ViewComponent && processedData ? (
             <div className="flex-1 overflow-auto p-4">
               <React.Suspense fallback={<div>Loading view...</div>}>
                 <ViewComponent data={processedData} />
               </React.Suspense>
             </div>
-          )}
+          ) : null}
 
           {/* Fallback: Processing Tabs */}
           {(!ViewComponent || !processedData) && (

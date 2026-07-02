@@ -809,7 +809,7 @@ function SelectionBar({
           </>
         ) : (
           <>
-            <Copy className="h-3 w-3" /> Copy {hasRange ? "selection" : "all"}
+            <Copy className="h-3 w-3" /> Copy {range ? "selection" : "all"}
           </>
         )}
       </button>

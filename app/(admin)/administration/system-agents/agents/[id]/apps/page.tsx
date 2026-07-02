@@ -2,7 +2,6 @@ import { getAgent, getAppsForAgent } from "@/lib/agents/data";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppsPanel } from "@/features/agents/components/apps/AgentAppsPanel";
-import type { AgentApp } from "@/features/agent-apps/types";
 
 export const metadata = { title: "Apps | System Agents" };
 
@@ -27,11 +26,7 @@ export default async function AdminSystemAgentAppsPage({
         />
       </PageHeader>
       <div className="h-full overflow-y-auto">
-        <AgentAppsPanel
-          agentId={id}
-          agentName={agent.name}
-          apps={apps as unknown as AgentApp[]}
-        />
+        <AgentAppsPanel agentId={id} agentName={agent.name} apps={apps} />
       </div>
     </>
   );

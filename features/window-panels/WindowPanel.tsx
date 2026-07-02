@@ -70,6 +70,10 @@ import { useWindowPersistence } from "./WindowPersistenceManager";
 import { Save } from "lucide-react";
 import { DebugStrip } from "./WindowPanel/DebugStrip";
 import { MobileWindowHeader } from "./WindowPanel/MobileHeader";
+import {
+  WINDOW_CHROME_ACTIONS,
+  WINDOW_CHROME_INTERACTIVE,
+} from "./WindowPanel/chromeClasses";
 import { DeprecationBanner } from "./WindowPanel/DeprecationBanner";
 import {
   detectPopoutCapability,
@@ -102,34 +106,83 @@ interface HandleDef {
 const HANDLES: HandleDef[] = [
   {
     edge: "e",
-    className: "absolute right-0 top-2 bottom-2 w-1.5 cursor-ew-resize",
+    className:
+      "absolute right-0 top-2 bottom-2 w-2.5 translate-x-1/2 cursor-ew-resize",
   },
   {
     edge: "w",
-    className: "absolute left-0 top-2 bottom-2 w-1.5 cursor-ew-resize",
+    className:
+      "absolute left-0 top-2 bottom-2 w-2.5 -translate-x-1/2 cursor-ew-resize",
   },
   {
     edge: "s",
-    className: "absolute bottom-0 left-2 right-2 h-1.5 cursor-ns-resize",
+    className:
+      "absolute bottom-0 left-2 right-2 h-2.5 translate-y-1/2 cursor-ns-resize",
   },
   {
+    // Start after the traffic-light hot zone (w-28) — top-left is close/minimize/maximize.
     edge: "n",
-    className: "absolute top-0 left-2 right-2 h-1.5 cursor-ns-resize",
+    className:
+      "absolute top-0 left-2 right-2 h-2.5 -translate-y-1/2 cursor-ns-resize",
   },
   {
     edge: "se",
-    className: "absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize",
+    className:
+      "absolute bottom-0 right-0 w-2.5 h-2.5 -translate-x-1/4 -translate-y-1/4 cursor-nwse-resize",
   },
   {
     edge: "sw",
-    className: "absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize",
+    className:
+      "absolute bottom-0 left-0 w-2.5 h-2.5 -translate-x-1/4 -translate-y-1/4 cursor-nesw-resize",
   },
   {
     edge: "ne",
-    className: "absolute top-0 right-0 w-3 h-3 cursor-nesw-resize",
+    className:
+      "absolute top-0 right-0 w-2.5 h-2.5 -translate-x-1/4 -translate-y-1/4 cursor-nesw-resize",
   },
-  { edge: "nw", className: "absolute top-0 left-0 w-3 h-3 cursor-nwse-resize" },
+  {
+    edge: "nw",
+    className:
+      "absolute top-0 left-0 w-2.5 h-2.5 -translate-x-1/4 -translate-y-1/4 cursor-nwse-resize",
+  },
 ];
+
+/**
+ * Desktop windowed body shell — consumers style the inner slot via `bodyClassName`
+ * only. The outer guard ring is structural: it keeps full-bleed children off the
+ * resize-handle hit zones and uses pointer-events-none so bare edge clicks reach
+ * the handle layer (z-50) even when inner content is `absolute inset-0`.
+ */
+function WindowPanelBodyShell({
+  bodyRef,
+  fitContent,
+  bodyClassName,
+  children,
+}: {
+  bodyRef: React.RefObject<HTMLDivElement | null>;
+  fitContent?: boolean;
+  bodyClassName?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      ref={bodyRef}
+      className={cn(
+        "relative z-0 min-h-0 flex-1 overflow-hidden p-1.5 pointer-events-none",
+        fitContent && "overflow-visible",
+      )}
+    >
+      <div
+        className={cn(
+          "h-full min-h-0 overflow-auto pointer-events-auto rounded-[10px]",
+          bodyClassName,
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -974,6 +1027,7 @@ export function WindowPanel({
       className={cn(
         // Always: detach from scroll + separate from the body with a top border.
         "shrink-0 border-t border-border/50",
+        WINDOW_CHROME_INTERACTIVE,
         footerVariant === "bar" &&
           // Compact metadata-bar chrome — thin chips, tiny buttons/icons. Crushes
           // rich content; consumers with a composer/input bar pass footerVariant="rich".
@@ -1157,15 +1211,10 @@ export function WindowPanel({
     <div
       ref={fitContent ? fitContentRef : undefined}
       className={cn(
-        "fixed flex flex-col",
-        "rounded-xl bg-card/95 backdrop-blur-md border border-border shadow-xl",
-        "overflow-hidden",
+        "fixed overflow-visible",
         // Drag-out candidate: ring-2 highlight signals "release here to pop out".
-        // Uses primary color from the design tokens so it adapts to theme.
         isPopoutCandidate &&
           "ring-2 ring-primary ring-offset-2 ring-offset-background transition-shadow",
-        // Deprecation marker: red ring around the shell. Stays even when the
-        // banner inside is dismissed, so the visual cue is persistent.
         deprecatedRingClass,
         className,
       )}
@@ -1188,50 +1237,56 @@ export function WindowPanel({
             key={h.edge}
             className={cn(
               h.className,
-              "z-10 hover:bg-primary/20 transition-colors",
+              "z-50 hover:bg-primary/20 transition-colors",
             )}
             style={{ touchAction: "none" }}
             onPointerDown={onResizeStart(h.edge)}
           />
         ))}
-      {header}
+      <div
+        className={cn(
+          "flex h-full w-full min-h-0 flex-col",
+          "rounded-xl bg-card/95 backdrop-blur-md border border-border shadow-xl",
+          "overflow-hidden",
+        )}
+      >
+        {header}
 
-      {/* Debug strip — shown in the body when open, or in the minimized shell */}
-      {isDebugMode && <DebugStrip rect={rect} zIndex={zIndex} />}
+        {/* Debug strip — shown in the body when open, or in the minimized shell */}
+        {isDebugMode && <DebugStrip rect={rect} zIndex={zIndex} />}
 
-      {!isMinimized && (
-        <div
-          ref={bodyRef}
-          className={cn(
-            fitContent ? "overflow-visible" : "flex-1 overflow-auto min-h-0",
-            bodyClassName,
-          )}
-        >
-          {bodyContent}
-        </div>
-      )}
+        {!isMinimized && (
+          <WindowPanelBodyShell
+            bodyRef={bodyRef}
+            fitContent={fitContent}
+            bodyClassName={bodyClassName}
+          >
+            {bodyContent}
+          </WindowPanelBodyShell>
+        )}
 
-      {/* Minimized: fill the empty shell body with the canonical tray preview
-          (registry custom / snapshot / default). Click anywhere to restore. */}
-      {isMinimized && (
-        <MinimizedWindowContent
-          windowId={overlayId ?? id}
-          title={typeof title === "string" ? title : undefined}
-          onRestore={handleRestoreClearingSnapshot}
-        />
-      )}
+        {/* Minimized: fill the empty shell body with the canonical tray preview
+            (registry custom / snapshot / default). Click anywhere to restore. */}
+        {isMinimized && (
+          <MinimizedWindowContent
+            windowId={overlayId ?? id}
+            title={typeof title === "string" ? title : undefined}
+            onRestore={handleRestoreClearingSnapshot}
+          />
+        )}
 
-      {!isMinimized && footerBar}
+        {!isMinimized && footerBar}
 
-      {/* Drag-out ghost label — overlays the body during the candidate dwell.
-          Pointer-events:none so it doesn't interfere with the in-progress drag. */}
-      {isPopoutCandidate && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-          <div className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium shadow-lg">
-            Release to pop out
+        {/* Drag-out ghost label — overlays the body during the candidate dwell.
+            Pointer-events:none so it doesn't interfere with the in-progress drag. */}
+        {isPopoutCandidate && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+            <div className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium shadow-lg">
+              Release to pop out
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 
@@ -1349,7 +1404,7 @@ function WindowHeader({
         {/* Left action zone */}
         {!isMinimized && actionsLeft && (
           <div
-            className="flex items-center gap-0.5 shrink-0 text-foreground/80 [&_svg]:text-foreground/80"
+            className={WINDOW_CHROME_ACTIONS}
             onPointerDown={(e) => e.stopPropagation()}
           >
             {actionsLeft}
@@ -1381,7 +1436,7 @@ function WindowHeader({
       <div className="flex items-center gap-1 z-10 shrink-0">
         {!isMinimized && actionsRight && (
           <div
-            className="flex items-center gap-0.5 shrink-0 text-foreground/80 [&_svg]:text-foreground/80"
+            className={WINDOW_CHROME_ACTIONS}
             onPointerDown={(e) => e.stopPropagation()}
           >
             {actionsRight}
@@ -1486,7 +1541,7 @@ function TrafficLightGroup({
       {hasSidebar && !isMinimized && (
         <button
           type="button"
-          className="ml-0.5 p-0.5 rounded hover:bg-accent/60 transition-colors text-foreground/60 group-hover/tl:text-foreground"
+          className="ml-0.5 p-0.5 rounded hover:bg-accent/60 transition-colors text-foreground/60 group-hover/tl:text-foreground cursor-pointer"
           onClick={onToggleSidebar}
           title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
           aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}

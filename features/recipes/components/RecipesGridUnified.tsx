@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast-service";
 import { UnifiedListLayout } from "@/components/official/unified-list/UnifiedListLayout";
+import type { UnifiedListLayoutConfig } from "@/components/official/unified-list/types";
 import { recipesConfig, Recipe } from "../config/recipes-config";
 import { RecipeCardUnified } from "./RecipeCardUnified";
 
@@ -27,7 +28,7 @@ export function RecipesGridUnified({ recipes }: RecipesGridUnifiedProps) {
   const router = useRouter();
 
   // Override config actions with actual implementations
-  const config = {
+  const config: UnifiedListLayoutConfig<Recipe> = {
     ...recipesConfig,
     page: {
       ...recipesConfig.page,
@@ -99,7 +100,7 @@ export function RecipesGridUnified({ recipes }: RecipesGridUnifiedProps) {
   };
 
   return (
-    <UnifiedListLayout
+    <UnifiedListLayout<Recipe>
       config={config}
       items={recipes}
       renderCard={(recipe, actions) => (

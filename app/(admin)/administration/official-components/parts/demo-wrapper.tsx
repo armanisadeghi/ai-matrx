@@ -17,7 +17,7 @@ interface DemoWrapperProps {
  * @returns A component compatible with the component system
  */
 export function createComponentDisplay(
-  OriginalDemo: React.ComponentType<any>,
+  OriginalDemo: React.ComponentType,
   codeExample: string,
   description?: string
 ) {
@@ -56,7 +56,7 @@ export function createComponentDisplay(
  * ```
  */
 export function wrapExistingDemo(
-  OriginalDemo: React.ComponentType<any>, 
+  OriginalDemo: React.ComponentType, 
   codeExample: string,
   description?: string
 ) {

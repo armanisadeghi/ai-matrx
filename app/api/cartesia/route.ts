@@ -22,6 +22,13 @@ export async function GET(request: NextRequest) {
     // client defaults to an older version (2024-06-10) and the websocket — which
     // connects at CARTESIA_API_VERSION — gets a 404 "No API schema exists for
     // the requested Cartesia-Version."
+    //
+    // The `@cartesia/cartesia-js` published .d.ts hardcodes `cartesiaVersion?:
+    // "2024-06-10"` — a stale vendor type that predates newer API versions the
+    // SDK accepts fine at runtime (this is the whole reason this cast exists:
+    // passing the real, newer CARTESIA_API_VERSION). `as unknown as` is the
+    // sanctioned two-step cast for a third-party type that disagrees with the
+    // real, working runtime contract — not our data.
     const cartesia = new CartesiaClient({
       apiKey: process.env.CARTESIA_API_KEY,
       cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",

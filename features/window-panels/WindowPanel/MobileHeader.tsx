@@ -10,6 +10,7 @@
 import type { ReactNode } from "react";
 import { Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WINDOW_CHROME_ACTIONS } from "./chromeClasses";
 
 interface MobileWindowHeaderProps {
   title?: ReactNode;
@@ -38,7 +39,7 @@ export function MobileWindowHeader({
         {onClose && (
           <button
             type="button"
-            className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center"
+            className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center cursor-pointer"
             onClick={onClose}
             aria-label="Close"
           >
@@ -47,7 +48,7 @@ export function MobileWindowHeader({
         )}
         <button
           type="button"
-          className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center"
+          className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center cursor-pointer"
           onClick={onMinimize}
           aria-label="Minimize"
         >
@@ -62,7 +63,7 @@ export function MobileWindowHeader({
             <button
               type="button"
               className={cn(
-                "px-3 py-1 rounded-md transition-colors whitespace-nowrap",
+                "px-3 py-1 rounded-md transition-colors whitespace-nowrap cursor-pointer",
                 activePaneMobile === "sidebar"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground",
@@ -74,7 +75,7 @@ export function MobileWindowHeader({
             <button
               type="button"
               className={cn(
-                "px-3 py-1 rounded-md transition-colors truncate max-w-[120px]",
+                "px-3 py-1 rounded-md transition-colors truncate max-w-[120px] cursor-pointer",
                 activePaneMobile === "main"
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground",
@@ -93,9 +94,7 @@ export function MobileWindowHeader({
 
       {/* Right actions */}
       {actionsRight && (
-        <div className="flex items-center gap-0.5 shrink-0 text-foreground/80 [&_svg]:text-foreground/80">
-          {actionsRight}
-        </div>
+        <div className={WINDOW_CHROME_ACTIONS}>{actionsRight}</div>
       )}
     </div>
   );

@@ -510,3 +510,34 @@ export interface AgentAppsListResponse {
   total: number;
   hasMore: boolean;
 }
+
+/**
+ * The exact column subset `getAppsForAgent` (lib/agents/data.ts) selects from
+ * `app.definition` for the per-agent apps list — enough for a card/grid, not
+ * the full record (no component_code, shell config, etc). Named so the panel
+ * chain (AgentAppsPanel → AgentAppsGrid → AgentAppCard, all in
+ * features/agent-apps/components/layouts/) can accept it honestly instead of
+ * casting a partial select up to the full `AgentApp`.
+ */
+export type AgentAppSummary = Pick<
+  AgentAppRecord,
+  | "id"
+  | "slug"
+  | "name"
+  | "tagline"
+  | "description"
+  | "category"
+  | "tags"
+  | "preview_image_url"
+  | "favicon_url"
+  | "status"
+  | "is_public"
+  | "is_featured"
+  | "total_executions"
+  | "last_execution_at"
+  | "agent_id"
+  | "agent_version_id"
+  | "use_latest"
+  | "created_at"
+  | "updated_at"
+>;

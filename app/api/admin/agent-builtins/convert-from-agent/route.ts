@@ -69,7 +69,7 @@ export async function POST(request: Request) {
           { status: 404 },
         );
       }
-      src = agent as unknown as Record<string, unknown>;
+      src = agent;
     }
 
     // Fields that carry over to the system agent. `id`, timestamps, and owner
@@ -79,19 +79,19 @@ export async function POST(request: Request) {
       description: (src.description as string | null) ?? null,
       category: (src.category as string | null) ?? null,
       tags: (src.tags as string[] | null) ?? [],
-      messages: (src.messages as unknown) ?? [],
-      variable_definitions: (src.variable_definitions as unknown) ?? null,
+      messages: src.messages ?? [],
+      variable_definitions: src.variable_definitions ?? null,
       model_id: (src.model_id as string | null) ?? null,
-      model_tiers: (src.model_tiers as unknown) ?? null,
-      settings: (src.settings as unknown) ?? {},
-      output_schema: (src.output_schema as unknown) ?? null,
+      model_tiers: src.model_tiers ?? null,
+      settings: src.settings ?? {},
+      output_schema: src.output_schema ?? null,
       tools: (src.tools as string[] | null) ?? [],
-      custom_tools: (src.custom_tools as unknown) ?? [],
+      custom_tools: src.custom_tools ?? [],
       // Pass the canonical tool_config through so the system agent row
       // carries the consolidated shape if backend stops syncing legacy
       // columns. Backend keeps both in sync today.
-      tool_config: (src.tool_config as unknown) ?? null,
-      context_slots: (src.context_slots as unknown) ?? [],
+      tool_config: src.tool_config ?? null,
+      context_slots: src.context_slots ?? [],
       mcp_servers: (src.mcp_servers as string[] | null) ?? [],
     };
 

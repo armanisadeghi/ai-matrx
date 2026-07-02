@@ -42,7 +42,21 @@ export async function POST(request: NextRequest) {
       return new NextResponse("Forbidden", { status: 403 });
     }
 
-    const payload = params as unknown as StatusCallbackPayload;
+    if (!params.MessageSid || !params.MessageStatus || !params.AccountSid || !params.ApiVersion) {
+      console.error("Twilio status callback missing required fields:", params);
+      return new NextResponse("Bad Request", { status: 400 });
+    }
+
+    const payload: StatusCallbackPayload = {
+      MessageSid: params.MessageSid,
+      MessageStatus: params.MessageStatus,
+      AccountSid: params.AccountSid,
+      From: params.From ?? "",
+      To: params.To ?? "",
+      ErrorCode: params.ErrorCode,
+      ErrorMessage: params.ErrorMessage,
+      ApiVersion: params.ApiVersion,
+    };
     const supabase = createAdminClient();
 
     // Log webhook
@@ -52,7 +66,7 @@ export async function POST(request: NextRequest) {
       .insert({
         webhook_type: "status_callback",
         twilio_sid: payload.MessageSid,
-        raw_payload: payload as unknown as Record<string, unknown>,
+        raw_payload: payload,
         processed: false,
       });
 

@@ -28,6 +28,7 @@ import {
   LANGUAGE_OPTIONS,
   FORMAT_OPTIONS,
   HOST_COUNT_OPTIONS,
+  findOptionOrFirst,
 } from "@/features/podcasts/generator/constants";
 import type {
   PodcastLanguageCode,
@@ -59,9 +60,9 @@ export function SettingsBar({
   showId,
   onShow,
 }: SettingsBarProps) {
-  const lang = LANGUAGE_OPTIONS.find((l) => l.code === language)!;
-  const fmt = FORMAT_OPTIONS.find((f) => f.value === format)!;
-  const hosts = HOST_COUNT_OPTIONS.find((h) => h.value === hostCount)!;
+  const lang = findOptionOrFirst(LANGUAGE_OPTIONS, language, (l) => l.code);
+  const fmt = findOptionOrFirst(FORMAT_OPTIONS, format, (f) => f.value);
+  const hosts = findOptionOrFirst(HOST_COUNT_OPTIONS, hostCount, (h) => h.value);
   const show = MOCK_SHOWS.find((s) => s.id === showId);
   const FmtIcon = fmt.icon;
 

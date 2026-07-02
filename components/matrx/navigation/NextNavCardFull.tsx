@@ -9,6 +9,12 @@ import { cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { ChevronRight, ArrowRight } from 'lucide-react';
 
+const cardColorOptions = ['default', 'primary', 'secondary', 'destructive', 'success', 'warning'] as const;
+type CardColor = (typeof cardColorOptions)[number];
+
+const toCardColor = (color: string | undefined): CardColor =>
+  cardColorOptions.includes(color as CardColor) ? (color as CardColor) : 'default';
+
 
 const cardVariants = cva(
     "w-full cursor-pointer transition-all",
@@ -87,11 +93,11 @@ const cardVariants = cva(
               href={fullPath}
               className={animated ? "transition-transform hover:scale-[1.01]" : ""}
             >
-              <Card 
+              <Card
                 className={cn(
-                  cardVariants({ 
-                    variant, 
-                    color: item.color || 'default' as any,
+                  cardVariants({
+                    variant,
+                    color: toCardColor(item.color),
                     animated
                   }),
                   cardClassName

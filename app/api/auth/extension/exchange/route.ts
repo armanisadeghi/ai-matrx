@@ -78,12 +78,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!user.email) {
+      return NextResponse.json(
+        { error: 'User has no email on file — extension sign-in requires an email-based account' },
+        { status: 400 }
+      );
+    }
+
     // Create a new session for the extension
     // Note: This creates a separate session - the extension won't share web cookies
     const { data: sessionData, error: sessionError } = await supabase.auth.admin
       .generateLink({
         type: 'magiclink',
-        email: user.email!,
+        email: user.email,
       });
 
     if (sessionError || !sessionData) {

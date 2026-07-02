@@ -15,12 +15,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { fromDeprecatedTable } from "@/utils/supabase/deprecated-tables";
+import { requireEnv } from "@/utils/supabase/env";
 
 // API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
 // and BANNED — see https://supabase.com/docs/guides/getting-started/api-keys
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim();
-const supabasePublishableKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim();
+const supabaseUrl = requireEnv(
+  "NEXT_PUBLIC_SUPABASE_URL",
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+);
+const supabasePublishableKey = requireEnv(
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+);
 
 export async function POST(request: NextRequest) {
   try {

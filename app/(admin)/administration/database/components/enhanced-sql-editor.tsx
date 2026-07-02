@@ -53,10 +53,10 @@ export interface EnhancedSQLEditorProps {
   loading: boolean;
   error: string | null;
   isTimeout?: boolean;
-  onExecuteQuery: (query: string, useCache?: boolean) => Promise<any>;
+  onExecuteQuery: (query: string, useCache?: boolean) => Promise<unknown>;
   onCancelQuery?: () => void;
   onClearCache?: () => void;
-  queryCache?: Record<string, any>;
+  queryCache?: Record<string, unknown>;
   className?: string;
 }
 
@@ -77,7 +77,7 @@ export const EnhancedSQLEditor = ({
   className,
 }: EnhancedSQLEditorProps) => {
   const [sqlQuery, setSqlQuery] = useState("");
-  const [queryResult, setQueryResult] = useState<any>(null);
+  const [queryResult, setQueryResult] = useState<unknown>(null);
   const [queryHistory, setQueryHistory] = useState<
     { query: string; timestamp: Date }[]
   >([]);
@@ -547,7 +547,7 @@ export const EnhancedSQLEditor = ({
           </Alert>
         )}
 
-        {queryResult && (
+        {queryResult != null && (
           <div className="border border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-2 flex justify-between items-center flex-shrink-0">
               <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">

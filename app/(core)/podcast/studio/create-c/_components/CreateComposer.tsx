@@ -43,6 +43,7 @@ import {
   POST_SCRIPT_PROCESSING,
   type SourceTile,
 } from "./source-data";
+import { findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import type {
   PodcastSourceKind,
   PodcastLanguageCode,
@@ -81,7 +82,7 @@ export function CreateComposer() {
   const [testMode, setTestMode] = useState(true);
 
   const activeSource = useMemo<SourceTile>(
-    () => SOURCE_TILES.find((s) => s.kind === sourceKind)!,
+    () => findOptionOrFirst(SOURCE_TILES, sourceKind, (s) => s.kind),
     [sourceKind],
   );
   const isRtl =

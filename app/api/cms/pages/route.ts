@@ -14,7 +14,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 // are DEPRECATED and BANNED. Generate the secret key at:
 // https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
 // Docs: https://supabase.com/docs/guides/getting-started/api-keys
-const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL!;
+const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
 const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
 
 function getCmsClient() {
@@ -511,10 +511,11 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[cms/pages] Unexpected error:", err);
+    const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json(
-      { error: err.message || "Internal server error" },
+      { error: message },
       { status: 500 },
     );
   }

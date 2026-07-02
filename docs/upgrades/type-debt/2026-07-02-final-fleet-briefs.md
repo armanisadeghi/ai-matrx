@@ -1,0 +1,33 @@
+# Final fleet decision briefs — 2026-07-02 (wf_495ab3dc-9cb)
+
+### BRIEF 1: hooks/images/useUnsplashGallery.ts:22 — cross-file type disagreement (out of scope)
+**data:** the hook declares `export type UnsplashPhoto = {id: string; tags?: Array<{title:string}>; links: {download_location: string}}` and types its `photos`/`favorites`/`selectedPhoto` state as `UnsplashPhoto[]`
+**producedBy:** hooks/images/useUnsplashGallery.ts's setPhotos(result.response.results) - result.response.results is unsplash-js's Basic[] type (urls, user, links.html, exif, alt_description, description, width, height, likes, ...), confirmed via node_modules/unsplash-js/dist/methods/photos/types.d.ts and unsplash-js/dist/index.d.ts's search.getPhotos return signature
+**consumedBy:** components/image/unsplash/desktop/EnhancedImageViewer.tsx, EnhancedUnsplashGallery.tsx, demo/EnhancedSearchDemo.tsx, mobile/MobileUnsplashViewer.tsx, mobile/MobileUnsplashGallery.tsx - all read .urls.regular/.full, .user.name, .alt_description, .description, .exif.* that UnsplashPhoto does not declare
+**conflict:** The hook's declared UnsplashPhoto type is far narrower than the real runtime shape (unsplash-js Basic). Every scope-file consumer that reads urls/user/exif/description was already relying on fields the hook's own type hides - previously masked entirely by `any` on the consuming side. I widened the consuming components to an honest `Photo`/`UnsplashDisplayPhoto` interface matching the real API shape (matching MobileUnsplashGallery.tsx's pre-existing isDisplayPhoto guard precedent), but the hook itself still exposes the too-narrow type, so passing its `photos`/`toggleFavorite`/`downloadImage` into the now-strict components required one documented `as Photo[]`/`as UnsplashDisplayPhoto[]` cast per call site (with an explanatory comment), since actually fixing the root cause means widening UnsplashPhoto in the hook file, which is out of my scope (components/matrx, components/image, components/animated only).
+**decisionNeeded:** Should hooks/images/useUnsplashGallery.ts's `UnsplashPhoto` type be widened to match unsplash-js's real `Basic`/`Random` return shape (or import it directly), eliminating the need for the two documented `as Photo[]` casts left in components/image/unsplash/desktop/EnhancedUnsplashGallery.tsx and mobile/MobileUnsplashGallery.tsx? This is a one-file, low-risk widening (the real data already has every field) but the hook is out of my scope.
+**Status:** PENDING
+
+### BRIEF 2: app/api/webhooks/resend/route.ts:199 — data-shape mismatch requiring a lookup RPC
+**data:** Resend webhook data.to (recipient email address, string|string[])
+**producedBy:** Resend's email.complained webhook payload (external, uncontrolled)
+**consumedBy:** users.user_email_preferences.user_id (auth UUID column) via .eq() filter
+**conflict:** No email->user_id resolver exists in the codebase (checked: no getUserByEmail helper, no RPC in database.types.ts). auth.admin.listUsers() only supports pagination, not a targeted email lookup.
+**decisionNeeded:** Either (A) add a SECURITY DEFINER RPC that resolves auth.users.email -> id for admin-client use, or (B) accept periodic full listUsers() scans for this low-volume webhook. Left the type honestly narrowed (typeof data.to === 'string' ? data.to : '') and flagged in a code comment rather than building unreviewed DB surface.
+**Status:** PENDING
+
+### BRIEF 3: app/(admin)/administration/agent-apps/edit/[id]/page.tsx:45 — as unknown as (declared type narrower than real data)
+**data:** AgentAppAdminView (hand-declared view interface in lib/services/agent-apps-admin-service.ts) is missing component_code/variable_schema/layout_config/styling_config/shell_kind/shell_config/slot_overrides/slot_code/component_language/allowed_imports/app_kind that AgentApp (and the AgentAppEditor that consumes it) require.
+**producedBy:** getAgentAppById() in lib/services/agent-apps-admin-service.ts, which does `.schema("app").from("definition").select("*")` — the real row DOES have every field at runtime; only the declared TS interface is narrow.
+**consumedBy:** AgentAppEditor (features/agent-apps/components/AgentAppEditor.tsx) reads app.component_code directly via useState(app.component_code).
+**conflict:** AgentAppAdminView (declared) vs Database["app"]["Tables"]["definition"]["Row"] (actual) — the view type is a strict subset with several required-on-AgentApp fields entirely absent.
+**decisionNeeded:** Should AgentAppAdminView be widened/replaced with the full definition Row (or a proper AgentAppSummary vs AgentAppFull split, following the AgentAppSummary precedent another session just added to features/agent-apps/types.ts for the list-view case), so this edit page can drop the cast entirely? That's a change to lib/services/agent-apps-admin-service.ts, outside my app/(admin)-only scope.
+**Status:** PENDING
+
+### BRIEF 4: app/(admin)/administration/utils/text-cleaner/utilities/ErrorManager.ts:85 — dynamic require + implicit any (not in my priority list but adjacent)
+**data:** const errorProcessors = require('./errorProcessors'); const processor = errorProcessors[processorName]; — CommonJS require() inside an ESM/TS module, indexed by a computed string key, so `processor` and `errorProcessors[processorName]` are implicitly `any`.
+**producedBy:** ErrorManager.parseError()'s dynamic-dispatch-by-error-code lookup.
+**consumedBy:** Same function, immediately calls processor(cleanedError) and reads processed.essential/.basic/.verbose/.errorType.
+**conflict:** This wasn't flagged by pnpm check:hatches (the scanner doesn't pattern-match `require(...)` or computed-member `any`), so it's outside my mandate to touch without evidence it's currently a live hatch per the tool, but it is a real dynamic-any pattern that would resist a `pnpm type-check` pass.
+**decisionNeeded:** Should this be converted to a static import map (Record<string, (error: string) => PartialParsedError>) built from the named exports of errorProcessors.ts, removing the require() entirely? Left untouched since it wasn't in the enumerated hatch list and changing dispatch mechanics risks behavior drift in this already-fragile dev-tooling module.
+**Status:** PENDING

@@ -199,7 +199,7 @@ export default function AgentAppsAdminListPage() {
     }
 
     filtered.sort((a, b) => {
-      let av: any, bv: any;
+      let av: string | number, bv: string | number;
       switch (sortField) {
         case "name":
           av = a.name?.toLowerCase() || "";
@@ -278,7 +278,7 @@ export default function AgentAppsAdminListPage() {
 
   const updateDropdownFilter = (
     field: "featured" | "verified",
-    value: any,
+    value: ColumnFilters["featured"] | ColumnFilters["verified"],
   ) => setColumnFilters((p) => ({ ...p, [field]: value }));
 
   const clearAllFilters = () =>

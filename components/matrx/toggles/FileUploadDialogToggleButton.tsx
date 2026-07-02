@@ -5,6 +5,11 @@ import { Button } from "@/components/ui/button";
 import { FileUploadWithStorage } from "@/components/ui/file-upload/FileUploadWithStorage";
 import { EnhancedFileDetails } from "@/utils/file-operations/constants";
 
+interface FileUploadDialogFileManager {
+    addFiles: (files: Array<{ url: string; type: string; details?: EnhancedFileDetails }>) => Promise<void>;
+    handleUploadStatusChange: (uploading: boolean) => void;
+}
+
 interface FileUploadDialogToggleButtonProps extends Omit<React.ComponentProps<typeof ToggleButton>, "onClick"> {
     dialogTitle: string;
     dialogDescription: React.ReactNode;
@@ -14,7 +19,7 @@ interface FileUploadDialogToggleButtonProps extends Omit<React.ComponentProps<ty
     path: string;
     cancelLabel?: string;
     successButtonLabel?: string;
-    fileManager: any; // Using any for now, but ideally you'd type this properly
+    fileManager: FileUploadDialogFileManager;
     allowMultiple?: boolean;
 }
 

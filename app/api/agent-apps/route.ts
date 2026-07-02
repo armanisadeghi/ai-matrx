@@ -3,6 +3,11 @@ import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { NextRequest, NextResponse } from "next/server";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
+import type { Database } from "@/types/database.types";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+
+type AgentAppInsert = Database["app"]["Tables"]["definition"]["Insert"];
 
 /**
  * POST /api/agent-apps
@@ -15,7 +20,7 @@ import type { CreateAgentAppInput } from "@/features/agent-apps/types";
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = (await createClient()) as unknown as any;
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -124,7 +129,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const insertPayload: Record<string, unknown> = {
+    // Every row needs a real tenant — never insert app.definition with a null
+    // organization_id. Global apps home under the system org (readable by all
+    // authed users via iam.system_orgs.global_readable); user apps home under
+    // the caller's own org (falling back to their personal org).
+    const organizationId = isGlobal
+      ? await resolveSystemOrgId(supabase)
+      : await ensureOrgIdServer(supabase, null);
+
+    const insertPayload: AgentAppInsert = {
       agent_id,
       agent_version_id: agent_version_id ?? null,
       use_latest: use_latest ?? true,
@@ -132,7 +145,7 @@ export async function POST(request: NextRequest) {
       // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
       // Global apps use the admin client (bypasses RLS), so created_by stays null there.
       created_by: isGlobal ? null : user.id,
-      organization_id: null,
+      organization_id: organizationId,
       project_id: null,
       task_id: null,
       slug: normalizedSlug,
@@ -146,30 +159,29 @@ export async function POST(request: NextRequest) {
       // shell_kind is set to a built-in.
       component_code: component_code ?? "",
       component_language: component_language ?? "tsx",
-      variable_schema: (variable_schema ?? []) as unknown,
-      allowed_imports: (allowed_imports ?? []) as unknown,
-      layout_config: (layout_config ?? {}) as unknown,
-      styling_config: (styling_config ?? {}) as unknown,
+      variable_schema: variable_schema ?? [],
+      allowed_imports: allowed_imports ?? [],
+      layout_config: layout_config ?? {},
+      styling_config: styling_config ?? {},
       // Shell columns are optional — when omitted the DB default applies
       // (currently 'chat'). When `component_code` is set without a
       // shell_kind, mark the row 'fully_custom' so the renderer dispatches
       // to AgentAppFullyCustomShell.
-      shell_kind:
-        shell_kind ?? (component_code ? "fully_custom" : undefined),
+      ...(shell_kind !== undefined
+        ? { shell_kind }
+        : component_code
+          ? { shell_kind: "fully_custom" }
+          : {}),
       ...(shell_config !== undefined ? { shell_config } : {}),
       ...(slot_overrides !== undefined ? { slot_overrides } : {}),
       ...(slot_code !== undefined ? { slot_code } : {}),
       status: "draft",
     };
-    // Strip undefined keys so the DB default applies.
-    Object.keys(insertPayload).forEach((k) => {
-      if (insertPayload[k] === undefined) delete insertPayload[k];
-    });
 
     // Global apps bypass RLS via the admin client because user_id = null
     // would fail a typical owner-check INSERT policy.
     const writer = isGlobal ? createAdminClient() : supabase;
-    const { data, error } = await (writer as any)
+    const { data, error } = await writer
       .schema("app")
       .from("definition")
       .insert(insertPayload)

@@ -51,13 +51,13 @@ const MatrxRadioGroup: React.FC<MatrxRadioGroupProps> = (
                 )}
             >
                 {React.Children.map(children, (child) => {
-                    if (React.isValidElement(child)) {
-                        return React.cloneElement(child as any, {
+                    if (React.isValidElement<Record<string, unknown>>(child)) {
+                        return React.cloneElement(child, {
                             size,
                             density,
                             variant,
                             disabled,
-                            ...(child.props as object)
+                            ...child.props,
                         });
                     }
                     return child;

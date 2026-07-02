@@ -2,12 +2,14 @@
 
 import React from "react";
 import { AgentAppCard } from "./AgentAppCard";
-import type { AgentApp, PublicAgentApp } from "../../types";
+import type { AgentApp, AgentAppSummary, PublicAgentApp } from "../../types";
+
+type GridApp = AgentApp | PublicAgentApp | AgentAppSummary;
 
 interface AgentAppsGridProps {
-  apps: (AgentApp | PublicAgentApp)[];
-  hrefFor?: (app: AgentApp | PublicAgentApp) => string;
-  onClick?: (app: AgentApp | PublicAgentApp) => void;
+  apps: GridApp[];
+  hrefFor?: (app: GridApp) => string;
+  onClick?: (app: GridApp) => void;
   emptyLabel?: string;
 }
 

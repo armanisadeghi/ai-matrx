@@ -638,6 +638,7 @@ export const ProTextarea = React.forwardRef<
     const runActiveAgentAction = useCallback(() => {
       if (
         menuMode === "menu" ||
+        menuMode === "stats" ||
         (isProTextareaAgentActionId(menuMode) &&
           isEmbeddedProTextareaAgentAction(menuMode))
       ) {
@@ -699,6 +700,7 @@ export const ProTextarea = React.forwardRef<
     const applyActiveAgentAction = useCallback(() => {
       if (
         menuMode === "menu" ||
+        menuMode === "stats" ||
         (isProTextareaAgentActionId(menuMode) &&
           isEmbeddedProTextareaAgentAction(menuMode))
       ) {

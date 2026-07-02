@@ -26,7 +26,7 @@ interface CopyOptions {
   showHtmlPreview?: boolean;
   includeThinking?: boolean;
   onSuccess?: () => void;
-  onError?: (err: any) => void;
+  onError?: (err: unknown) => void;
   onShowHtmlPreview?: (html: string) => void;
 }
 
@@ -312,7 +312,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
    * @param {Function} [options.onShowHtmlPreview] - Callback to show HTML preview
    * @returns {Promise<boolean>} - Whether the copy was successful
    */
-  export async function copyToClipboard(content: any, options: CopyOptions = {}) {
+  export async function copyToClipboard(content: unknown, options: CopyOptions = {}) {
     const {
       isMarkdown = false,
       formatForGoogleDocs = false,

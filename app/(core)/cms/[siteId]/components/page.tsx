@@ -43,8 +43,8 @@ export default function ComponentsPage() {
     try {
       const data = await CmsComponentService.listComponents(siteId);
       setComponents(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load components");
     } finally {
       setIsLoading(false);
     }
@@ -70,8 +70,8 @@ export default function ComponentsPage() {
       setEditingId(comp.id);
       setEditHtml("");
       setEditCss("");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create component");
     } finally {
       setIsCreating(false);
     }
@@ -95,8 +95,8 @@ export default function ComponentsPage() {
         prev.map((c) => (c.id === editingId ? updated : c)),
       );
       setEditingId(null);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save component");
     } finally {
       setIsSavingEdit(false);
     }

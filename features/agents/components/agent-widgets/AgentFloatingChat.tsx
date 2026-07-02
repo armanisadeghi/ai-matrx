@@ -7,13 +7,16 @@ import { AgentRunner } from "../smart/AgentRunner";
 import { AgentChatHistorySidebar } from "./AgentChatHistorySidebar";
 
 interface AgentFloatingChatProps {
+  /** Overlay instance id — unique per open panel; also the window-manager id. */
+  instanceId: string;
   conversationId: string;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 export function AgentFloatingChat({
+  instanceId,
   conversationId,
   onClose,
 }: AgentFloatingChatProps) {
@@ -23,6 +26,8 @@ export function AgentFloatingChat({
 
   return (
     <WindowPanel
+      id={instanceId}
+      overlayId="agentFloatingChat"
       title={displayTitle}
       onClose={onClose}
       width={420}
@@ -38,7 +43,7 @@ export function AgentFloatingChat({
       sidebarMinSize={150}
       defaultSidebarOpen={false}
       sidebarExpandsWindow
-      sidebarClassName="bg-muted/10"
+      sidebarClassName="bg-muted/10 border-2 border-red-500"
       // footer={<AgentChatFooter conversationId={conversationId} />}
     >
       <AgentRunner conversationId={conversationId} compact className="h-full" />

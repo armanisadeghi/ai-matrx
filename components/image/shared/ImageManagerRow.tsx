@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ImagePreviewRow } from "./ImagePreviewRow";
 import { ImageManager, ImageManagerProps } from "@/components/image/ImageManager";
-import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
+import { useSelectedImages, type ImageSource } from "@/components/image/context/SelectedImagesProvider";
 import { PlusCircle, Images } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +51,7 @@ export interface ImageManagerRowProps extends Omit<React.HTMLAttributes<HTMLDivE
   /**
    * Callback when selected images change
    */
-  onChange?: (images: any[]) => void;
+  onChange?: (images: ImageSource[]) => void;
   
   /**
    * Callback when the manager is opened

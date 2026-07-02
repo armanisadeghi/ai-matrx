@@ -146,17 +146,18 @@ export async function POST(request: NextRequest) {
       message: "Invitation resent successfully",
       emailSent: emailResult.success,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(
       "Error in POST /api/organizations/invitations/resend:",
       error,
     );
+    const message = error instanceof Error ? error.message : "Failed to resend invitation";
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to resend invitation",
-        details:
-          process.env.NODE_ENV === "development" ? error.stack : undefined,
+        error: message,
+        details: process.env.NODE_ENV === "development" ? stack : undefined,
       },
       { status: 500 },
     );

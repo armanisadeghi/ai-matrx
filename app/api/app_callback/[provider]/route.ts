@@ -8,7 +8,7 @@ interface ProviderConfig {
   redirectUri: string;
   bodyFormat: 'json' | 'form';
   headers?: Record<string, string>;
-  processResponseData?: (data: any) => any;
+  processResponseData?: (data: unknown) => unknown;
 }
 
 // Provider configurations - Simplified to only include Slack
@@ -23,8 +23,9 @@ const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
       'Accept': 'application/json',
     },
     processResponseData: (data) => {
-      if (!data.ok) {
-        throw new Error(data.error || 'Slack API error');
+      const payload = data as { ok?: boolean; error?: string };
+      if (!payload.ok) {
+        throw new Error(payload.error || 'Slack API error');
       }
       console.log('Slack app installed successfully:', data);
       return data;

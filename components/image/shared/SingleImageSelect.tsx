@@ -192,7 +192,7 @@ export function SingleImageSelect({
         if (newSelectedImages.length > 0) {
             const newImageUrl = newSelectedImages[0].url;
             // Durable cld_files id when the source was a cloud file / upload.
-            const newImageFileId = newSelectedImages[0].metadata?.fileId ?? "";
+            const newImageFileId = newSelectedImages[0].metadata?.fileId;
 
             // Only update if changed
             if (newImageUrl !== localImage) {

@@ -51,8 +51,16 @@ const HierarchicalExample = () => {
     // Get the full hierarchical path of a selected library
     const getSelectedPath = (selectedId: string) => {
         if (!selectedId) return "None";
-        
-        const findItem = (options: any[], id: string, path: string[] = []): string[] | null => {
+
+        // Matches the shape of `programmingLibraries` in ./constants —
+        // HierarchicalToggleMenu doesn't export its option types, so this
+        // mirrors them locally rather than casting through `any`.
+        type HierarchyItem = { id: string; label: string; items?: HierarchyItem[] };
+        const findItem = (
+            options: HierarchyItem[],
+            id: string,
+            path: string[] = [],
+        ): string[] | null => {
             for (const option of options) {
                 const currentPath = [...path, option.label];
                 

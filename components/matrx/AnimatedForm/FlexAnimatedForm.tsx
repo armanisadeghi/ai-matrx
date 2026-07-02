@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { Colord } from "colord";
 import { cn } from "@/styles/themes/utils";
 import AnimatedInput from "./AnimatedInput";
 import AnimatedTextarea from "./AnimatedTextarea";
@@ -101,7 +102,7 @@ export interface FlexFormField {
 }
 
 export interface FormState {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export type FormDensity = "normal" | "compact" | "comfortable";
@@ -111,7 +112,7 @@ export type AnimationPreset =
 export interface FlexAnimatedFormProps {
   fields: FlexFormField[];
   formState: FormState;
-  onUpdateField: (name: string, value: any) => void;
+  onUpdateField: (name: string, value: unknown) => void;
   onSubmit?: () => void;
   onSubmitUpdate?: (data: FormState) => void;
   onSubmitCreate?: (data: FormState) => void;
@@ -191,10 +192,12 @@ const FlexAnimatedForm: React.FC<FlexAnimatedFormProps> = ({
     : fields;
 
   const renderField = (field: FlexFormField) => {
+    const rawValue = formState[field.name];
+    const stringValue = typeof rawValue === "string" ? rawValue : "";
     const commonProps = {
       field,
-      value: formState[field.name] || "",
-      onChange: (value: any) => onUpdateField(field.name, value),
+      value: stringValue,
+      onChange: (value: string) => onUpdateField(field.name, value),
     };
 
     switch (field.type) {
@@ -213,33 +216,35 @@ const FlexAnimatedForm: React.FC<FlexAnimatedFormProps> = ({
         return (
           <AnimatedCheckbox
             field={field}
-            checked={formState[field.name] || false}
+            checked={typeof rawValue === "boolean" ? rawValue : false}
             onChange={(checked) => onUpdateField(field.name, checked)}
           />
         );
       case "radio":
         return <AnimatedRadioGroup layout="vertical" {...commonProps} />;
-      case "slider":
+      case "slider": {
+        const sliderValue = typeof rawValue === "number" ? rawValue : field.min;
         return (
           <Slider
             min={field.min}
             max={field.max}
             step={field.step}
-            value={[formState[field.name] || field.min]}
+            value={[sliderValue ?? 0]}
             onValueChange={(value) => onUpdateField(field.name, value[0])}
           />
         );
+      }
       case "switch":
         return (
           <Switch
-            checked={formState[field.name] || false}
+            checked={typeof rawValue === "boolean" ? rawValue : false}
             onCheckedChange={(checked) => onUpdateField(field.name, checked)}
           />
         );
       case "date":
         return (
           <DatePicker
-            value={formState[field.name]}
+            value={rawValue instanceof Date ? rawValue : undefined}
             onChange={(date) => onUpdateField(field.name, date)}
             placeholder={field.placeholder || "Select a date"}
             formatString={"MM/dd/yyyy"}
@@ -248,14 +253,14 @@ const FlexAnimatedForm: React.FC<FlexAnimatedFormProps> = ({
       case "time":
         return (
           <TimePicker
-            value={formState[field.name]}
+            value={typeof rawValue === "string" ? rawValue : undefined}
             onChange={(time) => onUpdateField(field.name, time)}
           />
         );
       case "color":
         return (
           <ColorPicker
-            color={formState[field.name]}
+            color={rawValue instanceof Colord ? rawValue : undefined}
             onChange={(color) => onUpdateField(field.name, color)}
           />
         );
@@ -263,7 +268,11 @@ const FlexAnimatedForm: React.FC<FlexAnimatedFormProps> = ({
         return (
           <FullEditableJsonViewer
             title={field.label}
-            data={formState[field.name]}
+            data={
+              typeof rawValue === "string" || (typeof rawValue === "object" && rawValue !== null)
+                ? rawValue
+                : null
+            }
             onChange={(json) => onUpdateField(field.name, json)}
             initialExpanded={true}
             maxHeight={"500px"}
@@ -279,14 +288,14 @@ const FlexAnimatedForm: React.FC<FlexAnimatedFormProps> = ({
       case "image":
         return (
           <ImageDisplay
-            src={field.src || formState[field.name]}
+            src={field.src || stringValue}
             alt={field.alt || field.label}
           />
         );
       case "rating":
         return (
           <StarRating
-            rating={formState[field.name] || 0}
+            rating={typeof rawValue === "number" ? rawValue : 0}
             onChange={(rating) => onUpdateField(field.name, rating)}
             color={"amber"}
             size={"md"}

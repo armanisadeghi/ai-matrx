@@ -62,14 +62,14 @@ const MatrxInputGroup: React.FC<MatrxInputGroupProps> = (
                 )}
             >
                 {React.Children.map(children, (child) => {
-                    if (React.isValidElement(child)) {
-                        return React.cloneElement(child as any, {
+                    if (React.isValidElement<Record<string, unknown>>(child)) {
+                        return React.cloneElement(child, {
                             size,
                             density,
                             variant,
                             disabled,
                             hideLabel: true,
-                            ...(child.props as object)
+                            ...child.props,
                         });
                     }
                     return child;

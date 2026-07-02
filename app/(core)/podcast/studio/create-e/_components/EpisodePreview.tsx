@@ -25,6 +25,7 @@ import {
   LANGUAGE_OPTIONS,
   FORMAT_OPTIONS,
   SOURCE_OPTIONS,
+  findOptionOrFirst,
 } from "@/features/podcasts/generator/constants";
 import type {
   PodcastLanguageCode,
@@ -52,9 +53,9 @@ export function EpisodePreview({
   showId,
   hasSource,
 }: Props) {
-  const fmt = FORMAT_OPTIONS.find((f) => f.value === format)!;
-  const lang = LANGUAGE_OPTIONS.find((l) => l.code === language)!;
-  const source = SOURCE_OPTIONS.find((o) => o.kind === sourceKind)!;
+  const fmt = findOptionOrFirst(FORMAT_OPTIONS, format, (f) => f.value);
+  const lang = findOptionOrFirst(LANGUAGE_OPTIONS, language, (l) => l.code);
+  const source = findOptionOrFirst(SOURCE_OPTIONS, sourceKind, (o) => o.kind);
   const show = MOCK_SHOWS.find((s) => s.id === showId);
   const hostLabel =
     hostCount === "4-20"

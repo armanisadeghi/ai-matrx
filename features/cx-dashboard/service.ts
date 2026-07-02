@@ -669,15 +669,15 @@ export async function fetchErrors(filters: CxFilters) {
   );
 
   return {
-    error_requests: (errorRequests || []).map((r: any) => {
+    error_requests: (errorRequests || []).map((r) => {
       const info = errConvInfo.get(r.id);
       return {
         ...r,
         conversation_id: info?.conversation_id ?? null,
         conversation_title: info?.conversation_title ?? null,
       };
-    }),
-    error_tool_calls: errorToolCalls || [],
+    }) as CxUserRequest[],
+    error_tool_calls: (errorToolCalls || []) as CxToolCall[],
   };
 }
 

@@ -53,6 +53,7 @@ import {
   HOST_OPTIONS,
   LENGTH_OPTIONS,
 } from "../_mock/options";
+import { findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import { MOCK_SHOWS, type MockShow } from "../_mock/shows";
 import { OptionTile } from "./OptionTile";
 import { EpisodeBrief } from "./EpisodeBrief";
@@ -80,7 +81,7 @@ export function StudioComposer() {
   const set = <K extends keyof EpisodeDraft>(key: K, value: EpisodeDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const activeSource = SOURCE_OPTIONS.find((s) => s.kind === draft.sourceKind)!;
+  const activeSource = findOptionOrFirst(SOURCE_OPTIONS, draft.sourceKind, (s) => s.kind);
   const language = LANGUAGE_OPTIONS.find((l) => l.code === draft.language);
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
 

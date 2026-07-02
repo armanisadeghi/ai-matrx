@@ -23,7 +23,7 @@ export interface ImageSource {
     fileSize?: number;
     /** When the resolved URL expires (epoch ms). null = permanent CDN URL. */
     urlExpiresAt?: number | null;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

@@ -56,6 +56,7 @@ import {
   SOURCE_OPTIONS,
   DEFAULT_LANGUAGE,
   isRtlLanguage,
+  findOptionOrFirst,
 } from "@/features/podcasts/generator/constants";
 import type {
   PodcastSourceKind,
@@ -95,7 +96,7 @@ export function CreateConsole() {
     null,
   );
 
-  const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind)!;
+  const activeSource = findOptionOrFirst(SOURCE_OPTIONS, sourceKind, (o) => o.kind);
   const isRtl = isRtlLanguage(language);
   const isUrlSource = activeSource.control === "urls";
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);

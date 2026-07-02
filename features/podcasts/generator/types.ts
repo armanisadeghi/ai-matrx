@@ -294,6 +294,19 @@ export interface MediaSlot {
   note?: string | null;
 }
 
+/** A MediaSlot that has finished rendering and has a real url — the shape
+ *  every gallery/preview surface actually wants once it's filtered out
+ *  pending/running/failed slots. Narrows `url` from `string | null` to
+ *  `string` so consumers don't need a non-null assertion after filtering. */
+export type ReadyMediaSlot = MediaSlot & { url: string };
+
+/** Type-guard filter predicate: `done` status AND a real url. Use as
+ *  `slots.filter(isReadyMediaSlot)` to get a `ReadyMediaSlot[]` with `url`
+ *  already narrowed to `string`. */
+export function isReadyMediaSlot(slot: MediaSlot): slot is ReadyMediaSlot {
+  return slot.status === "done" && !!slot.url;
+}
+
 export type StageStatus = "running" | "done" | "failed";
 
 export interface StageRow {

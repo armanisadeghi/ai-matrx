@@ -71,12 +71,12 @@ export async function POST(request: NextRequest) {
       success: true,
       data: result.data,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending email:', error);
     return NextResponse.json(
-      { 
-        error: error.message || 'Failed to send email',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      {
+        error: error instanceof Error ? error.message : 'Failed to send email',
+        details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

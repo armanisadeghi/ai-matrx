@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { SOURCE_OPTIONS } from "@/features/podcasts/generator/constants";
+import { SOURCE_OPTIONS, findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import type { PodcastSourceKind } from "@/features/podcasts/generator/types";
 
 export function SourcePicker({
@@ -24,7 +24,7 @@ export function SourcePicker({
   value: PodcastSourceKind;
   onChange: (kind: PodcastSourceKind) => void;
 }) {
-  const active = SOURCE_OPTIONS.find((o) => o.kind === value)!;
+  const active = findOptionOrFirst(SOURCE_OPTIONS, value, (o) => o.kind);
   const ActiveIcon = active.icon;
 
   return (

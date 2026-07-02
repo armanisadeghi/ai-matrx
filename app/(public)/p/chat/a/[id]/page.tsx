@@ -20,7 +20,7 @@ export default async function AgentPage({
   const { id } = await params;
 
   // Fire-and-forget: warm the agent on the Python backend.
-  warmAgent(id, { baseUrl: BACKEND_URLS.production ?? "" });
+  warmAgent(id, { baseUrl: BACKEND_URLS.production });
 
   return (
     <div className="h-full w-full bg-textured">

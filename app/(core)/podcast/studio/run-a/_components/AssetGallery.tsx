@@ -79,7 +79,7 @@ function Group({
 }
 
 function Slot({ slot, isVideo }: { slot: MediaSlot; isVideo: boolean }) {
-  const ready = slot.status === "done" && slot.url;
+  const url = slot.status === "done" ? slot.url : undefined;
   const failed = slot.status === "failed";
 
   return (
@@ -89,11 +89,11 @@ function Slot({ slot, isVideo }: { slot: MediaSlot; isVideo: boolean }) {
       )}
       title={slot.prompt || undefined}
     >
-      {ready ? (
+      {url ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element -- demo placeholder media only */}
           <img
-            src={slot.url!}
+            src={url}
             alt={slot.prompt || "Generated asset"}
             className="h-full w-full object-cover duration-500 animate-in fade-in"
           />

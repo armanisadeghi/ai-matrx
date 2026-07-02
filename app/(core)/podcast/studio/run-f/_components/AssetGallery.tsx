@@ -10,7 +10,7 @@
 import Image from "next/image";
 import { ImageIcon, Clapperboard, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { BoothState, MediaSlot } from "./boothState";
+import { isReadyMediaSlot, type BoothState, type MediaSlot } from "./boothState";
 
 export function AssetGallery({ state }: { state: BoothState }) {
   const slots = [...state.images, ...state.videos];
@@ -35,14 +35,14 @@ export function AssetGallery({ state }: { state: BoothState }) {
 
 function AssetTile({ slot }: { slot: MediaSlot }) {
   const Icon = slot.kind === "video" ? Clapperboard : ImageIcon;
-  const ready = slot.status === "done" && slot.url;
+  const ready = isReadyMediaSlot(slot);
 
   return (
     <figure className="group relative aspect-video overflow-hidden rounded-xl border border-border bg-muted">
       {ready ? (
         <>
           <Image
-            src={slot.url!}
+            src={slot.url}
             alt={slot.prompt || `${slot.kind} ${slot.index + 1}`}
             fill
             sizes="(max-width: 640px) 50vw, 200px"

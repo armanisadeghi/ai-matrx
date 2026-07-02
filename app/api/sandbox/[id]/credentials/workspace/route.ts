@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   resolveProxyContext,
   forwardToOrchestrator,
@@ -56,14 +56,14 @@ export async function POST(
   // CredentialsModal flow. We pass the token through `forwardToOrchestrator`
   // exactly once and discard the inbound body.
   const upstreamUrl = `${ctx.orchestrator.url}/sandboxes/${ctx.sandboxId}/credentials`;
-  const synthetic = new Request(upstreamUrl, {
+  const synthetic = new NextRequest(upstreamUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ kind: "github", token, scope }),
   });
 
   return forwardToOrchestrator(
-    synthetic as unknown as Parameters<typeof forwardToOrchestrator>[0],
+    synthetic,
     upstreamUrl,
     ctx.orchestrator,
     { timeoutMs: 30_000 },

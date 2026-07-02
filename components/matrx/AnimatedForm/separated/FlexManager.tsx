@@ -38,7 +38,7 @@ interface FlexManagerProps {
     layout: 'grid' | 'sections' | 'accordion' | 'tabs' | 'masonry' | 'carousel' | 'timeline';
     fields: FlexFormField[];
     formState: FormState;
-    onUpdateField: (name: string, value: any) => void;
+    onUpdateField: (name: string, value: unknown) => void;
     columns: number | 'auto' | { xs: number, sm: number, md: number, lg: number, xl: number };
     direction: 'row' | 'column' | 'row-reverse' | 'column-reverse';
     carouselActiveIndex?: number;

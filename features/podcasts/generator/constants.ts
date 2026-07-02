@@ -413,6 +413,28 @@ export const HOST_COUNT_OPTIONS: HostCountOption[] = [
 export const MAX_HOST_COUNT = 20;
 
 /**
+ * Look up an option by key, falling back to the list's first entry when the
+ * key doesn't match (e.g. a hostCount outside the fixed tile set, like an
+ * exact count typed into the "5+" custom picker). Every studio create/run
+ * variant's `X_OPTIONS.find(...)` was previously asserted with `!`, which
+ * would throw at runtime the moment a caller passed a key the list didn't
+ * cover — this makes the "not found" case an explicit, safe fallback instead.
+ */
+export function findOptionOrFirst<T, K>(
+  options: readonly T[],
+  key: K,
+  getKey: (option: T) => K,
+): T {
+  const found = options.find((option) => getKey(option) === key);
+  if (found) return found;
+  const first = options[0];
+  if (!first) {
+    throw new Error("findOptionOrFirst: options list is empty");
+  }
+  return first;
+}
+
+/**
  * Friendly fallback labels for stage keys, used when a stage_started event
  * hasn't supplied its own `label` yet. The backend always sends a `label`, so
  * this is purely defensive / for the collapsed timeline.

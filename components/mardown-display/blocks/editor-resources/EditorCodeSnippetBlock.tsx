@@ -29,9 +29,9 @@ export default function EditorCodeSnippetBlock({
   content,
   metadata,
 }: EditorCodeSnippetBlockProps) {
-  const file = (metadata?.file as string) ?? "";
-  const range = (metadata?.range as string) ?? "";
-  const language = (metadata?.language as string) ?? "plaintext";
+  const file = typeof metadata?.file === "string" ? metadata.file : "";
+  const range = typeof metadata?.range === "string" ? metadata.range : "";
+  const language = typeof metadata?.language === "string" ? metadata.language : "plaintext";
 
   const label = `${file ? basename(file) : "Snippet"}${range ? `:${range.replace(/^L?(\d+)-L?(\d+)$/, "$1-$2")}` : ""}`;
   const snippet = content.trim();

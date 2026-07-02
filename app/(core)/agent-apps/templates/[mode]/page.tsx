@@ -51,7 +51,8 @@ export default async function TemplateDemoPage({
 
   const displayMode = mode as AppDisplayMode;
   const templateCode = getTemplateForDisplayMode(displayMode);
-  const option = DISPLAY_MODE_OPTIONS.find((o) => o.value === displayMode)!;
+  const option = DISPLAY_MODE_OPTIONS.find((o) => o.value === displayMode);
+  if (!option) notFound();
 
   const navItems = DISPLAY_MODE_OPTIONS.filter((o) =>
     VALID_MODES.includes(o.value),

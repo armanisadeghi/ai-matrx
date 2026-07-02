@@ -13,8 +13,9 @@ export interface Recipe {
     id: string;
     name: string;
     description?: string;
-    tags?: any;
+    tags?: unknown;
     status?: string;
+    [key: string]: unknown;
 }
 
 /**

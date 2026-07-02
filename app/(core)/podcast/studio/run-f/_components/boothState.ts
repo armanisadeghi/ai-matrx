@@ -18,6 +18,14 @@ export interface MediaSlot {
   status: "pending" | "running" | "done";
 }
 
+/** A MediaSlot that has finished rendering and has a real url. */
+export type ReadyMediaSlot = MediaSlot & { url: string };
+
+/** Type-guard: `done` status AND a real url — narrows `url` to `string`. */
+export function isReadyMediaSlot(slot: MediaSlot): slot is ReadyMediaSlot {
+  return slot.status === "done" && !!slot.url;
+}
+
 export interface BoothState {
   status: "running" | "done" | "error";
   /** Per-act lifecycle. Drives the act rail + the central stage. */

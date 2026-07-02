@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { episodeHref } from "@/features/podcasts/generator/constants";
-import type { PodcastRunState } from "@/features/podcasts/generator/types";
+import { isReadyMediaSlot, type PodcastRunState } from "@/features/podcasts/generator/types";
 import { Equalizer } from "./Equalizer";
 
 export function FinishedPlayer({ state }: { state: PodcastRunState }) {
@@ -33,8 +33,8 @@ export function FinishedPlayer({ state }: { state: PodcastRunState }) {
   const [scriptOpen, setScriptOpen] = useState(false);
 
   const cover = state.images.find((i) => i.url)?.url ?? null;
-  const videos = state.videos.filter((v) => v.url);
-  const extraImages = state.images.filter((i) => i.url);
+  const videos = state.videos.filter(isReadyMediaSlot);
+  const extraImages = state.images.filter(isReadyMediaSlot);
   const href = episodeHref(state.episodeSlug, state.episodeId);
 
   const toggle = () => {
@@ -140,7 +140,7 @@ export function FinishedPlayer({ state }: { state: PodcastRunState }) {
             {extraImages.map((img) => (
               <GalleryItem
                 key={`img-${img.index}`}
-                url={img.url!}
+                url={img.url}
                 prompt={img.prompt}
                 icon={ImageIcon}
                 label="Cover art"
@@ -149,7 +149,7 @@ export function FinishedPlayer({ state }: { state: PodcastRunState }) {
             {videos.map((v) => (
               <GalleryItem
                 key={`vid-${v.index}`}
-                url={v.url!}
+                url={v.url}
                 prompt={v.prompt}
                 icon={Clapperboard}
                 label="Video clip"

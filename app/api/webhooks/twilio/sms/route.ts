@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Forbidden', { status: 403 });
     }
 
-    const payload = params as unknown as InboundSmsPayload;
+    const payload = params as InboundSmsPayload;
     const twiml = new twilio.twiml.MessagingResponse();
 
     // Check if sender is opted out

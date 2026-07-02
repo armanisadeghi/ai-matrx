@@ -47,14 +47,14 @@ export default function OrganizationSettingsPage() {
     organization,
     loading: orgLoading,
     error: orgError,
-  } = useOrganization(resolvedOrgId ?? "");
+  } = useOrganization(resolvedOrgId ?? undefined);
 
   const {
     role,
     loading: roleLoading,
     isOwner,
     isAdmin,
-  } = useUserRole(resolvedOrgId ?? "");
+  } = useUserRole(resolvedOrgId ?? undefined);
 
   const loading = resolving || orgLoading || roleLoading;
 

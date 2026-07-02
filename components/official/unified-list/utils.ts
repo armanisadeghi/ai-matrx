@@ -153,7 +153,7 @@ export function buildBreadcrumbPath<T extends HierarchicalListItem>(
   while (current) {
     path.unshift({ id: current.id, name: current.name });
 
-    const parentId = current.parentId;
+    const parentId: string | null | undefined = current.parentId;
     current = parentId ? allItems.find(i => i.id === parentId) : undefined;
   }
   

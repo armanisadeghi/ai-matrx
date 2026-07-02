@@ -370,7 +370,7 @@ const createTextWithFormatting = (text: string | undefined, startIndex: number =
     let currentIndex = startIndex;
     
     // Find all **bold** patterns and their positions
-    const parts = text.split(/(\*\*.*?\*\*)/g);
+    const parts = (text ?? '').split(/(\*\*.*?\*\*)/g);
     plainText = '';
     
     parts.forEach(part => {

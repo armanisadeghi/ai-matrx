@@ -1,6 +1,9 @@
 import { cn } from "@/lib/utils";
-import { useRef } from "react";
+import { useRef, type CSSProperties } from "react";
 import Image from "next/image";
+
+/** CSS custom properties (`--foo`) aren't in React's CSSProperties - this widens it honestly instead of `as any`. */
+type CSSPropertiesWithVars = CSSProperties & Record<`--${string}`, string>;
 
 export const GlareCard = ({
   children,
@@ -26,7 +29,7 @@ export const GlareCard = ({
     },
   });
   
-  const containerStyle = {
+  const containerStyle: CSSPropertiesWithVars = {
     "--m-x": "50%",
     "--m-y": "50%",
     "--r-x": "0deg",
@@ -38,7 +41,7 @@ export const GlareCard = ({
     "--opacity": "0",
     "--radius": "48px",
     "--easing": "ease",
-  } as any;
+  };
 
   const backgroundStyle = {
     "--step": "5%",

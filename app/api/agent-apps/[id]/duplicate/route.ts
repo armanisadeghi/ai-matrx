@@ -26,8 +26,8 @@ export async function POST(
 ) {
   try {
     const { id } = await context.params;
-    const supabase = (await createClient()) as unknown as any;
-    const admin = createAdminClient() as unknown as any;
+    const supabase = await createClient();
+    const admin = createAdminClient();
 
     const {
       data: { user },
@@ -36,6 +36,24 @@ export async function POST(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // app.definition.organization_id is NOT NULL — duplicating always resets
+    // ownership to the *acting* user's own scope (never the original's org),
+    // so resolve their personal org rather than passing null.
+    const { data: personalOrgId, error: orgError } = await supabase.rpc(
+      "ensure_personal_organization",
+      { p_user_id: user.id },
+    );
+    if (orgError || !personalOrgId) {
+      console.error(
+        "[agent-apps duplicate] failed to resolve personal organization:",
+        orgError,
+      );
+      return NextResponse.json(
+        { error: "Failed to resolve personal organization" },
+        { status: 500 },
+      );
     }
 
     // RLS scoping is fine here — the user must already be able to read the
@@ -88,7 +106,7 @@ export async function POST(
       .insert({
         user_id: user.id,
         created_by: user.id,
-        organization_id: null,
+        organization_id: personalOrgId,
         project_id: null,
         task_id: null,
         agent_id: original.agent_id,

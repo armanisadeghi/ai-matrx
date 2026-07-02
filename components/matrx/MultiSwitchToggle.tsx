@@ -15,23 +15,25 @@ const defaultSizes = {
     height: 'h-16',
 } as const;
 
-interface MultiSwitchToggleProps {
+interface MultiSwitchToggleState<T> {
+    label?: string;
+    icon?: React.ReactNode;
+    value: T;
+}
+
+interface MultiSwitchToggleProps<T = unknown> {
     variant?: 'rounded' | 'geometric' | string;
     defaultValue?: number;
-    value?: string | number;
-    states: Array<{
-        label?: string;
-        icon?: React.ReactNode;
-        value: any;
-    }>;
-    onChange?: (value: any) => void;
+    value?: T;
+    states: Array<MultiSwitchToggleState<T>>;
+    onChange?: (value: T) => void;
     width?: string;
     height?: string;
     disabled?: boolean;
     className?: string;
 }
 
-const MultiSwitchToggle = forwardRef<any, MultiSwitchToggleProps>(({
+const MultiSwitchToggleInner = <T,>({
     variant = 'geometric',
     defaultValue = 0,
     value,
@@ -41,7 +43,7 @@ const MultiSwitchToggle = forwardRef<any, MultiSwitchToggleProps>(({
     height,
     disabled = false,
     className,
-}: MultiSwitchToggleProps, ref) => {
+}: MultiSwitchToggleProps<T>, ref: React.ForwardedRef<HTMLDivElement>) => {
     const [internalState, setInternalState] = useState(defaultValue);
     const validVariant = noErrors(variant, 'rounded', ['rounded', 'geometric']);
 
@@ -151,8 +153,16 @@ const MultiSwitchToggle = forwardRef<any, MultiSwitchToggleProps>(({
             </div>
         </TooltipProvider>
     );
-});
+};
 
-MultiSwitchToggle.displayName = 'MultiSwitchToggle';
+MultiSwitchToggleInner.displayName = 'MultiSwitchToggle';
+
+// React.forwardRef's type declaration cannot express a generic-over-T component,
+// so the forwarded component is re-typed here as a generic function accepting a
+// ref, preserving full type safety for `states`/`value`/`onChange` at every call
+// site instead of erasing them to `any`.
+const MultiSwitchToggle = forwardRef(MultiSwitchToggleInner) as <T>(
+    props: MultiSwitchToggleProps<T> & { ref?: React.ForwardedRef<HTMLDivElement> },
+) => ReturnType<typeof MultiSwitchToggleInner>;
 
 export default MultiSwitchToggle;

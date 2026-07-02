@@ -17,6 +17,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeftToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WINDOW_CHROME_ACTIONS } from "./chromeClasses";
 
 export interface PopoutTopBarProps {
   /** Title displayed centered in the bar. Accepts string or arbitrary node. */
@@ -54,9 +55,7 @@ export function PopoutTopBar({
     >
       {/* Left actions */}
       {actionsLeft && (
-        <div className="flex items-center gap-0.5 shrink-0 text-foreground/80 [&_svg]:text-foreground/80">
-          {actionsLeft}
-        </div>
+        <div className={WINDOW_CHROME_ACTIONS}>{actionsLeft}</div>
       )}
 
       {/* Centered title */}
@@ -68,16 +67,14 @@ export function PopoutTopBar({
 
       {/* Right actions */}
       {actionsRight && (
-        <div className="flex items-center gap-0.5 shrink-0 text-foreground/80 [&_svg]:text-foreground/80">
-          {actionsRight}
-        </div>
+        <div className={WINDOW_CHROME_ACTIONS}>{actionsRight}</div>
       )}
 
       {/* Dock back button — always last, visually anchors the right side */}
       <button
         type="button"
         className={cn(
-          "ml-1 p-1 rounded hover:bg-accent/60 transition-colors shrink-0",
+          "ml-1 p-1 rounded hover:bg-accent/60 transition-colors shrink-0 cursor-pointer",
           "text-foreground/60 hover:text-foreground",
         )}
         onClick={onDock}

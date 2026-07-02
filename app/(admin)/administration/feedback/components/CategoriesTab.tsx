@@ -445,14 +445,13 @@ export default function CategoriesTab() {
                         <div className="space-y-2">
                             {categories.map((cat) => {
                                 const colors = CATEGORY_COLORS[cat.color as keyof typeof CATEGORY_COLORS] ?? CATEGORY_COLORS.gray;
-                                const isEditingThis = editing?.id === cat.id;
                                 const itemCount = allFeedback.filter(f => f.category_id === cat.id).length;
 
-                                if (isEditingThis) {
+                                if (editing && editing.id === cat.id) {
                                     return (
                                         <CategoryForm
                                             key={cat.id}
-                                            editing={editing!}
+                                            editing={editing}
                                             onChange={setEditing}
                                             onSave={handleSave}
                                             onCancel={() => setEditing(null)}

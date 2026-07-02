@@ -1263,7 +1263,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         id="edit-is-active"
                         checked={editData.is_active !== false}
                         onCheckedChange={(checked) =>
-                          handleEditChange("is_active", checked)
+                          handleEditChange("is_active", checked === true)
                         }
                       />
                       <Label htmlFor="edit-is-active">
@@ -2267,7 +2267,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                   This category{" "}
                   <strong>"{deleteConfirmation.item?.label}"</strong> has{" "}
                   {deleteConfirmation.hasChildren &&
-                    `${deleteConfirmation.item?.children?.length} child categories`}
+                    deleteConfirmation.item &&
+                    "children" in deleteConfirmation.item &&
+                    `${deleteConfirmation.item.children?.length} child categories`}
                   {deleteConfirmation.hasChildren &&
                     deleteConfirmation.hasBlocks &&
                     deleteConfirmation.hasBlocks > 0 &&

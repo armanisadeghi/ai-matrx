@@ -21,6 +21,7 @@ import {
   ZoomOut,
   Check,
 } from "lucide-react";
+import type { Photo } from "./EnhancedUnsplashGallery";
 
 const variants = {
   enter: (direction: number) => ({
@@ -44,15 +45,15 @@ const swipePower = (offset: number, velocity: number) =>
   Math.abs(offset) * velocity;
 
 interface EnhancedImageViewerProps {
-  photos: any[];
+  photos: Photo[];
   initialIndex: number;
   onClose: () => void;
-  onDownload: (photo: any) => void;
-  onFavorite: (photo: any) => void;
-  onShare: (photo: any) => void;
-  onInfo: (photo: any) => void;
-  isFavorite: (photo: any) => boolean;
-  onRelatedPhotoClick: (photo: any) => void;
+  onDownload: (photo: Photo) => void;
+  onFavorite: (photo: Photo) => void;
+  onShare: (photo: Photo) => void;
+  onInfo: (photo: Photo) => void;
+  isFavorite: (photo: Photo) => boolean;
+  onRelatedPhotoClick: (photo: Photo) => void;
   loadMorePhotos: () => void;
   isSharing?: boolean;
 }

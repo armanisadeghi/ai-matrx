@@ -94,7 +94,7 @@ export const jsonUtils = {
 
     for (let i = 0; i < lastIndex; i++) {
       const key = path[i];
-      const nested = (current as JsonObject)[key];
+      const nested: JsonValue | undefined = (current as JsonObject)[key];
       const clonedNested: JsonObject | JsonValue[] = Array.isArray(nested)
         ? [...nested]
         : { ...(nested as JsonObject) };

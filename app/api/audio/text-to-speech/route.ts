@@ -97,29 +97,31 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('TTS error:', error);
 
     // Handle specific Groq API errors
-    if (error?.status === 401) {
-      return NextResponse.json(
-        { error: 'API authentication failed' },
-        { status: 500 }
-      );
-    }
+    if (error instanceof Groq.APIError) {
+      if (error.status === 401) {
+        return NextResponse.json(
+          { error: 'API authentication failed' },
+          { status: 500 }
+        );
+      }
 
-    if (error?.status === 429) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
-      );
+      if (error.status === 429) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded. Please try again later.' },
+          { status: 429 }
+        );
+      }
     }
 
     // Generic error response
     return NextResponse.json(
-      { 
+      {
         error: 'Text-to-speech generation failed',
-        details: error?.message || 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

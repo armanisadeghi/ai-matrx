@@ -60,7 +60,8 @@ export async function POST(req: NextRequest) {
 
             return new NextResponse(response.body, {headers});
         })
-        .catch((error: any) => {
-            return new NextResponse(error || error?.message, {status: 500});
+        .catch((error: unknown) => {
+            const message = error instanceof Error ? error.message : String(error);
+            return new NextResponse(message, {status: 500});
         });
 }

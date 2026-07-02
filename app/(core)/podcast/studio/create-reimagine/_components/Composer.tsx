@@ -61,6 +61,7 @@ import {
   isRtlLanguage,
   deriveBackendPodcastType,
   HOST_COUNT_DEFAULT,
+  findOptionOrFirst,
 } from "@/features/podcasts/generator/constants";
 import type {
   PodcastGenerateRequest,
@@ -95,7 +96,7 @@ export function Composer() {
   const [busy, setBusy] = useState(false);
   const [, startTransition] = useTransition();
 
-  const activeSource = SOURCE_OPTIONS.find((o) => o.kind === sourceKind)!;
+  const activeSource = findOptionOrFirst(SOURCE_OPTIONS, sourceKind, (o) => o.kind);
   const cleanUrls = urls.map((u) => u.trim()).filter(Boolean);
   const isRtl = isRtlLanguage(language);
 

@@ -22,6 +22,7 @@ import { useGoogleAPIOptional } from "@/providers/google-provider/GoogleApiProvi
 import { PresentationPublishModal } from "./PresentationPublishModal";
 import { useHTMLPages } from "@/features/html-pages/hooks/useHTMLPages";
 import { generatePresentationHTML } from "./presentation-html-generator";
+import { resolveDeckTheme } from "./presets";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "sonner";
@@ -313,6 +314,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
     document.body.appendChild(tempContainer);
 
     const slideElements: HTMLElement[] = [];
+    const theme = resolveDeckTheme(presentationData.theme);
 
     try {
       // Render each slide to the temp container
@@ -330,7 +332,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
         if (slide.type === "intro") {
           slideDiv.innerHTML = `
                         <div style="text-align: center;">
-                            <h1 style="font-size: 48px; font-weight: bold; color: ${presentationData.theme.primaryColor}; margin-bottom: 24px;">
+                            <h1 style="font-size: 48px; font-weight: bold; color: ${theme.primaryColor}; margin-bottom: 24px;">
                                 ${parseMarkdownToHTML(slide.title)}
                             </h1>
                             <p style="font-size: 24px; color: #4B5563;">
@@ -343,7 +345,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
             .map(
               (bullet: string) => `
                         <div style="display: flex; gap: 12px; padding: 12px; margin-bottom: 8px; background: #F9FAFB; border-radius: 8px;">
-                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${presentationData.theme.primaryColor}; margin-top: 8px;"></div>
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${theme.primaryColor}; margin-top: 8px;"></div>
                             <p style="font-size: 18px; color: #1F2937;">${parseMarkdownToHTML(bullet)}</p>
                         </div>
                     `,
@@ -352,7 +354,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
 
           slideDiv.innerHTML = `
                         <div>
-                            <h2 style="font-size: 36px; font-weight: bold; color: ${presentationData.theme.primaryColor}; margin-bottom: 16px;">
+                            <h2 style="font-size: 36px; font-weight: bold; color: ${theme.primaryColor}; margin-bottom: 16px;">
                                 ${parseMarkdownToHTML(slide.title)}
                             </h2>
                             <p style="font-size: 20px; color: #6B7280; margin-bottom: 24px;">

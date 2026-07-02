@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { requireEnv } from "@/utils/supabase/env";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_URL = requireEnv(
+  "NEXT_PUBLIC_SUPABASE_URL",
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+);
 const TOKEN_UPSTREAM = `${SUPABASE_URL}/auth/v1/oauth/token`;
 const USERINFO_UPSTREAM = `${SUPABASE_URL}/auth/v1/oauth/userinfo`;
 

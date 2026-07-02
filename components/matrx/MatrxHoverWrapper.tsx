@@ -54,8 +54,8 @@ const MatrxHoverWrapper = React.forwardRef<HTMLDivElement, MatrxHoverWrapperProp
             {...props}
         >
             {React.Children.map(children, (child) => {
-                if (React.isValidElement(child)) {
-                    return React.cloneElement(child as React.ReactElement<any>, {
+                if (React.isValidElement<{ className?: string }>(child)) {
+                    return React.cloneElement(child, {
                         className: cn(
                             'flex w-full border-none bg-background text-black dark:text-white shadow-input rounded-md px-3 py-2 text-sm',
                             'placeholder:text-neutral-400 dark:placeholder-text-neutral-600',
@@ -63,7 +63,7 @@ const MatrxHoverWrapper = React.forwardRef<HTMLDivElement, MatrxHoverWrapperProp
                             'disabled:cursor-not-allowed disabled:opacity-50',
                             'dark:shadow-[0px_0px_1px_1px_var(--neutral-700)]',
                             'group-hover/input:shadow-none transition duration-400',
-                            (child.props as { className?: string }).className
+                            child.props.className
                         )
                     });
                 }

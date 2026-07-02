@@ -127,7 +127,15 @@ const Grid = ({
     );
 };
 
-function GridPattern({width, height, x, y, squares, ...props}: any) {
+interface GridPatternProps extends React.SVGProps<SVGSVGElement> {
+    width: number;
+    height: number;
+    x: string | number;
+    y: string | number;
+    squares?: number[][];
+}
+
+function GridPattern({width, height, x, y, squares, ...props}: GridPatternProps) {
     const patternId = useId();
 
     return (
@@ -152,7 +160,7 @@ function GridPattern({width, height, x, y, squares, ...props}: any) {
             />
             {squares && (
                 <svg x={x} y={y} className="overflow-visible">
-                    {squares.map(([x, y]: any, i: number) => (
+                    {squares.map(([x, y], i: number) => (
                         <rect
                             strokeWidth="0"
                             key={`${x}-${y}-${i}`}

@@ -48,8 +48,10 @@ export function MatrxFileBlock({
     const detected = detectMatrxFileMarkdown(content);
     const url = detected.url ?? src ?? "";
     const label = detected.label ?? alt ?? "";
-    const pre = detected.pre ?? (metadata?.pre as string | undefined) ?? "";
-    const post = detected.post ?? (metadata?.post as string | undefined) ?? "";
+    const metaPre = typeof metadata?.pre === "string" ? metadata.pre : undefined;
+    const metaPost = typeof metadata?.post === "string" ? metadata.post : undefined;
+    const pre = detected.pre ?? metaPre ?? "";
+    const post = detected.post ?? metaPost ?? "";
     return { url, label, pre, post };
   }, [content, src, alt, metadata]);
 

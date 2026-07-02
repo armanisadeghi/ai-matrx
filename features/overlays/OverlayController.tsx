@@ -1831,6 +1831,7 @@ export default function OverlayController() {
         return (
           <AgentFlexiblePanel
             key={inst.instanceId}
+            instanceId={inst.instanceId}
             onClose={() =>
               dispatch(
                 closeOverlay({
@@ -1854,6 +1855,7 @@ export default function OverlayController() {
         return (
           <AgentFloatingChat
             key={inst.instanceId}
+            instanceId={inst.instanceId}
             onClose={() =>
               dispatch(
                 closeOverlay({

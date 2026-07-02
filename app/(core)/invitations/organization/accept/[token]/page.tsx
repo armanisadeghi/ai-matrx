@@ -180,7 +180,7 @@ export default function AcceptInvitationPage() {
       };
 
       setInvitation(transformedInvitation);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error loading invitation:", err);
       setError("An unexpected error occurred");
     } finally {
@@ -204,7 +204,7 @@ export default function AcceptInvitationPage() {
         toast.error(result.error || "Failed to accept invitation");
         setError(result.error || "Failed to accept invitation");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error accepting invitation:", err);
       toast.error("An unexpected error occurred");
       setError("An unexpected error occurred");

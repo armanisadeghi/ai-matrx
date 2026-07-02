@@ -96,11 +96,7 @@ export async function POST(
     // Resolve identity: session cookie → user_id; otherwise fingerprint
     // header. Both branches end up using the admin client to write so RLS
     // policies don't gate tracking against draft apps.
-    const supabaseSsr = (await createClient()) as unknown as {
-      auth: {
-        getUser: () => Promise<{ data: { user: { id: string } | null } }>;
-      };
-    };
+    const supabaseSsr = await createClient();
     const {
       data: { user },
     } = await supabaseSsr.auth.getUser();

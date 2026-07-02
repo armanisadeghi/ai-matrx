@@ -121,12 +121,12 @@ export const SearchBar: React.FC<SearchBarProps> = (
     );
 };
 
-function debounce<T extends (...args: any[]) => void>(
-    func: T,
+function debounce<A extends unknown[]>(
+    func: (...args: A) => void,
     wait: number
-): (...args: Parameters<T>) => void {
+): (...args: A) => void {
     let timeout: NodeJS.Timeout | null = null;
-    return (...args: Parameters<T>) => {
+    return (...args: A) => {
         if (timeout) clearTimeout(timeout);
         timeout = setTimeout(() => func(...args), wait);
     };

@@ -64,10 +64,7 @@ function resolveAppOrigin(req: NextRequest): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // The `agent_apps` table isn't in the generated Database types yet; the
-    // original route used an `as unknown as any` escape hatch — preserved
-    // here until the types regenerate.
-    const supabase = (await createClient()) as unknown as any;
+    const supabase = await createClient();
     const {
       data: { user },
       error: authError,
@@ -107,7 +104,7 @@ export async function POST(request: NextRequest) {
     // Admin client for the ownership check + the agent_apps row update. The
     // favicon BYTES now live in cloud-files under `Agent Apps/{appId}/` —
     // uploaded via the user's session so RLS + ownership line up correctly.
-    const adminClient = createAdminClient() as unknown as any;
+    const adminClient = createAdminClient();
     const { data: app, error: appError } = await adminClient
       .schema("app")
       .from("definition")

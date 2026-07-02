@@ -16,6 +16,7 @@ import {
   Code2,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { extractErrorMessage } from "@/utils/errors";
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -84,7 +85,7 @@ export function ContentManagerMenu({
     await copyToClipboard(content, {
       onSuccess: () => {},
       onError: (error) => {
-        throw new Error(error.message || "Failed to copy text");
+        throw new Error(extractErrorMessage(error) || "Failed to copy text");
       },
     });
   };
@@ -95,7 +96,7 @@ export function ContentManagerMenu({
       formatForGoogleDocs: true,
       onSuccess: () => {},
       onError: (error) => {
-        throw new Error(error.message || "Failed to copy for Google Docs");
+        throw new Error(extractErrorMessage(error) || "Failed to copy for Google Docs");
       },
     });
   };
@@ -106,7 +107,7 @@ export function ContentManagerMenu({
       includeThinking: true,
       onSuccess: () => {},
       onError: (error) => {
-        throw new Error(error.message || "Failed to copy with thinking");
+        throw new Error(extractErrorMessage(error) || "Failed to copy with thinking");
       },
     });
   };
@@ -126,7 +127,7 @@ export function ContentManagerMenu({
       },
       onSuccess: () => {},
       onError: (error) => {
-        throw new Error(error.message || "Failed to generate HTML preview");
+        throw new Error(extractErrorMessage(error) || "Failed to generate HTML preview");
       },
     });
   };
@@ -161,7 +162,7 @@ ${cssContent}
           await copyToClipboard(completeHTML, {
             onSuccess: () => {},
             onError: (error) => {
-              throw new Error(error.message || "Failed to copy HTML");
+              throw new Error(extractErrorMessage(error) || "Failed to copy HTML");
             },
           });
         } catch (error) {
@@ -170,7 +171,7 @@ ${cssContent}
       },
       onSuccess: () => {},
       onError: (error) => {
-        throw new Error(error.message || "Failed to generate HTML");
+        throw new Error(extractErrorMessage(error) || "Failed to generate HTML");
       },
     });
   };

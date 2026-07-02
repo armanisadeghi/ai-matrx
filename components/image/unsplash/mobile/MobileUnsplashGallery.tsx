@@ -1,7 +1,13 @@
 'use client';
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useUnsplashGallery, type UnsplashPhoto } from '@/hooks/images/useUnsplashGallery';
+import {
+    useUnsplashGallery,
+    type UnsplashPhoto,
+    type SortOrder,
+    type ImageOrientation,
+    type PremiumFilter,
+} from '@/hooks/images/useUnsplashGallery';
 import { MobileImageCard } from '@/components/image/shared/MobileImageCard';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -12,9 +18,10 @@ interface MobileUnsplashGalleryProps {
     initialSearchTerm?: string;
 }
 
-type UnsplashDisplayPhoto = UnsplashPhoto & {
+export type UnsplashDisplayPhoto = UnsplashPhoto & {
     urls: { regular: string; full?: string };
     alt_description?: string | null;
+    description?: string | null;
     user: { name: string };
 };
 
@@ -46,6 +53,24 @@ function getPhotoCardProps(photo: UnsplashPhoto): {
         url: photo.urls.regular,
         description: photo.alt_description ?? `Photo by ${photo.user.name}`,
     };
+}
+
+interface UnsplashExifData {
+    make?: string | null;
+    model?: string | null;
+    aperture?: string | null;
+    exposure_time?: string | null;
+    iso?: number | null;
+}
+
+type UnsplashPhotoWithExif = UnsplashPhoto & { exif: UnsplashExifData };
+
+function hasExifData(photo: UnsplashPhoto): photo is UnsplashPhotoWithExif {
+    return 'exif' in photo && typeof photo.exif === 'object' && photo.exif !== null;
+}
+
+function getExifData(photo: UnsplashPhoto): UnsplashExifData | undefined {
+    return hasExifData(photo) ? photo.exif : undefined;
 }
 
 export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalleryProps) {
@@ -95,7 +120,8 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
         [loading, hasMore, loadMore]
     );
 
-    const handleShare = async (photo: any) => {
+    const handleShare = async (photo: UnsplashPhoto) => {
+        if (!isDisplayPhoto(photo)) return;
         try {
             const imageUrl = photo.urls.full || photo.urls.regular;
             await navigator.clipboard.writeText(imageUrl);
@@ -115,25 +141,23 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
         }
     };
 
-    const handleImageInfo = (photo: any) => {
+    const handleImageInfo = (photo: UnsplashPhoto) => {
+        const exif = getExifData(photo);
         toast({
             title: 'Image Information',
-            description: `Taken with ${photo.exif?.make || 'Unknown make'} ${
-                photo.exif?.model || 'Unknown model'
-            }, f/${photo.exif?.aperture || 'N/A'}, ${photo.exif?.exposure_time || 'N/A'}s, ISO ${photo.exif?.iso || 'N/A'}`,
+            description: `Taken with ${exif?.make || 'Unknown make'} ${
+                exif?.model || 'Unknown model'
+            }, f/${exif?.aperture || 'N/A'}, ${exif?.exposure_time || 'N/A'}s, ISO ${exif?.iso || 'N/A'}`,
         });
     };
 
-    const handleSearchChange = (query: string, options: any = {}) => {
+    const handleSearchChange = (
+        query: string,
+        options: { sortOrder?: SortOrder; orientation?: ImageOrientation; premiumFilter?: PremiumFilter } = {},
+    ) => {
         setSearchQuery(query);
         handleSearch(query, options);
     };
-
-    // Convert Unsplash photos to the format our mobile components expect
-    const formatPhotoForMobile = (photo: any) => ({
-        ...photo,
-        description: photo.alt_description || `Photo by ${photo.user.name}`,
-    });
 
     return (
         <div className="space-y-3">
@@ -183,8 +207,13 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
             
             <AnimatePresence>
                 {selectedPhoto && (
+                    // See isDisplayPhoto/UnsplashDisplayPhoto above - useUnsplashGallery()
+                    // declares `photos` as the minimal `UnsplashPhoto` shape, but the Unsplash
+                    // search API it calls actually returns the full photo object (urls, user,
+                    // description, ...) that MobileUnsplashViewer renders. Widening the hook's
+                    // declared `UnsplashPhoto` type is out of this component's scope.
                     <MobileUnsplashViewer
-                        photos={photos}
+                        photos={photos as UnsplashDisplayPhoto[]}
                         initialIndex={photos.findIndex((photo) => photo.id === selectedPhoto.id)}
                         onClose={closePhotoView}
                         onDownload={downloadImage}

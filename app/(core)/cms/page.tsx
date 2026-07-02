@@ -47,8 +47,8 @@ export default function SitesListPage() {
     try {
       const data = await CmsSiteService.listSites();
       setSites(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load sites");
     } finally {
       setIsLoading(false);
     }
@@ -84,8 +84,8 @@ export default function SitesListPage() {
       setNewSlug("");
       setNewDomain("");
       router.push(`/cms/${site.id}`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create site");
     } finally {
       setIsCreating(false);
     }

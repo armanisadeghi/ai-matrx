@@ -104,6 +104,7 @@ export type CxToolCall = {
   user_id: string;
   user_request_id: string | null;
   tool_name: string;
+  tool_name_as_called: string | null;
   tool_type: string;
   call_id: string;
   status: string;
@@ -111,12 +112,20 @@ export type CxToolCall = {
   success: boolean;
   output: string | null;
   output_type: string | null;
+  output_chars: number;
+  output_preview: unknown;
   is_error: boolean | null;
+  is_client_delegated: boolean;
   error_type: string | null;
   error_message: string | null;
+  fault_domain: string | null;
+  resolution_source: string | null;
+  resolved_at: string | null;
   duration_ms: number;
   started_at: string;
   completed_at: string;
+  expires_at: string | null;
+  model_stub_at: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
   total_tokens: number | null;
@@ -124,12 +133,18 @@ export type CxToolCall = {
   iteration: number;
   retry_count: number | null;
   parent_call_id: string | null;
-  execution_events: unknown[] | null;
+  execution_events: unknown;
   persist_key: string | null;
+  value_ref_key: string | null;
   file_path: string | null;
+  organization_id: string;
   metadata: Record<string, unknown>;
   created_at: string;
+  created_by: string | null;
+  updated_at: string;
+  updated_by: string | null;
   deleted_at: string | null;
+  version: number;
 };
 
 export type CxMedia = {

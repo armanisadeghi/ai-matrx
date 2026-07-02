@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { LatLngExpression } from "leaflet";
+import type { LatLngExpression, LatLngTuple, Map as LeafletMap } from "leaflet";
 import chroma from "chroma-js";
 // Static CSS import — bundled only with this client component, so it never
 // loads for other routes. A runtime `require('leaflet/dist/leaflet.css')`
@@ -72,7 +72,7 @@ export default function ZipCodeMap({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [zipLocations, setZipLocations] = useState<ZipCodeLocation[]>([]);
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
 
   // Detect system theme preference
   useEffect(() => {
@@ -187,8 +187,8 @@ export default function ZipCodeMap({
   // Auto-zoom when locations update
   useEffect(() => {
     if (zipLocations.length > 0 && mapRef.current && !isGeocoding) {
-      const bounds = zipLocations.map(
-        (loc) => [loc.lat, loc.lng] as LatLngExpression,
+      const bounds: LatLngTuple[] = zipLocations.map(
+        (loc) => [loc.lat, loc.lng] as LatLngTuple,
       );
       try {
         mapRef.current.fitBounds(bounds, { padding: [50, 50] });
@@ -204,7 +204,7 @@ export default function ZipCodeMap({
       // Small delay to ensure DOM has updated
       const timer = setTimeout(() => {
         try {
-          mapRef.current.invalidateSize();
+          mapRef.current?.invalidateSize();
         } catch (error) {
           console.error("Error invalidating map size:", error);
         }

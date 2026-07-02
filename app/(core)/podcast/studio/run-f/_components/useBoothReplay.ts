@@ -19,7 +19,10 @@ export function useBoothReplay() {
   const [state, setState] = useState<BoothState>(INITIAL_BOOTH_STATE);
   const [elapsed, setElapsed] = useState(0);
   const [nonce, setNonce] = useState(0);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Holds both setTimeout and setInterval handles — clearTimeout/clearInterval
+  // both accept either handle type at runtime, but their return types differ,
+  // so the ref tracks the union rather than asserting one into the other.
+  const timers = useRef<Array<ReturnType<typeof setTimeout> | ReturnType<typeof setInterval>>>([]);
 
   const restart = useCallback(() => {
     setState(INITIAL_BOOTH_STATE);
@@ -55,7 +58,7 @@ export function useBoothReplay() {
       }
       setElapsed((e) => e + 1);
     }, 1000);
-    timers.current.push(clock as unknown as ReturnType<typeof setTimeout>);
+    timers.current.push(clock);
 
     return () => {
       timers.current.forEach(clearTimeout);

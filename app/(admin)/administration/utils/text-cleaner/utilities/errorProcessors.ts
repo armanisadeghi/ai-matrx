@@ -1,5 +1,17 @@
 import {ErrorSeverity, ErrorFormat, ParsedError, DetailedError, FormattedError} from "./types";
 
+// parseTS2739Error/parseTS2322Error are dispatched dynamically by error code
+// (see ErrorManager.parseError, which only reads `.essential`/`.basic`/
+// `.verbose`/`.errorType` before spreading the whole object into its own
+// `details`, or treats a no-match `{}` as "processor didn't handle it").
+// They don't populate `details`/`severity`, so they can't return the full
+// `ParsedError` shape — this is the honest partial contract instead of the
+// `Record<string, any>` that was standing in for it.
+type PartialParsedError =
+    | (Partial<ParsedError> &
+          Pick<ParsedError, "essential" | "basic" | "verbose" | "errorCode" | "errorType">)
+    | Record<string, never>;
+
 
 
 export const extractTypeScriptError = {
@@ -73,7 +85,7 @@ export const extractTypeScriptError = {
 
 
 // Example usage in your TS2739 processor:
-export function parseTS2739Error(error: string): Record<string, any> {
+export function parseTS2739Error(error: string): PartialParsedError {
     const pattern = /Type '(.+)' is missing the following properties from type '(.+)': (.+)$/;
     const match = error.match(pattern);
     if (!match) return {};
@@ -111,7 +123,7 @@ export function parseTS2739Error(error: string): Record<string, any> {
     };
 }
 
-export function parseTS2322Error(error: string): Record<string, any> {
+export function parseTS2322Error(error: string): PartialParsedError {
     const { patterns, formatTypeList, formatOutput } = extractTypeScriptError;
 
     const typeMatch = error.match(patterns.typeAssignment);
@@ -745,77 +757,3 @@ export function parseTS2554Error(error: string): ParsedError {
         severity: 'error'
     };
 }
-
-
-
-
-/*
-// genericErrorProcessor.ts
-export function parseGenericTypeScriptError(error: string): Record<string, any> {
-    const { patterns, getTypeInfo, formatTypeList, formatOutput } = extractTypeScriptError;
-
-    // Try to extract common patterns
-    const typeAssignment = error.match(patterns.typeAssignment);
-    const missingProps = error.match(patterns.missingProperties);
-    const interfaceMatch = error.match(patterns.interfaceName);
-    const propertyType = error.match(patterns.propertyType);
-
-    // Collect all meaningful information
-    const extracted = {
-        providedType: typeAssignment?.[1],
-        expectedType: typeAssignment?.[2],
-        missingProperties: missingProps ? getPropertyList(missingProps[1]) : [],
-        interfaceName: interfaceMatch?.[1],
-        property: propertyType?.[1],
-        propertyType: propertyType?.[2],
-    };
-
-    // Build sections based on what we found
-    const sections: Record<string, string> = {};
-
-    if (extracted.providedType && extracted.expectedType) {
-        sections.types = `Type Mismatch:
-- Provided: ${formatTypeList(extracted.providedType, 'basic')}
-- Expected: ${formatTypeList(extracted.expectedType, 'basic')}`;
-    }
-
-    if (extracted.missingProperties.length) {
-        sections.missing = `Missing Properties:
-- ${extracted.missingProperties.join('\n- ')}`;
-    }
-
-    if (extracted.property) {
-        sections.property = `Property Issue:
-- Name: ${extracted.property}
-- Type: ${extracted.propertyType}`;
-    }
-
-    // Create different detail levels
-    const essential = formatOutput([
-        sections.missing || sections.types || sections.property || 'Type Error',
-    ]);
-
-    const basic = formatOutput([
-        sections.missing,
-        sections.types,
-        sections.property,
-    ]);
-
-    const verbose = formatOutput([
-        sections.missing,
-        sections.types,
-        sections.property,
-        `Full Error:\n${error}`
-    ]);
-
-    return {
-        errorCode: 'Generic',
-        errorType: 'TypeScript',
-        ...extracted,
-        essential,
-        basic,
-        verbose,
-    };
-}
-
-*/

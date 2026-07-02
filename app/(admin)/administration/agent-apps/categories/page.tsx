@@ -119,7 +119,10 @@ export default function AgentAppsCategoriesAdminPage() {
     }
   }, [selectedId, categories]);
 
-  const handleEditChange = (field: string, value: any) => {
+  const handleEditChange = <K extends keyof AgentAppCategoryRow>(
+    field: K,
+    value: AgentAppCategoryRow[K],
+  ) => {
     setEditData((p) => ({ ...p, [field]: value }));
     setHasUnsaved(true);
   };

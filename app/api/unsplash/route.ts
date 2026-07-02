@@ -1,5 +1,6 @@
 import { createApi } from "unsplash-js";
 import { NextRequest, NextResponse } from "next/server";
+import { requireEnv } from "@/utils/supabase/env";
 
 /**
  * Unsplash proxy.
@@ -23,7 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 
 const unsplash = createApi({
-  accessKey: process.env.UNSPLASH_ACCESS_KEY!,
+  accessKey: requireEnv("UNSPLASH_ACCESS_KEY", process.env.UNSPLASH_ACCESS_KEY),
 });
 
 type UnsplashMethod =

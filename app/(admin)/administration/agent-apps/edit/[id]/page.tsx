@@ -25,7 +25,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { AgentAppAdminActions } from "@/features/agent-apps/components/AgentAppAdminActions";
 import { AgentAppEditor } from "@/features/agent-apps/components/AgentAppEditor";
 import { UpdateAgentAppModal } from "@/features/agent-apps/components/UpdateAgentAppModal";
-import type { AgentApp } from "@/features/agent-apps/types";
+import type { AgentApp, UpdateAgentAppInput } from "@/features/agent-apps/types";
 import type {
   AgentAppAdminView,
   UpdateAgentAppAdminInput,
@@ -35,7 +35,14 @@ import {
   updateAgentAppAdmin,
 } from "@/lib/services/agent-apps-admin-service";
 
-function toAgentApp(row: AgentAppAdminView & Record<string, any>): AgentApp {
+// `AgentAppAdminView` is a hand-narrowed subset of the real DB row used by the
+// list/analytics surfaces (no component_code/variable_schema/shell_* fields).
+// `getAgentAppById()` (and the PATCH route below) actually `select("*")` from
+// `app.definition` (see `Database["app"]["Tables"]["definition"]["Row"]`), so
+// at runtime every AgentApp-only field the editor reads (component_code,
+// variable_schema, layout_config, shell_kind, etc.) IS present on `row` even
+// though the declared `AgentAppAdminView` view type omits it.
+function toAgentApp(row: AgentAppAdminView): AgentApp {
   return row as unknown as AgentApp;
 }
 
@@ -130,7 +137,10 @@ export default function AdminEditAgentAppPage({
     }
   };
 
-  const handleSaveComponentCode = async (appId: string, input: any) => {
+  const handleSaveComponentCode = async (
+    appId: string,
+    input: UpdateAgentAppInput,
+  ) => {
     try {
       const res = await fetch(`/api/agent-apps/${appId}`, {
         method: "PATCH",
@@ -157,7 +167,10 @@ export default function AdminEditAgentAppPage({
     }
   };
 
-  const handleSaveMetadata = async (appId: string, input: any) => {
+  const handleSaveMetadata = async (
+    appId: string,
+    input: UpdateAgentAppInput,
+  ) => {
     try {
       const res = await fetch(`/api/agent-apps/${appId}`, {
         method: "PATCH",

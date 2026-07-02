@@ -8,7 +8,7 @@
 
 import { ImageIcon, Clapperboard, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { MediaSlot } from "@/features/podcasts/generator/types";
+import { isReadyMediaSlot, type MediaSlot } from "@/features/podcasts/generator/types";
 
 export function AssetStrip({
   images,
@@ -46,7 +46,7 @@ export function AssetStrip({
 
 function AssetTile({ slot }: { slot: MediaSlot }) {
   const Icon = slot.kind === "image" ? ImageIcon : Clapperboard;
-  const done = slot.status === "done" && slot.url;
+  const done = isReadyMediaSlot(slot);
 
   return (
     <div
@@ -58,7 +58,7 @@ function AssetTile({ slot }: { slot: MediaSlot }) {
     >
       {done ? (
         <img
-          src={slot.url!}
+          src={slot.url}
           alt={slot.prompt}
           className="h-full w-full object-cover"
         />

@@ -27,15 +27,13 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import type { PodcastRunState } from "@/features/podcasts/generator/types";
+import { isReadyMediaSlot, type PodcastRunState } from "@/features/podcasts/generator/types";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 
 export function FinishedEpisode({ state }: { state: PodcastRunState }) {
   const cover = state.images.find((i) => i.status === "done" && i.url)?.url;
   const href = episodeHref(state.episodeSlug, state.episodeId);
-  const gallery = [...state.images, ...state.videos].filter(
-    (s) => s.status === "done" && s.url,
-  );
+  const gallery = [...state.images, ...state.videos].filter(isReadyMediaSlot);
 
   return (
     <div className="space-y-5">
@@ -112,7 +110,7 @@ export function FinishedEpisode({ state }: { state: PodcastRunState }) {
                 className="group relative aspect-video overflow-hidden rounded-xl border border-border bg-muted"
               >
                 <img
-                  src={s.url!}
+                  src={s.url}
                   alt={s.prompt}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />

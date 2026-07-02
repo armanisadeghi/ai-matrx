@@ -68,7 +68,7 @@ export const useAnimatedTabModal = (
         closeModal();
     }, [externalOnSubmit, internalFormState, closeModal]);
 
-    const handleUpdateField = useCallback((name: string, value: any) => {
+    const handleUpdateField = useCallback((name: string, value: unknown) => {
         const newState = {...internalFormState, [name]: value};
         setInternalFormState(newState);
         if (externalOnUpdateField) {

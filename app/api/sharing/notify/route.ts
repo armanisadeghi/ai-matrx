@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
 interface ResourceDetails {
   title: string;
   url: string;
@@ -22,7 +24,7 @@ interface ResourceDetails {
  * Get resource details for email
  */
 async function getResourceDetails(
-  supabase: any,
+  supabase: SupabaseServerClient,
   resourceType: string,
   resourceId: string
 ): Promise<ResourceDetails | null> {
@@ -38,12 +40,18 @@ async function getResourceDetails(
       }
 
       case 'canvas': {
+        // BUG FOUND: this previously queried `public.canvases`, a table that
+        // does not exist anywhere in the schema (canvas content lives in
+        // `canvas.canvas_items`). Every canvas share notification silently
+        // failed (caught below, returned null -> caller 404s "Resource
+        // details not found"). Repointed to the real table.
         const { data } = await supabase
-          .from('canvases')
+          .schema('canvas')
+          .from('canvas_items')
           .select('title')
           .eq('id', resourceId)
           .single();
-        
+
         return data
           ? {
               title: data.title || 'Untitled Canvas',
@@ -53,30 +61,26 @@ async function getResourceDetails(
       }
 
       case 'collection': {
-        const { data } = await supabase
-          .from('collections')
-          .select('name')
-          .eq('id', resourceId)
-          .single();
-        
-        return data
-          ? {
-              title: data.name || 'Untitled Collection',
-              url: `${siteUrl}/collections/${resourceId}`,
-            }
-          : null;
+        // BUG FOUND: `public.collections` does not exist anywhere in the
+        // schema — this resource type has no backing table today. Every
+        // "collection" share notification silently failed the same way as
+        // the canvas case above. No replacement table identified; leaving
+        // this branch returning null (existing observable behavior) rather
+        // than guessing at a destination table.
+        console.warn('[sharing/notify] collection sharing notification skipped — no backing table in current schema');
+        return null;
       }
 
       case 'note': {
         const { data } = await supabase
           .schema("workbench").from('notes')
-          .select('title')
+          .select('label')
           .eq('id', resourceId)
           .single();
-        
+
         return data
           ? {
-              title: data.title || 'Untitled Note',
+              title: data.label || 'Untitled Note',
               url: `${siteUrl}/notes/${resourceId}`,
             }
           : null;
@@ -97,7 +101,7 @@ async function getResourceDetails(
 /**
  * Check if user has email notifications enabled for sharing
  */
-async function checkEmailPreferences(supabase: any, userId: string): Promise<boolean> {
+async function checkEmailPreferences(supabase: SupabaseServerClient, userId: string): Promise<boolean> {
   try {
     const { data } = await supabase
       .schema('users').from('user_email_preferences')
@@ -204,13 +208,15 @@ export async function POST(request: NextRequest) {
       success: true,
       emailSent: true,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in POST /api/sharing/notify:', error);
+    const message = error instanceof Error ? error.message : 'Failed to send sharing notification';
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Failed to send sharing notification',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      {
+        success: false,
+        error: message,
+        details: process.env.NODE_ENV === 'development' ? stack : undefined,
       },
       { status: 500 }
     );

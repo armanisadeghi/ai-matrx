@@ -1,11 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-type AgentContextMenuViewRow = {
-  placement_type: string;
-  categories_flat: unknown;
-};
-
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -21,25 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const placementType = searchParams.get("placement_type");
 
-    type ContextMenuViewQuery = {
-      from: (tableOrView: string) => {
-        select: (cols: string) => {
-          eq: (col: string, val: string) => Promise<{
-            data: AgentContextMenuViewRow[] | null;
-            error: { message: string } | null;
-          }>;
-        } & Promise<{
-          data: AgentContextMenuViewRow[] | null;
-          error: { message: string } | null;
-        }>;
-      };
-    };
-
-    const untyped = supabase as unknown as ContextMenuViewQuery & {
-      schema: (name: string) => ContextMenuViewQuery;
-    };
-
-    const builder = untyped
+    const builder = supabase
       .schema("agent")
       .from("context_menu_view")
       .select("*");

@@ -11,6 +11,7 @@ import type {
   AgentListRow,
   AgentVersionSnapshot,
 } from "@/features/agents/types/agent-definition.types";
+import type { AgentAppSummary, AppStatus } from "@/features/agent-apps/types";
 
 /**
  * SSR seed for the agents list page.
@@ -93,16 +94,33 @@ export const getAgentSnapshot = cache(
  * caller sees their own apps + public published apps + org/admin apps
  * per the standard agent-apps policy.
  */
-export const getAppsForAgent = cache(async (agentId: string) => {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .schema("app")
-    .from("definition")
-    .select(
-      "id, slug, name, tagline, description, category, tags, preview_image_url, favicon_url, status, is_public, is_featured, total_executions, last_execution_at, agent_id, agent_version_id, use_latest, created_at, updated_at",
-    )
-    .eq("agent_id", agentId)
-    .order("updated_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
-});
+const APP_STATUSES: readonly AppStatus[] = [
+  "draft",
+  "published",
+  "archived",
+  "suspended",
+];
+
+export const getAppsForAgent = cache(
+  async (agentId: string): Promise<AgentAppSummary[]> => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .schema("app")
+      .from("definition")
+      .select(
+        "id, slug, name, tagline, description, category, tags, preview_image_url, favicon_url, status, is_public, is_featured, total_executions, last_execution_at, agent_id, agent_version_id, use_latest, created_at, updated_at",
+      )
+      .eq("agent_id", agentId)
+      .order("updated_at", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      ...row,
+      // DB stores status as a plain string; the app never writes an out-of-
+      // enum value, but validate at the boundary instead of asserting it.
+      status: APP_STATUSES.includes(row.status as AppStatus)
+        ? (row.status as AppStatus)
+        : "draft",
+      tags: row.tags ?? [],
+    }));
+  },
+);

@@ -336,9 +336,12 @@ export const ConfigurableMarkdownContent: React.FC<
   // ---------------------------------------------------------------------------
   const LinkWrapper: NonNullable<Components["a"]> = useMemo(() => {
     if (componentOverrides?.a) return componentOverrides.a;
-    return ({ node, href, children, ...props }) => (
-      <LinkComponent href={href}>{children}</LinkComponent>
-    );
+    return ({ node, href, children, ...props }) =>
+      href ? (
+        <LinkComponent href={href}>{children}</LinkComponent>
+      ) : (
+        <>{children}</>
+      );
   }, [componentOverrides?.a]);
 
   // ---------------------------------------------------------------------------
@@ -483,16 +486,13 @@ export const ConfigurableMarkdownContent: React.FC<
 
       return {
         // ---- input (checkbox) ----
-        input: ({ node, type, checked, disabled, onChange, ...props }) => {
+        input: ({ node, type, checked, disabled, ...props }) => {
           if (type === "checkbox") {
             return (
               <Checkbox
                 checked={checked}
                 disabled={disabled}
                 className="mr-2"
-                onCheckedChange={(v) => {
-                  onChange?.({ target: { checked: v === true } });
-                }}
               />
             );
           }

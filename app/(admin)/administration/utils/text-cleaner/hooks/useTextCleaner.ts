@@ -67,8 +67,8 @@ export function useTextCleaner() {
 
             const cleanContent = content.replace(/\s+/g, ' ').trim();
 
-            if (componentMap.has(structureSignature)) {
-                const existing = componentMap.get(structureSignature)!;
+            const existing = componentMap.get(structureSignature);
+            if (existing) {
                 existing.count++;
                 existing.indices.push(match.index);
                 if (!existing.examples.includes(cleanContent)) {

@@ -40,13 +40,13 @@ export default function OrganizationScopesPage() {
     organization,
     loading: orgLoading,
     error: orgError,
-  } = useOrganization(resolvedOrgId ?? "");
+  } = useOrganization(resolvedOrgId ?? undefined);
   const {
     role,
     loading: roleLoading,
     isOwner,
     isAdmin,
-  } = useUserRole(resolvedOrgId ?? "");
+  } = useUserRole(resolvedOrgId ?? undefined);
 
   const loading = resolving || orgLoading || roleLoading;
 
@@ -123,7 +123,7 @@ export default function OrganizationScopesPage() {
 
   return (
     <ScopeManagerPage
-      organizationId={resolvedOrgId!}
+      organizationId={organization.id}
       organizationName={organization.name}
       isPersonal={organization.isPersonal}
     />

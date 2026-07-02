@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SOURCE_OPTIONS } from "@/features/podcasts/generator/constants";
+import { SOURCE_OPTIONS, findOptionOrFirst } from "@/features/podcasts/generator/constants";
 import type { PodcastSourceKind } from "@/features/podcasts/generator/types";
 
 // The four primary sources lead; the rest are behind the expander. Order is the
@@ -29,8 +29,8 @@ const PRIMARY: PodcastSourceKind[] = [
   "website_url",
 ];
 
-const primaryOptions = PRIMARY.map(
-  (k) => SOURCE_OPTIONS.find((o) => o.kind === k)!,
+const primaryOptions = PRIMARY.map((k) =>
+  findOptionOrFirst(SOURCE_OPTIONS, k, (o) => o.kind),
 );
 const moreOptions = SOURCE_OPTIONS.filter((o) => !PRIMARY.includes(o.kind));
 
@@ -44,7 +44,7 @@ export function SourceTiles({ value, onChange }: SourceTilesProps) {
   const [open, setOpen] = useState(() =>
     moreOptions.some((o) => o.kind === value),
   );
-  const active = SOURCE_OPTIONS.find((o) => o.kind === value)!;
+  const active = findOptionOrFirst(SOURCE_OPTIONS, value, (o) => o.kind);
 
   return (
     <div className="space-y-2.5">

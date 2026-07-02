@@ -66,7 +66,7 @@ function AdminPageContent() {
   const selectedCategory = searchParams.get("category");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const getPreviewFeatures = (features: any[]) => {
+  const getPreviewFeatures = (features: AdminFeature[]) => {
     if (features.length <= 8) return features;
     return features.slice(0, 8);
   };

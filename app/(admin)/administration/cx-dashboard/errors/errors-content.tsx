@@ -12,10 +12,11 @@ import {
 } from "@/features/cx-dashboard/utils/format";
 import { exportToCSV, exportToJSON } from "@/features/cx-dashboard/utils/export";
 import { AlertTriangle, ExternalLink, Ban, Hourglass, Wrench } from "lucide-react";
+import type { CxUserRequest, CxToolCall } from "@/features/cx-dashboard/types/cxDashboardTypes";
 
 type ErrorsData = {
-  error_requests: any[];
-  error_tool_calls: any[];
+  error_requests: CxUserRequest[];
+  error_tool_calls: CxToolCall[];
 };
 
 export function ErrorsContent({ errors }: { errors: ErrorsData }) {
@@ -40,7 +41,12 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         showSearch={false}
         showStatusFilter={false}
         onRefresh={() => router.refresh()}
-        onExportJSON={() => exportToJSON(errors as any, "errors")}
+        onExportJSON={() =>
+          exportToJSON(
+            [...errors.error_requests, ...errors.error_tool_calls],
+            "errors",
+          )
+        }
       />
 
       {/* Summary cards */}
@@ -90,7 +96,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 </tr>
               </thead>
               <tbody>
-                {pendingRequests.map((r: any) => (
+                {pendingRequests.map((r) => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-muted/20">
                     <td className="py-1.5 px-3 font-mono">
                       <Link href={`/administration/cx-dashboard/requests/${r.id}`} className="hover:text-primary">
@@ -135,7 +141,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 </tr>
               </thead>
               <tbody>
-                {maxTokensRequests.map((r: any) => (
+                {maxTokensRequests.map((r) => (
                   <tr key={r.id} className="border-b border-border/50 hover:bg-muted/20">
                     <td className="py-1.5 px-3 font-mono">
                       <Link href={`/administration/cx-dashboard/requests/${r.id}`} className="hover:text-primary">
@@ -164,7 +170,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
             </h3>
           </div>
           <div className="divide-y divide-border/50">
-            {errors.error_tool_calls.map((tc: any) => (
+            {errors.error_tool_calls.map((tc) => (
               <div key={tc.id} className="p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-xs font-medium">{tc.tool_name}</span>
