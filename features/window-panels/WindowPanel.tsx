@@ -86,6 +86,7 @@ import {
   clampWindowRect,
   type WindowRect,
 } from "@/lib/redux/slices/windowManagerSlice";
+import { buildDockWindowPayload } from "./popout/dockWindowPayload";
 import { usePopoutWindow } from "./popout/usePopoutWindow";
 import { registerPopoutOpener } from "./popout/usePopoutControl";
 import { PopoutPortal } from "./popout/PopoutPortal";
@@ -238,6 +239,11 @@ interface WindowPanelBaseProps extends UseWindowPanelOptions {
   secondaryPanelMinSize?: number;
   /** Class name applied to the secondary panel content wrapper */
   secondaryPanelClassName?: string;
+  /**
+   * When true, hides the header pop-out affordance (icon + green-dropdown entry).
+   * Pop-out is shown by default on desktop when the browser supports it.
+   */
+  hidePopOutButton?: boolean;
   /** Content rendered in a full-width footer bar below the body. Renders as a single flex row. For zoned layout, use footerLeft/footerCenter/footerRight instead. */
   footer?: React.ReactNode;
   /** Left-aligned footer content (use instead of `footer` for zoned layout) */
@@ -379,6 +385,7 @@ export function WindowPanel({
   onSessionSaved,
   onHeavySnapshot,
   captureTraySnapshot,
+  hidePopOutButton = false,
   ...hookOpts
 }: WindowPanelProps) {
   if (overlayId === "createProjectWindow") {
@@ -804,6 +811,7 @@ export function WindowPanel({
   // transparently falls back to `window.open()` for second+ popouts so the
   // user gets a working window without us blocking the action.
   const canShowPopOut =
+    !hidePopOutButton &&
     !isMobile &&
     popoutCapability !== "none" &&
     windowState !== "minimized" &&
@@ -820,7 +828,7 @@ export function WindowPanel({
   }, [popout, rect.width, rect.height, title]);
 
   const handleDockBack = useCallback(() => {
-    dispatch(dockWindow(id));
+    dispatch(dockWindow(buildDockWindowPayload(id)));
   }, [dispatch, id]);
 
   // ── Tray snapshot capture (Pass 3 / Mode D) ──────────────────────────────
@@ -1297,6 +1305,21 @@ export function WindowPanel({
 
 // ─── WindowHeader ─────────────────────────────────────────────────────────────
 
+function PopOutHeaderButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="p-0.5 rounded hover:bg-accent/60 transition-colors text-foreground/60 hover:text-foreground cursor-pointer"
+      onClick={onClick}
+      onPointerDown={(e) => e.stopPropagation()}
+      title="Pop out into a separate window"
+      aria-label="Pop out into a separate window"
+    >
+      <ExternalLink className="w-3.5 h-3.5" />
+    </button>
+  );
+}
+
 interface WindowHeaderProps {
   title?: React.ReactNode;
   actionsLeft?: React.ReactNode;
@@ -1320,11 +1343,8 @@ interface WindowHeaderProps {
   /** When set, a "Save Window State" button appears in the green traffic-light dropdown. */
   onSaveWindowState?: () => void;
   /**
-   * When set, a "Pop out" entry appears in the green traffic-light dropdown.
-   * Clicking it should open the window in a separate browser window
-   * (Document Picture-in-Picture or `window.open` fallback). The actual
-   * lifecycle is owned by `usePopoutWindow`; this prop is the click hook.
-   * Hidden entirely on mobile and when no popout capability is available.
+   * When set, a header pop-out icon and green-dropdown entry are shown.
+   * Clicking opens the window in a separate browser window.
    */
   onPopOut?: () => void;
 }
@@ -1434,11 +1454,12 @@ function WindowHeader({
 
       {/* Right action zone */}
       <div className="flex items-center gap-1 z-10 shrink-0">
-        {!isMinimized && actionsRight && (
+        {!isMinimized && (onPopOut || actionsRight) && (
           <div
             className={WINDOW_CHROME_ACTIONS}
             onPointerDown={(e) => e.stopPropagation()}
           >
+            {onPopOut ? <PopOutHeaderButton onClick={onPopOut} /> : null}
             {actionsRight}
           </div>
         )}

@@ -74,9 +74,16 @@ const pdfStudioSlice = createSlice({
       const docId = state.activeDocId;
       if (!docId) return;
       const entry = ensureDocEntry(state, docId);
-      entry.visiblePanes = action.payload.length > 0
-        ? action.payload
-        : ["pdf"];
+      entry.visiblePanes = action.payload.length > 0 ? action.payload : ["pdf"];
+    },
+    /** Add a pane to the visible set without toggling others off. */
+    ensurePaneVisible(state, action: PayloadAction<PaneKey>) {
+      const docId = state.activeDocId;
+      if (!docId) return;
+      const entry = ensureDocEntry(state, docId);
+      if (!entry.visiblePanes.includes(action.payload)) {
+        entry.visiblePanes.push(action.payload);
+      }
     },
     setSidebarView(state, action: PayloadAction<SidebarView>) {
       const docId = state.activeDocId;
@@ -158,6 +165,7 @@ export const {
   setScrollSource,
   togglePane,
   setVisiblePanes,
+  ensurePaneVisible,
   setSidebarView,
   hydratePerDocFromStorage,
   chunksFetchStart,

@@ -75,7 +75,7 @@ export function TableImpactPanel() {
     async (override?: [string, string]) => {
       const parsed = override ?? parseSchemaTable(input);
       if (!parsed) {
-        toast.error('Enter a table as "schema.table", e.g. public.notes');
+        toast.error('Enter a table as "schema.table", e.g. workbench.notes');
         return;
       }
       const [schema, table] = parsed;
@@ -163,7 +163,7 @@ export function TableImpactPanel() {
       <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 pb-3 pt-3">
         <Input
           list="canonicalization-known-tables"
-          placeholder="schema.table — e.g. public.notes"
+          placeholder="schema.table — e.g. workbench.notes"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

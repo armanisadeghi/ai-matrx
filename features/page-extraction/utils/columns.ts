@@ -223,7 +223,10 @@ function normalizeType(t: string | undefined): ColumnType {
  *  of `coerceToRowList` (which does the same unwrapping on response DATA):
  *  both understand the "array, or array wrapped under one key" shape so the
  *  template editor's columns and the actual rows can never disagree. */
-function findItemProperties(schema: unknown): Record<string, unknown> | null {
+/** Exported for agent peek / any surface that needs the same key resolution as extraction. */
+export function findItemProperties(
+  schema: unknown,
+): Record<string, unknown> | null {
   if (!schema || typeof schema !== "object") return null;
   // Unwrap the OpenAI json_schema envelope: { name, schema, strict }.
   const env = schema as { schema?: unknown };

@@ -19,8 +19,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentDefinition,
+  selectAgentOutputSchema,
   selectAgentReadyForBuilder,
+  selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  findItemProperties,
+  importColumnsFromAgentSchema,
+} from "@/features/page-extraction/utils/columns";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { fetchModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
@@ -47,6 +53,8 @@ import {
   FileJson,
   Zap,
   FileText,
+  Variable,
+  Braces,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -178,6 +186,34 @@ function EmptyValue() {
   return <span className="text-sm text-muted-foreground italic">—</span>;
 }
 
+function outputSchemaRequiredKeys(outputSchema: unknown): Set<string> {
+  if (!outputSchema || typeof outputSchema !== "object") return new Set();
+  const env = outputSchema as { schema?: unknown };
+  const root = (env.schema ?? outputSchema) as {
+    type?: string;
+    required?: string[];
+    properties?: Record<string, unknown>;
+    items?: { required?: string[]; properties?: Record<string, unknown> };
+  };
+
+  const itemProps = findItemProperties(outputSchema);
+  if (!itemProps) return new Set(root.required ?? []);
+
+  if (root.type === "array" && root.items?.required) {
+    return new Set(root.items.required);
+  }
+
+  if (root.type === "object" && root.properties) {
+    const arrayChild = Object.values(root.properties).find((p) => {
+      const pp = p as { type?: string; items?: { required?: string[] } };
+      return pp?.type === "array" && pp.items;
+    }) as { items?: { required?: string[] } } | undefined;
+    if (arrayChild?.items?.required) return new Set(arrayChild.items.required);
+  }
+
+  return new Set(root.required ?? []);
+}
+
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
   const d = new Date(value);
@@ -293,6 +329,21 @@ export function AgentSneakPeekContent({
   const definition = useAppSelector((state) =>
     selectAgentDefinition(state, agentId),
   );
+  const variableDefs = useAppSelector((state) =>
+    selectAgentVariableDefinitions(state, agentId),
+  );
+  const outputSchema = useAppSelector((state) =>
+    selectAgentOutputSchema(state, agentId),
+  );
+
+  const outputFields = useMemo(
+    () => importColumnsFromAgentSchema(outputSchema),
+    [outputSchema],
+  );
+  const outputRequired = useMemo(
+    () => outputSchemaRequiredKeys(outputSchema),
+    [outputSchema],
+  );
 
   if (!isReady || !record) {
     return (
@@ -309,10 +360,19 @@ export function AgentSneakPeekContent({
   }
 
   return (
-    <Tabs defaultValue="summary" className={cn("flex flex-col gap-3", className)}>
+    <Tabs
+      defaultValue="summary"
+      className={cn("flex flex-col gap-3", className)}
+    >
       <TabsList className="h-auto bg-transparent p-0 gap-0 rounded-none border-b border-border justify-start w-full shrink-0 sticky top-0 z-10 backdrop-blur">
         <TabsTriggerCore value="summary" className={TAB_TRIGGER_CLASS}>
           Summary
+        </TabsTriggerCore>
+        <TabsTriggerCore value="input" className={TAB_TRIGGER_CLASS}>
+          Input
+        </TabsTriggerCore>
+        <TabsTriggerCore value="output" className={TAB_TRIGGER_CLASS}>
+          Output
         </TabsTriggerCore>
         <TabsTriggerCore value="full" className={TAB_TRIGGER_CLASS}>
           Full JSON
@@ -326,172 +386,284 @@ export function AgentSneakPeekContent({
       </TabsList>
 
       <TabsContent value="summary" className="mt-0 space-y-4">
-      <Section label="Description">
-        {record.description ? (
-          <p className="text-sm text-foreground whitespace-pre-wrap break-words">
-            {record.description}
-          </p>
-        ) : (
-          <EmptyValue />
-        )}
-      </Section>
+        <Section label="Description">
+          {record.description ? (
+            <p className="text-sm text-foreground whitespace-pre-wrap break-words">
+              {record.description}
+            </p>
+          ) : (
+            <EmptyValue />
+          )}
+        </Section>
 
-      <Section label="System Prompt">
-        {systemPromptText ? (
-          <TruncatedText
-            text={systemPromptText}
-            previewChars={SYSTEM_PROMPT_PREVIEW_CHARS}
-          />
-        ) : (
-          <EmptyValue />
-        )}
-      </Section>
+        <Section label="System Prompt">
+          {systemPromptText ? (
+            <TruncatedText
+              text={systemPromptText}
+              previewChars={SYSTEM_PROMPT_PREVIEW_CHARS}
+            />
+          ) : (
+            <EmptyValue />
+          )}
+        </Section>
 
-      <Section label="Model">
-        {modelLabel ? (
-          <span className="text-sm text-foreground">{modelLabel}</span>
-        ) : record.modelId ? (
-          <span className="text-sm text-muted-foreground italic">
-            Loading…
-          </span>
-        ) : (
-          <EmptyValue />
-        )}
-      </Section>
+        <Section label="Model">
+          {modelLabel ? (
+            <span className="text-sm text-foreground">{modelLabel}</span>
+          ) : record.modelId ? (
+            <span className="text-sm text-muted-foreground italic">
+              Loading…
+            </span>
+          ) : (
+            <EmptyValue />
+          )}
+        </Section>
 
-      <Section
-        label={`Variables${variableNames.length ? ` (${variableNames.length})` : ""}`}
-      >
-        {variableNames.length ? (
-          <div className="flex flex-wrap gap-1.5">
-            {variableNames.map((n) => (
-              <span
-                key={n}
-                className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-mono text-foreground"
-              >
-                {n}
-              </span>
-            ))}
+        <Section
+          label={`Variables${variableNames.length ? ` (${variableNames.length})` : ""}`}
+        >
+          {variableNames.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {variableNames.map((n) => (
+                <span
+                  key={n}
+                  className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-mono text-foreground"
+                >
+                  {n}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <EmptyValue />
+          )}
+        </Section>
+
+        <Section
+          label={`Tools${toolNames.length ? ` (${toolNames.length})` : ""}`}
+        >
+          {toolNames.length ? (
+            <div className="flex flex-wrap gap-1.5">
+              {toolNames.map((n, i) => (
+                <span
+                  key={`${n}-${i}`}
+                  className={cn(
+                    "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-foreground",
+                    !toolsReady && "opacity-70",
+                  )}
+                >
+                  {n}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <EmptyValue />
+          )}
+        </Section>
+
+        <Section
+          label={`Additional Messages${additionalMessages.length ? ` (${additionalMessages.length})` : ""}`}
+        >
+          {additionalMessages.length ? (
+            <div className="space-y-2">
+              {additionalMessages.map((m, i) => {
+                const text = extractTextContent(m);
+                return (
+                  <div
+                    key={i}
+                    className="rounded-md border border-border bg-muted/30 p-2.5"
+                  >
+                    <div className="text-[0.625rem] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                      {m.role}
+                    </div>
+                    {text ? (
+                      <TruncatedText
+                        text={text}
+                        previewChars={MESSAGE_PREVIEW_CHARS}
+                      />
+                    ) : (
+                      <EmptyValue />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyValue />
+          )}
+        </Section>
+
+        <div className="border-t border-border pt-3">
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground focus:outline-none"
+          >
+            {advancedOpen ? (
+              <ChevronDown className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5" />
+            )}
+            Advanced
+          </button>
+
+          {advancedOpen && (
+            <div
+              ref={advancedContentRef}
+              className="mt-2 rounded-md bg-muted/30 p-3"
+            >
+              <MetaRow label="ID" value={record.id} mono />
+              <MetaRow label="Type" value={record.agentType} />
+              <MetaRow label="Version" value={record.version ?? "—"} />
+              <MetaRow label="Category" value={record.category ?? "—"} />
+              <MetaRow
+                label="Tags"
+                value={record.tags?.length ? record.tags.join(", ") : "—"}
+              />
+              <MetaRow label="Active" value={record.isActive ? "Yes" : "No"} />
+              <MetaRow label="Public" value={record.isPublic ? "Yes" : "No"} />
+              <MetaRow
+                label="Archived"
+                value={record.isArchived ? "Yes" : "No"}
+              />
+              <MetaRow
+                label="Favorite"
+                value={record.isFavorite ? "Yes" : "No"}
+              />
+              <MetaRow label="Access" value={record.accessLevel ?? "—"} />
+              <MetaRow
+                label="Created"
+                value={formatDateTime(record.createdAt)}
+              />
+              <MetaRow
+                label="Updated"
+                value={formatDateTime(record.updatedAt)}
+              />
+              <MetaRow label="Model ID" value={record.modelId ?? "—"} mono />
+            </div>
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="input" className="mt-0 space-y-3">
+        {!variableDefs || variableDefs.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-6 text-center">
+            <Variable className="mx-auto mb-2 h-5 w-5 text-muted-foreground/60" />
+            <p className="text-sm text-muted-foreground">No declared inputs.</p>
+            <p className="mt-1 text-xs text-muted-foreground/70">
+              This agent runs without user-supplied variables.
+            </p>
           </div>
         ) : (
-          <EmptyValue />
-        )}
-      </Section>
-
-      <Section
-        label={`Tools${toolNames.length ? ` (${toolNames.length})` : ""}`}
-      >
-        {toolNames.length ? (
-          <div className="flex flex-wrap gap-1.5">
-            {toolNames.map((n, i) => (
-              <span
-                key={`${n}-${i}`}
-                className={cn(
-                  "inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs text-foreground",
-                  !toolsReady && "opacity-70",
-                )}
-              >
-                {n}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <EmptyValue />
-        )}
-      </Section>
-
-      <Section
-        label={`Additional Messages${additionalMessages.length ? ` (${additionalMessages.length})` : ""}`}
-      >
-        {additionalMessages.length ? (
           <div className="space-y-2">
-            {additionalMessages.map((m, i) => {
-              const text = extractTextContent(m);
+            {variableDefs.map((v) => {
+              const inputType =
+                v.customComponent?.type ??
+                (v.binding ? "context binding" : "textarea");
+              const defaultDisplay =
+                v.defaultValue != null && String(v.defaultValue).length > 0
+                  ? String(v.defaultValue)
+                  : null;
+
               return (
                 <div
-                  key={i}
+                  key={v.name}
                   className="rounded-md border border-border bg-muted/30 p-2.5"
                 >
-                  <div className="text-[0.625rem] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                    {m.role}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <code className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                      {`{{${v.name}}}`}
+                    </code>
+                    <span className="rounded bg-background px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {inputType}
+                    </span>
+                    {v.required && (
+                      <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                        required
+                      </span>
+                    )}
                   </div>
-                  {text ? (
-                    <TruncatedText
-                      text={text}
-                      previewChars={MESSAGE_PREVIEW_CHARS}
-                    />
-                  ) : (
-                    <EmptyValue />
+                  {v.helpText && (
+                    <p className="mt-1.5 text-sm leading-snug text-foreground/90">
+                      {v.helpText}
+                    </p>
+                  )}
+                  {defaultDisplay && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Default:{" "}
+                      <span className="font-mono text-foreground/80">
+                        {defaultDisplay}
+                      </span>
+                    </p>
                   )}
                 </div>
               );
             })}
           </div>
-        ) : (
-          <EmptyValue />
         )}
-      </Section>
+      </TabsContent>
 
-      <div className="border-t border-border pt-3">
-        <button
-          type="button"
-          onClick={() => setAdvancedOpen((v) => !v)}
-          className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground focus:outline-none"
-        >
-          {advancedOpen ? (
-            <ChevronDown className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronRight className="w-3.5 h-3.5" />
-          )}
-          Advanced
-        </button>
-
-        {advancedOpen && (
-          <div
-            ref={advancedContentRef}
-            className="mt-2 rounded-md bg-muted/30 p-3"
-          >
-            <MetaRow label="ID" value={record.id} mono />
-            <MetaRow label="Type" value={record.agentType} />
-            <MetaRow label="Version" value={record.version ?? "—"} />
-            <MetaRow label="Category" value={record.category ?? "—"} />
-            <MetaRow
-              label="Tags"
-              value={record.tags?.length ? record.tags.join(", ") : "—"}
-            />
-            <MetaRow
-              label="Active"
-              value={record.isActive ? "Yes" : "No"}
-            />
-            <MetaRow
-              label="Public"
-              value={record.isPublic ? "Yes" : "No"}
-            />
-            <MetaRow
-              label="Archived"
-              value={record.isArchived ? "Yes" : "No"}
-            />
-            <MetaRow
-              label="Favorite"
-              value={record.isFavorite ? "Yes" : "No"}
-            />
-            <MetaRow label="Access" value={record.accessLevel ?? "—"} />
-            <MetaRow
-              label="Created"
-              value={formatDateTime(record.createdAt)}
-            />
-            <MetaRow
-              label="Updated"
-              value={formatDateTime(record.updatedAt)}
-            />
-            <MetaRow
-              label="Model ID"
-              value={record.modelId ?? "—"}
-              mono
-            />
+      <TabsContent value="output" className="mt-0 space-y-3">
+        {outputFields.length === 0 ? (
+          <div className="rounded-md border border-border bg-muted/30 px-3 py-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Text</span>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+              No structured output schema — the agent returns free-form text.
+            </p>
           </div>
+        ) : (
+          <>
+            {outputSchema?.name && (
+              <div className="flex items-center gap-2 text-sm">
+                <Braces className="h-4 w-4 shrink-0 text-primary" />
+                <span className="font-medium text-foreground">
+                  {outputSchema.name}
+                </span>
+                {outputSchema.strict && (
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                    strict
+                  </span>
+                )}
+              </div>
+            )}
+            {outputSchema?.description && (
+              <p className="text-sm leading-snug text-muted-foreground">
+                {outputSchema.description}
+              </p>
+            )}
+            <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-2">
+              {outputFields.map((field) => (
+                <div
+                  key={field.key}
+                  className="rounded-md bg-background/60 px-2 py-1.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-1 truncate">
+                      <code className="text-xs font-semibold text-foreground">
+                        {field.key}
+                      </code>
+                      {outputRequired.has(field.key) && (
+                        <span className="text-[10px] font-semibold text-primary">
+                          *
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                      {field.type}
+                    </span>
+                  </div>
+                  {field.description && (
+                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                      {field.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
-      </div>
       </TabsContent>
 
       <TabsContent value="full" className="mt-0">
@@ -642,9 +814,7 @@ export function AgentSneakPeekModal({
 
   const bodyRef = useRef<HTMLDivElement>(null);
 
-  const currentIndex = navigationIds
-    ? navigationIds.indexOf(currentId)
-    : -1;
+  const currentIndex = navigationIds ? navigationIds.indexOf(currentId) : -1;
   const hasNav = navigationIds != null && currentIndex >= 0;
   const hasPrev = hasNav && currentIndex > 0;
   const hasNext =
@@ -665,7 +835,10 @@ export function AgentSneakPeekModal({
   useEffect(() => {
     if (!isOpen || !hasNav) return undefined;
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
       if (e.key === "ArrowLeft") {
@@ -680,9 +853,7 @@ export function AgentSneakPeekModal({
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, hasNav, currentIndex, navigationIds]);
 
-  const record = useAppSelector((state) =>
-    selectAgentById(state, currentId),
-  );
+  const record = useAppSelector((state) => selectAgentById(state, currentId));
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, currentId),
   );
@@ -734,10 +905,7 @@ export function AgentSneakPeekModal({
           </DialogTitle>
         </div>
 
-        <div
-          ref={bodyRef}
-          className="overflow-y-auto max-h-[65dvh] -mr-2 pr-2"
-        >
+        <div ref={bodyRef} className="overflow-y-auto max-h-[65dvh] -mr-2 pr-2">
           <AgentSneakPeekContent agentId={currentId} active={isOpen} />
         </div>
 

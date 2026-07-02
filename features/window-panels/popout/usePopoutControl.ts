@@ -26,6 +26,7 @@ import {
   dockWindow,
   type WindowRect,
 } from "@/lib/redux/slices/windowManagerSlice";
+import { buildDockWindowPayload } from "./dockWindowPayload";
 import type { OpenPopoutOptions, OpenPopoutResult } from "./usePopoutWindow";
 
 // ─── Module-level opener registry ────────────────────────────────────────────
@@ -96,7 +97,8 @@ export function usePopoutControl(): PopoutControlApi {
 
   const dock = useCallback<PopoutControlApi["dock"]>(
     (windowId) => {
-      dispatch(dockWindow(windowId));
+      const payload = buildDockWindowPayload(windowId);
+      dispatch(dockWindow(payload));
     },
     [dispatch],
   );

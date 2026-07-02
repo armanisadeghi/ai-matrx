@@ -28,7 +28,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Loader2, Plus, Save } from "lucide-react";
+import { AlertCircle, Loader2, Plus, Save, Sparkles } from "lucide-react";
 import {
   upsertJobInCache,
   useExtractionJobs,
@@ -62,6 +62,10 @@ import {
   formatPageRange,
   parsePageRangeInput,
 } from "@/features/page-extraction/utils/chunk-preview";
+import {
+  computeRecommendedChunkSettings,
+  type RecommendedChunkDebug,
+} from "@/features/page-extraction/utils/recommended-chunk-settings";
 import { SavedJobsList } from "@/features/page-extraction/components/SavedJobsList";
 import { SchemaEditor } from "@/features/page-extraction/components/SchemaEditor";
 import { VariableMappingEditor } from "@/features/page-extraction/components/VariableMappingEditor";
@@ -219,17 +223,19 @@ export function ChunkingConfigForm({
   // EDITING — full form takes over the panel.
   if (isEditing) {
     return (
-      <TemplateEditor
-        fileId={fileId}
-        processedDocumentId={processedDocumentId}
-        documentName={documentName}
-        loadedJob={loadedJob}
-        onSaved={(job) => {
-          setLoadedJob(job);
-          leaveEditing();
-        }}
-        onCancel={leaveEditing}
-      />
+      <div className="flex flex-1 min-h-0 flex-col h-full">
+        <TemplateEditor
+          fileId={fileId}
+          processedDocumentId={processedDocumentId}
+          documentName={documentName}
+          loadedJob={loadedJob}
+          onSaved={(job) => {
+            setLoadedJob(job);
+            leaveEditing();
+          }}
+          onCancel={leaveEditing}
+        />
+      </div>
     );
   }
 
@@ -237,7 +243,7 @@ export function ChunkingConfigForm({
   // selected). When nothing is selected the list itself is the entire
   // surface.
   return (
-    <div className="p-3 space-y-3 text-[11px]">
+    <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3 text-[11px]">
       {/* Header — context + New */}
       <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 border border-border">
         <div className="flex-1 min-w-0">
@@ -316,6 +322,7 @@ function TemplateEditor({
     chunks,
     stats,
     availablePages,
+    contentMeta,
     loading: pagesLoading,
   } = useChunkPreview({ fileId, processedDocumentId });
 
@@ -338,6 +345,29 @@ function TemplateEditor({
     if (!draft.agentId) return;
     void dispatch(fetchFullAgent(draft.agentId));
   }, [draft.agentId, dispatch]);
+
+  // New templates: seed the name from the selected agent until the user
+  // types their own (blank or still the generic doc-based placeholder).
+  useEffect(() => {
+    if (!agent?.name || selectedJobId) return;
+    const trimmed = draft.jobName.trim();
+    const placeholder = `${documentName} extraction`;
+    if (trimmed === "" || trimmed === placeholder) {
+      dispatch(patchDraft({ fileId, patch: { jobName: agent.name } }));
+    }
+  }, [
+    agent?.name,
+    agent?.id,
+    selectedJobId,
+    draft.jobName,
+    documentName,
+    dispatch,
+    fileId,
+  ]);
+
+  const handleAgentSelect = (agentId: string) => {
+    dispatch(patchDraft({ fileId, patch: { agentId } }));
+  };
 
   const [saving, setSaving] = useState(false);
 
@@ -459,271 +489,272 @@ function TemplateEditor({
   };
 
   return (
-    <div className="p-3 space-y-3 text-[11px]">
-      {/* Header — what we're editing right now */}
-      <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 border border-border">
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            {selectedJobId ? "Editing template" : "New template"}
-          </p>
-          <p className="text-[11px] font-medium truncate">
-            {loadedJob?.name ?? draft.jobName.trim() ?? "Untitled"}
-            {isDirty && selectedJobId && (
-              <span className="ml-1 text-amber-700 dark:text-amber-400">
-                · unsaved
-              </span>
-            )}
-          </p>
+    <div className="flex flex-col min-h-0 h-full text-[11px]">
+      <div className="shrink-0 px-3 pt-3 pb-2">
+        {/* Header — what we're editing right now */}
+        <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 border border-border">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              {selectedJobId ? "Editing template" : "New template"}
+            </p>
+            <p className="text-[11px] font-medium truncate">
+              {loadedJob?.name ?? draft.jobName.trim() ?? "Untitled"}
+              {isDirty && selectedJobId && (
+                <span className="ml-1 text-amber-700 dark:text-amber-400">
+                  · unsaved
+                </span>
+              )}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* 1. Template name */}
-      <Field label="Template name" required>
-        <Input
-          value={draft.jobName}
-          onChange={(e) =>
-            dispatch(patchDraft({ fileId, patch: { jobName: e.target.value } }))
-          }
-          placeholder={`${documentName} extraction`}
-          className="h-7 text-[11px]"
-        />
-      </Field>
-
-      {/* 1b. Template kind — extraction (per-chunk, inserts rows) vs
-              validation (one pass over another template's rows, updates
-              them: dedup / completeness / enrichment). */}
-      <Field label="Type" hint="What this template does">
-        <div className="flex gap-1">
-          {(["extraction", "validation"] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() =>
-                dispatch(patchDraft({ fileId, patch: { kind: k } }))
-              }
-              className={
-                "flex-1 h-7 rounded-md border text-[11px] capitalize transition-colors " +
-                (draft.kind === k
-                  ? "border-primary bg-primary/10 text-primary font-medium"
-                  : "border-border bg-card text-muted-foreground hover:bg-accent/40")
-              }
-            >
-              {k}
-            </button>
-          ))}
-        </div>
-      </Field>
-
-      {/* Validation-only: which extraction template's rows to process. */}
-      {draft.kind === "validation" && (
-        <Field
-          label="Validates template"
-          required
-          hint="Whose rows this reads + updates"
-        >
-          <ValidatesTemplatePicker
-            fileId={fileId}
-            currentJobId={selectedJobId}
-            value={draft.validatesJobId}
-            onChange={(id) =>
-              dispatch(patchDraft({ fileId, patch: { validatesJobId: id } }))
-            }
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 space-y-3 pb-3">
+        {/* 1. Agent first — pick the agent, then wire variables. */}
+        <Field label="Agent" required>
+          <AgentListDropdown
+            onSelect={handleAgentSelect}
+            label={agent?.name ?? "Select an Agent"}
+            noBorder={false}
           />
-          <p className="mt-1 text-[10px] text-muted-foreground/70 leading-snug">
-            The validation agent receives every result row of that template (as{" "}
-            <code>validated_rows</code>) and writes its{" "}
-            <span className="font-medium">validation</span>-source columns back
-            onto those rows.
-          </p>
-        </Field>
-      )}
-
-      {/* Extraction-only fields: pages + chunking. Validation runs once
-          over the whole result set, so it has no page scope or chunk size. */}
-      {draft.kind === "extraction" && (
-        <>
-          {/* 2. Page range */}
-          <Field
-            label="Pages"
-            required
-            hint={
-              pagesLoading ? "Loading…" : `${availablePages.length} available`
-            }
-          >
-            <Input
-              value={draft.scopePagesInputRaw}
-              onChange={(e) => handleRangeChange(e.target.value)}
-              placeholder="1-50, 80-90"
-              className="h-7 text-[11px]"
-            />
-            {draft.scopePages.length > 0 && (
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                <span className="font-mono text-foreground/80">
-                  {draft.scopePages.length}
-                </span>{" "}
-                in scope
-              </p>
-            )}
-            {rangeError && (
-              <p className="mt-1 text-[10px] text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> {rangeError}
-              </p>
-            )}
-          </Field>
-
-          {/* 3. Chunk size + overlap */}
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="Chunk size" required hint="Pages per call">
-              <Input
-                value={draft.chunkSize ?? ""}
-                onChange={(e) => handleChunkSizeChange(e.target.value)}
-                type="number"
-                min={1}
-                max={50}
-                placeholder="12"
-                className="h-7 text-[11px]"
-              />
-            </Field>
-            <Field label="Overlap" hint="Repeat pages">
-              <Input
-                value={draft.chunkOverlap}
-                onChange={(e) => handleChunkOverlapChange(e.target.value)}
-                type="number"
-                min={0}
-                max={Math.max(0, (draft.chunkSize ?? 1) - 1)}
-                placeholder="0"
-                className="h-7 text-[11px]"
-              />
-            </Field>
-          </div>
-          {draft.chunkSize != null && draft.scopePages.length > 0 && (
-            <p className="text-[10px] text-muted-foreground -mt-2">
-              →{" "}
-              <span className="font-mono text-foreground/80">
-                {chunks.length}
-              </span>{" "}
-              chunk{chunks.length === 1 ? "" : "s"}
-              {stats.avgChars > 0 && (
-                <>
-                  {" "}
-                  · avg{" "}
-                  <span className="font-mono">
-                    {stats.avgChars.toLocaleString()}
-                  </span>{" "}
-                  chars
-                </>
-              )}
-            </p>
-          )}
-        </>
-      )}
-
-      {/* 4. Agent + variable wiring. Wiring drives `source_variations`
-              implicitly — picking "N clean-text chunks" tells the save
-              path to request `clean_text` from the backend; no separate
-              checkbox section. Extra inputs from other templates are
-              managed inline at the bottom of the wiring panel and
-              appear as their own dropdown options. */}
-      <Field label="Agent" required>
-        <AgentListDropdown
-          onSelect={(id) =>
-            dispatch(patchDraft({ fileId, patch: { agentId: id } }))
-          }
-          label={agent?.name ?? "Select an Agent"}
-          noBorder={false}
-        />
-        {agent && (
-          <VariableMappingEditor
-            agentName={agent.name}
-            agentVariables={agent.variableDefinitions}
-            mapping={draft.variableMapping}
-            chunkCount={chunks.length}
-            extraInputs={draft.extraInputs}
-            candidateJobs={candidateJobs}
-            onChange={(next) =>
-              dispatch(patchDraft({ fileId, patch: { variableMapping: next } }))
-            }
-            onChangeExtraInputs={(next) =>
-              dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
-            }
-          />
-        )}
-      </Field>
-
-      {/* 4b. PDF attachment options — only relevant when the wiring
-              activates the pdf_page variation (an agent variable is
-              wired to receive the page attachments). */}
-      {deriveSourceVariations(draft.variableMapping).includes("pdf_page") && (
-        <Field
-          label="PDF attachments"
-          hint="Per-page PDFs are always attached when pdf_page is wired."
-        >
-          <label className="flex items-start gap-2 cursor-pointer">
-            <Checkbox
-              checked={draft.attachCombinedPdf}
-              onCheckedChange={(v) =>
+          {agent && (
+            <VariableMappingEditor
+              agentName={agent.name}
+              agentVariables={agent.variableDefinitions}
+              mapping={draft.variableMapping}
+              chunkCount={chunks.length}
+              extraInputs={draft.extraInputs}
+              candidateJobs={candidateJobs}
+              onChange={(next) =>
                 dispatch(
-                  patchDraft({
-                    fileId,
-                    patch: { attachCombinedPdf: v === true },
-                  }),
+                  patchDraft({ fileId, patch: { variableMapping: next } }),
                 )
               }
-              className="mt-0.5"
+              onChangeExtraInputs={(next) =>
+                dispatch(patchDraft({ fileId, patch: { extraInputs: next } }))
+              }
             />
-            <div className="flex-1">
-              <span className="font-medium text-foreground">
-                Also attach a combined chunk PDF
-              </span>
-              <p className="text-[10px] text-muted-foreground leading-snug">
-                Sends one PDF of the whole chunk&apos;s pages alongside the
-                individual per-page attachments, giving the agent continuous
-                cross-page context. More tokens.
-              </p>
-            </div>
-          </label>
+          )}
         </Field>
-      )}
 
-      {/* 4c. Output columns — the durable table definition. Import from
+        {/* 2. Template name — auto-filled from agent on new templates. */}
+        <Field label="Template name" required>
+          <Input
+            value={draft.jobName}
+            onChange={(e) =>
+              dispatch(
+                patchDraft({ fileId, patch: { jobName: e.target.value } }),
+              )
+            }
+            placeholder={agent?.name ?? `${documentName} extraction`}
+            className="h-7 text-[11px]"
+          />
+        </Field>
+
+        {/* 3. Template kind */}
+        <Field label="Type" hint="What this template does">
+          <div className="flex gap-1">
+            {(["extraction", "validation"] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() =>
+                  dispatch(patchDraft({ fileId, patch: { kind: k } }))
+                }
+                className={
+                  "flex-1 h-7 rounded-md border text-[11px] capitalize transition-colors " +
+                  (draft.kind === k
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border bg-card text-muted-foreground hover:bg-accent/40")
+                }
+              >
+                {k}
+              </button>
+            ))}
+          </div>
+        </Field>
+
+        {/* Validation-only: which extraction template's rows to process. */}
+        {draft.kind === "validation" && (
+          <Field
+            label="Validates template"
+            required
+            hint="Whose rows this reads + updates"
+          >
+            <ValidatesTemplatePicker
+              fileId={fileId}
+              currentJobId={selectedJobId}
+              value={draft.validatesJobId}
+              onChange={(id) =>
+                dispatch(patchDraft({ fileId, patch: { validatesJobId: id } }))
+              }
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground/70 leading-snug">
+              The validation agent receives every result row of that template
+              (as <code>validated_rows</code>) and writes its{" "}
+              <span className="font-medium">validation</span>-source columns
+              back onto those rows.
+            </p>
+          </Field>
+        )}
+
+        {draft.kind === "extraction" && (
+          <>
+            <DocumentContentMeta
+              loading={pagesLoading}
+              totalPages={contentMeta.totalPages}
+              rawCharacters={contentMeta.rawCharacters}
+              cleanCharacters={contentMeta.cleanCharacters}
+            />
+
+            {/* Page range */}
+            <Field
+              label="Pages"
+              required
+              hint={
+                pagesLoading ? "Loading…" : `${availablePages.length} available`
+              }
+            >
+              <Input
+                value={draft.scopePagesInputRaw}
+                onChange={(e) => handleRangeChange(e.target.value)}
+                placeholder="1-50, 80-90"
+                className="h-7 text-[11px]"
+              />
+              {draft.scopePages.length > 0 && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  <span className="font-mono text-foreground/80">
+                    {draft.scopePages.length}
+                  </span>{" "}
+                  in scope
+                </p>
+              )}
+              {rangeError && (
+                <p className="mt-1 text-[10px] text-destructive flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> {rangeError}
+                </p>
+              )}
+            </Field>
+
+            {/* Chunk size + overlap */}
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Chunk size" required hint="Pages per call">
+                <Input
+                  value={draft.chunkSize ?? ""}
+                  onChange={(e) => handleChunkSizeChange(e.target.value)}
+                  type="number"
+                  min={1}
+                  max={50}
+                  placeholder="12"
+                  className="h-7 text-[11px]"
+                />
+              </Field>
+              <Field label="Overlap" hint="Repeat pages">
+                <Input
+                  value={draft.chunkOverlap}
+                  onChange={(e) => handleChunkOverlapChange(e.target.value)}
+                  type="number"
+                  min={0}
+                  max={Math.max(0, (draft.chunkSize ?? 1) - 1)}
+                  placeholder="0"
+                  className="h-7 text-[11px]"
+                />
+              </Field>
+            </div>
+            {draft.chunkSize != null && draft.scopePages.length > 0 && (
+              <p className="text-[10px] text-muted-foreground -mt-2">
+                →{" "}
+                <span className="font-mono text-foreground/80">
+                  {chunks.length}
+                </span>{" "}
+                chunk{chunks.length === 1 ? "" : "s"}
+                {stats.avgChars > 0 && (
+                  <>
+                    {" "}
+                    · avg{" "}
+                    <span className="font-mono">
+                      {stats.avgChars.toLocaleString()}
+                    </span>{" "}
+                    chars
+                  </>
+                )}
+              </p>
+            )}
+          </>
+        )}
+
+        {deriveSourceVariations(draft.variableMapping).includes("pdf_page") && (
+          <Field
+            label="PDF attachments"
+            hint="Per-page PDFs are always attached when pdf_page is wired."
+          >
+            <label className="flex items-start gap-2 cursor-pointer">
+              <Checkbox
+                checked={draft.attachCombinedPdf}
+                onCheckedChange={(v) =>
+                  dispatch(
+                    patchDraft({
+                      fileId,
+                      patch: { attachCombinedPdf: v === true },
+                    }),
+                  )
+                }
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <span className="font-medium text-foreground">
+                  Also attach a combined chunk PDF
+                </span>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Sends one PDF of the whole chunk&apos;s pages alongside the
+                  individual per-page attachments, giving the agent continuous
+                  cross-page context. More tokens.
+                </p>
+              </div>
+            </label>
+          </Field>
+        )}
+
+        {/* 4c. Output columns — the durable table definition. Import from
               the agent, then add review/validation columns or drop fields.
               Empty = inherit the agent's schema at run time. */}
-      <Field label="Output table" hint="Defines the Results columns.">
-        <SchemaEditor
-          outputSchema={draft.outputSchema}
-          agentOutputSchema={agent?.outputSchema}
-          onChange={(next) =>
-            dispatch(patchDraft({ fileId, patch: { outputSchema: next } }))
-          }
-        />
-      </Field>
-
-      {/* 5. RAG-boost override */}
-      <Field label="RAG boost" hint="Blank = agent default">
-        <Input
-          value={draft.ragBoost ?? ""}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === "") {
-              dispatch(patchDraft({ fileId, patch: { ragBoost: null } }));
-              return;
+        <Field label="Output table" hint="Defines the Results columns.">
+          <SchemaEditor
+            outputSchema={draft.outputSchema}
+            agentOutputSchema={agent?.outputSchema}
+            onChange={(next) =>
+              dispatch(patchDraft({ fileId, patch: { outputSchema: next } }))
             }
-            const parsed = Math.round(Number.parseInt(raw, 10));
-            if (Number.isFinite(parsed)) {
-              dispatch(patchDraft({ fileId, patch: { ragBoost: parsed } }));
-            }
-          }}
-          type="number"
-          step={5}
-          min={-50}
-          max={100}
-          placeholder="inherit"
-          className="h-7 text-[11px] font-mono"
-        />
-      </Field>
+          />
+        </Field>
 
-      {/* Sticky bottom — Cancel + Save/Update */}
-      <div className="sticky bottom-0 -mx-3 -mb-3 px-3 py-2 border-t border-border bg-background/95 backdrop-blur-sm">
+        {/* 5. RAG-boost override */}
+        <Field label="RAG boost" hint="Blank = agent default">
+          <Input
+            value={draft.ragBoost ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") {
+                dispatch(patchDraft({ fileId, patch: { ragBoost: null } }));
+                return;
+              }
+              const parsed = Math.round(Number.parseInt(raw, 10));
+              if (Number.isFinite(parsed)) {
+                dispatch(patchDraft({ fileId, patch: { ragBoost: parsed } }));
+              }
+            }}
+            type="number"
+            step={5}
+            min={-50}
+            max={100}
+            placeholder="inherit"
+            className="h-7 text-[11px] font-mono"
+          />
+        </Field>
+      </div>
+
+      {/* Bottom — Cancel + Save/Update */}
+      <div className="shrink-0 px-3 py-2 border-t border-border bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Button
             size="sm"
@@ -772,6 +803,50 @@ function TemplateEditor({
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Internal: document content summary (above page range) ────────────────
+
+function DocumentContentMeta({
+  loading,
+  totalPages,
+  rawCharacters,
+  cleanCharacters,
+}: {
+  loading: boolean;
+  totalPages: number;
+  rawCharacters: number;
+  cleanCharacters: number;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-muted/20 px-2.5 py-2 grid grid-cols-3 gap-2">
+      <MetaStat
+        label="Total pages"
+        value={loading ? "…" : totalPages.toLocaleString()}
+      />
+      <MetaStat
+        label="Raw characters"
+        value={loading ? "…" : rawCharacters.toLocaleString()}
+      />
+      <MetaStat
+        label="Clean characters"
+        value={loading ? "…" : cleanCharacters.toLocaleString()}
+      />
+    </div>
+  );
+}
+
+function MetaStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] text-muted-foreground uppercase tracking-wider">
+        {label}
+      </p>
+      <p className="font-mono text-[11px] font-medium text-foreground/90 tabular-nums">
+        {value}
+      </p>
     </div>
   );
 }
@@ -862,10 +937,7 @@ function jobToDraftPatch(job: PageExtractionJob) {
       "clean_text",
     ]) as SourceVariationKind[],
     chunkingStrategy: (job.chunking_strategy ?? "pages") as
-      | "pages"
-      | "keyword"
-      | "manual"
-      | "section",
+      "pages" | "keyword" | "manual" | "section",
     jobName: job.name,
     saveAsJob: true,
     variableMapping: job.variable_mapping ?? {},

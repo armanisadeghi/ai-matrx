@@ -527,7 +527,14 @@ function OptionSelect({
       >
         <SelectValue placeholder="Not mapped" />
       </SelectTrigger>
-      <SelectContent className="max-h-[60dvh] min-w-[20rem]">
+      <SelectContent
+        className="max-h-[min(60dvh,20rem)] min-w-[20rem] z-[10001]"
+        position="popper"
+        side="bottom"
+        align="start"
+        sideOffset={4}
+        collisionPadding={12}
+      >
         <SelectItem value={UNMAPPED_VALUE} className="text-[11px]">
           <span className="text-muted-foreground italic">Not mapped</span>
         </SelectItem>

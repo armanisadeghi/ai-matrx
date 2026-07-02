@@ -38,10 +38,18 @@ interface PageRow {
   cleaned_text: string | null;
 }
 
+export interface DocumentContentMeta {
+  totalPages: number;
+  rawCharacters: number;
+  cleanCharacters: number;
+}
+
 export interface UseChunkPreviewResult {
   draft: ChunkingConfigDraft;
   /** All known page numbers from the source document (sorted asc). */
   availablePages: number[];
+  /** Whole-document character totals from processed page rows. */
+  contentMeta: DocumentContentMeta;
   /** chunks computed from `scopePages` ∩ `availablePages`. */
   chunks: ChunkPreviewItem[];
   stats: ChunkStats;
@@ -86,7 +94,8 @@ export function useChunkPreview(opts: {
     setLoading(true);
     setError(null);
     void (supabase as any)
-      .schema("docproc").from("processed_document_pages")
+      .schema("docproc")
+      .from("processed_document_pages")
       .select("page_number, raw_text, cleaned_text")
       .eq("processed_document_id", processedDocumentId)
       .order("page_number", { ascending: true })
@@ -120,6 +129,21 @@ export function useChunkPreview(opts: {
     [pages],
   );
 
+  const contentMeta = useMemo<DocumentContentMeta>(
+    () => ({
+      totalPages: pages.length,
+      rawCharacters: pages.reduce(
+        (sum, p) => sum + (p.raw_text?.length ?? 0),
+        0,
+      ),
+      cleanCharacters: pages.reduce(
+        (sum, p) => sum + (p.cleaned_text?.length ?? 0),
+        0,
+      ),
+    }),
+    [pages],
+  );
+
   const bundles = useMemo<PageTextBundle[]>(() => {
     if (cfg.scopePages.length === 0) return [];
     const scope = new Set(cfg.scopePages);
@@ -149,5 +173,13 @@ export function useChunkPreview(opts: {
 
   const stats = useMemo(() => computeChunkStats(chunks), [chunks]);
 
-  return { draft, availablePages, chunks, stats, loading, error };
+  return {
+    draft,
+    availablePages,
+    contentMeta,
+    chunks,
+    stats,
+    loading,
+    error,
+  };
 }

@@ -99,6 +99,7 @@ export function useExtractionRunLauncher(): UseExtractionRunLauncherResult {
       // Selecting also propagates to the viewed job, so the pane follows the
       // run that's about to stream.
       dispatch(selectJobForFile({ fileId, jobId }));
+      dispatch(viewJobForFile({ fileId, jobId }));
       try {
         await start(fileId, { job_id: jobId });
       } catch (err) {
@@ -146,11 +147,15 @@ export function useExtractionRunLauncher(): UseExtractionRunLauncherResult {
 
   const handleReplace = useCallback(async () => {
     if (!pending) return;
+    const { fileId, job } = pending;
+    // Dismiss the prompt before the run starts — `runJob` awaits the full
+    // SSE stream (often minutes). Leaving `pending` set kept the AlertDialog
+    // open with a blocking overlay for the entire run.
+    setPending(null);
     setBusyAction("replace");
     try {
-      await clearJobResults(pending.job.id);
-      await runJob(pending.fileId, pending.job.id);
-      setPending(null);
+      await clearJobResults(job.id);
+      await runJob(fileId, job.id);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Replace failed");
     } finally {
@@ -160,16 +165,18 @@ export function useExtractionRunLauncher(): UseExtractionRunLauncherResult {
 
   const handleAddNew = useCallback(async () => {
     if (!pending) return;
+    const { fileId, job } = pending;
+    const cloneName = newName;
+    setPending(null);
     setBusyAction("addNew");
     try {
-      const clone = await cloneJobWithName(pending.job.id, newName);
+      const clone = await cloneJobWithName(job.id, cloneName);
       // Show the new "(2)" template in the saved list immediately (Realtime
       // will converge too, but the in-tab actor shouldn't wait for it).
-      upsertJobInCache(pending.fileId, clone);
-      dispatch(viewJobForFile({ fileId: pending.fileId, jobId: clone.id }));
-      await runJob(pending.fileId, clone.id);
+      upsertJobInCache(fileId, clone);
+      dispatch(viewJobForFile({ fileId, jobId: clone.id }));
+      await runJob(fileId, clone.id);
       toast.success(`Running as "${clone.name}"`);
-      setPending(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Run-as-new failed");
     } finally {

@@ -42,11 +42,7 @@ import { createPdfWidgetsScope } from "@/features/surfaces/manifests/pdf-widgets
 // opens as a resizable drawer from the studio toolbar (PdfStudioShell), so the
 // doc stays visible while building. See KnowledgeAssetPanel mount sites.
 export type SectionKey =
-  | "widgets"
-  | "chunked"
-  | "stores"
-  | "manipulate"
-  | "lineage";
+  "widgets" | "chunked" | "stores" | "manipulate" | "lineage";
 
 const SECTIONS: {
   key: SectionKey;
@@ -135,18 +131,11 @@ export function PdfStudioInspector({
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        {section === "widgets" && (
-          <AiActionsPanel
-            doc={doc}
-            pages={pages}
-            activePage={activePage}
-            onRunShortcut={onRunShortcut}
-          />
-        )}
-        {section === "chunked" && (
-          <div className="p-3">
+      {/* Content — chunked tab owns its own scroll shell (long variable-
+          wiring forms); other sections scroll here. */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {section === "chunked" ? (
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             {chunkedFileId ? (
               <ChunkingConfigForm
                 fileId={chunkedFileId}
@@ -154,31 +143,42 @@ export function PdfStudioInspector({
                 documentName={doc.name}
               />
             ) : (
-              <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-snug">
+              <p className="p-3 text-[11px] text-amber-700 dark:text-amber-400 leading-snug overflow-y-auto">
                 Chunked extractions need a <code>cld_file</code> source. This
                 document doesn&apos;t have one linked.
               </p>
             )}
           </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {section === "widgets" && (
+              <AiActionsPanel
+                doc={doc}
+                pages={pages}
+                activePage={activePage}
+                onRunShortcut={onRunShortcut}
+              />
+            )}
+            {section === "stores" && (
+              <DataStoreBindPanel
+                processedDocumentId={doc.id}
+                documentName={doc.name}
+              />
+            )}
+            {section === "manipulate" && (
+              <ManipulationPanel
+                doc={doc}
+                onRunPipeline={onRunPipeline}
+                running={pipelineRunning}
+                pdfPaneEditMode={pdfPaneEditMode}
+                onStartCrop={onStartCrop}
+                onStartReorder={onStartReorder}
+                onEditModeCancel={onEditModeCancel}
+              />
+            )}
+            {section === "lineage" && <LineageTreeView doc={doc} />}
+          </div>
         )}
-        {section === "stores" && (
-          <DataStoreBindPanel
-            processedDocumentId={doc.id}
-            documentName={doc.name}
-          />
-        )}
-        {section === "manipulate" && (
-          <ManipulationPanel
-            doc={doc}
-            onRunPipeline={onRunPipeline}
-            running={pipelineRunning}
-            pdfPaneEditMode={pdfPaneEditMode}
-            onStartCrop={onStartCrop}
-            onStartReorder={onStartReorder}
-            onEditModeCancel={onEditModeCancel}
-          />
-        )}
-        {section === "lineage" && <LineageTreeView doc={doc} />}
       </div>
     </aside>
   );
@@ -403,6 +403,8 @@ function AiActionsPanel({
         scope: applicationScope,
         sourceFeature: "programmatic",
         runtime: { surfaceName: "matrx-user/pdf-widgets" },
+        // Keep the PDF + Extractions stream visible — no blocking modal.
+        config: { displayMode: "background", autoRun: true },
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not run agent");

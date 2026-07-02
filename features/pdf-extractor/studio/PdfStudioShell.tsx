@@ -60,6 +60,7 @@ import type { PaneKey } from "../state/types";
 import {
   clearActiveDoc,
   clearPendingScroll,
+  ensurePaneVisible,
   setActiveDocId,
   setActivePage,
   setPendingScrollPage,
@@ -73,6 +74,9 @@ import {
   selectSidebarView,
   selectVisiblePanesForActiveDoc,
 } from "../state/selectors";
+import { selectRunProgress } from "@/features/page-extraction/redux/selectors";
+import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 
 interface PdfStudioShellProps {
   initialDocumentId?: string;
@@ -168,6 +172,37 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     enabled: !!activeDoc,
   });
 
+  const activeCldFileId =
+    activeDoc?.sourceKind === "cld_file" && activeDoc.sourceId
+      ? activeDoc.sourceId
+      : null;
+  const viewedExtractionJobId = useAppSelector((s) =>
+    selectViewedJobForFile(s, activeCldFileId),
+  );
+  const extractionRunProgress = useAppSelector((s) =>
+    selectRunProgress(
+      s,
+      viewedExtractionJobId && !isAllJobsView(viewedExtractionJobId)
+        ? viewedExtractionJobId
+        : null,
+    ),
+  );
+  const prevExtractionRunStatus = useRef(extractionRunProgress.status);
+
+  // When a chunk extraction run starts, surface the Extractions reader pane
+  // so the user can watch chunk/output streaming — even if they closed it.
+  useEffect(() => {
+    const prev = prevExtractionRunStatus.current;
+    prevExtractionRunStatus.current = extractionRunProgress.status;
+    if (
+      extractionRunProgress.status === "running" &&
+      prev !== "running" &&
+      activeDoc
+    ) {
+      dispatch(ensurePaneVisible("extractions"));
+    }
+  }, [extractionRunProgress.status, activeDoc, dispatch]);
+
   // Auto-pick first page once pages land.
   useEffect(() => {
     if (!activeDoc) return;
@@ -237,7 +272,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         // `processed_documents.name` is the studio's source of truth for the
         // title — persist it authoritatively.
         const { error } = await (supabase as any)
-          .schema("docproc").from("processed_documents")
+          .schema("docproc")
+          .from("processed_documents")
           .update({ name: trimmed })
           .eq("id", activeDoc.id);
         if (error) throw new Error(error.message);
@@ -519,6 +555,9 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         await triggerShortcut(shortcutId, {
           scope: { selection: docText },
           sourceFeature: "programmatic",
+          // Never open a blocking modal over the PDF reader / extractions
+          // stream — chunk output lives in the Extractions pane.
+          config: { displayMode: "background", autoRun: true },
         });
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Run failed");
@@ -766,7 +805,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       {/* RIGHT — inspector (collapsible) */}
       <div
         className={cn(
-          "shrink-0 hidden lg:flex flex-col border-l border-border transition-all duration-200",
+          "shrink-0 hidden lg:flex flex-col border-l border-border transition-all duration-200 min-h-0",
           inspectorOpen ? "w-80 xl:w-96" : "w-11",
         )}
       >
@@ -780,20 +819,22 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               />
             </div>
             {activeDoc ? (
-              <PdfStudioInspector
-                doc={activeDoc}
-                pages={pages}
-                activePage={activePage}
-                onRunShortcut={handleRunShortcut}
-                onRunPipeline={handleRunPipeline}
-                pipelineRunning={pipelineRunning}
-                pdfPaneEditMode={pdfPaneEditMode}
-                onStartCrop={handleStartCrop}
-                onStartReorder={handleStartReorder}
-                onEditModeCancel={handleEditModeCancel}
-                requestedSection={inspectorRequestedSection}
-                onSectionConsumed={() => setInspectorRequestedSection(null)}
-              />
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <PdfStudioInspector
+                  doc={activeDoc}
+                  pages={pages}
+                  activePage={activePage}
+                  onRunShortcut={handleRunShortcut}
+                  onRunPipeline={handleRunPipeline}
+                  pipelineRunning={pipelineRunning}
+                  pdfPaneEditMode={pdfPaneEditMode}
+                  onStartCrop={handleStartCrop}
+                  onStartReorder={handleStartReorder}
+                  onEditModeCancel={handleEditModeCancel}
+                  requestedSection={inspectorRequestedSection}
+                  onSectionConsumed={() => setInspectorRequestedSection(null)}
+                />
+              </div>
             ) : (
               <div className="flex-1 bg-card/30" />
             )}

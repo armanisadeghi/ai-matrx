@@ -27,12 +27,16 @@ import reducer, {
   type WindowManagerState,
   type WindowRect,
 } from "@/lib/redux/slices/windowManagerSlice";
+import { centerRectInViewport } from "@/features/window-panels/utils/rectClamp";
 
 const RECT_A: WindowRect = { x: 100, y: 100, width: 400, height: 300 };
 const RECT_B: WindowRect = { x: 200, y: 200, width: 500, height: 350 };
+const VIEWPORT = { viewportWidth: 1920, viewportHeight: 1080 };
 
-const fresh = (): WindowManagerState =>
-  reducer(undefined, { type: "@@INIT" });
+const dock = (state: WindowManagerState, id: string) =>
+  reducer(state, dockWindow({ id, ...VIEWPORT }));
+
+const fresh = (): WindowManagerState => reducer(undefined, { type: "@@INIT" });
 
 const withRegistered = (
   ids: Array<{ id: string; rect: WindowRect; title?: string }>,
@@ -113,7 +117,7 @@ describe("windowManagerSlice — popout", () => {
       state = reducer(state, popOutWindow({ id: "w1", mode: "pip" }));
       state = reducer(state, popOutWindow({ id: "w2", mode: "popup" }));
       // Dock w1 (the PiP) — w2 should be untouched
-      state = reducer(state, dockWindow("w1"));
+      state = dock(state, "w1");
       expect(state.windows.w1.popoutMode).toBeNull();
       expect(state.windows.w2.popoutMode).toBe("popup");
       // PiP slot is now free
@@ -170,22 +174,27 @@ describe("windowManagerSlice — popout", () => {
   });
 
   describe("dockWindow", () => {
-    it("restores prePopoutRect to windowed and clears popout state", () => {
+    it("centers using prePopoutRect size and clears popout state", () => {
       let state = withRegistered([{ id: "w1", rect: RECT_A }]);
       state = reducer(state, popOutWindow({ id: "w1", mode: "pip" }));
       // Simulate OS resize while popped out (via the proper reducer)
       state = reducer(state, updateWindowRect({ id: "w1", rect: RECT_B }));
-      state = reducer(state, dockWindow("w1"));
+      state = dock(state, "w1");
       expect(state.windows.w1.popoutMode).toBeNull();
       expect(state.windows.w1.prePopoutRect).toBeNull();
-      expect(state.windows.w1.windowed).toEqual(RECT_A);
+      expect(state.windows.w1.windowed).toEqual(
+        centerRectInViewport(RECT_A, {
+          width: VIEWPORT.viewportWidth,
+          height: VIEWPORT.viewportHeight,
+        }),
+      );
     });
 
     it("releases the activePipWindowId slot on dock", () => {
       let state = withRegistered([{ id: "w1", rect: RECT_A }]);
       state = reducer(state, popOutWindow({ id: "w1", mode: "pip" }));
       expect(state.activePipWindowId).toBe("w1");
-      state = reducer(state, dockWindow("w1"));
+      state = dock(state, "w1");
       expect(state.activePipWindowId).toBeNull();
     });
 
@@ -196,7 +205,7 @@ describe("windowManagerSlice — popout", () => {
       ]);
       state = reducer(state, popOutWindow({ id: "w1", mode: "pip" }));
       const z2Before = state.windows.w2.zIndex;
-      state = reducer(state, dockWindow("w1"));
+      state = dock(state, "w1");
       expect(state.windows.w1.zIndex).toBeGreaterThan(z2Before);
     });
 
@@ -206,7 +215,7 @@ describe("windowManagerSlice — popout", () => {
         { id: "w2", rect: RECT_B },
       ]);
       state = reducer(state, popOutWindow({ id: "w1", mode: "pip" }));
-      state = reducer(state, dockWindow("w1"));
+      state = dock(state, "w1");
       state = reducer(state, popOutWindow({ id: "w2", mode: "pip" }));
       expect(state.windows.w2.popoutMode).toBe("pip");
       expect(state.activePipWindowId).toBe("w2");
@@ -214,13 +223,13 @@ describe("windowManagerSlice — popout", () => {
 
     it("no-ops if window is already docked", () => {
       const state = withRegistered([{ id: "w1", rect: RECT_A }]);
-      const after = reducer(state, dockWindow("w1"));
+      const after = dock(state, "w1");
       expect(after).toEqual(state);
     });
 
     it("no-ops on unknown window id", () => {
       const state = withRegistered([{ id: "w1", rect: RECT_A }]);
-      const after = reducer(state, dockWindow("ghost"));
+      const after = reducer(state, dockWindow({ id: "ghost", ...VIEWPORT }));
       expect(after).toEqual(state);
     });
   });

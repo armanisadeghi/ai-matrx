@@ -7,7 +7,11 @@ import {
   computeGlobalArrangement,
   GlobalLayoutType,
 } from "@/features/window-panels/utils/windowArrangements";
-import { clampRectToViewport } from "@/features/window-panels/utils/rectClamp";
+import {
+  centerRectInViewport,
+  clampRectToViewport,
+} from "@/features/window-panels/utils/rectClamp";
+import type { DockWindowPayload } from "@/features/window-panels/popout/dockWindowPayload";
 // WindowRect lives in the shared types file so that windowArrangements.ts
 // (a feature utility) can import it without pulling in this Redux slice,
 // which would create a cycle. Re-exported here for backward compatibility.
@@ -647,20 +651,27 @@ const windowManagerSlice = createSlice({
     /**
      * Transition a popped-out window back into the parent viewport.
      *
-     * Restores `prePopoutRect → windowed`, clears `popoutMode`, releases
-     * the PiP slot if held, and bumps z-index to bring the window to the top.
+     * Centers the window in the parent viewport using `prePopoutRect`
+     * width/height (falls back to current `windowed` size), clears
+     * `popoutMode`, releases the PiP slot if held, and bumps z-index.
      * Caller is responsible for closing the actual browser popout window.
      */
-    dockWindow(state, action: PayloadAction<string>) {
-      const win = state.windows[action.payload];
+    dockWindow(state, action: PayloadAction<DockWindowPayload>) {
+      const { id, viewportWidth, viewportHeight } = action.payload;
+      const win = state.windows[id];
       if (!win || win.popoutMode === null) return;
       if (state.activePipWindowId === win.id) {
         state.activePipWindowId = null;
       }
-      if (win.prePopoutRect) {
-        win.windowed = win.prePopoutRect;
-        win.prePopoutRect = null;
-      }
+
+      const savedRect = win.prePopoutRect ?? win.windowed;
+      const centered = centerRectInViewport(savedRect, {
+        width: viewportWidth,
+        height: viewportHeight,
+      });
+
+      win.windowed = centered;
+      win.prePopoutRect = null;
       win.popoutMode = null;
       // Bring back to top of the z-stack (mirrors restoreWindow behavior).
       win.zIndex = state.nextZIndex++;

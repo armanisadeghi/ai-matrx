@@ -27,8 +27,8 @@ export interface PopoutTopBarProps {
   /** Optional content slotted on the right, before the dock button. */
   actionsRight?: ReactNode;
   /**
-   * Click handler for the dock button. Should dispatch `dockWindow(id)` so
-   * the window returns to its `prePopoutRect` position in the parent viewport.
+   * Click handler for the dock button. Should dispatch `dockWindow({ id, viewportWidth, viewportHeight })`
+   * so the window returns centered in the parent viewport.
    * The browser popout window itself is closed by the `usePopoutWindow`
    * lifecycle hook in response to the Redux state change.
    */

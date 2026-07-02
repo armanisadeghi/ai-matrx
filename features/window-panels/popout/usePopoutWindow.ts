@@ -46,10 +46,8 @@ import {
   getPopoutWindow,
 } from "./popoutWindowMap";
 import { cloneStylesIntoDocument } from "./cloneStyles";
-import {
-  markPopoutPending,
-  clearPopoutPending,
-} from "./popoutPendingStorage";
+import { markPopoutPending, clearPopoutPending } from "./popoutPendingStorage";
+import { buildDockWindowPayload } from "./dockWindowPayload";
 
 export interface OpenPopoutOptions {
   width: number;
@@ -59,7 +57,11 @@ export interface OpenPopoutOptions {
 
 export type OpenPopoutResult =
   | { ok: true; mode: "pip" | "popup" }
-  | { ok: false; reason: "pip-slot-taken" | "popup-blocked" | "no-capability" | "request-failed" };
+  | {
+      ok: false;
+      reason:
+        "pip-slot-taken" | "popup-blocked" | "no-capability" | "request-failed";
+    };
 
 export interface UsePopoutWindowReturn {
   /**
@@ -103,7 +105,7 @@ export function usePopoutWindow(windowId: string): UsePopoutWindowReturn {
     clearPopoutPending(windowId);
     // Dispatch dockWindow if Redux still considers us popped out. The
     // reducer is itself idempotent, so a redundant dispatch is harmless.
-    dispatch(dockWindow(windowId));
+    dispatch(dockWindow(buildDockWindowPayload(windowId)));
     // Best-effort close. If the close was triggered by `pagehide`, the
     // window is already going away. If by `close()`, this is the action.
     try {
@@ -232,7 +234,7 @@ export function usePopoutWindow(windowId: string): UsePopoutWindowReturn {
     const win = getPopoutWindow(windowId);
     if (!win) {
       // Already closed — make sure Redux is consistent.
-      dispatch(dockWindow(windowId));
+      dispatch(dockWindow(buildDockWindowPayload(windowId)));
       return;
     }
     // Closing the window fires `pagehide`, which runs handleClose.

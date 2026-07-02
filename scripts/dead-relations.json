@@ -172,18 +172,18 @@
     {
       "relation": "rs_source_tag",
       "old": "public.rs_source_tag",
-      "newSchema": "research",
-      "new": "research.rs_source_tag",
-      "since": "2026-06-28",
-      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_source_tag')."
+      "newSchema": "platform",
+      "new": "platform.associations",
+      "since": "2026-07-02",
+      "reason": "M2M junction collapsed into platform.associations (research_source → research_tag, worklog §4.1) and archived to graveyard.rs_source_tag. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_source_tag')."
     },
     {
       "relation": "rs_keyword_source",
       "old": "public.rs_keyword_source",
-      "newSchema": "research",
-      "new": "research.rs_keyword_source",
-      "since": "2026-06-28",
-      "reason": "moved to research schema (clean cut). Use .schema('research').from('rs_keyword_source')."
+      "newSchema": "platform",
+      "new": "platform.associations",
+      "since": "2026-07-02",
+      "reason": "M2M junction collapsed into platform.associations (research_source → research_keyword, worklog §4.2) and archived to graveyard.rs_keyword_source. Per-keyword rank now lives in the association metadata. Reads/writes go through associationsService (assoc_* RPCs). Never .from('rs_keyword_source')."
     },
     {
       "relation": "rs_source_keywords",

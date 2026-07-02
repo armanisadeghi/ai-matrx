@@ -46,21 +46,13 @@ export function clampRectToViewport(
 
   // 1. Sanitise width/height. Reject 0, negative, NaN, or absurdly large.
   let width = rect.width;
-  if (
-    !Number.isFinite(width) ||
-    width <= 0 ||
-    width > viewport.width * 4
-  ) {
+  if (!Number.isFinite(width) || width <= 0 || width > viewport.width * 4) {
     width = FALLBACK_W;
   }
   width = Math.min(width, maxW);
 
   let height = rect.height;
-  if (
-    !Number.isFinite(height) ||
-    height <= 0 ||
-    height > viewport.height * 4
-  ) {
+  if (!Number.isFinite(height) || height <= 0 || height > viewport.height * 4) {
     height = FALLBACK_H;
   }
   height = Math.min(height, maxH);
@@ -79,6 +71,20 @@ export function clampRectToViewport(
   y = Math.max(minY, Math.min(maxY, y));
 
   return { x, y, width, height };
+}
+
+/**
+ * Center a rect in the viewport, preserving (clamped) width/height.
+ * Used when docking a popped-out window back into the parent page.
+ */
+export function centerRectInViewport(
+  rect: WindowRectLike,
+  viewport: { width: number; height: number },
+): WindowRectLike {
+  const sized = clampRectToViewport({ ...rect, x: 0, y: 0 }, viewport);
+  const x = Math.max(0, Math.round((viewport.width - sized.width) / 2));
+  const y = Math.max(0, Math.round((viewport.height - sized.height) / 2));
+  return { x, y, width: sized.width, height: sized.height };
 }
 
 /**
