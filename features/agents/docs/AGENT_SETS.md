@@ -9,7 +9,7 @@ A **set** = one **orchestrator agent** presiding over **member agents**, each fi
 | Edge | source → target | role | Carries |
 |---|---|---|---|
 | **Marker** | `agent:X` → `agent:X` (self-edge) | `matrx_set` | Set config in `metadata` (`accent`, `tagline`, `orchestratorPos`) + `label`. Its existence = "X is an orchestrator" (lets an **empty set persist**). |
-| **Member** | `agent:X` → `agent:Y` | `member` | `position` (order) + `metadata` (`roleTitle`, `gap` — the authored "what it does in this set" — and saved `pos`). |
+| **Member** | `agent:X` → `agent:Y` | `member` | role title in the `label` column; `position` (order) + `metadata` (`gap` — the authored "what it does in this set" — and saved `pos`). |
 
 **Direction is fixed: orchestrator = source, member = target.** This matches `assoc_set_targets` (operates from the source) and the org-auth gate in `assoc_add` (resolves org from the source agent's `organization_id`). The `(source, target, role)` unique key keeps the marker and member edges from ever colliding, and makes every write an idempotent upsert.
 
@@ -34,4 +34,5 @@ The set's name/description ARE the orchestrator agent's — no duplicated identi
 - **No `agent_set` table, ever.** Membership is association edges. New write → reuse `associationsService`, never a bespoke RPC.
 - **React Flow (`@xyflow/react`) lives ONLY in `SetBuilderCanvasImpl.tsx`**, reached via the `SetBuilderCanvas` `next/dynamic({ ssr:false })` wrapper. A static import anywhere else is a build-time leak — guarded by `reactFlowStaticImportBan` in `eslint.config.mjs`. See the `code-splitting` skill.
 - **`agent` is a curated `ASSOCIATION_TARGET_TYPES` member** (`features/scopes/types.ts`) so agent→agent is a permitted edge.
-- **Phase 1 = structure + UI.** Runtime delegation (the orchestrator actually invoking members) is designed-for via `role`/`metadata` and lands later as an aidream contract — not built yet.
+- **Phase 1 = structure + UI.** Runtime delegation (the orchestrator actually invoking members) is designed-for via `role`/`metadata` and lands later as an aidream contract — not built yet. The full prioritized path (P0 server-side set reader → member-as-tool supervisor → pipelines/DAG → hardening → polish) is in [`AGENT_SETS_ROADMAP.md`](./AGENT_SETS_ROADMAP.md).
+- **The library rail reuses the canonical agent filter** (`useAgentConsumer` + `makeSelectFilteredOwned/SharedAgents` + `<DesktopFilterPanel>`), never a bespoke list. The peek is the canonical `AgentSneakPeekModal` (via `AgentPeekButton`). The inspector lazy-loads the full definition (`fetchFullAgent`) to show inputs + output type.
