@@ -55,6 +55,88 @@ export function getHunks(
   return hunks;
 }
 
+/** A run of unchanged lines between hunks — foldable in the UI. */
+export interface ContextBlock {
+  kind: "context";
+  lines: string[];
+  /** True when a hunk immediately precedes / follows this block (so its
+   * adjacent lines are the meaningful context to keep visible when folded). */
+  hasPrevHunk: boolean;
+  hasNextHunk: boolean;
+}
+
+export interface HunkBlock {
+  kind: "hunk";
+  index: number;
+  removed: string[];
+  added: string[];
+}
+
+export type DiffStructureItem = ContextBlock | HunkBlock;
+
+/**
+ * Compute the whole diff ONCE into an ordered list of context blocks + hunks.
+ * Renderers derive everything (folding, per-hunk resolution, the merged result)
+ * from this without re-running the O(n·m) LCS — critical for large files where
+ * re-diffing on every interaction stalls the UI.
+ */
+export function getDiffStructure(
+  original: string,
+  modified: string,
+  options?: TextDiffOptions,
+): { items: DiffStructureItem[]; hunkCount: number } {
+  const { inline } = computeTextDiff(original, modified, options);
+  const items: DiffStructureItem[] = [];
+  let i = 0;
+  let hunkIndex = 0;
+  while (i < inline.length) {
+    if (inline[i].type === "unchanged") {
+      const lines: string[] = [];
+      while (i < inline.length && inline[i].type === "unchanged") {
+        lines.push(inline[i].content);
+        i++;
+      }
+      items.push({ kind: "context", lines, hasPrevHunk: false, hasNextHunk: false });
+    } else {
+      const removed: string[] = [];
+      const added: string[] = [];
+      while (i < inline.length && inline[i].type !== "unchanged") {
+        if (inline[i].type === "removed") removed.push(inline[i].content);
+        else added.push(inline[i].content);
+        i++;
+      }
+      items.push({ kind: "hunk", index: hunkIndex, removed, added });
+      hunkIndex++;
+    }
+  }
+  for (let k = 0; k < items.length; k++) {
+    const it = items[k];
+    if (it.kind === "context") {
+      it.hasPrevHunk = k > 0 && items[k - 1].kind === "hunk";
+      it.hasNextHunk = k < items.length - 1 && items[k + 1].kind === "hunk";
+    }
+  }
+  return { items, hunkCount: hunkIndex };
+}
+
+/**
+ * Merge a precomputed structure given the set of ACCEPTED hunk indices —
+ * pure and cheap (no re-diff). Accepted hunk → new lines; anything else
+ * (pending or rejected) keeps the old lines. Empty set === original,
+ * every index === modified.
+ */
+export function mergeFromDecisions(
+  items: DiffStructureItem[],
+  acceptedIndices: Set<number>,
+): string {
+  const out: string[] = [];
+  for (const it of items) {
+    if (it.kind === "context") out.push(...it.lines);
+    else out.push(...(acceptedIndices.has(it.index) ? it.added : it.removed));
+  }
+  return out.join("\n");
+}
+
 /**
  * Reconstruct the merged text: unchanged lines are always kept; for each hunk,
  * an accepted index takes the NEW (added) lines, otherwise the OLD (removed)
