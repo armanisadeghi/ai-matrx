@@ -649,7 +649,7 @@ function ScopeSidebar({
         <KindToggle value={scope.kindFilter} onChange={scope.setKindFilter} />
         <label
           className="flex items-center gap-2 text-xs cursor-pointer"
-          title="Re-orders the fused results with a cross-encoder when a reranker is configured on the server. Retrieval itself runs on OpenAI embeddings."
+          title="Re-orders the fused candidates with Cohere's rerank-v3.5 cross-encoder (reads each candidate against your query text). Retrieval itself runs on OpenAI embeddings; when the whole window scores low-confidence the fusion order is kept instead."
         >
           <Checkbox
             checked={scope.rerank}
@@ -1144,6 +1144,24 @@ function SearchTab({ scope }: { scope: Scope }) {
                 candidates · {response.latency_ms} ms
                 {response.reranker_model &&
                   ` · reranked by ${response.reranker_model}`}
+                {response.rerank_status === "low_confidence" && (
+                  <span
+                    className="text-amber-600 dark:text-amber-500"
+                    title="Cohere reranked the candidates but every one scored below the confidence floor — no strong match for this query, so the fusion (RRF) order was kept."
+                  >
+                    {" "}
+                    · rerank skipped: low confidence
+                  </span>
+                )}
+                {response.rerank_status === "failed" && (
+                  <span
+                    className="text-amber-600 dark:text-amber-500"
+                    title="The rerank call errored; results use the fusion (RRF) order."
+                  >
+                    {" "}
+                    · rerank failed — fusion order
+                  </span>
+                )}
               </div>
               <QueryTermCoverage query={response.query} hits={response.hits} />
               {response.hits.length === 0 ? (

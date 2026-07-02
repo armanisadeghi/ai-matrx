@@ -43,6 +43,14 @@ export interface RagSearchResponse {
   embedding_model: string;
   reranker_model: string | null;
   latency_ms: number;
+  /**
+   * What happened to the rerank stage — disambiguates a null reranker_model:
+   * "applied" (Cohere ordering used) · "low_confidence" (Cohere ran, every
+   * candidate scored below the floor, fusion order kept) · "failed" (Cohere
+   * errored, fusion order kept) · "off". Optional until the backend deploy
+   * that adds it ships.
+   */
+  rerank_status?: "applied" | "low_confidence" | "failed" | "off";
 }
 
 export interface RagSearchFilters {
