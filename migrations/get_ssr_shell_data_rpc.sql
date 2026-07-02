@@ -79,7 +79,7 @@ AS $$
     'ai_models', (
       SELECT COALESCE(json_agg(row_to_json(m)), '[]'::json)
       FROM (
-        SELECT * FROM ai.model
+        SELECT * FROM ai.model_definition
         WHERE is_deprecated = false
         ORDER BY common_name ASC
       ) m

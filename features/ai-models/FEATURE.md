@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-04-25`
+**Last updated:** `2026-07-02`
 
 ---
 
@@ -24,7 +24,7 @@ The catalog and configuration surface for every LLM available to the product —
 
 **API endpoints**
 - `GET /api/ai-models` — cached (12h s-maxage, 24h SWR) list of active models for client/SSR readers
-- `POST/GET /api/ai-models/provider-sync` — fetch-and-cache model lists from Anthropic / OpenAI / Groq APIs into `ai_provider.provider_models_cache`
+- `POST/GET /api/ai-models/provider-sync` — fetch-and-cache model lists from Anthropic / OpenAI / Groq APIs into `ai.provider.provider_models_cache`
 - `POST /api/ai-models/revalidate` — cache-tag invalidation
 
 **Hooks** (`features/ai-models/hooks/useModels.ts`)
@@ -38,7 +38,7 @@ The catalog and configuration surface for every LLM available to the product —
 - `useTabUrlState()` — URL-persisted tab/filter presets for the admin table
 
 **Services**
-- `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `prompts`/`prompt_builtins`/`agx_agent`/`agx_agent_templates`), and deprecation-migration helpers (`replaceModelIn*`)
+- `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `agent.definition`/`agent.template`), and deprecation-migration helpers (`replaceModelIn*`). `public.prompts`/`prompt_builtins` are graveyarded — `fetchUsage`/`replaceModelInPrompts` treat that leg as a no-op (0 rows, intentional)
 - `features/ai-models/server/ai-models-server.ts` — `fetchAIModels()` (React-cached server reader for SSR shells)
 
 **Redux slice**
@@ -48,11 +48,18 @@ The catalog and configuration surface for every LLM available to the product —
 
 ## Data model
 
-**Database tables** (Supabase)
-- `ai_model` — master registry row. Columns include `id`, `name`, `common_name`, `provider`, `model_provider`, `model_class`, `api_class`, `context_window`, `max_tokens`, `is_deprecated`, `is_primary`, `is_premium`, two self-FK columns `mid_fallback_id` + `guest_fallback_id` (see Tier fallbacks below), and JSONB blobs: `capabilities`, `controls`, `constraints`, `pricing`, `endpoints`.
-- `ai_provider` — provider catalog (Anthropic, OpenAI, Groq, …) + `provider_models_cache` JSONB (last live fetch from provider API).
-- `ai_endpoint` — endpoint rows referenced by model.
-- Referenced by (read side): `prompts.model_id`, `prompt_builtins.model_id`, `agx_agent.model_id` (+ `model_tiers.primary_model_id`), `agx_agent_templates.model_id`.
+**Database tables** (Supabase, `ai` schema — renamed/canonicalized 2026-07-02 "AI-catalog reshape", was flat `public.ai_*`)
+- `ai.model_definition` (was `ai.model`) — master registry row. Columns include `id`, `name`, `common_name`, `provider`, `model_provider`, `model_class`, `api_class`, `context_window`, `max_tokens`, `is_deprecated`, `is_primary`, `is_premium`, two self-FK columns `mid_fallback_id` + `guest_fallback_id` (see Tier fallbacks below), and JSONB blobs: `capabilities`, `controls`, `constraints`, `pricing`, `endpoints`.
+- `ai.provider` — provider catalog (Anthropic, OpenAI, Groq, …) + `provider_models_cache` JSONB (last live fetch from provider API).
+- `ai.endpoint` — endpoint rows referenced by model.
+- `ai.voices` — TTS voice catalog (provider-agnostic), canonicalized alongside the reshape; consumed by `features/podcasts/generator/voiceCatalog.ts`, not this feature.
+- Referenced by (read side): `agent.definition.model_id` / `agent.template.model_id` (+ `model_tiers.primary_model_id`). The old `public.prompts`/`prompt_builtins`/`agx_agent`/`agx_agent_templates` were migrated into `agent.definition`/`agent.template` and are now `graveyard.*` — no live reads against them.
+
+**New in the reshape, not yet consumed by this feature (open gap, see Current work below):**
+- `ai.service` — a callable route (translator/wire-format token consumed by matrx-ai; internal name, base URL, auth ref).
+- `ai.offering` — `model_id × service_id` = the actual callable unit; per-service pricing/availability/capability overrides over `model_definition`.
+- `ai.setting` — canonical settings vocabulary (temperature, reasoning_effort, …) that controls/UI should eventually render from instead of ad hoc per-model `controls` JSONB.
+- `ai.model_offering` (view) — joins `offering` + `service` + `model_definition` into a user-facing row with points-based pricing (`points_per_million_input/output/cached_input`). Nothing in the app queries this view yet.
 
 **Key types** (`features/ai-models/types.ts`)
 - `AiModel` — `AiModelRow` with JSONB columns narrowed to `ControlsSchema | null`, `ModelConstraint[] | null`, `PricingTier[] | null`, `string[] | null` (endpoints), capabilities record.
@@ -74,7 +81,7 @@ The catalog and configuration surface for every LLM available to the product —
 
 1. Admin opens `/administration/ai-models/`. `AiModelsContainer` calls `aiModelService.fetchAll()` + `fetchProviders()`.
 2. Clicks "+ new" → `AiModelDetailPanel` opens in create mode with an empty `AiModelForm`.
-3. On save: `aiModelService.create(insert)` inserts into `ai_model`. The new row is prepended in component state and becomes the selected record.
+3. On save: `aiModelService.create(insert)` inserts into `ai.model_definition`. The new row is prepended in component state and becomes the selected record.
 4. Edit path uses `aiModelService.update(id, patch)` — returns the updated row; `handleSaved` replaces in list. JSON fields (`controls`, `constraints`, `pricing`, `endpoints`, `capabilities`) are edited via dedicated sub-editors in tabs.
 5. Cache invalidation: `POST /api/ai-models/revalidate` clears the SSR cache tag; the client Redux registry is refreshed on next `fetchModelOptions` / `fetchModelById`.
 
@@ -90,7 +97,7 @@ The catalog and configuration surface for every LLM available to the product —
 
 1. Builder renders `AgentModelConfiguration` / `AgentSettingsCore`, which mount `SmartModelSelect` (`features/ai-models/components/smart/SmartModelSelect.tsx`).
 2. `SmartModelSelect` calls `useModels()` → `fetchModelOptions` thunk populates `modelRegistry` with `_fetchType:'options'` records. Dropdown renders from `selectModelOptions`.
-3. On pick, `onValueChange(modelId)` dispatches `setAgentField({ field: 'modelId', value: modelId })` on the `agentDefinition` slice. The agent row stores the ID in `agx_agent.model_id`; converters map it back as `modelId` (`features/agents/redux/agent-definition/converters.ts`).
+3. On pick, `onValueChange(modelId)` dispatches `setAgentField({ field: 'modelId', value: modelId })` on the `agentDefinition` slice. The agent row stores the ID in `agent.definition.model_id`; converters map it back as `modelId` (`features/agents/redux/agent-definition/converters.ts`).
 4. For controls/context_window/max_tokens/etc., `SmartModelConfigs` calls `useModelFull(modelId)` — triggers `fetchModelById` and returns the `'full'` record only once loaded.
 5. At invocation time, the Builder ships the full agent definition (including `modelId`) to `POST /prompts`; Runner/Chat/Shortcut/App ship only the agent ID, and the server resolves the model row.
 
@@ -99,29 +106,29 @@ The catalog and configuration surface for every LLM available to the product —
 1. `/administration/ai-models/audit` mounts `ModelAuditDashboard`. It pulls `aiModelService.fetchAll()`, filters deprecated out by default, runs `runAudit(models, rules)` against `DEFAULT_AUDIT_RULES`.
 2. Tabs (`overview`, `core_fields`, `pricing`, `api_class`, `capabilities`, `configurations`) show per-category failures. `AuditRulesConfig` lets admins tune thresholds live (client-only state).
 3. Inline fixes: each row has a quick-edit that calls `aiModelService.patchField(id, field, value)` or `bulkPatchField(patches)`; local `models` state is updated via `handleModelUpdated`.
-4. Deprecated-reference cleanup: `DeprecatedModelsAudit` uses `aiModelService.fetchUsage(id)` to find every prompt/builtin/agent/template still pointing at a deprecated model, then `replaceModelInPrompts` / `replaceModelInBuiltins` / `replaceModelInAgents` / `replaceModelInAgentTemplates` to rewrite `model_id` (and merge `settings->model_id`) in one pass.
-5. Provider sync: `/administration/ai-models/provider-sync` → `POST /api/ai-models/provider-sync` fetches live model lists from provider APIs and caches in `ai_provider.provider_models_cache`; admins diff against registry to spot new or removed models. (Note: historical row-level change audit is not stored in-app — the dashboard is data-quality audit, not who-changed-what.)
+4. Deprecated-reference cleanup: `DeprecatedModelsAudit` uses `aiModelService.fetchUsage(id)` to find every builtin/agent/template still pointing at a deprecated model (against `agent.definition`/`agent.template` — `prompts`/`prompt_builtins` are graveyarded no-ops), then `replaceModelInBuiltins` / `replaceModelInAgents` / `replaceModelInAgentTemplates` to rewrite `model_id` (and merge `settings->model_id`) in one pass.
+5. Provider sync: `/administration/ai-models/provider-sync` → `POST /api/ai-models/provider-sync` fetches live model lists from provider APIs and caches in `ai.provider.provider_models_cache`; admins diff against registry to spot new or removed models. (Note: historical row-level change audit is not stored in-app — the dashboard is data-quality audit, not who-changed-what.)
 
 ---
 
 ## Invariants & gotchas
 
-- **The `ai_model` table is the single source of truth for model IDs, capabilities, pricing, and constraints.** Never hard-code provider model strings (`"claude-3-5-sonnet-…"`, `"gpt-4o"`) at call sites. Resolve via `useModelFull` or the server reader.
-- **Agents reference models by `model_id` only.** `agx_agent.model_id` is a UUID pointing at `ai_model.id` — never a provider string. Converters (`features/agents/redux/agent-definition/converters.ts`) preserve this on both read and write.
+- **The `ai.model_definition` table is the single source of truth for model IDs, capabilities, pricing, and constraints.** Never hard-code provider model strings (`"claude-3-5-sonnet-…"`, `"gpt-4o"`) at call sites. Resolve via `useModelFull` or the server reader.
+- **Agents reference models by `model_id` only.** `agent.definition.model_id` is a UUID pointing at `ai.model_definition.id` — never a provider string. Converters (`features/agents/redux/agent-definition/converters.ts`) preserve this on both read and write.
 - **Constraints are advisory at the agent level and enforced server-side at call time.** The Builder/Runner UI MAY surface constraint violations as warnings but MUST NOT block save. The LLM-call layer runs `ModelConstraint[]` evaluation against the assembled request and rejects/downgrades per `severity`.
 - **Registry records have two data levels.** `_fetchType: 'options'` only guarantees `id`, `name`, `common_name`, `provider`, `model_class`, `is_deprecated`. Anything else (`controls`, `context_window`, `pricing`, `constraints`, `capabilities`) requires `_fetchType: 'full'`. Always gate on `useModelFull()` or `selectModelFullyLoaded()` before reading those fields.
 - **Status never downgrades.** Once a record is `'full'`, subsequent `fetchModelOptions` calls will not overwrite it back to `'options'`. The slice has explicit guards — do not bypass them.
 - **`/api/ai-models` is CDN-cached for 12h** (`s-maxage=43200, stale-while-revalidate=86400`). Changes to the registry require `POST /api/ai-models/revalidate` to propagate to SSR consumers; in-app Redux reads use the client thunks and see changes immediately.
-- **Deprecating a model is destructive at the reference layer.** Flip `is_deprecated=true` in `ai_model`, then run the deprecated-audit migration helpers — do not rely on downstream features to catch stale references. `fetchUsage` is the canonical list of everything to migrate.
+- **Deprecating a model is destructive at the reference layer.** Flip `is_deprecated=true` in `ai.model_definition`, then run the deprecated-audit migration helpers — do not rely on downstream features to catch stale references. `fetchUsage` is the canonical list of everything to migrate.
 - **`replaceModelIn*` helpers patch both column and `settings->model_id`.** Some legacy rows store the model in either place. Always let the helper fetch-then-patch; never write raw SQL that ignores the JSONB path.
-- **Provider-cache and registry are separate.** `ai_provider.provider_models_cache` is live provider data — not the canonical list. Adding a model to the registry is always an explicit create against `ai_model`.
+- **Provider-cache and registry are separate.** `ai.provider.provider_models_cache` is live provider data — not the canonical list. Adding a model to the registry is always an explicit create against `ai.model_definition`.
 - **A media/audio model's `pricing.usage_basis` MUST match how its provider reports usage — wrong/absent basis silently mis-bills.** This is the bug class behind a gpt-image model billing $30/image (missing basis → synthetic per-image charge against a $/1M-token price), TTS billing $0 (units never populated), and ElevenLabs billing 1,000,000× too little ($/character entered as $/1M-character). The pricing editor (`ModelPricingEditor`) now requires a basis per tier, labels each price field with its real unit, and surfaces inline errors via `validatePricingTiers` (`usageBasis.ts`) — the same checks the server runs in `scripts/validate_model_pricing.py` (loud drift guard) and `matrx_ai.config.usage_config.validate_model_pricing`. Token-billed image models (gpt-image-*, Gemini image-native) legitimately use no basis. **When adding a media model, pick the basis; never leave it on "Token" for a non-token-billed media model.**
 
 ---
 
 ## Tier fallbacks — `mid_fallback_id` + `guest_fallback_id`
 
-Two self-FKs on `ai_model` let admins declare what the aidream backend should substitute when the caller is past a tier:
+Two self-FKs on `ai.model_definition` let admins declare what the aidream backend should substitute when the caller is past a tier:
 
 - **`mid_fallback_id`** — picked when an authenticated user is past their soft limit. Today this is plumbed but not enforced; the column captures the intent so the eventual quota gate can read it without further schema changes.
 - **`guest_fallback_id`** — picked when the caller is unauthenticated (`X-Fingerprint-ID` header from the matrx-extend Chrome extension or any future surface). Aidream's `swap_model_for_auth_tier` runs inside `prepare_agent_run` and silently rewrites `config.model`. The original is stashed on the run's `ctx.metadata['original_model']`.
@@ -139,7 +146,7 @@ Both default to `NULL`, which means "no swap; keep the agent's declared model". 
 ## Related features
 
 - **Depends on:** `utils/supabase/*` (client, server, admin/script clients), `types/database.types` (generated Supabase types)
-- **Depended on by:** `features/agents/` (Builder model picker, settings, runtime resolution), `features/prompts/` + `features/prompt-builtins/` (legacy consumers — being retired per `features/agents/migration/`)
+- **Depended on by:** `features/agents/` (Builder model picker, settings, runtime resolution) via `agent.definition`/`agent.template`. The legacy `features/prompts/`/`features/prompt-builtins/` consumers are gone — those tables are graveyarded.
 - **Cross-links:**
   - [`features/agents/FEATURE.md`](../agents/FEATURE.md) — consumer of the registry
   - [`features/agents/docs/AGENT_BUILDER.md`](../agents/docs/AGENT_BUILDER.md) — Builder flow that surfaces `SmartModelSelect`
@@ -149,12 +156,15 @@ Both default to `NULL`, which means "no swap; keep the agent's declared model". 
 
 ## Current work / migration state
 
-Configuration surface is stable. The consumer side is mid-migration: prompt/builtins references to `model_id` are being collapsed into agent references as part of the agents migration (`features/agents/migration/MASTER-PLAN.md`). No breaking changes planned to the `ai_model` schema or to `ModelConstraint` shape.
+Configuration surface is stable on the new `ai.model_definition`/`ai.provider`/`ai.endpoint` shape (2026-07-02 rename, fully repointed). No breaking changes planned to `ModelConstraint` shape.
+
+**Open gap:** the reshape also added `ai.service` / `ai.offering` / `ai.setting` (+ the `ai.model_offering` view) — a proper per-service pricing/availability/capability-override layer and a canonical settings vocabulary. **Nothing in this feature (or anywhere in the app) reads or writes these yet** — `aiModelService`, the admin table, and the registry slice all still operate purely on `ai.model_definition`. Building the offering/service admin UI and switching controls rendering onto `ai.setting` is unstarted follow-up work, not a bug.
 
 ---
 
 ## Change log
 
+- `2026-07-02` — AI-catalog reshape doc sync + drift cleanup. `ai.model` → `ai.model_definition` rename (plus new `ai.service`/`ai.offering`/`ai.setting` tables + `ai.model_offering` view) was already fully repointed in code across prior commits, sitting unpushed on local `main` — production was still on stale deployed code, throwing `PGRST205: ai.model not found`, not a code bug. Separately found and fixed a real drift: the checked-in `migrations/get_ssr_shell_data_rpc.sql` / `get_ssr_agent_shell_data_rpc.sql` still said `ai.model` while the live DB functions had already been patched to `ai.model_definition` out of band — synced both files to the live bodies, re-applied (no-op) via Supabase MCP, updated `_schema_migrations` ledger checksums. Deleted two dead code paths modeling the old flat shape: `lib/api/ai-models.ts` (unused duplicate fetch path) and `features/recipes/view-setup/` (dead sub-feature, hand-rolled `AISettings` type mirroring graveyarded `ai_settings`).
 - `2026-06-30` — Provider sync: Copy for AI at row / provider (status-filtered dropdown) / page levels via `ProviderSyncCopyForAi`; in-code excluded-model registry (`constants/excluded-provider-models.ts`) marks legacy provider IDs as "Excluded" instead of "Not in DB".
 - `2026-06-30` — Provider sync dashboard: sortable column headers per provider table; default sort is release date descending via `compareTimestamps` (newest models first).
 - `2026-06-30` — Provider sync: dropped retired `anthropic-beta: models-2024-09-01` header; Anthropic `/v1/models` is GA and only needs `anthropic-version`. Added `usage_basis` (+ `note`) to `PricingTier`; new `features/ai-models/usageBasis.ts` (taxonomy + `validatePricingTiers`, mirrors the matrx-ai server SSOT). `ModelPricingEditor` now has a per-tier billing-basis dropdown, dynamic per-unit price labels, and inline validation. Closes the root cause of the media-billing bugs (freeform pricing JSONB with no guardrail). Server side: `usage_config.USAGE_BASIS_SPECS`, computed megapixel/second billing, and `scripts/validate_model_pricing.py` drift guard.
@@ -164,4 +174,4 @@ Configuration surface is stable. The consumer side is mid-migration: prompt/buil
 
 ---
 
-> **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this feature — especially to the `ai_model` schema, `ModelConstraint` shape, registry slice fetch contracts, or the constraints editor — update this file's Entry points / Data model / Invariants sections and append to the Change log. Stale FEATURE.md cascades across parallel agents working on Builder, audits, and model picking.
+> **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this feature — especially to the `ai.model_definition` schema, `ModelConstraint` shape, registry slice fetch contracts, or the constraints editor — update this file's Entry points / Data model / Invariants sections and append to the Change log. Stale FEATURE.md cascades across parallel agents working on Builder, audits, and model picking.

@@ -25,19 +25,19 @@ AS $$
     -- ── User session ──────────────────────────────────────────
     'is_admin', (
       SELECT EXISTS(
-        SELECT 1 FROM public.admins WHERE user_id = p_user_id
+        SELECT 1 FROM admin.admins WHERE user_id = p_user_id
       )
     ),
 
     'preferences_exists', (
       SELECT EXISTS(
-        SELECT 1 FROM public.user_preferences WHERE user_id = p_user_id
+        SELECT 1 FROM users.user_preferences WHERE user_id = p_user_id
       )
     ),
 
     'preferences', (
       SELECT preferences
-      FROM public.user_preferences
+      FROM users.user_preferences
       WHERE user_id = p_user_id
       LIMIT 1
     ),
@@ -47,27 +47,27 @@ AS $$
       SELECT COALESCE(json_agg(row_to_json(m)), '[]'::json)
       FROM (
         SELECT *
-        FROM ai.model
+        FROM ai.model_definition
         WHERE is_deprecated = false
         ORDER BY common_name ASC
       ) m
     ),
 
     -- ── Agent context menu ────────────────────────────────────
-    -- Pulls from agent_context_menu_view (Phase 1.3). Same column
+    -- Pulls from agent.context_menu_view (Phase 1.3). Same column
     -- shape as the legacy view (placement_type + categories_flat).
     'agent_context_menu', (
       SELECT COALESCE(json_agg(row_to_json(c)), '[]'::json)
       FROM (
         SELECT placement_type, categories_flat
-        FROM public.agent_context_menu_view
+        FROM agent.context_menu_view
       ) c
     ),
 
     -- ── SMS unread badge ──────────────────────────────────────
     'sms_unread_total', (
       SELECT COALESCE(SUM(unread_count), 0)::int
-      FROM public.sms_conversations
+      FROM communication.sms_conversations
       WHERE user_id = p_user_id
         AND status = 'active'
     )
