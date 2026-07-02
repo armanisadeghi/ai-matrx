@@ -53,10 +53,11 @@ function metaToConfig(meta: Json | null | undefined): AgentSetConfig {
   return cfg;
 }
 
-function metaToMemberMeta(meta: Json | null | undefined): AgentSetMemberMeta {
+// Per-member metadata jsonb holds ONLY gap + saved position. The member's role
+// title lives in the association's `label` column (see load()/addMember()).
+function metaToMemberMeta(meta: Json | null | undefined): Pick<AgentSetMemberMeta, "gap" | "pos"> {
   const m = asRecord(meta);
-  const out: AgentSetMemberMeta = {};
-  if (typeof m.roleTitle === "string") out.roleTitle = m.roleTitle;
+  const out: Pick<AgentSetMemberMeta, "gap" | "pos"> = {};
   if (typeof m.gap === "string") out.gap = m.gap;
   if (m.pos && typeof m.pos === "object") {
     const p = m.pos as Record<string, unknown>;
@@ -116,7 +117,7 @@ export const agentSetsService = {
           edgeId: e.id,
           agentId: e.targetId,
           position: e.position ?? i,
-          roleTitle: meta.roleTitle ?? null,
+          roleTitle: e.label ?? null, // role title = the association's label column
           gap: meta.gap ?? null,
           pos: meta.pos ?? null,
         };
@@ -169,14 +170,17 @@ export const agentSetsService = {
     memberId: string,
     args?: { position?: number; meta?: AgentSetMemberMeta },
   ): Promise<ScopesRpcResult<{ id: string }>> {
+    const meta = args?.meta ?? {};
     return associationsService.add({
       sourceType: AGENT_TOKEN,
       sourceId: orchestratorId,
       targetType: AGENT_TOKEN,
       targetId: memberId,
       role: MEMBER_ROLE,
+      // role title → the canonical `label` column; only gap + saved position ride metadata
+      label: meta.roleTitle,
       position: args?.position,
-      metadata: (args?.meta ?? {}) as Json,
+      metadata: { gap: meta.gap, pos: meta.pos } as Json,
     });
   },
 

@@ -20,6 +20,7 @@ import {
   Background,
   BackgroundVariant,
   Controls,
+  Panel,
   Handle,
   Position,
   useReactFlow,
@@ -30,7 +31,8 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Network, Webhook, Pencil, X } from "lucide-react";
+import dagre from "dagre";
+import { Network, Webhook, GitFork, CircleDot, LayoutGrid, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -142,11 +144,74 @@ function defaultMemberPos(index: number, total: number): { x: number; y: number 
   return { x: startX + col * spanX, y: 260 + row * 230 };
 }
 
+type LayoutKind = "hierarchy" | "radial" | "grid";
+type XY = { x: number; y: number };
+interface LayoutResult {
+  orch: XY;
+  members: Record<string, XY>;
+}
+
+const ORCH_W = 260;
+const ORCH_H = 150;
+const MEM_W = 244;
+const MEM_H = 132;
+
+/** Compute a fresh position for every node under one of the auto-arrange modes. */
+function computeLayout(kind: LayoutKind, memberIds: string[]): LayoutResult {
+  const n = memberIds.length;
+
+  if (kind === "grid") {
+    const members: Record<string, XY> = {};
+    memberIds.forEach((id, i) => (members[id] = defaultMemberPos(i, n)));
+    return { orch: { x: -ORCH_W / 2, y: -40 }, members };
+  }
+
+  if (kind === "radial") {
+    const members: Record<string, XY> = {};
+    const R = Math.max(340, n * 48);
+    memberIds.forEach((id, i) => {
+      const ang = (2 * Math.PI * i) / Math.max(n, 1) - Math.PI / 2;
+      members[id] = { x: Math.cos(ang) * R - MEM_W / 2, y: Math.sin(ang) * R - MEM_H / 2 };
+    });
+    return { orch: { x: -ORCH_W / 2, y: -ORCH_H / 2 }, members };
+  }
+
+  // hierarchy — dagre top-down tree (orchestrator over its members)
+  const g = new dagre.graphlib.Graph();
+  g.setGraph({ rankdir: "TB", nodesep: 44, ranksep: 90, marginx: 24, marginy: 24 });
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setNode(ORCH_ID, { width: ORCH_W, height: ORCH_H });
+  memberIds.forEach((id) => g.setNode(id, { width: MEM_W, height: MEM_H }));
+  memberIds.forEach((id) => g.setEdge(ORCH_ID, id));
+  dagre.layout(g);
+  const on = g.node(ORCH_ID);
+  const members: Record<string, XY> = {};
+  memberIds.forEach((id) => {
+    const dn = g.node(id);
+    members[id] = { x: dn.x - MEM_W / 2, y: dn.y - MEM_H / 2 };
+  });
+  return { orch: { x: on.x - ORCH_W / 2, y: on.y - ORCH_H / 2 }, members };
+}
+
+function LayoutButton({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={`Auto-arrange: ${label}`}
+      className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
+  );
+}
+
 // ─── canvas ─────────────────────────────────────────────────────────────
 
 function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: SetBuilderCanvasProps) {
   const dispatch = useAppDispatch();
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
   const a = accentClasses(accent);
 
   // Live drag positions — updated ONLY from onNodesChange (an event handler), so
@@ -253,6 +318,28 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
     event.dataTransfer.dropEffect = "copy";
   }, []);
 
+  // Auto-arrange: recompute every node's position, snap instantly (overrides),
+  // persist (per-member pos + orchestrator pos), then frame the graph.
+  const applyLayout = useCallback(
+    (kind: LayoutKind) => {
+      const layout = computeLayout(kind, members.map((m) => m.agentId));
+      setOverrides({ [ORCH_ID]: layout.orch, ...layout.members });
+      dispatch(
+        saveSetConfig({ orchestratorId, config: { ...config, orchestratorPos: layout.orch } }),
+      );
+      members.forEach((m) =>
+        dispatch(
+          saveMemberMeta({ orchestratorId, agentId: m.agentId, meta: { pos: layout.members[m.agentId] } }),
+        ),
+      );
+      // Frame after the position change has painted.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => fitView({ padding: 0.25, maxZoom: 1, duration: 400 })),
+      );
+    },
+    [members, dispatch, orchestratorId, config, fitView],
+  );
+
   return (
     <div className="h-full w-full" onDrop={onDrop} onDragOver={onDragOver}>
       <ReactFlow
@@ -271,6 +358,14 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="opacity-50" />
         <Controls showInteractive={false} className="!shadow-md" />
+        <Panel position="top-right">
+          <div className="flex items-center gap-0.5 rounded-lg border border-border bg-card/90 p-0.5 shadow-md backdrop-blur">
+            <span className="px-1.5 text-[11px] font-medium text-muted-foreground">Arrange</span>
+            <LayoutButton icon={GitFork} label="Hierarchy" onClick={() => applyLayout("hierarchy")} />
+            <LayoutButton icon={CircleDot} label="Radial" onClick={() => applyLayout("radial")} />
+            <LayoutButton icon={LayoutGrid} label="Grid" onClick={() => applyLayout("grid")} />
+          </div>
+        </Panel>
       </ReactFlow>
     </div>
   );

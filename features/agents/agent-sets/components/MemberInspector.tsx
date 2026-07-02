@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Loader2, Play, Trash2, Webhook, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,11 +14,28 @@ import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  selectAgentById,
+  selectAgentVariableDefinitions,
+  selectAgentOutputSchema,
+  selectAgentReadyForBuilder,
+} from "@/features/agents/redux/agent-definition/selectors";
+import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { removeAgentFromSet, saveMemberMeta } from "@/features/agents/redux/agent-sets/thunks";
+import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
 import type { SetAccent } from "../constants";
 import type { AgentSetMember } from "../types";
+
+/** Render one JSON-schema property's type as a short label. */
+function propType(def: unknown): string {
+  if (def && typeof def === "object" && "type" in def) {
+    const t = (def as { type?: unknown }).type;
+    if (Array.isArray(t)) return t.join(" | ");
+    if (typeof t === "string") return t;
+  }
+  return "any";
+}
 
 export interface MemberInspectorProps {
   orchestratorId: string;
@@ -31,6 +48,14 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
   const dispatch = useAppDispatch();
   const a = accentClasses(accent);
   const agent = useAppSelector((s) => selectAgentById(s, member.agentId));
+  const ready = useAppSelector((s) => selectAgentReadyForBuilder(s, member.agentId));
+  const variableDefs = useAppSelector((s) => selectAgentVariableDefinitions(s, member.agentId));
+  const outputSchema = useAppSelector((s) => selectAgentOutputSchema(s, member.agentId));
+
+  // Lazy-load the full definition (variables + output schema are NOT in the list row).
+  useEffect(() => {
+    if (!ready) dispatch(fetchFullAgent(member.agentId));
+  }, [ready, member.agentId, dispatch]);
 
   // Seeded once from props; the parent remounts this panel via `key={agentId}`
   // when a different member is selected, so no setState-in-effect re-seed.
@@ -39,6 +64,10 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
   const [saving, setSaving] = useState(false);
 
   const dirty = roleTitle !== (member.roleTitle ?? "") || gap !== (member.gap ?? "");
+  const outputProps = outputSchema?.schema?.properties
+    ? Object.entries(outputSchema.schema.properties)
+    : [];
+  const requiredOut = new Set(outputSchema?.schema?.required ?? []);
 
   const handleSave = async () => {
     setSaving(true);
@@ -64,6 +93,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           <div className="truncate text-sm font-semibold text-foreground">{agent?.name ?? "Member"}</div>
           <div className="text-[11px] text-muted-foreground">Member role</div>
         </div>
+        <AgentPeekButton agentId={member.agentId} />
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
           <X className="h-4 w-4" />
         </Button>
@@ -99,6 +129,63 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
             rows={5}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+        </div>
+
+        {/* Agent I/O — what this member consumes + produces (lazy-loaded full def) */}
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-muted-foreground">Inputs</div>
+          {!ready ? (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+            </div>
+          ) : !variableDefs || variableDefs.length === 0 ? (
+            <div className="text-xs text-muted-foreground/70">No declared inputs.</div>
+          ) : (
+            <div className="space-y-1.5">
+              {variableDefs.map((v) => (
+                <div key={v.name} className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <code className="text-[11px] font-semibold text-foreground">{v.name}</code>
+                    {v.required && (
+                      <span className={cn("rounded px-1 text-[9px] font-semibold", a.soft, a.text)}>
+                        required
+                      </span>
+                    )}
+                  </div>
+                  {v.helpText && (
+                    <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
+                      {v.helpText}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-muted-foreground">Output</div>
+          {!ready ? (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+            </div>
+          ) : outputProps.length === 0 ? (
+            <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">
+              Text
+            </div>
+          ) : (
+            <div className="space-y-1 rounded-md border border-border bg-muted/30 p-2">
+              {outputProps.map(([field, def]) => (
+                <div key={field} className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="flex items-center gap-1 truncate">
+                    <code className="font-semibold text-foreground">{field}</code>
+                    {requiredOut.has(field) && <span className={cn("text-[9px]", a.text)}>*</span>}
+                  </span>
+                  <span className="shrink-0 font-mono text-muted-foreground">{propType(def)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-1.5">
