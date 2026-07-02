@@ -139,6 +139,10 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 - `audit.table_impact(schema,table)` — **PREFLIGHT**: every fn touching the table · `dependency` (precise|text-qualified) · `currently_broken` · exact `referenced_columns[]`. Run before any rename/drop to get the blast radius.
 - `audit.m2m_candidates` · `audit.unregistered_candidates` · `audit.stale_registry` · `audit.refresh_log`.
 
+**Factual candidates — the two fixes that make the utilities trustworthy (2026-07-02):**
+1. **`audit.is_m2m_shape(regclass)`** — the real definition of a junction: ≥2 FKs to entity tables AND a unique/PK key that IS those FK columns (± ordering/role). `refresh()` gates `m2m_candidates` on it, so an *entity* that merely references 2 others (surrogate `id` PK, FK pair not unique) never appears. Cut the list from ~110 noise → **6 genuine junctions** (`skill.project`, `tool.bundle_member`, `tool.binding` [blocked], `applet_containers`/`container_fields` [skip], `flashcard_set_relations` [deprecate]).
+2. **`meta.audit_exemption` + `meta.exempt(check, schema, table, reason)` / `meta.unexempt(...)`** — the ONE general method for known exceptions across every check. `refresh()` filters each candidate/gate insert against it. `check_name` ∈ `m2m_candidate` · `unregistered_candidate` · `stale_registry` · `gate:<check_name>` (suppress a specific accepted verify_canonical FAIL/WARN). New false positive → one `meta.exempt(...)` call, never a function edit. A shape-true-but-semantically-not-a-link table (config entity / grant / KG edge) is the intended use: `context_item_values`, `webhook_deliveries`, `data_store_grants`, `kg_edges`, `agent_surface`, `ui_surface_agent_pref` are exempted from `m2m_candidate`. **Every new utility MUST consult `meta.audit_exemption` so it reports factually.**
+
 ## 5c. Snapshot — 2026-07-01 (COMPLETE gate)
 - 199 registered live tables → **9 fully certified · 190 not**. (Old partial gate falsely implied 63 OK — it never checked triggers/FKs/version/metadata/updated_by/org-NOT-NULL. ~800 hidden FAILs.)
 - Gate: **1039 FAIL / 242 WARN**. Dependency edges mapped: **1731**.
