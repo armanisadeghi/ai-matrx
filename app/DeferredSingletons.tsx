@@ -48,6 +48,7 @@ import AuthSessionWatcher from "@/components/layout/AuthSessionWatcher";
 import AnnouncementProvider from "@/components/layout/AnnouncementProvider";
 import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
 import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
+import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
 
 const LazyMessagingIsland = dynamic(
   () => import("@/features/shell/islands/LazyMessagingIsland"),
@@ -169,6 +170,10 @@ export default function DeferredSingletons() {
   // Idempotent — repeat mounts are no-ops.
   useEffect(() => {
     installGlobalErrorCapture();
+    // Persist red-tier captures to public.system_error (canonical sink) — self
+    // gates to production + authenticated; deduped + throttled. See
+    // lib/diagnostics/persistCapturedErrors.ts.
+    installErrorPersistence();
   }, []);
 
   // Pre-warm the scope tree (features/scopes) on idle. This is the ONLY

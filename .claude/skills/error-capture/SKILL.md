@@ -37,6 +37,16 @@ One sink, many adapters. Every error in the app funnels through **`captureError(
 - **Normal operation / by-design → yellow**: `agent-stream-tool-error` (the agent tries a query, the guard rejects it, the agent adapts), aborted requests, `total_timeout`, ResizeObserver noise.
 - Match on `source` for a class; add `code`/`relation`/`messageIncludes` to a higher rule to carve out one signature. The admin tunes this live — **"Copy for AI" embeds a paste-ready rule stub** (`buildDowngradeRuleStub`).
 
+## Persistence (automatic)
+
+A **red-tier** capture auto-persists (prod + authenticated, deduped, throttled) to
+the canonical `public.system_error` sink via the `log_client_error` RPC
+(`lib/diagnostics/persistCapturedErrors.ts`). So **tier choice = persistence
+choice**: a new red source lands in the server error dashboard for free; orange/
+yellow stay client-only. No per-source wiring needed. Don't add a parallel
+persistence path — extend the RPC (`migrations/log_client_error.sql`) if a new
+field must reach the DB.
+
 ## React boundaries
 
 New error boundary → use `lib/error-boundary/ErrorBoundaryWithCapture.tsx` (capture built-in). Migrating a bespoke `componentDidCatch` → add one line: `captureReactRenderError(error, { boundary, relation, componentStack })` (`lib/diagnostics/captureReactError.ts`). Route `error.tsx` boundaries are already covered at `components/errors/ErrorBoundaryView.tsx` — don't re-wire each one.
