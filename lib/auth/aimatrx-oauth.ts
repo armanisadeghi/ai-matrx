@@ -5,8 +5,16 @@
 // AI Matrx Supabase project acting as an identity provider.
 // ---------------------------------------------------------------------------
 
-const AIMATRX_SUPABASE_URL = process.env.AIMATRX_SUPABASE_URL!;
-const AIMATRX_OAUTH_CLIENT_ID = process.env.AIMATRX_OAUTH_CLIENT_ID!;
+function requireEnv(name: "AIMATRX_SUPABASE_URL" | "AIMATRX_OAUTH_CLIENT_ID"): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is required for AI Matrx OAuth but is not set`);
+  }
+  return value;
+}
+
+const AIMATRX_SUPABASE_URL = requireEnv("AIMATRX_SUPABASE_URL");
+const AIMATRX_OAUTH_CLIENT_ID = requireEnv("AIMATRX_OAUTH_CLIENT_ID");
 const AIMATRX_OAUTH_CLIENT_SECRET = process.env.AIMATRX_OAUTH_CLIENT_SECRET;
 
 const AUTHORIZE_ENDPOINT = `${AIMATRX_SUPABASE_URL}/auth/v1/oauth/authorize`;
@@ -19,8 +27,8 @@ const USERINFO_ENDPOINT = `${AIMATRX_SUPABASE_URL}/auth/v1/oauth/userinfo`;
 
 function base64URLEncode(buffer: Uint8Array): string {
   let binary = "";
-  for (let i = 0; i < buffer.length; i++) {
-    binary += String.fromCharCode(buffer[i]!);
+  for (const byte of buffer) {
+    binary += String.fromCharCode(byte);
   }
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }

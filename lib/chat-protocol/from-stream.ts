@@ -23,13 +23,7 @@
  *   error               → creates ErrorBlock
  */
 
-import type {
-  TypedStreamEvent,
-  ToolEventPayload,
-  ChunkPayload,
-  ReasoningChunkPayload,
-  ErrorPayload,
-} from "@/types/python-generated/stream-events";
+import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 
 import type {
   CanonicalBlock,
@@ -102,7 +96,8 @@ export function buildCanonicalBlocks(
 
   // ------------------------------------------------------------------
   function getOrCreateToolBlock(callId: string, toolName: string): number {
-    if (toolIndex.has(callId)) return toolIndex.get(callId)!;
+    const existingIdx = toolIndex.get(callId);
+    if (existingIdx !== undefined) return existingIdx;
     const idx = blocks.length;
     blocks.push({
       type: "tool_call",
@@ -115,18 +110,12 @@ export function buildCanonicalBlocks(
     toolIndex.set(callId, idx);
     return idx;
   }
-
-  function toolBlock(callId: string): MutableToolCallBlock | null {
-    const idx = toolIndex.get(callId);
-    if (idx === undefined) return null;
-    return blocks[idx] as MutableToolCallBlock;
-  }
   // ------------------------------------------------------------------
 
   for (const event of events) {
     // ── Text chunk ──────────────────────────────────────────────────
     if (event.event === "chunk") {
-      const text = (event.data as unknown as ChunkPayload).text ?? "";
+      const text = event.data.text;
       if (!text) continue;
 
       const last = blocks[blocks.length - 1];
@@ -139,7 +128,7 @@ export function buildCanonicalBlocks(
     }
 
     if (event.event === "reasoning_chunk") {
-      const text = (event.data as unknown as ReasoningChunkPayload).text ?? "";
+      const text = event.data.text;
       if (!text) continue;
 
       const last = blocks[blocks.length - 1];
@@ -153,17 +142,24 @@ export function buildCanonicalBlocks(
 
     // ── Tool event ──────────────────────────────────────────────────
     if (event.event === "tool_event") {
-      const te = event.data as unknown as ToolEventPayload;
+      const te = event.data;
       const { call_id: callId, tool_name: toolName, message } = te;
-      const data = te.data ?? {};
+      // MATRX-EXCEPTION: `data` is genuinely optional on ToolEventPayload (not
+      // every tool event carries a payload) — this is a local read-only
+      // default, never written back or persisted.
+      const data: Record<string, unknown> = te.data ?? {};
 
       switch (te.event) {
         case "tool_started": {
           const idx = getOrCreateToolBlock(callId, toolName);
           const tb = blocks[idx] as MutableToolCallBlock;
+          const args = data.arguments;
           tb.input = {
             name: toolName,
-            arguments: (data.arguments as Record<string, unknown>) ?? {},
+            arguments:
+              args && typeof args === "object" && !Array.isArray(args)
+                ? (args as Record<string, unknown>)
+                : {},
           };
           tb.phase = "running";
           if (message) tb.progress.push({ message });
@@ -174,15 +170,15 @@ export function buildCanonicalBlocks(
         case "tool_step":
         case "tool_result_preview": {
           // Ensure block exists (may receive progress before started in edge cases)
-          getOrCreateToolBlock(callId, toolName);
-          const tb = toolBlock(callId)!;
+          const idx = getOrCreateToolBlock(callId, toolName);
+          const tb = blocks[idx] as MutableToolCallBlock;
           if (message) tb.progress.push({ message });
           break;
         }
 
         case "tool_completed": {
-          getOrCreateToolBlock(callId, toolName);
-          const tb = toolBlock(callId)!;
+          const idx = getOrCreateToolBlock(callId, toolName);
+          const tb = blocks[idx] as MutableToolCallBlock;
           tb.output = {
             status: "success",
             result: data.result ?? data,
@@ -193,8 +189,8 @@ export function buildCanonicalBlocks(
         }
 
         case "tool_error": {
-          getOrCreateToolBlock(callId, toolName);
-          const tb = toolBlock(callId)!;
+          const idx = getOrCreateToolBlock(callId, toolName);
+          const tb = blocks[idx] as MutableToolCallBlock;
           tb.error = { message: message ?? "Tool execution failed" };
           tb.phase = "error";
           break;
@@ -205,11 +201,11 @@ export function buildCanonicalBlocks(
 
     // ── Stream-level error ──────────────────────────────────────────
     if (event.event === "error") {
-      const err = event.data as unknown as ErrorPayload;
+      const err = event.data;
       blocks.push({
         type: "error",
-        errorType: err.error_type ?? "unknown",
-        message: err.message ?? "An error occurred",
+        errorType: err.error_type,
+        message: err.message,
       });
       continue;
     }
@@ -218,8 +214,11 @@ export function buildCanonicalBlocks(
     // carry no renderable content — intentionally ignored.
   }
 
-  // Freeze mutable blocks into readonly CanonicalBlocks before returning.
-  return blocks as unknown as CanonicalBlock[];
+  // Mutable-block shapes are structurally identical to their CanonicalBlock
+  // counterparts (only the `readonly` modifiers differ, plus MediaBlock/
+  // ErrorBlock which this builder never constructs directly) — TS accepts a
+  // mutable object where its readonly counterpart is expected, so no cast.
+  return blocks;
 }
 
 // ============================================================================

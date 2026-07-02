@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, {useState} from 'react';
 import {CalendarIcon} from "lucide-react";
 import {format} from "date-fns";
@@ -10,7 +9,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import {DateRange} from "react-day-picker";
+import type {Modifiers} from "react-day-picker";
 
 interface DatePickerProps {
     onChange: (date: Date | undefined) => void;
@@ -34,11 +33,14 @@ export const DatePicker: React.FC<DatePickerProps> = (
     }) => {
     const [date, setDate] = useState<Date | undefined>(value);
 
-    const handleDateSelect = (newDate: Date | DateRange | undefined) => {
-        if (newDate instanceof Date) {
-            setDate(newDate);
-            onChange(newDate);
-        }
+    const handleDateSelect = (
+        newDate: Date | undefined,
+        _triggerDate: Date,
+        _modifiers: Modifiers,
+        _e: React.MouseEvent | React.KeyboardEvent,
+    ) => {
+        setDate(newDate);
+        onChange(newDate);
     };
 
     return (

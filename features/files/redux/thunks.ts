@@ -111,7 +111,6 @@ import type {
   SignedUrlArg,
   UpdateFileMetadataArg,
   UploadFilesArg,
-  Visibility,
 } from "@/features/files/types";
 
 type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
@@ -172,8 +171,38 @@ export const loadUserFileTree = createAsyncThunk<
     if (pageRows.length < TREE_PAGE_SIZE) break;
   }
 
-  const files: Partial<CloudFile>[] = [];
-  const folders: Partial<CloudFolder>[] = [];
+  // Every field pushed below is always set from the non-optional
+  // `CloudTreeRow` columns — narrowed here so the tree-spine reconstruction
+  // (below) doesn't need a non-null assertion on `f.id` or a nullish-default
+  // fallback on `f.ownerId`, which would otherwise silently paper over a
+  // real parse gap.
+  type PartialCloudFileWithId = Partial<CloudFile> &
+    Pick<
+      CloudFile,
+      | "id"
+      | "ownerId"
+      | "filePath"
+      | "fileName"
+      | "visibility"
+      | "currentVersion"
+      | "createdAt"
+      | "updatedAt"
+      | "deletedAt"
+    >;
+  type PartialCloudFolderWithId = Partial<CloudFolder> &
+    Pick<
+      CloudFolder,
+      | "id"
+      | "ownerId"
+      | "folderPath"
+      | "folderName"
+      | "visibility"
+      | "createdAt"
+      | "updatedAt"
+      | "deletedAt"
+    >;
+  const files: PartialCloudFileWithId[] = [];
+  const folders: PartialCloudFolderWithId[] = [];
   for (const row of rows) {
     if (row.kind === "file") {
       files.push({
@@ -213,30 +242,30 @@ export const loadUserFileTree = createAsyncThunk<
 
   // Build tree spine directly from the just-parsed rows. Simpler than reading
   // the normalized slice back out, and avoids any race with batched dispatch.
-  const fileIds = files.map((f) => f.id!).filter(Boolean);
-  const folderIds = folders.map((f) => f.id!).filter(Boolean);
+  const fileIds = files.map((f) => f.id).filter(Boolean);
+  const folderIds = folders.map((f) => f.id).filter(Boolean);
   const tree = buildTreeState({
     fileIds,
     folderIds,
     filesById: Object.fromEntries(
       files.map((f) => [
-        f.id!,
+        f.id,
         {
-          id: f.id!,
-          ownerId: f.ownerId ?? "",
-          filePath: f.filePath ?? "",
+          id: f.id,
+          ownerId: f.ownerId,
+          filePath: f.filePath,
           storageUri: "",
-          fileName: f.fileName ?? "",
+          fileName: f.fileName,
           mimeType: f.mimeType ?? null,
           fileSize: f.fileSize ?? null,
           checksum: null,
-          visibility: (f.visibility ?? "private") as Visibility,
-          currentVersion: f.currentVersion ?? 1,
+          visibility: f.visibility,
+          currentVersion: f.currentVersion,
           parentFolderId: f.parentFolderId ?? null,
           metadata: {},
-          createdAt: f.createdAt ?? "",
-          updatedAt: f.updatedAt ?? "",
-          deletedAt: f.deletedAt ?? null,
+          createdAt: f.createdAt,
+          updatedAt: f.updatedAt,
+          deletedAt: f.deletedAt,
           // Tree-spine reconstruction is internal — the computed URL fields
           // and the Phase-1b backend thumbnail_url are only populated when
           // records arrive via the REST API. Default all to null here; the
@@ -261,18 +290,18 @@ export const loadUserFileTree = createAsyncThunk<
     ),
     foldersById: Object.fromEntries(
       folders.map((f) => [
-        f.id!,
+        f.id,
         {
-          id: f.id!,
-          ownerId: f.ownerId ?? "",
-          folderPath: f.folderPath ?? "",
-          folderName: f.folderName ?? "",
+          id: f.id,
+          ownerId: f.ownerId,
+          folderPath: f.folderPath,
+          folderName: f.folderName,
           parentId: f.parentId ?? null,
-          visibility: (f.visibility ?? "private") as Visibility,
+          visibility: f.visibility,
           metadata: {},
-          createdAt: f.createdAt ?? "",
-          updatedAt: f.updatedAt ?? "",
-          deletedAt: f.deletedAt ?? null,
+          createdAt: f.createdAt,
+          updatedAt: f.updatedAt,
+          deletedAt: f.deletedAt,
           // Tree-spine reconstruction is internal — public_url is only
           // populated when records arrive via the API. Default to null
           // here; surfaces that need a CDN URL fetch via useFileSrc.

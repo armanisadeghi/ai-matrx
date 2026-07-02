@@ -3,9 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CanonicalizationDataset } from "../types";
+import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
 
-/** Fetches one `audit.*` dataset from the canonicalization API and exposes a reload fn. */
-export function useAuditDataset<T>(dataset: Exclude<CanonicalizationDataset, "overview">) {
+/**
+ * Fetches one `audit.*` dataset from the canonicalization API and exposes a
+ * reload fn. `isRow` is the per-dataset shape guard from `types.ts`
+ * (`isAuditSummaryRow`, `isBrokenFunctionRow`, …) — rows that fail it are
+ * dropped and reported via toast rather than silently trusted, since these
+ * rows never pass through a Supabase-generated/`DbRpcRow` compile-time check
+ * (the `audit` schema is hidden from PostgREST).
+ */
+export function useAuditDataset<T>(
+  dataset: Exclude<CanonicalizationDataset, "overview">,
+  isRow: (v: unknown) => v is T,
+) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,9 +26,14 @@ export function useAuditDataset<T>(dataset: Exclude<CanonicalizationDataset, "ov
     setError(null);
     try {
       const res = await fetch(`/api/admin/canonicalization?dataset=${dataset}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? res.statusText);
-      setRows((data.rows ?? []) as T[]);
+      const data = await readJsonObject(res);
+      if (!res.ok) throw new Error(errorMessageFrom(data, res));
+      const rawRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
+      const validRows = rawRows.filter(isRow);
+      if (validRows.length !== rawRows.length) {
+        toast.warning(`${dataset}: dropped ${rawRows.length - validRows.length} malformed row(s)`);
+      }
+      setRows(validRows);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
@@ -25,7 +41,7 @@ export function useAuditDataset<T>(dataset: Exclude<CanonicalizationDataset, "ov
     } finally {
       setLoading(false);
     }
-  }, [dataset]);
+  }, [dataset, isRow]);
 
   useEffect(() => {
     void load();

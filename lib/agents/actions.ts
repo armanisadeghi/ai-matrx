@@ -37,15 +37,14 @@ function seedToInsertPayload(
     is_favorite: seed.isFavorite,
     agent_type: seed.agentType,
     model_id: seed.modelId ?? undefined,
-    messages: seed.messages as unknown as AgentInsert["messages"],
-    variable_definitions:
-      seed.variableDefinitions as unknown as AgentInsert["variable_definitions"],
-    settings: seed.settings as unknown as AgentInsert["settings"],
+    messages: seed.messages,
+    variable_definitions: seed.variableDefinitions,
+    settings: seed.settings,
     tools: seed.tools,
-    context_slots: seed.contextSlots as unknown as AgentInsert["context_slots"],
-    model_tiers: seed.modelTiers as unknown as AgentInsert["model_tiers"],
-    output_schema: seed.outputSchema as unknown as AgentInsert["output_schema"],
-    custom_tools: seed.customTools as unknown as AgentInsert["custom_tools"],
+    context_slots: seed.contextSlots,
+    model_tiers: seed.modelTiers,
+    output_schema: seed.outputSchema,
+    custom_tools: seed.customTools,
     mcp_servers: seed.mcpServers,
   };
 

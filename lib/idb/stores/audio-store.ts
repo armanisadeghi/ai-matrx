@@ -118,14 +118,12 @@ class AudioStore extends DBStoreManager<Recording> {
 
     async saveChunk(chunk: Omit<RecordingChunk, 'id'>): AsyncResult<string> {
         await this.ensureInitialized();
-        // @ts-ignore: Type error here as RecordingChunk differs from Recording, but this is how we're storing chunks
-        return this.add(STORES.CHUNKS, chunk);
+        return this.add<Omit<RecordingChunk, 'id'>>(STORES.CHUNKS, chunk);
     }
 
     async getChunk(id: number): AsyncResult<RecordingChunk> {
         await this.ensureInitialized();
-        // @ts-ignore - Cast Recording type to RecordingChunk
-        return this.get(STORES.CHUNKS, id.toString());
+        return this.get<RecordingChunk>(STORES.CHUNKS, id.toString());
     }
 
     async getRecordingChunks(recordingId: number): AsyncResult<RecordingChunk[]> {
@@ -156,7 +154,7 @@ class AudioStore extends DBStoreManager<Recording> {
         return {
             data: {
                 recording: recordingResult.data,
-                chunks: chunksResult.data || []
+                chunks: chunksResult.data ?? []
             },
             error: null
         };

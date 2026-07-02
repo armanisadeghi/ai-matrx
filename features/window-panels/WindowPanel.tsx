@@ -54,6 +54,7 @@ import {
   selectAllWindows,
   arrangeActiveWindows,
 } from "@/lib/redux/slices/windowManagerSlice";
+import type { GlobalLayoutType } from "./utils/windowArrangements";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
 import {
@@ -723,7 +724,7 @@ export function WindowPanel({
   }, [dispatch, id, rect.width, rect.height]);
 
   const arrangeAll = useCallback(
-    (layout: any) => {
+    (layout: GlobalLayoutType) => {
       dispatch(
         arrangeActiveWindows({
           layout,
@@ -1257,7 +1258,7 @@ interface WindowHeaderProps {
   snapTop: () => void;
   snapBottom: () => void;
   snapCentre: () => void;
-  arrangeAll: (layout: any) => void;
+  arrangeAll: (layout: GlobalLayoutType) => void;
   hasSidebar: boolean;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
@@ -1406,7 +1407,7 @@ interface TrafficLightGroupProps {
   snapTop: () => void;
   snapBottom: () => void;
   snapCentre: () => void;
-  arrangeAll: (layout: any) => void;
+  arrangeAll: (layout: GlobalLayoutType) => void;
   hasSidebar: boolean;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
@@ -1559,7 +1560,7 @@ interface GreenTrafficLightProps {
   snapTop: () => void;
   snapBottom: () => void;
   snapCentre: () => void;
-  arrangeAll: (layout: any) => void;
+  arrangeAll: (layout: GlobalLayoutType) => void;
   onSaveWindowState?: () => void;
   /** When set, renders a "Pop out" entry that opens the window in a separate browser window. */
   onPopOut?: () => void;

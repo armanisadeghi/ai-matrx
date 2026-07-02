@@ -406,7 +406,7 @@ function describeMatch(match: DuplicateMatch, file: File): string {
 
 function titleFor(conflicts: DuplicateConflictRow[]): string {
   if (conflicts.length === 1) {
-    const kind = conflicts[0]!.match.kind;
+    const kind = conflicts[0].match.kind;
     if (
       kind === "identical_content_same_folder" ||
       kind === "identical_content_other_folder"
@@ -420,7 +420,7 @@ function titleFor(conflicts: DuplicateConflictRow[]): string {
 
 function descriptionFor(conflicts: DuplicateConflictRow[]): string {
   if (conflicts.length === 1) {
-    const kind = conflicts[0]!.match.kind;
+    const kind = conflicts[0].match.kind;
     if (
       kind === "identical_content_same_folder" ||
       kind === "identical_content_other_folder"

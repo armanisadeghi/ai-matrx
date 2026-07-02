@@ -213,7 +213,8 @@ const instanceUserInputSlice = createSlice({
       };
       entry._undoFuture.push(current);
 
-      const prev = entry._undoPast.pop()!;
+      const prev = entry._undoPast.pop();
+      if (!prev) return;
       entry.text = prev.text;
       // userValues are stored on the snapshot but applied to the variable slice
       // by the hook (see useInstanceInputUndoRedo)
@@ -230,7 +231,8 @@ const instanceUserInputSlice = createSlice({
       };
       entry._undoPast.push(current);
 
-      const next = entry._undoFuture.pop()!;
+      const next = entry._undoFuture.pop();
+      if (!next) return;
       entry.text = next.text;
     },
 

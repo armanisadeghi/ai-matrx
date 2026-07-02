@@ -8,7 +8,17 @@
  * TODO: Remove stubs and re-implement once replacement tables/schema are ready.
  */
 
-export type FunctionalityConfig = any;
+// Stub shape — the backing tables no longer exist, so no row is ever produced;
+// this documents the fields callers historically read from a functionality
+// config (label/description/variables) rather than propagating `any`.
+export interface FunctionalityConfig {
+  name?: string;
+  label?: string;
+  description?: string;
+  required_variables?: string[];
+  optional_variables?: string[];
+  requiredVariables?: string[];
+}
 
 const STUB_WARN = (fn: string, args: Record<string, unknown>) => {
   console.warn(
@@ -58,14 +68,24 @@ export async function getFunctionalitiesByPlacementType(
   return [];
 }
 
+export interface BasePromptMessage {
+  role?: string;
+  content?: string;
+}
+
+export interface BasePromptSnapshot {
+  messages?: BasePromptMessage[];
+  [key: string]: unknown;
+}
+
 /**
  * Extract variables from prompt snapshot
  */
-export function extractVariablesFromPrompt(promptSnapshot: any): string[] {
+export function extractVariablesFromPrompt(promptSnapshot: BasePromptSnapshot): string[] {
   const variables = new Set<string>();
   const regex = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 
-  promptSnapshot.messages?.forEach((msg: any) => {
+  promptSnapshot.messages?.forEach((msg) => {
     if (msg.content) {
       let match;
       while ((match = regex.exec(msg.content)) !== null) {

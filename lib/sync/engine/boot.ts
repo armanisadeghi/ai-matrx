@@ -28,6 +28,11 @@ import { buildRehydrateAction } from "./rehydrate";
 import { createStaleRefreshScheduler, invokeRemoteFetch, type StaleRefreshRegistration } from "./remoteFetch";
 import { extractErrorMessage } from "@/utils/errors";
 import { setMode, type ThemeMode } from "@/styles/themes/themeSlice";
+// MATRX-EXCEPTION: `Policy<any>` throughout this file — same invariant-TState
+// reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
+// TState invariant, so `Policy<unknown>` cannot accept the registry's
+// heterogeneous `readonly Policy<any>[]`). Every function here only reads
+// non-generic fields (`policy.config.sliceName`, `.version`, `.preset`, …).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { IdentityKey, Policy } from "../types";
 

@@ -116,6 +116,18 @@ const MAX_DIAG_CONVERSATIONS = 25;
 const MAX_INPUT_TEXT_CHARS = 8000;
 
 /**
+ * Narrow an `unknown` value (arbitrary live Redux state, DOM globals) to a
+ * plain object for best-effort diagnostic reads. Never throws; missing or
+ * wrong-shaped state just yields an empty record so the rest of this
+ * best-effort collector degrades gracefully instead of crashing.
+ */
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/**
  * Pull the live agent-execution state out of the (possibly null) Redux snapshot.
  * Reads only the three byConversationId slices and is defensive about every
  * field — these slices are absent in the slim store and may not be loaded.
@@ -123,21 +135,22 @@ const MAX_INPUT_TEXT_CHARS = 8000;
 function collectAgentExecution(
   s: Record<string, unknown>,
 ): OverlayDiagnostics["agentExecution"] {
-  const conversations = (s.conversations as Record<string, unknown>) ?? null;
-  const userInput = (s.instanceUserInput as Record<string, unknown>) ?? null;
-  const uiState = (s.instanceUIState as Record<string, unknown>) ?? null;
+  const conversations = asRecord(s.conversations);
+  const userInput = asRecord(s.instanceUserInput);
+  const uiState = asRecord(s.instanceUIState);
 
-  const byId =
-    (conversations?.byConversationId as Record<
-      string,
-      Record<string, unknown>
-    >) ?? {};
-  const inputById =
-    (userInput?.byConversationId as Record<string, Record<string, unknown>>) ??
-    {};
-  const uiById =
-    (uiState?.byConversationId as Record<string, Record<string, unknown>>) ??
-    {};
+  const byId = asRecord(conversations.byConversationId) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  const inputById = asRecord(userInput.byConversationId) as Record<
+    string,
+    Record<string, unknown>
+  >;
+  const uiById = asRecord(uiState.byConversationId) as Record<
+    string,
+    Record<string, unknown>
+  >;
 
   // Union of conversation ids across all three slices — typed input can exist
   // for a conversation the conversations slice hasn't fully registered yet.
@@ -149,9 +162,9 @@ function collectAgentExecution(
 
   const rows: AgentConversationDiag[] = [];
   for (const conversationId of ids) {
-    const conv = byId[conversationId] ?? {};
-    const input = inputById[conversationId] ?? {};
-    const ui = uiById[conversationId] ?? {};
+    const conv = asRecord(byId[conversationId]);
+    const input = asRecord(inputById[conversationId]);
+    const ui = asRecord(uiById[conversationId]);
 
     const rawText = typeof input.text === "string" ? input.text : null;
     const truncated = !!rawText && rawText.length > MAX_INPUT_TEXT_CHARS;
@@ -164,7 +177,7 @@ function collectAgentExecution(
       title: conv.title ?? ui.displayTitle ?? null,
       status: conv.status ?? null,
       displayMode: ui.displayMode ?? null,
-      inputText: truncated ? rawText!.slice(0, MAX_INPUT_TEXT_CHARS) : rawText,
+      inputText: truncated && rawText ? rawText.slice(0, MAX_INPUT_TEXT_CHARS) : rawText,
       inputTextLength: rawText?.length ?? 0,
       inputTextTruncated: truncated,
       messagePartCount: parts.length,
@@ -188,9 +201,9 @@ function collectAgentExecution(
 
 function getNextBuildId(): string | null {
   if (typeof window === "undefined") return null;
-  const data = (window as unknown as { __NEXT_DATA__?: { buildId?: string } })
-    .__NEXT_DATA__;
-  return data?.buildId ?? null;
+  const nextData = asRecord(window).__NEXT_DATA__;
+  const data = asRecord(nextData);
+  return typeof data.buildId === "string" ? data.buildId : null;
 }
 
 function collectLoadedScripts(): string[] {
@@ -249,11 +262,10 @@ function collectChunkTimings(): {
   );
   const failedOrPending: ChunkTiming[] = [];
   for (const e of chunks) {
-    const status =
-      typeof (e as unknown as { responseStatus?: number }).responseStatus ===
-      "number"
-        ? (e as unknown as { responseStatus: number }).responseStatus
-        : null;
+    // `responseStatus` is a newer PerformanceResourceTiming field not yet in
+    // TS's lib.dom types on every supported target — read it defensively.
+    const responseStatus = asRecord(e).responseStatus;
+    const status = typeof responseStatus === "number" ? responseStatus : null;
     const completed = e.responseEnd > 0;
     const transferSize =
       typeof e.transferSize === "number" ? e.transferSize : null;
@@ -286,16 +298,15 @@ function collectConnection(): {
   if (typeof navigator === "undefined") {
     return { online: null, effectiveType: null, downlink: null, rtt: null };
   }
-  const conn = (
-    navigator as unknown as {
-      connection?: { effectiveType?: string; downlink?: number; rtt?: number };
-    }
-  ).connection;
+  // `navigator.connection` (Network Information API) isn't in TS's lib.dom
+  // types (Safari/Firefox don't implement it either) — read it defensively.
+  const conn = asRecord(asRecord(navigator).connection);
+  const effectiveType = conn.effectiveType;
   return {
     online: typeof navigator.onLine === "boolean" ? navigator.onLine : null,
-    effectiveType: conn?.effectiveType ?? null,
-    downlink: typeof conn?.downlink === "number" ? conn.downlink : null,
-    rtt: typeof conn?.rtt === "number" ? conn.rtt : null,
+    effectiveType: typeof effectiveType === "string" ? effectiveType : null,
+    downlink: typeof conn.downlink === "number" ? conn.downlink : null,
+    rtt: typeof conn.rtt === "number" ? conn.rtt : null,
   };
 }
 
@@ -325,12 +336,11 @@ export function collectOverlayDiagnostics(
   const { failedOrPending, total } = collectChunkTimings();
   const conn = collectConnection();
 
-  const s = (reduxState ?? {}) as Record<string, unknown>;
-  const overlays = (s.overlays as Record<string, unknown>) ?? null;
-  const wm = (s.windowManager as Record<string, unknown>) ?? {};
-  const wmWindows =
-    (wm.windows as Record<string, Record<string, unknown>>) ?? {};
-  const user = (s.userAuth as Record<string, unknown>) ?? {};
+  const s = asRecord(reduxState);
+  const overlays = s.overlays ?? null;
+  const wm = asRecord(s.windowManager);
+  const wmWindows = asRecord(wm.windows) as Record<string, Record<string, unknown>>;
+  const user = asRecord(s.userAuth);
 
   // Trim window entries to the fields that matter (state/title/overlayId),
   // dropping geometry noise.

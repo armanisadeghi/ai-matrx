@@ -69,7 +69,7 @@ import type {
   TemplateFormData,
   AgentConfigKey,
 } from "./types";
-import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "./types";
+import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META, jsonToAgentConfigStrings } from "./types";
 import {
   fetchTemplates,
   createTemplate,
@@ -98,16 +98,6 @@ function agentConfigStringField(
     return undefined;
   const v = (config as Record<string, Json>)[key];
   return typeof v === "string" ? v : undefined;
-}
-
-function jsonToAgentConfigStrings(value: Json | null): Record<string, string> {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    return {};
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(value)) {
-    if (typeof v === "string") out[k] = v;
-  }
-  return out;
 }
 
 const EMPTY_FORM: TemplateFormData = {
@@ -155,8 +145,8 @@ export function TemplatesManager() {
       setBuiltins(builtinsData);
 
       const allAgentIds = templatesData
-        .flatMap((t) => Object.values(t.agent_config ?? {}))
-        .filter((v): v is string => typeof v === "string" && v.length > 0);
+        .flatMap((t) => Object.values(jsonToAgentConfigStrings(t.agent_config)))
+        .filter((v) => v.length > 0);
       const uniqueIds = [...new Set(allAgentIds)];
       if (uniqueIds.length > 0) {
         const names = await resolveBuiltinNames(uniqueIds);

@@ -46,15 +46,19 @@ export const selectProjects = createSelector(
     const byProjectId = new Map<string | null, typeof taskRecords>();
     for (const t of taskRecords) {
       const key = t.project_id ?? null;
-      if (!byProjectId.has(key)) byProjectId.set(key, []);
-      byProjectId.get(key)!.push(t);
+      const bucket = byProjectId.get(key);
+      if (bucket) {
+        bucket.push(t);
+      } else {
+        byProjectId.set(key, [t]);
+      }
     }
 
     const toUiTask = (rec: (typeof taskRecords)[number]): Task => ({
       id: rec.id,
       title: rec.title,
       completed: rec.status === "completed",
-      description: (rec.description ?? "") as string,
+      description: rec.description ?? "",
       attachments: [],
       dueDate: rec.due_date ?? "",
       priority: (rec.priority as Task["priority"]) ?? null,
@@ -73,9 +77,12 @@ export const selectProjects = createSelector(
       const roots: Task[] = [];
       for (const t of tasks) map.set(t.id, toUiTask(t));
       for (const t of tasks) {
-        const node = map.get(t.id)!;
-        if (t.parent_task_id && map.has(t.parent_task_id)) {
-          const parent = map.get(t.parent_task_id)!;
+        const node = map.get(t.id);
+        if (!node) continue;
+        const parent = t.parent_task_id
+          ? map.get(t.parent_task_id)
+          : undefined;
+        if (parent) {
           parent.subtasks = [...(parent.subtasks ?? []), node];
         } else {
           roots.push(node);
@@ -156,7 +163,7 @@ export const selectTaskIdsMatchingAppContextScopes = createSelector(
     selectScopeSelectionsContext,
   ],
   (state, scopeSelections): string[] | null => {
-    const ids = Object.values(scopeSelections ?? {}).filter(
+    const ids = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     if (ids.length === 0) return null;
@@ -178,7 +185,7 @@ export const selectTaskIdsMatchingAppContextScopes = createSelector(
 export const selectValidProjectIds = createSelector(
   [selectAllProjects, selectOrganizationId, selectScopeSelectionsContext],
   (projects, orgId, scopeSelections): Set<string> | null => {
-    const selectedScopeIds = Object.values(scopeSelections ?? {}).filter(
+    const selectedScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     if (!orgId && selectedScopeIds.length === 0) return null;

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/utils/supabase/client';
 import { getFingerprint } from '@/lib/services/fingerprint-service';
 import { checkGuestLimit, type GuestLimitStatus } from '@/lib/services/guest-limit-service';
@@ -34,7 +35,7 @@ export interface GuestLimitState {
 }
 
 export function useGuestLimit() {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [state, setState] = useState<GuestLimitState>({
         isAuthenticated: false,
@@ -120,12 +121,12 @@ export function useGuestLimit() {
             }));
 
             return status;
-        } catch (error: any) {
+        } catch (error) {
             console.error('Failed to check guest limit:', error);
             setState(prev => ({
                 ...prev,
                 loading: false,
-                error: error?.message || 'Failed to check limit',
+                error: error instanceof Error ? error.message : 'Failed to check limit',
                 allowed: false // Fail closed
             }));
             

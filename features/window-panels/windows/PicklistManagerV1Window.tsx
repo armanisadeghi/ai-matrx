@@ -38,7 +38,7 @@ export default function PicklistManagerV1Window({
 
   return (
     <WindowPanel
-      id={id!}
+      id={id}
       title={resolvedTitle}
       onClose={onClose}
       minWidth={forcedListId ? 480 : 720}

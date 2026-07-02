@@ -707,11 +707,11 @@ function TextPayload({
   const hasText = typeof text === "string" && text.length > 0;
 
   const handleCopy = useCallback(() => {
-    if (!hasText) return;
-    navigator.clipboard.writeText(text!);
+    if (!text) return;
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  }, [text, hasText]);
+  }, [text]);
 
   return (
     <div className="rounded border border-border/60 bg-background/50 overflow-hidden">
@@ -723,10 +723,10 @@ function TextPayload({
             {subtitle}
           </div>
         </div>
-        {hasText && (
+        {hasText && text && (
           <>
             <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-              {text!.length.toLocaleString()} chars
+              {text.length.toLocaleString()} chars
             </span>
             <button
               type="button"

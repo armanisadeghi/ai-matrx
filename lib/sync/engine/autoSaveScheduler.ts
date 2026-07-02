@@ -25,8 +25,12 @@
  *     realtime middleware can suppress its own postgres_changes echoes.
  */
 
-import type { Store } from "@reduxjs/toolkit";
+import type { Store, UnknownAction } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
+// MATRX-EXCEPTION: `Policy<any>` / `AutoSaveConfig<any>` — same invariant-TState
+// reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
+// TState invariant, so `Policy<unknown>` cannot accept the registry's
+// heterogeneous `readonly Policy<any>[]`).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
     AutoSaveConfig,
@@ -34,6 +38,15 @@ import type {
     Policy,
 } from "../types";
 import { logger } from "../logger";
+
+/** Narrows an optimistic action-creator's return value to a dispatchable Redux action. */
+function isDispatchableAction(value: unknown): value is UnknownAction {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        typeof (value as { type?: unknown }).type === "string"
+    );
+}
 
 interface PendingAutoSave {
     timerHandle: ReturnType<typeof setTimeout> | null;
@@ -106,23 +119,23 @@ export function createAutoSaveScheduler(
 
     function selectRecord(
         cfg: AutoSaveConfig<any>,
-        sliceState: any,
+        sliceState: unknown,
         recordId: string,
-    ): any | undefined {
-        if (!sliceState) return undefined;
-        const records = sliceState[cfg.recordsKey];
+    ): unknown {
+        if (!sliceState || typeof sliceState !== "object") return undefined;
+        const records = (sliceState as Record<string, unknown>)[cfg.recordsKey as string];
         if (!records || typeof records !== "object") return undefined;
-        return records[recordId];
+        return (records as Record<string, unknown>)[recordId];
     }
 
-    function selectSliceState(sliceName: string): any {
+    function selectSliceState(sliceName: string): unknown {
         const root = store.getState() as Record<string, unknown>;
         return root?.[sliceName];
     }
 
     function debounceForRecord(
         cfg: AutoSaveConfig<any>,
-        record: any,
+        record: unknown,
         recordId: string,
     ): number {
         if (typeof cfg.debounceMs === "function") {
@@ -137,7 +150,7 @@ export function createAutoSaveScheduler(
 
     function shouldSave(
         cfg: AutoSaveConfig<any>,
-        record: any,
+        record: unknown,
         recordId: string,
     ): boolean {
         if (record === undefined || record === null) return false;
@@ -148,7 +161,10 @@ export function createAutoSaveScheduler(
                 return false;
             }
         }
-        return record._dirty === true;
+        return (
+            typeof record === "object" &&
+            (record as { _dirty?: unknown })._dirty === true
+        );
     }
 
     async function flushOne(sliceName: string, recordId: string): Promise<void> {
@@ -183,8 +199,8 @@ export function createAutoSaveScheduler(
         // Optimistic onStart.
         try {
             const onStart = cfg.optimistic?.onStart?.(recordId);
-            if (onStart && typeof (onStart as any).type === "string") {
-                store.dispatch(onStart as any);
+            if (isDispatchableAction(onStart)) {
+                store.dispatch(onStart);
             }
         } catch (err) {
             logger.error("autoSave.optimistic.onStart.failed", {
@@ -210,8 +226,8 @@ export function createAutoSaveScheduler(
                         recordId,
                         result,
                     );
-                    if (onSuccess && typeof (onSuccess as any).type === "string") {
-                        store.dispatch(onSuccess as any);
+                    if (isDispatchableAction(onSuccess)) {
+                        store.dispatch(onSuccess);
                     }
                 } catch (err) {
                     logger.error("autoSave.optimistic.onSuccess.failed", {
@@ -231,8 +247,8 @@ export function createAutoSaveScheduler(
                         recordId,
                         extractErrorMessage(err),
                     );
-                    if (onError && typeof (onError as any).type === "string") {
-                        store.dispatch(onError as any);
+                    if (isDispatchableAction(onError)) {
+                        store.dispatch(onError);
                     }
                 } catch (oeErr) {
                     logger.error("autoSave.optimistic.onError.failed", {

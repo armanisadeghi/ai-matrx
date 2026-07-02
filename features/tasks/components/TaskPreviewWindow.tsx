@@ -146,13 +146,13 @@ export default function TaskPreviewWindow({
   }, [open, parsedItems, appProjectId]);
 
   const scopeChips = useMemo(() => {
-    const ids = Object.values(scopeSelections ?? {}).filter(
+    const ids = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     return ids
       .map((id) => allScopes.find((s) => s.id === id))
-      .filter(Boolean)
-      .map((s) => ({ id: s!.id, name: s!.name }));
+      .filter((s): s is NonNullable<typeof s> => s !== undefined)
+      .map((s) => ({ id: s.id, name: s.name }));
   }, [scopeSelections, allScopes]);
 
   const toggleRow = (key: string) => {
@@ -198,7 +198,7 @@ export default function TaskPreviewWindow({
       items,
       project_id: projectId || undefined,
       organization_id: appOrgId ?? undefined,
-      scope_ids: Object.values(scopeSelections ?? {}).filter(
+      scope_ids: Object.values(scopeSelections).filter(
         (v): v is string => typeof v === "string" && v.length > 0,
       ),
       source: source

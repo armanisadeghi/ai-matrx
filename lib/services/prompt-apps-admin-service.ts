@@ -3,9 +3,12 @@
 // Stubbed functions return empty/throw clearly. Analytics reads `app.definition` instead.
 import { createClient } from "@/utils/supabase/client";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
+import type { JsonObject } from "@/types/json";
 
 // Helper to get the right client based on context (fetchAnalytics → app.definition)
-function getClient() {
+function getClient(): SupabaseClient<Database> {
   if (typeof window !== "undefined") {
     return createClient();
   } else {
@@ -53,9 +56,9 @@ export interface PromptAppError {
   error_type: string;
   error_code?: string;
   error_message?: string;
-  error_details: Record<string, any>;
-  variables_sent: Record<string, any>;
-  expected_variables: Record<string, any>;
+  error_details: JsonObject;
+  variables_sent: JsonObject;
+  expected_variables: JsonObject;
   resolved: boolean;
   resolved_at?: string;
   resolved_by?: string;
@@ -79,8 +82,8 @@ export interface PromptAppExecution {
   ip_address?: string;
   user_agent?: string;
   task_id: string;
-  variables_provided: Record<string, any>;
-  variables_used: Record<string, any>;
+  variables_provided: JsonObject;
+  variables_used: JsonObject;
   success: boolean;
   error_type?: string;
   error_message?: string;
@@ -88,7 +91,7 @@ export interface PromptAppExecution {
   tokens_used?: number;
   cost?: number;
   referer?: string;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   created_at: string;
   // Joined data
   app_name?: string;
@@ -295,11 +298,21 @@ export async function updateAppAdmin(
 // Analytics
 // ============================================================================
 
+export interface PromptAppAnalyticsRow {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  total_executions: number | null;
+  success_rate: number | null;
+  last_execution_at: string | null;
+}
+
 export async function fetchAnalytics(filters?: {
   app_id?: string;
   status?: string;
   limit?: number;
-}): Promise<any[]> {
+}): Promise<PromptAppAnalyticsRow[]> {
   const supabase = getClient();
   let query = supabase
     .schema("app")
@@ -318,5 +331,5 @@ export async function fetchAnalytics(filters?: {
     console.error("Error fetching analytics:", error);
     return [];
   }
-  return data || [];
+  return data ?? [];
 }

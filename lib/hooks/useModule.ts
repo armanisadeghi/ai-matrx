@@ -7,6 +7,17 @@ import {
   createModuleSlice,
 } from "@/lib/redux/slices/moduleSliceCreator";
 
+// MATRX-EXCEPTION (file-wide): `T extends ModuleSchema` is generic over a
+// UNION of concrete module schemas (AiAudioSchema | AiChatSchema | ...).
+// Building `{ [key]: value }` from a generically-typed `K extends keyof
+// T["data"]` cannot be proven assignable to `Partial<T["data"]>` by the
+// compiler — TS cannot correlate a computed property key typed as a generic
+// `K` with the indexed-access type it was drawn from across a union. Each
+// `setOne*`/`addOne*` below is constrained by its own generic signature
+// (`<K extends keyof T["data"]>(key: K, value: T["data"][K])`), so the
+// runtime shape is sound; the cast documents where the type system's
+// reasoning stops, it is not a widening of the actual contract.
+
 export const createUseModuleHook = <T extends ModuleSchema>(
   moduleName: ModuleName,
   moduleInitialState: T,
@@ -22,6 +33,11 @@ export const createUseModuleHook = <T extends ModuleSchema>(
   return () => {
     const dispatch = useAppDispatch();
 
+    // MATRX-EXCEPTION: `moduleName` is a runtime `ModuleName` string used to
+    // index into the root Redux state at a slot the dynamic-module system
+    // registers per module (lib/redux/dynamic/moduleSchema.ts) — the root
+    // state type has no static key for it, so this cannot be typed without
+    // widening the whole store's type.
     const moduleState = useAppSelector(
       (state) => state[moduleName as keyof typeof state],
     ) as unknown as T | undefined;
@@ -172,7 +188,7 @@ export const createUseModuleHook = <T extends ModuleSchema>(
     );
 
     const smartSetData = useCallback(
-      (key: keyof T["data"] | string, value: any) => {
+      (key: keyof T["data"] | string, value: unknown) => {
         if (key in data) {
           dispatch(
             actions.updateData({ [key as keyof T["data"]]: value } as Partial<

@@ -17,10 +17,13 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { BoolBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
-import type {
-  M2mCandidateRow,
-  StaleRegistryRow,
-  UnregisteredCandidateRow,
+import {
+  isM2mCandidateRow,
+  isStaleRegistryRow,
+  isUnregisteredCandidateRow,
+  type M2mCandidateRow,
+  type StaleRegistryRow,
+  type UnregisteredCandidateRow,
 } from "../types";
 
 type CandidateView = "m2m" | "unregistered" | "stale";
@@ -28,11 +31,12 @@ type CandidateView = "m2m" | "unregistered" | "stale";
 export function CandidatesPage() {
   const [view, setView] = useState<CandidateView>("m2m");
 
-  const m2m = useAuditDataset<M2mCandidateRow>("m2m-candidates");
+  const m2m = useAuditDataset<M2mCandidateRow>("m2m-candidates", isM2mCandidateRow);
   const unregistered = useAuditDataset<UnregisteredCandidateRow>(
     "unregistered-candidates",
+    isUnregisteredCandidateRow,
   );
-  const stale = useAuditDataset<StaleRegistryRow>("stale-registry");
+  const stale = useAuditDataset<StaleRegistryRow>("stale-registry", isStaleRegistryRow);
 
   const m2mColumns: AuditColumnDef<M2mCandidateRow>[] = useMemo(
     () => [

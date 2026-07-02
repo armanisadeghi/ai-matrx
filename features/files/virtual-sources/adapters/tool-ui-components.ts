@@ -23,6 +23,7 @@ import type {
   VirtualSourceAdapter,
 } from "@/features/files/virtual-sources/types";
 import { VirtualSourceError } from "@/features/files/virtual-sources/errors";
+import type { Database } from "@/types/database.types";
 
 const TAB_ID_PREFIX = "tool-ui:";
 
@@ -47,24 +48,26 @@ const FIELDS: readonly ToolUiField[] = [
 
 const FIELD_BY_ID = new Map(FIELDS.map((f) => [f.fieldId, f] as const));
 
-interface ToolUiRow {
-  id: string;
-  tool_name: string;
-  display_name: string;
-  language: string | null;
-  updated_at: string;
-  is_active: boolean;
-  notes: string | null;
-  inline_code: string;
-  overlay_code: string | null;
-  header_extras_code: string | null;
-  header_subtitle_code: string | null;
-  utility_code: string | null;
-}
+type ToolUiRow = Pick<
+  Database["tool"]["Tables"]["ui"]["Row"],
+  | "id"
+  | "tool_name"
+  | "display_name"
+  | "language"
+  | "updated_at"
+  | "is_active"
+  | "notes"
+  | "inline_code"
+  | "overlay_code"
+  | "header_extras_code"
+  | "header_subtitle_code"
+  | "utility_code"
+>;
 
+// One literal (no concatenation) so TS keeps the literal type and supabase-js
+// can parse the column list — this is what types the query result as ToolUiRow.
 const LIST_COLUMNS =
-  "id,tool_name,display_name,language,updated_at,is_active,notes," +
-  "inline_code,overlay_code,header_extras_code,header_subtitle_code,utility_code";
+  "id,tool_name,display_name,language,updated_at,is_active,notes,inline_code,overlay_code,header_extras_code,header_subtitle_code,utility_code";
 
 function mapLanguage(raw: string | null | undefined): string {
   const v = (raw ?? "tsx").toLowerCase();
@@ -117,7 +120,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
         .order("display_name", { ascending: true })
         .limit(args.limit ?? 300);
       if (error) return [];
-      const rows = (data ?? []) as unknown as ToolUiRow[];
+      const rows: ToolUiRow[] = data ?? [];
       return rows.map(
         (row): VirtualNode => ({
           id: row.id,
@@ -145,7 +148,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
       .eq("id", args.parentId)
       .maybeSingle();
     if (error || !data) return [];
-    const row = data as unknown as ToolUiRow;
+    const row: ToolUiRow = data;
     return FIELDS.map((f): VirtualNode => {
       const raw = row[f.column] as string | null;
       return {
@@ -182,7 +185,7 @@ const toolUiAdapter: VirtualSourceAdapter = {
     if (error || !data) {
       throw new VirtualSourceError("not_found", "read", `Tool UI not found: ${id}`);
     }
-    const row = data as unknown as ToolUiRow;
+    const row: ToolUiRow = data;
     const language = mapLanguage(row.language);
     return {
       id: row.id,

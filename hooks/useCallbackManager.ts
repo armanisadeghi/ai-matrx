@@ -1,15 +1,15 @@
-import { callbackManager } from '@/utils/callbackManager';
+import { callbackManager, type CallbackContext } from '@/utils/callbackManager';
 import { useState, useEffect } from 'react';
 
-interface CallbackData {
-    result: any;
+interface CallbackData<T> {
+    result: T;
 }
 
-interface CustomPromise extends Promise<any> {
+type CustomPromise<T> = Promise<T> & {
     callbackId?: string;
-}
+};
 
-export function useCallbackManager() {
+export function useCallbackManager<T = unknown>() {
     const [callbackId, setCallbackId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -21,10 +21,10 @@ export function useCallbackManager() {
     }, [callbackId]);
 
     const createCallback = () => {
-        let id: string;
-        
-        const promise = new Promise((resolve, reject) => {
-            id = callbackManager.registerWithContext((data: CallbackData, context: any) => {
+        let id: string | undefined;
+
+        const promise = new Promise<T>((resolve, reject) => {
+            id = callbackManager.registerWithContext((data: CallbackData<T>, context?: CallbackContext) => {
                 if (context?.progress?.status === 'error') {
                     reject(context.progress.error);
                 } else if (context?.progress?.status === 'completed') {
@@ -33,9 +33,11 @@ export function useCallbackManager() {
             });
 
             setCallbackId(id);
-        }) as CustomPromise;
+        }) as CustomPromise<T>;
 
-        promise.callbackId = id!;
+        // The Promise executor above runs synchronously, so `id` is always
+        // assigned by this point.
+        promise.callbackId = id;
         return promise;
     };
 

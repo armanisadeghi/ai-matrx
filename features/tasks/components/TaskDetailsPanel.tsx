@@ -58,9 +58,10 @@ import type { TaskLabel } from "@/features/tasks/services/taskService";
 import type { Comment } from "@/features/comments/types";
 import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import type { TaskWithProject } from "@/features/tasks/types";
 
 interface TaskDetailsPanelProps {
-  task: any;
+  task: TaskWithProject;
   onClose: () => void;
 }
 
@@ -245,7 +246,7 @@ export default function TaskDetailsPanel({
   };
 
   const handleToggleSubtask = async (subtaskId: string) => {
-    const subtask = task.subtasks?.find((st: any) => st.id === subtaskId);
+    const subtask = task.subtasks?.find((st) => st.id === subtaskId);
     if (!subtask) return;
 
     try {
@@ -298,7 +299,7 @@ export default function TaskDetailsPanel({
   };
 
   const subtasks = task.subtasks || [];
-  const completedSubtasks = subtasks.filter((st: any) => st.completed).length;
+  const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const totalSubtasks = subtasks.length;
 
   return (
@@ -502,7 +503,11 @@ export default function TaskDetailsPanel({
           </label>
           <Select
             value={priority || "none"}
-            onValueChange={(val) => handlePriorityChange(val as any)}
+            onValueChange={(val) => {
+              if (val === "low" || val === "medium" || val === "high") {
+                handlePriorityChange(val);
+              }
+            }}
           >
             <SelectTrigger className="text-sm">
               <SelectValue>
@@ -626,7 +631,7 @@ export default function TaskDetailsPanel({
             {totalSubtasks > 0 && `(${completedSubtasks}/${totalSubtasks})`}
           </label>
           <div className="space-y-2">
-            {subtasks.map((subtask: any) => (
+            {subtasks.map((subtask) => (
               <div key={subtask.id} className="flex items-center gap-2 group">
                 <Checkbox
                   checked={subtask.completed}

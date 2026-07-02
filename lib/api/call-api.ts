@@ -78,6 +78,7 @@ import {
   selectTaskId,
   selectConversationId,
 } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { logApiTarget } from "@/lib/api/log-api-target";
@@ -453,9 +454,9 @@ function resolveBaseUrl(
     return testOverrides.forceBaseUrl;
   }
 
-  const url = selectResolvedBaseUrl(state as any);
+  const url = selectResolvedBaseUrl(state);
   if (!url) {
-    const env = (state as any)?.apiConfig?.activeServer ?? "production";
+    const env = state.apiConfig?.activeServer ?? "production";
     throw new Error(
       `[callApi] No URL configured for server environment "${env}". ` +
         `Set the corresponding NEXT_PUBLIC_BACKEND_URL_* env variable, ` +
@@ -527,14 +528,13 @@ function resolveScope(
   state: RootState,
   overrides?: Partial<CallScope>,
 ): CallScope {
-  // user_id: available from existing userSlice
-  // TODO: replace with a proper selector once userSlice exposes profile.id directly
-  const userId: string | undefined =
-    (state as any)?.user?.profile?.id ?? undefined;
+  // user_id: userAuth is the auth-domain slice (Phase 4 split — see
+  // lib/redux/slices/userAuthSlice.ts); selectUserId is its canonical selector.
+  const userId: string | undefined = selectUserId(state) ?? undefined;
 
   // appContext may be absent in store configurations that haven't registered the slice.
   // Guard defensively so callApi never crashes on a missing key — all fields are nullable.
-  const hasAppContext = !!(state as any)?.appContext;
+  const hasAppContext = !!(state as Partial<RootState>)?.appContext;
 
   // Effective org = explicitly-selected org, else the user's personal org.
   // Soft enforcement: every request carries a valid org id even before the
@@ -591,6 +591,9 @@ const UI_ONLY_BODY_FIELDS = new Set<string>([
  * stripped — they are internal frontend signals and are not part of the backend schema.
  */
 function buildRequestBody(body: unknown, scope: CallScope): unknown {
+  // MATRX-EXCEPTION: `body` is optional by design — a caller with no body
+  // still gets scope fields injected below, so `{}` (no caller fields) is
+  // the correct starting point, not a masked failure.
   const raw = (body ?? {}) as Record<string, unknown>;
 
   // Strip UI-only fields before sending to the backend
@@ -890,7 +893,7 @@ export function callApi<
       source: "callApi",
       method: config.method,
       channel: config._testOverrides?.forceBaseUrl ? "force" : "global",
-      activeServer: (state as any)?.apiConfig?.activeServer,
+      activeServer: state.apiConfig?.activeServer,
       stream: !!config.stream,
     });
 

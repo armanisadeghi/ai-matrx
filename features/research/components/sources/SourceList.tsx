@@ -717,17 +717,13 @@ function SourceRow({
                     {source.is_included ? "Exclude" : "Include"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={(e) =>
-                      onScrape(source, e as unknown as React.MouseEvent)
-                    }
+                    onClick={(e) => onScrape(source, e)}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     {needsScrape ? "Scrape" : "Re-scrape"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={(e) =>
-                      onAnalyze(source, e as unknown as React.MouseEvent)
-                    }
+                    onClick={(e) => onAnalyze(source, e)}
                   >
                     <Play className="h-4 w-4 mr-2" />
                     {analysisStateFor(source) === "none"
@@ -889,7 +885,7 @@ export default function SourceList() {
   // tier (it's derived from the score), so this narrows the fetched page.
   const [tierFilter, setTierFilter] = useState<string | null>(null);
 
-  const tagList = (tags as ResearchTag[]) ?? [];
+  const tagList = tags ?? [];
   const tagsBySource = sourceTagMap ?? {};
   const tagCountFor = useCallback(
     (id: string) => tagsBySource[id]?.length ?? 0,
@@ -905,7 +901,7 @@ export default function SourceList() {
 
   // The COMPLETE topic source set (capped at FETCH_ALL_LIMIT), already carrying
   // any server-side filter + sort the user picked.
-  const allSources = (sources as ResearchSource[]) ?? [];
+  const allSources = sources ?? [];
   // True only when the topic genuinely exceeds the fetch cap — used to show an
   // honest "showing first N" note so the table never silently truncates.
   const fetchCapped = allSources.length >= FETCH_ALL_LIMIT;

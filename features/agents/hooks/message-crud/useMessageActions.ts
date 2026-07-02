@@ -159,7 +159,9 @@ export function useMessageActions({
             ...invocation.identity,
             conversationId: fork.conversationId,
           },
-          inputs: { ...(invocation.inputs ?? {}), userInput: newUserInput },
+          inputs: invocation.inputs
+            ? { ...invocation.inputs, userInput: newUserInput }
+            : { userInput: newUserInput },
         };
         await dispatch(launchConversation(withInput)).unwrap();
       }

@@ -3,6 +3,7 @@ import {
   AppletContainer,
   AppletLayoutOption,
   AppletSourceConfig,
+  Broker,
   BrokerMapping,
   CustomAppletConfig,
 } from "@/types/customAppTypes";
@@ -16,12 +17,21 @@ import {
 } from "../../app-runner/types";
 import { RecipeInfo } from "@/features/recipes/types";
 import type { Database, Json } from "@/types/database.types";
+import type { DbRpcRow } from "@/types/supabase-rpc";
+import { isJsonArray, isJsonObject } from "@/types/json";
 
 export type CustomAppletConfigDB =
   Database["public"]["Tables"]["custom_applet_configs"]["Row"];
 
 type CustomAppletConfigInsert =
   Database["public"]["Tables"]["custom_applet_configs"]["Insert"];
+
+// add_groups_to_applet returns a single setof custom_applet_configs row —
+// compile-time guard that CustomAppletConfigDB still matches the RPC's return shape.
+type _Check_AddGroupsToApplet =
+  CustomAppletConfigDB extends DbRpcRow<"add_groups_to_applet"> ? true : false;
+declare const _addGroupsToAppletCheck: _Check_AddGroupsToApplet;
+true satisfies typeof _addGroupsToAppletCheck;
 
 const KNOWN_LAYOUT_TYPES = [
   "horizontal",
@@ -552,30 +562,39 @@ export const getCompiledRecipeById = async (
   };
 };
 
-const convertDbResponseForSourceConfigs = (data: any) => {
+type CompiledRecipeRow =
+  Database["graveyard"]["Tables"]["compiled_recipe"]["Row"];
+
+const convertDbResponseForSourceConfigs = (
+  data: CompiledRecipeRow,
+): AppletSourceConfig => {
   const compiled_id = data.id;
   const recipe_id = data.recipe_id;
   const version = data.version;
-  const compiled_data = data.compiled_recipe;
-  const raw_brokers = compiled_data.brokers || [];
+  const compiledData = isJsonObject(data.compiled_recipe)
+    ? data.compiled_recipe
+    : undefined;
+  const rawBrokers = isJsonArray(compiledData?.brokers)
+    ? compiledData.brokers
+    : [];
 
-  const needed_brokers = raw_brokers.map((broker: any) => {
-    return {
-      id: broker.id,
-      name: broker.name || "Name Missing",
-      required: broker.required || true,
-      dataType: broker.data_type || null,
-      defaultValue: broker.default_value || null,
-      inputComponent: broker.inputComponent || null,
-    };
-  });
+  const needed_brokers: Broker[] = rawBrokers.filter(isJsonObject).map((broker) => ({
+    id: typeof broker.id === "string" ? broker.id : "",
+    name: typeof broker.name === "string" ? broker.name : "Name Missing",
+    required: typeof broker.required === "boolean" ? broker.required : true,
+    dataType: typeof broker.data_type === "string" ? broker.data_type : "",
+    defaultValue:
+      typeof broker.default_value === "string" ? broker.default_value : "",
+    inputComponent:
+      typeof broker.inputComponent === "string" ? broker.inputComponent : "",
+  }));
 
   return {
     sourceType: "recipe",
     config: {
-      id: recipe_id,
+      id: recipe_id ?? "",
       compiledId: compiled_id,
-      version: version,
+      version: version ?? 0,
       neededBrokers: needed_brokers,
     },
   };
@@ -605,6 +624,7 @@ export const getCompiledRecipeByVersionWithNeededBrokers = async (
     console.error("Error fetching compiled recipe:", error);
     throw error;
   }
+  if (!data[0]) return null;
   return convertDbResponseForSourceConfigs(data[0]);
 };
 

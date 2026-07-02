@@ -29,8 +29,8 @@ export function UnsavedChangesDiff({ agentId }: UnsavedChangesDiffProps) {
     const saved: Record<string, unknown> = {};
 
     for (const field of Object.keys(dirtyFields) as Array<keyof AgentDefinition>) {
-      current[field] = (agent as unknown as Record<string, unknown>)[field];
-      saved[field] = (fieldHistory as unknown as Record<string, unknown>)[field];
+      current[field] = agent[field];
+      saved[field] = fieldHistory[field];
     }
 
     return {

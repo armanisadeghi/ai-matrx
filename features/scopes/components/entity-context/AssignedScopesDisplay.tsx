@@ -87,8 +87,12 @@ export function AssignedScopesDisplay({
       for (const row of res.data.scopes) {
         const t = row.scope_type;
         if (!t) continue;
-        if (!byType.has(t.id)) byType.set(t.id, { type: t, scopes: [] });
-        byType.get(t.id)!.scopes.push({ id: row.id, name: row.name });
+        let group = byType.get(t.id);
+        if (!group) {
+          group = { type: t, scopes: [] };
+          byType.set(t.id, group);
+        }
+        group.scopes.push({ id: row.id, name: row.name });
       }
       const sorted = Array.from(byType.values()).sort((a, b) =>
         a.type.label_singular.localeCompare(b.type.label_singular),

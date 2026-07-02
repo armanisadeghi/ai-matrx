@@ -505,15 +505,15 @@ export function AgentRoleCard({
             <h4 className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               {role.systemOnly ? "Configuration" : "Override"}
             </h4>
-            {overrideActive ? (
+            {overrideActive && currentOverrideId ? (
               <button
                 type="button"
-                onClick={() => copyId(currentOverrideId!)}
+                onClick={() => copyId(currentOverrideId)}
                 className="inline-flex items-center gap-1 font-mono text-[10.5px] text-muted-foreground/70 hover:text-foreground"
                 title="Copy agent ID"
               >
                 <ClipboardCopy className="h-2.5 w-2.5" />
-                {shortUuid(currentOverrideId!)}
+                {shortUuid(currentOverrideId)}
               </button>
             ) : null}
           </div>
@@ -545,9 +545,9 @@ export function AgentRoleCard({
                 </Button>
               </div>
 
-              {overrideActive ? (
+              {overrideActive && currentOverrideId ? (
                 <CurrentOverridePanel
-                  agentId={currentOverrideId!}
+                  agentId={currentOverrideId}
                   agentName={overrideAgent?.name}
                   onRemove={() => setRemoveOpen(true)}
                   isApplying={isApplying}

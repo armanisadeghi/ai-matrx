@@ -140,7 +140,7 @@ const label = typeof cfg?.label === "string" ? cfg.label : null;
 Skip the `satisfies`/`_Check` guard for:
 - RPCs that return `Json` directly (no row schema to enforce)
 - Table queries (use `Tables<T>["Row"]` directly — already typed)
-- Utility/legacy code with `@ts-nocheck` (fix the nocheck first)
+- Files marked `@ts-nocheck` / `@ts-ignore` — deliberate markers on known-dead old code awaiting deletion (Arman's call). Don't fix their types at all; the fix is deletion. Never add the directives to new code.
 
 ---
 

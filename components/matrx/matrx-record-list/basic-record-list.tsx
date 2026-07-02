@@ -3,9 +3,11 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { ComponentDensity, ComponentSize } from "@/types/componentConfigTypes";
+import type { JsonObject } from "@/types/json";
 
 interface RecordListProps {
-  records: Record<string, any>;
+  /** Keyed by record id; each value is an arbitrary, uniformly-shaped JSON record — a generic "render any JSON record" primitive with no fixed schema. */
+  records: Record<string, JsonObject>;
   fields: Array<{
     name: string;
     displayName?: string;
@@ -54,7 +56,7 @@ export function MatrxRecordList({
     [maxLength],
   );
 
-  const formatValue = React.useCallback((value: any): string => {
+  const formatValue = React.useCallback((value: unknown): string => {
     if (value === null || value === undefined) return "-";
     if (typeof value === "object") {
       try {

@@ -1,9 +1,11 @@
 /**
  * Organization Types
- * 
+ *
  * Type definitions for organization management system including
  * organizations, members, and invitations.
  */
+
+import type { JsonObject } from "@/types/json";
 
 // ============================================================================
 // Core Types
@@ -13,6 +15,18 @@
  * Organization role hierarchy: owner > admin > member
  */
 export type OrgRole = 'owner' | 'admin' | 'member';
+
+const ORG_ROLES: readonly OrgRole[] = ['owner', 'admin', 'member'];
+
+/** Narrow a DB `role: string` (iam.organization_members.role) into OrgRole. */
+export function isOrgRole(value: string): value is OrgRole {
+  return (ORG_ROLES as readonly string[]).includes(value);
+}
+
+/** Narrow a DB role string, falling back to 'member' for any unrecognized value. */
+export function toOrgRole(value: string): OrgRole {
+  return isOrgRole(value) ? value : 'member';
+}
 
 /**
  * Organization entity
@@ -30,7 +44,7 @@ export interface Organization {
   updatedAt: string;
   createdBy?: string | null;
   isPersonal: boolean;
-  settings?: Record<string, any>;
+  settings?: JsonObject;
 }
 
 /**
@@ -100,7 +114,7 @@ export interface CreateOrganizationOptions {
   logoUrl?: string;
   logoFileId?: string;
   website?: string;
-  settings?: Record<string, any>;
+  settings?: JsonObject;
 }
 
 /**
@@ -112,7 +126,7 @@ export interface UpdateOrganizationOptions {
   logoUrl?: string;
   logoFileId?: string;
   website?: string;
-  settings?: Record<string, any>;
+  settings?: JsonObject;
 }
 
 /**

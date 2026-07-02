@@ -85,6 +85,10 @@ export async function fetchAppConfig({
     return fetchAppConfigBySlug(slug);
   }
 
-  // Fallback to ID if slug is not provided
-  return fetchAppConfigById(id!);
+  // Fallback to ID if slug is not provided — the guard above guarantees
+  // `id` is set here (slug was falsy, and at least one of the two is required).
+  if (!id) {
+    throw new Error("Either slug or id must be provided to fetch app config");
+  }
+  return fetchAppConfigById(id);
 }

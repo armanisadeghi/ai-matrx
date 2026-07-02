@@ -3,9 +3,11 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { ComponentDensity, ComponentSize } from '@/types/componentConfigTypes';
+import type { JsonObject } from '@/types/json';
 
 interface BasicAutoTableProps {
-    data: any[];
+    /** Arbitrary, uniformly-shaped JSON objects — this is a generic "render any JSON as a table" primitive with no fixed schema. */
+    data: JsonObject[];
     density?: ComponentDensity;
     size?: ComponentSize;
     showBorders?: boolean;
@@ -44,7 +46,7 @@ export function MatrxBasicAutoTable({
         return text.slice(0, maxLength) + '...';
     }, [maxLength]);
 
-    const formatValue = React.useCallback((value: any): string => {
+    const formatValue = React.useCallback((value: unknown): string => {
         if (value === null || value === undefined) return '-';
         if (typeof value === 'object') {
             try {

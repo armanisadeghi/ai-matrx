@@ -140,7 +140,7 @@ function extractFenceInfo(
   let ticks = 0;
   while (ticks < trimmed.length && trimmed[ticks] === "`") ticks++;
   if (ticks < 3) return null;
-  const language = trimmed.slice(ticks).trim().split(/\s/)[0] || "";
+  const language = trimmed.slice(ticks).trim().split(/\s/)[0];
   return { language, ticks };
 }
 
@@ -320,8 +320,11 @@ export class StreamBlockAccumulator {
     const combined = this.pendingLineFragment + text;
     const parts = combined.split("\n");
 
-    // Last element may be incomplete (no trailing newline)
-    this.pendingLineFragment = parts.pop()!;
+    // Last element may be incomplete (no trailing newline). `split` on a
+    // string always yields at least one element, so `parts` is never empty
+    // here and this index read is always defined.
+    this.pendingLineFragment = parts[parts.length - 1];
+    parts.length -= 1;
 
     for (const rawLine of parts) {
       this.processLine(rawLine, dispatch);

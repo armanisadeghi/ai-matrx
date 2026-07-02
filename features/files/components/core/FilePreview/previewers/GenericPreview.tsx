@@ -101,9 +101,9 @@ export function GenericPreview({
             : "This file type can't be previewed here.")}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {hasViewAsText && viewAsTextPrimary ? (
+        {onViewAsText && viewAsTextPrimary ? (
           <ViewAsTextButton
-            onClick={onViewAsText!}
+            onClick={onViewAsText}
             label={viewAsTextLabel}
             busy={viewAsTextBusy}
             variant="primary"
@@ -124,9 +124,9 @@ export function GenericPreview({
             Download
           </button>
         ) : null}
-        {hasViewAsText && !viewAsTextPrimary ? (
+        {onViewAsText && !viewAsTextPrimary ? (
           <ViewAsTextButton
-            onClick={onViewAsText!}
+            onClick={onViewAsText}
             label={viewAsTextLabel}
             busy={viewAsTextBusy}
             variant="secondary"

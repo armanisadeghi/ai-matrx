@@ -81,6 +81,8 @@ export interface MessageActionContext {
   /** `cx_message.metadata` — arbitrary JSON; included in saves and exports. */
   metadata: Record<string, unknown> | null;
   dispatch: AppDispatch;
+  /** Store snapshot reader — used for synchronous state reads (e.g. resolving a forked message's id). */
+  getState: () => RootState;
   onClose: () => void;
 
   /** True when the renderer has a full-page print handler ready. */
@@ -184,7 +186,7 @@ function requireAuth(
 }
 
 function wrapTextAsContent(text: string): Json {
-  return [{ type: "text", text }] as unknown as Json;
+  return [{ type: "text", text }];
 }
 
 /**
@@ -603,7 +605,7 @@ function saveItems(ctx: MessageActionContext): MenuItem[] {
         dispatch(
           setPendingSource({
             entity_type: "message",
-            entity_id: ctx.messageId ?? "",
+            entity_id: ctx.messageId ?? null,
             label: preview,
             metadata: {
               // Also attach the whole conversation when available so the
@@ -796,17 +798,12 @@ function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
       try {
         const { forkConversation } =
           await import("@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk");
-        const positionThunk = (_: unknown, getState: () => RootState) => {
-          const entry = getState().messages.byConversationId[conversationId];
-          const msg = entry?.byId?.[messageId];
-          const position = msg?.position ?? 0;
-          return dispatch(
-            forkConversation({ conversationId, atPosition: position }),
-          ).unwrap();
-        };
-        const result = (await dispatch(positionThunk as never)) as unknown as {
-          conversationId: string;
-        };
+        const entry = ctx.getState().messages.byConversationId[conversationId];
+        const msg = entry?.byId?.[messageId];
+        const position = msg?.position ?? 0;
+        const result = await dispatch(
+          forkConversation({ conversationId, atPosition: position }),
+        ).unwrap();
 
         // Post-fork affordance: explicitly ask the user where to go
         // next. The previous toast-based version was easy to miss;
@@ -1490,7 +1487,9 @@ export function resumePendingAuthAction(
       dispatch(
         setPendingSource({
           entity_type: "message",
-          entity_id: "",
+          // No live message context on the post-auth resume path (working
+          // from saved content only) — null, not a fake empty id.
+          entity_id: null,
           label: preview,
           prePopulate: { title: seedTitle, description: savedContent },
         }),

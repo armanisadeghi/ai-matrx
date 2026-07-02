@@ -77,7 +77,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
   const metadataPretty = useMemo(() => {
     if (!file) return null;
     try {
-      const keys = Object.keys(file.metadata ?? {});
+      const keys = Object.keys(file.metadata);
       if (keys.length === 0) return null;
       return JSON.stringify(file.metadata, null, 2);
     } catch {
@@ -177,7 +177,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
             <CopyableRow
               label="Full path"
               value={file.filePath || "—"}
-              copyValue={file.filePath || ""}
+              copyValue={file.filePath}
               disabled={!file.filePath}
             />
           </Section>
@@ -243,7 +243,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
             <CopyableRow
               label="Owner ID"
               value={file.ownerId || "—"}
-              copyValue={file.ownerId || ""}
+              copyValue={file.ownerId}
               disabled={!file.ownerId}
               mono
             />

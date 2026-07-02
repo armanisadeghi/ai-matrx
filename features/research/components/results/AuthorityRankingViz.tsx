@@ -39,21 +39,19 @@ export function AuthorityRankingViz({
   topicId: string;
 }) {
   const ranked = useMemo<RankedSource[]>(() => {
-    const withScore = sources.filter(
-      (s) =>
-        (s.is_included ?? false) &&
-        s.authority_score != null &&
-        resolveTier(s.authority_tier, s.authority_score) != null,
-    );
-    withScore.sort(
-      (a, b) => (b.authority_score ?? 0) - (a.authority_score ?? 0),
-    );
-    return withScore.map((source, i) => ({
-      source,
-      score: source.authority_score as number,
-      tier: resolveTier(source.authority_tier, source.authority_score)!,
-      rank: i + 1,
-    }));
+    const withScore = sources
+      .filter((s) => s.is_included ?? false)
+      .map((source) => ({
+        source,
+        score: source.authority_score,
+        tier: resolveTier(source.authority_tier, source.authority_score),
+      }))
+      .filter(
+        (r): r is { source: ResearchSource; score: number; tier: AuthorityTier } =>
+          r.score != null && r.tier != null,
+      );
+    withScore.sort((a, b) => b.score - a.score);
+    return withScore.map((r, i) => ({ ...r, rank: i + 1 }));
   }, [sources]);
 
   if (ranked.length === 0) return null;

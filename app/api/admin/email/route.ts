@@ -56,6 +56,12 @@ export async function POST(request: Request) {
     if (sendAsUser) {
       // Format: "User Name via AI Matrx" <platform-email@domain.com>
       const defaultFrom = getDefaultFromAddress();
+      if (!defaultFrom) {
+        return NextResponse.json(
+          { success: false, msg: "EMAIL_FROM is not configured" },
+          { status: 500 }
+        );
+      }
       const emailMatch = defaultFrom.match(/<([^>]+)>/) || defaultFrom.match(/([^\s<>]+@[^\s<>]+)/);
       const platformEmail = emailMatch ? emailMatch[1] : defaultFrom;
       const displayName = senderFullName || senderEmail || 'A user';

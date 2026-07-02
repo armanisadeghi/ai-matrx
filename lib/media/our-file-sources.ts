@@ -129,11 +129,16 @@ const OUR_FILE_ORIGINS: OurFileOrigin[] = [
   {
     label: "user-files-signed",
     test: (url) => fileIdFromUserFilesUrl(url) !== null,
-    toSource: (url, _parsed, mime) => ({
-      kind: "file_id",
-      fileId: fileIdFromUserFilesUrl(url)!,
-      mime: mime ?? undefined,
-    }),
+    toSource: (url, _parsed, mime) => {
+      const fileId = fileIdFromUserFilesUrl(url);
+      if (!fileId) {
+        // `test` above already guarantees this is non-null for any url that
+        // reaches toSource; if it's ever null here, treat as unrecognized
+        // rather than fabricate an id.
+        return { kind: "external_url", url, mime: mime ?? undefined };
+      }
+      return { kind: "file_id", fileId, mime: mime ?? undefined };
+    },
   },
   // 2. Public CDN — `cdn.matrxserver.com/.../{file_id}.{ext}`. Recover the
   //    file_id when present (durable identity); otherwise the CDN URL is itself
@@ -170,7 +175,7 @@ const OUR_FILE_ORIGINS: OurFileOrigin[] = [
     test: (_url, parsed) =>
       !!parsed && /\/share\/[^/]+(\/download)?$/i.test(parsed.pathname),
     toSource: (url, parsed, mime) => {
-      const token = shareTokenFromPath(parsed?.pathname ?? "");
+      const token = parsed ? shareTokenFromPath(parsed.pathname) : null;
       if (token) return { kind: "share_link", token, mime: mime ?? undefined };
       return { kind: "external_url", url, mime: mime ?? undefined };
     },

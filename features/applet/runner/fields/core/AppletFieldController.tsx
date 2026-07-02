@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 "use client";
 
 import React from "react";
@@ -46,7 +44,12 @@ export const AppletFieldController = ({
   disabled = false,
   className = "",
 }: CommonFieldProps) => {
-  switch (field.component) {
+  // Legacy configs (e.g. sample-config.json, older builder output) can still
+  // carry `component: "button"` — a name later renamed to "buttonSelection".
+  // Read as `string` here so that legacy value is tolerated without widening
+  // the shared `ComponentType` union used everywhere else.
+  const componentKey: string = field.component;
+  switch (componentKey) {
     case "textarea": {
       return (
         <TextareaField
@@ -178,7 +181,8 @@ export const AppletFieldController = ({
       );
     }
 
-    // @ts-ignore   ===== This needs to be updated for all components and then removed.
+    // ===== "button" is a legacy alias for "buttonSelection"; needs a data
+    // backfill for all components and then removal. =====
     case "button":
       console.log(
         "========== button. not buttonSelection using ButtonSelectionField ==========",

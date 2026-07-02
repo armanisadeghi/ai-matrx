@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import {
   addField,
+  assignField,
   createFieldFlags,
   fieldFlagsSize,
   hasField,
@@ -52,9 +53,9 @@ function mergeAndTrack(
 ): void {
   (Object.keys(partial) as (keyof AgentShortcutCategoryDef)[]).forEach(
     (key) => {
-      if (partial[key] !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (record as any)[key] = partial[key];
+      const value = partial[key];
+      if (value !== undefined) {
+        assignField(record, key, value);
         addField(record._loadedFields, key);
       }
     },
@@ -71,8 +72,7 @@ function applyFieldEdit<K extends keyof AgentShortcutCategoryDef>(
       field
     ] as AgentShortcutCategoryDef[K];
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (record as any)[field] = value;
+  assignField(record, field, value);
   addField(record._dirtyFields, field);
   record._dirty = true;
 }
@@ -217,8 +217,7 @@ export const agentShortcutCategorySlice = createSlice({
       if (!record || !hasField(record._dirtyFields, field)) return;
       const original = record._fieldHistory[field];
       if (original !== undefined) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (record as any)[field] = original;
+        assignField(record, field, original);
       }
       removeField(record._dirtyFields, field);
       delete record._fieldHistory[field];
@@ -233,8 +232,7 @@ export const agentShortcutCategorySlice = createSlice({
       ).forEach((field) => {
         const original = record._fieldHistory[field];
         if (original !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (record as any)[field] = original;
+          assignField(record, field, original);
         }
       });
       markRecordClean(record);
@@ -260,8 +258,7 @@ export const agentShortcutCategorySlice = createSlice({
       ).forEach((field) => {
         const value = snapshot[field];
         if (value !== undefined) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (record as any)[field] = value;
+          assignField(record, field, value);
         }
       });
       record._dirty = fieldFlagsSize(record._dirtyFields) > 0;

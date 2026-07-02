@@ -85,7 +85,7 @@ export function ActiveContextButton({
   const taskName = useAppSelector(selectTaskName);
 
   const scopeIds = useMemo(
-    () => Object.values(scopeSelections ?? {}).filter((v): v is string => !!v),
+    () => Object.values(scopeSelections).filter((v): v is string => !!v),
     [scopeSelections],
   );
   const hasContext = useAppSelector(selectHasActiveContext);

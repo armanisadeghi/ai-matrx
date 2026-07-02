@@ -66,6 +66,10 @@ export async function submitFeedback(
         user_id: agentId,
         username: agentName,
         feedback_type: input.feedback_type,
+        // route is NOT NULL with no DB default; "" is the deliberate
+        // sentinel for "no route supplied" (route is optional at the API/MCP
+        // boundary — general feedback with no specific location).
+        // MATRX-EXCEPTION: honest default for a NOT NULL column, not a boundary failure
         route: input.route || "",
         description: input.description,
         status: "new",

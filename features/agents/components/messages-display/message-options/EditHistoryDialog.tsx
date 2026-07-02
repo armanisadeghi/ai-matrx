@@ -61,7 +61,9 @@ interface EditHistoryDialogProps {
 }
 
 interface HistoryEntry {
-  content: unknown[];
+  // Archived verbatim from `cx_message.content_history` (JSONB) — a real
+  // Json[] at the source, not an opaque unknown[].
+  content: Json[];
   saved_at: string;
 }
 
@@ -224,7 +226,7 @@ function HistoryContent({
         editMessage({
           conversationId,
           messageId,
-          newContent: entry.content as unknown as Json,
+          newContent: entry.content,
         }),
       ).unwrap();
       toast.success("Restored");

@@ -23,11 +23,11 @@ export const componentGroupToDBFormat = async (
   return {
     ...(group.id ? { id: group.id } : {}),
     label: group.label || "",
-    short_label: group.shortLabel || "",
-    description: group.description || "",
+    short_label: group.shortLabel ?? null,
+    description: group.description ?? null,
     hide_description:
       group.hideDescription !== undefined ? group.hideDescription : false,
-    help_text: group.helpText || "",
+    help_text: group.helpText ?? null,
     fields: (group.fields ?? []) as Json,
     user_id: userId,
     is_public: group.isPublic !== undefined ? group.isPublic : false,

@@ -157,8 +157,6 @@ export const UnifiedVideoBlockRenderer: React.FC<
   const handleExpand = useCallback(() => setIsExpanded(true), []);
   const longPressHandlers = useLongPress(() => setDrawerOpen(true));
 
-  const hasExtra = !!extraActions && extraActions.length > 0;
-
   // ── Compact variant ─────────────────────────────────────────────────
 
   if (variant === "compact") {
@@ -190,9 +188,9 @@ export const UnifiedVideoBlockRenderer: React.FC<
   // ── Drawer body (mobile long-press) ───────────────────────────────
   const drawerBody = (
     <div className="px-4 pb-6 flex flex-col gap-0.5">
-      {hasExtra ? (
+      {extraActions && extraActions.length > 0 ? (
         <>
-          {extraActions!.map((a) => (
+          {extraActions.map((a) => (
             <DrawerRow
               key={a.id}
               icon={a.icon}
@@ -317,9 +315,9 @@ export const UnifiedVideoBlockRenderer: React.FC<
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {hasExtra ? (
+                  {extraActions && extraActions.length > 0 ? (
                     <>
-                      {extraActions!.map((a) => (
+                      {extraActions.map((a) => (
                         <DropdownMenuItem
                           key={a.id}
                           onClick={a.onClick}
@@ -377,9 +375,9 @@ export const UnifiedVideoBlockRenderer: React.FC<
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-56">
-          {hasExtra ? (
+          {extraActions && extraActions.length > 0 ? (
             <>
-              {extraActions!.map((a) => (
+              {extraActions.map((a) => (
                 <ContextMenuItem
                   key={a.id}
                   onClick={a.onClick}

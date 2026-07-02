@@ -14,14 +14,14 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, UserPlus, CheckCircle, XCircle, Search, Users, MessageSquare, Building2, Mail } from 'lucide-react';
-import { PermissionLevel, ResourceType } from '@/utils/permissions';
+import { PermissionLevel, ResourceType, ShareActionResult } from '@/utils/permissions';
 import { PermissionLevelDescription } from '../PermissionBadge';
 import { useToast } from '@/hooks/use-toast';
 import { createClient } from '@/utils/supabase/client';
 import { useUserConnections, type ConnectionUser } from '@/features/messaging/hooks/useUserConnections';
 
 interface ShareWithUserTabProps {
-  onShare: (userId: string, level: PermissionLevel) => Promise<any>;
+  onShare: (userId: string, level: PermissionLevel) => Promise<ShareActionResult>;
   onSuccess: () => void;
   resourceType: ResourceType;
   resourceId: string;

@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { AsyncResult } from '@/lib/idb/store-manager';
 import { PublicStoreManager } from '@/lib/idb/store-interface';
 
-export function useIDB(store: PublicStoreManager<any>) {
+export function useIDB<T extends object>(store: PublicStoreManager<T>) {
     const [loadingOps, setLoadingOps] = useState(new Set<string>());
 
     const withLoading = useCallback(<T,>(
@@ -28,7 +28,7 @@ export function useIDB(store: PublicStoreManager<any>) {
 
     return {
         isLoading,
-        add: useCallback(<T extends object>(
+        add: useCallback((
             storeName: string,
             data: T
         ): AsyncResult<string> => {
@@ -40,27 +40,27 @@ export function useIDB(store: PublicStoreManager<any>) {
         get: useCallback((
             storeName: string,
             id: string
-        ): AsyncResult<any> => {
-            return withLoading<any>(`get-${storeName}-${id}`, () =>
+        ): AsyncResult<T> => {
+            return withLoading<T>(`get-${storeName}-${id}`, () =>
                 store.getItem(storeName, id)
             );
         }, [withLoading, store]),
 
         getAll: useCallback((
             storeName: string
-        ): AsyncResult<any[]> => {
-            return withLoading<any[]>(`getAll-${storeName}`, () =>
+        ): AsyncResult<T[]> => {
+            return withLoading<T[]>(`getAll-${storeName}`, () =>
                 store.getAllItems(storeName)
             );
         }, [withLoading, store]),
 
-        update: useCallback(<T extends object>(
+        update: useCallback(<U extends object>(
             storeName: string,
             id: number,
-            data: Partial<T>
+            data: Partial<U>
         ): AsyncResult<boolean> => {
             return withLoading<boolean>(`update-${storeName}-${id}`, () =>
-                store.updateItem<T>(storeName, id, data)
+                store.updateItem<U>(storeName, id, data)
             );
         }, [withLoading, store]),
 

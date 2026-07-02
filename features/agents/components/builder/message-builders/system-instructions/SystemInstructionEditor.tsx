@@ -148,13 +148,13 @@ export function SystemInstructionEditor({
         <div className="grid grid-cols-2 gap-3">
           <FieldInput
             label="Version"
-            value={data.version}
+            value={data.version ?? undefined}
             onChange={(v) => update({ version: v || undefined })}
             placeholder="e.g. v1.2"
           />
           <FieldInput
             label="Category"
-            value={data.category}
+            value={data.category ?? undefined}
             onChange={(v) => update({ category: v || undefined })}
             placeholder="e.g. support"
           />

@@ -22,7 +22,9 @@ export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
     const client = getTwilioClient();
     const baseUrl = getAppBaseUrl();
 
-    const createParams: Record<string, unknown> = {
+    type MessageCreateParams = Parameters<typeof client.messages.create>[0];
+
+    const createParams: MessageCreateParams = {
       body,
       to,
       statusCallback: statusCallback || `${baseUrl}/api/webhooks/twilio/status`,
@@ -39,8 +41,7 @@ export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
       createParams.mediaUrl = mediaUrl;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const message = await client.messages.create(createParams as any);
+    const message = await client.messages.create(createParams);
 
     return {
       success: true,
@@ -88,17 +89,20 @@ export async function sendAndLogSms(options: SendSmsOptions & {
   const { error: dbError } = await supabase.schema('communication').from('sms_messages').insert({
     organization_id: organizationId,
     conversation_id: conversationId,
-    twilio_sid: result.sid || null,
+    twilio_sid: result.sid ?? null,
     direction: 'outbound',
+    // MATRX-EXCEPTION: from_number is NOT NULL with no DB default; "" is the
+    // deliberate sentinel when a Messaging Service (not an explicit from
+    // number) picked the sender — matches Twilio's own semantics.
     from_number: sendOptions.from || '',
     to_number: sendOptions.to,
     body: sendOptions.body,
     status: result.success ? (result.status || 'queued') : 'failed',
-    error_code: result.errorCode || null,
-    error_message: result.error || null,
-    num_media: sendOptions.mediaUrl?.length || 0,
-    media_urls: sendOptions.mediaUrl || [],
-    sent_by_user_id: sentByUserId || null,
+    error_code: result.errorCode ?? null,
+    error_message: result.error ?? null,
+    num_media: sendOptions.mediaUrl?.length ?? 0,
+    media_urls: sendOptions.mediaUrl ?? null,
+    sent_by_user_id: sentByUserId ?? null,
     sent_by_type: sentByType,
   });
 
@@ -230,7 +234,11 @@ export async function sendNotificationSms(options: {
       .limit(1)
       .single();
 
-    const ourNumber = defaultNumber?.phone_number || '';
+    if (!defaultNumber?.phone_number) {
+      console.error('No active default outbound SMS number configured');
+      return { success: false, error: 'No outbound SMS number configured' };
+    }
+    const ourNumber = defaultNumber.phone_number;
 
     const { data: newConv, error: convError } = await supabase
       .schema('communication').from('sms_conversations')

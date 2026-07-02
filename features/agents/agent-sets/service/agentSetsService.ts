@@ -143,7 +143,7 @@ export const agentSetsService = {
       targetId: orchestratorId,
       role: SET_MARKER_ROLE,
       label: opts?.label,
-      metadata: (opts?.config ?? {}) as Json,
+      metadata: opts?.config ?? {},
     });
   },
 
@@ -159,7 +159,7 @@ export const agentSetsService = {
       targetId: orchestratorId,
       role: SET_MARKER_ROLE,
       label: args.label,
-      metadata: (args.config ?? {}) as Json,
+      metadata: args.config ?? {},
     });
   },
 
@@ -176,7 +176,7 @@ export const agentSetsService = {
       targetId: memberId,
       role: MEMBER_ROLE,
       position: args?.position,
-      metadata: (args?.meta ?? {}) as Json,
+      metadata: args?.meta ?? {},
     });
   },
 

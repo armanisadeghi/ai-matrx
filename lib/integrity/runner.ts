@@ -28,7 +28,7 @@ function stripTotal(rows: IntegrityFinding[]): IntegrityFinding[] {
 
 /** Light limit so a slow/locked backend can't make the whole run hang. */
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(
       () => reject(new Error(`probe timeout after ${ms}ms`)),
@@ -38,7 +38,7 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   try {
     return await Promise.race([p, timeout]);
   } finally {
-    clearTimeout(timer!);
+    clearTimeout(timer);
   }
 }
 

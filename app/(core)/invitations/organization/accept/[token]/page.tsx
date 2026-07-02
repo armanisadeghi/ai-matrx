@@ -23,10 +23,7 @@ import type {
 } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef } from "@/features/files";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === "object" && !Array.isArray(value);
-}
+import { isJsonObject } from "@/types/json";
 
 /**
  * Accept Invitation Page
@@ -176,7 +173,7 @@ export default function AcceptInvitationPage() {
           updatedAt: data.organizations.updated_at,
           createdBy: data.organizations.created_by,
           isPersonal: data.organizations.is_personal,
-          settings: isRecord(data.organizations.settings)
+          settings: isJsonObject(data.organizations.settings)
             ? data.organizations.settings
             : undefined,
         },

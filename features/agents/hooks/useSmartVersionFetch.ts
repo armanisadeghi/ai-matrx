@@ -126,6 +126,11 @@ export function useSmartVersionFetch(
 
       let diffSummary: DiffResult | undefined;
       if (snapshot && prevSnapshot) {
+        // MATRX-EXCEPTION: computeDiff is a generic structural-diff algorithm
+        // that treats both sides as plain objects by design — it doesn't care
+        // about AgentDefinitionRecord's concrete shape. `Record<string, unknown>`
+        // has no index signature overlap with the record type, so TS requires
+        // the two-step cast; both operands are real, already-typed records.
         diffSummary = computeDiff(
           prevSnapshot as unknown as Record<string, unknown>,
           snapshot as unknown as Record<string, unknown>,

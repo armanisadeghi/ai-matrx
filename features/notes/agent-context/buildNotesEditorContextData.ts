@@ -32,7 +32,7 @@ export interface NotesEditorNoteRecord {
 }
 
 export interface NotesEditorNotesMapEntry {
-  id?: string;
+  id: string;
   label?: string;
   folder_name?: string;
   updated_at?: string;
@@ -118,8 +118,7 @@ export function buildNotesEditorContextData(
           (n) =>
             !n.deleted_at && n.folder_name === currentFolder && n.id !== noteId,
         )
-        .map((n) => n.id!)
-        .filter(Boolean)
+        .map((n) => n.id)
     : [];
 
   const surround = formatEditorSurroundContext(text, {

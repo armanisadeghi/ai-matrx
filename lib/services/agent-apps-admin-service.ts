@@ -1,12 +1,17 @@
 import { createClient } from "@/utils/supabase/client";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
+import type { JsonObject } from "@/types/json";
+import { isJsonObject } from "@/types/json";
 
-function getClient() {
+function getClient(): SupabaseClient<Database> {
   if (typeof window !== "undefined") {
-    return createClient() as unknown as any;
+    return createClient();
   } else {
-    return getScriptSupabaseClient() as unknown as any;
+    return getScriptSupabaseClient();
   }
 }
 
@@ -83,8 +88,8 @@ export interface AgentAppExecutionRow {
   ip_address?: string | null;
   user_agent?: string | null;
   task_id: string;
-  variables_provided: Record<string, any>;
-  variables_used: Record<string, any>;
+  variables_provided: JsonObject;
+  variables_used: JsonObject;
   success: boolean;
   error_type?: string | null;
   error_message?: string | null;
@@ -92,7 +97,7 @@ export interface AgentAppExecutionRow {
   tokens_used?: number | null;
   cost?: number | null;
   referer?: string | null;
-  metadata: Record<string, any>;
+  metadata: JsonObject;
   created_at: string;
   app_name?: string;
   app_slug?: string;
@@ -105,9 +110,9 @@ export interface AgentAppErrorRow {
   error_type: string;
   error_code?: string | null;
   error_message?: string | null;
-  error_details: Record<string, any>;
-  variables_sent: Record<string, any>;
-  expected_variables: Record<string, any>;
+  error_details: JsonObject;
+  variables_sent: JsonObject;
+  expected_variables: JsonObject;
   resolved: boolean;
   resolved_at?: string | null;
   resolved_by?: string | null;
@@ -142,11 +147,15 @@ export async function fetchAgentAppCategories(): Promise<
   const supabase = getClient();
   const { data, error } = await supabase
     .schema("platform").from("categories")
-    .select("id, name, sort_order:position, icon, description:metadata->>description")
+    // Parsing the aliased/JSON-path column list blows TS's instantiation depth
+    // (TS2589); explicit select generics pin the row type without the parse.
+    .select<string, AgentAppCategoryRow>(
+      "id, name, sort_order:position, icon, description:metadata->>description",
+    )
     .eq("dimension", "app")
     .order("position", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as AgentAppCategoryRow[];
+  return data ?? [];
 }
 
 export async function createAgentAppCategory(
@@ -158,6 +167,9 @@ export async function createAgentAppCategory(
     .insert([
       {
         dimension: "app",
+        // platform.categories requires an owning org; agent-app categories are
+        // platform-wide, so they belong to the Matrx System tenant.
+        organization_id: await resolveSystemOrgId(supabase),
         name: input.name,
         slug: input.name
           ?.toLowerCase()
@@ -173,31 +185,34 @@ export async function createAgentAppCategory(
         },
       },
     ])
-    .select("id, name, sort_order:position, icon, description:metadata->>description")
+    .select<string, AgentAppCategoryRow>(
+      "id, name, sort_order:position, icon, description:metadata->>description",
+    )
     .single();
   if (error) throw error;
-  return data as AgentAppCategoryRow;
+  return data;
 }
 
 export async function updateAgentAppCategory(
   input: UpdateAgentAppCategoryInput,
 ): Promise<AgentAppCategoryRow> {
   const supabase = getClient();
-  const patch: Record<string, any> = {};
+  const patch: Database["platform"]["Tables"]["categories"]["Update"] = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.icon !== undefined) patch.icon = input.icon;
   if (input.sort_order !== undefined) patch.position = input.sort_order;
   // description lives in metadata; merge atomically so legacy_id/legacy_table
   // and any other existing metadata keys are not wiped by a partial update.
   if (input.description !== undefined) {
-    const { data: current } = await supabase
+    const { data: current, error: readError } = await supabase
       .schema("platform").from("categories")
       .select("metadata")
       .eq("id", input.id)
       .eq("dimension", "app")
       .single();
+    if (readError) throw readError;
     patch.metadata = {
-      ...((current?.metadata as Record<string, unknown>) ?? {}),
+      ...(isJsonObject(current.metadata) ? current.metadata : {}),
       description: input.description,
     };
   }
@@ -206,10 +221,12 @@ export async function updateAgentAppCategory(
     .update(patch)
     .eq("id", input.id)
     .eq("dimension", "app")
-    .select("id, name, sort_order:position, icon, description:metadata->>description")
+    .select<string, AgentAppCategoryRow>(
+      "id, name, sort_order:position, icon, description:metadata->>description",
+    )
     .single();
   if (error) throw error;
-  return data as AgentAppCategoryRow;
+  return data;
 }
 
 export async function deleteAgentAppCategory(id: string): Promise<void> {
@@ -254,21 +271,25 @@ export async function fetchAgentAppsAdmin(filters?: {
   if (data && data.length > 0) {
     const userIds = [
       ...new Set(
-        data.map((r: any) => r.user_id).filter((v: string | null) => !!v),
+        data.map((r) => r.user_id).filter((v): v is string => !!v),
       ),
-    ] as string[];
+    ];
     if (userIds.length > 0) {
-      const { data: users } = await supabase.rpc("get_user_emails_by_ids", {
-        user_ids: userIds,
-      });
-      const userMap = new Map(((users ?? []) as any[]).map((u) => [u.id, u]));
-      return data.map((item: any) => ({
+      const { data: users, error: usersError } = await supabase.rpc(
+        "get_user_emails_by_ids",
+        { user_ids: userIds },
+      );
+      if (usersError) throw usersError;
+      const userMap = new Map((users ?? []).map((u) => [u.id, u]));
+      return data.map((item) => ({
         ...item,
-        creator_email: userMap.get(item.user_id)?.email,
+        creator_email: item.user_id
+          ? userMap.get(item.user_id)?.email
+          : undefined,
       })) as AgentAppAdminView[];
     }
   }
-  return (data ?? []).map((item: any) => ({
+  return (data ?? []).map((item) => ({
     ...item,
     creator_email: undefined,
   })) as AgentAppAdminView[];
@@ -284,7 +305,7 @@ export async function getAgentAppById(
     .eq("id", id)
     .single();
   if (error) {
-    if ((error as any).code === "PGRST116") return null;
+    if (error.code === "PGRST116") return null;
     throw error;
   }
   return data as AgentAppAdminView;
@@ -294,7 +315,7 @@ export async function updateAgentAppAdmin(
   input: UpdateAgentAppAdminInput,
 ): Promise<AgentAppAdminView> {
   const supabase = getClient();
-  const patch: Record<string, any> = {};
+  const patch: Database["app"]["Tables"]["definition"]["Update"] = {};
   if (input.status !== undefined) patch.status = input.status;
   if (input.is_verified !== undefined) patch.is_verified = input.is_verified;
   if (input.is_featured !== undefined) patch.is_featured = input.is_featured;
@@ -336,13 +357,14 @@ export async function fetchAgentAppExecutions(filters?: {
   if (error) throw error;
 
   if (data && data.length > 0) {
-    const appIds = [...new Set(data.map((e: any) => e.app_id))] as string[];
-    const { data: apps } = await supabase
+    const appIds = [...new Set(data.map((e) => e.app_id))];
+    const { data: apps, error: appsError } = await supabase
       .schema("app").from("definition")
       .select("id, name, slug")
       .in("id", appIds);
-    const appMap = new Map(((apps ?? []) as any[]).map((a) => [a.id, a]));
-    return (data as any[]).map((item) => ({
+    if (appsError) throw appsError;
+    const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
+    return data.map((item) => ({
       ...item,
       app_name: appMap.get(item.app_id)?.name,
       app_slug: appMap.get(item.app_id)?.slug,
@@ -373,13 +395,14 @@ export async function fetchAgentAppErrors(filters?: {
   if (error) throw error;
 
   if (data && data.length > 0) {
-    const appIds = [...new Set(data.map((e: any) => e.app_id))] as string[];
-    const { data: apps } = await supabase
+    const appIds = [...new Set(data.map((e) => e.app_id))];
+    const { data: apps, error: appsError } = await supabase
       .schema("app").from("definition")
       .select("id, name, slug")
       .in("id", appIds);
-    const appMap = new Map(((apps ?? []) as any[]).map((a) => [a.id, a]));
-    return (data as any[]).map((item) => ({
+    if (appsError) throw appsError;
+    const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
+    return data.map((item) => ({
       ...item,
       app_name: appMap.get(item.app_id)?.name,
       app_slug: appMap.get(item.app_id)?.slug,
@@ -448,13 +471,14 @@ export async function fetchAgentAppRateLimits(filters?: {
   if (error) throw error;
 
   if (data && data.length > 0) {
-    const appIds = [...new Set(data.map((e: any) => e.app_id))] as string[];
-    const { data: apps } = await supabase
+    const appIds = [...new Set(data.map((e) => e.app_id))];
+    const { data: apps, error: appsError } = await supabase
       .schema("app").from("definition")
       .select("id, name, slug")
       .in("id", appIds);
-    const appMap = new Map(((apps ?? []) as any[]).map((a) => [a.id, a]));
-    return (data as any[]).map((item) => ({
+    if (appsError) throw appsError;
+    const appMap = new Map((apps ?? []).map((a) => [a.id, a]));
+    return data.map((item) => ({
       ...item,
       app_name: appMap.get(item.app_id)?.name,
       app_slug: appMap.get(item.app_id)?.slug,

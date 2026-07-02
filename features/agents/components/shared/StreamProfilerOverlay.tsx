@@ -4,14 +4,39 @@ import { useEffect, useState } from "react";
 import { Activity, X, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Shape written by `utils/stream-profiler.ts` (`StreamProfiler.stopAndReport`)
+ * onto `window.__STREAM_REPORTS__`. Debug-only dev overlay, no DB/Python
+ * contract — this interface documents the producer's actual fields.
+ */
+interface StreamProfilerReport {
+  Test: string;
+  RequestId: string;
+  ClientDurationSec: string;
+  TotalChunksProcessed: number;
+  ChunksPerSecond: string;
+  JankFrames_Dropped: number;
+  JankRatio: string;
+  MemoryGrowthMB: string;
+  TokensOut?: number;
+  TokensTotal?: number;
+  ClientSpeed_TokensPerSec?: string | null;
+  ServerTotalTimeSec?: number | null;
+  ServerApiTimeSec?: number | null;
+}
+
+type WindowWithStreamReports = typeof window & {
+  __STREAM_REPORTS__?: StreamProfilerReport[];
+};
+
 export function StreamProfilerOverlay() {
   const [isOpen, setIsOpen] = useState(false);
-  const [reports, setReports] = useState<any[]>([]);
+  const [reports, setReports] = useState<StreamProfilerReport[]>([]);
 
   useEffect(() => {
     const handleUpdate = () => {
       if (typeof window !== "undefined") {
-        setReports((window as any).__STREAM_REPORTS__ || []);
+        setReports((window as WindowWithStreamReports).__STREAM_REPORTS__ ?? []);
       }
     };
     
@@ -112,8 +137,8 @@ export function StreamProfilerOverlay() {
       {reports.length > 0 && (
          <div className="p-3 border-t border-slate-800 bg-slate-900 border-b flex justify-between items-center text-xs">
            <span className="text-slate-500">Records: {reports.length}</span>
-           <button 
-             onClick={() => { (window as any).__STREAM_REPORTS__ = []; setReports([]); }}
+           <button
+             onClick={() => { (window as WindowWithStreamReports).__STREAM_REPORTS__ = []; setReports([]); }}
              className="text-red-400 hover:text-red-300"
            >
              Clear History

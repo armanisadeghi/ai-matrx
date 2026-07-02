@@ -1,4 +1,5 @@
 import { AppletContainer, CustomAppConfig, CustomAppletConfig, FieldDefinition , AppletSourceConfig } from "@/types/customAppTypes";
+import type { JsonObject } from "@/types/json";
 
 export interface FieldBuilder extends FieldDefinition {
     isPublic?: boolean;
@@ -35,7 +36,7 @@ export interface AppBuilder extends CustomAppConfig {
     isTemplated?: boolean;
     templateType?: 'simple' | 'complex';
     slugStatus?: 'unchecked' | 'unique' | 'notUnique';
-    appDataContext?: any;
+    appDataContext?: JsonObject;
 }
 
 export interface AppsState {
@@ -46,11 +47,13 @@ export interface AppsState {
     newAppId: string | null;
 }
 
+// NOTE: unused duplicate of app-runner/types.ts#RuntimeBrokerDefinition — no importer
+// in the codebase references this local copy (all consumers import the app-runner one).
 export interface RuntimeBrokerDefinition {
     id: string;
     name: string;
     dataType: string;
-    defaultValue?: any;
+    defaultValue?: unknown;
   }
   
 export interface ContainersState {

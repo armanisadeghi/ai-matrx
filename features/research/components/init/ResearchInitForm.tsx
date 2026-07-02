@@ -57,7 +57,7 @@ import type {
   ResearchTopic,
   TopicQuotaFields,
 } from "../../types";
-import { keywordTemplatesFromJson } from "../../types";
+import { keywordTemplatesFromJson, parseSuggestApplied } from "../../types";
 import {
   getKeywords,
   getTopic,
@@ -962,10 +962,10 @@ function AiCanvas({
 
       {/* Title */}
       <div className="min-h-[3.5rem]">
-        {hasTitle ? (
+        {hasTitle && title ? (
           isReview && onUpdateTitle ? (
             <EditableText
-              value={title!}
+              value={title}
               onCommit={onUpdateTitle}
               className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight text-balance text-foreground"
               placeholder="Untitled topic"
@@ -1525,7 +1525,7 @@ export default function ResearchInitForm() {
             }
           }
           if (inner.type === "suggest_applied") {
-            applied = inner as unknown as SuggestApplied;
+            applied = parseSuggestApplied(inner);
           }
         }
       }
@@ -1786,10 +1786,11 @@ export default function ResearchInitForm() {
 
   const handleRemoveKeyword = (row: KeywordRow) => {
     setKeywordRows((prev) => prev.filter((r) => r.localId !== row.localId));
-    if (!row.dbId) return;
+    const dbId = row.dbId;
+    if (!dbId) return;
     (async () => {
       try {
-        await deleteKeywordService(row.dbId!);
+        await deleteKeywordService(dbId);
       } catch (err) {
         toast.error((err as Error).message ?? "Could not remove keyword");
         setKeywordRows((prev) => [...prev, row]);

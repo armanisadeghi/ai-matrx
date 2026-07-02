@@ -1,7 +1,17 @@
 // File: lib/ai/recipeUtils.ts
 
+interface RecipeContentPart {
+    text: string;
+    [key: string]: unknown;
+}
+
+interface RecipeMessage {
+    content: RecipeContentPart[];
+    [key: string]: unknown;
+}
+
 // Function to extract variables from a recipe
-export function extractVariablesFromRecipe(recipe: any[]): string[] {
+export function extractVariablesFromRecipe(recipe: RecipeMessage[]): string[] {
     const variableRegex = /\{([^}]+)\}/g;
     const variables: string[] = [];
 
@@ -18,7 +28,7 @@ export function extractVariablesFromRecipe(recipe: any[]): string[] {
 }
 
 // Function to replace variables in a recipe with provided values
-export function replaceVariablesInRecipe(recipe: any[], variableValues: { [key: string]: string }): any[] {
+export function replaceVariablesInRecipe(recipe: RecipeMessage[], variableValues: { [key: string]: string }): RecipeMessage[] {
     return recipe.map(message => {
         const newMessage = { ...message };
         newMessage.content = message.content.map(contentPart => {

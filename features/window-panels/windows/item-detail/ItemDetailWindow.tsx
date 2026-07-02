@@ -148,10 +148,12 @@ function ItemDetailWindowInner({
     setStatus("loading");
     setRow(null);
 
-    // Dynamic table name → use the UNtyped generic client (same as the
-    // registry's fetchRow, which takes a plain `SupabaseClient` param). The
-    // typed `SupabaseClient<Database>` rejects `.from(string)` and blows the
-    // instantiation depth resolving the full schema union.
+    // MATRX-EXCEPTION: dynamic table name → use the UNtyped generic client
+    // (same as the registry's fetchRow, which takes a plain `SupabaseClient`
+    // param). The typed `SupabaseClient<Database>` rejects `.from(string)`
+    // and blows the instantiation depth resolving the full schema union.
+    // This window is the deliberate generic fallback for arbitrary item
+    // types — there is no single table/row shape to type against.
     const baseDb = supabase as unknown as SupabaseClient;
     const db = detailSource.schemaName
       ? baseDb.schema(detailSource.schemaName)
@@ -174,6 +176,9 @@ function ItemDetailWindowInner({
         setStatus("not-found");
         return;
       }
+      // MATRX-EXCEPTION: `data` is the untyped generic client's result for a
+      // runtime-determined table (see baseDb above) — genuinely no static
+      // row shape exists to guard against.
       setRow(data as unknown as Row);
       setStatus("ready");
     })();

@@ -2,8 +2,9 @@ import type { AppThunk } from "@/lib/redux/store";
 import { componentDefinitionsSlice } from "../slices/componentDefinitionsSlice";
 import { fetchAppConfig } from "@/lib/redux/app-runner/service/applet-service";
 import { CustomAppConfig } from "@/types/customAppTypes";
-import { loadApplet } from "./loadApplet";
+import { loadApplet, type LoadAppletResult } from "./loadApplet";
 import brokerSlice, { brokerActions } from "@/lib/redux/brokerSlice/slice";
+import { extractErrorMessage } from "@/utils/errors";
 
 interface LoadAppResult {
   success: boolean;
@@ -11,7 +12,7 @@ interface LoadAppResult {
   appletResults?: Array<{
     appletId: string;
     success: boolean;
-    componentInstances?: any[];
+    componentInstances?: LoadAppletResult["componentInstances"];
   }>;
   error?: string;
 }
@@ -76,15 +77,16 @@ export const loadApp =
         appConfig,
         appletResults,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error loading app:", error);
-      dispatch(componentDefinitionsSlice.actions.setError(error.message));
-      dispatch(brokerActions.setError(error.message));
+      const message = extractErrorMessage(error);
+      dispatch(componentDefinitionsSlice.actions.setError(message));
+      dispatch(brokerActions.setError(message));
       dispatch(componentDefinitionsSlice.actions.setLoading(false));
       dispatch(brokerActions.setLoading(false));
       return {
         success: false,
-        error: error.message,
+        error: message,
       };
     }
   };

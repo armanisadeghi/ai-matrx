@@ -50,7 +50,9 @@ export function SandboxFileViewer({
       setLoading(true);
       setError(null);
       try {
-        const text = await adapterRef.current!.readFile(target);
+        const adapter = adapterRef.current;
+        if (!adapter) throw new Error("Sandbox adapter not initialized");
+        const text = await adapter.readFile(target);
         setContent(text);
       } catch (err) {
         setContent(null);

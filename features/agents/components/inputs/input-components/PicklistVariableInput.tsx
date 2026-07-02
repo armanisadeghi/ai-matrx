@@ -45,7 +45,17 @@ export function PicklistVariableInput({
   wizardMode = false,
   containerWidth = 0,
 }: PicklistVariableInputProps) {
-  const binding = customComponent.picklist!;
+  const binding = customComponent.picklist;
+  if (!binding) {
+    // Caller (VariableInputComponent) only renders this when
+    // customComponent.picklist.listId is set — this guards the invariant
+    // honestly rather than asserting it.
+    return (
+      <p className="text-xs text-muted-foreground italic">
+        This variable is not bound to a picklist.
+      </p>
+    );
+  }
   const listId = binding.listId;
   const multiple = !!binding.multiple;
   const allowOther = customComponent.allowOther;

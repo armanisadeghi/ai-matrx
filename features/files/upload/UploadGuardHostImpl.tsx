@@ -142,7 +142,7 @@ export default function UploadGuardHostImpl() {
           conflicts.push({
             id: `${index}`,
             index,
-            file: arg.files[index]!,
+            file: arg.files[index],
             match: m,
           });
         }

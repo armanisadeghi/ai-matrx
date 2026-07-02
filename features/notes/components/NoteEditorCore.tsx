@@ -30,6 +30,7 @@ import type {
 } from "@/features/rich-document/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { cn } from "@/lib/utils";
+import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 
 const TuiEditorContent = dynamic(
   () =>
@@ -71,7 +72,7 @@ export interface NoteEditorCoreProps {
   /** Ref to the underlying textarea (plain + split modes). Parent uses for cursor ops. */
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   /** Ref to TUI editor instance (wysiwyg + markdown-split modes) */
-  tuiEditorRef?: React.MutableRefObject<any>;
+  tuiEditorRef?: React.MutableRefObject<TuiEditorContentRef | null>;
   /** Called when voice transcription completes. If not provided, default inserts at cursor. */
   onVoiceTranscription?: (text: string) => void;
   /** Show the microphone button (top-right overlay) */
@@ -223,7 +224,7 @@ export function NoteEditorCore({
   const richSource: ContentSource =
     actionsSource ?? (noteId ? { type: "note", noteId } : { type: "raw" });
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const internalTuiRef = useRef<any>(null);
+  const internalTuiRef = useRef<TuiEditorContentRef>(null);
 
   // Discrete-edit handler: prefer `onChangeFlush` if the parent provides one,
   // otherwise fall back to `onChange`.
@@ -452,7 +453,7 @@ export function NoteEditorCore({
 export function getCurrentEditorContent(
   editorMode: EditorMode,
   content: string,
-  tuiEditorRef?: React.MutableRefObject<any>,
+  tuiEditorRef?: React.MutableRefObject<TuiEditorContentRef | null>,
 ): string {
   if (
     (editorMode === "wysiwyg" || editorMode === "markdown-split") &&

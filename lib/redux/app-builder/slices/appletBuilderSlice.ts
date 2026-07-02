@@ -164,13 +164,13 @@ export const appletBuilderSlice = createSlice({
 
             state.applets[id] = { ...state.applets[id], dataSourceConfig, isDirty: true };
         },
-        setResultComponentConfig: (state, action: PayloadAction<{ id: string; resultComponentConfig?: any }>) => {
+        setResultComponentConfig: (state, action: PayloadAction<{ id: string; resultComponentConfig?: unknown }>) => {
             const { id, resultComponentConfig } = action.payload;
             if (!checkAppletExists(state, id)) return;
 
             state.applets[id] = { ...state.applets[id], resultComponentConfig, isDirty: true };
         },
-        setNextStepConfig: (state, action: PayloadAction<{ id: string; nextStepConfig?: any }>) => {
+        setNextStepConfig: (state, action: PayloadAction<{ id: string; nextStepConfig?: unknown }>) => {
             const { id, nextStepConfig } = action.payload;
             if (!checkAppletExists(state, id)) return;
 

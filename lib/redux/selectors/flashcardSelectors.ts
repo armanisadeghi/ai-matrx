@@ -60,16 +60,15 @@ const flashcardByIdSelectorCache = new Map<
 
 /** Memoized lookup for a single flashcard id — stable ref when record unchanged. */
 const selectFlashcardById = (id: string) => {
-  if (!flashcardByIdSelectorCache.has(id)) {
-    flashcardByIdSelectorCache.set(
-      id,
-      createSelector(
-        [selectFlashcardsRecord],
-        (flashcards): FlashcardState | undefined => flashcards[id],
-      ),
-    );
-  }
-  return flashcardByIdSelectorCache.get(id)!;
+  const existing = flashcardByIdSelectorCache.get(id);
+  if (existing) return existing;
+
+  const selector = createSelector(
+    [selectFlashcardsRecord],
+    (flashcards): FlashcardState | undefined => flashcards[id],
+  );
+  flashcardByIdSelectorCache.set(id, selector);
+  return selector;
 };
 
 export {

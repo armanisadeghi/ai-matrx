@@ -15,6 +15,8 @@ import { useEffect, useRef } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
+import { readField } from "@/features/agents/redux/shared/field-flags";
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
 const STORAGE_PREFIX = "agent-autosave:";
 const DEBOUNCE_MS = 2_000;
@@ -32,12 +34,15 @@ export function useAgentAutoSave(agentId: string) {
       if (raw) {
         const saved = JSON.parse(raw) as Record<string, unknown>;
         if (saved?._dirty) {
+          // Strip the `_dirty` marker — it's this hook's own bookkeeping key,
+          // not a real AgentDefinition field, and mergePartialAgent merges
+          // whatever keys are present onto the record.
+          const { _dirty: _unused, ...fields } = saved;
           dispatch(
             mergePartialAgent({
               id: agentId,
-              ...saved,
-              _skipDirty: true,
-            } as unknown as Parameters<typeof mergePartialAgent>[0]),
+              ...fields,
+            } as Partial<AgentDefinition> & { id: string }),
           );
         }
       }
@@ -56,10 +61,10 @@ export function useAgentAutoSave(agentId: string) {
       try {
         const snapshot: Record<string, unknown> = { _dirty: true };
         if (record._dirtyFields) {
-          for (const field of Object.keys(record._dirtyFields)) {
-            snapshot[field] = (record as unknown as Record<string, unknown>)[
-              field
-            ];
+          for (const field of Object.keys(
+            record._dirtyFields,
+          ) as (keyof AgentDefinition)[]) {
+            snapshot[field] = readField(record, field);
           }
         }
         localStorage.setItem(storageKey, JSON.stringify(snapshot));

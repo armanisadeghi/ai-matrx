@@ -283,11 +283,12 @@ export function NoteSidebar({
     if (!activeTabId) return;
     if (groupBy === "default") return;
     const note = allNotes.find((n) => n.id === activeTabId);
-    if (note?.folder_name) {
+    const folderName = note?.folder_name;
+    if (folderName) {
       setExpandedFolders((prev) => {
-        if (prev.has(note.folder_name!)) return prev;
+        if (prev.has(folderName)) return prev;
         const next = new Set(prev);
-        next.add(note.folder_name!);
+        next.add(folderName);
         return next;
       });
     }
@@ -425,8 +426,12 @@ export function NoteSidebar({
           key = n.folder_name || "Uncategorized";
           break;
       }
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(n);
+      let bucket = map.get(key);
+      if (!bucket) {
+        bucket = [];
+        map.set(key, bucket);
+      }
+      bucket.push(n);
     }
 
     // Sort each group

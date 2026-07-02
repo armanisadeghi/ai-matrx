@@ -135,16 +135,21 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       const BACKEND_URL = getBackendUrl();
       const headers = getHeaders();
 
+      // NOTE: field names must match the generated `LLMParams` wire schema
+      // (types/python-generated/api-types.ts) — `model` / `internal_web_search`,
+      // not the stale `ai_model_id` / `web_search_enabled` this hook used to
+      // send (those extra keys were silently ignored server-side).
       const configOverrides: Record<string, unknown> = {};
       if (state.modelOverride) {
-        configOverrides.ai_model_id = state.modelOverride;
+        configOverrides.model = state.modelOverride;
       }
       if (state.settings.searchEnabled) {
-        configOverrides.web_search_enabled = true;
+        configOverrides.internal_web_search = true;
       }
-      if (state.settings.thinkEnabled) {
-        configOverrides.thinking_enabled = true;
-      }
+      // `thinkEnabled` (boolean UI toggle) has no direct field on `LLMParams`
+      // (which takes `thinking_level: "minimal"|"low"|"medium"|"high"`, not a
+      // bool) — see ESCALATION brief in the type-fleet worklog; left unmapped
+      // rather than guessing a level.
 
       const userInput: string | Record<string, unknown>[] =
         contentItems.length > 0

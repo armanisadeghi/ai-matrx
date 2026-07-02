@@ -1,6 +1,6 @@
 
 import {FlashcardData} from "@/types/flashcards.types";
-import {ApiName, Assistant} from "@/types/voice/voiceAssistantTypes";
+import {ApiName, Assistant, ProcessState} from "@/types/voice/voiceAssistantTypes";
 
 export interface FastFireSessionState {
     isActive: boolean;
@@ -40,6 +40,6 @@ export interface UseFastFireSessionReturn {
     playAllAudioFeedback: () => void;
     playCorrectAnswersOnly: () => void;
     playHighScoresOnly: (minScore: number) => void;
-    processState: any;
+    processState: ProcessState;
     totalCards: number;
 }

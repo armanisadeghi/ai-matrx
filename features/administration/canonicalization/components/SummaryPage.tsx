@@ -7,13 +7,13 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { BoolBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
-import type { AuditSummaryRow } from "../types";
+import { isAuditSummaryRow, type AuditSummaryRow } from "../types";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function SummaryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { rows, loading, reload } = useAuditDataset<AuditSummaryRow>("summary");
+  const { rows, loading, reload } = useAuditDataset<AuditSummaryRow>("summary", isAuditSummaryRow);
 
   const onlyUncertified = searchParams.get("onlyUncertified") === "1";
   const initialColumnFilters = useMemo<Record<string, ColumnFilter> | undefined>(

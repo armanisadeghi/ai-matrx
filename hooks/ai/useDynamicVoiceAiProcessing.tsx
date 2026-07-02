@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
 import { nanoid } from 'nanoid';
 import { processAiRequest } from "@/actions/ai-actions/assistant-modular";
@@ -30,7 +30,7 @@ interface ActivityTiming {
     isActive: boolean;
 }
 
-interface DynamicResponse<T = any> {
+interface DynamicResponse<T = StructuredResponse> {
     textResponse: string;
     structuredResponse?: T;
 }
@@ -76,14 +76,14 @@ export const useDynamicVoiceAiProcessing = (initialAssistant?: Assistant) => {
         isActive: false
     });
 
-    const audioPlayerRef = useRef<any>(null);
+    const audioPlayerRef = useRef<ReactNode>(null);
 
-    const processStructuredResponse = useCallback((response: any) => {
+    const processStructuredResponse = useCallback((response: string | ReadableStream): StructuredResponse => {
         try {
-            const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+            const parsed: StructuredResponse = typeof response === 'string' ? JSON.parse(response) : response;
 
             // Extract audio feedback if it exists
-            if (parsed.audioFeedback) {
+            if (typeof parsed.audioFeedback === 'string') {
                 const feedbackItem: AudioFeedbackItem = {
                     id: nanoid(),
                     feedback: parsed.audioFeedback,
@@ -102,7 +102,7 @@ export const useDynamicVoiceAiProcessing = (initialAssistant?: Assistant) => {
             return parsed;
         } catch (error) {
             console.error('Error processing structured response:', error);
-            return response;
+            return typeof response === 'string' ? { raw: response } : {};
         }
     }, []);
 
@@ -220,7 +220,7 @@ export const useDynamicVoiceAiProcessing = (initialAssistant?: Assistant) => {
         }
     };
 
-    const addMessage = (userMessage: Message, assistantMessage: Message, structuredData?: any) => {
+    const addMessage = (userMessage: Message, assistantMessage: Message, structuredData?: StructuredResponse) => {
         setConversations(prev => prev.map(conv => {
             if (conv.id === currentConversationId) {
                 const updatedMessages = [...conv.messages, userMessage, assistantMessage];
@@ -248,22 +248,23 @@ export const useDynamicVoiceAiProcessing = (initialAssistant?: Assistant) => {
         }));
     }, []);
 
-    const processResponse = (response: any): DynamicResponse => {
+    const processResponse = (response: string | ReadableStream): DynamicResponse => {
         if (typeof response === 'string') {
-            return { textResponse: response };
-        }
-
-        if (assistant?.responseFormat) {
-            try {
-                const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
-                return {
-                    textResponse: parsedResponse.message || parsedResponse.text || JSON.stringify(response),
-                    structuredResponse: parsedResponse
-                };
-            } catch (error) {
-                console.error('Error parsing structured response:', error);
-                return { textResponse: String(response) };
+            if (assistant?.responseFormat) {
+                try {
+                    const parsedResponse: StructuredResponse = JSON.parse(response);
+                    const message = parsedResponse.message;
+                    const text = parsedResponse.text;
+                    return {
+                        textResponse: typeof message === 'string' ? message : typeof text === 'string' ? text : response,
+                        structuredResponse: parsedResponse
+                    };
+                } catch (error) {
+                    console.error('Error parsing structured response:', error);
+                    return { textResponse: response };
+                }
             }
+            return { textResponse: response };
         }
 
         return { textResponse: String(response) };
@@ -396,9 +397,9 @@ export const useDynamicVoiceAiProcessing = (initialAssistant?: Assistant) => {
                 setInput('');
             }
 
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error in submit:', error);
-            toast.error(error.message || "An error occurred");
+            toast.error(error instanceof Error ? error.message : "An error occurred");
             setProcessState(prev => ({
                 ...prev,
                 processing: false,

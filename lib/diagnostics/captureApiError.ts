@@ -12,6 +12,7 @@
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { ApiCallError } from "@/lib/api/call-api";
+import { isJsonObject } from "@/types/json";
 
 interface ApiErrorContext {
   /** Fully-resolved request URL. */
@@ -41,7 +42,7 @@ export function captureApiError(
     // typed fields out instead of burying everything in `raw`. Supports both
     // the `{ error, message, user_message, details, request_id }` envelope and
     // FastAPI's `{ detail: ValidationError[] }` validation shape.
-    const sd = (error.serverDetail ?? {}) as Record<string, unknown>;
+    const sd = isJsonObject(error.serverDetail) ? error.serverDetail : {};
     const backendType =
       typeof sd.error_type === "string"
         ? sd.error_type

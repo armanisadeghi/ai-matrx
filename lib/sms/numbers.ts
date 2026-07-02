@@ -16,19 +16,25 @@ import { extractErrorMessage } from "@/utils/errors";
 export async function searchAvailableNumbers(options: PhoneNumberPurchaseOptions = {}): Promise<PhoneNumberInfo[]> {
   const { areaCode, country = 'US', smsEnabled = true, mmsEnabled = true } = options;
   const client = getTwilioClient();
+  const localList = client.availablePhoneNumbers(country).local;
 
-  const searchParams: Record<string, unknown> = {
+  type LocalSearchParams = Parameters<typeof localList.list>[0];
+
+  const searchParams: LocalSearchParams = {
     smsEnabled,
     mmsEnabled,
     limit: 20,
   };
 
   if (areaCode) {
-    searchParams.areaCode = areaCode;
+    // Our options carry the area code as a string; Twilio's API takes a number.
+    const parsed = Number.parseInt(areaCode, 10);
+    if (!Number.isNaN(parsed)) {
+      searchParams.areaCode = parsed;
+    }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const numbers = await client.availablePhoneNumbers(country).local.list(searchParams as any);
+  const numbers = await localList.list(searchParams);
 
   return numbers.map(n => ({
     sid: '',
@@ -178,7 +184,7 @@ export async function listPhoneNumbers(options?: {
     return [];
   }
 
-  return (data || []).map(n => ({
+  return (data ?? []).map(n => ({
     sid: n.twilio_sid,
     phoneNumber: n.phone_number,
     friendlyName: n.friendly_name || n.phone_number,
@@ -203,7 +209,7 @@ export async function updateAllWebhookUrls(): Promise<{ updated: number; errors:
   let updated = 0;
   let errors = 0;
 
-  for (const num of numbers || []) {
+  for (const num of numbers ?? []) {
     try {
       await client.incomingPhoneNumbers(num.twilio_sid).update({
         smsUrl: `${baseUrl}/api/webhooks/twilio/sms`,

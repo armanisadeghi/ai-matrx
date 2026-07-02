@@ -20,8 +20,24 @@ import {
 import { RichDocument } from '@/features/rich-document/RichDocument';
 import type { ContentSource } from '@/features/rich-document/types';
 import type { Note } from '@/features/notes/types';
+import type { TuiEditorContentRef } from '@/components/mardown-display/chat-markdown/tui/TuiEditorContent';
 
 export type MobileEditorMode = 'plain' | 'wysiwyg' | 'preview';
+
+/** State the editor exposes to MobileNotesView's header save button/dirty poll. */
+interface MobileNoteEditorWindowState {
+  isDirty: boolean;
+  isSaving: boolean;
+  handleSave: () => Promise<void>;
+}
+
+declare global {
+  interface Window {
+    // Escape hatch so MobileNotesView's header can drive the mounted editor
+    // without a prop-drilled ref (header and editor are siblings under a view switch).
+    __mobileNoteEditorState?: MobileNoteEditorWindowState;
+  }
+}
 
 // Heavy TUI editor — only loaded when needed
 const TuiEditorContent = dynamic(
@@ -68,7 +84,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const tuiRef = useRef<any>(null);
+  const tuiRef = useRef<TuiEditorContentRef>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Capture the server baseline when the note first loads (or switches).
@@ -197,8 +213,8 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   // Expose save state and handler to parent (MobileNotesView injects into header)
   // We use a module-level ref pattern so the parent can read current values
   useEffect(() => {
-    (window as any).__mobileNoteEditorState = { isDirty, isSaving, handleSave };
-    return () => { delete (window as any).__mobileNoteEditorState; };
+    window.__mobileNoteEditorState = { isDirty, isSaving, handleSave };
+    return () => { delete window.__mobileNoteEditorState; };
   });
 
 

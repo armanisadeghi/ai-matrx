@@ -3,7 +3,8 @@ import { IDBPDatabase } from "idb";
 import { PublicStoreManager } from "./store-interface";
 
 export abstract class FeatureStore<T> extends PublicStoreManager<T> {
-    protected static override _instance: any;
+    // See DBStoreManager._instance — subclasses override with their concrete type.
+    protected static override _instance: unknown;
     protected storeName: string;
 
     protected constructor(dbName: string, version: number, storeName: string) {

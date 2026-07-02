@@ -6,7 +6,8 @@ import {Check, X} from 'lucide-react';
 
 interface MetricRowProps {
     label: string;
-    value: any;
+    /** Arbitrary JSON-ish value — formatted defensively (string/number/boolean/object/null all handled). */
+    value: unknown;
     showIcon?: boolean;
     className?: string;
 }

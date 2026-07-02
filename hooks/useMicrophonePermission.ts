@@ -75,8 +75,9 @@ export function useMicrophonePermission() {
             setCookie(COOKIE_KEY, 'true', COOKIE_DAYS);
             setHasAskedBefore(true);
             return 'granted';
-        } catch (err: any) {
-            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        } catch (err) {
+            const name = err instanceof DOMException ? err.name : undefined;
+            if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
                 setStatus('denied');
                 setCookie(COOKIE_KEY, 'true', COOKIE_DAYS);
                 setHasAskedBefore(true);

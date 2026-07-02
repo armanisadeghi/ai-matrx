@@ -124,7 +124,7 @@ export function serverConfigFromRow(
     isDefault: row.is_default,
     command: row.command,
     args: row.args,
-    envSchema: (row.env_schema as unknown as McpEnvSchemaField[]) ?? [],
+    envSchema: (row.env_schema as McpEnvSchemaField[]) ?? [],
     requiresDocker: row.requires_docker,
     npmPackage: row.npm_package,
     pipPackage: row.pip_package,

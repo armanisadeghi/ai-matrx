@@ -214,33 +214,36 @@ export function ShareNoteDialog({
             <div className="grid gap-2">
               <Label>People with access</Label>
               <div className="space-y-1">
-                {grants.map((g) => (
-                  <div
-                    key={g.id}
-                    className="flex items-center justify-between p-2 rounded border border-border/50 text-xs"
-                  >
-                    <span className="truncate">
-                      {g.grantedToUserId
-                        ? `User: ${g.grantedToUserId.slice(0, 8)}...`
-                        : `Org: ${g.grantedToOrganizationId?.slice(0, 8)}...`}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">
-                        {g.permissionLevel}
+                {grants.map((g) => {
+                  const grantedToUserId = g.grantedToUserId;
+                  return (
+                    <div
+                      key={g.id}
+                      className="flex items-center justify-between p-2 rounded border border-border/50 text-xs"
+                    >
+                      <span className="truncate">
+                        {grantedToUserId
+                          ? `User: ${grantedToUserId.slice(0, 8)}...`
+                          : `Org: ${g.grantedToOrganizationId?.slice(0, 8)}...`}
                       </span>
-                      {g.grantedToUserId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-destructive"
-                          onClick={() => handleRevoke(g.grantedToUserId!)}
-                        >
-                          Revoke
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">
+                          {g.permissionLevel}
+                        </span>
+                        {grantedToUserId && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-destructive"
+                            onClick={() => handleRevoke(grantedToUserId)}
+                          >
+                            Revoke
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

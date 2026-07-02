@@ -67,10 +67,11 @@ export function OutputSchemaTab({ agentId, onDirtyChange }: OutputSchemaTabProps
   const [parsed, setParsed] = useState<Record<string, unknown> | null>(
     // OutputSchema is a typed envelope ({name, description?, schema, strict?}) —
     // no string index signature, so it has no structural overlap with
-    // Record<string, unknown>. The editor treats the whole serialized envelope
-    // as a JSON dict (matches `initialText = JSON.stringify(outputSchema, …)`
-    // above), which is safe at runtime; the cast goes through `unknown` as the
-    // compiler requests.
+    // Record<string, unknown>. SettingsJsonEditor's onParse/onApply contract
+    // is deliberately a generic JSON-dict editor (matches
+    // `initialText = JSON.stringify(outputSchema, …)` above); the typed
+    // envelope is unwrapped to edit and re-wrapped only in handleApply below.
+    // MATRX-EXCEPTION: SettingsJsonEditor's contract is a generic JSON-dict editor.
     (outputSchema as unknown as Record<string, unknown> | null) ?? null,
   );
   const [report, setReport] = useState<OutputSchemaValidation | null>(null);
@@ -81,6 +82,7 @@ export function OutputSchemaTab({ agentId, onDirtyChange }: OutputSchemaTabProps
     dispatch(
       setAgentOutputSchema({
         id: agentId,
+        // MATRX-EXCEPTION: SettingsJsonEditor's contract is a generic JSON-dict editor; re-wrapped here.
         outputSchema: isEmpty ? null : (obj as unknown as OutputSchema),
       }),
     );

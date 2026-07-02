@@ -12,10 +12,15 @@
  * migration retires legacy broadcast plumbing earlier.
  */
 
-import type { Action, Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
+import type { Middleware, MiddlewareAPI } from "@reduxjs/toolkit";
 import { extractErrorMessage } from "@/utils/errors";
 import { logger } from "../logger";
 import { buildActionMessage, type ActionMessage } from "../messages";
+// MATRX-EXCEPTION: `Policy<any>` throughout this file — same invariant-TState
+// reason as lib/sync/registry.ts (partialize: readonly (keyof TState)[] makes
+// TState invariant, so `Policy<unknown>` cannot accept the registry's
+// heterogeneous `readonly Policy<any>[]`). Every use here only reads
+// non-generic fields (config.sliceName/.version/.preset, broadcastActions, …).
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Policy, SyncActionMeta, IdentityKey } from "../types";
 import { getPreset } from "../policies/presets";
@@ -216,7 +221,7 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
   // we never re-key a write-in-progress to the new identity).
   let lastSeenIdentity = ctx.getIdentity().key;
 
-  const middleware =
+  const middleware: Middleware =
     (api: MiddlewareAPI) =>
     (next: (action: unknown) => unknown) =>
     (action: unknown) => {
@@ -238,7 +243,7 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
         }
       }
 
-      const result = next(action as Action);
+      const result = next(action);
 
       // Ignore rehydrate echoes and anything without a string type.
       if (
@@ -415,5 +420,5 @@ export function createSyncMiddleware(ctx: SyncMiddlewareContext): Middleware {
       return result;
     };
 
-  return middleware as unknown as Middleware;
+  return middleware;
 }

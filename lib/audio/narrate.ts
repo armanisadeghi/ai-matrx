@@ -36,8 +36,13 @@ export interface NarrateOptions {
 export interface NarrateSuccess {
   /** Durable cld_files id — the canonical, re-mintable handle. Persist THIS. */
   fileId: string;
-  /** A URL for immediate playback. Convenience only — do not persist. */
-  url: string;
+  /**
+   * A URL for immediate playback. Convenience only — do not persist.
+   * Absent when the handler resolved a fileId but no directly-playable URL
+   * (e.g. a cloud URI/base64-only result); callers should re-mint from
+   * `fileId` in that case rather than treat a missing url as an error.
+   */
+  url?: string;
 }
 
 export interface NarrateFailure {
@@ -114,7 +119,7 @@ export async function narrate(
     }
     // The durable handle is `fileId`. `url` is whatever the handler resolved
     // (public CDN / share URL); it's a convenience for immediate playback.
-    return { fileId: file.fileId, url: file.url ?? "" };
+    return { fileId: file.fileId, url: file.url };
   } catch (e) {
     return { error: `narrate: upload failed (${asMessage(e)})` };
   }

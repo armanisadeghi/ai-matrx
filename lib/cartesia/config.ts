@@ -54,6 +54,8 @@ export function resolveVoiceId(
   userVoiceId: string | null | undefined,
   purpose: VoicePurpose,
 ): string {
+  // MATRX-EXCEPTION: honest default for an explicitly-optional param — falls
+  // through to the purpose default below, not a boundary write.
   const v = (userVoiceId ?? "").trim();
   if (v && v !== LEGACY_DEFAULT_VOICE_ID) return v;
   return purpose === "reading" ? READING_VOICE_ID : ASSISTANT_VOICE_ID;

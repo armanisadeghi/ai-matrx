@@ -19,6 +19,20 @@ import {
 import { ensureId } from "@/utils/schema/lite";
 import { getFlashcardSet } from "@/app/(transitional)/flashcard/app-data";
 import AiAssistModal from "@/app/(transitional)/flash-cards/ai/AiAssistModal";
+import type { TableData } from "@/types/tableTypes";
+import type { Flashcard } from "@/types/flashcards.types";
+
+// MatrxTable is a generic table component (rows typed as the loose `TableData`),
+// but this screen only ever feeds it `Flashcard` rows (via `ensureId(allFlashcards)`
+// below). Narrow at the boundary instead of widening `useFlashcard`'s `handleAction`
+// contract back to `any`.
+function isFlashcardRow(row: TableData): row is TableData & Flashcard {
+  return (
+    typeof row.order === "number" &&
+    typeof row.front === "string" &&
+    typeof row.back === "string"
+  );
+}
 
 const FlashcardComponentMobile: React.FC<{ dataSetId }> = ({ dataSetId }) => {
   const initialFlashcards = getFlashcardSet(dataSetId);
@@ -80,7 +94,13 @@ const FlashcardComponentMobile: React.FC<{ dataSetId }> = ({ dataSetId }) => {
       <Suspense fallback={<LargeComponentLoading />}>
         <MatrxTable
           data={flashcardsWithUUIDs}
-          onAction={handleAction}
+          onAction={(actionName, rowData) => {
+            if (!isFlashcardRow(rowData)) {
+              console.error("FlashcardComponentMobile: table row is not a Flashcard", rowData);
+              return;
+            }
+            handleAction(actionName, rowData);
+          }}
           defaultVisibleColumns={[
             "lesson",
             "topic",

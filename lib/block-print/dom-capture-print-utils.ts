@@ -72,10 +72,8 @@ function patchGetComputedStyle(isDark: boolean): () => void {
     const computed = original(elt, pseudoElt);
 
     return new Proxy(computed, {
-      get(target, prop: string | symbol) {
-        const value = (target as unknown as Record<string | symbol, unknown>)[
-          prop
-        ];
+      get(target, prop, receiver) {
+        const value: unknown = Reflect.get(target, prop, receiver);
 
         // Intercept string property accesses (color values)
         if (typeof prop === "string" && typeof value === "string" && value) {
@@ -96,7 +94,7 @@ function patchGetComputedStyle(isDark: boolean): () => void {
         }
 
         if (typeof value === "function") {
-          return (value as Function).bind(target);
+          return value.bind(target);
         }
 
         return value;

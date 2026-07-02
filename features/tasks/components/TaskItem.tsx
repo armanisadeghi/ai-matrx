@@ -29,12 +29,13 @@ import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsD
 import { ShareButton } from "@/features/sharing";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import type { Task, TaskWithProject } from "@/features/tasks/types";
 
 export default function TaskItem({
   task,
   depth = 0,
 }: {
-  task: any;
+  task: TaskWithProject;
   depth?: number;
 }) {
   const dispatch = useAppDispatch();
@@ -230,7 +231,7 @@ export default function TaskItem({
         {/* Subtasks */}
         {task.subtasks && task.subtasks.length > 0 && (
           <div className="mt-2 ml-6 space-y-2 border-l-2 border-border pl-3">
-            {task.subtasks.map((subtask: any) => (
+            {task.subtasks.map((subtask) => (
               <SubtaskItem
                 key={subtask.id}
                 subtask={subtask}
@@ -249,7 +250,7 @@ function SubtaskItem({
   subtask,
   parentTaskId,
 }: {
-  subtask: any;
+  subtask: Task;
   parentTaskId: string;
 }) {
   const dispatch = useAppDispatch();

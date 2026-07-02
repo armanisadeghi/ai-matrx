@@ -7,9 +7,9 @@
  * CRITICAL: This service MUST be used for ANY AI interaction from guests.
  */
 
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
+import FingerprintJS, { type Agent, type BuiltinComponents } from "@fingerprintjs/fingerprintjs";
 
-let fpPromise: Promise<any> | null = null;
+let fpPromise: Promise<Agent> | null = null;
 let cachedFingerprint: string | null = null;
 
 // Storage configuration
@@ -170,7 +170,7 @@ export function clearCachedFingerprint(): void {
 export async function getDetailedFingerprint(): Promise<{
   visitorId: string;
   confidence: number;
-  components: Record<string, any>;
+  components: BuiltinComponents;
 }> {
   try {
     const fp = await initFingerprint();
@@ -178,8 +178,8 @@ export async function getDetailedFingerprint(): Promise<{
 
     return {
       visitorId: result.visitorId,
-      confidence: result.confidence?.score || 0,
-      components: result.components || {},
+      confidence: result.confidence.score,
+      components: result.components,
     };
   } catch (error) {
     console.error("Failed to get detailed fingerprint:", error);

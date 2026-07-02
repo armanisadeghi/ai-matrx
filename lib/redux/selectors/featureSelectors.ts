@@ -10,8 +10,8 @@ export const createFeatureSelectors = <T extends z.ZodTypeAny>(
   type FeatureType = z.infer<T>;
 
   const getFeatureState = (
-    state: Record<string, any>,
-  ): SliceState<FeatureType> => state[featureName];
+    state: Record<string, unknown>,
+  ): SliceState<FeatureType> => state[featureName] as SliceState<FeatureType>;
 
   const getItems = createSelector([getFeatureState], (state) => state.items);
 
@@ -42,7 +42,7 @@ export const createFeatureSelectors = <T extends z.ZodTypeAny>(
   );
 
   const getOne = createSelector(
-    [getItems, (_state: Record<string, any>, id: string) => id],
+    [getItems, (_state: Record<string, unknown>, id: string) => id],
     (items, id): FeatureType | undefined => items[id],
   );
 
@@ -50,7 +50,7 @@ export const createFeatureSelectors = <T extends z.ZodTypeAny>(
     [
       getLastFetched,
       getStaleTime,
-      (_state: Record<string, any>, id: string) => id,
+      (_state: Record<string, unknown>, id: string) => id,
     ],
     (lastFetched, staleTime, id): boolean => {
       const fetchTime = lastFetched[id];

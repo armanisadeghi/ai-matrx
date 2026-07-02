@@ -172,7 +172,7 @@ export const useFlashcard = (initialFlashcards: FlashcardData[]) => {
   );
 
   const handleAction = useCallback(
-    (actionName: string, data: any) => {
+    (actionName: string, data: Flashcard) => {
       switch (actionName) {
         case "add":
           dispatch(addFlashcard(data));
@@ -181,7 +181,9 @@ export const useFlashcard = (initialFlashcards: FlashcardData[]) => {
           setEditingCard(data);
           break;
         case "delete":
-          dispatch(deleteFlashcard(data.id));
+          if (data.id) {
+            dispatch(deleteFlashcard(data.id));
+          }
           break;
         case "expand":
           setIsExpandedChatOpen(true);

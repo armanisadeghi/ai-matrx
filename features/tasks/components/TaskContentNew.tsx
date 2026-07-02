@@ -134,7 +134,7 @@ export default function TaskContentNew() {
     if (!trimmedTitle) return;
     if (trimmedTitle.length > 200) return;
 
-    const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
+    const defaultScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
 

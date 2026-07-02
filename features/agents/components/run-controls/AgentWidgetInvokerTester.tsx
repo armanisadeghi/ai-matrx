@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { AgentExecutionTestModal } from "./AgentExecutionTestModal";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import {
@@ -33,7 +34,9 @@ export function AgentWidgetInvokerTester({
 
   const displayTypes = getAllDisplayTypes().map((displayMode) => {
     const meta = getDisplayMeta(displayMode);
-    const IconComponent = (props: any) => <DynamicIcon name={meta.icon} {...props} />;
+    const IconComponent = (props: Omit<ComponentProps<typeof DynamicIcon>, "name">) => (
+      <DynamicIcon name={meta.icon} {...props} />
+    );
     return {
       name: meta.label,
       icon: IconComponent,

@@ -198,7 +198,7 @@ export const makeSelectOrphanProjects = () =>
     (byOrg, orgId): OrphanBucket<ProjectNode> =>
       (orgId && byOrg[orgId]) || {
         status: "unfetched",
-        items: empty as unknown as ProjectNode[],
+        items: empty,
         fetchedAt: null,
         error: null,
       },
@@ -214,7 +214,7 @@ export const makeSelectTaskBucket = () =>
     (byKey, key): TaskBucketEntry =>
       byKey[key] ?? {
         status: "idle",
-        taskIds: empty as unknown as string[],
+        taskIds: empty,
         fetchedAt: null,
         error: null,
       },
@@ -228,7 +228,9 @@ export const makeSelectTasksForLevel = () =>
       `${args.level}:${args.id}`,
     (byKey, byId, key): TaskNode[] => {
       const ids = byKey[key]?.taskIds ?? empty;
-      return ids.map((id) => byId[id]).filter(Boolean) as unknown as TaskNode[];
+      return ids
+        .map((id) => byId[id])
+        .filter((node): node is TaskNode => node !== undefined);
     },
   );
 
@@ -236,7 +238,7 @@ export const makeSelectTasksForLevel = () =>
 
 const EMPTY_ENTITY_SCOPES: EntityScopesEntry = {
   status: "idle",
-  scope_ids: empty as unknown as string[],
+  scope_ids: empty,
   fetchedAt: null,
   error: null,
 };

@@ -15,6 +15,8 @@ import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import type { Database } from "@/types/database.types";
+import { isJsonObject } from "@/types/json";
 import {
   Organization,
   OrganizationWithRole,
@@ -33,6 +35,7 @@ import {
   validateOrgSlug,
   validateEmail,
   generateSlug,
+  toOrgRole,
 } from "./types";
 
 // ============================================================================
@@ -141,11 +144,12 @@ export async function createOrganization(
       message: "Organization created successfully",
       organization: transformOrganizationFromDb(org),
     };
-  } catch (error: any) {
-    console.error("Error creating organization:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error creating organization:", err);
     return {
       success: false,
-      error: error?.message || "Failed to create organization",
+      error: err.message || "Failed to create organization",
     };
   }
 }
@@ -161,7 +165,7 @@ export async function updateOrganization(
   updates: UpdateOrganizationOptions,
 ): Promise<OrganizationResult> {
   try {
-    const updateData: any = {};
+    const updateData: Database["iam"]["Tables"]["organizations"]["Update"] = {};
 
     if (updates.name) {
       const validation = validateOrgName(updates.name);
@@ -193,11 +197,12 @@ export async function updateOrganization(
       message: "Organization updated successfully",
       organization: transformOrganizationFromDb(data),
     };
-  } catch (error: any) {
-    console.error("Error updating organization:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error updating organization:", err);
     return {
       success: false,
-      error: error.message || "Failed to update organization",
+      error: err.message || "Failed to update organization",
     };
   }
 }
@@ -233,11 +238,12 @@ export async function deleteOrganization(
       success: true,
       message: "Organization deleted successfully",
     };
-  } catch (error: any) {
-    console.error("Error deleting organization:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error deleting organization:", err);
     return {
       success: false,
-      error: error.message || "Failed to delete organization",
+      error: err.message || "Failed to delete organization",
     };
   }
 }
@@ -329,7 +335,7 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
 
     const roleByOrgId = new Map<string, OrgRole>();
     for (const m of memberships) {
-      roleByOrgId.set(m.containerId, m.role as OrgRole);
+      roleByOrgId.set(m.containerId, toOrgRole(m.role));
     }
     const orgIds = [...roleByOrgId.keys()];
 
@@ -359,7 +365,7 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
       const org = transformOrganizationFromDb(row);
       return {
         ...org,
-        role: roleByOrgId.get(org.id) ?? ("member" as OrgRole),
+        role: roleByOrgId.get(org.id) ?? "member",
         memberCount: countByOrgId.get(org.id) ?? 0,
       };
     });
@@ -370,16 +376,21 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
       if (!a.isPersonal && b.isPersonal) return 1;
       return a.name.localeCompare(b.name);
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Silently handle if organizations table doesn't exist yet
+    const err = pgErrorToError(error);
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? (error as { code?: unknown }).code
+        : undefined;
     if (
-      error?.code === "42P01" ||
-      error?.message?.includes("relation") ||
-      error?.message?.includes("does not exist")
+      code === "42P01" ||
+      err.message.includes("relation") ||
+      err.message.includes("does not exist")
     ) {
       return [];
     }
-    console.error("Error in getUserOrganizations:", error);
+    console.error("Error in getUserOrganizations:", err);
     return [];
   }
 }
@@ -430,11 +441,11 @@ export async function getOrganizationMembers(
     if (error) throw pgErrorToError(error);
 
     // Transform RPC result to application format
-    return (data || []).map((row: any) => ({
+    return data.map((row) => ({
       id: row.id,
       organizationId: row.organization_id,
       userId: row.user_id,
-      role: row.role,
+      role: toOrgRole(row.role),
       joinedAt: row.joined_at,
       invitedBy: row.invited_by,
       user: {
@@ -509,11 +520,12 @@ export async function updateMemberRole(
       success: true,
       message: "Member role updated successfully",
     };
-  } catch (error: any) {
-    console.error("Error updating member role:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error updating member role:", err);
     return {
       success: false,
-      error: error.message || "Failed to update member role",
+      error: err.message || "Failed to update member role",
     };
   }
 }
@@ -568,11 +580,12 @@ export async function removeMember(
       success: true,
       message: "Member removed successfully",
     };
-  } catch (error: any) {
-    console.error("Error removing member:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error removing member:", err);
     return {
       success: false,
-      error: error.message || "Failed to remove member",
+      error: err.message || "Failed to remove member",
     };
   }
 }
@@ -589,11 +602,12 @@ export async function leaveOrganization(
     const currentUserId = requireUserId();
 
     return await removeMember(orgId, currentUserId);
-  } catch (error: any) {
-    console.error("Error leaving organization:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error leaving organization:", err);
     return {
       success: false,
-      error: error.message || "Failed to leave organization",
+      error: err.message || "Failed to leave organization",
     };
   }
 }
@@ -613,7 +627,7 @@ export async function getUserRole(orgId: string): Promise<OrgRole | null> {
     const membership = membersResult.data.memberships.find(
       (m) => m.containerId === orgId,
     );
-    return (membership?.role as OrgRole) ?? null;
+    return membership ? toOrgRole(membership.role) : null;
   } catch (error) {
     console.error("Error fetching user role:", error);
     return null;
@@ -670,11 +684,12 @@ export async function inviteToOrganization(
       message: "Invitation sent successfully",
       invitation: transformInvitationFromDb(result.data),
     };
-  } catch (error: any) {
-    console.error("Error inviting to organization:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error inviting to organization:", err);
     return {
       success: false,
-      error: error.message || "Failed to send invitation",
+      error: err.message || "Failed to send invitation",
     };
   }
 }
@@ -698,7 +713,7 @@ export async function getOrganizationInvitations(
 
     if (error) throw pgErrorToError(error);
 
-    return (data || []).map(transformInvitationFromDb);
+    return data.map(transformInvitationFromDb);
   } catch (error) {
     console.error("Error fetching organization invitations:", error);
     return [];
@@ -725,11 +740,12 @@ export async function cancelInvitation(
       success: true,
       message: "Invitation cancelled successfully",
     };
-  } catch (error: any) {
-    console.error("Error cancelling invitation:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error cancelling invitation:", err);
     return {
       success: false,
-      error: error.message || "Failed to cancel invitation",
+      error: err.message || "Failed to cancel invitation",
     };
   }
 }
@@ -769,11 +785,12 @@ export async function resendInvitation(
       success: true,
       message: "Invitation resent successfully",
     };
-  } catch (error: any) {
-    console.error("Error resending invitation:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error resending invitation:", err);
     return {
       success: false,
-      error: error.message || "Failed to resend invitation",
+      error: err.message || "Failed to resend invitation",
     };
   }
 }
@@ -830,11 +847,12 @@ export async function acceptInvitation(
       message: "Successfully joined organization",
       organization: transformOrganizationFromDb(org),
     };
-  } catch (error: any) {
-    console.error("Error accepting invitation:", error);
+  } catch (error: unknown) {
+    const err = pgErrorToError(error);
+    console.error("Error accepting invitation:", err);
     return {
       success: false,
-      error: error.message || "Failed to accept invitation",
+      error: err.message || "Failed to accept invitation",
     };
   }
 }
@@ -861,9 +879,11 @@ export async function getUserInvitations(): Promise<
 
     if (error) throw pgErrorToError(error);
 
-    return (data || []).map((item: any) => ({
+    return data.map((item) => ({
       ...transformInvitationFromDb(item),
-      organization: transformOrganizationFromDb(item.organizations),
+      organization: item.organizations
+        ? transformOrganizationFromDb(item.organizations)
+        : undefined,
     }));
   } catch (error) {
     console.error("Error fetching user invitations:", error);
@@ -875,10 +895,13 @@ export async function getUserInvitations(): Promise<
 // Helper Functions
 // ============================================================================
 
+type OrganizationRow = Database["iam"]["Tables"]["organizations"]["Row"];
+type InvitationRow = Database["iam"]["Tables"]["invitations"]["Row"];
+
 /**
  * Transform database organization record to application format
  */
-function transformOrganizationFromDb(dbRecord: any): Organization {
+function transformOrganizationFromDb(dbRecord: OrganizationRow): Organization {
   return {
     id: dbRecord.id,
     name: dbRecord.name,
@@ -887,33 +910,11 @@ function transformOrganizationFromDb(dbRecord: any): Organization {
     logoUrl: dbRecord.logo_url,
     logoFileId: dbRecord.logo_file_id,
     website: dbRecord.website,
-    createdAt: dbRecord.created_at,
-    updatedAt: dbRecord.updated_at,
+    createdAt: dbRecord.created_at ?? "",
+    updatedAt: dbRecord.updated_at ?? "",
     createdBy: dbRecord.created_by,
-    isPersonal: dbRecord.is_personal,
-    settings: dbRecord.settings || {},
-  };
-}
-
-/**
- * Transform database member record to application format
- */
-function transformMemberFromDb(dbRecord: any): OrganizationMemberWithUser {
-  return {
-    id: dbRecord.id,
-    organizationId: dbRecord.organization_id,
-    userId: dbRecord.user_id,
-    role: dbRecord.role,
-    joinedAt: dbRecord.joined_at,
-    invitedBy: dbRecord.invited_by,
-    user: dbRecord.users
-      ? {
-          id: dbRecord.users.id,
-          email: dbRecord.users.email,
-          displayName: dbRecord.users.display_name,
-          avatarUrl: dbRecord.users.avatar_url,
-        }
-      : undefined,
+    isPersonal: dbRecord.is_personal ?? false,
+    settings: isJsonObject(dbRecord.settings) ? dbRecord.settings : {},
   };
 }
 
@@ -922,16 +923,16 @@ function transformMemberFromDb(dbRecord: any): OrganizationMemberWithUser {
  * iam.invitations columns: created_at (was invited_at), created_by (was invited_by).
  * email_sent / email_sent_at live in metadata, not top-level columns.
  */
-function transformInvitationFromDb(dbRecord: any): OrganizationInvitation {
+function transformInvitationFromDb(dbRecord: InvitationRow): OrganizationInvitation {
   return {
     id: dbRecord.id,
     organizationId: dbRecord.organization_id,
-    email: dbRecord.email,
-    token: dbRecord.token,
-    role: dbRecord.role,
+    email: dbRecord.email ?? "",
+    token: dbRecord.token ?? "",
+    role: toOrgRole(dbRecord.role),
     invitedAt: dbRecord.created_at,
     invitedBy: dbRecord.created_by,
-    expiresAt: dbRecord.expires_at,
+    expiresAt: dbRecord.expires_at ?? "",
   };
 }
 

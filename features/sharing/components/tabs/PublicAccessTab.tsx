@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Globe, AlertTriangle, Lock } from 'lucide-react';
-import { ResourceType, Permission } from '@/utils/permissions';
+import { ResourceType, Permission, ShareActionResult } from '@/utils/permissions';
 import { PublicBadge } from '../PermissionBadge';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -14,8 +14,8 @@ interface PublicAccessTabProps {
   /** The public permission row from the permissions table, if any */
   publicPermission?: Permission;
   isOwner: boolean;
-  onMakePublic: () => Promise<any>;
-  onRevokePublic: () => Promise<any>;
+  onMakePublic: () => Promise<ShareActionResult>;
+  onRevokePublic: () => Promise<ShareActionResult>;
   resourceType: ResourceType;
   resourceName: string;
 }
@@ -58,8 +58,9 @@ export function PublicAccessTab({
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Please try again';
+      toast({ title: 'Error', description: message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }

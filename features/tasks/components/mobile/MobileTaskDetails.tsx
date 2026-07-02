@@ -40,9 +40,10 @@ import * as taskService from "@/features/tasks/services/taskService";
 import { TaskContextPicker } from "../TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
+import type { TaskWithProject } from "@/features/tasks/types";
 
 interface MobileTaskDetailsProps {
-  task: any;
+  task: TaskWithProject;
   onBack: () => void;
 }
 
@@ -158,7 +159,7 @@ export default function MobileTaskDetails({
   };
 
   const handleToggleSubtask = async (subtaskId: string) => {
-    const subtask = task.subtasks?.find((st: any) => st.id === subtaskId);
+    const subtask = task.subtasks?.find((st) => st.id === subtaskId);
     if (!subtask) return;
 
     try {
@@ -192,7 +193,7 @@ export default function MobileTaskDetails({
   };
 
   const subtasks = task.subtasks || [];
-  const completedSubtasks = subtasks.filter((st: any) => st.completed).length;
+  const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const totalSubtasks = subtasks.length;
 
   return (
@@ -365,7 +366,11 @@ export default function MobileTaskDetails({
             <Select
               value={priority || "none"}
               onValueChange={(val) => {
-                setPriority(val === "none" ? null : (val as any));
+                if (val === "none") {
+                  setPriority(null);
+                } else if (val === "low" || val === "medium" || val === "high") {
+                  setPriority(val);
+                }
                 setIsDirty(true);
               }}
             >
@@ -408,7 +413,7 @@ export default function MobileTaskDetails({
               {totalSubtasks > 0 && `(${completedSubtasks}/${totalSubtasks})`}
             </label>
             <div className="space-y-2">
-              {subtasks.map((subtask: any) => (
+              {subtasks.map((subtask) => (
                 <div
                   key={subtask.id}
                   className="flex items-center gap-2 group py-1"

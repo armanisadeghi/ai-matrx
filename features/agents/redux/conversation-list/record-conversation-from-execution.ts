@@ -60,7 +60,7 @@ export function buildConversationListItemFromExecution(
     initialAgentVersionId:
       overrides?.initialAgentVersionId ??
       (agent?.isVersion === true ? agent.id : ""),
-    lastModelId: overrides?.lastModelId ?? agent?.modelId ?? "",
+    lastModelId: overrides?.lastModelId ?? agent?.modelId ?? null,
     sourceApp: overrides?.sourceApp ?? instance.sourceApp,
     sourceFeature: overrides?.sourceFeature ?? instance.sourceFeature,
   };

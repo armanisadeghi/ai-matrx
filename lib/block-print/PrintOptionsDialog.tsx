@@ -65,6 +65,8 @@ function PrintOptionsContent({
   data: unknown;
   onClose: () => void;
 }) {
+  // MATRX-EXCEPTION: React state initializer — "" (no variant selected) when
+  // the printer declares zero variants; pure UI default, not a boundary write.
   const [selectedVariant, setSelectedVariant] = useState<string>(
     printer.variants[0]?.id ?? "",
   );

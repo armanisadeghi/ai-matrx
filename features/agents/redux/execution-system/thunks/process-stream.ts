@@ -357,8 +357,11 @@ export async function processStream({
 
   let textBuffer = "";
   let reasoningBuffer = "";
-  let rafHandle: number | null = null;
-  let pendingJsonState: { results: any[]; revision: number } | null = null;
+  let rafHandle: ReturnType<typeof setTimeout> | null = null;
+  let pendingJsonState: {
+    results: ExtractedJsonSnapshot[];
+    revision: number;
+  } | null = null;
 
   const dispatchBatch = () => {
     if (rafHandle !== null) {
@@ -398,7 +401,7 @@ export async function processStream({
       // Throttling down to ~30fps (30ms delay) rather than rAF's 60fps (16ms)
       // because feeding 12,000 character strings to react-markdown 60x a second
       // will mathematically freeze the browser main thread.
-      rafHandle = setTimeout(dispatchBatch, 30) as any;
+      rafHandle = setTimeout(dispatchBatch, 30);
     }
   };
 
@@ -652,7 +655,11 @@ export async function processStream({
             patchAgentConversationMetadata({
               conversationId: labeled.conversation_id,
               title: labeled.title,
-              description: labeled.description ?? "",
+              // Omit (not "") when absent — patchConversationMetadata only
+              // touches fields it receives as !== undefined, so forcing ""
+              // here would blank out an existing description instead of
+              // leaving it alone when the server didn't send one.
+              description: labeled.description,
             }),
           );
         } else if (d.type === "memory_context_injected") {
@@ -799,6 +806,11 @@ export async function processStream({
                 type: renderBlockType,
                 status: isStreamingPartial ? "streaming" : "complete",
                 content: null,
+                // MATRX-EXCEPTION: RenderBlockPayload.data is the generated
+                // OpenAPI contract's open bag (Record<string, unknown> | null
+                // — genuinely varies per block type). UnifiedMediaBlock has no
+                // index signature to overlap with Record<string, unknown>, so
+                // the two-step cast is required, not a shortcut.
                 data: unified as unknown as Record<string, unknown>,
               },
             }),
@@ -837,11 +849,19 @@ export async function processStream({
           // cycle after deploy).
           let blockData: Record<string, unknown>;
           if (dataType === "image_output") {
+            // MATRX-EXCEPTION: `metadata` is read defensively off the raw
+            // event even though the generated `ImageOutputData` contract
+            // doesn't declare it (see ESCALATION brief for this line — the
+            // wire contract may be missing the field, or this is dead
+            // defensive code from before the contract stabilized).
             const unified: UnifiedImageBlock = fromImageOutputData(
               d as ImageOutputData,
               ((d as unknown as Record<string, unknown>).metadata as
                 Record<string, unknown> | undefined) ?? null,
             );
+            // MATRX-EXCEPTION: UnifiedImageBlock has no index signature to
+            // overlap with Record<string, unknown> (RenderBlockPayload's
+            // generated `data` field), so the two-step cast is required.
             blockData = unified as unknown as Record<string, unknown>;
           } else if (dataType === "partial_image") {
             const unified: UnifiedImageBlock = fromPartialImageData(
@@ -851,6 +871,10 @@ export async function processStream({
           } else if (blockType === "unknown_data_event") {
             blockData = { ...(d as UntypedDataPayload), _dataType: dataType };
           } else {
+            // MATRX-EXCEPTION: `d` here is one of the many TypedDataPayload
+            // union members without a shared index signature; blockData's
+            // target (RenderBlockPayload.data) is the generated contract's
+            // open Record<string, unknown> bag.
             blockData = d as unknown as Record<string, unknown>;
           }
 
@@ -1246,7 +1270,7 @@ export async function processStream({
               toolDurationMs: null,
               toolCallsCount: null,
               toolCallsDetails: null,
-              metadata: (d.metadata ?? {}) as CxRequestRecord["metadata"],
+              metadata: d.metadata as CxRequestRecord["metadata"],
               createdAt: nowIso,
               deletedAt: null,
             }),
@@ -1301,7 +1325,7 @@ export async function processStream({
               persistKey: null,
               filePath: null,
               executionEvents: null,
-              metadata: (d.metadata ?? {}) as CxToolCallRecord["metadata"],
+              metadata: d.metadata as CxToolCallRecord["metadata"],
               createdAt: nowIso,
               deletedAt: null,
             }),
@@ -1845,8 +1869,7 @@ export async function processStream({
         conversationId,
         messageId: turn.messageId,
         patch: {
-          content:
-            assistantBlocks as unknown as import("@/types/database.types").Json,
+          content: assistantBlocks,
           status: "active",
           _clientStatus: finalErrorMessage ? "error" : "complete",
           position: turn.position,
@@ -1855,7 +1878,7 @@ export async function processStream({
     );
     materializeTargets.push({
       messageId: turn.messageId,
-      content: assistantBlocks as unknown as CxContentBlock[],
+      content: assistantBlocks,
     });
   } else if (sortedTurns.length > 1) {
     // Multi-reservation — partition assembled blocks by iteration. Each
@@ -1940,8 +1963,7 @@ export async function processStream({
           conversationId,
           messageId: turn.messageId,
           patch: {
-            content:
-              content as unknown as import("@/types/database.types").Json,
+            content,
             status: "active",
             // Only the FINAL reservation carries the error marker — earlier
             // iterations completed before the stream died and must render
@@ -1956,7 +1978,7 @@ export async function processStream({
       );
       materializeTargets.push({
         messageId: turn.messageId,
-        content: content as unknown as CxContentBlock[],
+        content,
       });
     }
   } else if (assistantBlocks.length > 0) {
@@ -2003,8 +2025,7 @@ export async function processStream({
         conversationId,
         messageId: tempId,
         patch: {
-          content:
-            assistantBlocks as unknown as import("@/types/database.types").Json,
+          content: assistantBlocks,
           status: "active",
           _clientStatus: finalErrorMessage ? "error" : "complete",
           position: maxPos + 1,
@@ -2044,7 +2065,7 @@ export async function processStream({
             isError: lc.status === "error" ? true : null,
             errorType: lc.errorType ?? null,
             errorMessage: lc.errorMessage ?? null,
-            arguments: (lc.arguments ?? {}) as CxToolCallRecord["arguments"],
+            arguments: lc.arguments as CxToolCallRecord["arguments"],
             output: outputStr,
             outputChars: outputStr?.length ?? 0,
             outputPreview: (lc.resultPreview ??

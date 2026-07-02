@@ -46,8 +46,8 @@ export function sortNotes(notes: Note[], sortConfig: NoteSortConfig): Note[] {
   const sorted = [...notes];
 
   sorted.sort((a, b) => {
-    let aVal: any;
-    let bVal: any;
+    let aVal: string | number;
+    let bVal: string | number;
 
     switch (sortConfig.field) {
       case "label":
@@ -89,10 +89,12 @@ export function groupNotesByFolder(notes: Note[]): FolderGroup[] {
   // Add notes to their respective folders
   notes.forEach((note) => {
     const folder = note.folder_name || "Draft";
-    if (!folderMap.has(folder)) {
-      folderMap.set(folder, []);
+    let bucket = folderMap.get(folder);
+    if (!bucket) {
+      bucket = [];
+      folderMap.set(folder, bucket);
     }
-    folderMap.get(folder)!.push(note);
+    bucket.push(note);
   });
 
   const groups: FolderGroup[] = Array.from(folderMap.entries()).map(

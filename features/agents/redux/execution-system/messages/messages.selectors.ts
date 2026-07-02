@@ -53,28 +53,25 @@ const conversationMessagesSelectorCache = new Map<
 
 /** Ordered `MessageRecord[]` for a conversation. */
 export const selectConversationMessages = (conversationId: string) => {
-  if (!conversationMessagesSelectorCache.has(conversationId)) {
-    conversationMessagesSelectorCache.set(
-      conversationId,
-      createSelector(
-        (state: RootState) =>
-          state.messages.byConversationId[conversationId]?.orderedIds,
-        (state: RootState) =>
-          state.messages.byConversationId[conversationId]?.byId,
-        (orderedIds, byId): MessageRecord[] => {
-          if (!orderedIds || !byId || orderedIds.length === 0)
-            return EMPTY_RECORDS;
-          const out: MessageRecord[] = [];
-          for (const id of orderedIds) {
-            const rec = byId[id];
-            if (rec) out.push(rec);
-          }
-          return out.length === 0 ? EMPTY_RECORDS : out;
-        },
-      ),
-    );
-  }
-  return conversationMessagesSelectorCache.get(conversationId)!;
+  const cached = conversationMessagesSelectorCache.get(conversationId);
+  if (cached) return cached;
+
+  const selector = createSelector(
+    (state: RootState) =>
+      state.messages.byConversationId[conversationId]?.orderedIds,
+    (state: RootState) => state.messages.byConversationId[conversationId]?.byId,
+    (orderedIds, byId): MessageRecord[] => {
+      if (!orderedIds || !byId || orderedIds.length === 0) return EMPTY_RECORDS;
+      const out: MessageRecord[] = [];
+      for (const id of orderedIds) {
+        const rec = byId[id];
+        if (rec) out.push(rec);
+      }
+      return out.length === 0 ? EMPTY_RECORDS : out;
+    },
+  );
+  conversationMessagesSelectorCache.set(conversationId, selector);
+  return selector;
 };
 
 export const selectOrderedMessageIds =
@@ -441,7 +438,7 @@ export const selectMessageInterleavedContent = (
       if ((record.role as string) === "tool") return EMPTY_SEGMENTS;
 
       const parts = Array.isArray(record.content)
-        ? (record.content as unknown as MessagePart[])
+        ? (record.content as MessagePart[])
         : [];
       if (parts.length === 0) return EMPTY_SEGMENTS;
 
@@ -517,15 +514,11 @@ export const selectMessageInterleavedContent = (
           }
           case "tool_call": {
             // ToolCallPart now uses `call_id` (server migration). Pre-migration
-            // persisted rows used `id`. Cast through `unknown` to access both
-            // fields without fighting the new wire type.
-            const tc = part as unknown as {
-              call_id?: string;
-              id?: string;
-              name?: string;
-              arguments?: Record<string, unknown>;
-            };
-            const callId = tc.call_id ?? tc.id ?? "unknown";
+            // persisted rows used `id` — that one legacy field isn't on the
+            // current wire type, so it needs its own narrow cast; every other
+            // field is read straight off the discriminated `part`.
+            const legacyId = (part as { id?: string }).id;
+            const callId = part.call_id ?? legacyId ?? "unknown";
             const toolCallRecord =
               callId !== "unknown" ? toolCallByCallId.get(callId) : undefined;
 
@@ -537,12 +530,12 @@ export const selectMessageInterleavedContent = (
               type: "db_tool",
               callId,
               record: toolCallRecord ?? null,
-              stubName: tc.name ?? null,
+              stubName: part.name ?? null,
               stubArguments:
-                tc.arguments &&
-                typeof tc.arguments === "object" &&
-                !Array.isArray(tc.arguments)
-                  ? tc.arguments
+                part.arguments &&
+                typeof part.arguments === "object" &&
+                !Array.isArray(part.arguments)
+                  ? part.arguments
                   : null,
             } satisfies ContentSegmentDbTool);
             break;

@@ -290,9 +290,11 @@ export function useAgentLauncher(
     if (!isManaged || !ready || !surfaceKey || !sourceFeature || !agentId)
       return undefined;
 
-    // The id resolved synchronously during render — the instance is created
-    // (or reused) under THIS id, so the surface never re-keys.
-    const targetId = mintedIdRef.current!;
+    // The id resolved synchronously during render (isManagedHook mirrors
+    // isManaged above) — the instance is created (or reused) under THIS id,
+    // so the surface never re-keys.
+    const targetId = mintedIdRef.current;
+    if (!targetId) return undefined;
     let cancelled = false;
 
     // Reuse branch: a live instance already exists for this surface's id (e.g.

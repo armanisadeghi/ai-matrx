@@ -67,6 +67,12 @@ export async function refreshAccessToken(
   }
 
   const credential = Array.isArray(creds) ? creds[0] : creds;
+  // MATRX-EXCEPTION: get_mcp_credentials' generated Returns row types every
+  // column as non-nullable `string`, but this comes from a LEFT JOIN-backed
+  // RPC where refresh_token/token_expires_at/oauth_token_endpoint/
+  // oauth_client_id can genuinely be NULL at runtime for connections that
+  // haven't completed OAuth — the interface below is intentionally more
+  // defensive than the generated contract. See ESCALATION brief.
   const typedCred = credential as unknown as McpCredentials;
 
   if (!typedCred.refresh_token) {
@@ -112,8 +118,11 @@ export async function refreshAccessToken(
         `${typedCred.oauth_client_id}:${clientSecret}`,
       ).toString("base64");
       headers["Authorization"] = `Basic ${credentials}`;
-    } else {
-      body.set("client_id", typedCred.oauth_client_id ?? "");
+    } else if (typedCred.oauth_client_id) {
+      // Public-client flow: send client_id in the body only when we actually
+      // have one. Omitting the param (rather than sending it blank) when
+      // oauth_client_id is null is the correct OAuth request shape.
+      body.set("client_id", typedCred.oauth_client_id);
     }
 
     const response = await fetch(typedCred.oauth_token_endpoint, {
@@ -201,6 +210,12 @@ export async function getValidToken(
   }
 
   const credential = Array.isArray(creds) ? creds[0] : creds;
+  // MATRX-EXCEPTION: get_mcp_credentials' generated Returns row types every
+  // column as non-nullable `string`, but this comes from a LEFT JOIN-backed
+  // RPC where refresh_token/token_expires_at/oauth_token_endpoint/
+  // oauth_client_id can genuinely be NULL at runtime for connections that
+  // haven't completed OAuth — the interface below is intentionally more
+  // defensive than the generated contract. See ESCALATION brief.
   const typedCred = credential as unknown as McpCredentials;
 
   // If token is still valid, return it

@@ -65,15 +65,14 @@ export const bulkUpdateShortcuts = createAsyncThunk<
   if (fullRows.length === 0) return [];
 
   const rows = fullRows.map((r) => ({
-    ...(agentShortcutToInsert(r) as Record<string, unknown>),
+    ...agentShortcutToInsert(r),
     id: r.id,
   }));
 
   const { data, error } = await supabase
     .schema("agent")
     .from("shortcut")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .upsert(rows as any, { onConflict: "id" })
+    .upsert(rows, { onConflict: "id" })
     .select();
   if (error) throw pgErrorToError(error);
 

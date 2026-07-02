@@ -27,8 +27,26 @@
  * test.ts` asserts set-but-unsupported keys surface in the caution layer.
  */
 
-import type { ControlDefinition } from "./types";
+import type { ControlDefinition, ControlType } from "./types";
 import { UI_GATE_KEYS } from "./ui-gates";
+
+const CONTROL_TYPES = [
+  "number",
+  "integer",
+  "boolean",
+  "string",
+  "enum",
+  "array",
+  "string_array",
+  "object_array",
+] as const satisfies readonly ControlType[];
+
+/** Type predicate so `type` narrows into a real `ControlDefinition`, not just a runtime check. */
+function isControlDefinitionShape(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & { type: ControlType } {
+  return typeof value.type === "string" && (CONTROL_TYPES as readonly string[]).includes(value.type);
+}
 
 // ── Group identity ─────────────────────────────────────────────────────────────
 
@@ -200,14 +218,16 @@ function lookupControl(
     // rawControls/unmappedControls live here too; never treat them as a control.
     if (key === "rawControls" || key === "unmappedControls") return null;
   }
-  const candidate = (controls as Record<string, unknown>)[key];
+  const candidate = controls[key];
   if (
     candidate &&
     typeof candidate === "object" &&
-    !Array.isArray(candidate) &&
-    "type" in (candidate as Record<string, unknown>)
+    !Array.isArray(candidate)
   ) {
-    return candidate as unknown as ControlDefinition;
+    const c = candidate as Record<string, unknown>;
+    if (isControlDefinitionShape(c)) {
+      return c as ControlDefinition;
+    }
   }
   return null;
 }

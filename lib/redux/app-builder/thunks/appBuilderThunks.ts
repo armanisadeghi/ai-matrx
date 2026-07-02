@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   createCustomAppConfig,
   updateCustomAppConfig,
@@ -33,8 +34,8 @@ export const createAppThunk = createAsyncThunk<AppBuilder, AppBuilder>(
         id: savedApp.id,
         appletIds: app.appletIds || [],
       };
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -59,8 +60,8 @@ export const updateAppThunk = createAsyncThunk<
       id: updatedApp.id,
       appletIds: changes.appletIds || [],
     };
-  } catch (error: any) {
-    return rejectWithValue(error.message);
+  } catch (error: unknown) {
+    return rejectWithValue(extractErrorMessage(error));
   }
 });
 
@@ -70,8 +71,8 @@ export const deleteAppThunk = createAsyncThunk<void, string>(
     try {
       await deleteCustomAppConfig(id);
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -84,8 +85,8 @@ export const addAppletThunk = createAsyncThunk<
     // Update applet to set app_id
     await updateCustomAppletConfig(appletId, { id: appletId, appId });
     return undefined;
-  } catch (error: any) {
-    return rejectWithValue(error.message);
+  } catch (error: unknown) {
+    return rejectWithValue(extractErrorMessage(error));
   }
 });
 
@@ -102,8 +103,8 @@ export const removeAppletThunk = createAsyncThunk<
         appId: undefined,
       });
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -144,9 +145,9 @@ export const fetchAppsThunk = createAsyncThunk<AppBuilder[], void>(
       }));
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("fetchAppsThunk - error:", error);
-      return rejectWithValue(error.message);
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -161,9 +162,9 @@ export const checkAppSlugUniqueness = createAsyncThunk<
     try {
       const isAvailable = await isAppSlugAvailable(slug, appId);
       return isAvailable;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return rejectWithValue(
-        error.message || "Failed to check slug uniqueness",
+        extractErrorMessage(error) || "Failed to check slug uniqueness",
       );
     }
   },
@@ -223,18 +224,18 @@ export const setActiveAppWithFetchThunk = createAsyncThunk<
             console.error(`App with ID ${appId} not found on server`);
             dispatch(setActiveApp(null));
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(
-            `Failed to fetch app with ID ${appId}: ${error.message}`,
+            `Failed to fetch app with ID ${appId}: ${extractErrorMessage(error)}`,
           );
           dispatch(setActiveApp(null));
-          return rejectWithValue(error.message || "Failed to fetch app");
+          return rejectWithValue(extractErrorMessage(error) || "Failed to fetch app");
         }
       }
       return undefined;
-    } catch (error: any) {
-      console.error(`Error in setActiveAppWithFetchThunk: ${error.message}`);
-      return rejectWithValue(error.message || "Failed to set active app");
+    } catch (error: unknown) {
+      console.error(`Error in setActiveAppWithFetchThunk: ${extractErrorMessage(error)}`);
+      return rejectWithValue(extractErrorMessage(error) || "Failed to set active app");
     }
   },
 );
@@ -270,8 +271,8 @@ export const saveAppThunk = createAsyncThunk<
       isLocal: false,
       slugStatus: "unique",
     };
-  } catch (error: any) {
-    return rejectWithValue(error.message || "Failed to save app");
+  } catch (error: unknown) {
+    return rejectWithValue(extractErrorMessage(error) || "Failed to save app");
   }
 });
 
@@ -311,8 +312,8 @@ export const createTemplateAppThunk = createAsyncThunk<
         // TODO: Implement the complex template structure
       }
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message || "Failed to create template app");
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error) || "Failed to create template app");
     }
   },
 );

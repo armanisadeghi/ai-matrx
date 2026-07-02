@@ -67,6 +67,11 @@ export const dispatchWidgetAction = createAsyncThunk<
         message: `No widget handle registered for conversation ${conversationId}`,
       };
     } else {
+      // MATRX-EXCEPTION: WidgetHandle is a heterogeneous method registry —
+      // each onX method takes a DIFFERENTLY-shaped payload. Dispatch needs one
+      // uniform callable signature to invoke whichever method the tool name
+      // maps to; the `typeof method !== "function"` check just below is the
+      // runtime validation that makes this cast safe.
       const methodKey = WIDGET_TOOL_NAME_TO_HANDLE_METHOD[toolName];
       const method = handle[methodKey] as unknown as
         | ((p: Record<string, unknown>) => void | Promise<void>)

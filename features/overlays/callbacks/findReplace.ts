@@ -39,9 +39,11 @@ export interface FindReplaceCallbackGroup {
 export function createFindReplaceCallbackGroup(
   group: FindReplaceCallbackGroup,
 ): { callbackGroupId: string; dispose: () => void } {
-  // Store the group object in a callback slot. It is never `trigger`ed; the
-  // overlay retrieves it via `get` (same convention as widget handles, which
-  // also park a non-callable object in the callback slot).
+  // MATRX-EXCEPTION: `callbackManager.register` slots are declared as
+  // `Callback<T>` (a function), but this group object is intentionally
+  // stored as a non-callable payload — retrieved via `get`, never
+  // `trigger`ed (same convention as `registerWidgetHandle` in
+  // utils/callbackManager.ts). No function value exists to pass honestly.
   const callbackGroupId = callbackManager.register(
     group as unknown as () => void,
   );

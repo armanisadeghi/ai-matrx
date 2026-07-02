@@ -9,10 +9,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, Mail, Search, Users, Send } from "lucide-react";
+import type { OrganizationMemberWithUser } from "@/features/organizations/types";
 
 interface OrgEmailTabProps {
   organizationId: string;
   organizationName: string;
+}
+
+/** Narrows a member to one with a resolved user + non-empty email. */
+type EmailableMember = OrganizationMemberWithUser & {
+  user: NonNullable<OrganizationMemberWithUser["user"]> & { email: string };
+};
+
+function hasEmail(m: OrganizationMemberWithUser): m is EmailableMember {
+  return Boolean(m.user?.email);
 }
 
 function getInitials(name?: string, email?: string): string {
@@ -47,7 +57,7 @@ export function OrgEmailTab({
 
   // Filter members with valid emails
   const emailableMembers = useMemo(() => {
-    return members.filter((m) => m.user?.email);
+    return members.filter(hasEmail);
   }, [members]);
 
   // Search filter
@@ -68,8 +78,8 @@ export function OrgEmailTab({
       .filter((m) => selectedIds.has(m.userId))
       .map((m) => ({
         id: m.userId,
-        email: m.user!.email,
-        name: m.user?.displayName || m.user!.email,
+        email: m.user.email,
+        name: m.user.displayName || m.user.email,
       }));
   }, [emailableMembers, selectedIds]);
 

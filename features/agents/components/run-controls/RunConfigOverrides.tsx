@@ -65,7 +65,13 @@ export function RunConfigOverrides({
   );
   const models = useAppSelector(selectAllModels);
 
+  // baseSettings/overrides are Partial<LLMParams> (fixed named fields, no
+  // index signature); the settings catalogue below is genuinely
+  // catalogue-key-driven (dynamic string keys), so a loose map view is the
+  // documented, deliberate contract for this whole file.
+  // MATRX-EXCEPTION: settings-catalogue keys are dynamic; LLMParams has no index signature.
   const base = (overrideState?.baseSettings ?? {}) as Record<string, unknown>;
+  // MATRX-EXCEPTION: settings-catalogue keys are dynamic; LLMParams has no index signature.
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
   const removals = overrideState?.removals ?? [];
   const effectiveModelId =
@@ -92,6 +98,11 @@ export function RunConfigOverrides({
   // render with the effective (possibly overridden) model so the rows match
   // what will actually run.
   const { normalizedControls } = useModelControls(models, effectiveModelId);
+  // NormalizedControls has no string index signature (typed optional keys +
+  // two Record<string, unknown> escape-hatch fields) — buildSettingsRows
+  // takes the documented loose bag-of-controls contract (ControlsLike) and
+  // validates each candidate internally before trusting it as a control.
+  // MATRX-EXCEPTION: buildSettingsRows validates each field at read time; see lookupControl.
   const controlsMap = normalizedControls as unknown as Record<
     string,
     ControlDefinition
@@ -261,6 +272,10 @@ function OverrideRow({
   onReset: () => void;
 }) {
   const touched = isOverridden || isRemoved;
+  // buildSettingsRows only returns rows for keys the model declares a
+  // control for (see settings-catalogue.ts) — control is never null here,
+  // but the shared SettingsRow type allows it for other producers.
+  if (!row.control) return null;
   return (
     <div
       className={cn(
@@ -285,7 +300,7 @@ function OverrideRow({
       <div className="min-w-0 flex-1">
         <SettingControlInput
           settingKey={row.key}
-          control={row.control!}
+          control={row.control}
           value={value}
           onChange={onChange}
           disabled={isRemoved}

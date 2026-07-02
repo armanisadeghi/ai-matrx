@@ -13,9 +13,9 @@ export type { ModuleName, BaseModuleSchema };
 export interface SystemComponentsSchema {
     moduleName: 'systemComponents';
     initiated: boolean;
-    configs: Record<string, any>;
-    userPreferences: Record<string, any>;
-    data: Record<string, any>;
+    configs: Record<string, unknown>;
+    userPreferences: Record<string, unknown>;
+    data: Record<string, unknown>;
     loading: boolean;
     error: string | null;
     staleTime: number;

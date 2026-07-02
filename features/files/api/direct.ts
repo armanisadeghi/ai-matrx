@@ -68,6 +68,8 @@ export async function getUsageStatusDirect(
   const { data, error } = await q;
   if (error) throw pgErrorToError(error);
 
+  // get_usage_status returns Json directly (no row schema) — sanctioned
+  // Json-direct cast per the type-safety skill's supabase-patterns.md.
   const { limits, usage } = data as unknown as UsageStatusRpc;
   return {
     tier_id: limits.tier_id,
@@ -119,6 +121,8 @@ export async function softDeleteFolderDirect(
     p_folder_id: folderId,
   });
   if (error) throw pgErrorToError(error);
+  // soft_delete_folder returns Json directly (no row schema) — sanctioned
+  // Json-direct cast per the type-safety skill's supabase-patterns.md.
   return data as unknown as { folders: number; files: number; links: number };
 }
 
@@ -139,5 +143,7 @@ export async function restoreFolderDirect(
     p_folder_id: folderId,
   });
   if (error) throw pgErrorToError(error);
+  // restore_folder returns Json directly (no row schema) — sanctioned
+  // Json-direct cast per the type-safety skill's supabase-patterns.md.
   return data as unknown as { folders: number; files: number };
 }

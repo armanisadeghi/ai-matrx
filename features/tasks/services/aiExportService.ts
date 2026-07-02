@@ -132,8 +132,12 @@ function groupTasksByParent(
   const byParent = new Map<string | null, DatabaseTask[]>();
   for (const task of tasks) {
     const key = task.parent_task_id ?? null;
-    if (!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key)!.push(task);
+    const bucket = byParent.get(key);
+    if (bucket) {
+      bucket.push(task);
+    } else {
+      byParent.set(key, [task]);
+    }
   }
   return byParent;
 }

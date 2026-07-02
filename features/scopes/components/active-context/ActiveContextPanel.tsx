@@ -56,7 +56,7 @@ export function ActiveContextPanel({
   const taskId = useAppSelector(selectTaskId);
 
   const scopeIds = useMemo(
-    () => Object.values(scopeSelections ?? {}).filter((v): v is string => !!v),
+    () => Object.values(scopeSelections).filter((v): v is string => !!v),
     [scopeSelections],
   );
 

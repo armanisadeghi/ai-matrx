@@ -1196,6 +1196,24 @@ function SeoField({
   );
 }
 
+function SlugCopyButton({
+  slug,
+  onCopy,
+}: {
+  slug: string;
+  onCopy: (text: string, what: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onCopy(slug, "Slug")}
+      className="inline-flex items-center gap-1 font-mono text-[11px] rounded bg-muted/60 px-1.5 py-0.5 hover:bg-muted"
+    >
+      <Link2 className="h-3 w-3" />
+      {slug}
+    </button>
+  );
+}
+
 function SeoView({ seo }: { seo: SeoPackage }) {
   const [showRaw, setShowRaw] = useState(false);
   const jsonLd = JSON.stringify(
@@ -1231,13 +1249,7 @@ function SeoView({ seo }: { seo: SeoPackage }) {
       )}
       {seo.slug && (
         <SeoField label="Slug">
-          <button
-            onClick={() => copy(seo.slug!, "Slug")}
-            className="inline-flex items-center gap-1 font-mono text-[11px] rounded bg-muted/60 px-1.5 py-0.5 hover:bg-muted"
-          >
-            <Link2 className="h-3 w-3" />
-            {seo.slug}
-          </button>
+          <SlugCopyButton slug={seo.slug} onCopy={copy} />
         </SeoField>
       )}
       {Array.isArray(seo.keywords) && seo.keywords.length > 0 && (

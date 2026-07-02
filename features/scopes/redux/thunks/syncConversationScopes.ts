@@ -34,7 +34,7 @@ export function syncConversationScopes(
   conversationId: string,
 ): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
-    const selections = selectScopeSelectionsContext(getState()) ?? {};
+    const selections = selectScopeSelectionsContext(getState());
     const activeIds = Object.values(selections).filter(
       (id): id is string => !!id,
     );

@@ -23,11 +23,13 @@ export function useEnums({
   defaultSort = { field: 'name', direction: 'asc' },
 }: UseEnumsProps = {}) {
   // State
-  const [enums, setEnums] = useState<DatabaseEnum[]>(initialData || []);
+  const [enums, setEnums] = useState<DatabaseEnum[]>(initialData ?? []);
   const [filteredEnums, setFilteredEnums] = useState<DatabaseEnum[]>(enums);
   const [loading, setLoading] = useState<boolean>(!initialData);
   const [error, setError] = useState<Error | null>(null);
-  const [filter, setFilter] = useState<EnumFilter>(defaultFilter || {});
+  // MATRX-EXCEPTION: React state initializer default for a genuinely optional
+  // hook prop (no filters applied) — not a boundary write.
+  const [filter, setFilter] = useState<EnumFilter>(defaultFilter ?? {});
   const [sort, setSort] = useState<EnumSort>(defaultSort);
   const [selectedEnum, setSelectedEnum] = useState<DatabaseEnum | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -160,30 +162,33 @@ export function useEnums({
     
     // Apply filters
     if (filter.name) {
-      result = result.filter(enumType => 
-        enumType.name.toLowerCase().includes(filter.name!.toLowerCase())
+      const nameFilter = filter.name.toLowerCase();
+      result = result.filter(enumType =>
+        enumType.name.toLowerCase().includes(nameFilter)
       );
     }
-    
+
     if (filter.schema) {
-      result = result.filter(enumType => 
-        enumType.schema.toLowerCase().includes(filter.schema!.toLowerCase())
+      const schemaFilter = filter.schema.toLowerCase();
+      result = result.filter(enumType =>
+        enumType.schema.toLowerCase().includes(schemaFilter)
       );
     }
-    
+
     if (filter.hasValue) {
-      result = result.filter(enumType => 
-        enumType.values.some(value => 
-          value.toLowerCase().includes(filter.hasValue!.toLowerCase())
+      const hasValueFilter = filter.hasValue.toLowerCase();
+      result = result.filter(enumType =>
+        enumType.values.some(value =>
+          value.toLowerCase().includes(hasValueFilter)
         )
       );
     }
     
     // Apply sorting
     result.sort((a, b) => {
-      let fieldA: any;
-      let fieldB: any;
-      
+      let fieldA: string | number;
+      let fieldB: string | number;
+
       switch (sort.field) {
         case 'name':
           fieldA = a.name;

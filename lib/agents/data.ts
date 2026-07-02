@@ -76,6 +76,8 @@ export const getAgentSnapshot = cache(
     if (error) notFound();
     const raw = Array.isArray(data) ? data[0] : data;
     if (!raw) notFound();
+    // Sanctioned cast: AgentVersionSnapshot carries a compile-time DbRpcRow
+    // guard against agx_get_version_snapshot (agent-definition.types.ts).
     return versionSnapshotRowToAgentDefinition(
       id,
       raw as unknown as AgentVersionSnapshot,
@@ -93,25 +95,7 @@ export const getAgentSnapshot = cache(
  */
 export const getAppsForAgent = cache(async (agentId: string) => {
   const supabase = await createClient();
-  const { data, error } = await (
-    supabase as unknown as {
-      schema: (name: string) => {
-        from: (table: string) => {
-          select: (columns: string) => {
-            eq: (
-              column: string,
-              value: string,
-            ) => {
-              order: (
-                column: string,
-                opts: { ascending: boolean },
-              ) => Promise<{ data: unknown; error: unknown }>;
-            };
-          };
-        };
-      };
-    }
-  )
+  const { data, error } = await supabase
     .schema("app")
     .from("definition")
     .select(
@@ -120,5 +104,5 @@ export const getAppsForAgent = cache(async (agentId: string) => {
     .eq("agent_id", agentId)
     .order("updated_at", { ascending: false });
   if (error) throw error;
-  return (data as Record<string, unknown>[] | null) ?? [];
+  return data ?? [];
 });

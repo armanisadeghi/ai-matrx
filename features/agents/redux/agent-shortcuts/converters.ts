@@ -96,6 +96,12 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
   // The Database types may lag the migration during transition. We read v2
   // columns through a loose accessor so this converter compiles even before
   // `npm run types` regenerates.
+  // NOTE: as of this pass, `Database["agent"]["Tables"]["shortcut"]["Row"]`
+  // already has surface_name/scope_mappings/enabled_features/etc. directly —
+  // this `loose` indirection may no longer be needed for most fields below.
+  // Left as-is (only `enabled_contexts`, a legacy pre-rename column not on
+  // the generated Row, still needs it) — narrowing further needs a
+  // side-by-side diff against every field this function reads.
   const loose = row as unknown as LooseRow;
 
   return {
@@ -126,11 +132,10 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
     contextSlots: [],
 
     enabledFeatures:
-      ((loose.enabled_features ??
-        loose.enabled_contexts) as unknown as ShortcutContext[]) ?? [],
+      ((loose.enabled_features ?? loose.enabled_contexts) as ShortcutContext[]) ??
+      [],
     surfaceName: rString(loose, "surface_name"),
-    scopeMappings:
-      (row.scope_mappings as unknown as Record<string, string>) ?? null,
+    scopeMappings: (row.scope_mappings as Record<string, string>) ?? null,
     valueMappings: parseValueMappings(loose.value_mappings),
     contextMappings: rJsonObject<Record<string, string>>(
       loose,
@@ -263,8 +268,12 @@ export function shortcutToExecutionConfig(
 // ---------------------------------------------------------------------------
 
 export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
-  // Build via loose object so we can write v2 column names even when the
-  // generated `ShortcutInsert` type still reflects the pre-migration shape.
+  // MATRX-EXCEPTION: built as a loose object because AgentShortcut.organizationId
+  // is `string | null` while the generated ShortcutInsert.organization_id is
+  // required (`string`) — the DB column has no default and RLS/insert always
+  // runs in an org context in practice, but the TS types don't encode that.
+  // A direct ShortcutInsert-typed object literal would reject a nullable
+  // organizationId even though callers only ever insert with one present.
   const insert: Record<string, unknown> = {
     category_id: shortcut.categoryId,
     label: shortcut.label,
@@ -320,6 +329,12 @@ export function agentShortcutToInsert(shortcut: AgentShortcut): ShortcutInsert {
 export function agentShortcutToUpdate(
   partial: Partial<AgentShortcut>,
 ): ShortcutUpdate {
+  // MATRX-EXCEPTION: built as a loose object — several AgentShortcut fields
+  // (organizationId, userId, projectId, taskId, scopeMappings, etc.) are
+  // `string | null` while the generated ShortcutUpdate's matching columns
+  // are non-nullable `string` (Postgres columns with no default but that
+  // also aren't part of the update-nullable set). See agentShortcutToInsert
+  // above for the same mismatch on insert.
   const update: Record<string, unknown> = {};
 
   if (partial.categoryId !== undefined) update.category_id = partial.categoryId;

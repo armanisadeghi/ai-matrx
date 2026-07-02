@@ -11,13 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Building2, Check } from "lucide-react";
-import { PermissionLevel, ResourceType } from "@/utils/permissions";
+import { PermissionLevel, ResourceType, ShareActionResult } from "@/utils/permissions";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { PermissionLevelDescription } from "../PermissionBadge";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ShareWithOrgTabProps {
-  onShare: (orgId: string, level: PermissionLevel) => Promise<any>;
+  onShare: (orgId: string, level: PermissionLevel) => Promise<ShareActionResult>;
   onSuccess: () => void;
   resourceType: ResourceType;
   /** IDs of organizations that already have access (to disable in dropdown) */
@@ -73,10 +73,11 @@ export function ShareWithOrgTab({
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to share";
       toast({
         title: "Error",
-        description: error.message || "Failed to share",
+        description: message,
         variant: "destructive",
       });
     } finally {

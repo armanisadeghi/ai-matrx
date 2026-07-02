@@ -51,6 +51,10 @@ export function useCartesiaWithPreferences({
       
       setConnectionState("connecting");
       const cartesia = new CartesiaClient({
+        // MATRX-EXCEPTION: the installed @cartesia/cartesia-js SDK hard-pins
+        // `cartesiaVersion` to the literal "2024-06-10" — its type lags the
+        // released API version we intentionally pin to (lib/cartesia/config.ts).
+        // Vendor type limitation, not a contract we control.
         cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
       });
       websocketRef.current = cartesia.tts.websocket({

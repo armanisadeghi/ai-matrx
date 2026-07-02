@@ -40,23 +40,10 @@ export function useWarmAgent(
     // Fire on idle so this never competes with first paint, hydration, or
     // the user's own interaction. Falls back to a small timeout where
     // requestIdleCallback isn't available (Safari).
-    type IdleScheduler = (
-      cb: () => void,
-      opts?: { timeout?: number },
-    ) => number;
-    const ric = (
-      typeof window !== "undefined"
-        ? (window as unknown as { requestIdleCallback?: IdleScheduler })
-            .requestIdleCallback
-        : undefined
-    );
-    const cancel = (
-      typeof window !== "undefined"
-        ? (window as unknown as {
-            cancelIdleCallback?: (h: number) => void;
-          }).cancelIdleCallback
-        : undefined
-    );
+    const ric =
+      typeof window !== "undefined" ? window.requestIdleCallback : undefined;
+    const cancel =
+      typeof window !== "undefined" ? window.cancelIdleCallback : undefined;
 
     if (ric) {
       const handle = ric(fire, { timeout: 2000 });

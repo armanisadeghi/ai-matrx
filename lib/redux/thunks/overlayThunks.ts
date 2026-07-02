@@ -83,7 +83,7 @@ export const openOverlayInstance = createAsyncThunk<
 
   // Check whether we already have saved state for this instance
   const existingEntry = selectOverlayData(
-    getState() as any,
+    getState(),
     payload.overlayId,
     instanceId,
   );
@@ -99,7 +99,7 @@ export const openOverlayInstance = createAsyncThunk<
     // First open (or forced reset) — merge schema defaults with caller data.
     const schema = overlaySchemaRegistry[payload.overlayId];
     resolvedData = schema
-      ? { ...schema.defaults, ...(payload.data ?? {}) }
+      ? { ...schema.defaults, ...payload.data }
       : (payload.data ?? null);
 
     // Write the initial data into overlayDataSlice

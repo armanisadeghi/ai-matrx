@@ -42,7 +42,6 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Json } from "@/types/database.types";
 import { setRequestEditedText } from "../active-requests/active-requests.slice";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { editMessage } from "./edit-message.thunk";
@@ -103,10 +102,7 @@ export const commitInlineContentEdit =
       const rawContent = Array.isArray(record.content)
         ? (record.content as unknown[])
         : undefined;
-      const nextContent = buildContentBlocksForSave(
-        newText,
-        rawContent,
-      ) as unknown as Json;
+      const nextContent = buildContentBlocksForSave(newText, rawContent);
       dispatch(
         updateMessageRecord({
           conversationId,
@@ -138,7 +134,7 @@ export const commitInlineContentEdit =
       const flushContent = buildContentBlocksForSave(
         entry.latestText,
         flushRawContent,
-      ) as unknown as Json;
+      );
 
       // Fire-and-forget; editMessage already toasts on failure and
       // rolls back the optimistic patch. We don't await because the
@@ -181,10 +177,7 @@ export const flushPendingInlineEdit =
     const rawContent = Array.isArray(record.record.content)
       ? (record.record.content as unknown[])
       : undefined;
-    const flushContent = buildContentBlocksForSave(
-      entry.latestText,
-      rawContent,
-    ) as unknown as Json;
+    const flushContent = buildContentBlocksForSave(entry.latestText, rawContent);
 
     void dispatch(
       editMessage({

@@ -58,7 +58,11 @@ function splitWithVariables(text: string): React.ReactNode[] {
   return nodes.length > 0 ? nodes : [text];
 }
 
-import type { Components } from "react-markdown";
+import type { Components, ExtraProps } from "react-markdown";
+
+/** Props react-markdown passes to a `<code>` renderer/element — the only fields this file reads off `child.props`. */
+type MarkdownCodeElementProps = React.HTMLAttributes<HTMLElement> &
+  ExtraProps & { className?: string };
 
 const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
@@ -708,16 +712,14 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           // react-markdown wraps fenced code in <pre><code>. Extract the code
           // element and render via InlineCodeSnippet for proper formatting.
           const childArray = React.Children.toArray(children);
-          const codeChild = childArray.find((child: any) => {
-            if (!React.isValidElement(child)) return false;
-            const p = child.props as Record<string, any>;
-            return (
-              p?.node?.tagName === "code" || typeof p?.className === "string"
-            );
+          const codeChild = childArray.find((child) => {
+            if (!React.isValidElement<MarkdownCodeElementProps>(child)) return false;
+            const p = child.props;
+            return p.node?.tagName === "code" || typeof p.className === "string";
           });
 
-          if (React.isValidElement(codeChild)) {
-            const codeProps = codeChild.props as Record<string, any>;
+          if (React.isValidElement<MarkdownCodeElementProps>(codeChild)) {
+            const codeProps = codeChild.props;
             const langClass = String(codeProps.className || "");
             const langMatch = langClass.match(/language-(\w+)/);
             const language = langMatch?.[1];

@@ -118,7 +118,7 @@ export const registerArtifactThunk = createAsyncThunk<
     externalId: payload.externalId,
     externalUrl: payload.externalUrl,
     thumbnailUrl: payload.thumbnailUrl,
-    metadata: payload.metadata ?? {},
+    metadata: payload.metadata,
     ...context,
   });
 
@@ -241,7 +241,7 @@ export const fetchUserArtifactsThunk = createAsyncThunk<
   dispatch(setFetchStatus({ status: "loading" }));
 
   const { data, error } = await callArtifactsApi("list", {
-    filters: filters ?? {},
+    filters,
   });
 
   if (error || !data) {

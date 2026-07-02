@@ -63,7 +63,7 @@ export function useAssociateTask() {
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
+  const defaultScopeIds = Object.values(scopeSelections).filter(
     (v): v is string => typeof v === "string" && v.length > 0,
   );
 

@@ -30,9 +30,10 @@ function serializeThrown(err: unknown): unknown {
       message: err.message,
       stack: err.stack,
     };
-    for (const key of Object.keys(err)) {
-      out[key] = (err as unknown as Record<string, unknown>)[key];
-    }
+    // Copy the instance's own enumerable props (custom error subclasses often
+    // attach fields like `code`/`status`/`details`) — Object.assign does the
+    // reflection without needing a cast on the non-indexable Error type.
+    Object.assign(out, err);
     return out;
   }
   return err;

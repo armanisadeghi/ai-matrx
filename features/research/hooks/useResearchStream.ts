@@ -16,6 +16,8 @@ import type {
   ResearchInfoEvent,
   ResearchStreamCallbacks,
 } from "../types";
+import { isResearchDataEventType } from "../types";
+import { isJsonObject } from "@/types/json";
 
 export interface StreamMessage {
   id: string;
@@ -129,10 +131,16 @@ export function useResearchStream(
             },
 
             onData: (data) => {
-              const record = data as unknown as Record<string, unknown>;
+              if (!isJsonObject(data)) return;
               // Wire format uses `type` as the discriminator (Pydantic Literal).
-              if (record.type && typeof record.type === "string") {
-                callbacks?.onData?.(record as unknown as ResearchDataEvent);
+              // Validated against every known ResearchDataEvent tag — an
+              // unrecognized tag means the backend added an event this union
+              // hasn't been taught yet, and is dropped rather than blindly cast.
+              if (isResearchDataEventType(data.type)) {
+                // MATRX-EXCEPTION: discriminator is runtime-validated above;
+                // per-field validation of all 27 ResearchDataEvent variants
+                // is a larger Zod-schema undertaking, tracked as a brief.
+                callbacks?.onData?.(data as unknown as ResearchDataEvent);
               }
             },
 

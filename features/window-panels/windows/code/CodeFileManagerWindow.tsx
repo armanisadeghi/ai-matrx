@@ -590,7 +590,7 @@ function FolderTree({
                   {node.fileCount}
                 </span>
               ) : null}
-              {!isRoot ? (
+              {!isRoot && dbId ? (
                 <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
                   <IconButtonSmall
                     title="New subfolder"
@@ -605,7 +605,7 @@ function FolderTree({
                     title="Rename"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRequestRename(dbId!, node.name);
+                      onRequestRename(dbId, node.name);
                     }}
                   >
                     <Pencil className="h-3 w-3" />
@@ -614,7 +614,7 @@ function FolderTree({
                     title="Delete"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onRequestDelete(dbId!, node.name);
+                      onRequestDelete(dbId, node.name);
                     }}
                   >
                     <Trash2 className="h-3 w-3" />

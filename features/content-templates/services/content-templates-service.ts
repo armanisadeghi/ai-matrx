@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
 // Helper to get the right client based on context
@@ -127,6 +128,7 @@ export async function createTemplate(
   const supabase = getClient();
 
   const userId = requireUserId();
+  const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase
     .from("content_template")
@@ -139,6 +141,7 @@ export async function createTemplate(
         is_public: input.is_public || false,
         tags: input.tags || null,
         user_id: userId,
+        organization_id: organizationId,
       },
     ])
     .select()

@@ -144,14 +144,22 @@ const EMPTY_FORM: SlotFormState = {
   ctxOnMissing: "empty",
 };
 
+/**
+ * Legacy stored slots (pre-`key` rename) carried an `id` field instead.
+ * `ContextSlot` no longer declares it; read it defensively without widening
+ * the type.
+ */
+function legacySlotId(slot: ContextSlot): string | undefined {
+  return "id" in slot && typeof slot.id === "string" ? slot.id : undefined;
+}
+
 function getSlotKey(slot: ContextSlot): string {
   if (slot.key) return slot.key;
-  const legacy = slot as unknown as { id?: string };
-  return legacy.id ?? "";
+  return legacySlotId(slot) ?? "";
 }
 
 function slotToForm(slot: ContextSlot): SlotFormState {
-  const legacy = slot as unknown as { id?: string };
+  const legacyId = legacySlotId(slot);
 
   // Decode max_inline_chars into the three-mode UI (shared canonical helper).
   const { mode: inlineMode, customChars: inlineCustomChars } = decodeInlinePolicy(
@@ -162,7 +170,7 @@ function slotToForm(slot: ContextSlot): SlotFormState {
   const isCtx = source?.kind === "ctx_item";
 
   return {
-    key: slot.key || legacy.id || "",
+    key: slot.key || legacyId || "",
     label: slot.label ?? "",
     description: slot.description ?? "",
     type: slot.type ?? "text",

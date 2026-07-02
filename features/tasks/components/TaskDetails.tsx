@@ -15,8 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
+import type { TaskWithProject } from "@/features/tasks/types";
 
-export default function TaskDetails({ task }: { task: any }) {
+export default function TaskDetails({ task }: { task: TaskWithProject }) {
   const dispatch = useAppDispatch();
 
   // Local state for editing

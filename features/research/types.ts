@@ -129,6 +129,35 @@ export type SuggestApplied = {
   keywords_dropped_by_quota: string[];
   max_keywords: number;
 };
+
+function isStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.every((x) => typeof x === "string");
+}
+
+/** Validate a `suggest_applied` stream event payload at ingress. Returns null
+ *  (never a partial/coerced object) when the shape doesn't match the contract. */
+export function parseSuggestApplied(v: unknown): SuggestApplied | null {
+  if (v === null || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  if (o.type !== "suggest_applied") return null;
+  if (typeof o.topic_id !== "string") return null;
+  if (typeof o.name_updated !== "boolean") return null;
+  if (typeof o.description_updated !== "boolean") return null;
+  if (!isStringArray(o.keywords_saved)) return null;
+  if (!isStringArray(o.keywords_skipped_duplicate)) return null;
+  if (!isStringArray(o.keywords_dropped_by_quota)) return null;
+  if (typeof o.max_keywords !== "number") return null;
+  return {
+    type: "suggest_applied",
+    topic_id: o.topic_id,
+    name_updated: o.name_updated,
+    description_updated: o.description_updated,
+    keywords_saved: o.keywords_saved,
+    keywords_skipped_duplicate: o.keywords_skipped_duplicate,
+    keywords_dropped_by_quota: o.keywords_dropped_by_quota,
+    max_keywords: o.max_keywords,
+  };
+}
 export type TagCreate = components["schemas"]["TagCreate"];
 export type TagUpdate = components["schemas"]["TagUpdate"];
 export type TemplateCreate = components["schemas"]["TemplateCreate"];
@@ -642,6 +671,49 @@ export function pageAnalysisFromJson(
     entities_mentioned,
     recommended_use: recommendedUse,
     analysis_notes: asString(o.analysis_notes),
+  };
+}
+
+/** The live `rs_source` row shape (Supabase-generated, source of truth). */
+export type ResearchSourceRow = Database["research"]["Tables"]["rs_source"]["Row"];
+
+/**
+ * Map a raw `rs_source` row to the typed `ResearchSource` domain shape. The
+ * row and the domain type agree on every field except `page_analysis`
+ * (JSONB on the row, `PageAnalysis | null` on the domain type) — narrowed
+ * here via `pageAnalysisFromJson` instead of a whole-row `as unknown as` cast.
+ */
+export function rowToResearchSource(row: ResearchSourceRow): ResearchSource {
+  return {
+    id: row.id,
+    topic_id: row.topic_id,
+    url: row.url,
+    title: row.title,
+    description: row.description,
+    hostname: row.hostname,
+    source_type: row.source_type,
+    origin: row.origin,
+    rank: row.rank,
+    page_age: row.page_age,
+    thumbnail_url: row.thumbnail_url,
+    extra_snippets: row.extra_snippets,
+    raw_search_result: row.raw_search_result,
+    is_included: row.is_included,
+    is_stale: row.is_stale,
+    scrape_status: row.scrape_status,
+    discovered_at: row.discovered_at,
+    last_seen_at: row.last_seen_at,
+    authority_score: row.authority_score,
+    authority_tier: row.authority_tier,
+    authority_reasoning: row.authority_reasoning,
+    authority_ranked_at: row.authority_ranked_at,
+    page_analysis: pageAnalysisFromJson(row.page_analysis),
+    post_read_score: row.post_read_score,
+    final_source_score: row.final_source_score,
+    recommended_use: row.recommended_use,
+    analysis_status: row.analysis_status,
+    pre_read_score: row.pre_read_score,
+    pre_read_breakdown: row.pre_read_breakdown,
   };
 }
 
@@ -1223,6 +1295,59 @@ export type ResearchDataEvent =
   | TagSuggestionsStart
   | TagSuggestionsComplete
   | PipelineComplete;
+
+/** Every valid `ResearchDataEvent["type"]` discriminator tag, derived from the
+ *  union so it cannot drift: adding/removing a member without updating this
+ *  list is a compile error (the `satisfies` below enforces exact coverage). */
+const RESEARCH_DATA_EVENT_TYPES = [
+  "search_page_start",
+  "search_page_complete",
+  "search_sources_stored",
+  "search_complete",
+  "scrape_start",
+  "scrape_complete",
+  "scrape_failed",
+  "rescrape_complete",
+  "analysis_start",
+  "analysis_complete",
+  "analysis_failed",
+  "analyze_all_complete",
+  "retry_complete",
+  "retry_all_complete",
+  "synthesis_start",
+  "synthesis_complete",
+  "synthesis_failed",
+  "authority_rank_start",
+  "authority_rank_batch",
+  "authority_rank_complete",
+  "suggest_complete",
+  "consolidate_complete",
+  "suggest_tags_complete",
+  "document_complete",
+  "tag_suggestions_start",
+  "tag_suggestions_complete",
+  "pipeline_complete",
+] as const satisfies readonly ResearchDataEvent["type"][];
+
+type _ResearchDataEventTypeCheck =
+  ResearchDataEvent["type"] extends (typeof RESEARCH_DATA_EVENT_TYPES)[number]
+    ? true
+    : false;
+declare const _researchDataEventTypeCheck: _ResearchDataEventTypeCheck;
+true satisfies typeof _researchDataEventTypeCheck;
+
+const RESEARCH_DATA_EVENT_TYPE_SET: ReadonlySet<string> = new Set(
+  RESEARCH_DATA_EVENT_TYPES,
+);
+
+/** Runtime guard for a raw `data` event payload's `type` discriminator —
+ *  catches wire drift (a backend event tag not modeled in `ResearchDataEvent`)
+ *  instead of blindly trusting a cast. */
+export function isResearchDataEventType(
+  type: unknown,
+): type is ResearchDataEvent["type"] {
+  return typeof type === "string" && RESEARCH_DATA_EVENT_TYPE_SET.has(type);
+}
 
 /** @deprecated Use ResearchDataEvent instead — matches real backend contract */
 export type ResearchStreamDataPayload = ResearchDataEvent;

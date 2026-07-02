@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { extractErrorMessage } from "@/utils/errors";
 import type { FieldsState } from "../types";
 import {
   createFieldComponent,
@@ -54,8 +55,8 @@ export const saveFieldThunk = createAsyncThunk<
       isDirty: false,
       isLocal: false,
     };
-  } catch (error: any) {
-    return rejectWithValue(error.message || "Failed to save field");
+  } catch (error: unknown) {
+    return rejectWithValue(extractErrorMessage(error) || "Failed to save field");
   }
 });
 
@@ -112,10 +113,10 @@ export const saveFieldAndUpdateContainerThunk = createAsyncThunk.withTypes<{
         field: saveResult,
         containerId,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error in saveFieldAndUpdateContainerThunk:", error);
       return rejectWithValue(
-        error.message || "Failed to save field and update container",
+        extractErrorMessage(error) || "Failed to save field and update container",
       );
     }
   },
@@ -127,8 +128,8 @@ export const createFieldThunk = createAsyncThunk<FieldBuilder, FieldBuilder>(
     try {
       const savedField = await createFieldComponent(field);
       return savedField;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -145,8 +146,8 @@ export const createFieldThunk = createAsyncThunk<FieldBuilder, FieldBuilder>(
 //                 ...changes
 //             });
 //             return updatedField;
-//         } catch (error: any) {
-//             return rejectWithValue(error.message);
+//         } catch (error: unknown) {
+//             return rejectWithValue(extractErrorMessage(error));
 //         }
 //     }
 // );
@@ -157,8 +158,8 @@ export const deleteFieldThunk = createAsyncThunk<void, string>(
     try {
       await deleteFieldComponent(id);
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -168,8 +169,8 @@ export const fetchFieldsThunk = createAsyncThunk<FieldBuilder[], void>(
   async (_, { rejectWithValue }) => {
     try {
       return await getAllFieldComponents();
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -183,8 +184,8 @@ export const fetchFieldByIdThunk = createAsyncThunk<FieldBuilder, string>(
         throw new Error(`Field with ID ${id} not found`);
       }
       return field as FieldBuilder;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -198,8 +199,8 @@ export const setFieldPublicThunk = createAsyncThunk<
     try {
       await setFieldComponentPublic(id, isPublic);
       return undefined;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(extractErrorMessage(error));
     }
   },
 );
@@ -226,10 +227,10 @@ export const saveFieldToContainerThunk = createAsyncThunk<
         containerId,
         updatedContainer,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving field to container:", error);
       return rejectWithValue(
-        error.message || "Failed to save field to container",
+        extractErrorMessage(error) || "Failed to save field to container",
       );
     }
   },
@@ -284,18 +285,18 @@ export const setActiveFieldWithFetchThunk = createAsyncThunk<
             console.error(`Field with ID ${fieldId} not found on server`);
             dispatch(setActiveField(null));
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error(
-            `Failed to fetch field with ID ${fieldId}: ${error.message}`,
+            `Failed to fetch field with ID ${fieldId}: ${extractErrorMessage(error)}`,
           );
           dispatch(setActiveField(null));
-          return rejectWithValue(error.message || "Failed to fetch field");
+          return rejectWithValue(extractErrorMessage(error) || "Failed to fetch field");
         }
       }
       return undefined;
-    } catch (error: any) {
-      console.error(`Error in setActiveFieldWithFetchThunk: ${error.message}`);
-      return rejectWithValue(error.message || "Failed to set active field");
+    } catch (error: unknown) {
+      console.error(`Error in setActiveFieldWithFetchThunk: ${extractErrorMessage(error)}`);
+      return rejectWithValue(extractErrorMessage(error) || "Failed to set active field");
     }
   },
 );

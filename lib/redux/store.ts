@@ -113,7 +113,7 @@ function resolveUserPreferencesForBootstrap(
   }
   const raw = input.userPreferences as Record<string, unknown>;
   if (raw && typeof raw === "object" && "_meta" in raw) {
-    return input.userPreferences as unknown as UserPreferencesState;
+    return input.userPreferences as UserPreferencesState;
   }
   return initializeUserPreferencesState(
     input.userPreferences as Partial<UserPreferences>,
@@ -238,7 +238,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   setStoreSingleton(storeWithSync);
   // Register this store's sagaMiddleware so `runSaga` from this module
   // (and any consumer that imports it) always runs on the active store.
-  setRunSaga((saga) => sagaMiddleware.run(saga as () => any));
+  setRunSaga((saga) => sagaMiddleware.run(saga));
 
   return storeWithSync;
 };

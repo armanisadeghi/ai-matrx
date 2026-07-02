@@ -35,8 +35,14 @@ export function usePlayerSafe() {
 
 		// Stop any currently playing audio
 		stop();
-		
-		let nextStartTime = audioContext.current!.currentTime;
+
+		const ctx = audioContext.current;
+		if (!ctx) {
+			console.error("AudioContext is not available");
+			return;
+		}
+
+		let nextStartTime = ctx.currentTime;
 		const reader = stream.getReader();
 		let leftover = new Uint8Array();
 		let result = await reader.read();

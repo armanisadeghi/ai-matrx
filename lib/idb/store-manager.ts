@@ -5,7 +5,10 @@ import { openDB, IDBPDatabase } from 'idb';
 export type AsyncResult<T> = Promise<{ data: T | null; error: Error | null }>;
 
 export abstract class DBStoreManager<T> {
-    protected static _instance: any;
+    // Subclasses override with their own concrete instance type (static
+    // fields can't be generic over T, so this base slot is intentionally
+    // untyped — see AudioStore for the pattern).
+    protected static _instance: unknown;
     protected db: IDBPDatabase | null = null;
     protected dbName: string;
     protected version: number;
@@ -32,7 +35,11 @@ export abstract class DBStoreManager<T> {
         }
     }
 
-    protected async add(storeName: string, data: T): AsyncResult<string> {
+    // `add`/`get` carry their own generic (like `query` below) so a subclass
+    // whose `T` covers one IDB object store (e.g. Recording) can still read/write
+    // a different store's record shape (e.g. RecordingChunk) without a cast —
+    // see AudioStore, which manages both `recordings` and `chunks` stores.
+    protected async add<TRecord = T>(storeName: string, data: TRecord): AsyncResult<string> {
         try {
             if (!this.db) throw new Error('Database not initialized');
             const id = await this.db.add(storeName, data);
@@ -42,11 +49,11 @@ export abstract class DBStoreManager<T> {
         }
     }
 
-    protected async get(storeName: string, id: string): AsyncResult<T> {
+    protected async get<TRecord = T>(storeName: string, id: string): AsyncResult<TRecord> {
         try {
             if (!this.db) throw new Error('Database not initialized');
             const result = await this.db.get(storeName, id);
-            return { data: result as T, error: null };
+            return { data: result as TRecord, error: null };
         } catch (error) {
             return { data: null, error: error as Error };
         }

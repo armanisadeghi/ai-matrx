@@ -127,15 +127,16 @@ export function TaskQuickCreateCore({
 
   const initialScopeIds = useMemo(
     () =>
-      Object.values(scopeSelections ?? {}).filter(
+      Object.values(scopeSelections).filter(
         (v): v is string => typeof v === "string" && v.length > 0,
       ),
     [scopeSelections],
   );
 
   const parent = (source?.metadata?.parent as ParentRef | undefined) ?? null;
-  const hasParent =
-    !!parent && !!parent.entity_type && !!parent.entity_id && !!source;
+  const validParent =
+    parent && parent.entity_type && parent.entity_id && source ? parent : null;
+  const hasParent = validParent !== null;
 
   const [title, setTitle] = useState(prePopulate?.title ?? "");
   const [description, setDescription] = useState(
@@ -207,14 +208,14 @@ export function TaskQuickCreateCore({
     secondary?: TaskSourceInput;
   } => {
     if (!source) return {};
-    if (!hasParent) return { primary: source };
+    if (!validParent) return { primary: source };
     if (linkScope === "message") return { primary: source };
     if (linkScope === "conversation")
       return {
         primary: {
-          entity_type: parent!.entity_type,
-          entity_id: parent!.entity_id,
-          label: parent!.label ?? source.label,
+          entity_type: validParent.entity_type,
+          entity_id: validParent.entity_id,
+          label: validParent.label ?? source.label,
           metadata: {},
         },
       };
@@ -222,13 +223,13 @@ export function TaskQuickCreateCore({
     return {
       primary: source,
       secondary: {
-        entity_type: parent!.entity_type,
-        entity_id: parent!.entity_id,
-        label: parent!.label ?? source.label,
+        entity_type: validParent.entity_type,
+        entity_id: validParent.entity_id,
+        label: validParent.label ?? source.label,
         metadata: {},
       },
     };
-  }, [source, parent, hasParent, linkScope]);
+  }, [source, validParent, linkScope]);
 
   const handleSave = useCallback(async () => {
     if (!canSave) return;
@@ -514,14 +515,14 @@ export function TaskQuickCreateCore({
                 }
               />
             )}
-            {hasParent &&
+            {validParent &&
               (linkScope === "conversation" || linkScope === "both") && (
                 <ResourceLinkChip
-                  entityType={parent!.entity_type}
-                  entityId={parent!.entity_id}
-                  label={parent!.label ?? source.label}
+                  entityType={validParent.entity_type}
+                  entityId={validParent.entity_id}
+                  label={validParent.label ?? source.label}
                   onOpen={() =>
-                    openEntity(parent!.entity_type, parent!.entity_id)
+                    openEntity(validParent.entity_type, validParent.entity_id)
                   }
                 />
               )}

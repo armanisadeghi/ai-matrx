@@ -128,6 +128,11 @@ export function useQuickNoteSave({
       toast.error("Please select a note to update");
       return null;
     }
+    // Narrowed once, here — `selectedNote` is proven defined in update mode by
+    // the guard above, but that guard is in `save`'s outer scope while the
+    // read below happens inside a nested `run` closure, which TS can't narrow
+    // through. Capture the checked value instead of re-asserting it later.
+    const selectedNoteForUpdate = mode === "update" ? selectedNote : undefined;
 
     const requestId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     const trimmedContent = workingContent.trim();
@@ -183,9 +188,13 @@ export function useQuickNoteSave({
             return note;
           }
 
+          if (!selectedNoteForUpdate) {
+            throw new Error("No note selected to update");
+          }
+
           const finalContent =
             updateMethod === "append"
-              ? `${selectedNote!.content ?? ""}\n\n${trimmedContent}`.trim()
+              ? `${selectedNoteForUpdate.content ?? ""}\n\n${trimmedContent}`.trim()
               : trimmedContent;
 
           await dispatch(
@@ -197,7 +206,7 @@ export function useQuickNoteSave({
           ).unwrap();
 
           return {
-            ...(selectedNote as unknown as Note),
+            ...selectedNoteForUpdate,
             content: finalContent,
           };
         },

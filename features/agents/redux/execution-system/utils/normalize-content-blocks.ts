@@ -47,6 +47,11 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
   // _matrxBlockType:"quiz"}`). They aren't MessagePart variants, so the typed
   // switch below dumps them to `unknown_data_event` ("This data type is not yet
   // registered" — the every-reload bug). Recognize + reconstruct them first.
+  // MATRX-EXCEPTION: `raw` is a concrete MessagePart union member (no index
+  // signature), but these two helpers need to probe for keys that aren't on
+  // any MessagePart variant (`_matrxBlockType`, or the alternate wire shape
+  // for images) — a defensive shape-sniff on data whose real runtime shape
+  // isn't fully described by the generated union.
   const persisted = reconstructPersistedBlock(
     raw as unknown as Record<string, unknown>,
     index,
@@ -342,6 +347,10 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
       // renderer and action bar never need to consult `metadata` again.
       // See features/files/blocks/image/UNIFIED_IMAGE_BLOCK.md.
       const unified = fromCxMediaPart(raw);
+      // MATRX-EXCEPTION: RenderBlockPayload.data is the generated OpenAPI
+      // contract's open bag; UnifiedImageBlock has no index signature to
+      // overlap with Record<string, unknown>, so the two-step cast is
+      // required (same as the OrchestratorNode-style casts elsewhere).
       return {
         blockId: newId("db_image_output"),
         blockIndex: index,

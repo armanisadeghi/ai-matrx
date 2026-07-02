@@ -26,6 +26,7 @@ import {
   ok,
 } from "@/features/scopes/service/rpcResult";
 import type { ScopesRpcResult } from "@/features/scopes/types";
+import type { DbRpcRow } from "@/types/supabase-rpc";
 
 // ─── Shapes ─────────────────────────────────────────────────────────
 
@@ -70,6 +71,24 @@ interface InvListRow {
   created_at: string;
   created_by: string | null;
 }
+
+// inv_create returns the FULL iam.invitations row (not the trimmed InvListRow
+// shape other RPCs return) — metadata/updated_at/updated_by/version/deleted_at
+// included. Declare that shape and guard it so a DB column add/remove breaks
+// the build here rather than silently widening the cast below.
+interface InvCreateRow extends InvListRow {
+  // inv_create's org_id is NOT NULL on iam.invitations (unlike the trimmed
+  // InvListRow shape other RPCs use) — narrow it so the guard below matches.
+  organization_id: string;
+  deleted_at: string | null;
+  metadata: unknown;
+  updated_at: string;
+  updated_by: string | null;
+  version: number;
+}
+type _InvCreateCheck = InvCreateRow extends DbRpcRow<"inv_create"> ? true : false;
+declare const _invCreateCheck: _InvCreateCheck;
+true satisfies typeof _invCreateCheck;
 
 // inv_get_by_token omits `token`; inv_for_me omits `invited_user_id` +
 // `accepted_at`. We widen to a partial of InvListRow and map defensively.
@@ -214,7 +233,8 @@ export const invitationsService = {
       });
       if (error) return err(...mapPgErrorPair(error));
       if (!data) return err("internal", "inv_create returned no invitation");
-      return ok({ invitation: toInvitation(data as unknown as InvListRow) });
+      // Sanctioned cast — DB-shape-guarded above (_InvCreateCheck).
+      return ok({ invitation: toInvitation(data as unknown as InvCreateRow) });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

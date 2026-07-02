@@ -30,6 +30,14 @@ export function convertProgressToTasks(
   const tasks: TaskItemType[] = [];
 
   categories.forEach((category, catIndex) => {
+    // Add items as subtasks
+    const children: TaskItemType[] = category.items.map((item, itemIndex) => ({
+      id: `subtask-${catIndex}-${itemIndex}-${item.id}`,
+      title: item.text + (item.optional ? ' (optional)' : ''),
+      type: 'subtask',
+      checked: item.completed,
+    }));
+
     // Create a parent task for each category
     const parentTask: TaskItemType = {
       id: `task-${catIndex}-${category.id}`,
@@ -37,19 +45,8 @@ export function convertProgressToTasks(
       type: 'task',
       bold: true,
       checked: category.items.every(item => item.completed),
-      children: [],
+      children,
     };
-
-    // Add items as subtasks
-    category.items.forEach((item, itemIndex) => {
-      const subtask: TaskItemType = {
-        id: `subtask-${catIndex}-${itemIndex}-${item.id}`,
-        title: item.text + (item.optional ? ' (optional)' : ''),
-        type: 'subtask',
-        checked: item.completed,
-      };
-      parentTask.children!.push(subtask);
-    });
 
     tasks.push(parentTask);
   });
@@ -81,32 +78,29 @@ export function convertTimelineToTasks(
   const tasks: TaskItemType[] = [];
 
   periods.forEach((period, periodIndex) => {
+    // Add events as tasks
+    const children: TaskItemType[] = period.events.map((event, eventIndex) => ({
+      id: `task-${periodIndex}-${eventIndex}-${event.id}`,
+      title: `${event.title}${event.date ? ` (${event.date})` : ''}`,
+      type: 'task',
+      checked: event.status === 'completed',
+      children: event.description ? [
+        {
+          id: `subtask-${periodIndex}-${eventIndex}-desc`,
+          title: event.description,
+          type: 'subtask',
+          checked: false,
+        }
+      ] : [],
+    }));
+
     // Create a section for each period
     const section: TaskItemType = {
       id: `section-${periodIndex}`,
       title: period.period,
       type: 'section',
-      children: [],
+      children,
     };
-
-    // Add events as tasks
-    period.events.forEach((event, eventIndex) => {
-      const task: TaskItemType = {
-        id: `task-${periodIndex}-${eventIndex}-${event.id}`,
-        title: `${event.title}${event.date ? ` (${event.date})` : ''}`,
-        type: 'task',
-        checked: event.status === 'completed',
-        children: event.description ? [
-          {
-            id: `subtask-${periodIndex}-${eventIndex}-desc`,
-            title: event.description,
-            type: 'subtask',
-            checked: false,
-          }
-        ] : [],
-      };
-      section.children!.push(task);
-    });
 
     tasks.push(section);
   });
@@ -153,6 +147,14 @@ export function convertTroubleshootingToTasks(
 
   issues.forEach((issue, issueIndex) => {
     issue.solutions.forEach((solution, solutionIndex) => {
+      // Add steps as subtasks
+      const children: TaskItemType[] = solution.steps.map((step, stepIndex) => ({
+        id: `subtask-${issueIndex}-${solutionIndex}-${stepIndex}-${step.id}`,
+        title: step.title,
+        type: 'subtask',
+        checked: false,
+      }));
+
       // Create a main task for each solution
       const mainTask: TaskItemType = {
         id: `task-${issueIndex}-${solutionIndex}-${solution.id}`,
@@ -160,19 +162,8 @@ export function convertTroubleshootingToTasks(
         type: 'task',
         bold: true,
         checked: false,
-        children: [],
+        children,
       };
-
-      // Add steps as subtasks
-      solution.steps.forEach((step, stepIndex) => {
-        const subtask: TaskItemType = {
-          id: `subtask-${issueIndex}-${solutionIndex}-${stepIndex}-${step.id}`,
-          title: step.title,
-          type: 'subtask',
-          checked: false,
-        };
-        mainTask.children!.push(subtask);
-      });
 
       tasks.push(mainTask);
     });

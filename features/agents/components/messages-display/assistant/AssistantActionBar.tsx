@@ -35,7 +35,7 @@ import {
 } from "@/components/icons/tap-buttons";
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
 import {
@@ -136,6 +136,7 @@ export function AssistantActionBar({
   groupMessageIds,
 }: AssistantActionBarProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const [isCopied, setIsCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
@@ -235,17 +236,13 @@ export function AssistantActionBar({
       ).unwrap();
       const newConversationId = forkResult.conversationId;
 
-      const findCopiedId = dispatch(((
-        _: unknown,
-        getState: () => import("@/lib/redux/store").RootState,
-      ) => {
-        const entry = getState().messages.byConversationId[newConversationId];
-        if (!entry) return null;
-        const match = Object.values(entry.byId).find(
-          (m) => m.position === (messagePosition ?? 0),
-        );
-        return match?.id ?? null;
-      }) as never) as unknown as string | null;
+      const forkedEntry =
+        store.getState().messages.byConversationId[newConversationId];
+      const findCopiedId = forkedEntry
+        ? (Object.values(forkedEntry.byId).find(
+            (m) => m.position === (messagePosition ?? 0),
+          )?.id ?? null)
+        : null;
 
       if (typeof findCopiedId === "string") {
         await dispatch(

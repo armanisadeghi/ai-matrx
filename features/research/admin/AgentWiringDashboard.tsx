@@ -19,7 +19,12 @@ import { cn } from '@/lib/utils';
 import MatrxMiniLoader from '@/components/loaders/MatrxMiniLoader';
 import type { ResearchTemplate } from '../types';
 import type { PromptBuiltinRef, AgentConfigKey } from './types';
-import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META, SYSTEM_CONSTANTS } from './types';
+import {
+    AGENT_CONFIG_KEYS,
+    AGENT_CONFIG_META,
+    SYSTEM_CONSTANTS,
+    jsonToAgentConfigStrings,
+} from './types';
 import {
     fetchTemplates, updateTemplateAgentConfig,
     fetchPromptBuiltins, resolveBuiltinNames,
@@ -48,7 +53,7 @@ export function AgentWiringDashboard() {
             setBuiltins(builtinsData);
 
             const allIds = [
-                ...templatesData.flatMap(t => Object.values(t.agent_config ?? {})),
+                ...templatesData.flatMap(t => Object.values(jsonToAgentConfigStrings(t.agent_config))),
                 ...SYSTEM_CONSTANTS.map(c => c.defaultValue),
             ].filter((v): v is string => typeof v === 'string' && v.length > 0);
 
@@ -95,8 +100,7 @@ export function AgentWiringDashboard() {
     };
 
     const getOverallStatus = (template: ResearchTemplate): 'full' | 'partial' | 'none' => {
-        const config = template.agent_config as Record<string, string> | null;
-        if (!config) return 'none';
+        const config = jsonToAgentConfigStrings(template.agent_config);
         const wired = AGENT_CONFIG_KEYS.filter(k => config[k] && config[k].length > 0).length;
         if (wired === AGENT_CONFIG_KEYS.length) return 'full';
         if (wired > 0) return 'partial';
@@ -179,8 +183,8 @@ export function AgentWiringDashboard() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-4">
                         {AGENT_CONFIG_KEYS.map(key => {
                             const templatesUsing = templates.filter(t => {
-                                const config = t.agent_config as Record<string, string> | null;
-                                return config?.[key] && config[key].length > 0;
+                                const config = jsonToAgentConfigStrings(t.agent_config);
+                                return config[key] && config[key].length > 0;
                             });
                             return (
                                 <TooltipProvider key={key}>
@@ -223,7 +227,7 @@ export function AgentWiringDashboard() {
                     {templates.map(template => {
                         const status = getOverallStatus(template);
                         const isExpanded = expandedTemplates.has(template.id);
-                        const config = (template.agent_config ?? {}) as Record<string, string>;
+                        const config = jsonToAgentConfigStrings(template.agent_config);
 
                         return (
                             <div key={template.id} className="rounded-xl border border-border bg-card overflow-hidden">

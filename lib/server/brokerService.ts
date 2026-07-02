@@ -16,7 +16,7 @@ export async function getServerBroker(idArgs: BrokerIdentifier, providedSessionI
 export async function getServerBrokers(identifiers: BrokerIdentifier[]) {
   const cookiesObj = await cookies();
   const sessionId = cookiesObj.get('session-id')?.value;
-  const values: Record<string, any> = {};
+  const values: Record<string, unknown> = {};
   
   await Promise.all(
     identifiers.map(async (idArgs) => {

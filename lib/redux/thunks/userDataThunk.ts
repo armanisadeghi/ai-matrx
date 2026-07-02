@@ -39,6 +39,17 @@ const PROFILE_KEYS = [
 
 type LegacyUserPayload = Partial<UserData> & Partial<UserProfileState>;
 
+/** Copies `key` from `source` to `target` only when both sides agree it's a valid key. */
+function copyKeyIfPresent<Target extends object>(
+  target: Target,
+  source: LegacyUserPayload,
+  key: keyof Target & keyof LegacyUserPayload,
+): void {
+  if (key in source) {
+    target[key] = source[key] as Target[typeof key];
+  }
+}
+
 /**
  * Fan out a legacy-shaped `Partial<UserData>` payload to the auth + profile
  * slices. Empty payloads are no-ops (no dispatch). Mirrors the legacy
@@ -57,16 +68,10 @@ export const setUserData =
     const profilePart: Partial<UserProfileState> = {};
 
     for (const key of AUTH_KEYS) {
-      if (key in payload) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (authPart as Record<string, unknown>)[key] = (payload as any)[key];
-      }
+      copyKeyIfPresent(authPart, payload, key);
     }
     for (const key of PROFILE_KEYS) {
-      if (key in payload) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (profilePart as Record<string, unknown>)[key] = (payload as any)[key];
-      }
+      copyKeyIfPresent(profilePart, payload, key);
     }
 
     if (Object.keys(authPart).length > 0) {

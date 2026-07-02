@@ -204,7 +204,6 @@ export const UnifiedImageBlockRenderer: React.FC<
     useUnifiedImageUrl(block);
   const isMobile = useIsMobile();
   const isMatrx = block.origin === "matrx";
-  const hasExtra = !!extraActions && extraActions.length > 0;
 
   const actions = useImageActions({ block, currentSrc: src, fileId });
 
@@ -291,9 +290,9 @@ export const UnifiedImageBlockRenderer: React.FC<
   // to merge them makes both worse.
   const drawerBody = (
     <div className="px-4 pb-6 flex flex-col gap-0.5">
-      {hasExtra ? (
+      {extraActions && extraActions.length > 0 ? (
         <>
-          {extraActions!.map((a) => (
+          {extraActions.map((a) => (
             <DrawerRow
               key={a.id}
               icon={a.icon}
@@ -489,9 +488,9 @@ export const UnifiedImageBlockRenderer: React.FC<
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {hasExtra ? (
+                  {extraActions && extraActions.length > 0 ? (
                     <>
-                      {extraActions!.map((a) => (
+                      {extraActions.map((a) => (
                         <DropdownMenuItem
                           key={a.id}
                           onClick={a.onClick}
@@ -612,9 +611,9 @@ export const UnifiedImageBlockRenderer: React.FC<
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-56">
-          {hasExtra ? (
+          {extraActions && extraActions.length > 0 ? (
             <>
-              {extraActions!.map((a) => (
+              {extraActions.map((a) => (
                 <ContextMenuItem
                   key={a.id}
                   onClick={a.onClick}

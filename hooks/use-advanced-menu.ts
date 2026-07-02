@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import type { LucideIcon } from "lucide-react";
 import { MenuItem } from "@/components/official/AdvancedMenu";
 
 export interface UseAdvancedMenuOptions {
@@ -7,7 +8,7 @@ export interface UseAdvancedMenuOptions {
   onClose?: () => void;
   onActionStart?: (key: string) => void;
   onActionSuccess?: (key: string) => void;
-  onActionError?: (key: string, error: any) => void;
+  onActionError?: (key: string, error: unknown) => void;
 }
 
 export function useAdvancedMenu(options?: UseAdvancedMenuOptions) {
@@ -62,7 +63,7 @@ export function useAdvancedMenu(options?: UseAdvancedMenuOptions) {
 export function createMenuItem(
   key: string,
   label: string,
-  icon: any,
+  icon: LucideIcon,
   action: () => void | Promise<void>,
   options?: Partial<Omit<MenuItem, "key" | "label" | "icon" | "action">>
 ): MenuItem {

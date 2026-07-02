@@ -25,8 +25,6 @@ import type {
     CxTextContent,
     CxThinkingContent,
     CxMediaContent,
-    CxCodeExecContent,
-    CxCodeResultContent,
 } from '@/features/public-chat/types/cx-tables';
 
 import type {
@@ -42,10 +40,20 @@ import type {
 } from './types';
 
 import { PROTOCOL_VERSION } from './types';
+import { isJsonObject } from '@/types/json';
 
 // ============================================================================
 // INTERNAL HELPERS
 // ============================================================================
+
+/**
+ * Read a legacy/undeclared string field off an object without casting the
+ * whole value — used for pre-migration field names that never made it into
+ * the current CxContentBlock union (e.g. `tool_call_id` / `tool_use_id`).
+ */
+function readLegacyStringField(value: object, key: string): unknown {
+    return (value as Record<string, unknown>)[key];
+}
 
 /**
  * Coerce an arbitrary DB value into a Record<string, unknown>.
@@ -96,7 +104,7 @@ function convertThinkingContent(block: CxThinkingContent): ThinkingBlock {
     if (!content && block.summary?.length) {
         // summary items are objects with a .text field from Python
         content = block.summary
-            .map(item => (typeof item === 'string' ? item : (item as {text?: string}).text ?? ''))
+            .map(item => (typeof item === 'string' ? item : item.text))
             .filter(Boolean)
             .join('\n');
     }
@@ -165,13 +173,20 @@ function convertContentBlocks(
             }
 
             case 'tool_call': {
-                // DB stores: { type, id (or tool_call_id), name, arguments }
-                // Cast through unknown to safely access arbitrary runtime fields.
-                const raw2     = block as unknown as Record<string, unknown>;
+                // DB stores: { type, id (or tool_call_id), name, arguments }.
+                // `tool_call_id`/`tool_use_id` are pre-migration legacy field
+                // names not on CxToolCallContent — read those two defensively
+                // via readLegacyStringField rather than casting the whole block.
                 // call_id (OpenAI) takes priority; fall back to id (Anthropic/Google) or tool_use_id (legacy)
-                const callId   = String(raw2.call_id ?? raw2.id ?? raw2.tool_call_id ?? raw2.tool_use_id ?? '');
-                const toolName = String(raw2.name ?? '');
-                const args     = toRecord(raw2.arguments);
+                const callId   = String(
+                    block.call_id ??
+                    block.id ??
+                    readLegacyStringField(block, 'tool_call_id') ??
+                    readLegacyStringField(block, 'tool_use_id') ??
+                    ''
+                );
+                const toolName = String(block.name);
+                const args     = toRecord(block.arguments);
 
                 const input: ToolInput = { name: toolName, arguments: args };
                 const output  = callIdOutputMap.get(callId);
@@ -198,10 +213,8 @@ function convertContentBlocks(
                 // Normally handled by extractResultsFromToolRoleContent below.
                 // Encountering them inside an assistant message body is unusual
                 // but safe — extract the error case and emit an error block.
-                // Cast through unknown to safely access arbitrary runtime fields.
-                const raw2      = block as unknown as Record<string, unknown>;
-                const isError   = Boolean(raw2.is_error);
-                const resultRaw = raw2.content;
+                const isError   = Boolean(block.is_error);
+                const resultRaw = block.content;
 
                 if (isError) {
                     blocks.push({
@@ -216,15 +229,13 @@ function convertContentBlocks(
 
             case 'code_exec': {
                 // Render code blocks as text for now
-                const b = block as unknown as CxCodeExecContent;
-                blocks.push({ type: 'text', content: `\`\`\`${b.language}\n${b.code}\n\`\`\`` });
+                blocks.push({ type: 'text', content: `\`\`\`${block.language}\n${block.code}\n\`\`\`` });
                 break;
             }
 
             case 'code_result': {
-                const b = block as unknown as CxCodeResultContent;
-                if (b.output) {
-                    blocks.push({ type: 'text', content: `\`\`\`\n${b.output}\n\`\`\`` });
+                if (block.output) {
+                    blocks.push({ type: 'text', content: `\`\`\`\n${block.output}\n\`\`\`` });
                 }
                 break;
             }
@@ -236,10 +247,10 @@ function convertContentBlocks(
             }
 
             default: {
-                // Unknown block type — salvage any text field
-                const unknownBlock = block as unknown as Record<string, unknown>;
-                if (typeof unknownBlock.text === 'string' && unknownBlock.text) {
-                    blocks.push({ type: 'text', content: unknownBlock.text });
+                // Unknown block type (not in CxContentBlock — malformed or a
+                // future wire shape) — salvage any text field if present.
+                if (isJsonObject(raw) && typeof raw.text === 'string' && raw.text) {
+                    blocks.push({ type: 'text', content: raw.text });
                 }
             }
         }
@@ -271,6 +282,9 @@ function extractResultsFromToolRoleContent(
         const block = raw as Record<string, unknown>;
 
         if (block.type === 'tool_result') {
+            // MATRX-EXCEPTION: `?? ''` is the honest "no id recognized" default
+            // for a map lookup key (checked via `if (!callId) continue` below),
+            // not data written anywhere.
             const callId  = String(block.tool_call_id ?? block.tool_use_id ?? '');
             const isError = Boolean(block.is_error);
             const result  = block.content;

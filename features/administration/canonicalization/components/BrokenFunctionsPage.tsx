@@ -8,13 +8,13 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { GateStatusBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
-import type { BrokenFunctionRow } from "../types";
+import { isBrokenFunctionRow, type BrokenFunctionRow } from "../types";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function BrokenFunctionsPage() {
   const searchParams = useSearchParams();
   const { rows, loading, reload } =
-    useAuditDataset<BrokenFunctionRow>("broken-functions");
+    useAuditDataset<BrokenFunctionRow>("broken-functions", isBrokenFunctionRow);
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<

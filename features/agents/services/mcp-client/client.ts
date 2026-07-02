@@ -244,6 +244,9 @@ export class McpClient {
       }
     }
 
-    throw lastError!;
+    // The loop runs at least once (attempt starts at 0, condition is <=) and
+    // every iteration either returns or sets lastError, so this is always set
+    // by the time the loop exits. Guard honestly rather than assert.
+    throw lastError ?? new Error("withRetry exhausted with no captured error");
   }
 }

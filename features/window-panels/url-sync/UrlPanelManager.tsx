@@ -33,11 +33,12 @@ export function parseParams(paramString: string | null) {
     const [typeKey, instanceId, argsStr] = part.split(":");
     let args: Record<string, string> | undefined;
     if (argsStr) {
-      args = {};
+      const parsedArgs: Record<string, string> = {};
       argsStr.split("_").forEach((pair) => {
         const [k, v] = pair.split("-");
-        if (k && v) args![k] = v;
+        if (k && v) parsedArgs[k] = v;
       });
+      args = parsedArgs;
     }
     return { typeKey, instanceId, args };
   });

@@ -109,13 +109,14 @@ interface LoadVirtualChildrenArg {
 /**
  * Convert a `VirtualNode` to a `Partial<CloudFile>` / `Partial<CloudFolder>`
  * — synthetic id, `source.kind: "virtual"`, fields from the node mapped onto
- * the cloud-files domain shape.
+ * the cloud-files domain shape. `id` is always set (from `makeSyntheticId`),
+ * so the return type narrows it to required — callers don't need `f.id!`.
  */
 function nodeToFilePartial(
   adapterId: string,
   parentSyntheticId: string,
   node: VirtualNode,
-): Partial<CloudFile> {
+): Partial<CloudFile> & { id: string } {
   return {
     id: makeSyntheticId(adapterId, node.id),
     fileName: node.name,
@@ -142,7 +143,7 @@ function nodeToFolderPartial(
   adapterId: string,
   parentSyntheticId: string,
   node: VirtualNode,
-): Partial<CloudFolder> {
+): Partial<CloudFolder> & { id: string } {
   return {
     id: makeSyntheticId(adapterId, node.id),
     folderName: node.name,
@@ -180,8 +181,8 @@ export const loadVirtualChildren = createAsyncThunk<
 
   const nodes = await adapter.list(supabase, userId, { parentId: parentVid });
 
-  const files: Partial<CloudFile>[] = [];
-  const folders: Partial<CloudFolder>[] = [];
+  const files: (Partial<CloudFile> & { id: string })[] = [];
+  const folders: (Partial<CloudFolder> & { id: string })[] = [];
   for (const node of nodes) {
     if (node.kind === "folder") {
       folders.push(nodeToFolderPartial(arg.adapterId, parentSyntheticId, node));
@@ -198,7 +199,7 @@ export const loadVirtualChildren = createAsyncThunk<
       attachChildToFolder({
         parentFolderId: parentSyntheticId,
         kind: "folder",
-        id: folder.id!,
+        id: folder.id,
       }),
     );
   }
@@ -207,7 +208,7 @@ export const loadVirtualChildren = createAsyncThunk<
       attachChildToFolder({
         parentFolderId: parentSyntheticId,
         kind: "file",
-        id: file.id!,
+        id: file.id,
       }),
     );
   }

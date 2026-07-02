@@ -76,7 +76,7 @@ export type FullScreenEditorMode =
 
 export interface OverlayInstance {
   isOpen: boolean;
-  data: any;
+  data: unknown;
   /**
    * Unix ms timestamp of the last open action. Used by `pruneStaleInstances`
    * to GC long-forgotten closed entries. Set on every open, untouched on
@@ -276,7 +276,7 @@ export const selectOverlayData = (
   state: StateWithOverlays,
   overlayId: string,
   instanceId: string = DEFAULT_INSTANCE_ID,
-): any => selectOverlay(state, overlayId, instanceId).data;
+): unknown => selectOverlay(state, overlayId, instanceId).data;
 
 /**
  * Returns all currently-open instances for a given overlayId.
@@ -287,13 +287,13 @@ export const selectOverlayData = (
  */
 const _openInstancesCache = new Map<
   string,
-  (state: StateWithOverlays) => Array<{ instanceId: string; data: any }>
+  (state: StateWithOverlays) => Array<{ instanceId: string; data: unknown }>
 >();
 
 export const selectOpenInstances = (
   state: StateWithOverlays,
   overlayId: string,
-): Array<{ instanceId: string; data: any }> => {
+): Array<{ instanceId: string; data: unknown }> => {
   if (!_openInstancesCache.has(overlayId)) {
     _openInstancesCache.set(
       overlayId,
@@ -301,7 +301,7 @@ export const selectOpenInstances = (
         (s: StateWithOverlays) => s.overlays.overlays[overlayId],
         (instances) => {
           if (!instances) return EMPTY_INSTANCES;
-          const result: Array<{ instanceId: string; data: any }> = [];
+          const result: Array<{ instanceId: string; data: unknown }> = [];
           for (const [instanceId, inst] of Object.entries(instances)) {
             if (inst.isOpen) result.push({ instanceId, data: inst.data });
           }
@@ -315,7 +315,7 @@ export const selectOpenInstances = (
 
 // Stable empty array — returned when there are no open instances so callers
 // that do `instances.length === 0` checks don't get a new reference each render.
-const EMPTY_INSTANCES: Array<{ instanceId: string; data: any }> = [];
+const EMPTY_INSTANCES: Array<{ instanceId: string; data: unknown }> = [];
 
 // ── Internal raw actions (untyped overlayId) ────────────────────────────────
 // These come straight from createSlice and accept `overlayId: string`. We

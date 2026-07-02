@@ -87,7 +87,11 @@ async function hydrateFromFileId(
   const state = store.getState() as RootState;
   const cached = selectFileById(state, file.fileId);
 
-  let cloudFile = cached ? cloudFileFromRecord(cached) : null;
+  // `selectFileById` already returns a fully-typed `CloudFileRecord`
+  // (`extends CloudFile`) straight from our own reducer-typed state — no
+  // re-validation needed. `undefined` (not cached) normalizes to `null`.
+  let cloudFile: import("@/features/files/types").CloudFile | null =
+    cached ?? null;
 
   if (!cloudFile) {
     try {
@@ -195,50 +199,3 @@ async function sniffIfPossible(file: NormalizedFile): Promise<NormalizedFile> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function cloudFileFromRecord(
-  record: unknown,
-): import("@/features/files/types").CloudFile | null {
-  if (!record || typeof record !== "object") return null;
-  const r = record as Record<string, unknown>;
-  if (typeof r.id !== "string") return null;
-  return {
-    id: r.id,
-    ownerId: (r.ownerId as string) ?? "",
-    filePath: (r.filePath as string) ?? "",
-    storageUri: (r.storageUri as string) ?? "",
-    fileName: (r.fileName as string) ?? "",
-    mimeType: (r.mimeType as string | null) ?? null,
-    fileSize: (r.fileSize as number | null) ?? null,
-    checksum: (r.checksum as string | null) ?? null,
-    visibility: (r.visibility as "public" | "private" | "shared") ?? "private",
-    currentVersion: (r.currentVersion as number) ?? 1,
-    parentFolderId: (r.parentFolderId as string | null) ?? null,
-    metadata: (r.metadata as Record<string, unknown>) ?? {},
-    createdAt: (r.createdAt as string) ?? new Date().toISOString(),
-    updatedAt: (r.updatedAt as string) ?? new Date().toISOString(),
-    deletedAt: (r.deletedAt as string | null) ?? null,
-    publicUrl: (r.publicUrl as string | null) ?? null,
-    // Carry the four-flavour URL envelope through the cache-record path so
-    // a file hydrated from the slice keeps its permanent cdn_url instead of
-    // forcing a re-mint (matches apiFileRecordToCloudFile).
-    url: (r.url as string | null) ?? null,
-    cdnUrl: (r.cdnUrl as string | null) ?? null,
-    signedUrl: (r.signedUrl as string | null) ?? null,
-    downloadUrl: (r.downloadUrl as string | null) ?? null,
-    thumbnailUrl: (r.thumbnailUrl as string | null) ?? null,
-    source: (r.source as { kind: "real" }) ?? { kind: "real" },
-    parentFileId: (r.parentFileId as string | null | undefined) ?? null,
-    derivationKind: (r.derivationKind as string | null | undefined) ?? null,
-    derivationMetadata:
-      (r.derivationMetadata as Record<string, unknown> | null | undefined) ??
-      null,
-    duplicateOfFileId:
-      (r.duplicateOfFileId as string | null | undefined) ?? null,
-    canonicalProcessedDocumentId:
-      (r.canonicalProcessedDocumentId as string | null | undefined) ?? null,
-  };
-}

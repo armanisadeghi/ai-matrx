@@ -70,7 +70,11 @@ export const dbToFieldDefinition = (
     defaultValue: dbRecord.default_value,
     includeOther: dbRecord.include_other ?? undefined,
     options: (dbRecord.options ?? undefined) as FieldOption[] | undefined,
-    componentProps: (dbRecord.component_props ?? {}) as ComponentProps,
+    // Real field defaults get merged in by normalizeFieldDefinition below —
+    // pass through undefined rather than faking a complete ComponentProps here.
+    componentProps: dbRecord.component_props
+      ? (dbRecord.component_props as ComponentProps)
+      : undefined,
     isPublic: dbRecord.is_public ?? undefined,
     publicRead: dbRecord.public_read ?? undefined,
   };

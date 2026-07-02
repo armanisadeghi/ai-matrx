@@ -25,13 +25,18 @@
 
 "use client";
 
-import type { Middleware } from "@reduxjs/toolkit";
+import type { Middleware, ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { CloudFilesState } from "@/features/files/types";
 
 // Minimal local state type — avoids importing RootState from store.ts which
 // imports this middleware, creating a type-level cycle.
 type StateWithCloudFiles = { cloudFiles: CloudFilesState };
+// Thunk-aware dispatch — this middleware dispatches `reconcileTree`, an
+// async thunk, so the plain `Middleware`/`Dispatch<UnknownAction>` types
+// (which don't know about thunk middleware) aren't enough. Same local
+// pattern as thunks.ts's `AppDispatch`, to avoid the store.ts import cycle.
+type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import type {
   RealtimeChannel,
   RealtimePostgresChangesPayload,
@@ -149,10 +154,11 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   let channel: RealtimeChannel | null = null;
   let subscribedUserId: string | null = null;
 
-  // Local typed dispatcher — the Middleware type is deliberately loose (see
-  // note above), so we cast once here to keep the call sites concise.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dispatch = store.dispatch as (action: any) => any;
+  // Local typed dispatcher — `store.dispatch` comes in through the plain
+  // `Middleware` API type, which doesn't know about thunk middleware; this
+  // middleware dispatches `reconcileTree` (an async thunk), so we widen to
+  // the thunk-aware `AppDispatch` once here to keep call sites concise.
+  const dispatch = store.dispatch as AppDispatch;
 
   async function teardown(): Promise<void> {
     if (channel) {
@@ -274,6 +280,15 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
   // -------------------------------------------------------------------------
   // Payload handlers
+  //
+  // Every handler below asserts `payload.new`/`payload.old` (typed
+  // `Record<string, unknown>` by supabase-js — `.on("postgres_changes", ...)`
+  // isn't bound to `Database`, so the client cannot know the row shape) to
+  // the generated `Tables<T>["Row"]` type for that table (`CloudFileRow` /
+  // `CloudFolderRow` / etc., already Pattern-2 "table query" types). This is
+  // the realtime-payload analogue of the RPC `DbRpcRow`-guarded cast: there is
+  // no row schema the library can check, but the target types are the real
+  // generated ground truth, not a hand-mirrored shape.
   // -------------------------------------------------------------------------
 
   function handleFilePayload(

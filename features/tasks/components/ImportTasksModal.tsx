@@ -260,7 +260,8 @@ export default function ImportTasksModal({
 
       const isSelected = selectedTasks[item.id];
       const isCompleted = checkboxState[item.id] || item.checked;
-      const hasChildren = item.children && item.children.length > 0;
+      const childCount = item.children?.length ?? 0;
+      const hasChildren = childCount > 0;
 
       return (
         <div key={item.id} className={`${depth > 0 ? "ml-6" : ""} mb-2`}>
@@ -280,8 +281,8 @@ export default function ImportTasksModal({
               {item.title}
               {hasChildren && (
                 <span className="text-xs text-gray-500 ml-2">
-                  ({item.children!.length} subtask
-                  {item.children!.length !== 1 ? "s" : ""})
+                  ({childCount} subtask
+                  {childCount !== 1 ? "s" : ""})
                 </span>
               )}
             </label>
@@ -314,7 +315,11 @@ export default function ImportTasksModal({
                 <Label>Import to:</Label>
                 <Select
                   value={projectSelection}
-                  onValueChange={(v: any) => setProjectSelection(v)}
+                  onValueChange={(v) => {
+                    if (v === "new" || v === "existing" || v === "draft") {
+                      setProjectSelection(v);
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />

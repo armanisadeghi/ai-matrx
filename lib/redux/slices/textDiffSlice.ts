@@ -170,7 +170,8 @@ const textDiffSlice = createSlice({
       const result = applyDiffs(state.currentText, diffsToApply);
 
       if (result.success && result.newText) {
-        state.currentText = result.newText;
+        const newText = result.newText;
+        state.currentText = newText;
         state.isDirty = true;
 
         // Move all to accepted
@@ -181,7 +182,7 @@ const textDiffSlice = createSlice({
             id: pd.id,
             diff: pd.diff,
             acceptedAt: timestamp,
-            appliedText: result.newText!,
+            appliedText: newText,
           })),
         ];
 

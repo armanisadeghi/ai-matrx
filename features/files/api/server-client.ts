@@ -128,10 +128,11 @@ function toBlob(
   contentType?: string,
 ): Blob {
   if (input instanceof Blob) return input;
-  // Node's Uint8Array / Buffer are valid BlobParts at runtime, but the DOM
-  // type definitions under Next 16 / TS 5.9 don't accept them cleanly. Cast
-  // the entire parts array to sidestep the lib mismatch — this is safe
-  // because Blob's constructor accepts any BufferSource at runtime.
+  // MATRX-EXCEPTION: Node's Uint8Array / Buffer are valid BlobParts at
+  // runtime, but the DOM lib's BlobPart requires ArrayBufferView<ArrayBuffer>
+  // while Node's types are ArrayBufferView<ArrayBufferLike> — a real lib
+  // mismatch (not a design gap). Cast the entire parts array to sidestep it;
+  // safe because Blob's constructor accepts any BufferSource at runtime.
   const parts = [input] as unknown as BlobPart[];
   return new Blob(parts, {
     type: contentType ?? "application/octet-stream",

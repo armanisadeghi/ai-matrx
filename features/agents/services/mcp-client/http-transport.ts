@@ -127,7 +127,10 @@ async function collectSseResponse<T>(
       buffer += decoder.decode(value, { stream: true });
 
       const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
+      // `split` on a string always yields at least one element, so this is
+      // never undefined.
+      buffer = lines[lines.length - 1];
+      lines.length -= 1;
 
       let currentData = "";
 

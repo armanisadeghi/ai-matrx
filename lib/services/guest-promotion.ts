@@ -131,7 +131,7 @@ export async function promoteGuestToUser({
   });
 
   if (updErr) {
-    const m = (updErr.message || "").toLowerCase();
+    const m = updErr.message.toLowerCase();
     const code = (updErr as { code?: string }).code;
     if (
       code === "email_exists" ||

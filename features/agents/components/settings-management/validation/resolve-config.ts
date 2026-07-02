@@ -72,13 +72,19 @@ export function resolveConfig(
 /**
  * Look up a ControlDefinition from normalizedControls by key.
  * Shared utility used by individual validation rules.
+ *
+ * `NormalizedControls` is a `Partial<Record<keyof AgentSettings, ...>>` —
+ * every declared field is individually optional, so an arbitrary runtime
+ * `key` genuinely may not be one of them. `key in normalizedControls` proves
+ * it before indexing, so no cast is needed.
  */
 export function getControlForKey(
   normalizedControls: NormalizedControls | null,
   key: string,
 ): ControlDefinition | undefined {
   if (!normalizedControls) return undefined;
-  return (normalizedControls as unknown as Record<string, ControlDefinition>)[
-    key
-  ];
+  if (!(key in normalizedControls)) return undefined;
+  return normalizedControls[key as keyof NormalizedControls] as
+    | ControlDefinition
+    | undefined;
 }

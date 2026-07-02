@@ -6,6 +6,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
+import { isJsonObject, type JsonObject } from "@/types/json";
 import type { NoteVersion } from "../types";
 
 type RpcVersionRow = {
@@ -20,15 +21,8 @@ type RpcVersionRow = {
   note_id?: string;
 };
 
-function diffMetadataFromJson(value: Json): Record<string, any> {
-  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-    const result: Record<string, any> = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = val;
-    }
-    return result;
-  }
-  return {};
+function diffMetadataFromJson(value: Json): JsonObject {
+  return isJsonObject(value) ? value : {};
 }
 
 function mapVersionRow(row: RpcVersionRow, noteId: string): NoteVersion {
@@ -100,7 +94,7 @@ export async function restoreVersion(
     throw error;
   }
 
-  return !!(data as unknown as boolean);
+  return !!data;
 }
 
 /**
@@ -137,7 +131,7 @@ export async function createManualVersion(
   options: {
     change_source?: "user" | "ai" | "system";
     change_type?: string;
-    diff_metadata?: Record<string, any>;
+    diff_metadata?: JsonObject;
   } = {},
 ): Promise<NoteVersion> {
   // The RPC owns ownership/version-number/timestamps; it returns the new id.

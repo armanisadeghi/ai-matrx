@@ -138,7 +138,7 @@ export function fileInfoHumanSummary(snapshot: FileInfoSnapshot): string {
     lines.push("");
   }
 
-  const metadataKeys = Object.keys(file.metadata ?? {});
+  const metadataKeys = Object.keys(file.metadata);
   if (metadataKeys.length > 0) {
     lines.push("Metadata");
     lines.push(JSON.stringify(file.metadata, null, 2));
