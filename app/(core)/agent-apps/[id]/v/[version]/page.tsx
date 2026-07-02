@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { VersionCodeCompare } from "./VersionCodeCompare";
 
 
 interface VersionPageProps {
@@ -138,6 +139,14 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
                 <CodeIcon className="w-4 h-4 text-muted-foreground" />
                 <CardTitle className="text-sm">Code</CardTitle>
               </div>
+              {!isCurrent && (
+                <VersionCodeCompare
+                  snapshotCode={snapshot.component_code ?? ""}
+                  currentCode={app.component_code ?? ""}
+                  language={snapshot.component_language ?? "typescript"}
+                  snapshotVersion={snapshot.version_number}
+                />
+              )}
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-1">
               <KV label="Language" value={snapshot.component_language ?? "—"} />
@@ -145,12 +154,17 @@ export default async function AgentAppVersionPage({ params }: VersionPageProps) 
                 label="Lines"
                 value={codeLines > 0 ? String(codeLines) : "—"}
               />
-              {/* Note: viewing the actual code at this version is a follow-up;
-                  the editor's history view will be the primary surface. */}
-              <p className="text-xs pt-2">
-                Viewing this version's code in-editor is coming next. For now
-                the snapshot fields above are the read-only record.
-              </p>
+              {isCurrent ? (
+                <p className="text-xs pt-2">
+                  This is the current version — its code is what the app renders
+                  now.
+                </p>
+              ) : (
+                <p className="text-xs pt-2">
+                  Use “Compare with current” to see exactly how this version’s
+                  code differs from the live app.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
