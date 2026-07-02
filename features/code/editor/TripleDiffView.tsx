@@ -31,6 +31,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DiffEditor } from "@monaco-editor/react";
 import { AlertTriangle, FileText, History } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useCodeWorkspace } from "../CodeWorkspaceProvider";
 import { useMonacoTheme } from "./useMonacoTheme";
@@ -158,6 +159,11 @@ export const TripleDiffView: React.FC<TripleDiffViewProps> = ({ tab }) => {
           <span className="font-mono text-[10px] text-neutral-500 dark:text-neutral-400">
             msg {snapshot.messageId.slice(0, 8)}
           </span>
+          <LegacyDiffChip
+            className="ml-auto"
+            label="Monaco 3-way"
+            reason="3-way inspector bound to editor snapshots + the filesystem adapter; no standalone equivalent in the canonical system yet"
+          />
           {matchingTab?.dirty && (
             <span className="ml-auto inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
               <AlertTriangle className="h-3 w-3" />

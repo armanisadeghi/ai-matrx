@@ -23,6 +23,7 @@ import { DiffView } from "@/features/code-editor/components/DiffView";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { DiffLoadingIndicator } from "../DiffLoadingIndicator";
 import { DiffCollapsible } from "../DiffCollapsible";
+import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -221,6 +222,12 @@ export const SearchReplaceDiffRenderer: React.FC<
         className={className}
         additions={diffData.additions}
         deletions={diffData.deletions}
+        headerRight={
+          <LegacyDiffChip
+            label="chat diff"
+            reason="Streaming SEARCH/REPLACE chat block; the completed diff uses the canonical DiffView, but the collapsed preview + counts still use the legacy LCS util"
+          />
+        }
         showPreview={true}
         previewContent={
           <DiffPreview

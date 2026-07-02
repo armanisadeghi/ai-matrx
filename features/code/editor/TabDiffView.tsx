@@ -44,6 +44,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronLeft, ChevronRight, Rocket, X } from "lucide-react";
 import { DiffEditor, type DiffOnMount } from "@monaco-editor/react";
 import type { editor as MonacoEditorNS } from "monaco-editor";
+import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { applyCodeEdits } from "@/features/code-editor/agent-code-editor/utils/applyCodeEdits";
@@ -523,6 +524,10 @@ export const TabDiffView: React.FC<TabDiffViewProps> = ({ tab }) => {
         </span>
 
         <div className="ml-auto flex items-center gap-1">
+          <LegacyDiffChip
+            label="Monaco per-hunk"
+            reason="Coupled to the code-editor patch store (pending agent edits), so it stays on Monaco rather than the canonical DiffReview"
+          />
           <button
             type="button"
             onClick={rejectAll}

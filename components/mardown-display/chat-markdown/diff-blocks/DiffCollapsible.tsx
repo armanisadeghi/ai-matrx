@@ -29,6 +29,9 @@ interface DiffCollapsibleProps {
   // Preview mode - shows first N lines when collapsed
   previewContent?: ReactNode;
   showPreview?: boolean;
+  /** Optional element pinned to the right of the header, OUTSIDE the toggle
+   * button (so it can be interactive — e.g. an admin chip). */
+  headerRight?: ReactNode;
 }
 
 /**
@@ -44,15 +47,17 @@ export const DiffCollapsible: React.FC<DiffCollapsibleProps> = ({
   deletions,
   previewContent,
   showPreview = false,
+  headerRight,
 }) => {
   const [isOpen, setIsOpen] = useState(initialOpen);
 
   return (
     <div className={cn('border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden my-2', className)}>
       {/* Ultra-minimal header - VS Code style */}
+      <div className="flex items-center bg-muted/30">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 w-full px-2 py-1 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+        className="flex items-center gap-1.5 flex-1 min-w-0 px-2 py-1 hover:bg-muted/50 transition-colors text-left"
       >
         {/* Chevron - rotates on open */}
         {isOpen ? (
@@ -87,6 +92,8 @@ export const DiffCollapsible: React.FC<DiffCollapsibleProps> = ({
           </div>
         )}
       </button>
+      {headerRight && <div className="shrink-0 px-2">{headerRight}</div>}
+      </div>
 
       {/* Content - with preview support */}
       <div className={cn(
