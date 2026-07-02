@@ -42,10 +42,14 @@ interface Record1 {
     _saving?: boolean;
 }
 
-// The engine's autoSave callbacks receive `record: unknown` (the scheduler is
-// record-shape-agnostic); tests narrow with this predicate instead of casting.
-function isRecord1(v: unknown): v is Record1 {
-    return typeof v === "object" && v !== null && "id" in v && "content" in v;
+/** Narrows the engine's `unknown` per-record callback param to `Record1`. */
+function isRecord1(rec: unknown): rec is Record1 {
+    return (
+        typeof rec === "object" &&
+        rec !== null &&
+        "id" in rec &&
+        "content" in rec
+    );
 }
 
 interface SliceState {
@@ -375,9 +379,9 @@ describe("createAutoSaveScheduler — direct API", () => {
             autoSave: {
                 recordsKey: "records",
                 triggerActions: ["rec/updateContent"],
-                debounceMs: (rec) => {
-                    if (!isRecord1(rec)) return 10;
-                    seen.push(rec.content.length);
+                debounceMs: (rec: unknown) => {
+                    const len = isRecord1(rec) ? rec.content.length : 0;
+                    seen.push(len);
                     return 10;
                 },
                 write: async () => {},

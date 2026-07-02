@@ -33,18 +33,27 @@ export type WorkingDocumentKind = "working" | "scratch";
 
 export interface CxWorkingDocumentRow {
   id: string;
-  conversation_id: string | null;
-  user_id: string | null;
+  // Legacy columns — optional so the type survives the STEP 3 drop. Origin now
+  // lives in metadata.origin_conversation_id.
+  conversation_id?: string | null;
+  user_id?: string | null;
   kind: string;
   title: string;
   content: string;
   version: number;
+  metadata?: { origin_conversation_id?: string | null } | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface CxWorkingDocument {
   id: string;
+  /**
+   * The conversation the document was BORN in (provenance, not identity — a doc
+   * is M2M-linked to many conversations). Resolved from the legacy column when
+   * present, else from metadata.origin_conversation_id. Keys the doc's tab in the
+   * workspace so an attached doc from another chat loads its own content.
+   */
   conversationId: string | null;
   userId: string | null;
   kind: WorkingDocumentKind;
@@ -60,8 +69,9 @@ export function rowToCxWorkingDocument(
 ): CxWorkingDocument {
   return {
     id: row.id,
-    conversationId: row.conversation_id,
-    userId: row.user_id,
+    conversationId:
+      row.conversation_id ?? row.metadata?.origin_conversation_id ?? null,
+    userId: row.user_id ?? null,
     kind: (row.kind as WorkingDocumentKind) ?? "working",
     title: row.title,
     content: row.content,
@@ -219,7 +229,7 @@ export async function listRecentUserDocuments(
   limit = 100,
 ): Promise<CxWorkingDocumentSummary[]> {
   const { data, error } = await WD()
-    .select("id, conversation_id, kind, title, content, updated_at")
+    .select("id, conversation_id, metadata, kind, title, content, updated_at")
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -229,12 +239,21 @@ export async function listRecentUserDocuments(
     data as Array<
       Pick<
         CxWorkingDocumentRow,
-        "id" | "conversation_id" | "kind" | "title" | "content" | "updated_at"
+        | "id"
+        | "conversation_id"
+        | "metadata"
+        | "kind"
+        | "title"
+        | "content"
+        | "updated_at"
       >
     >
   ).map((row) => ({
     id: row.id,
-    conversationId: row.conversation_id,
+    // Origin resolves from the legacy column OR metadata — so documents created
+    // under the new (column-less) model still surface in the rail.
+    conversationId:
+      row.conversation_id ?? row.metadata?.origin_conversation_id ?? null,
     kind: (row.kind as WorkingDocumentKind) ?? "working",
     title: row.title,
     preview: (row.content ?? "").trim().slice(0, 200),

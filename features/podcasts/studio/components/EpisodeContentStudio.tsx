@@ -19,7 +19,9 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
+  GitCompareArrows,
 } from "lucide-react";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -54,6 +56,7 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
   const [episode, setEpisode] = useState<PcEpisodeWithShow | null>(null);
   const { articles, drafts, busy, generate, togglePublish } =
     useEpisodeArticles(episode);
+  const openDiff = useOpenDiffViewerWindow();
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +106,31 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
                 <p className="mt-0.5 text-xs text-muted-foreground">{blurb}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
+                {article &&
+                  draft != null &&
+                  !isBusy &&
+                  draft !== article.content_markdown && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        openDiff({
+                          original: article.content_markdown ?? "",
+                          modified: draft,
+                          originalLabel: "Saved",
+                          modifiedLabel: "Regenerated",
+                          title: `${label} — compare`,
+                          engine: "light",
+                          language: "markdown",
+                          defaultView: "highlight",
+                        })
+                      }
+                      className="gap-1.5"
+                    >
+                      <GitCompareArrows className="h-3.5 w-3.5" />
+                      Compare
+                    </Button>
+                  )}
                 {article && (
                   <Button
                     variant="ghost"

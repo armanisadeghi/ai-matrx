@@ -10,6 +10,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 import { wrapClientForCapture } from "@/lib/diagnostics/supabaseErrorCapture";
+import { requireEnv } from "@/utils/supabase/env";
 
 export function createClient() {
   // Wrapped for global error capture: every .from()/.rpc()/.schema() error is
@@ -18,8 +19,11 @@ export function createClient() {
   // server and never alters query behavior — see supabaseErrorCapture.ts.
   return wrapClientForCapture(
     createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim(),
+      requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
+      requireEnv(
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      ),
     ),
   );
 }

@@ -151,7 +151,7 @@ export async function recordGuestExecution(
       return {
         success: false,
         log_id: null,
-        error: error.message,
+        error: error.message ?? "Unknown error",
       };
     }
 

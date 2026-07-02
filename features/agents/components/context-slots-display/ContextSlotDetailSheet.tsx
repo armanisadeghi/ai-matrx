@@ -38,7 +38,6 @@ import {
 } from "./knownContextValues";
 import {
   WorkingDocumentBody,
-  WorkingDocumentTitleActions,
   buildWorkingDocumentDrawerItem,
 } from "../context-items/bodies/WorkingDocumentBody";
 import { cn } from "@/lib/utils";
@@ -124,9 +123,6 @@ export function ContextSlotDetailSheet({
             <Icon className="h-3.5 w-3.5" />
           </span>
           <span className="min-w-0 truncate">{label}</span>
-          {isWorkingDocument && (
-            <WorkingDocumentTitleActions item={workingDocItem} />
-          )}
         </span>
       }
       description={

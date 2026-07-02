@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Loader2, FileText } from "lucide-react";
+import { ArrowLeft, Save, Loader2, FileText, GitCompareArrows } from "lucide-react";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useToast } from "@/components/ui/use-toast";
 import {
   ContentTemplateDB,
@@ -76,12 +77,14 @@ function EditorHeader({
   canSave,
   onBack,
   onSave,
+  onCompare,
 }: {
   mode: "create" | "edit";
   isSaving: boolean;
   canSave: boolean;
   onBack: () => void;
   onSave: () => void;
+  onCompare?: () => void;
 }) {
   return (
     <PageSpecificHeader>
@@ -100,6 +103,17 @@ function EditorHeader({
             {mode === "create" ? "New Template" : "Edit Template"}
           </span>
         </div>
+        {onCompare && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onCompare}
+            className="h-8 w-8 flex-shrink-0"
+            title="Compare saved vs draft"
+          >
+            <GitCompareArrows className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button
           size="icon"
           onClick={onSave}
@@ -130,6 +144,23 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
   const [tagsInput, setTagsInput] = useState((template?.tags ?? []).join(", "));
 
   const canSave = label.trim().length > 0 && content.trim().length > 0;
+
+  const openDiff = useOpenDiffViewerWindow();
+  const canCompare =
+    mode === "edit" && !!template && template.content !== content;
+  const handleCompare = useCallback(() => {
+    if (!template) return;
+    openDiff({
+      original: template.content ?? "",
+      modified: content,
+      originalLabel: "Saved",
+      modifiedLabel: "Draft",
+      title: `${template.label ?? "Template"} — compare`,
+      engine: "auto",
+      language: "markdown",
+      defaultView: "split",
+    });
+  }, [openDiff, template, content]);
 
   const handleBack = useCallback(() => router.back(), [router]);
 
@@ -199,6 +230,7 @@ export function TemplateEditor({ template, mode }: TemplateEditorProps) {
         canSave={canSave}
         onBack={handleBack}
         onSave={handleSave}
+        onCompare={canCompare ? handleCompare : undefined}
       />
 
       {/* Single page scroll — no bounded inner container */}

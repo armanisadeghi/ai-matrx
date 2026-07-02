@@ -1,6 +1,6 @@
 // utils/safeStringify.ts
 
-export function safeStringify(obj: any, space: number = 2): string {
+export function safeStringify(obj: unknown, space: number = 2): string {
     const seen = new WeakSet();
     return JSON.stringify(obj, (key, value) => {
         if (typeof value === "object" && value !== null) {
@@ -14,10 +14,10 @@ export function safeStringify(obj: any, space: number = 2): string {
 }
 
 
-export function safeStringifyDepthLimit(obj: any, space: number = 2, maxDepth: number = 5): string {
+export function safeStringifyDepthLimit(obj: unknown, space: number = 2, maxDepth: number = 5): string {
     const seen = new WeakSet();
 
-    function stringifyHelper(value: any, depth: number): any {
+    function stringifyHelper(value: unknown, depth: number): unknown {
         if (depth > maxDepth) {
             return "[Max Depth Reached]";
         }
@@ -28,10 +28,14 @@ export function safeStringifyDepthLimit(obj: any, space: number = 2, maxDepth: n
             }
             seen.add(value);
 
-            const result: any = Array.isArray(value) ? [] : {};
+            if (Array.isArray(value)) {
+                return value.map((v) => stringifyHelper(v, depth + 1));
+            }
+
+            const result: Record<string, unknown> = {};
             for (const key in value) {
                 if (Object.hasOwn(value, key)) {
-                    result[key] = stringifyHelper(value[key], depth + 1);
+                    result[key] = stringifyHelper((value as Record<string, unknown>)[key], depth + 1);
                 }
             }
             return result;
@@ -43,7 +47,7 @@ export function safeStringifyDepthLimit(obj: any, space: number = 2, maxDepth: n
     return JSON.stringify(stringifyHelper(obj, 0), null, space);
 }
 
-export function safeStringifyWithTimeout(obj: any, space: number = 2, maxDepth: number = 5, timeout: number = 1000): string {
+export function safeStringifyWithTimeout(obj: unknown, space: number = 2, maxDepth: number = 5, timeout: number = 1000): string {
     let result = "[Unresolved]";
     const stringifyTask = new Promise<void>((resolve) => {
         result = safeStringifyDepthLimit(obj, space, maxDepth);

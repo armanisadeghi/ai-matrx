@@ -8,7 +8,9 @@
  */
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { DiffViewer, type DiffEngine } from "@/components/diff/DiffViewer";
+import { DiffReview } from "@/components/diff/DiffReview";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -92,6 +94,7 @@ export default function DiffDemoPage() {
   const [wordLevel, setWordLevel] = useState(true);
   const [granularity, setGranularity] = useState<"word" | "character">("word");
   const [ignoreTrailingWs, setIgnoreTrailingWs] = useState(false);
+  const [reviewMode, setReviewMode] = useState(false);
 
   const openWindow = useOpenDiffViewerWindow();
 
@@ -190,6 +193,13 @@ export default function DiffDemoPage() {
           />
           ignore trailing ws
         </label>
+        <label className="flex items-center gap-1">
+          <Checkbox
+            checked={reviewMode}
+            onCheckedChange={(v) => setReviewMode(v === true)}
+          />
+          review &amp; merge (per-hunk)
+        </label>
         <Button
           size="sm"
           className="h-7 text-xs"
@@ -232,20 +242,40 @@ export default function DiffDemoPage() {
         </div>
 
         <div className="min-h-0 overflow-hidden">
-          <DiffViewer
-            original={original}
-            modified={modified}
-            engine={engine}
-            language={language || undefined}
-            view={view}
-            originalLabel="Original"
-            modifiedLabel="Modified"
-            textOptions={{
-              wordLevel,
-              granularity,
-              ignoreTrailingWhitespace: ignoreTrailingWs,
-            }}
-          />
+          {reviewMode ? (
+            <DiffReview
+              original={original}
+              modified={modified}
+              originalLabel="Original"
+              modifiedLabel="Modified"
+              diffOptions={{
+                wordLevel,
+                granularity,
+                ignoreTrailingWhitespace: ignoreTrailingWs,
+              }}
+              onApply={(merged) => {
+                setOriginal(merged);
+                toast.success("Applied merge", {
+                  description: `${merged.split("\n").length} lines written back as the new Original`,
+                });
+              }}
+            />
+          ) : (
+            <DiffViewer
+              original={original}
+              modified={modified}
+              engine={engine}
+              language={language || undefined}
+              view={view}
+              originalLabel="Original"
+              modifiedLabel="Modified"
+              textOptions={{
+                wordLevel,
+                granularity,
+                ignoreTrailingWhitespace: ignoreTrailingWs,
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -266,6 +296,10 @@ export default function DiffDemoPage() {
             <li>Monaco for code / large inputs via engine=&quot;auto&quot;.</li>
             <li>Renders anywhere: inline here, or “Open in window”.</li>
             <li>Whitespace-only detection; optional ignore-trailing-ws.</li>
+            <li>
+              Per-hunk accept/reject merge (toggle “review &amp; merge”) →
+              merged text via <code>onApply</code>.
+            </li>
           </ul>
         </div>
         <div>
@@ -276,8 +310,8 @@ export default function DiffDemoPage() {
             <li>No move detection — a moved line shows as remove + add.</li>
             <li>Light engine diffs raw text, not rendered markdown/HTML.</li>
             <li>
-              Read-only — no inline edit / accept-reject (that’s Monaco
-              TabDiffView).
+              Light engine is read-only line-level; the `DiffReview` merge tool
+              is whole-hunk accept/reject (no in-place text editing of a hunk).
             </li>
             <li>
               No syntax highlighting in the light engine (use Monaco for that).

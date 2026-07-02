@@ -10,30 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, AlertCircle, Info, CheckCircle2, Bug, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
-
-// Type definitions for our log structure
-interface ReduxAction {
-  type: string;
-  payload?: any;
-}
-
-interface ReduxLog {
-  id: string;
-  category: string;
-  level: string;
-  message: string;
-  action: {
-    type: string;
-    payload?: any;
-  };
-  prevState: unknown;
-  nextState: unknown;
-  context: {
-    timestamp: string;
-    environment: string;
-    action: string;
-  };
-}
+import type { ReduxLog } from "@/utils/logger/types";
 
 const LogLevel = ({ level }: { level: string }) => {
   const getColorClass = (level: string) => {
@@ -74,7 +51,7 @@ const LogLevel = ({ level }: { level: string }) => {
   );
 };
 
-const DetailSection = ({ title, content }: { title: string; content: any }) => (
+const DetailSection = ({ title, content }: { title: string; content: unknown }) => (
   <div className="mb-4">
     <h3 className="text-sm font-semibold text-muted-foreground mb-2">
       {title}

@@ -91,10 +91,12 @@ export function useOrchestrateSave(
                         },
                         {
                             groupId,
+                            // Satisfies SaveOrchestrationContext; typed as the
+                            // manager's CallbackContext bag (no cast needed).
                             context: {
                                 componentId,
                                 saveType: 'component'
-                            } as SaveOrchestrationContext
+                            }
                         }
                     );
                 });

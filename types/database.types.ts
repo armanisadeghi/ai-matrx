@@ -20905,6 +20905,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ts_check_runs: {
+        Row: {
+          codebase_path: string
+          duration_ms: number | null
+          error_count: number
+          errors: Json
+          id: string
+          message: string | null
+          ran_at: string
+          ran_by: string | null
+          status: string
+          tsconfig: string
+        }
+        Insert: {
+          codebase_path: string
+          duration_ms?: number | null
+          error_count?: number
+          errors?: Json
+          id?: string
+          message?: string | null
+          ran_at?: string
+          ran_by?: string | null
+          status?: string
+          tsconfig?: string
+        }
+        Update: {
+          codebase_path?: string
+          duration_ms?: number | null
+          error_count?: number
+          errors?: Json
+          id?: string
+          message?: string | null
+          ran_at?: string
+          ran_by?: string | null
+          status?: string
+          tsconfig?: string
+        }
+        Relationships: []
+      }
       window_sessions: {
         Row: {
           created_at: string | null
@@ -25954,6 +25993,21 @@ export type Database = {
         Returns: Json
       }
       list_wizard_archetypes: { Args: never; Returns: Json }
+      log_client_error: {
+        Args: {
+          p_code?: string
+          p_context?: Json
+          p_conversation_id?: string
+          p_message: string
+          p_organization_id?: string
+          p_payload?: Json
+          p_request_id?: string
+          p_route?: string
+          p_source: string
+          p_stack?: string
+        }
+        Returns: string
+      }
       lookup_user_by_email: {
         Args: { lookup_email: string }
         Returns: {

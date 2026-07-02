@@ -78,6 +78,11 @@ export async function readClipboardImage(): Promise<File | null> {
 // Chrome-only. Not available in Safari or Firefox (as of 2026).
 // Check before use — callers should fall back to <input type="file">.
 
+/** Chrome-only File System Access API — not in the standard `Window` lib types. */
+interface WindowWithFileSystemAccess extends Window {
+    showOpenFilePicker?: (...args: unknown[]) => Promise<unknown>;
+}
+
 export function supportsFileSystemAccess(): boolean {
-    return typeof (window as any).showOpenFilePicker === 'function';
+    return typeof (window as WindowWithFileSystemAccess).showOpenFilePicker === 'function';
 }

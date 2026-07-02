@@ -50,7 +50,7 @@ export function registerResultComponents() {
       
       return (
         <div className="date-display text-center">
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{result}</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{String(result)}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Formatted Date</div>
         </div>
       );
@@ -74,12 +74,12 @@ export function registerResultComponents() {
         );
       }
       
-      if (!result) return null;
-      
+      if (!result || typeof result !== 'object') return null;
+
       return (
         <div className="stats-display">
           <div className="grid grid-cols-2 gap-2">
-            {Object.entries(result).map(([key, value]) => (
+            {Object.entries(result as Record<string, unknown>).map(([key, value]) => (
               <div key={key} className="p-2 border-border rounded">
                 <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{key}</div>
                 <div className="text-lg font-bold text-gray-800 dark:text-gray-200">{String(value)}</div>
@@ -108,16 +108,17 @@ export function registerResultComponents() {
         );
       }
       
-      if (!result) return null;
-      
-      const isValid = result.isValid;
-      
+      if (!result || typeof result !== 'object') return null;
+
+      const validation = result as { isValid?: boolean; message?: string };
+      const isValid = validation.isValid;
+
       return (
         <div className={`p-4 ${isValid ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'} border rounded-md`}>
           <div className="flex items-center">
             <div className={`w-4 h-4 rounded-full ${isValid ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
             <div className={`font-medium ${isValid ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}`}>
-              {result.message}
+              {validation.message}
             </div>
           </div>
         </div>
@@ -184,7 +185,7 @@ export function registerResultComponents() {
       }
       
       // Get the original input from context if available
-      const originalInput = context?.input || '';
+      const originalInput = (context?.input as string | undefined) || '';
       
       return (
         <div className="string-transform-display p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
@@ -200,7 +201,7 @@ export function registerResultComponents() {
           <div>
             <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Transformed:</div>
             <div className="text-blue-600 dark:text-blue-400 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800 font-medium">
-              {result}
+              {String(result)}
             </div>
           </div>
         </div>

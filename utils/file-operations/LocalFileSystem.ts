@@ -3,12 +3,24 @@
 
 import { openDB, IDBPDatabase } from 'idb';
 
+/** Bucket-structure entry shape stored under the METADATA store (`bucket:<name>`). */
+interface BucketStructureEntry {
+    id: string;
+    bucketName: string;
+    type: 'bucket';
+    structure: {
+        contents: Array<{ path: string; [key: string]: unknown }>;
+        [key: string]: unknown;
+    };
+    lastUpdated: number;
+}
+
 interface LocalFile {
     id: string;           // bucketName:path
     bucketName: string;
     path: string;
     blob: Blob;
-    metadata: any;
+    metadata: Record<string, unknown>;
     version: number;      // For sync tracking
     lastModified: number;
     lastSynced: number;   // Last successful sync with cloud
@@ -108,7 +120,7 @@ class LocalFileSystem {
         }
     }
 
-    async updateBucketStructure(bucketName: string, structure: any): Promise<void> {
+    async updateBucketStructure(bucketName: string, structure: BucketStructureEntry['structure']): Promise<void> {
         const db = await this.getDbSafe();
         if (!db) return;
         await db.put(this.STORES.METADATA, {
@@ -120,7 +132,7 @@ class LocalFileSystem {
         });
     }
 
-    async getBucketStructure(bucketName: string): Promise<any> {
+    async getBucketStructure(bucketName: string): Promise<BucketStructureEntry | null> {
         if (!this.isBrowser()) return null;
         const db = await this.initDB();
         if (!db) return null;
@@ -164,7 +176,7 @@ class LocalFileSystem {
         return await index.getAll('conflict');
     }
 
-    async getAllBucketStructures(): Promise<any[]> {
+    async getAllBucketStructures(): Promise<BucketStructureEntry[]> {
         const db = await this.getDbSafe();
         if (!db) return [];
         const tx = db.transaction(this.STORES.METADATA, 'readonly');
@@ -215,7 +227,7 @@ class LocalFileSystem {
         }
     }
 
-    async updateFileMetadata(bucketName: string, path: string, metadata: any): Promise<void> {
+    async updateFileMetadata(bucketName: string, path: string, metadata: Record<string, unknown>): Promise<void> {
         const db = await this.getDbSafe();
         if (!db) return;
         const tx = db.transaction(this.STORES.FILES, 'readwrite');
@@ -328,7 +340,7 @@ class LocalFileSystem {
         }
     }
 
-    async getFolderContents(bucketName: string, folderPath: string): Promise<any[]> {
+    async getFolderContents(bucketName: string, folderPath: string): Promise<LocalFile[]> {
         const db = await this.getDbSafe();
         if (!db) return [];
         const tx = db.transaction(this.STORES.FILES, 'readonly');
@@ -338,7 +350,7 @@ class LocalFileSystem {
             folderPath ? `${folderPath}/\uffff` : '\uffff'
         );
 
-        const contents: any[] = [];
+        const contents: LocalFile[] = [];
         let cursor = await index.openCursor(range);
 
         while (cursor) {
@@ -353,7 +365,7 @@ class LocalFileSystem {
         const db = await this.getDbSafe();
         const structure = await this.getBucketStructure(bucketName);
         if (structure) {
-            structure.structure.contents = structure.structure.contents.map((item: any) => {
+            structure.structure.contents = structure.structure.contents.map((item) => {
                 if (item.path.startsWith(oldPath)) {
                     return {
                         ...item,
@@ -565,7 +577,7 @@ class LocalFileSystem {
         return null;
     }
 
-    async storeBuckets(buckets: any[]): Promise<void> {
+    async storeBuckets(buckets: Array<{ name: string; [key: string]: unknown }>): Promise<void> {
         const db = await this.getDbSafe();
         if (!db) return;
         const tx = db.transaction(this.STORES.METADATA, 'readwrite');
@@ -579,7 +591,7 @@ class LocalFileSystem {
         ));
     }
 
-    async getBuckets(): Promise<any[]> {
+    async getBuckets(): Promise<Array<{ id: string; name: string; type: 'bucket-info'; lastUpdated: number; [key: string]: unknown }>> {
         const db = await this.getDbSafe();
         if (!db) return [];
         const tx = db.transaction(this.STORES.METADATA, 'readonly');

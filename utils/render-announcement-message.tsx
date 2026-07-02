@@ -89,9 +89,13 @@ function parseRawUrls(text: string, keyStart: number): { nodes: React.ReactNode[
  * renderAnnouncementMessage("Visit https://example.com for more info")
  * // Returns: ["Visit ", <a href="...">https://example.com</a>, " for more info"]
  */
+type MessageSegment =
+    | { type: 'text'; content: string }
+    | { type: 'link'; content: string; url: string };
+
 export function renderAnnouncementMessage(message: string): React.ReactNode[] {
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-    const segments: { type: 'text' | 'link'; content: string; url?: string }[] = [];
+    const segments: MessageSegment[] = [];
     let lastIndex = 0;
     let match;
 
@@ -128,7 +132,7 @@ export function renderAnnouncementMessage(message: string): React.ReactNode[] {
 
     for (const segment of segments) {
         if (segment.type === 'link') {
-            parts.push(renderLink(segment.url!, segment.content, key++));
+            parts.push(renderLink(segment.url, segment.content, key++));
         } else {
             const { nodes, nextKey } = parseRawUrls(segment.content, key);
             parts.push(...nodes);

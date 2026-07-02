@@ -1,6 +1,12 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
+import type { DbRpcRow } from "@/types/supabase-rpc";
+import type { JsonObject } from "@/types/json";
+import { isJsonObject } from "@/types/json";
 
-export type AdminLevel = "developer" | "senior_admin" | "super_admin";
+export type AdminLevel = Database["public"]["Enums"]["admin_level"];
+
+type AdminsLevelRow = Pick<Database["admin"]["Tables"]["admins"]["Row"], "level">;
 
 export interface AdminStatus {
   isAdmin: boolean;
@@ -9,15 +15,21 @@ export interface AdminStatus {
 
 export interface UserSessionData {
   isAdmin: boolean;
-  preferences: any;
+  preferences: JsonObject;
   preferencesExist: boolean;
 }
 
 interface UserSessionDataResponse {
   is_admin: boolean;
-  preferences: any;
+  preferences: unknown; // Json field — narrowed at use via isJsonObject (Pattern 4)
   preferences_exists: boolean;
 }
+
+// Compile-time guard — breaks if the DB row shape changes.
+type _CheckUserSessionDataResponse =
+  UserSessionDataResponse extends DbRpcRow<"get_user_session_data"> ? true : false;
+declare const _userSessionDataResponseCheck: _CheckUserSessionDataResponse;
+true satisfies typeof _userSessionDataResponseCheck;
 
 /**
  * Single source of truth for admin status. Queries the admins table once and
@@ -40,7 +52,7 @@ export async function getAdminStatus(
     return { isAdmin: false, level: null };
   }
 
-  const level = (data as { level?: AdminLevel } | null)?.level ?? null;
+  const level = (data as AdminsLevelRow | null)?.level ?? null;
   return { isAdmin: !!data, level };
 }
 
@@ -85,9 +97,9 @@ export async function getUserSessionData(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserSessionData> {
-  const { data, error } = (await supabase
+  const { data, error } = await supabase
     .rpc("get_user_session_data", { p_user_id: userId })
-    .single()) as { data: UserSessionDataResponse | null; error: any };
+    .single();
 
   if (error) {
     console.error("Error fetching user session data:", error);
@@ -106,9 +118,10 @@ export async function getUserSessionData(
     };
   }
 
+  const row = data as unknown as UserSessionDataResponse;
   return {
-    isAdmin: data.is_admin,
-    preferences: data.preferences,
-    preferencesExist: data.preferences_exists,
+    isAdmin: row.is_admin,
+    preferences: isJsonObject(row.preferences) ? row.preferences : {},
+    preferencesExist: row.preferences_exists,
   };
 }

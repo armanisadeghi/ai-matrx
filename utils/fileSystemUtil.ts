@@ -299,7 +299,7 @@ export const fileHelpers = {
     json: {
         save: async (
             filename: string,
-            data: any,
+            data: unknown,
             directoryOptions: DirectoryOptions
         ): Promise<FileOperationResult> => {
             const jsonString = JSON.stringify(data, null, 2);

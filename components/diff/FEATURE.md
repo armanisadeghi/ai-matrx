@@ -48,6 +48,22 @@ overlay/router/Redux state, and renders identically as:
 `engine="auto"` → Monaco for recognized code languages or inputs over
 ~60k chars; the light text engine otherwise.
 
+### Merge, don't just view — `DiffReview`
+
+```tsx
+import { DiffReview } from "@/components/diff/DiffReview";
+
+<DiffReview original={a} modified={b} onApply={(mergedText) => save(mergedText)} />
+```
+
+`DiffReview` turns a comparison into an **editing tool**: the user accepts (take
+the new lines) or rejects (keep the old lines) each **hunk**, sees the running
+result, and Applies → `onApply(mergedText)`. Headless of any source — the caller
+owns what "apply" means (write a note / code file / context value / resolve a
+conflict). Engine in `text/engine/hunks.ts` (`getHunks` + `applyHunks`; all
+hunks accepted === `modified`, none === `original`). Use `DiffViewer` for a
+read-only comparison, `DiffReview` when the user should selectively merge.
+
 ### Light engine highlights (what the old diffs lacked)
 
 `text/engine/computeTextDiff.ts` consolidates the two legacy hand-rolled LCS
@@ -59,18 +75,23 @@ inline views. One computation produces both representations.
 
 ```
 components/diff/
-  DiffViewer.tsx              # ⭐ canonical headless core (engine router)
+  DiffViewer.tsx              # ⭐ canonical headless core (engine router), read-only
+  DiffReview.tsx             # ⭐ per-hunk accept/reject MERGE tool → onApply(mergedText)
   text/
-    TextDiff.tsx              # light core: inline + split + highlight, word-level, Swap toggle, GitHub-style colors
+    TextDiff.tsx              # light core: inline + split + highlight, word-level, Swap toggle
+    diffColors.ts            # ⭐ ONE source of truth for diff colors (every renderer imports)
     AnimatedDiffReveal.tsx    # single-pane human reader; animates a known edit landing
     useDiffReveal.ts          # paced "fill the replacement in" reveal for a known before→after
     engine/
       types.ts                # DiffRow, InlineDiffLine, WordSegment, stats
       computeTextDiff.ts      # line LCS + inline/aligned builders + stats
       wordDiff.ts             # intra-line word/char LCS
+      hunks.ts               # getHunks + applyHunks (per-hunk merge model for DiffReview)
   code/
-    CodeDiff.tsx              # heavy core: clean lazy Monaco DiffEditor wrapper
-  engine/ views/ adapters/    # (pre-existing) STRUCTURED entity diff — unchanged
+    CodeDiff.tsx              # heavy core: Monaco DiffEditor behind ONE next/dynamic({ssr:false})
+  adapters/
+    InlineTextDiff.tsx       # compact, self-sizing, chrome-less light diff (structured grid / markdown blocks)
+  engine/ views/              # (pre-existing) STRUCTURED entity diff — unchanged
 ```
 
 ## Wrappers & integration
@@ -114,20 +135,20 @@ interactive per-hunk Monaco surfaces stay on Monaco.
 
 | # | Location | Today | Action |
 |---|---|---|---|
-| A1 | `features/code-editor/utils/generateDiff.ts` | hand-rolled LCS | delete → `text/engine/computeTextDiff` |
-| A2 | `features/code-editor/agent-code-editor/utils/generateDiff.ts` | dup of A1 | delete → canonical engine |
+| A1 | `features/code-editor/utils/generateDiff.ts` | hand-rolled LCS | delete → `computeTextDiff` — **blocked**: still used by A13 preview, `ContextAwareCodeEditor*`, `useAICodeEditor`, `TabDiffView`. Migrate those first. |
+| A2 | `features/code-editor/agent-code-editor/utils/generateDiff.ts` | dup of A1 | delete — **blocked**: still used by `TabDiffView`. |
 | A3 | `features/notes/utils/diffAnalysis.ts` | 3rd LCS | migrate engine; keep thin `analyzeDiff` stats wrapper |
-| A4 | `features/code-editor/components/DiffView.tsx` | LCS + Prism, inline | `DiffViewer light` (monaco for big code) |
-| A5 | `features/code-editor/agent-code-editor/components/parts/DiffView.tsx` | copy of A4 | same as A4 |
+| A4 | `features/code-editor/components/DiffView.tsx` | ~~LCS + Prism~~ | **✓ done** → thin wrapper over `DiffViewer` (auto) |
+| A5 | `features/code-editor/agent-code-editor/components/parts/DiffView.tsx` | ~~copy of A4~~ | **✓ done** — re-exports A4 (dup gone) |
 | A6 | `features/research/components/document/VersionDiff.tsx` | ~~`react-diff-viewer-continued`~~ | **✓ done** → `DiffViewer light` (inline) |
 | A7 | ~~`features/agents/route/AgentVersionsWorkspace.tsx`~~ | dead | **✓ done** — deleted |
-| A8 | `features/versioning/components/VersionDiffView.tsx` | raw `<pre>`/spans | text→`light`, JSON→structured/`monaco` |
-| A9 | `features/notes/components/NoteConflictWindow.tsx` | `diffAnalysis` segments | diff tab→`light`; keep resolution actions |
+| A8 | `features/versioning/components/VersionDiffView.tsx` | ~~raw `<pre>`/spans~~ | **✓ done** → `InlineTextDiff` (short scalars stay compact) |
+| A9 | `features/notes/components/NoteConflictWindow.tsx` | ~~`diffAnalysis` segments~~ | **✓ done** → diff tab `DiffViewer` + new **Merge** tab (`DiffReview`) |
 | A10 | `features/notes/components/diff/adapters/NoteContentAdapter.tsx` | custom row renderer | inner renderer→`TextDiff` inside structured adapter |
 | A11 | `features/agents/components/diff/adapters/MessagesAdapter.tsx` | colored `<pre>`, no LCS | per-message text→`TextDiff`; keep message matching |
 | A12 | `components/diff/views/RawJsonView.tsx` | ~~direct Monaco~~ | **✓ done** → consumes `CodeDiff` |
-| A13 | `components/mardown-display/chat-markdown/diff-blocks/renderers/SearchReplaceDiffRenderer.tsx` | A1+A4 on complete | complete-state→`DiffViewer light`; keep streaming SM |
-| A14 | `features/canvas/custom-components/CodePreviewCanvas.tsx` | A4 + stats | diff tab→`DiffViewer monaco` |
+| A13 | `components/mardown-display/chat-markdown/diff-blocks/renderers/SearchReplaceDiffRenderer.tsx` | complete diff via A4 (now canonical); `generateUnifiedDiff` still powers the collapsed count + 4-line preview | **partial** — main diff canonical; preview/count still A1 |
+| A14 | `features/canvas/custom-components/CodePreviewCanvas.tsx` | ~~A4 + getDiffStats~~ | **✓ done** — diff via canonical A4; stats via `computeTextDiff` |
 | A15 | `features/code-editor/components/AICodeEditor.tsx` | A4 | `DiffViewer` when touched |
 | A16 | `features/code-editor/agent-code-editor/components/parts/ReviewStage.tsx` | A5 | `DiffViewer` when touched |
 | A17 | `features/data-tables/components/VersionHistoryViewer.tsx` | local key prev→next | long values→`light`; keep key summary |
@@ -166,22 +187,35 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 `B27` PD-ratings draft↔saved · `B28` content-templates/skills body edits ·
 `B29` `PromptGenerator` generated↔current · `B30` `stringTransformDisplay` util result.
 
-**✓ Shipped (2026-06-27 rollout):** `B6` ContextVersionHistory · `B7` canvas
-artifact versions · `B10`/`B11`/`B12` RAG raw↔cleaned (DocumentViewer, library
-preview, detail sheet) — plus surfaces not in the original list: **Quick Save
-overwrite confirms** (note + code, compare-before-apply), **transcript
-CleanupPad** (raw↔cleaned), **SystemPromptOptimizer** (current↔optimized).
-**Still open (high-value next):** `B4` agent-app version page · `B13` RAG ingest
-preview · `B16`/`B17`/`B18` data-table + transcript-studio · `B28` content
-templates · `B29` PromptGenerator · notes Find/Replace-All preview. Plus
-Category-A replacements `A4`/`A5` (code-editor `DiffView` dup → delete `A1`/`A2`
-LCS), `A9`+`A3` (notes conflict/`diffAnalysis`), `A13`/`A14`. Expansions:
-per-hunk accept/reject (resurrect dead `features/text-diff` `applyDiffs`),
-`<CompareTwoPicker>`, standalone `/compare` route, agent-emittable `matrx-diff`
-block, 3-way merge.
+**✓ Shipped (2026-06-27 rollout):** `B4` agent-app version code · `B6`
+ContextVersionHistory · `B7` canvas artifact versions · `B10`/`B11`/`B12` RAG
+raw↔cleaned — plus surfaces not in the original list: **Quick Save overwrite
+confirms** (note + code, compare-before-apply), **transcript CleanupPad**,
+**SystemPromptOptimizer**, **ContextItemForm** (compare-with-saved), **content
+TemplateEditor**, **podcast EpisodeContentStudio** (saved↔regenerated). Plus the
+per-hunk **merge** tool (`DiffReview`) wired into `NoteConflictWindow` (A9).
+**Still open:** `B13` RAG ingest preview · `B16`/`B17`/`B18` data-table +
+transcript-studio · `B29` PromptGenerator · notes Find/Replace-All preview ·
+`A13` collapsed preview/count (still on A1) · `A3` `diffAnalysis` engine
+migration · `A1`/`A2` deletion (blocked on the consumers noted above).
+Expansions still to build: `<CompareTwoPicker>` (pick A / pick B), a standalone
+`/compare` route (the `/demos/diff` playground already does paste-two +
+compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen.
 
 ## Change Log
 
+- 2026-06-27 — Rollout pass 2: replacements + the merge tool. **New capability —
+  `DiffReview`** (`components/diff/DiffReview.tsx` + `text/engine/hunks.ts`):
+  per-hunk accept/reject → `onApply(mergedText)`, turning the read-only system
+  into an editing tool; verified live on `/demos/diff` ("review & merge" toggle).
+  **Replacements:** code-editor `DiffView` A4 → thin wrapper over `DiffViewer`,
+  A5 → re-export (duplicate LCS render gone, ~200 lines); `NoteConflictWindow`
+  A9 → canonical diff tab + new per-hunk **Merge** tab; `CodePreviewCanvas` A14
+  stats → `computeTextDiff`. **New Compare surfaces:** `ContextItemForm`
+  (compare-with-saved by the required change summary), agent-app version page B4
+  (client island → Monaco diff of version vs current code), content
+  `TemplateEditor` (saved↔draft), podcast `EpisodeContentStudio`
+  (saved↔regenerated). A1/A2 LCS utils kept (still have consumers — see table).
 - 2026-06-27 — Universal-rollout pass (foundation + 9 surfaces). **Foundation:**
   Monaco now loads via a single `next/dynamic({ssr:false})` in `CodeDiff` +
   `RawJsonView` (was `React.lazy` — rule violation); verified Monaco renders both

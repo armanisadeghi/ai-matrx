@@ -6,7 +6,7 @@ export interface ParameterDefinition {
   type: ParameterType;
   description: string;
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: unknown;
 }
 
 // Define function metadata
@@ -20,14 +20,21 @@ export interface FunctionMetadata {
 }
 
 // Define dependencies that a function might require
+// MATRX-EXCEPTION: heterogeneous dependency-injection bag — each registered
+// function declares its own `requiredDependencies` names and validates their
+// presence at call time (see `executeFunction` below); no single concrete
+// shape covers every function's dependency set.
 export interface FunctionDependencies {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Define registered function structure
 export interface RegisteredFunction {
   metadata: FunctionMetadata;
-  execute: (params: Record<string, any>, dependencies: FunctionDependencies) => Promise<any>;
+  // MATRX-EXCEPTION: heterogeneous handler registry — `params` shape varies
+  // per registered function and is validated at runtime against
+  // `metadata.parameters` (required-param check in `executeFunction`).
+  execute: (params: Record<string, unknown>, dependencies: FunctionDependencies) => Promise<unknown>;
   requiredDependencies: string[]; // Names of dependencies this function requires
 }
 
@@ -39,7 +46,7 @@ const functionRegistry: Record<string, RegisteredFunction> = {};
  */
 export function registerFunction(
   metadata: FunctionMetadata,
-  executeFunction: (params: Record<string, any>, dependencies: FunctionDependencies) => Promise<any>,
+  executeFunction: (params: Record<string, unknown>, dependencies: FunctionDependencies) => Promise<unknown>,
   requiredDependencies: string[] = []
 ): void {
   if (functionRegistry[metadata.name]) {
@@ -79,9 +86,9 @@ export function getRegisteredFunction(name: string): RegisteredFunction | undefi
  */
 export async function executeFunction(
   name: string,
-  params: Record<string, any>,
+  params: Record<string, unknown>,
   dependencies: FunctionDependencies
-): Promise<any> {
+): Promise<unknown> {
   const registeredFunction = functionRegistry[name];
   
   if (!registeredFunction) {

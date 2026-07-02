@@ -84,6 +84,23 @@ Capture is in-memory, cheap, try/caught — it can never break a caller — and 
 for **all** users. Only the UI is admin-gated, which is the seam for the future
 "surface certain errors to end users" feature (`user_message` is captured for it).
 
+## Persistence — client errors join the server error sink
+
+The in-memory store is per-session. `lib/diagnostics/persistCapturedErrors.ts`
+(`installErrorPersistence`, mounted in `DeferredSingletons`) persists **selected**
+captures to the canonical universal error sink **`public.system_error`** (the same
+queryable store + admin dashboard the server writes), so client + server errors
+live in one place. Conservative — **NOT** the in-memory firehose: **red-tier only**,
+deduped (once per entry/session), throttled, **production + authenticated only**.
+
+Direct client INSERT into `system_error` is RLS-denied — the canonical browser
+path is the auth-checked `SECURITY DEFINER` RPC **`public.log_client_error`**
+(`migrations/log_client_error.sql`): attributes to `auth.uid()`, resolves
+`organization_id` (personal org → `matrx-system` fallback) so the NOT NULL never
+blocks capture, fail-safe (returns NULL, never raises). `source_app='matrx-frontend'`
+distinguishes client rows. The ad-hoc API-route writers (audio error logger,
+tool-ui-incident) can adopt this RPC over time.
+
 ## Tiers + downgrade rules (`lib/diagnostics/errorTierRules.ts`)
 
 Every error is classified into a **visibility tier** (NOT a log level) at capture
@@ -167,6 +184,10 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-02 — **DB persistence.** Red-tier captures now persist to the canonical
+  `public.system_error` sink via the new `public.log_client_error` SECURITY DEFINER
+  RPC (`persistCapturedErrors.ts`; prod + authed + throttled). Client errors join
+  the server error dashboard. No new table — merged into the universal sink.
 - 2026-07-01 — **New `data-shape` source: stored data violated the generated
   wire/DB contract at a read ingress.** First producer:
   `features/agents/redux/agent-definition/parse-custom-tools.ts` (validates

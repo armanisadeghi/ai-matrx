@@ -9,12 +9,15 @@ import {
   AlertTriangle,
   X,
   GitCompare,
+  GitMerge,
   FileText,
   Globe,
   Bug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DiffAnalysis, DiffSegment } from "@/features/notes/utils/diffAnalysis";
+import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffReview } from "@/components/diff/DiffReview";
+import type { DiffAnalysis } from "@/features/notes/utils/diffAnalysis";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -31,33 +34,7 @@ export interface NoteConflictWindowProps {
   onCancel: () => void;
 }
 
-type Tab = "diff" | "local" | "remote";
-
-// ── Diff segment renderer ────────────────────────────────────────────────────
-
-function DiffView({ segments }: { segments: DiffSegment[] }) {
-  return (
-    <div className="font-mono text-xs leading-relaxed whitespace-pre-wrap">
-      {segments.map((seg, i) => (
-        <span
-          key={i}
-          className={cn(
-            seg.type === "added" &&
-              "bg-green-500/15 text-green-700 dark:text-green-300",
-            seg.type === "removed" &&
-              "bg-red-500/15 text-red-700 dark:text-red-300 line-through",
-            seg.type === "unchanged" && "text-foreground/70",
-          )}
-        >
-          {seg.type === "added" && "+ "}
-          {seg.type === "removed" && "- "}
-          {seg.content}
-          {"\n"}
-        </span>
-      ))}
-    </div>
-  );
-}
+type Tab = "diff" | "merge" | "local" | "remote";
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -205,6 +182,9 @@ export function NoteConflictWindow({
           <button className={tabClass("diff")} onClick={() => setActiveTab("diff")}>
             <GitCompare className="w-3.5 h-3.5" /> Diff View
           </button>
+          <button className={tabClass("merge")} onClick={() => setActiveTab("merge")}>
+            <GitMerge className="w-3.5 h-3.5" /> Merge
+          </button>
           <button className={tabClass("local")} onClick={() => setActiveTab("local")}>
             <FileText className="w-3.5 h-3.5" /> Your Version
           </button>
@@ -214,8 +194,34 @@ export function NoteConflictWindow({
         </div>
 
         {/* Content area */}
-        <div className="flex-1 min-h-0 overflow-auto p-4" style={{ maxHeight: "50dvh" }}>
-          {activeTab === "diff" && <DiffView segments={analysis.segments} />}
+        <div
+          className={cn(
+            "flex-1 min-h-0 overflow-auto",
+            activeTab === "diff" || activeTab === "merge" ? "" : "p-4",
+          )}
+          style={{ maxHeight: "50dvh" }}
+        >
+          {activeTab === "diff" && (
+            <DiffViewer
+              original={remoteContent}
+              modified={localContent}
+              originalLabel="Remote"
+              modifiedLabel="Yours"
+              engine="light"
+              defaultView="split"
+            />
+          )}
+
+          {activeTab === "merge" && (
+            <DiffReview
+              original={remoteContent}
+              modified={localContent}
+              originalLabel="Remote"
+              modifiedLabel="Yours"
+              applyLabel="Save merged"
+              onApply={(merged) => onKeepMine(merged)}
+            />
+          )}
 
           {activeTab === "local" && (
             <textarea

@@ -8,6 +8,23 @@ import {
 } from "@/constants/favicon-route-data";
 import { Metadata } from "next";
 
+/** Narrowed non-array/non-string/non-URL branch of `Metadata["icons"]`. */
+type MetadataIcons = Exclude<
+  NonNullable<Metadata["icons"]>,
+  string | URL | ReadonlyArray<unknown>
+>;
+
+/** True only for the `Icons` map shape (`{ icon?, shortcut?, apple?, other? }`) — excludes string/URL/array icon shorthands. */
+function isMetadataIconsMap(
+  icons: NonNullable<Metadata["icons"]>,
+): icons is MetadataIcons {
+  return (
+    typeof icons === "object" &&
+    !(icons instanceof URL) &&
+    !Array.isArray(icons)
+  );
+}
+
 // ─── System-route color families ──────────────────────────────────────────────
 // These route trees have a FIXED COLOR so users can instantly identify the
 // category of a tab. The LETTER is always supplied per-route — never shared —
@@ -187,7 +204,7 @@ export function generateFaviconMetadata(
 
   if (!config) {
     // Return empty metadata if no config found
-    return (additionalMetadata || {}) as Metadata;
+    return additionalMetadata ?? {};
   }
 
   const svg = generateSVGFavicon(config);
@@ -204,13 +221,9 @@ export function generateFaviconMetadata(
     };
 
     // Merge icons properly - prioritize our favicon icon
-    if (
-      additionalMetadata.icons &&
-      typeof additionalMetadata.icons === "object" &&
-      !Array.isArray(additionalMetadata.icons)
-    ) {
+    if (additionalMetadata.icons && isMetadataIconsMap(additionalMetadata.icons)) {
       result.icons = {
-        ...(additionalMetadata.icons as Record<string, any>),
+        ...additionalMetadata.icons,
         ...faviconIcons,
       };
     } else {
@@ -249,13 +262,9 @@ export function createCustomFaviconMetadata(
     };
 
     // Merge icons properly - prioritize our favicon icon
-    if (
-      additionalMetadata.icons &&
-      typeof additionalMetadata.icons === "object" &&
-      !Array.isArray(additionalMetadata.icons)
-    ) {
+    if (additionalMetadata.icons && isMetadataIconsMap(additionalMetadata.icons)) {
       result.icons = {
-        ...(additionalMetadata.icons as Record<string, any>),
+        ...additionalMetadata.icons,
         ...faviconIcons,
       };
     } else {
@@ -276,9 +285,12 @@ export function createCustomFaviconMetadata(
  */
 export function getAllRoutesWithFavicons() {
   return faviconRouteData
-    .filter((link) => link.favicon)
+    .filter(
+      (link): link is FaviconRouteEntry & { favicon: FaviconConfig } =>
+        link.favicon !== undefined,
+    )
     .map((link) => ({
       href: link.href,
-      favicon: link.favicon!,
+      favicon: link.favicon,
     }));
 }

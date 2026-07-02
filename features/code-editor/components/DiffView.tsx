@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Prism as SyntaxHighlighterBase } from 'react-syntax-highlighter';
-import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { useThemeMode } from '@/styles/themes/useThemeMode';
-import { generateUnifiedDiff, DiffLine } from '@/features/code-editor/utils/generateDiff';
-import { cn } from '@/styles/themes/utils';
+// features/code-editor/components/DiffView.tsx
+//
+// Thin, API-preserving wrapper over the canonical DiffViewer (components/diff).
+// Was a hand-rolled unified diff (generateUnifiedDiff LCS + Prism-per-line) —
+// now delegates to the shared engine: real syntax-highlighted Monaco diff for
+// code (engine="auto"+language), the light word-level engine for plain text.
+// Same props, so callers are unchanged. (FEATURE.md A4.)
 
-// Type assertion to resolve React 19 type incompatibility
-const SyntaxHighlighter = SyntaxHighlighterBase as any;
+import React from "react";
+import { DiffViewer } from "@/components/diff/DiffViewer";
 
 interface DiffViewProps {
   originalCode: string;
@@ -25,81 +26,15 @@ export function DiffView({
   showLineNumbers = true,
   className,
 }: DiffViewProps) {
-  const mode = useThemeMode();
-  const diff = generateUnifiedDiff(originalCode, modifiedCode);
-
-  const getDiffLineStyle = (type: DiffLine['type']) => {
-    if (type === 'added') {
-      return mode === 'dark'
-        ? 'bg-green-900/60 border-l-4 border-green-500'
-        : 'bg-green-100 border-l-4 border-green-600';
-    }
-    if (type === 'removed') {
-      return mode === 'dark'
-        ? 'bg-red-900/60 border-l-4 border-red-500'
-        : 'bg-red-100 border-l-4 border-red-600';
-    }
-    return 'bg-textured';
-  };
-
   return (
-    <div className={cn('h-full overflow-hidden', className)}>
-      <div className="h-full overflow-auto">
-        <div className="font-mono text-xs bg-textured">
-          {diff.lines.map((line, index) => (
-            <div
-              key={index}
-              className={cn(
-                'flex items-center',
-                getDiffLineStyle(line.type)
-              )}
-            >
-              {showLineNumbers && (
-                <div className={cn(
-                  'shrink-0 w-10 text-right pr-2 select-none',
-                  mode === 'dark' ? 'text-gray-500' : 'text-gray-400'
-                )}>
-                  {line.lineNumber}
-                </div>
-              )}
-              <div className="flex-1 px-2 overflow-x-auto">
-                {line.type === 'removed' ? (
-                  <span className={cn(
-                    'whitespace-pre',
-                    mode === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                  )}>
-                    {line.content || ' '}
-                  </span>
-                ) : (
-                  <SyntaxHighlighter
-                    language={language}
-                    style={mode === 'dark' ? vscDarkPlus : vs}
-                    PreTag="span"
-                    customStyle={{
-                      margin: 0,
-                      padding: 0,
-                      background: 'transparent',
-                      fontSize: 'inherit',
-                      fontFamily: 'inherit',
-                      lineHeight: '1.2',
-                    }}
-                    codeTagProps={{
-                      style: {
-                        background: 'transparent',
-                        fontFamily: 'inherit',
-                        lineHeight: '1.2',
-                      }
-                    }}
-                  >
-                    {line.content || ' '}
-                  </SyntaxHighlighter>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <DiffViewer
+      original={originalCode}
+      modified={modifiedCode}
+      language={language}
+      engine="auto"
+      defaultView="inline"
+      showLineNumbers={showLineNumbers}
+      className={className}
+    />
   );
 }
-

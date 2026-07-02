@@ -268,16 +268,36 @@ export function useQueryWorkbench() {
 
     const start = performance.now();
     try {
-      const data = await executeSqlQuery(resolved);
+      const actionResult = await executeSqlQuery(resolved);
       const elapsed = performance.now() - start;
-      const rows = toRows(data);
+
+      if (actionResult.error) {
+        setBlocks((prev) =>
+          prev.map((b) =>
+            b.id === id
+              ? {
+                  ...b,
+                  status: "error",
+                  error: actionResult.error,
+                  result: null,
+                  executionTime: elapsed,
+                  rowCount: null,
+                }
+              : b,
+          ),
+        );
+        return;
+      }
+
+      const payload = actionResult.data;
+      const rows = toRows(payload);
       setBlocks((prev) =>
         prev.map((b) =>
           b.id === id
             ? {
                 ...b,
                 status: "success",
-                result: data,
+                result: payload,
                 error: null,
                 executionTime: elapsed,
                 rowCount: rows.length,

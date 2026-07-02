@@ -25,9 +25,20 @@ export function useCallbackManager<T = unknown>() {
 
         const promise = new Promise<T>((resolve, reject) => {
             id = callbackManager.registerWithContext((data: CallbackData<T>, context?: CallbackContext) => {
-                if (context?.progress?.status === 'error') {
-                    reject(context.progress.error);
-                } else if (context?.progress?.status === 'completed') {
+                // CallbackContext is an open bag — narrow `progress` honestly
+                // before reading its fields.
+                const progress = context?.progress;
+                const status =
+                    typeof progress === 'object' && progress !== null && 'status' in progress
+                        ? progress.status
+                        : undefined;
+                if (status === 'error') {
+                    reject(
+                        typeof progress === 'object' && progress !== null && 'error' in progress
+                            ? progress.error
+                            : undefined,
+                    );
+                } else if (status === 'completed') {
                     resolve(data.result);
                 }
             });

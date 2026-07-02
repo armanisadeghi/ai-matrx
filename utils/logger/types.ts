@@ -34,7 +34,7 @@ export interface AccurateLogEntry {
     id: string;
     level: LogLevel;
     message: string;
-    data: any;
+    data: unknown;
     trace?: string[];
     module?: string;
     feature?: string;

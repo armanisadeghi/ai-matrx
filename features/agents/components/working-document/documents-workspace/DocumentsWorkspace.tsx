@@ -14,10 +14,17 @@
  * shell, not a new editor.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FileText, Lock, PanelLeftOpen, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { selectWorkingDocBinding } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import {
+  detachWorkspaceDocumentThunk,
+  listAttachedDocumentTabsThunk,
+  openWorkspaceDocumentThunk,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { WorkingDocumentPanel } from "../WorkingDocumentPanel";
 import type { WorkingDocumentSurfaceContext } from "../workingDocumentSurface";
 import {
@@ -32,6 +39,8 @@ interface DocTab {
   label?: string;
   /** Base tabs (this conversation's working + scratch) can't be closed. */
   closable: boolean;
+  /** The durable document id (attached tabs — needed to detach the edge). */
+  documentId?: string;
 }
 
 function tabKey(t: { conversationId: string; kind: WorkingDocumentKind }): string {
@@ -61,6 +70,7 @@ export function DocumentsWorkspace({
   defaultRailOpen = false,
   className,
 }: DocumentsWorkspaceProps) {
+  const dispatch = useAppDispatch();
   const [tabs, setTabs] = useState<DocTab[]>(() => [
     { conversationId, kind: "working", closable: false },
     { conversationId, kind: "scratch", closable: false },
@@ -70,26 +80,111 @@ export function DocumentsWorkspace({
   );
   const [railOpen, setRailOpen] = useState(defaultRailOpen);
 
-  const openDoc = useCallback((sel: DocumentsRailSelection) => {
-    const key = tabKey(sel);
-    setTabs((prev) =>
-      prev.some((t) => tabKey(t) === key)
-        ? prev
-        : [
-            ...prev,
-            {
-              conversationId: sel.conversationId,
-              kind: sel.kind,
-              label: sel.title?.trim() || kindLabel(sel.kind),
+  // Restore this conversation's ATTACHED documents (persisted association
+  // edges) as tabs on mount — the thunk also loads each one's content into its
+  // origin slice entry so the tab renders.
+  useEffect(() => {
+    let cancelled = false;
+    void dispatch(listAttachedDocumentTabsThunk({ conversationId }))
+      .unwrap()
+      .then((restored) => {
+        if (cancelled || restored.length === 0) return;
+        setTabs((prev) => {
+          const open = new Set(prev.map(tabKey));
+          const added = restored
+            .filter((r) => !open.has(tabKey(r)))
+            .map((r) => ({
+              conversationId: r.conversationId,
+              kind: r.kind,
+              label: r.title?.trim() || kindLabel(r.kind),
               closable: true,
-            },
-          ],
-    );
-    setActiveKey(key);
-  }, []);
+              documentId: r.documentId,
+            }));
+          return added.length ? [...prev, ...added] : prev;
+        });
+      })
+      .catch((err: unknown) => {
+        console.error("[documents-workspace] attached-tab restore failed", {
+          conversationId,
+          err,
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, conversationId]);
+
+  // The base tabs' current bindings — a rail doc that IS the conversation's
+  // primary (linked/adopted) doc activates its base tab instead of opening the
+  // same document under a second tab.
+  const workingBinding = useAppSelector(
+    selectWorkingDocBinding(conversationId, "working"),
+  );
+  const scratchBinding = useAppSelector(
+    selectWorkingDocBinding(conversationId, "scratch"),
+  );
+
+  const openDoc = useCallback(
+    (sel: DocumentsRailSelection) => {
+      const boundKind =
+        workingBinding.kind === "cx_working_document" &&
+        workingBinding.id === sel.documentId
+          ? "working"
+          : scratchBinding.kind === "cx_working_document" &&
+              scratchBinding.id === sel.documentId
+            ? "scratch"
+            : null;
+      if (boundKind) {
+        setActiveKey(tabKey({ conversationId, kind: boundKind }));
+        return;
+      }
+      const key = tabKey(sel);
+      const alreadyOpen = tabs.some((t) => tabKey(t) === key);
+      if (!alreadyOpen) {
+        // Cross-conversation doc: load its content into its origin slice entry
+        // and persist the attach edge so the tab restores on the next mount.
+        // (Idempotent — safe if the edge already exists.)
+        if (sel.conversationId !== conversationId) {
+          void dispatch(
+            openWorkspaceDocumentThunk({
+              documentId: sel.documentId,
+              attachTo: conversationId,
+            }),
+          );
+        }
+        setTabs((prev) =>
+          prev.some((t) => tabKey(t) === key)
+            ? prev
+            : [
+                ...prev,
+                {
+                  conversationId: sel.conversationId,
+                  kind: sel.kind,
+                  label: sel.title?.trim() || kindLabel(sel.kind),
+                  closable: true,
+                  documentId: sel.documentId,
+                },
+              ],
+        );
+      }
+      setActiveKey(key);
+    },
+    [tabs, conversationId, dispatch, workingBinding, scratchBinding],
+  );
 
   const closeTab = useCallback(
     (key: string) => {
+      // Closing an attached tab also removes its persisted edge (keeps the
+      // doc) — otherwise it silently reappears on the next mount.
+      const target = tabs.find((t) => tabKey(t) === key);
+      if (target?.closable && target.documentId) {
+        void dispatch(
+          detachWorkspaceDocumentThunk({
+            conversationId,
+            documentId: target.documentId,
+          }),
+        );
+      }
       setTabs((prev) => {
         const next = prev.filter((t) => tabKey(t) !== key);
         return next.length ? next : prev;
@@ -100,7 +195,7 @@ export function DocumentsWorkspace({
         return remaining.length ? tabKey(remaining[0]) : cur;
       });
     },
-    [tabs],
+    [tabs, conversationId, dispatch],
   );
 
   const active = tabs.find((t) => tabKey(t) === activeKey) ?? tabs[0];

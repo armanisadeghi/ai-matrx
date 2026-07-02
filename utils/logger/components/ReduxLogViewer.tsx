@@ -16,10 +16,12 @@ import { logEmitter } from "./ReduxLogger";
 import DataDisplay from "./DataDisplay";
 import LogDetailView from "./LogDetailView";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { ReduxLog } from "@/utils/logger/types";
+import type { ComponentType } from "react";
 
 interface CollapsibleCardProps {
   title: string;
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   children: React.ReactNode;
   defaultExpanded?: boolean;
 }
@@ -54,7 +56,7 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
 };
 
 interface DataDisplayProps {
-  data: any;
+  data: unknown;
 }
 
 const JsonDataDisplay: React.FC<DataDisplayProps> = ({ data }) => {
@@ -106,25 +108,25 @@ interface ReduxLogViewerProps {
 }
 
 const ReduxLogViewer: React.FC<ReduxLogViewerProps> = ({ maxLogs = 100 }) => {
-  const [logs, setLogs] = useState<any[]>([]);
-  const [configs, setConfigs] = useState<any>(null);
-  const [state, setState] = useState<Record<string, any>>({});
+  const [logs, setLogs] = useState<ReduxLog[]>([]);
+  const [configs, setConfigs] = useState<unknown>(null);
+  const [state, setState] = useState<Record<string, unknown>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
 
   useEffect(() => {
-    const handleNewLog = (log: any) => {
+    const handleNewLog = (log: ReduxLog) => {
       setLogs((prevLogs) => {
         const updatedLogs = [log, ...prevLogs];
         return updatedLogs.slice(0, maxLogs);
       });
     };
 
-    const handleUpdateConfigs = (newConfigs: any) => {
+    const handleUpdateConfigs = (newConfigs: unknown) => {
       setConfigs(newConfigs);
     };
 
-    const handleUpdateState = (newState: any) => {
+    const handleUpdateState = (newState: Record<string, unknown>) => {
       console.log("State update received:", newState);
       setState((prevState) => ({
         ...prevState,
@@ -132,7 +134,9 @@ const ReduxLogViewer: React.FC<ReduxLogViewerProps> = ({ maxLogs = 100 }) => {
       }));
     };
 
-    const handleDebugLog = (debugInfo: any) => {
+    // `debugLog` is a dead emit path (no call sites) — kept typed as ReduxLog
+    // since LogDetailView below requires that shape to render.
+    const handleDebugLog = (debugInfo: ReduxLog) => {
       setLogs((prevLogs) => {
         const updatedLogs = [debugInfo, ...prevLogs];
         return updatedLogs.slice(0, maxLogs);
@@ -180,11 +184,11 @@ const ReduxLogViewer: React.FC<ReduxLogViewerProps> = ({ maxLogs = 100 }) => {
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-auto p-2 bg-background">
-        {configs && (
+        {configs ? (
           <CollapsibleCard title="Configs" icon={Settings}>
             <DataDisplay data={configs} />
           </CollapsibleCard>
-        )}
+        ) : null}
         {Object.keys(state).length > 0 && (
           <CollapsibleCard title="State" icon={Database} defaultExpanded={true}>
             <JsonDataDisplay data={state} />

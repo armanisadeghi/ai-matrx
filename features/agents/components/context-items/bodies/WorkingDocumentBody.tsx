@@ -1,29 +1,25 @@
 "use client";
 
 /**
- * Working-document drawer adapter. ONE working-document component renders
- * everywhere (panel, window, smart-input tab, this drawer) — `WorkingDocumentPanel`
- * — varied only by its chrome props. The drawer reuses it with the header off
- * (the drawer owns the title bar + footer), so there is no second editor/diff/
- * history implementation and no divergent behaviour. The title bar's view
- * controls + the binding footer are the only drawer-specific chrome.
+ * Working-document drawer adapter. Every surface that shows the working document
+ * — the tool-result Canvas, the right-sidebar overlay, the floating window, and
+ * THIS context drawer/slot sheet — renders the ONE unified `DocumentsWorkspace`
+ * (tabs + doc rail over the shared `WorkingDocumentPanel`). The drawer used to
+ * render a slimmer single-document peek; it now shows the same workspace so the
+ * experience (and its features) are identical no matter how you open it. The
+ * rail defaults collapsed to fit the drawer width.
  *
- * IMPORTANT: this adapter reads the title via a SELECTOR (not a second
- * `useWorkingDocument` mount) — mounting the hook twice would fork the editor
- * draft state. The single hook mount lives inside `WorkingDocumentPanel`.
+ * Because `DocumentsWorkspace` owns its own header / tab strip / view controls /
+ * status, this body registers no separate TitleActions or Footer in the
+ * context-item registry (they would double up with the workspace's chrome).
  */
 
 import { useEffect } from "react";
-import { FileText, Link2 } from "lucide-react";
-import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
+import { FileText } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectWorkingDocBinding,
-  selectWorkingDocTitle,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { selectWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import type { ContextDrawerItem, ContextItemBodyProps } from "../types";
-import { WorkingDocumentPanel } from "../../working-document/WorkingDocumentPanel";
-import { WorkingDocumentViewControls } from "../../working-document/WorkingDocumentViewControls";
+import { DocumentsWorkspace } from "../../working-document/documents-workspace/DocumentsWorkspace";
 
 export function buildWorkingDocumentDrawerItem(
   conversationId: string,
@@ -53,43 +49,12 @@ export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
     setTitle?.(title?.trim() || "Working document");
   }, [title, setTitle]);
 
-  // The ONE working-document component, chrome off — the drawer supplies its own
-  // title bar (WorkingDocumentTitleActions) + footer (WorkingDocumentFooter).
   return (
-    <WorkingDocumentPanel
+    <DocumentsWorkspace
       conversationId={conversationId}
-      kind="working"
-      showHeader={false}
-      showEnableToggle={false}
-      showOpenInWindow={false}
+      defaultRailOpen={false}
+      className="h-full"
     />
   );
 }
 
-export function WorkingDocumentTitleActions({ item }: ContextItemBodyProps) {
-  return <WorkingDocumentViewControls conversationId={item.conversationId} />;
-}
-
-export function WorkingDocumentFooter({ item }: ContextItemBodyProps) {
-  const binding = useAppSelector(
-    selectWorkingDocBinding(item.conversationId, "working"),
-  );
-  const isBound = binding.kind === "note" && !!binding.id;
-
-  return (
-    <span className="inline-flex min-w-0 items-center gap-1 truncate text-[11px] text-muted-foreground">
-      {isBound ? (
-        <>
-          <Link2 className="h-3 w-3 shrink-0" />
-          <span className="truncate">
-            Synced to note{binding.label ? ` · ${binding.label}` : ""}
-          </span>
-        </>
-      ) : (
-        <span className="truncate">
-          Auto-saved · {WORKING_DOCUMENT_CONTEXT_KEY}
-        </span>
-      )}
-    </span>
-  );
-}

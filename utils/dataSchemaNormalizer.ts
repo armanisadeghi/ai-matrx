@@ -7,13 +7,13 @@ const isNullLike = (value: unknown): boolean => {
 };
 
 export function createNormalizer(fields: readonly string[]) {
-    return (data: any) => {
-        const normalized: Record<string, any> = {};
-        
+    return (data: Record<string, unknown> | null | undefined) => {
+        const normalized: Record<string, unknown> = {};
+
         fields.forEach(field => {
             normalized[field] = isNullLike(data?.[field]) ? 'default' : data?.[field];
         });
-        
+
         return normalized;
     };
 }

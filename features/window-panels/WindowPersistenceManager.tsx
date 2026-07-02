@@ -216,6 +216,9 @@ export function WindowPersistenceManager({
       setHydrated(true);
       return undefined;
     }
+    // Narrow once for the closures below — `userId` is nullable at the
+    // effect's type but is guaranteed non-null past this guard.
+    const currentUserId = userId;
 
     let cancelled = false;
 
@@ -263,11 +266,10 @@ export function WindowPersistenceManager({
     }
 
     async function hydrate() {
-      if (!userId) return;
       try {
         await runSlugMigrations();
         if (cancelled) return;
-        const sessions = await loadWindowSessions(userId);
+        const sessions = await loadWindowSessions(currentUserId);
         if (cancelled) return;
 
         // Geometry restore payload: slug → WindowEntry shape.

@@ -1,9 +1,11 @@
 /**
  * Email Service
- * 
+ *
  * Handles sending emails via SMTP
  * Uses Nodemailer with your Gmail SMTP settings
  */
+
+import { extractErrorMessage } from "@/utils/errors";
 
 export interface SendEmailOptions {
   to: string;
@@ -33,23 +35,23 @@ export async function sendEmail(options: SendEmailOptions): Promise<EmailResult>
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error: unknown = await response.json();
       return {
         success: false,
-        error: error.message || 'Failed to send email',
+        error: extractErrorMessage(error) || 'Failed to send email',
       };
     }
 
-    const result = await response.json();
+    const result: { messageId?: string } = await response.json();
     return {
       success: true,
       messageId: result.messageId,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error sending email:', error);
     return {
       success: false,
-      error: error.message || 'Failed to send email',
+      error: extractErrorMessage(error) || 'Failed to send email',
     };
   }
 }

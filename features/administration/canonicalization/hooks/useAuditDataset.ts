@@ -28,6 +28,8 @@ export function useAuditDataset<T>(
       const res = await fetch(`/api/admin/canonicalization?dataset=${dataset}`);
       const data = await readJsonObject(res);
       if (!res.ok) throw new Error(errorMessageFrom(data, res));
+      // The caller-supplied `isRow` predicate IS the runtime validation the
+      // dataset's `T` needs — rows failing it are dropped loudly, never cast.
       const rawRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
       const validRows = rawRows.filter(isRow);
       if (validRows.length !== rawRows.length) {

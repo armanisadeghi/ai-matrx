@@ -1,4 +1,9 @@
-export function cleanErrorStack(errorStack) {
+interface CleanedErrorStack {
+    errorStack?: string;
+    [functionName: string]: string | { "File Location": string; line: string } | undefined;
+}
+
+export function cleanErrorStack(errorStack: string | undefined): CleanedErrorStack {
     if (!errorStack) return {};
 
     // Keep the working filtering logic
@@ -21,7 +26,7 @@ export function cleanErrorStack(errorStack) {
         );
 
     // Start building our result object with the error message
-    const result = {
+    const result: CleanedErrorStack = {
         errorStack: filteredLines[0]
     };
 
@@ -52,11 +57,11 @@ export function cleanErrorStack(errorStack) {
 
 
 interface ErrorDetails {
-    error: Error | { message: string; [key: string]: any };
+    error: Error | { message: string; [key: string]: unknown };
     location: string;
-    action?: { type: string; payload: any };
+    action?: { type: string; payload: unknown };
     entityKey?: string;
-    additionalContext?: Record<string, any>;
+    additionalContext?: Record<string, unknown>;
 }
 
 export function createStructuredError(
@@ -67,7 +72,7 @@ export function createStructuredError(
         entityKey,
         additionalContext = {}
     }: ErrorDetails) {
-    const details = {
+    const details: Record<string, unknown> = {
         location,
         errorMessage: error.message,
         errorName: error.constructor.name,
@@ -76,7 +81,7 @@ export function createStructuredError(
     };
 
     // Add error stack if available
-    if ('stack' in error) {
+    if ('stack' in error && typeof error.stack === 'string') {
         details['errorStack'] = cleanErrorStack(error.stack);
     }
 

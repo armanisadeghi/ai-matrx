@@ -53,6 +53,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { PlainTextMetricsBar } from "@/components/text/PlainTextMetricsBar";
 
 const MarkdownAnalyzer = lazy(() => import("./analyzer/MarkdownAnalyzer"));
 
@@ -1096,13 +1097,16 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       label: TAB_LABELS.write,
       content: wrapInBoundary(
         "write",
-        <textarea
-          className="w-full h-full p-4 outline-none resize-none border-none bg-textured text-foreground text-base font-mono"
-          value={editedContent}
-          onChange={handleTextareaChange}
-          placeholder="Start writing markdown..."
-          aria-label="Markdown Editor"
-        />,
+        <div className="flex h-full min-h-0 flex-col">
+          <textarea
+            className="min-h-0 flex-1 w-full resize-none border-none bg-textured p-4 font-mono text-base text-foreground outline-none"
+            value={editedContent}
+            onChange={handleTextareaChange}
+            placeholder="Start writing markdown..."
+            aria-label="Markdown Editor"
+          />
+          <PlainTextMetricsBar text={editedContent} compact={isMobile} />
+        </div>,
       ),
       className: "p-0",
     });

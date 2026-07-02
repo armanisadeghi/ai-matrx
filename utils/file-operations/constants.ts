@@ -200,7 +200,6 @@ export const CATEGORY_FILE_DEFAULTS: Partial<Record<FileCategory, Partial<FileTy
     },
 };
 // SubCategory-level defaults
-// @ts-ignore
 export const SUBCATEGORY_FILE_DEFAULTS: Record<string, Partial<FileTypeDetails>> = {
     // Code Subcategories
     JAVASCRIPT: {
@@ -629,7 +628,7 @@ export const getFileDetailsByUrl = (url: string, metadata?: StorageMetadata, loc
     Object.assign(result, extConfig);
 
     // Extract iconName from the icon component
-    const iconName = (result.icon as any)?.displayName || "UnknownIcon";
+    const iconName = result.icon?.displayName || "UnknownIcon";
 
     return {
         ...result,

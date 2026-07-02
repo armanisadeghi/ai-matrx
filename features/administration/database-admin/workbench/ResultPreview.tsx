@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Copy, Table as TableIcon } from "lucide-react";
-import { toast } from "sonner";
+import { Table as TableIcon } from "lucide-react";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { getColumns, toRows } from "./utils/joinResults";
 
 interface ResultPreviewProps {
@@ -39,15 +38,6 @@ export function ResultPreview({
   const columns = useMemo(() => getColumns(rows), [rows]);
   const truncated = rows.length > maxTableRows;
   const displayRows = truncated ? rows.slice(0, maxTableRows) : rows;
-
-  const copyJson = () => {
-    try {
-      navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-      toast.success("Copied JSON to clipboard");
-    } catch {
-      toast.error("Failed to copy");
-    }
-  };
 
   if (rows.length === 0 && (data === null || data === undefined)) {
     return (
@@ -84,15 +74,6 @@ export function ResultPreview({
               JSON
             </TabsTrigger>
           </TabsList>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={copyJson}
-            className="h-6 w-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-            title="Copy JSON"
-          >
-            <Copy className="h-3 w-3" />
-          </Button>
         </div>
 
         <TabsContent value="table" className="m-0 flex-1 min-h-0 overflow-auto">
@@ -159,10 +140,11 @@ export function ResultPreview({
           )}
         </TabsContent>
 
-        <TabsContent value="json" className="m-0 flex-1 min-h-0 overflow-auto">
-          <pre className="p-2 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap">
-            {JSON.stringify(data, null, 2)}
-          </pre>
+        <TabsContent
+          value="json"
+          className="m-0 flex-1 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col"
+        >
+          <JsonInspector data={data} defaultView="json" className="h-full" />
         </TabsContent>
       </Tabs>
     </div>

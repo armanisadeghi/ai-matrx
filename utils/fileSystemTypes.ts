@@ -22,7 +22,7 @@ export interface FileOperationResult {
 }
 
 export interface FileContentResult {
-    content: any;
+    content: unknown;
     type: string;
     viewerType: 'json' | 'text' | 'markdown' | 'image' | 'binary' | 'none';
     error?: string;

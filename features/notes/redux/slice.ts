@@ -930,9 +930,9 @@ const notesSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // The thunk is type-only-imported (runtime import would be circular), so
-    // match on the action type string with a predicate that narrows to the
-    // thunk's fulfilled action — addMatcher accepts exactly this shape.
+    // The thunk is type-only-imported (a runtime import would be circular —
+    // thunks.ts imports actions from this slice), so match on the action type
+    // string with a predicate that narrows to the thunk's fulfilled action.
     builder.addMatcher(
       (action): action is ReturnType<typeof fetchAllNoteScopes.fulfilled> =>
         action.type === "notes/fetchAllNoteScopes/fulfilled",

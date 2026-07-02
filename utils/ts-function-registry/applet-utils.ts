@@ -6,7 +6,7 @@ export interface AppletStep {
   id: string;
   type: 'function';
   functionName: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   title: string;
   description?: string;
 }
@@ -24,16 +24,16 @@ export interface AppletLogic {
 export async function executeAppletLogic(
   dependencies: FunctionDependencies,
   applet: AppletLogic,
-  initialState: Record<string, any> = {}
+  initialState: Record<string, unknown> = {}
 ): Promise<{
   success: boolean;
-  results: Record<string, any>;
+  results: Record<string, unknown>;
   error?: string;
   failedStep?: string;
 }> {
   // Create a state object that will be updated as each step executes
   const state = { ...initialState };
-  const results: Record<string, any> = {};
+  const results: Record<string, unknown> = {};
   
   try {
     // Execute each step in sequence
@@ -96,35 +96,35 @@ export async function executeAppletLogic(
  * Example: {value: "{{step1.id}}"} would be replaced with the actual value
  */
 async function processParameters(
-  params: Record<string, any>,
-  state: Record<string, any>
-): Promise<Record<string, any>> {
-  const processedParams: Record<string, any> = {};
-  
+  params: Record<string, unknown>,
+  state: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const processedParams: Record<string, unknown> = {};
+
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === 'string' && value.match(/^\{\{.*\}\}$/)) {
       // Extract variable path from template {{stepId.property.subproperty}}
       const path = value.slice(2, -2).trim().split('.');
-      
+
       // Traverse the state object to get the referenced value
-      let current: any = state;
+      let current: unknown = state;
       for (const segment of path) {
-        if (current === undefined || current === null) {
+        if (current === undefined || current === null || typeof current !== 'object') {
           break;
         }
-        current = current[segment];
+        current = (current as Record<string, unknown>)[segment];
       }
-      
+
       processedParams[key] = current;
     } else if (typeof value === 'object' && value !== null) {
       // Recursively process nested objects and arrays
-      processedParams[key] = await processParameters(value, state);
+      processedParams[key] = await processParameters(value as Record<string, unknown>, state);
     } else {
       // Keep primitive values as-is
       processedParams[key] = value;
     }
   }
-  
+
   return processedParams;
 }
 

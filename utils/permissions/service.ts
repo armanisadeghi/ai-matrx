@@ -51,6 +51,43 @@ import {
 } from "./types";
 import { getShareableResource } from "./registry";
 
+/**
+ * Minimal query surface used by the dynamic-table helpers below. The registry
+ * resolves schema/table names at RUNTIME from resource-type metadata (any of
+ * dozens of resource types), so the generated `Database` type — which requires
+ * literal schema/table names — cannot express this call shape statically.
+ *
+ * MATRX-EXCEPTION: `resolveDynamicClient` is the one sanctioned cast site for
+ * this pattern in this file; every dynamic-schema table access below routes
+ * through it instead of hand-rolling its own `as unknown as` interface.
+ */
+interface DynamicTableClient {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (
+        column: string,
+        value: string,
+      ) => {
+        maybeSingle: <T>() => Promise<{ data: T | null; error: unknown }>;
+      };
+    };
+    update: (patch: Record<string, unknown>) => {
+      eq: (
+        column: string,
+        value: string,
+      ) => {
+        select: (columns: string) => Promise<{ data: unknown[] | null; error: unknown }>;
+      };
+    };
+  };
+}
+
+/** Resolve a client scoped to a dynamically-named schema (or the default public client). */
+function resolveDynamicClient(schemaName: string | undefined): DynamicTableClient {
+  const base = supabase as unknown as { schema: (s: string) => unknown };
+  return (schemaName ? base.schema(schemaName) : supabase) as unknown as DynamicTableClient;
+}
+
 type RpcPermissionRow =
   Database["public"]["Functions"]["get_resource_permissions"]["Returns"][number];
 type PermissionsTableRow = Database["iam"]["Tables"]["permissions"]["Row"];
@@ -150,21 +187,7 @@ async function setVisibilityColumn(
   const entry = getShareableResource(resourceType);
   const tableName = entry?.physicalTable ?? entry?.tableName ?? resourceType;
   const idColumn = entry?.idColumn ?? "id";
-  const base = supabase as unknown as {
-    schema: (s: string) => unknown;
-  };
-  const scoped = (entry?.schemaName ? base.schema(entry.schemaName) : supabase) as unknown as {
-    from: (t: string) => {
-      update: (patch: Record<string, unknown>) => {
-        eq: (
-          k: string,
-          v: string,
-        ) => {
-          select: (col: string) => Promise<{ data: unknown[] | null; error: unknown }>;
-        };
-      };
-    };
-  };
+  const scoped = resolveDynamicClient(entry?.schemaName);
   const { data, error } = await scoped
     .from(tableName)
     .update({ visibility })
@@ -202,19 +225,7 @@ export async function getResourceVisibility(
     if (usesVisibilityEnum(resourceType)) {
       const tableName = entry?.physicalTable ?? entry?.tableName ?? resourceType;
       const idColumn = entry?.idColumn ?? "id";
-      const visBase = supabase as unknown as { schema: (s: string) => unknown };
-      const visClient = (entry?.schemaName ? visBase.schema(entry.schemaName) : supabase) as unknown as {
-        from: (t: string) => {
-          select: (col: string) => {
-            eq: (
-              k: string,
-              v: string,
-            ) => {
-              maybeSingle: <T>() => Promise<{ data: T | null; error: unknown }>;
-            };
-          };
-        };
-      };
+      const visClient = resolveDynamicClient(entry?.schemaName);
       const { data, error } = await visClient
         .from(tableName)
         .select("visibility")
@@ -226,19 +237,7 @@ export async function getResourceVisibility(
     if (!entry || !entry.isPublicColumn) {
       return { isPublic: false };
     }
-    const pubBase = supabase as unknown as { schema: (s: string) => unknown };
-    const client = (entry.schemaName ? pubBase.schema(entry.schemaName) : supabase) as unknown as {
-      from: (t: string) => {
-        select: (col: string) => {
-          eq: (
-            k: string,
-            v: string,
-          ) => {
-            maybeSingle: <T>() => Promise<{ data: T | null; error: unknown }>;
-          };
-        };
-      };
-    };
+    const client = resolveDynamicClient(entry.schemaName);
     const { data, error } = await client
       .from(entry.physicalTable ?? entry.tableName)
       .select(entry.isPublicColumn)
@@ -651,19 +650,7 @@ export async function isResourceOwner(
     // Resolve the real physical table + schema (file/folder live in `files.*`,
     // not `public`, and their `tableName` is the RLS key, not the table name).
     const tableName = entry.physicalTable ?? entry.tableName;
-    const base = supabase as unknown as { schema: (s: string) => unknown };
-    const client = (entry.schemaName ? base.schema(entry.schemaName) : supabase) as unknown as {
-      from: (t: string) => {
-        select: (col: string) => {
-          eq: (
-            k: string,
-            v: string,
-          ) => {
-            maybeSingle: <T>() => Promise<{ data: T | null; error: unknown }>;
-          };
-        };
-      };
-    };
+    const client = resolveDynamicClient(entry.schemaName);
     const [
       { data: row },
       {

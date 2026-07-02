@@ -1775,7 +1775,13 @@ export async function processStream({
 
   StreamProfiler.getInstance().stopAndReport("Stream Performance Result", {
     tokens: tokenUsage,
-    timing: completionStats?.timing_stats,
+    // The wire type allows null durations; the profiler wants number|undefined.
+    timing: completionStats?.timing_stats
+      ? {
+          total_duration: completionStats.timing_stats.total_duration ?? undefined,
+          api_duration: completionStats.timing_stats.api_duration ?? undefined,
+        }
+      : undefined,
   });
 
   const postLoopState = getState();

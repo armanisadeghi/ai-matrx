@@ -13,7 +13,7 @@ interface AppConfig {
   creator: string;
   primary_color: string | null;
   accent_color: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AppletConfig {
@@ -21,7 +21,7 @@ interface AppletConfig {
   name: string;
   description: string | null;
   slug: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AppData {

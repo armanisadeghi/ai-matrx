@@ -162,14 +162,15 @@ export async function createAgentAppCategory(
   input: CreateAgentAppCategoryInput,
 ): Promise<AgentAppCategoryRow> {
   const supabase = getClient();
+  const organizationId = await resolveSystemOrgId(supabase);
   const { data, error } = await supabase
     .schema("platform").from("categories")
     .insert([
       {
-        dimension: "app",
         // platform.categories requires an owning org; agent-app categories are
         // platform-wide, so they belong to the Matrx System tenant.
-        organization_id: await resolveSystemOrgId(supabase),
+        organization_id: organizationId,
+        dimension: "app",
         name: input.name,
         slug: input.name
           ?.toLowerCase()

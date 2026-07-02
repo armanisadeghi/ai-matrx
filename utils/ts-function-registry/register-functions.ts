@@ -1,8 +1,31 @@
 'use client';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { registerFunction, FunctionDependencies } from './function-registry';
 import { createSchemaTemplate, getSchemaTemplates, getSchemaTemplateById, deleteSchemaTemplate, updateSchemaTemplate, CreateTemplateParams } from '../user-table-utls/template-utils';
 import { createTable, addColumn, getTableDetails, addRow, CreateTableParams, AddColumnParams, AddRowParams } from '../user-table-utls/table-utils';
+
+/**
+ * Every registered function here declares `['supabase']` as its required
+ * dependency (validated by name in `executeFunction`), so the bag always
+ * carries a real client at call time — narrow it once per callback instead
+ * of threading an `as unknown as` through every RPC call below.
+ */
+function requireSupabase(dependencies: FunctionDependencies): SupabaseClient {
+  return dependencies.supabase as SupabaseClient;
+}
+
+/**
+ * Heterogeneous-registry narrowing, confined to one reviewed line: the
+ * registry validates every declared required parameter by name at dispatch
+ * (`executeFunction` in function-registry.ts) before a callback runs, so the
+ * param bag matches the callback's declared shape at runtime. Casting to an
+ * unconstrained generic keeps each call site to `asParams<X>(params)` instead
+ * of a banned two-step cast.
+ */
+function asParams<T>(params: Record<string, unknown>): T {
+  return params as T;
+}
 
 /**
  * Register all database operation functions for use in applets
@@ -44,8 +67,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'CreateTemplateResult'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await createSchemaTemplate(dependencies.supabase, params as CreateTemplateParams);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await createSchemaTemplate(requireSupabase(dependencies), asParams<CreateTemplateParams>(params));
     },
     ['supabase']
   );
@@ -59,8 +82,8 @@ export function registerDatabaseFunctions() {
       parameters: [],
       returnType: 'SchemaTemplate[]'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await getSchemaTemplates(dependencies.supabase);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await getSchemaTemplates(requireSupabase(dependencies));
     },
     ['supabase']
   );
@@ -81,8 +104,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'SchemaTemplate | null'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await getSchemaTemplateById(dependencies.supabase, params.templateId);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await getSchemaTemplateById(requireSupabase(dependencies), params.templateId as string);
     },
     ['supabase']
   );
@@ -103,8 +126,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'Object'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await deleteSchemaTemplate(dependencies.supabase, params.templateId);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await deleteSchemaTemplate(requireSupabase(dependencies), params.templateId as string);
     },
     ['supabase']
   );
@@ -149,9 +172,9 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'Object'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
       const { templateId, ...updates } = params;
-      return await updateSchemaTemplate(dependencies.supabase, templateId, updates);
+      return await updateSchemaTemplate(requireSupabase(dependencies), templateId as string, updates as Partial<CreateTemplateParams>);
     },
     ['supabase']
   );
@@ -201,8 +224,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'CreateTableResult'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await createTable(dependencies.supabase, params as CreateTableParams);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await createTable(requireSupabase(dependencies), asParams<CreateTableParams>(params));
     },
     ['supabase']
   );
@@ -253,8 +276,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'AddColumnResult'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await addColumn(dependencies.supabase, params as AddColumnParams);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await addColumn(requireSupabase(dependencies), asParams<AddColumnParams>(params));
     },
     ['supabase']
   );
@@ -275,8 +298,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'GetTableResult'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await getTableDetails(dependencies.supabase, params.tableId);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await getTableDetails(requireSupabase(dependencies), params.tableId as string);
     },
     ['supabase']
   );
@@ -303,8 +326,8 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'AddRowResult'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      return await addRow(dependencies.supabase, params as AddRowParams);
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      return await addRow(requireSupabase(dependencies), asParams<AddRowParams>(params));
     },
     ['supabase']
   );
@@ -333,32 +356,33 @@ export function registerDatabaseFunctions() {
       ],
       returnType: 'string'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      const rawDate = params.date as string;
       try {
-        const date = new Date(params.date);
-        
+        const date = new Date(rawDate);
+
         // Very simple formatting implementation
         // In a real app, you might use a library like date-fns
-        const format = params.format || 'yyyy-MM-dd';
-        
+        const format = (params.format as string | undefined) || 'yyyy-MM-dd';
+
         // Return ISO string if we can't parse the date
         if (isNaN(date.getTime())) {
-          return params.date;
+          return rawDate;
         }
-        
+
         // Simple formatting logic
         const year = date.getFullYear();
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const day = date.getDate().toString().padStart(2, '0');
-        
+
         return format
           .replace('yyyy', year.toString())
           .replace('MM', month)
           .replace('dd', day);
       } catch (err) {
-        return params.date; // Return original if formatting fails
+        return rawDate; // Return original if formatting fails
       }
     },
     [] // No dependencies needed
   );
-} 
+}

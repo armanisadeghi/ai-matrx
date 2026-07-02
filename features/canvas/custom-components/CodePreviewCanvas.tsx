@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import CodeBlock from '@/features/code-editor/components/code-block/CodeBlock';
 import { DiffView } from '@/features/code-editor/components/DiffView';
-import { getDiffStats } from '@/features/code-editor/utils/generateDiff';
+import { computeTextDiff } from '@/components/diff/text/engine/computeTextDiff';
 import type { CodeEdit } from '@/features/code-editor/utils/parseCodeEdits';
 
 export interface CodePreviewCanvasProps {
@@ -53,7 +53,13 @@ export function CodePreviewCanvas({
   const [activeTab, setActiveTab] = useState('diff');
   const [isApplied, setIsApplied] = useState(false);
 
-  const diffStats = getDiffStats(originalCode, modifiedCode);
+  // Canonical engine stats. Unified counting: a modified line is one addition
+  // and one deletion, so fold `modifications` into both.
+  const { stats } = computeTextDiff(originalCode, modifiedCode);
+  const diffStats = {
+    additions: stats.additions + stats.modifications,
+    deletions: stats.deletions + stats.modifications,
+  };
 
   const handleApply = () => {
     onApply();
