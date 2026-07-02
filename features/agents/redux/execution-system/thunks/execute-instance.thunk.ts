@@ -738,9 +738,14 @@ export const executeInstance = createAsyncThunk<
         }),
       );
       if (!retry) {
-        const { clearUserInput } =
-          await import("../instance-user-input/instance-user-input.slice");
-        dispatch(clearUserInput(conversationId));
+        // Pre-stream failure clear-on-send. Same class as run-ai-stream's error
+        // path — route through the ONE sanctioned clear helper so a live
+        // next-message draft is never wiped (and never trips a false violation
+        // scream); the just-failed message clears as before.
+        const { clearComposerIfUnsubmitted } = await import(
+          "../instance-user-input/clear-composer.thunk"
+        );
+        dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
       }
       return rejectWithValue(message);
     }

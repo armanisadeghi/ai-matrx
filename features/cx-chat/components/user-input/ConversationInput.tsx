@@ -64,7 +64,7 @@ import {
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import {
   selectAvailableModels,
   selectModelOptions,
@@ -421,8 +421,11 @@ export function ConversationInput({
         return;
       }
 
-      // Set the text in Redux then fire executeInstance — it assembles everything
-      // (user input, variables, resources, model overrides) from instance slices.
+      // Set the text in Redux then fire the canonical send path (`smartExecute`)
+      // — it snapshots the submit (markInputSubmitted), assembles everything
+      // (user input, variables, resources, model overrides) from the instance
+      // slices, and executes. No surfaceKey ⇒ never splits ⇒ this durable
+      // conversation can never be orphaned.
       if (finalContent) {
         dispatch(
           setUserInputText({
@@ -431,7 +434,7 @@ export function ConversationInput({
           }),
         );
       }
-      dispatch(executeInstance({ conversationId }));
+      dispatch(smartExecute({ conversationId }));
       dispatch(setUserInputText({ conversationId: conversationId, text: "" }));
       onSend?.();
     },

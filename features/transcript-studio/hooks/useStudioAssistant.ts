@@ -10,7 +10,8 @@
  *   - Rebuilds the named context objects (recording_NN_raw / session_cleaned /
  *     working_document) before every turn so new recordings + cleanups + the
  *     latest document content reach the agent.
- *   - Sends a turn (typed or spoken-then-transcribed) via executeInstance.
+ *   - Sends a turn (typed or spoken-then-transcribed) via the canonical
+ *     `smartExecute` send path (no surfaceKey ⇒ never splits/orphans).
  *
  * The assistant edits the working_document server-side via ctx_patch; those
  * writes land in studio_documents and arrive back through realtime, so this
@@ -20,7 +21,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -248,10 +249,12 @@ export function useStudioAssistant(
         dispatch(setUserInputText({ conversationId, text }));
       }
       refreshContext();
-      // `executeInstance` records the submitted text for draft-protection
-      // (markInputSubmitted) centrally — direct senders like this no longer
-      // need to do it themselves. See execute-instance.thunk.ts.
-      await dispatch(executeInstance({ conversationId }));
+      // Route through the ONE canonical send path (`smartExecute`) — same as the
+      // main chat composer — so every human-composer surface shares one submit
+      // entrypoint. No surfaceKey ⇒ never splits ⇒ this durable studio
+      // conversation can never be orphaned. `smartExecute` records the submitted
+      // text for draft-protection (markInputSubmitted) itself.
+      await dispatch(smartExecute({ conversationId }));
     },
     [conversationId, dispatch, refreshContext],
   );

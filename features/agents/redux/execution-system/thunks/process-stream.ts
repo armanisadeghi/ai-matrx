@@ -159,11 +159,8 @@ import {
   type CxRequestRecord,
   type CxToolCallRecord,
 } from "../observability/observability.slice";
-import {
-  clearUserInput,
-  markInputPersisted,
-} from "../instance-user-input/instance-user-input.slice";
 import { isInputDraftProtected } from "../instance-user-input/input-draft-protection";
+import { clearComposerIfUnsubmitted } from "../instance-user-input/clear-composer.thunk";
 import { clearSubmittedResources } from "../instance-resources/instance-resources.slice";
 import { selectHasUnsentResources } from "../instance-resources/instance-resources.selectors";
 import { resetUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
@@ -1206,12 +1203,15 @@ export async function processStream({
           const nowIso = new Date().toISOString();
           // Phase 2 — server has persisted the user's request. Safe to visually
           // clear the input field; lastSubmittedText is retained in the slice.
-          // Both clears are SCOPED to exactly what was submitted: markInputPersisted
-          // only clears the text if it's still the sent text, and
-          // clearSubmittedResources removes only the snapshotted sent attachments
-          // — so a next-message draft the user has already started (text, pasted
-          // image, file) is never touched.
-          dispatch(markInputPersisted(conversationId));
+          // Both clears are SCOPED to exactly what was submitted:
+          // clearComposerIfUnsubmitted (via "persist" → markInputPersisted) only
+          // clears the text if it's still the sent text — a live next-message
+          // draft is left untouched, silently, via the one sanctioned clear
+          // path — and clearSubmittedResources removes only the snapshotted sent
+          // attachments, so a pasted image / file added afterward survives.
+          dispatch(
+            clearComposerIfUnsubmitted(conversationId, { via: "persist" }),
+          );
           dispatch(clearSubmittedResources(conversationId));
           dispatch(
             upsertUserRequest({
@@ -2114,9 +2114,10 @@ export async function processStream({
     const textProtected = inputEntry
       ? isInputDraftProtected(inputEntry)
       : false;
-    if (!textProtected) {
-      dispatch(clearUserInput(conversationId));
-    }
+    // Sanctioned clear-on-send: no-ops on a live draft, wipes the just-sent
+    // text otherwise (the reservation path already ran this for persistent
+    // convos; this covers ephemeral runs that have no reservation).
+    dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
     dispatch(clearSubmittedResources(conversationId));
     const hasUnsentResources =
       selectHasUnsentResources(conversationId)(getState());

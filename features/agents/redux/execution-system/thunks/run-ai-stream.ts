@@ -484,14 +484,16 @@ export async function runAiStream(
     );
 
     // Pre-persistence failure (e.g. "Failed to fetch"): clear the hidden input
-    // so the message doesn't linger in the box. It survives as the optimistic
-    // user bubble + the `lastSubmittedText` re-apply backup, so nothing is
-    // lost. (markInputPersisted, which normally clears it on success, never
-    // ran on this path.) Resume never reads the input box, so it passes false.
+    // so the failed message doesn't linger in the box. It survives as the
+    // optimistic user bubble + the `lastSubmittedText` re-apply backup, so
+    // nothing is lost. Routed through the ONE sanctioned clear path so a live
+    // next-message draft the user started while this send was in flight is left
+    // untouched (no false violation scream). Resume passes false here.
     if (clearInputOnError) {
-      const { clearUserInput } =
-        await import("../instance-user-input/instance-user-input.slice");
-      dispatch(clearUserInput(conversationId));
+      const { clearComposerIfUnsubmitted } = await import(
+        "../instance-user-input/clear-composer.thunk"
+      );
+      dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
     }
 
     // Wrap so the caller's outer catch knows we've already cleaned up and

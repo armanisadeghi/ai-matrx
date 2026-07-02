@@ -33,6 +33,7 @@ import {
   createInstance,
   destroyInstance,
 } from "../conversations/conversations.slice";
+import { deriveConversationLifecycle } from "@/features/agents/types/instance.types";
 import {
   setFocus,
   setInputFocus,
@@ -442,6 +443,10 @@ export const createInstanceFromShortcut = createAsyncThunk<
       origin: "shortcut" as InstanceOrigin,
       shortcutId,
       sourceFeature,
+      conversationLifecycle: deriveConversationLifecycle(
+        autoClearConversation,
+        showAutoClearToggle,
+      ),
     }),
   );
 
@@ -873,6 +878,13 @@ export const startNewConversation = createAsyncThunk<
         agentType: snapshot?.agentType ?? instance.agentType,
         origin: instance.origin as InstanceOrigin,
         sourceFeature: sourceFeature as SourceFeature,
+        // Keep the new conversation's lifecycle in lockstep with the uiState it
+        // inherits below (autoClear defaults ON here, mirroring the builder's
+        // fresh-start affordance).
+        conversationLifecycle: deriveConversationLifecycle(
+          currentUIState?.autoClearConversation ?? true,
+          currentUIState?.showAutoClearToggle,
+        ),
       }),
     );
 
@@ -1021,6 +1033,12 @@ export const startNewConversationAndExecute = createAsyncThunk<
         agentType: snapshot?.agentType ?? instance.agentType,
         origin: origin as InstanceOrigin,
         sourceFeature: sourceFeature as SourceFeature,
+        // The autoclear split IS the iterate affordance — the fresh conversation
+        // is splittable again on the next submit.
+        conversationLifecycle: deriveConversationLifecycle(
+          true,
+          currentUIState?.showAutoClearToggle,
+        ),
       }),
     );
 
@@ -1190,6 +1208,12 @@ export const splitInputIntoNewConversation = createAsyncThunk<
         agentType: snapshot?.agentType ?? instance.agentType,
         origin: origin as InstanceOrigin,
         sourceFeature: sourceFeature as SourceFeature,
+        // This IS the split — the fresh conversation must remain "iterate" so
+        // the next submit can split it again.
+        conversationLifecycle: deriveConversationLifecycle(
+          true,
+          currentUIState?.showAutoClearToggle,
+        ),
       }),
     );
     dispatch(

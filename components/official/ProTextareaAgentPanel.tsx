@@ -16,7 +16,7 @@ import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
+import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { selectInstanceStatus } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
@@ -111,7 +111,9 @@ function ProTextareaAgentRunnerSession({
         content: sourceText,
       }),
     );
-    void dispatch(executeInstance({ conversationId }));
+    // Canonical send path (no surfaceKey ⇒ never splits ⇒ this continuous
+    // conversation can never be orphaned).
+    void dispatch(smartExecute({ conversationId }));
   }, [conversationId, dispatch, isExecuting, sourceText]);
 
   useEffect(() => {

@@ -96,13 +96,34 @@ export const smartExecute = createAsyncThunk<
         ? dispatch(executeManualInstance({ conversationId }))
         : dispatch(executeInstance({ conversationId }));
 
+    // The split (auto-clear "iterate") mints a NEW, historyless conversation and
+    // repoints the input focus at it. That is ONLY valid for a conversation
+    // explicitly created as "iterate" (builder / tester / orchestrator generator
+    // / programmatic extraction). Splitting a durable ("continuous"/undefined)
+    // conversation would ORPHAN it — the exact class of failure this gate makes
+    // structurally impossible: split ONLY when the stamped lifecycle says
+    // iterate; otherwise refuse and scream (loud recovery). Reaching the else
+    // means auto-clear got turned on for a non-iterate conversation — a rogue
+    // path that bypassed the `showAutoClearToggle`-gated toggle.
     if (autoClear && surfaceKey) {
-      await dispatch(
-        splitInputIntoNewConversation({
-          currentConversationId: conversationId,
-          surfaceKey,
-        }),
-      );
+      const lifecycle =
+        state.conversations.byConversationId[conversationId]
+          ?.conversationLifecycle;
+      if (lifecycle === "iterate") {
+        await dispatch(
+          splitInputIntoNewConversation({
+            currentConversationId: conversationId,
+            surfaceKey,
+          }),
+        );
+      } else {
+        console.error(
+          `[smart-input] refused to split a non-iterate conversation ` +
+            `"${conversationId}" (lifecycle=${lifecycle ?? "continuous"}) — ` +
+            `would orphan it; treating as continuous. Auto-clear/split is an ` +
+            `iterate-surface affordance only — see ConversationLifecycle.`,
+        );
+      }
     }
 
     await executePromise;

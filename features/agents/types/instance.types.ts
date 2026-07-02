@@ -140,6 +140,40 @@ export const SOURCE_APP = "matrx-admin" as const;
 export type ApiEndpointMode = "agent" | "manual";
 
 /**
+ * Conversation lifecycle intent — declared ONCE at creation, never mutated.
+ *
+ *   "continuous" — a durable thread the user keeps adding turns to (chat,
+ *                  scribe, runner, agent-apps, notes…). Must NEVER be split /
+ *                  orphaned. This is the safe default (undefined ⇒ continuous).
+ *   "iterate"    — a disposable "run the same prompt again against a fresh
+ *                  call" surface (builder/tester, orchestrator generator,
+ *                  programmatic extraction). Here the auto-clear SPLIT is the
+ *                  whole point: each send mints a fresh historyless id.
+ *
+ * The split gate in `smartExecute` fires only for `"iterate"`; an `autoClear +
+ * surfaceKey` submit on any non-iterate conversation is refused loudly (it
+ * would orphan a durable thread). Derived at creation from
+ * `deriveConversationLifecycle(autoClearConversation, showAutoClearToggle)` —
+ * a surface that enables auto-clear OR merely SHOWS the auto-clear toggle
+ * (letting the user flip it on at runtime) is iterate-capable.
+ */
+export type ConversationLifecycle = "continuous" | "iterate";
+
+/**
+ * The ONE place the iterate/continuous decision is made. A conversation is
+ * `"iterate"` iff it was created with auto-clear on OR it exposes the auto-clear
+ * toggle (the only runtime path that can turn auto-clear on — see
+ * `InputActionButtons` → `setAutoClearMode`, gated on `showAutoClearToggle`).
+ * Everything else is `"continuous"` — the safe, un-splittable default.
+ */
+export function deriveConversationLifecycle(
+  autoClearConversation?: boolean,
+  showAutoClearToggle?: boolean,
+): ConversationLifecycle {
+  return autoClearConversation || showAutoClearToggle ? "iterate" : "continuous";
+}
+
+/**
  * Conversation record shape.
  *
  * Fields above the first block break mirror the existing legacy surface.
@@ -208,6 +242,15 @@ export interface ExecutionInstance {
    * RLS enforces this via `iam.has_access`. `'public'` ⇒ shared with anyone.
    */
   visibility?: ConversationVisibility;
+
+  /**
+   * Whether this conversation may be split (auto-clear "iterate") or must stay
+   * a single durable thread. Stamped once at creation from
+   * `deriveConversationLifecycle`; the `smartExecute` split gate reads it so a
+   * durable ("continuous"/undefined) conversation can never be orphaned. See
+   * `ConversationLifecycle`.
+   */
+  conversationLifecycle?: ConversationLifecycle;
 
   // ── Sidebar-list fields (replaces cxConversations.items entries) ────────
   title?: string | null;

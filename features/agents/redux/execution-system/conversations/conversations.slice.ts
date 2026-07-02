@@ -21,8 +21,12 @@ import type {
   InstanceStatus,
   InstanceOrigin,
   SourceFeature,
+  ConversationLifecycle,
 } from "@/features/agents/types/instance.types";
-import { SOURCE_APP } from "@/features/agents/types/instance.types";
+import {
+  SOURCE_APP,
+  deriveConversationLifecycle,
+} from "@/features/agents/types/instance.types";
 import { generateConversationId } from "../utils/ids";
 import { AgentType } from "@/features/agents/types/agent-definition.types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
@@ -87,6 +91,8 @@ interface CreateInstanceArgs {
   isEphemeral?: boolean;
   /** Canonical access-control dimension — `cx_conversation.visibility`. */
   visibility?: ConversationVisibility;
+  /** iterate ⇒ splittable; continuous/undefined ⇒ durable, never orphaned. */
+  conversationLifecycle?: ConversationLifecycle;
   apiEndpointMode?: ApiEndpointMode;
   reuseConversationId?: boolean;
   builderAdvancedSettings?: ConversationRecord["builderAdvancedSettings"];
@@ -116,6 +122,7 @@ function applyCreateInstance(
     taskId,
     isEphemeral,
     visibility,
+    conversationLifecycle,
     apiEndpointMode,
     reuseConversationId,
     builderAdvancedSettings,
@@ -152,6 +159,7 @@ function applyCreateInstance(
     ...(taskId !== undefined ? { taskId } : {}),
     ...(isEphemeral !== undefined ? { isEphemeral } : {}),
     ...(visibility !== undefined ? { visibility } : {}),
+    ...(conversationLifecycle !== undefined ? { conversationLifecycle } : {}),
     ...(apiEndpointMode !== undefined ? { apiEndpointMode } : {}),
     ...(reuseConversationId !== undefined ? { reuseConversationId } : {}),
     ...(builderAdvancedSettings !== undefined
@@ -337,6 +345,14 @@ const conversationsSlice = createSlice({
         shortcutId: p.shortcutId,
         initialAgentVersionId: p.initialAgentVersionId,
         isEphemeral: p.isEphemeral,
+        // Stamp the lifecycle from the atomic-create uiState bundle: builder /
+        // tester surfaces ship autoClear or the auto-clear toggle → "iterate";
+        // everything else → "continuous" (never splittable). This is the ONLY
+        // atomic-path create, so it needs no per-caller field.
+        conversationLifecycle: deriveConversationLifecycle(
+          p.uiState?.autoClearConversation,
+          p.uiState?.showAutoClearToggle,
+        ),
       });
     });
 
