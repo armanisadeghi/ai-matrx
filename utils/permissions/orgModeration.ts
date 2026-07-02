@@ -13,8 +13,29 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { Json } from "@/types/database.types";
 
 export type OrgShareStatus = "active" | "pending" | "rejected";
+
+/** Narrow a Json-direct RPC result without assuming shape beyond the known optional fields. */
+function parseModerationRpcResult(data: Json | null): {
+  success?: boolean;
+  error?: string;
+  status?: OrgShareStatus;
+} {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) {
+    return {};
+  }
+  const o = data as Record<string, unknown>;
+  return {
+    success: typeof o.success === "boolean" ? o.success : undefined,
+    error: typeof o.error === "string" ? o.error : undefined,
+    status:
+      o.status === "active" || o.status === "pending" || o.status === "rejected"
+        ? o.status
+        : undefined,
+  };
+}
 
 export interface OrgShareGrant {
   permissionId: string;
@@ -124,7 +145,7 @@ export async function revokeOrgShare(
       p_target_org_id: orgId,
     });
     if (error) throw error;
-    const parsed = (data ?? {}) as { success?: boolean; error?: string };
+    const parsed = parseModerationRpcResult(data);
     if (!parsed.success) {
       return { success: false, error: parsed.error ?? "Failed to unshare" };
     }
@@ -149,11 +170,7 @@ export async function reviewOrgShare(
       p_note: note,
     });
     if (error) throw error;
-    const parsed = (data ?? {}) as {
-      success?: boolean;
-      error?: string;
-      status?: OrgShareStatus;
-    };
+    const parsed = parseModerationRpcResult(data);
     if (!parsed.success) {
       return {
         success: false,

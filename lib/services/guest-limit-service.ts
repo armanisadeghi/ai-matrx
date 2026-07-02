@@ -124,7 +124,7 @@ export async function recordGuestExecution(
       return {
         success: false,
         log_id: null,
-        error: error.message,
+        error: error.message ?? "Unknown error",
       };
     }
 
@@ -132,12 +132,12 @@ export async function recordGuestExecution(
       success: true,
       log_id: data,
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to record guest execution:", error);
     return {
       success: false,
       log_id: null,
-      error: error?.message || "Unknown error",
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }

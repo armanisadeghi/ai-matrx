@@ -16,10 +16,10 @@ export interface RegisteredComponent {
 }
 
 export interface ResultRendererProps {
-  result: any;
+  result: unknown;
   functionName: string;
   error?: string | null;
-  context?: Record<string, any>; // Optional additional context data
+  context?: Record<string, unknown>; // Optional additional context data
 }
 
 // Registry to store all registered components

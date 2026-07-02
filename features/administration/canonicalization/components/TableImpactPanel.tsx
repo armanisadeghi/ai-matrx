@@ -42,7 +42,9 @@ export function TableImpactPanel() {
   useEffect(() => {
     fetch("/api/admin/canonicalization/table-impact")
       .then((r) => r.json())
-      .then((data) => setTables((data.tables ?? []) as KnownTableRef[]))
+      // `audit.*` rows have no generated schema (see ../types.ts header) —
+      // cast through `unknown` per the "Json returned directly" pattern.
+      .then((data) => setTables((data.tables ?? []) as unknown as KnownTableRef[]))
       .catch(() => undefined);
   }, []);
 
@@ -64,7 +66,9 @@ export function TableImpactPanel() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? res.statusText);
-        setRows((data.rows ?? []) as TableImpactRow[]);
+        // `audit.*` rows have no generated schema (see ../types.ts header) —
+        // cast through `unknown` per the "Json returned directly" pattern.
+        setRows((data.rows ?? []) as unknown as TableImpactRow[]);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
         setRows([]);

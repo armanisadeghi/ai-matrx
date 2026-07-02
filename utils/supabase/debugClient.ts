@@ -7,19 +7,23 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
+import { requireEnv } from "@/utils/supabase/env";
 
 export const createClient = () =>
   createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim(),
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
+    requireEnv(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    ),
   );
 
-function logParams(label: string, params: any) {
+function logParams(label: string, params: unknown) {
   console.log(`-- ${label} Parameters:`);
   console.dir(params, { depth: null });
 }
 
-function logResults(label: string, data: any, error?: any) {
+function logResults(label: string, data: unknown, error?: unknown) {
   console.log(`-- ${label} Results:`);
   console.dir(data, { depth: null });
   if (error) {
@@ -29,32 +33,40 @@ function logResults(label: string, data: any, error?: any) {
 
 export const createDebugClient = () => {
   const client = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim(),
+    requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL),
+    requireEnv(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    ),
   );
 
-  const handler = {
-    get(target: any, prop: string) {
-      const original = target[prop];
+  // MATRX-EXCEPTION: dev-only logging proxy wraps every method of the
+  // Supabase client dynamically (`.from`, `.rpc`, `.schema`, ...); the
+  // Supabase client's method surface isn't a fixed shape this proxy can
+  // declare statically, so the trap stays typed against `object`/`unknown`
+  // rather than the concrete client interface.
+  const handler: ProxyHandler<object> = {
+    get(target, prop) {
+      const original = Reflect.get(target, prop);
 
       if (typeof original === "function") {
-        return (...args: any[]) => {
-          logParams(`Supabase.${prop}`, args);
-          const result = original.apply(target, args);
+        return (...args: unknown[]) => {
+          logParams(`Supabase.${String(prop)}`, args);
+          const result = (original as (...a: unknown[]) => unknown).apply(target, args);
 
           if (result instanceof Promise) {
             return result
-              .then((res: any) => {
-                logResults(`Supabase.${prop}`, res?.data, res?.error);
+              .then((res: { data?: unknown; error?: unknown }) => {
+                logResults(`Supabase.${String(prop)}`, res?.data, res?.error);
                 return res;
               })
-              .catch((err: any) => {
-                console.error(`Supabase.${prop} - Error:`, err);
+              .catch((err: unknown) => {
+                console.error(`Supabase.${String(prop)} - Error:`, err);
                 throw err;
               });
           }
 
-          logResults(`Supabase.${prop}`, result);
+          logResults(`Supabase.${String(prop)}`, result);
           return result;
         };
       }

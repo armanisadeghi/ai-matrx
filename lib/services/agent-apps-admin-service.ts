@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 function getClient() {
   if (typeof window !== "undefined") {
@@ -140,11 +141,11 @@ export async function fetchAgentAppCategories(): Promise<
   AgentAppCategoryRow[]
 > {
   const supabase = getClient();
-  const { data, error } = await supabase
+  const query = supabase
     .schema("platform").from("categories")
     .select("id, name, sort_order:position, icon, description:metadata->>description")
-    .eq("dimension", "app")
-    .order("position", { ascending: true });
+    .eq("dimension", "app");
+  const { data, error } = await query.order("position", { ascending: true });
   if (error) throw error;
   return (data ?? []) as AgentAppCategoryRow[];
 }
@@ -153,10 +154,12 @@ export async function createAgentAppCategory(
   input: CreateAgentAppCategoryInput,
 ): Promise<AgentAppCategoryRow> {
   const supabase = getClient();
+  const organizationId = await resolveSystemOrgId(supabase);
   const { data, error } = await supabase
     .schema("platform").from("categories")
     .insert([
       {
+        organization_id: organizationId,
         dimension: "app",
         name: input.name,
         slug: input.name

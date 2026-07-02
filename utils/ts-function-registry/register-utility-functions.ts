@@ -31,18 +31,19 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'string'
     },
-    async (params: Record<string, any>) => {
+    async (params: Record<string, unknown>) => {
+      const rawDate = params.date as string;
       try {
-        const date = new Date(params.date);
-        
+        const date = new Date(rawDate);
+
         // Very simple formatting implementation
-        const format = params.format || 'yyyy-MM-dd';
-        
+        const format = (params.format as string | undefined) || 'yyyy-MM-dd';
+
         // Return ISO string if we can't parse the date
         if (isNaN(date.getTime())) {
-          return params.date;
+          return rawDate;
         }
-        
+
         // Simple formatting logic
         const year = date.getFullYear();
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -50,7 +51,7 @@ export function registerUtilityFunctions() {
         const hours = date.getHours().toString().padStart(2, '0');
         const minutes = date.getMinutes().toString().padStart(2, '0');
         const seconds = date.getSeconds().toString().padStart(2, '0');
-        
+
         return format
           .replace('yyyy', year.toString())
           .replace('MM', month)
@@ -59,7 +60,7 @@ export function registerUtilityFunctions() {
           .replace('mm', minutes)
           .replace('ss', seconds);
       } catch (err) {
-        return params.date; // Return original if formatting fails
+        return rawDate; // Return original if formatting fails
       }
     },
     [] // No dependencies needed
@@ -88,11 +89,12 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'string'
     },
-    async (params: Record<string, any>) => {
-      const { input, transformation } = params;
-      
+    async (params: Record<string, unknown>) => {
+      const input = params.input as string;
+      const transformation = params.transformation as string;
+
       if (!input) return '';
-      
+
       switch(transformation) {
         case 'uppercase': return input.toUpperCase();
         case 'lowercase': return input.toLowerCase();
@@ -122,10 +124,10 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'object'
     },
-    async (params: Record<string, any>) => {
+    async (params: Record<string, unknown>) => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const isValid = emailRegex.test(params.email);
-      
+      const isValid = emailRegex.test(params.email as string);
+
       return {
         isValid,
         message: isValid ? 'Valid email' : 'Invalid email format'
@@ -163,22 +165,24 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'string'
     },
-    async (params: Record<string, any>) => {
+    async (params: Record<string, unknown>) => {
+      const input = params.input as string;
+
       // Simple JSON to CSV conversion
       if (params.fromFormat === 'json' && params.toFormat === 'csv') {
         try {
-          const jsonData = JSON.parse(params.input);
+          const jsonData = JSON.parse(input) as Record<string, unknown>[];
           if (!Array.isArray(jsonData) || jsonData.length === 0) {
             return 'Input must be a non-empty array of objects';
           }
-          
+
           // Extract headers
           const headers = Object.keys(jsonData[0] || {});
-          
+
           // Build CSV
           const csv = [
             headers.join(','),
-            ...jsonData.map(row => 
+            ...jsonData.map(row =>
               headers.map(field => {
                 const val = row[field];
                 if (val === null || val === undefined) return '';
@@ -187,21 +191,21 @@ export function registerUtilityFunctions() {
               }).join(',')
             )
           ].join('\n');
-          
+
           return csv;
         } catch (err) {
           return `Error converting data: ${extractErrorMessage(err)}`;
         }
       }
-      
+
       // Simple CSV to JSON conversion
       if (params.fromFormat === 'csv' && params.toFormat === 'json') {
         try {
-          const lines = params.input.split('\n');
+          const lines = input.split('\n');
           if (lines.length < 2) {
             return 'Input must have at least a header row and one data row';
           }
-          
+
           const headers = lines[0].split(',').map(h => h.trim());
           const result: Record<string, string | number | boolean>[] = [];
           
@@ -280,22 +284,25 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'array'
     },
-    async (params: Record<string, any>) => {
-      const { array, property, operator, value } = params;
-      
+    async (params: Record<string, unknown>) => {
+      const array = params.array;
+      const property = params.property as string;
+      const operator = params.operator as string;
+      const value = params.value as string;
+
       if (!Array.isArray(array)) {
         return { error: 'Input is not an array' };
       }
-      
-      return array.filter(item => {
+
+      return (array as unknown[]).filter(item => {
         if (!item || typeof item !== 'object') return false;
-        
-        const itemValue = item[property];
-        
+
+        const itemValue = (item as Record<string, unknown>)[property];
+
         switch(operator) {
           case 'equals': return itemValue == value;
           case 'notEquals': return itemValue != value;
-          case 'contains': 
+          case 'contains':
             if (typeof itemValue === 'string') {
               return itemValue.includes(value);
             }
@@ -326,12 +333,12 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'object'
     },
-    async (params: Record<string, any>) => {
+    async (params: Record<string, unknown>) => {
       if (!Array.isArray(params.numbers)) {
         return { error: 'Input is not an array' };
       }
-      
-      const numbers = params.numbers.map(Number).filter(n => !isNaN(n));
+
+      const numbers = (params.numbers as unknown[]).map(Number).filter(n => !isNaN(n));
       
       if (numbers.length === 0) {
         return { error: 'No valid numbers provided' };
@@ -397,10 +404,12 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'any'
     },
-    async (params: Record<string, any>) => {
-      const { type, count = 1, options = {} } = params;
+    async (params: Record<string, unknown>) => {
+      const type = params.type as string;
+      const count = (params.count as number | undefined) ?? 1;
+      const options = (params.options as Record<string, number> | undefined) ?? {};
       const results: (string | number | boolean)[] = [];
-      
+
       for (let i = 0; i < count; i++) {
         switch(type) {
           case 'uuid':
@@ -479,15 +488,19 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'object'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      const { url, method = 'GET', headers = {}, body } = params;
-      
-      if (!dependencies.fetch) {
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      const url = params.url as string;
+      const method = (params.method as string | undefined) ?? 'GET';
+      const headers = (params.headers as Record<string, string> | undefined) ?? {};
+      const body = params.body;
+
+      const fetchDep = dependencies.fetch as typeof fetch | undefined;
+      if (!fetchDep) {
         return { error: 'Fetch dependency not available' };
       }
-      
+
       try {
-        const response = await dependencies.fetch(url, {
+        const response = await fetchDep(url, {
           method,
           headers: {
             'Content-Type': 'application/json',
@@ -495,10 +508,10 @@ export function registerUtilityFunctions() {
           },
           body: body ? JSON.stringify(body) : undefined
         });
-        
+
         const isJson = response.headers.get('content-type')?.includes('application/json');
         const data = isJson ? await response.json() : await response.text();
-        
+
         return {
           status: response.status,
           ok: response.ok,
@@ -543,21 +556,22 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'any'
     },
-    async (params: Record<string, any>, dependencies: FunctionDependencies) => {
-      const { operation, key, value } = params;
-      
-      if (!dependencies.localStorage) {
+    async (params: Record<string, unknown>, dependencies: FunctionDependencies) => {
+      const operation = params.operation as string;
+      const key = params.key as string;
+      const value = params.value;
+
+      const storage = dependencies.localStorage as Storage | undefined;
+      if (!storage) {
         return { error: 'localStorage dependency not available' };
       }
-      
-      const storage = dependencies.localStorage;
-      
+
       switch(operation) {
         case 'get':
           try {
             const storedValue = storage.getItem(key);
             if (!storedValue) return null;
-            
+
             try {
               return JSON.parse(storedValue);
             } catch {
@@ -635,79 +649,88 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'any'
     },
-    async (params: Record<string, any>) => {
-      const { operation, array, options = {} } = params;
-      
+    async (params: Record<string, unknown>) => {
+      const operation = params.operation as string;
+      const array = params.array;
+      const options = (params.options as Record<string, unknown> | undefined) ?? {};
+
       if (!Array.isArray(array)) {
         return { error: 'Input is not an array' };
       }
-      
+      const items = array as unknown[];
+
       switch(operation) {
         case 'sort': {
-          const { property, direction = 'asc' } = options;
+          const property = options.property as string | undefined;
+          const direction = (options.direction as string | undefined) ?? 'asc';
           if (property) {
             // Sort array of objects by property
-            return [...array].sort((a, b) => {
-              if (a[property] < b[property]) return direction === 'asc' ? -1 : 1;
-              if (a[property] > b[property]) return direction === 'asc' ? 1 : -1;
+            return [...items].sort((a, b) => {
+              const av = (a as Record<string, unknown>)[property] as string | number;
+              const bv = (b as Record<string, unknown>)[property] as string | number;
+              if (av < bv) return direction === 'asc' ? -1 : 1;
+              if (av > bv) return direction === 'asc' ? 1 : -1;
               return 0;
             });
           } else {
             // Sort array of primitives
-            return [...array].sort((a, b) => {
-              if (a < b) return direction === 'asc' ? -1 : 1;
-              if (a > b) return direction === 'asc' ? 1 : -1;
+            return [...items].sort((a, b) => {
+              const av = a as string | number;
+              const bv = b as string | number;
+              if (av < bv) return direction === 'asc' ? -1 : 1;
+              if (av > bv) return direction === 'asc' ? 1 : -1;
               return 0;
             });
           }
         }
-        
+
         case 'map': {
-          const { property } = options;
+          const property = options.property as string | undefined;
           if (!property) return { error: 'Property required for map operation' };
-          return array.map(item => item[property]);
+          return items.map(item => (item as Record<string, unknown>)[property]);
         }
-        
+
         case 'reduce': {
-          const { initialValue = 0, property } = options;
+          const initialValue = (options.initialValue as number | undefined) ?? 0;
+          const property = options.property as string | undefined;
           if (property) {
-            return array.reduce((acc, item) => acc + (Number(item[property]) || 0), initialValue);
+            return items.reduce((acc: number, item) => acc + (Number((item as Record<string, unknown>)[property]) || 0), initialValue);
           } else {
-            return array.reduce((acc, item) => acc + (Number(item) || 0), initialValue);
+            return items.reduce((acc: number, item) => acc + (Number(item) || 0), initialValue);
           }
         }
-        
+
         case 'unique': {
-          const { property } = options;
+          const property = options.property as string | undefined;
           if (property) {
             // Unique values by object property
             const seen = new Set();
-            return array.filter(item => {
-              const value = item[property];
+            return items.filter(item => {
+              const value = (item as Record<string, unknown>)[property];
               if (seen.has(value)) return false;
               seen.add(value);
               return true;
             });
           } else {
             // Unique primitive values
-            return [...new Set(array)];
+            return [...new Set(items)];
           }
         }
-        
+
         case 'groupBy': {
-          const { property } = options;
+          const property = options.property as string | undefined;
           if (!property) return { error: 'Property required for groupBy operation' };
-          
-          const result = {};
-          array.forEach(item => {
-            const key = item[property];
+
+          const result: Record<string, unknown[]> = {};
+          items.forEach(item => {
+            const key = String((item as Record<string, unknown>)[property]);
             if (!result[key]) result[key] = [];
             result[key].push(item);
           });
-          
+
           return result;
         }
-        
+
         default:
           return { error: 'Invalid operation', validOperations: ['sort', 'map', 'reduce', 'unique', 'groupBy'] };
       }
@@ -744,92 +767,96 @@ export function registerUtilityFunctions() {
       ],
       returnType: 'any'
     },
-    async (params: Record<string, any>) => {
-      const { operation, input, options = {} } = params;
-      
+    async (params: Record<string, unknown>) => {
+      const operation = params.operation as string;
+      const input = params.input;
+      const options = (params.options as Record<string, unknown> | undefined) ?? {};
+
       if (!input || typeof input !== 'object') {
         return { error: 'Input must be an object' };
       }
-      
+      const inputObj = input as Record<string, unknown>;
+
       switch(operation) {
         case 'merge': {
-          const { source } = options;
+          const source = options.source;
           if (!source || typeof source !== 'object') {
             return { error: 'Source object required for merge operation' };
           }
-          return { ...input, ...source };
+          return { ...inputObj, ...(source as Record<string, unknown>) };
         }
-        
+
         case 'pick': {
-          const { properties } = options;
+          const properties = options.properties;
           if (!Array.isArray(properties)) {
             return { error: 'Properties array required for pick operation' };
           }
-          
-          const result = {};
-          properties.forEach(prop => {
-            if (input.hasOwnProperty(prop)) {
-              result[prop] = input[prop];
+
+          const result: Record<string, unknown> = {};
+          (properties as string[]).forEach(prop => {
+            if (Object.prototype.hasOwnProperty.call(inputObj, prop)) {
+              result[prop] = inputObj[prop];
             }
           });
-          
+
           return result;
         }
-        
+
         case 'omit': {
-          const { properties } = options;
+          const properties = options.properties;
           if (!Array.isArray(properties)) {
             return { error: 'Properties array required for omit operation' };
           }
-          
-          const result = { ...input };
-          properties.forEach(prop => {
+
+          const result: Record<string, unknown> = { ...inputObj };
+          (properties as string[]).forEach(prop => {
             delete result[prop];
           });
-          
+
           return result;
         }
-        
+
         case 'flatten': {
-          const result = {};
-          
-          function flattenObj(obj, prefix = '') {
+          const result: Record<string, unknown> = {};
+
+          function flattenObj(obj: Record<string, unknown>, prefix = '') {
             for (const key in obj) {
-              if (obj.hasOwnProperty(key)) {
+              if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 const newKey = prefix ? `${prefix}.${key}` : key;
-                if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-                  flattenObj(obj[key], newKey);
+                const value = obj[key];
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                  flattenObj(value as Record<string, unknown>, newKey);
                 } else {
-                  result[newKey] = obj[key];
+                  result[newKey] = value;
                 }
               }
             }
           }
-          
-          flattenObj(input);
+
+          flattenObj(inputObj);
           return result;
         }
-        
+
         case 'unflatten': {
-          const result = {};
-          
-          Object.keys(input).forEach(key => {
+          const result: Record<string, unknown> = {};
+
+          Object.keys(inputObj).forEach(key => {
             const parts = key.split('.');
-            let current = result;
-            
+            let current: Record<string, unknown> = result;
+
             for (let i = 0; i < parts.length - 1; i++) {
               if (!current[parts[i]]) {
                 current[parts[i]] = {};
               }
-              current = current[parts[i]];
+              current = current[parts[i]] as Record<string, unknown>;
             }
-            
-            current[parts[parts.length - 1]] = input[key];
+
+            current[parts[parts.length - 1]] = inputObj[key];
           });
-          
+
           return result;
         }
-        
+
         default:
           return { error: 'Invalid operation', validOperations: ['merge', 'pick', 'omit', 'flatten', 'unflatten'] };
       }

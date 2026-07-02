@@ -49,7 +49,7 @@ class NextJsLogger extends BaseLogger {
     }
 
     private interceptConsoleLogs() {
-        const nextJsFilter = (args: any[]) => {
+        const nextJsFilter = (args: unknown[]) => {
             // Only intercept Next.js related logs
             const message = args.join(' ');
             return message.includes('Next.js') || 
@@ -89,7 +89,7 @@ class NextJsLogger extends BaseLogger {
         };
     }
 
-    private logConsoleMessage(level: LogLevel, args: any[]) {
+    private logConsoleMessage(level: LogLevel, args: unknown[]) {
         const logEntry: ApplicationLog = {
             id: uuidv4(),
             level,
@@ -107,7 +107,7 @@ class NextJsLogger extends BaseLogger {
         this.processLog(logEntry);
     }
 
-    private logErrorMessage(args: any[]) {
+    private logErrorMessage(args: unknown[]) {
         const errorEntry: ErrorLog = {
             id: uuidv4(),
             level: 'error',
@@ -193,7 +193,7 @@ class NextJsLogger extends BaseLogger {
         this.processLog(logEntry);
     }
 
-    private stringify(arg: any): string {
+    private stringify(arg: unknown): string {
         if (typeof arg === 'string') return arg;
         try {
             return JSON.stringify(arg, null, 2);

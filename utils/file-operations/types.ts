@@ -143,13 +143,25 @@ export interface FolderTypeDetails {
     protected?: boolean;
 }
 
+export type QuickPreviewType =
+    | "code"
+    | "config"
+    | "document"
+    | "audio"
+    | "image"
+    | "video"
+    | "archive"
+    | "data"
+    | "advancedImage"
+    | "unknown";
+
 export type FileTypeDetails = {
     category: FileCategory;
     subCategory: string;
     icon: IconComponent;
     color?: string
     canPreview?: boolean;
-    quickPreviewType?: any;
+    quickPreviewType?: QuickPreviewType;
 }
 
 
@@ -166,7 +178,7 @@ export interface BucketStructure {
 
 export interface StructureWithContents {
     contents: BucketStructure[];
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface NodeStructureWithMetadata extends NodeStructure {
@@ -194,7 +206,7 @@ export interface NodeStructure {
 export interface BucketStructureWithNodes {
     name: string;
     contents: NodeStructure[];
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface FolderContentsInput {

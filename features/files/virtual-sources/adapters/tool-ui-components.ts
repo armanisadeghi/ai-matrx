@@ -63,8 +63,7 @@ interface ToolUiRow {
 }
 
 const LIST_COLUMNS =
-  "id,tool_name,display_name,language,updated_at,is_active,notes," +
-  "inline_code,overlay_code,header_extras_code,header_subtitle_code,utility_code";
+  "id,tool_name,display_name,language,updated_at,is_active,notes,inline_code,overlay_code,header_extras_code,header_subtitle_code,utility_code";
 
 function mapLanguage(raw: string | null | undefined): string {
   const v = (raw ?? "tsx").toLowerCase();

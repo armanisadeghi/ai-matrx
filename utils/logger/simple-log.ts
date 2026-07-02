@@ -2,7 +2,7 @@ const INFO = true;
 const DEBUG = true;
 const VERBOSE = true;
 
-const log = (label: string = '', level: 'INFO' | 'DEBUG' | 'VERBOSE' | null = null, ...args: any[]) => {
+const log = (label: string = '', level: 'INFO' | 'DEBUG' | 'VERBOSE' | null = null, ...args: unknown[]) => {
   // Check debug level
   if (level === null) {
     // Log everything by default

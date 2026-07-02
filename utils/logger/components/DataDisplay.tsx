@@ -2,14 +2,14 @@ import React from 'react';
 import { Copy } from 'lucide-react';
 
 interface DataDisplayProps {
-  data: any;
+  data: unknown;
   level?: number;
   label?: string;
 }
 
 interface ConfigItemProps {
   label: string;
-  value: any;
+  value: unknown;
   level?: number;
 }
 
@@ -45,7 +45,7 @@ const ConfigItem: React.FC<ConfigItemProps> = ({ label, value, level = 0 }) => {
           </button>
         </div>
         <div className="ml-4">
-          {value.map((item: any, index: number) => (
+          {value.map((item: unknown, index: number) => (
             <div key={index} className="text-sm">
               {typeof item === 'object' ? (
                 <DataDisplay data={item} level={(level || 0) + 1} />

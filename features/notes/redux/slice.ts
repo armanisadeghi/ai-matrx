@@ -879,11 +879,12 @@ const notesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(
-      // Imported at bottom to avoid circular dependency
-      "notes/fetchAllNoteScopes/fulfilled" as any,
+      // String type (not the imported thunk) to avoid a circular dependency
+      // with ./thunks, which imports actions from this slice.
+      "notes/fetchAllNoteScopes/fulfilled",
       (
         state: typeof initialState,
-        action: { payload: NoteScopeAssignment[] },
+        action: PayloadAction<NoteScopeAssignment[]>,
       ) => {
         state.noteScopeAssignments = action.payload;
         state.noteScopesLoaded = true;

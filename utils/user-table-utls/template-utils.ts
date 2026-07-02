@@ -6,7 +6,7 @@ export interface SchemaTemplate {
   id: string;
   template_name: string;
   description: string;
-  fields: any[];
+  fields: FieldDefinition[];
   version: number;
   created_at: string;
 }
@@ -187,7 +187,7 @@ export async function updateSchemaTemplate(
   updates: Partial<CreateTemplateParams>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (updates.templateName) {
       updateData.template_name = updates.templateName;

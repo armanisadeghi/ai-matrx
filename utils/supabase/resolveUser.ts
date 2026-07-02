@@ -16,10 +16,13 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { requireEnv } from "@/utils/supabase/env";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.trim();
-const supabasePublishableKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!.trim();
+const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+const supabasePublishableKey = requireEnv(
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+);
 
 export async function resolveUser(request: NextRequest) {
   const authHeader = request.headers.get("Authorization");

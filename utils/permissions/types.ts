@@ -135,7 +135,7 @@ export interface CheckPermissionOptions {
 export interface OwnedResource {
   id: string;
   user_id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface OwnerCheckResult {
@@ -244,7 +244,7 @@ export class PermissionError extends Error {
   constructor(
     message: string,
     public code: string,
-    public details?: any,
+    public details?: unknown,
   ) {
     super(message);
     this.name = "PermissionError";

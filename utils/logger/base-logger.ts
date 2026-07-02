@@ -78,11 +78,9 @@ export abstract class BaseLogger {
     let effectiveLevel = logConfig.logLevel;
 
     // Check module override
-    if (module && runtimeState.moduleOverrides.has(module)) {
-      const moduleLevel = runtimeState.moduleOverrides.get(module)!;
-      if (LOG_LEVEL_MAPPING[moduleLevel] > LOG_LEVEL_MAPPING[effectiveLevel]) {
-        effectiveLevel = moduleLevel;
-      }
+    const moduleLevel = module ? runtimeState.moduleOverrides.get(module) : undefined;
+    if (moduleLevel && LOG_LEVEL_MAPPING[moduleLevel] > LOG_LEVEL_MAPPING[effectiveLevel]) {
+      effectiveLevel = moduleLevel;
     }
 
     // Feature filter always allows logging

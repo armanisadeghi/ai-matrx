@@ -1,6 +1,6 @@
 export interface JsonConversionResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   formattedJson?: string;
   error?: string;
   warnings?: string[];
@@ -141,7 +141,7 @@ export function flexibleJsonParse(input: string): JsonConversionResult {
 /**
  * Safe JSON stringify that handles undefined, functions, etc.
  */
-export function safeJsonStringify(obj: any, indent: number = 2): string {
+export function safeJsonStringify(obj: unknown, indent: number = 2): string {
   try {
     return JSON.stringify(
       obj,
@@ -244,7 +244,7 @@ export function deepClone<T>(obj: T): T {
  * Converts a value to a string representation suitable for text input
  * Objects and arrays are converted to formatted JSON strings
  */
-export function valueToString(value: any): string {
+export function valueToString(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
@@ -265,7 +265,7 @@ export function valueToString(value: any): string {
  * For objects/arrays, checks if they have properties/elements
  * For strings, checks if non-empty after trimming
  */
-export function hasContent(value: any): boolean {
+export function hasContent(value: unknown): boolean {
   if (!value) return false;
 
   if (typeof value === "object") {

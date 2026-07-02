@@ -17,18 +17,14 @@ export async function searchAvailableNumbers(options: PhoneNumberPurchaseOptions
   const { areaCode, country = 'US', smsEnabled = true, mmsEnabled = true } = options;
   const client = getTwilioClient();
 
-  const searchParams: Record<string, unknown> = {
+  const parsedAreaCode = areaCode ? Number.parseInt(areaCode, 10) : undefined;
+
+  const numbers = await client.availablePhoneNumbers(country).local.list({
     smsEnabled,
     mmsEnabled,
     limit: 20,
-  };
-
-  if (areaCode) {
-    searchParams.areaCode = areaCode;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const numbers = await client.availablePhoneNumbers(country).local.list(searchParams as any);
+    ...(parsedAreaCode !== undefined && !Number.isNaN(parsedAreaCode) ? { areaCode: parsedAreaCode } : {}),
+  });
 
   return numbers.map(n => ({
     sid: '',

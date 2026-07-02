@@ -56,7 +56,7 @@ import { siteConfig } from "@/config/extras/site";
  */
 export function createRouteMetadata(
   pathname: string,
-  options?: {
+  options: {
     title?: string;
     titlePrefix?: string;
     description?: string;
@@ -68,10 +68,10 @@ export function createRouteMetadata(
      *  against `metadataBase` (set in app/config/metadata.ts). */
     canonicalPath?: string;
     additionalMetadata?: Partial<Metadata>;
-  },
+  } = {},
 ): Metadata {
   const { title, titlePrefix, description, letter, keywords, canonicalPath, additionalMetadata } =
-    options || {};
+    options;
 
   // Compose the browser-tab title: "Prefix | Section" or just "Section"
   const composedTitle =

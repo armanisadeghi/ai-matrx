@@ -31,9 +31,18 @@ export function useStreamingJson(options?: StreamingJsonTrackerOptions) {
   if (!trackerRef.current) {
     trackerRef.current = new StreamingJsonTracker(options);
   }
+  // Lazily initialized immediately above — always present for the rest of
+  // this hook's lifetime. Read through a getter instead of `!` at each call
+  // site so the non-null invariant is documented and asserted in one place.
+  const getTracker = useCallback((): StreamingJsonTracker => {
+    if (!trackerRef.current) {
+      throw new Error("useStreamingJson: tracker not initialized");
+    }
+    return trackerRef.current;
+  }, []);
 
   const [state, setState] = useState<StreamingJsonState>(
-    trackerRef.current.getState(),
+    getTracker().getState(),
   );
 
   const maybeUpdate = useCallback((next: StreamingJsonState) => {
@@ -45,31 +54,31 @@ export function useStreamingJson(options?: StreamingJsonTrackerOptions) {
 
   const append = useCallback(
     (chunk: string) => {
-      const next = trackerRef.current!.append(chunk);
+      const next = getTracker().append(chunk);
       maybeUpdate(next);
     },
-    [maybeUpdate],
+    [getTracker, maybeUpdate],
   );
 
   const setFullText = useCallback(
     (text: string) => {
-      const next = trackerRef.current!.setFullText(text);
+      const next = getTracker().setFullText(text);
       maybeUpdate(next);
     },
-    [maybeUpdate],
+    [getTracker, maybeUpdate],
   );
 
   const finalize = useCallback(() => {
-    const next = trackerRef.current!.finalize();
+    const next = getTracker().finalize();
     lastRevisionRef.current = next.revision;
     setState(next);
-  }, []);
+  }, [getTracker]);
 
   const reset = useCallback(() => {
-    trackerRef.current!.reset();
+    getTracker().reset();
     lastRevisionRef.current = 0;
-    setState(trackerRef.current!.getState());
-  }, []);
+    setState(getTracker().getState());
+  }, [getTracker]);
 
   return { state, append, setFullText, finalize, reset };
 }

@@ -1,13 +1,15 @@
 export const cleanJson = (
-  data: any,
+  data: unknown,
   indent = 2,
   returnAsString = false,
-): any => {
+): unknown => {
   const cleanRecursively = (
-    input: any,
+    input: unknown,
     visited: WeakSet<object> = new WeakSet(),
-  ): any => {
-    // Handle null or non-object types
+  ): unknown => {
+    // Handle null or non-object types (the `typeof === "object"` check above
+    // means a string branch below is unreachable for non-JSON.parse'd input,
+    // matching prior behavior — `typeof input === "string"` never holds here).
     if (input === null || typeof input !== "object") {
       return input;
     }
@@ -19,15 +21,6 @@ export const cleanJson = (
 
     // Add current object to visited set
     visited.add(input);
-
-    // Handle strings that might be JSON
-    if (typeof input === "string") {
-      try {
-        return cleanRecursively(JSON.parse(input), visited);
-      } catch {
-        return input;
-      }
-    }
 
     // Handle arrays
     if (Array.isArray(input)) {
@@ -50,8 +43,8 @@ export const cleanJson = (
     : cleanedData;
 };
 
-export const formatJson = (data: any, indent = 2): string => {
-  return cleanJson(data, indent, true);
+export const formatJson = (data: unknown, indent = 2): string => {
+  return cleanJson(data, indent, true) as string;
 };
 
 /** Deepest object/array nesting in `value` (0 for primitives). */

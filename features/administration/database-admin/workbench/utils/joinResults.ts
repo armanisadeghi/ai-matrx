@@ -9,7 +9,11 @@ export type Row = Record<string, unknown>;
  */
 const ENVELOPE_KEYS = ["result", "results", "data", "rows", "records", "items"];
 
-const MAX_UNWRAP_DEPTH = 3;
+const MAX_UNWRAP_DEPTH = 6;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function arrayOfRows(arr: unknown[]): Row[] {
   return arr.filter(
@@ -18,41 +22,53 @@ function arrayOfRows(arr: unknown[]): Row[] {
 }
 
 /**
- * Coerce an arbitrary value into rows. Strips common single-key envelopes like
- * `{ result: [...] }` so suggestions and merges run against the real data
- * instead of the wrapper.
+ * Coerce an arbitrary value into rows. Strips common envelopes like
+ * `{ result: [...] }` and nested wrappers such as
+ * `{ data: { result: [...] }, error: null }` so suggestions and merges run
+ * against the real data instead of the wrapper.
  */
 export function toRows(value: unknown): Row[] {
   let current: unknown = value;
-  for (let depth = 0; depth < MAX_UNWRAP_DEPTH; depth += 1) {
+
+  unwrap: for (let depth = 0; depth < MAX_UNWRAP_DEPTH; depth += 1) {
     if (Array.isArray(current)) {
       return arrayOfRows(current);
     }
-    if (!current || typeof current !== "object") {
+    if (!isPlainObject(current)) {
       return [];
     }
-    const obj = current as Record<string, unknown>;
+    const obj = current;
 
-    // Try well-known envelope keys first
-    let unwrapped: unknown | undefined;
+    // Server action envelope from executeSqlQuery: { data, error }
+    if ("data" in obj && "error" in obj) {
+      current = obj.data;
+      continue unwrap;
+    }
+
+    // Well-known envelope keys — array → rows; nested object → keep unwrapping
     for (const key of ENVELOPE_KEYS) {
-      if (key in obj && Array.isArray(obj[key])) {
-        unwrapped = obj[key];
-        break;
+      if (!(key in obj)) continue;
+      const inner = obj[key];
+      if (Array.isArray(inner)) {
+        return arrayOfRows(inner);
+      }
+      if (isPlainObject(inner)) {
+        current = inner;
+        continue unwrap;
       }
     }
 
-    // Fall back: a single-key object whose value is an array
-    if (unwrapped === undefined) {
-      const keys = Object.keys(obj);
-      if (keys.length === 1 && Array.isArray(obj[keys[0]])) {
-        unwrapped = obj[keys[0]];
+    // Single-key wrapper whose value is an array or another object envelope
+    const keys = Object.keys(obj);
+    if (keys.length === 1) {
+      const inner = obj[keys[0]];
+      if (Array.isArray(inner)) {
+        return arrayOfRows(inner);
       }
-    }
-
-    if (unwrapped !== undefined) {
-      current = unwrapped;
-      continue;
+      if (isPlainObject(inner)) {
+        current = inner;
+        continue unwrap;
+      }
     }
 
     // Object with no array envelope — treat as a single row

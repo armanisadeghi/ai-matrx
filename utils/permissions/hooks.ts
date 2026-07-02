@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { extractErrorMessage } from "@/utils/errors";
 import {
   Permission,
   PermissionWithDetails,
@@ -58,9 +59,9 @@ export function usePermissions(
     try {
       const data = await listPermissions(resourceType, resourceId);
       setPermissions(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching permissions:", err);
-      setError(err.message || "Failed to fetch permissions");
+      setError(extractErrorMessage(err) || "Failed to fetch permissions");
     } finally {
       setLoading(false);
     }
@@ -103,9 +104,9 @@ export function useResourcePermissions(
     try {
       const data = await getResourcePermissions(resourceType, resourceId);
       setPermissions(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching resource permissions:", err);
-      setError(err.message || "Failed to fetch resource permissions");
+      setError(extractErrorMessage(err) || "Failed to fetch resource permissions");
     } finally {
       setLoading(false);
     }
@@ -288,8 +289,8 @@ export function useSharing(
 
         await refresh();
         return result;
-      } catch (err: any) {
-        const errorMessage = err.message || "Failed to share with user";
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err) || "Failed to share with user";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -319,8 +320,8 @@ export function useSharing(
 
         await refresh();
         return result;
-      } catch (err: any) {
-        const errorMessage = err.message || "Failed to share with organization";
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err) || "Failed to share with organization";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -349,8 +350,8 @@ export function useSharing(
 
         await refresh();
         return result;
-      } catch (err: any) {
-        const errorMessage = err.message || "Failed to make public";
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err) || "Failed to make public";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -380,8 +381,8 @@ export function useSharing(
         }
         await refresh();
         return result;
-      } catch (err: any) {
-        const errorMessage = err.message || "Failed to revoke access";
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err) || "Failed to revoke access";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -407,8 +408,8 @@ export function useSharing(
         }
         await refresh();
         return result;
-      } catch (err: any) {
-        const errorMessage = err.message || "Failed to revoke org access";
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err) || "Failed to revoke org access";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -438,8 +439,8 @@ export function useSharing(
         }
         await refresh();
         return result;
-      } catch (err: any) {
-        const errorMessage = err.message || "Failed to update permission";
+      } catch (err) {
+        const errorMessage = extractErrorMessage(err) || "Failed to update permission";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -486,9 +487,9 @@ export function useSharedWithMe(resourceType?: ResourceType) {
     try {
       const data = await getSharedWithMe(resourceType);
       setPermissions(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching shared resources:", err);
-      setError(err.message || "Failed to fetch shared resources");
+      setError(extractErrorMessage(err) || "Failed to fetch shared resources");
     } finally {
       setLoading(false);
     }

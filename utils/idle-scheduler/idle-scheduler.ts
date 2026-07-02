@@ -41,6 +41,13 @@ export type UnregisterFn = () => void;
 
 type FlushState = 'idle' | 'waiting' | 'flushing' | 'done';
 
+/** Experimental Scheduler API (Chrome/Edge/Firefox 142+) — not yet in standard lib types. */
+interface GlobalThisWithScheduler {
+    scheduler?: {
+        postTask: (callback: () => void, options?: { priority: string }) => Promise<void>;
+    };
+}
+
 // ---------------------------------------------------------------------------
 // Singleton state
 // ---------------------------------------------------------------------------
@@ -159,8 +166,9 @@ function startFlushPipeline(): void {
 
     const waitForIdle = () => {
         // Tier 1: scheduler.postTask with background priority (Chrome/Edge/Firefox 142+)
-        if ('scheduler' in globalThis && 'postTask' in (globalThis as any).scheduler) {
-            (globalThis as any).scheduler
+        const schedulerGlobal = (globalThis as GlobalThisWithScheduler).scheduler;
+        if (schedulerGlobal && 'postTask' in schedulerGlobal) {
+            schedulerGlobal
                 .postTask(() => flush(), { priority: 'background' })
                 .catch(() => {});
             return;
@@ -222,8 +230,9 @@ async function flush(): Promise<void> {
 /** Schedule a single callback through the idle chain (for post-flush registrations) */
 function scheduleImmediate(callback: () => void | Promise<void>): void {
     requestAnimationFrame(() => {
-        if ('scheduler' in globalThis && 'postTask' in (globalThis as any).scheduler) {
-            (globalThis as any).scheduler
+        const schedulerGlobal = (globalThis as GlobalThisWithScheduler).scheduler;
+        if (schedulerGlobal && 'postTask' in schedulerGlobal) {
+            schedulerGlobal
                 .postTask(() => callback(), { priority: 'background' })
                 .catch(() => {});
             return;

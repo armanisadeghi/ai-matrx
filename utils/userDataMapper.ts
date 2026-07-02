@@ -1,4 +1,5 @@
 // File: utils/userDataMapper.ts
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { AdminLevel } from "@/utils/supabase/userSessionData";
 
 export interface AppMetadata {
@@ -53,8 +54,8 @@ export interface UserData {
  * @returns Mapped UserData object
  */
 export function mapUserData(
-  user: any,
-  accessToken?: any,
+  user: SupabaseUser | null | undefined,
+  accessToken?: string | null,
   isAdmin?: boolean,
   adminLevel?: AdminLevel | null,
 ): UserData {
@@ -77,7 +78,7 @@ export function mapUserData(
       picture: user?.user_metadata?.picture || null,
     },
     identities:
-      user?.identities?.map((identity: any) => ({
+      user?.identities?.map((identity) => ({
         provider: identity?.provider || null,
         id: identity?.id || null,
         user_id: identity?.user_id || null,

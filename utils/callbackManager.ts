@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import type { WidgetHandle } from "@/features/agents/types/widget-handle.types";
-export type CallbackContext = Record<string, any>;
+export type CallbackContext = Record<string, unknown>;
 export interface ProgressInfo {
   progress?: number;
   status?: "pending" | "running" | "completed" | "error";
@@ -36,13 +36,13 @@ class CallbackManager {
    */
   registerWithContext<T, C extends CallbackContext = CallbackContext>(
     callback: Callback<T, C>,
-    options?: {
+    options: {
       context?: C;
       groupId?: string;
-    },
+    } = {},
   ): string {
     const callbackId = uuidv4();
-    const { context, groupId } = options || {};
+    const { context, groupId } = options;
 
     this.callbacks.set(callbackId, {
       callback: callback as Callback,
@@ -241,6 +241,8 @@ class CallbackManager {
     // The handle object itself occupies the `callback` slot. `trigger` is
     // never called on it; only `get` retrieves it.
     this.callbacks.set(callbackId, {
+      // MATRX-EXCEPTION: CallbackEntry.callback is a heterogeneous slot (fn | WidgetHandle);
+      // this entry is retrieved only via `get<WidgetHandle>()`, never invoked as a Callback.
       callback: handle as unknown as Callback,
     });
     return callbackId;

@@ -98,7 +98,7 @@ declare global {
 }
 
 if (typeof global !== 'undefined') {
-    (global as any).serverLogger = {
+    (global as typeof globalThis & NodeJS.Global).serverLogger = {
         setLogLevel: ServerLogger.setLogLevel,
         disableLogging: ServerLogger.disableLogging,
         enableLogging: ServerLogger.enableLogging

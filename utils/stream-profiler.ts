@@ -1,3 +1,35 @@
+export interface StreamProfilerExtraStats {
+  tokens?: { output?: number; total?: number };
+  timing?: { total_duration?: number; api_duration?: number };
+}
+
+export interface StreamProfilerReport {
+  Test: string;
+  RequestId: string;
+  ClientDurationSec: string;
+  TotalChunksProcessed: number;
+  ChunksPerSecond: string;
+  JankFrames_Dropped: number;
+  JankRatio: string;
+  MemoryGrowthMB: string;
+  TokensOut?: number | null;
+  TokensTotal?: number | null;
+  ClientSpeed_TokensPerSec?: string | null;
+  ServerTotalTimeSec?: string | null;
+  ServerApiTimeSec?: string | null;
+}
+
+/** Chrome-only non-standard `performance.memory` API. Absent elsewhere. */
+interface PerformanceWithMemory extends Performance {
+  memory?: { usedJSHeapSize: number };
+}
+
+declare global {
+  interface Window {
+    __STREAM_REPORTS__?: StreamProfilerReport[];
+  }
+}
+
 export class StreamProfiler {
   private startTime: number = 0;
   private chunkCount: number = 0;
@@ -34,8 +66,7 @@ export class StreamProfiler {
     this.jankFrames = 0;
     this.lastFrameTime = performance.now();
     
-    // @ts-ignore - Chrome specific memory API
-    this.startMemory = performance.memory?.usedJSHeapSize ?? 0;
+    this.startMemory = (performance as PerformanceWithMemory).memory?.usedJSHeapSize ?? 0;
 
     const tick = (now: number) => {
       const delta = now - this.lastFrameTime;
@@ -62,17 +93,16 @@ export class StreamProfiler {
     this.isActive = false;
   }
 
-  public stopAndReport(testName: string, extraStats?: any) {
+  public stopAndReport(testName: string, extraStats?: StreamProfilerExtraStats) {
     if (!this.isActive) return null;
     this.cancelRunning();
 
     const durationSec = (performance.now() - this.startTime) / 1000;
-    
-    // @ts-ignore
-    const endMemory = performance.memory?.usedJSHeapSize ?? 0;
+
+    const endMemory = (performance as PerformanceWithMemory).memory?.usedJSHeapSize ?? 0;
     const memoryGrowthMB = (endMemory - this.startMemory) / (1024 * 1024);
-    
-    const report: any = {
+
+    const report: StreamProfilerReport = {
         Test: testName,
         RequestId: this.requestId,
         ClientDurationSec: durationSec.toFixed(2),
@@ -99,8 +129,8 @@ export class StreamProfiler {
     
     // Attach to window so a UI widget can read it
     if (typeof window !== 'undefined') {
-      (window as any).__STREAM_REPORTS__ = (window as any).__STREAM_REPORTS__ || [];
-      (window as any).__STREAM_REPORTS__.push(report);
+      if (!window.__STREAM_REPORTS__) window.__STREAM_REPORTS__ = [];
+      window.__STREAM_REPORTS__.push(report);
       // Fire a custom event so the UI can update automatically
       window.dispatchEvent(new CustomEvent('stream-profiler-update'));
     }

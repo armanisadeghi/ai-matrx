@@ -60,7 +60,7 @@ export interface FieldDefinition {
   data_type: string;
   field_order: number;
   is_required: boolean;
-  default_value?: any;
+  default_value?: string | number | boolean | null;
 }
 
 export interface TableField extends FieldDefinition {
@@ -87,7 +87,7 @@ export interface AddColumnParams {
   displayName: string;
   dataType: string;
   isRequired: boolean;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean | null;
 }
 
 export interface AddColumnResult {
@@ -98,7 +98,7 @@ export interface AddColumnResult {
 
 export interface AddRowParams {
   tableId: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface AddRowResult {

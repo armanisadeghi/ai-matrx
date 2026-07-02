@@ -42,6 +42,16 @@ interface Record1 {
     _saving?: boolean;
 }
 
+/** Narrows the engine's `unknown` per-record callback param to `Record1`. */
+function isRecord1(rec: unknown): rec is Record1 {
+    return (
+        typeof rec === "object" &&
+        rec !== null &&
+        "id" in rec &&
+        "content" in rec
+    );
+}
+
 interface SliceState {
     records: Record<string, Record1>;
 }
@@ -151,7 +161,8 @@ describe("createAutoSaveScheduler — direct API", () => {
                 recordsKey: "records",
                 triggerActions: ["rec/updateContent"],
                 debounceMs: 20,
-                shouldSave: (rec) => rec._dirty === true && !rec._saving,
+                shouldSave: (rec) =>
+                    isRecord1(rec) && rec._dirty === true && !rec._saving,
                 write: async ({ recordId }) => {
                     writes.push(recordId);
                 },
@@ -368,8 +379,8 @@ describe("createAutoSaveScheduler — direct API", () => {
             autoSave: {
                 recordsKey: "records",
                 triggerActions: ["rec/updateContent"],
-                debounceMs: (rec: Record1) => {
-                    const len = rec.content.length;
+                debounceMs: (rec: unknown) => {
+                    const len = isRecord1(rec) ? rec.content.length : 0;
                     seen.push(len);
                     return 10;
                 },
