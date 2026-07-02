@@ -47,11 +47,7 @@ import { TaskBody } from "./bodies/TaskBody";
 import { WebpageBody, WebpageFooter } from "./bodies/WebpageBody";
 import { DataBody } from "./bodies/DataBody";
 import { MediaBody, MediaFooter } from "./bodies/MediaBody";
-import {
-  WorkingDocumentBody,
-  WorkingDocumentFooter,
-  WorkingDocumentTitleActions,
-} from "./bodies/WorkingDocumentBody";
+import { WorkingDocumentBody } from "./bodies/WorkingDocumentBody";
 import { GenericBody, GenericFooter } from "./bodies/GenericBody";
 import { BookmarkReferenceBody } from "./bodies/BookmarkReferenceBody";
 import {
@@ -129,14 +125,14 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
     // The live, collaborative working document (re-sent every turn — editing
     // it reaches the agent automatically, no re-attach prompt). Reached via the
     // context-slot strip, keyed `working_document`, NOT as a resource block.
+    // No Footer/TitleActions: the body renders the full DocumentsWorkspace,
+    // which owns its own header, tabs, view controls, and status chrome.
     blockTypes: ["working_document"],
     typeLabel: "Working document",
     icon: FileText,
     themeKey: "input_document",
     editable: true,
     Body: WorkingDocumentBody,
-    Footer: WorkingDocumentFooter,
-    TitleActions: WorkingDocumentTitleActions,
   },
   {
     // A reference to a specific rich document by id — distinct from the live

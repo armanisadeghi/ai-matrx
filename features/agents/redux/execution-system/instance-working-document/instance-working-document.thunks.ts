@@ -60,6 +60,7 @@ import {
   listConversationDocuments,
   materializeWorkingDocument,
   setConversationDocumentEnabled,
+  unlinkDocumentFromConversation,
   updateCxWorkingDocumentContent,
 } from "./cx-working-document.service";
 
@@ -784,5 +785,173 @@ export const reflectAgentMaterializedThunk = createAsyncThunk<
       }
     }
     await dispatch(syncWorkingDocumentFromAgentThunk({ conversationId, kind }));
+  },
+);
+
+// =============================================================================
+// Multi-attach — link MULTIPLE documents from other chats into one workspace
+// =============================================================================
+//
+// M2M: a conversation can have many `working_document` → `conversation` edges.
+// The DocumentsWorkspace shows the conversation's own working + scratch PLUS one
+// tab per attached document. An attached doc is keyed in the slice by its ORIGIN
+// (conversationId, kind) — a doc born in another chat is never hydrated by the
+// active-conversation bridge, so we load its content on open. Attaches persist
+// as association edges and are restored on mount.
+
+/** One attached-document tab: its ORIGIN (conversationId, kind) + id + title. */
+export interface WorkspaceDocTab {
+  conversationId: string;
+  kind: WorkingDocumentKind;
+  documentId: string;
+  title: string;
+}
+
+/**
+ * Open a document (by id) in the workspace: load its content into its ORIGIN
+ * (conversationId, kind) slice entry so the tab renders it, and — when `attachTo`
+ * is given — persist a `working_document → conversation` edge so it survives a
+ * reload. Returns the tab descriptor (null if the doc vanished or has no origin).
+ *
+ * `skipOrigin`: bail (no slice writes) when the doc's origin IS that
+ * conversation — its own docs are hydrated by the conversation bridge, and
+ * re-applying DB content here could stomp a fresh local draft.
+ */
+export const openWorkspaceDocumentThunk = createAsyncThunk<
+  WorkspaceDocTab | null,
+  { documentId: string; attachTo?: string; skipOrigin?: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/openWorkspaceDoc",
+  async ({ documentId, attachTo, skipOrigin }, { dispatch, getState }) => {
+    let doc;
+    try {
+      doc = await getCxWorkingDocumentById(documentId);
+    } catch (err) {
+      console.error("[working-document] openWorkspaceDoc: load failed", {
+        documentId,
+        err,
+      });
+      return null;
+    }
+    if (!doc || !doc.conversationId) return null;
+    if (skipOrigin && doc.conversationId === skipOrigin) return null;
+
+    if (attachTo) {
+      const orgId = resolveOrgId(getState(), attachTo);
+      if (orgId) {
+        try {
+          await linkDocumentToConversation({
+            documentId,
+            conversationId: attachTo,
+            organizationId: orgId,
+            kind: doc.kind,
+            enabled: true,
+          });
+        } catch (err) {
+          console.error("[working-document] attach: link failed", {
+            attachTo,
+            documentId,
+            err,
+          });
+        }
+      }
+    }
+
+    const originConv = doc.conversationId;
+    const kind = doc.kind;
+    dispatch(setWorkingDocEnabled({ conversationId: originConv, kind, enabled: true }));
+    dispatch(
+      setWorkingDocBinding({
+        conversationId: originConv,
+        kind,
+        binding: { kind: "cx_working_document", id: doc.id, label: doc.title },
+      }),
+    );
+    dispatch(
+      markWorkingDocMaterialized({ conversationId: originConv, kind, version: doc.version }),
+    );
+    if (doc.title) {
+      dispatch(setWorkingDocTitle({ conversationId: originConv, kind, title: doc.title }));
+    }
+    dispatch(
+      applyAgentWorkingDocContent({
+        conversationId: originConv,
+        kind,
+        content: doc.content ?? "",
+      }),
+    );
+    return { conversationId: originConv, kind, documentId: doc.id, title: doc.title };
+  },
+);
+
+/** Detach a document from a conversation (removes the edge; keeps the doc). */
+export const detachWorkspaceDocumentThunk = createAsyncThunk<
+  void,
+  { conversationId: string; documentId: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/detachWorkspaceDoc",
+  async ({ conversationId, documentId }) => {
+    try {
+      await unlinkDocumentFromConversation(documentId, conversationId);
+    } catch (err) {
+      console.error("[working-document] detach failed", {
+        conversationId,
+        documentId,
+        err,
+      });
+    }
+  },
+);
+
+/**
+ * Restore the conversation's ATTACHED documents (from its association edges) as
+ * workspace tabs on mount, loading each one's content. Excludes the
+ * conversation's OWN primary docs (already base tabs — origin === this
+ * conversation). Returns the attached-doc tab descriptors.
+ */
+export const listAttachedDocumentTabsThunk = createAsyncThunk<
+  WorkspaceDocTab[],
+  { conversationId: string },
+  ThunkConfig
+>(
+  "instanceWorkingDocument/listAttachedTabs",
+  async ({ conversationId }, { dispatch, getState }) => {
+    let links;
+    try {
+      links = await listConversationDocuments(conversationId);
+    } catch (err) {
+      console.error("[working-document] listAttachedTabs failed", {
+        conversationId,
+        err,
+      });
+      return [];
+    }
+    // A linked doc the hydrate path already ADOPTED as this conversation's
+    // primary (kind slot) is the base tab — an attached tab for it would show
+    // the same document twice.
+    const state = getState();
+    const boundIds = new Set(
+      DOC_KINDS.map(
+        (k) => selectWorkingDocBinding(conversationId, k)(state),
+      )
+        .filter((b) => b.kind === "cx_working_document" && b.id)
+        .map((b) => b.id),
+    );
+    const tabs: WorkspaceDocTab[] = [];
+    for (const link of links) {
+      if (boundIds.has(link.documentId)) continue;
+      // skipOrigin: the conversation's own primary docs (born here) are already
+      // base tabs AND bridge-hydrated — loading them again could stomp a draft.
+      const tab = await dispatch(
+        openWorkspaceDocumentThunk({
+          documentId: link.documentId,
+          skipOrigin: conversationId,
+        }),
+      ).unwrap();
+      if (tab && tab.conversationId !== conversationId) tabs.push(tab);
+    }
+    return tabs;
   },
 );
