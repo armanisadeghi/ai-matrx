@@ -101,12 +101,14 @@ export const CtxItemCard: React.FC<CtxItemCardProps> = ({
   const showKey = item.key && item.key !== label;
 
   // Prefer the returned-chars count (page mode) but fall back to the total.
-  const sizeChars =
+  // A zero count (e.g. structured db_ref content) is noise, not a size hint.
+  const rawSizeChars =
     typeof item.chars_returned === "number"
       ? item.chars_returned
       : typeof item.total_chars === "number"
         ? item.total_chars
         : null;
+  const sizeChars = rawSizeChars != null && rawSizeChars > 0 ? rawSizeChars : null;
 
   // Summary mode delivers a `summary` string in place of `content`.
   const isSummary = typeof item.summary === "string" && item.summary.length > 0;

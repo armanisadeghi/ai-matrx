@@ -12,8 +12,9 @@
  *   running / no result → honest progress (last 1–2 real messages + a subtle
  *                         animated cue). The ONLY place "theater" is allowed,
  *                         and it's unmistakably a loading state.
- *   completed      → a CopyButtons header + <ResultValue density="inline"> +
- *                    a full-width "View complete result" button (overlay).
+ *   completed      → <ResultValue density="inline"> with CopyButtons beside it
+ *                    (no dedicated header row) + a full-width "View complete
+ *                    result" button (overlay).
  *
  * All interactive elements `stopPropagation()` so they don't toggle the row.
  */
@@ -185,28 +186,33 @@ export const GenericRenderer: React.FC<ToolRendererProps> = ({
     !isEmpty && resultWarrantsOverlay(entry.result) && Boolean(onOpenOverlay);
 
   return (
-    <div className="space-y-1">
-      {!isEmpty && (
-        <div className="flex items-start justify-end">
-          <CopyButtons
-            label="Result"
-            size="icon"
-            human={() => resultToHuman(entry.result)}
-            agent={() => ({
-              kind: "tool-result",
-              location: "AI Matrx — Tool call result",
-              description: `Result of the "${entry.displayName || entry.toolName}" tool call.`,
-              data: {
-                tool: entry.toolName,
-                callId: entry.callId,
-                result: entry.result,
-              },
-            })}
-          />
-        </div>
-      )}
-
-      <ResultValue value={entry.result} density="inline" />
+    <div className="space-y-1.5">
+      <div className="flex items-start gap-2">
+        <ResultValue
+          value={entry.result}
+          density="inline"
+          className="min-w-0 flex-1"
+        />
+        {!isEmpty && (
+          <div className="shrink-0">
+            <CopyButtons
+              label="Result"
+              size="icon"
+              human={() => resultToHuman(entry.result)}
+              agent={() => ({
+                kind: "tool-result",
+                location: "AI Matrx — Tool call result",
+                description: `Result of the "${entry.displayName || entry.toolName}" tool call.`,
+                data: {
+                  tool: entry.toolName,
+                  callId: entry.callId,
+                  result: entry.result,
+                },
+              })}
+            />
+          </div>
+        )}
+      </div>
 
       {hasMoreToSee && onOpenOverlay && (
         <button

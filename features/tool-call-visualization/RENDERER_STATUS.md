@@ -14,7 +14,7 @@ Registered in `registry/registry.tsx`; code in `renderers/<name>/`. ~20 tools.
 
 | tool(s) | renderer | inline | overlay | window | notes |
 |---|---|---|---|---|---|
-| `ctx_get` / `ctx_batch` / `ctx_patch` | CTX | ✅ | ✅ (=inline) | ✅ | `ctx_patch` shows the working-doc live diff |
+| `context` (LIVE unified, `action:` get/batch) / `ctx_get` / `ctx_batch` / `ctx_patch` | CTX | ✅ | ✅ (=inline) | ✅ | `context` dispatches by action via `ContextActionInline`; `ctx_patch` shows the working-doc live diff |
 | `sql` / `db_query` / `db_schema` | SQL | ✅ | ✅ (=inline) | ✅ | SQL→plain-English intent + result table |
 | `research_web` / `core_web_search_and_read` / `core_web_read_web_pages` | Deep Research | ✅ | ✅ (OverlayTabs) | ✅ | stay-open |
 | `web_search_v1` | Web Research | ✅ | ✅ | ✅ | stay-open |

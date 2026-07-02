@@ -84,6 +84,7 @@ import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
 import { CtxGetInline } from "../renderers/ctx/CtxGetInline";
 import { CtxBatchInline } from "../renderers/ctx/CtxBatchInline";
 import { CtxPatchInline } from "../renderers/ctx/CtxPatchInline";
+import { ContextActionInline } from "../renderers/ctx/ContextActionInline";
 import { SqlInline } from "../renderers/sql/SqlInline";
 import { DbSchemaInline } from "../renderers/sql/DbSchemaInline";
 import { summarizeSql } from "../renderers/sql/summarizeSql";
@@ -894,6 +895,46 @@ export const toolRendererRegistry: ToolRegistry = {
       return typeof result?.key === "string" && result.key
         ? (result.key as string)
         : null;
+    },
+  },
+
+  // `context` — the LIVE unified read tool used TODAY (verified in
+  // chat.tool_call: 40 calls and counting; `ctx_get`/`ctx_batch` died
+  // 2026-06-21). One tool routed by the `action` argument (get | batch); the
+  // per-action result shapes are unchanged, so `ContextActionInline`
+  // dispatches to the same CtxGetInline / CtxBatchInline renderers. Without
+  // this entry it fell through to the GenericRenderer.
+  context: {
+    toolName: "context",
+    displayName: "Context",
+    phaseLabels: {
+      running: "Reviewing context",
+      complete: "Reviewed context",
+      errorPrefix: "Couldn't read context",
+    },
+    resultsLabel: "Context",
+    InlineComponent: ContextActionInline,
+    OverlayComponent: ContextActionInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const action = getArg<string>(entry, "action");
+      const result = resultAsObject(entry);
+      if (action === "batch") {
+        const count =
+          typeof result?.count === "number"
+            ? (result.count as number)
+            : Array.isArray(result?.results)
+              ? (result?.results as unknown[]).length
+              : null;
+        return count == null ? null : `${count} ${count === 1 ? "item" : "items"}`;
+      }
+      const label =
+        typeof result?.label === "string" && result.label
+          ? (result.label as string)
+          : null;
+      if (label) return label;
+      const key = getArg<string>(entry, "key");
+      return typeof key === "string" && key ? key : null;
     },
   },
 

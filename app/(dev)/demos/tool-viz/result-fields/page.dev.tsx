@@ -122,9 +122,63 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
     { label: "empty (empty object)", value: {} },
 ];
 
-// ─── CTX renderer fixtures (ctx_get / ctx_batch / ctx_patch) ────────────────
+// ─── CTX renderer fixtures (context / ctx_get / ctx_batch / ctx_patch) ──────
 
 const CTX_ENTRIES: ToolLifecycleEntry[] = [
+    entry({
+        // The LIVE unified `context` tool (action: "get") — routes through
+        // ContextActionInline to the same CtxItemCard as legacy ctx_get.
+        callId: "context-get",
+        toolName: "context",
+        displayName: "Context",
+        arguments: { key: "user_scratchpad", mode: "full", action: "get" },
+        result: {
+            key: "user_scratchpad",
+            type: "text",
+            label: "My Scratchpad",
+            content:
+                "Tasks:\n- Get a list of the actual functions, likely args, likely response schema and what it likely does.\n- Confirm if JS or Python makes more sense and why.\n- Confirm if the sandbox has to be an actual full environment like an actual box or if you can create virtual sandboxes in the browser at all.",
+            total_chars: 301,
+        },
+    }),
+    entry({
+        // The LIVE unified `context` tool (action: "batch").
+        callId: "context-batch",
+        toolName: "context",
+        displayName: "Context",
+        arguments: {
+            action: "batch",
+            requests: [{ key: "selection" }, { key: "current_section_text" }],
+        },
+        result: {
+            count: 2,
+            requested: 2,
+            results: [
+                {
+                    key: "selection",
+                    success: true,
+                    output: {
+                        key: "selection",
+                        type: "text",
+                        label: "Selection",
+                        content: "The paragraph the user highlighted in the editor.",
+                        total_chars: 49,
+                    },
+                },
+                {
+                    key: "current_section_text",
+                    success: true,
+                    output: {
+                        key: "current_section_text",
+                        type: "text",
+                        label: "Current Section Text",
+                        content: "## 9. Expand card\n\nWhen a learner struggles, split one card into smaller atomic cards and link them.",
+                        total_chars: 100,
+                    },
+                },
+            ],
+        },
+    }),
     entry({
         callId: "ctx-get-md",
         toolName: "ctx_get",
@@ -1556,7 +1610,7 @@ export default function ResultFieldsGalleryPage() {
 
             <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    CTX renderers — ctx_get / ctx_batch / ctx_patch (click a row to expand)
+                    CTX renderers — context (live unified) / ctx_get / ctx_batch / ctx_patch (click a row to expand)
                 </h2>
                 <div className="rounded-lg border border-border bg-card p-3">
                     {CTX_ENTRIES.map((e) => (
