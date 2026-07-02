@@ -15,8 +15,8 @@ import type { Database } from "@/types/database.types";
 // Types
 // ---------------------------------------------------------------------------
 
-/** Full row shape from the `ai.model` table — always in sync with the DB. */
-export type AIModelRow = Database["ai"]["Tables"]["model"]["Row"];
+/** Full row shape from the `ai.model_definition` table — always in sync with the DB. */
+export type AIModelRow = Database["ai"]["Tables"]["model_definition"]["Row"];
 
 /**
  * What data this record currently holds.
@@ -111,7 +111,7 @@ export const fetchModelOptions = createAsyncThunk(
       const supabase = createClient();
       const { data, error } = await supabase
         .schema("ai")
-        .from("model")
+        .from("model_definition")
         .select("id, name, common_name, provider, model_class, is_deprecated")
         .eq("is_deprecated", false)
         .order("common_name", { ascending: true, nullsFirst: false });
@@ -159,7 +159,7 @@ export const fetchModelById = createAsyncThunk(
       const supabase = createClient();
       const { data, error } = await supabase
         .schema("ai")
-        .from("model")
+        .from("model_definition")
         .select("*")
         .eq("id", modelId)
         .single();

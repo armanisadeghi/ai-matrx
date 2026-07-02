@@ -4,9 +4,9 @@ import type { Database } from "@/types/database.types";
 // Raw DB types — source of truth, never hand-edit
 // =============================================================================
 
-export type AiModelRow = Database["ai"]["Tables"]["model"]["Row"];
-export type AiModelInsert = Database["ai"]["Tables"]["model"]["Insert"];
-export type AiModelUpdate = Database["ai"]["Tables"]["model"]["Update"];
+export type AiModelRow = Database["ai"]["Tables"]["model_definition"]["Row"];
+export type AiModelInsert = Database["ai"]["Tables"]["model_definition"]["Insert"];
+export type AiModelUpdate = Database["ai"]["Tables"]["model_definition"]["Update"];
 
 export type AiProviderRow = Database["ai"]["Tables"]["provider"]["Row"];
 export type AiProviderInsert = Database["ai"]["Tables"]["provider"]["Insert"];

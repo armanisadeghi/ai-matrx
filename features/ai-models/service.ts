@@ -37,7 +37,7 @@ export const aiModelService = {
   async fetchAll(): Promise<AiModel[]> {
     const { data, error } = await supabase
       .schema("ai")
-      .from("model")
+      .from("model_definition")
       .select("*")
       .order("common_name", { ascending: true, nullsFirst: false });
     if (error) throw error;
@@ -84,7 +84,7 @@ export const aiModelService = {
   async create(payload: AiModelInsert): Promise<AiModel> {
     const { data, error } = await supabase
       .schema("ai")
-      .from("model")
+      .from("model_definition")
       .insert(payload)
       .select()
       .single();
@@ -95,7 +95,7 @@ export const aiModelService = {
   async update(id: string, payload: AiModelUpdate): Promise<AiModel> {
     const { data, error } = await supabase
       .schema("ai")
-      .from("model")
+      .from("model_definition")
       .update(payload)
       .eq("id", id)
       .select()
@@ -107,7 +107,7 @@ export const aiModelService = {
   async remove(id: string): Promise<void> {
     const { error } = await supabase
       .schema("ai")
-      .from("model")
+      .from("model_definition")
       .delete()
       .eq("id", id);
     if (error) throw error;
@@ -317,10 +317,10 @@ export const aiModelService = {
       patches.map(({ id, field, value }) =>
         supabase
           .schema("ai")
-          .from("model")
+          .from("model_definition")
           .update({
             [field]: value,
-          } as Database["ai"]["Tables"]["model"]["Update"])
+          } as Database["ai"]["Tables"]["model_definition"]["Update"])
           .eq("id", id),
       ),
     );
@@ -339,7 +339,7 @@ export const aiModelService = {
   ): Promise<void> {
     const { error } = await supabase
       .schema("ai")
-      .from("model")
+      .from("model_definition")
       .update({ [field]: value } as unknown as AiModelUpdate)
       .eq("id", id);
     if (error) throw error;

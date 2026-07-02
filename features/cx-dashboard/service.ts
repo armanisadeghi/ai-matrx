@@ -45,9 +45,9 @@ interface UrConversationInfo {
   provider: string | null;
 }
 
-// chat.* tables have cross-schema FKs to ai.model (chat→ai schema boundary).
+// chat.* tables have cross-schema FKs to ai.model_definition (chat→ai schema boundary).
 // PostgREST cannot auto-resolve cross-schema FK embeds, so we fetch model info
-// separately via `.schema("ai").from("model")` and join in JS.
+// separately via `.schema("ai").from("model_definition")` and join in JS.
 async function resolveAiModels(
   supabase: ServerSupabase,
   modelIds: (string | null | undefined)[],
@@ -56,7 +56,7 @@ async function resolveAiModels(
   if (ids.length === 0) return new Map();
   const { data } = await supabase
     .schema("ai")
-    .from("model")
+    .from("model_definition")
     .select("id, common_name, provider, name")
     .in("id", ids);
   const map = new Map<string, { common_name: string | null; provider: string | null; name: string | null }>();

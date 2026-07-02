@@ -7,7 +7,7 @@ async function _fetchAIModelsFromDB() {
   // Fetch all non-deprecated AI models
   const { data: models, error } = await supabase
     .schema("ai")
-    .from("model")
+    .from("model_definition")
     .select("*")
     .eq("is_deprecated", false)
     .order("common_name", { ascending: true });
