@@ -48,19 +48,19 @@ export interface DiffRevealOptions {
    */
   active: boolean;
   /**
-   * Characters revealed per tick during the FILL phase. The reveal is paced
-   * to land in roughly a fixed wall-clock budget regardless of length, so this
-   * is a floor — long replacements reveal in bigger steps. Default 3.
+   * Characters revealed per tick during the FILL phase — a floor; the tick
+   * snaps forward to the next word boundary so text rolls in word-by-word
+   * (smooth) rather than in mid-word chunks (jerky). Default 1.
    */
   charsPerTick?: number;
-  /** Milliseconds between ticks. Default 28 (snappy, ~36fps-ish). */
+  /** Milliseconds between ticks. Default 24 (~42fps — smooth). */
   intervalMs?: number;
-  /** Ticks to HOLD on the removal frame before filling. Default 6 (~170ms). */
+  /** Ticks to HOLD on the removal frame before filling. Default 10 (~240ms). */
   holdTicks?: number;
   /**
    * Total wall-clock budget (ms) the FILL phase aims to finish within, so a
-   * huge replacement doesn't crawl. The effective step grows to meet it.
-   * Default 1100.
+   * huge replacement doesn't crawl. Kept deliberately generous so the reveal
+   * stays a slow, smooth roll even when the data arrived instantly. Default 2600.
    */
   budgetMs?: number;
   /** Bump to restart the reveal from the beginning (e.g. a fresh callId). */
@@ -112,10 +112,10 @@ export function useDiffReveal(
 ): DiffReveal {
   const {
     active,
-    charsPerTick = 3,
-    intervalMs = 28,
-    holdTicks = 6,
-    budgetMs = 1100,
+    charsPerTick = 1,
+    intervalMs = 24,
+    holdTicks = 10,
+    budgetMs = 2600,
     replayKey,
   } = opts;
 
@@ -141,10 +141,13 @@ export function useDiffReveal(
   );
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Effective per-tick chars so even a long replacement finishes within budget.
+  // Effective per-tick chars so a long replacement finishes within budget —
+  // but capped low so the reveal stays a smooth roll instead of leaping in big
+  // chunks (word-snapping below extends each step to a word boundary anyway).
   const effectiveChars = useMemo(() => {
     const ticksAvailable = Math.max(1, Math.floor(budgetMs / intervalMs));
-    return Math.max(charsPerTick, Math.ceil(region.newMiddle.length / ticksAvailable));
+    const toBudget = Math.ceil(region.newMiddle.length / ticksAvailable);
+    return Math.min(6, Math.max(charsPerTick, toBudget));
   }, [budgetMs, intervalMs, charsPerTick, region.newMiddle.length]);
 
   // Reset whenever a fresh reveal begins (new texts, replay, or (re)activation).
@@ -170,13 +173,21 @@ export function useDiffReveal(
 
     timerRef.current = setInterval(() => {
       setStep((s) => {
-        const next = s + effectiveChars;
-        if (next >= region.newMiddle.length) {
+        let next = s + effectiveChars;
+        // Snap forward to the end of the current word (then trailing spaces) so
+        // whole words roll in — much smoother than stopping mid-word. Only once
+        // we're past the HOLD (next > 0) and still inside the changed region.
+        const nl = region.newMiddle;
+        if (next > 0 && next < nl.length) {
+          while (next < nl.length && !/\s/.test(nl[next])) next++;
+          while (next < nl.length && /\s/.test(nl[next])) next++;
+        }
+        if (next >= nl.length) {
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
           }
-          return region.newMiddle.length;
+          return nl.length;
         }
         return next;
       });
