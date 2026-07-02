@@ -381,6 +381,57 @@ function TemplateEditor({
 
   // Local error for the page-range input only.
   const [rangeError, setRangeError] = useState<string | null>(null);
+  const [recommendedDebug, setRecommendedDebug] =
+    useState<RecommendedChunkDebug | null>(null);
+
+  const sourceVariations = useMemo(
+    () => deriveSourceVariations(draft.variableMapping),
+    [draft.variableMapping],
+  );
+
+  const canApplyRecommended =
+    draft.kind === "extraction" &&
+    !pagesLoading &&
+    availablePages.length > 0 &&
+    draft.agentId != null;
+
+  const handleApplyRecommended = () => {
+    if (!canApplyRecommended) {
+      toast.error("Load document pages and select an agent first.");
+      return;
+    }
+
+    const result = computeRecommendedChunkSettings({
+      availablePages,
+      scopePages: draft.scopePages,
+      rawCharacters: contentMeta.rawCharacters,
+      cleanCharacters: contentMeta.cleanCharacters,
+      variableMapping: draft.variableMapping,
+      sourceVariations,
+    });
+
+    if (!result) {
+      toast.error("No pages available to recommend chunk settings.");
+      return;
+    }
+
+    setRangeError(null);
+    setRecommendedDebug(result.debug);
+    dispatch(
+      patchDraft({
+        fileId,
+        patch: {
+          scopePages: result.scopePages,
+          scopePagesInputRaw: result.scopePagesInputRaw,
+          chunkSize: result.chunkSize,
+          chunkOverlap: result.chunkOverlap,
+        },
+      }),
+    );
+    toast.success(
+      `Recommended: ${result.scopePagesInputRaw}, chunk ${result.chunkSize}, overlap ${result.chunkOverlap}`,
+    );
+  };
 
   const handleRangeChange = (raw: string) => {
     setRangeError(null);
@@ -606,6 +657,30 @@ function TemplateEditor({
               rawCharacters={contentMeta.rawCharacters}
               cleanCharacters={contentMeta.cleanCharacters}
             />
+
+            <div className="flex flex-col gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 w-full justify-center gap-1.5 text-[11px]"
+                disabled={!canApplyRecommended}
+                onClick={handleApplyRecommended}
+              >
+                <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                Apply Recommended
+              </Button>
+              {recommendedDebug && (
+                <p className="text-[9px] text-muted-foreground/80 leading-snug font-mono">
+                  {recommendedDebug.rules} · {recommendedDebug.charCountSource}{" "}
+                  {recommendedDebug.effectiveCharCount.toLocaleString()} chars →{" "}
+                  {recommendedDebug.targetChunkCount} chunk
+                  {recommendedDebug.targetChunkCount === 1 ? "" : "s"} · size{" "}
+                  {recommendedDebug.chunkSize} · overlap{" "}
+                  {recommendedDebug.chunkOverlap}
+                </p>
+              )}
+            </div>
 
             {/* Page range */}
             <Field
