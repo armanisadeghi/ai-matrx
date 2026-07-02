@@ -7,7 +7,14 @@
 // accepted operations (auto-versions); cancelling changes nothing.
 
 import { useState } from "react";
-import { ShieldCheck, Bug, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ShieldCheck,
+  Bug,
+  ChevronDown,
+  ChevronRight,
+  Columns2,
+  ListChecks,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DiffViewer } from "@/components/diff/DiffViewer";
+import { cn } from "@/lib/utils";
 import { CopyForAiButton } from "@/components/agent-copy/CopyForAiButton";
 import { cleanContent } from "@/lib/content-cleanup/clean";
 import { buildOperationCards } from "@/lib/content-cleanup/review";
@@ -100,6 +109,11 @@ export function CleanupReviewDialog({
   const applyAll = () => setAccepted(new Set(cards.map((c) => c.id)));
   const skipAll = () => setAccepted(new Set());
 
+  // "By type" = the per-operation cards (the control surface); "Full diff" = the
+  // canonical DiffViewer of the actual before→after, reflecting the currently
+  // accepted operations live.
+  const [mode, setMode] = useState<"cards" | "diff">("cards");
+
   // The real engine produces the final content from the accepted operations.
   const finalContent = cleanContent(report.original, accepted).cleaned;
   const willWrite = finalContent !== report.original;
@@ -129,6 +143,36 @@ export function CleanupReviewDialog({
             {cards.length} type{cards.length !== 1 ? "s" : ""} of change ·{" "}
             <span className="text-foreground">{accepted.size} applied</span>
           </span>
+          <div className="flex items-center overflow-hidden rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => setMode("cards")}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-1 text-[0.6875rem] transition-colors",
+                mode === "cards"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
+              title="Review each type of change with an Apply/Skip switch"
+            >
+              <ListChecks className="h-3.5 w-3.5" />
+              By type
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("diff")}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-1 text-[0.6875rem] transition-colors",
+                mode === "diff"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
+              title="See the actual before → after of the whole note (canonical diff)"
+            >
+              <Columns2 className="h-3.5 w-3.5" />
+              Full diff
+            </button>
+          </div>
           <div className="ml-auto flex items-center gap-1">
             <Button
               variant="ghost"
@@ -151,43 +195,62 @@ export function CleanupReviewDialog({
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto bg-textured px-4 py-3">
-          {cards.length === 0 ? (
-            <div className="rounded-md border border-border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
-              No textual changes were produced.
-            </div>
-          ) : (
-            cards.map((card) => (
-              <CleanupChangeCard
-                key={card.id}
-                card={card}
-                accepted={accepted.has(card.id)}
-                onToggle={toggle}
+        {mode === "diff" ? (
+          <div className="flex-1 min-h-0 overflow-hidden bg-card">
+            {willWrite ? (
+              <DiffViewer
+                original={report.original}
+                modified={finalContent}
+                originalLabel="Now"
+                modifiedLabel="After cleanup"
+                engine="light"
+                defaultView="split"
               />
-            ))
-          )}
+            ) : (
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                Nothing applied — toggle changes back on under “By type”.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 space-y-2.5 overflow-y-auto bg-textured px-4 py-3">
+            {cards.length === 0 ? (
+              <div className="rounded-md border border-border bg-card px-3 py-6 text-center text-sm text-muted-foreground">
+                No textual changes were produced.
+              </div>
+            ) : (
+              cards.map((card) => (
+                <CleanupChangeCard
+                  key={card.id}
+                  card={card}
+                  accepted={accepted.has(card.id)}
+                  onToggle={toggle}
+                />
+              ))
+            )}
 
-          {protectedCount > 0 && (
-            <Section
-              title="Protected — left untouched"
-              icon={ShieldCheck}
-              badge={
-                <span className="ml-1 rounded bg-muted px-1.5 py-px text-[0.625rem] text-muted-foreground">
-                  {protectedCount}
-                </span>
-              }
-            >
-              <ProtectedRegionsInspector regions={report.protectedRegions} />
+            {protectedCount > 0 && (
+              <Section
+                title="Protected — left untouched"
+                icon={ShieldCheck}
+                badge={
+                  <span className="ml-1 rounded bg-muted px-1.5 py-px text-[0.625rem] text-muted-foreground">
+                    {protectedCount}
+                  </span>
+                }
+              >
+                <ProtectedRegionsInspector regions={report.protectedRegions} />
+              </Section>
+            )}
+
+            <Section title="Details" icon={Bug}>
+              <CleanupDebugPanel
+                report={report}
+                debugContext={{ noteId, noteLabel }}
+              />
             </Section>
-          )}
-
-          <Section title="Details" icon={Bug}>
-            <CleanupDebugPanel
-              report={report}
-              debugContext={{ noteId, noteLabel }}
-            />
-          </Section>
-        </div>
+          </div>
+        )}
 
         <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 py-3">
           <Button
