@@ -13,9 +13,10 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, GitCompareArrows } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 
 interface EditableTextSegmentRowProps {
   text: string;
@@ -39,6 +40,7 @@ export function EditableTextSegmentRow({
   className,
 }: EditableTextSegmentRowProps) {
   const [editing, setEditing] = useState(false);
+  const openDiff = useOpenDiffViewerWindow();
   const [draft, setDraft] = useState(text);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const taRef = useRef<HTMLTextAreaElement | null>(null);
@@ -96,6 +98,27 @@ export function EditableTextSegmentRow({
             rows={3}
           />
           <div className="flex items-center justify-end gap-1.5">
+            {draft !== text && (
+              <button
+                type="button"
+                onClick={() =>
+                  openDiff({
+                    original: text,
+                    modified: draft,
+                    originalLabel: "Saved",
+                    modifiedLabel: "Edit",
+                    title: "Segment — compare",
+                    engine: "light",
+                    defaultView: "highlight",
+                  })
+                }
+                className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+                title="Compare your edit with the saved text"
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" />
+                Compare
+              </button>
+            )}
             <button
               type="button"
               onClick={cancel}

@@ -13,6 +13,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 export interface ChangeFieldDiff {
   /** Field name, Sentence case: "Title", "Status", "Due date", "Description". */
@@ -57,24 +58,33 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
   const before = display(field.before ?? null);
 
   if (field.block) {
+    // A real UPDATE (both sides present) shows a word-level diff via the
+    // canonical engine instead of the whole-old-strike + whole-new block.
+    // Adds (no before) and clears (empty after) keep the simple block render.
+    const isUpdate = hasBefore && !before.empty && !after.empty;
     return (
       <div className="flex flex-col gap-1 rounded-lg border border-border/60 bg-background/60 p-2.5">
         <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
           {field.label}
         </div>
-        {hasBefore && !before.empty && (
-          <div className="line-clamp-2 whitespace-pre-wrap text-[12px] text-muted-foreground/70 line-through">
-            {before.text}
+        {isUpdate ? (
+          <div className="max-h-48 overflow-auto rounded-md border border-border/50">
+            <InlineTextDiff
+              original={before.text}
+              modified={after.text}
+              view="inline"
+            />
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "line-clamp-4 whitespace-pre-wrap text-[13px] leading-relaxed",
+              after.empty ? "italic text-muted-foreground" : "text-foreground",
+            )}
+          >
+            {after.empty ? "cleared" : after.text}
           </div>
         )}
-        <div
-          className={cn(
-            "line-clamp-4 whitespace-pre-wrap text-[13px] leading-relaxed",
-            after.empty ? "italic text-muted-foreground" : "text-foreground",
-          )}
-        >
-          {after.empty ? "cleared" : after.text}
-        </div>
       </div>
     );
   }

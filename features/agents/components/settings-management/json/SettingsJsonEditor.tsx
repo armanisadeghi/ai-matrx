@@ -17,7 +17,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import JSON5 from "json5";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, GitCompareArrows } from "lucide-react";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { extractErrorMessage } from "@/utils/errors";
 
 interface SettingsJsonEditorProps {
@@ -107,6 +108,7 @@ export function SettingsJsonEditor({
   showFooter = true,
   fillHeight = false,
 }: SettingsJsonEditorProps) {
+  const openDiff = useOpenDiffViewerWindow();
   const [text, setText] = useState(initialValue);
   const [parseResult, setParseResult] = useState<ParseResult>({
     ok: true,
@@ -271,6 +273,29 @@ export function SettingsJsonEditor({
             Trailing commas, comments, and unquoted keys all OK · ⌘+Enter to
             apply
           </span>
+          {text !== lastInitialRef.current && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                openDiff({
+                  original: lastInitialRef.current,
+                  modified: text,
+                  originalLabel: "Saved",
+                  modifiedLabel: "Draft",
+                  title: "JSON settings — compare",
+                  engine: "monaco",
+                  language: "json",
+                  defaultView: "split",
+                })
+              }
+              className="h-7 gap-1.5 text-xs"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />
+              Compare
+            </Button>
+          )}
           {onReset && (
             <Button
               type="button"

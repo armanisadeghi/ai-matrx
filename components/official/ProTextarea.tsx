@@ -30,6 +30,10 @@
  *     default: General Chat (`helpAgentId` to override).
  *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; no
  *     preset default until `customAgentId` is set (agent filter TBD).
+ * - **Text stats** — character/word/line counts via a pinned stats bar (ON by
+ *   default when the "…" menu is shown) and a "Text stats" detail view in the
+ *   menu. Pass `enableTextStats={false}` to hide entirely; users can toggle the
+ *   bar off from the menu.
  * - **Submit button** — opt-in via `onSubmit`. Renders a primary-colored Send
  *   button at bottom-right. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit (Shift+Enter still inserts newline).
@@ -89,8 +93,10 @@ import {
   X,
   MessageCircle,
   Bot,
+  GitCompareArrows,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
@@ -136,6 +142,11 @@ import {
   type ProTextareaMenuMode,
 } from "./proTextareaAgentActions";
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
+import {
+  ProTextFieldStatsBar,
+  ProTextFieldStatsMenuItems,
+  ProTextFieldStatsPanel,
+} from "./ProTextFieldStats";
 
 /** Real HTMLTextAreaElement with optional expando methods set by ProTextarea. */
 export interface ProTextareaElement extends HTMLTextAreaElement {
@@ -204,6 +215,14 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   surfaceContextItems?: SessionContextItem[];
   /** Show bound agents in the "…" menu when `surfaceName` is set. Default: true. */
   enableBoundAgents?: boolean;
+  /**
+   * Text stats (chars, words, lines, paragraphs) in the "…" menu + optional
+   * pinned stats bar. ON by default when the menu is shown. Pass `false` to
+   * hide entirely.
+   */
+  enableTextStats?: boolean;
+  /** Initial pinned stats bar visibility. Default: true. */
+  defaultShowTextStatsBar?: boolean;
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
@@ -272,6 +291,8 @@ export const ProTextarea = React.forwardRef<
       getApplicationScope,
       surfaceContextItems,
       enableBoundAgents = true,
+      enableTextStats = true,
+      defaultShowTextStatsBar = true,
       onSubmit,
       submitDisabled,
       isSubmitting = false,
@@ -301,6 +322,7 @@ export const ProTextarea = React.forwardRef<
     // action menu and an agent-action view. A single dismissable layer avoids
     // the dropdown-vs-popover focus war that made the view flash + vanish.
     const agentAction = useProTextareaAgentAction();
+    const openDiff = useOpenDiffViewerWindow();
     const boundAgentsEnabled = Boolean(surfaceName) && enableBoundAgents;
     const {
       sections: boundAgentSections,
@@ -340,6 +362,9 @@ export const ProTextarea = React.forwardRef<
 
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuMode, setMenuMode] = useState<ProTextareaMenuMode>("menu");
+    const [showTextStatsBar, setShowTextStatsBar] = useState(
+      defaultShowTextStatsBar,
+    );
     const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
     const [selectedAgentName, setSelectedAgentName] = useState<string | null>(
       null,
@@ -654,6 +679,23 @@ export const ProTextarea = React.forwardRef<
       valueAsString,
     ]);
 
+    // Preview the AI result against the current text before applying (it
+    // otherwise blind-replaces the whole field). Current = baseline, AI = new.
+    const compareActiveAgentAction = useCallback(() => {
+      const result = agentAction.result.trim();
+      if (!result) return;
+      openDiff({
+        original: valueAsString,
+        modified: agentAction.result,
+        originalLabel: "Current",
+        modifiedLabel: "AI result",
+        title: "AI edit — compare",
+        engine: "light",
+        language: "markdown",
+        defaultView: "highlight",
+      });
+    }, [agentAction.result, valueAsString, openDiff]);
+
     const applyActiveAgentAction = useCallback(() => {
       if (
         menuMode === "menu" ||
@@ -748,6 +790,8 @@ export const ProTextarea = React.forwardRef<
       (showCopyButton ||
         enabledAgentActionIds.length > 0 ||
         showBoundAgentsMenu);
+    const showTextStats = enableTextStats && showMenu;
+    const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -915,10 +959,12 @@ export const ProTextarea = React.forwardRef<
                     ? showBoundAgentsMenu
                       ? "w-56 max-h-[70dvh] overflow-y-auto"
                       : "w-48"
-                    : isProTextareaAgentActionId(menuMode) &&
-                        isEmbeddedProTextareaAgentAction(menuMode)
-                      ? "w-auto max-w-none"
-                      : "w-80",
+                    : menuMode === "stats"
+                      ? "w-56"
+                      : isProTextareaAgentActionId(menuMode) &&
+                          isEmbeddedProTextareaAgentAction(menuMode)
+                        ? "w-auto max-w-none"
+                        : "w-80",
                 )}
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
@@ -937,6 +983,28 @@ export const ProTextarea = React.forwardRef<
                         Copy
                       </button>
                     )}
+                    {showTextStats && (
+                      <>
+                        {showCopyButton && (
+                          <div
+                            className="my-1 h-px bg-border"
+                            role="separator"
+                          />
+                        )}
+                        <ProTextFieldStatsMenuItems
+                          showStatsBar={showTextStatsBar}
+                          onToggleStatsBar={() =>
+                            setShowTextStatsBar((prev) => !prev)
+                          }
+                          onOpenStatsPanel={() => setMenuMode("stats")}
+                        />
+                      </>
+                    )}
+                    {(enabledAgentActionIds.length > 0 ||
+                      showBoundAgentsMenu) &&
+                      (showCopyButton || showTextStats) && (
+                        <div className="my-1 h-px bg-border" role="separator" />
+                      )}
                     {enabledAgentActionIds.map((actionId) => {
                       const definition = PRO_TEXTAREA_AGENT_ACTIONS[actionId];
                       const icon =
@@ -967,6 +1035,13 @@ export const ProTextarea = React.forwardRef<
                       />
                     )}
                   </div>
+                ) : menuMode === "stats" ? (
+                  <ProTextFieldStatsPanel
+                    text={valueAsString}
+                    variant="textarea"
+                    onBack={() => setMenuMode("menu")}
+                    onClose={() => setMenuOpen(false)}
+                  />
                 ) : isProTextareaAgentActionId(menuMode) &&
                   isEmbeddedProTextareaAgentAction(menuMode) ? (
                   <ProTextareaAgentPanel
@@ -997,6 +1072,7 @@ export const ProTextarea = React.forwardRef<
                     onRun={runActiveAgentAction}
                     canRun={Boolean(selectedAgent) && !agentAction.isBusy}
                     onApply={applyActiveAgentAction}
+                    onCompare={compareActiveAgentAction}
                     onBack={() => {
                       setMenuMode("menu");
                       setSelectedAgent(null);
@@ -1131,6 +1207,10 @@ export const ProTextarea = React.forwardRef<
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {showPinnedTextStatsBar && (
+          <ProTextFieldStatsBar text={valueAsString} variant="textarea" />
+        )}
       </div>
     );
   },
@@ -1153,6 +1233,7 @@ function AgentActionPopoverBody({
   onRun,
   canRun,
   onApply,
+  onCompare,
   onBack,
   onCancel,
 }: {
@@ -1167,6 +1248,7 @@ function AgentActionPopoverBody({
   onRun: () => void;
   canRun: boolean;
   onApply: () => void;
+  onCompare?: () => void;
   onBack: () => void;
   onCancel: () => void;
 }) {
@@ -1265,6 +1347,17 @@ function AgentActionPopoverBody({
           >
             Cancel
           </button>
+          {onCompare && isComplete && hasResult && (
+            <button
+              type="button"
+              onClick={onCompare}
+              className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="Compare your current text with the AI result before applying"
+            >
+              <GitCompareArrows className="h-3.5 w-3.5" />
+              Compare
+            </button>
+          )}
           <button
             type="button"
             onClick={onApply}
