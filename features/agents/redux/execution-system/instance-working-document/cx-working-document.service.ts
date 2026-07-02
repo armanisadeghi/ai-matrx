@@ -186,7 +186,10 @@ export async function commitWorkingDocumentContent(
   if (!current) {
     // Row vanished — fall back to an unconditional write so we don't lose the
     // user's content to a transient read.
-    return { status: "saved", document: await updateCxWorkingDocumentContent(id, content) };
+    return {
+      status: "saved",
+      document: await updateCxWorkingDocumentContent(id, content),
+    };
   }
   return { status: "conflict", document: current };
 }
@@ -229,7 +232,7 @@ export async function listRecentUserDocuments(
   limit = 100,
 ): Promise<CxWorkingDocumentSummary[]> {
   const { data, error } = await WD()
-    .select("id, conversation_id, metadata, kind, title, content, updated_at")
+    .select("id, metadata, kind, title, content, updated_at")
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -239,21 +242,14 @@ export async function listRecentUserDocuments(
     data as Array<
       Pick<
         CxWorkingDocumentRow,
-        | "id"
-        | "conversation_id"
-        | "metadata"
-        | "kind"
-        | "title"
-        | "content"
-        | "updated_at"
+        "id" | "metadata" | "kind" | "title" | "content" | "updated_at"
       >
     >
   ).map((row) => ({
     id: row.id,
-    // Origin resolves from the legacy column OR metadata — so documents created
-    // under the new (column-less) model still surface in the rail.
-    conversationId:
-      row.conversation_id ?? row.metadata?.origin_conversation_id ?? null,
+    // Origin lives in metadata.origin_conversation_id (the legacy
+    // conversation_id column was dropped in STEP 3).
+    conversationId: row.metadata?.origin_conversation_id ?? null,
     kind: (row.kind as WorkingDocumentKind) ?? "working",
     title: row.title,
     preview: (row.content ?? "").trim().slice(0, 200),
@@ -434,7 +430,10 @@ export async function listConversationDocuments(
   return res.data.edges
     .filter((e) => e.sourceType === "working_document")
     .map((e) => {
-      const meta = (e.metadata ?? {}) as { enabled?: boolean; doc_kind?: string };
+      const meta = (e.metadata ?? {}) as {
+        enabled?: boolean;
+        doc_kind?: string;
+      };
       return {
         documentId: e.sourceId,
         kind: (meta.doc_kind as WorkingDocumentKind) ?? "working",
