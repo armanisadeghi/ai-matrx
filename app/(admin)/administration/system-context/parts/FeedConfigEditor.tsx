@@ -14,10 +14,12 @@ import {
   Bot,
   Code2,
   Database,
+  ExternalLink,
   Globe2,
   Loader2,
   Pencil,
   Plug,
+  Plus,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -124,6 +126,73 @@ function cfgStr(config: FeedConfig, key: string): string {
   return typeof v === "string" ? v : "";
 }
 
+export interface FeedLink {
+  href: string;
+  label: string;
+}
+
+// Where the SOURCE of a feed lives (its admin/detail home) — so any linked
+// resource is one click from being opened for a quick check. Null when the feed
+// has no external source (manual value, ambient compute).
+export function feedSourceLink(
+  feedType: FeedType,
+  feedConfig: FeedConfig | null | undefined,
+): FeedLink | null {
+  const cfg = feedConfig ?? {};
+  switch (feedType) {
+    case "dataset": {
+      const id = cfgStr(cfg, "data_store_id");
+      return id
+        ? { href: `/rag/data-stores?store_id=${encodeURIComponent(id)}`, label: "Open dataset" }
+        : null;
+    }
+    case "agent": {
+      const id = cfgStr(cfg, "agent_id");
+      return id ? { href: `/agents/${encodeURIComponent(id)}`, label: "Open agent" } : null;
+    }
+    default:
+      return null;
+  }
+}
+
+// Where to CREATE more resources of a feed's kind — so this surface never links
+// to a thing without also showing how to make another one.
+export function feedCreateLink(feedType: FeedType): FeedLink | null {
+  switch (feedType) {
+    case "dataset":
+      return { href: "/rag/data-stores", label: "Manage / create datasets" };
+    case "agent":
+      return { href: "/agents", label: "Browse / create agents" };
+    default:
+      return null;
+  }
+}
+
+// A new-tab link to an admin/source home. (The user asked for "another tab or a
+// window panel"; a new tab is the robust default for a cross-feature jump.)
+export function OpenSourceLink({
+  link,
+  create = false,
+  className = "",
+}: {
+  link: FeedLink;
+  create?: boolean;
+  className?: string;
+}) {
+  return (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className={`inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline ${className}`}
+    >
+      {create ? <Plus className="h-3 w-3" /> : <ExternalLink className="h-3 w-3" />}
+      {link.label}
+    </a>
+  );
+}
+
 // ── Dataset picker — lists published/discoverable knowledge libraries from
 // the live RAG catalog (/rag/library-catalog) and writes the pointer.
 function DatasetFeedConfig({
@@ -135,10 +204,18 @@ function DatasetFeedConfig({
 }) {
   const { items, loading, error } = useLibraryCatalog();
   const selectedId = cfgStr(config, "data_store_id");
+  const sourceLink = feedSourceLink("dataset", config);
+  const createLink = feedCreateLink("dataset");
 
   return (
     <div className="space-y-2">
-      <span className="text-xs font-medium text-foreground">Knowledge resource</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-foreground">Knowledge resource</span>
+        <div className="flex items-center gap-3">
+          {sourceLink && <OpenSourceLink link={sourceLink} />}
+          {createLink && <OpenSourceLink link={createLink} create />}
+        </div>
+      </div>
       {loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading library catalog…
