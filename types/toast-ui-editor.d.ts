@@ -12,5 +12,5 @@ declare module "@toast-ui/editor" {
   // `export *` does not surface names that types/index.d.ts re-exports via a
   // bare `export { ... }` clause over its own imports (WidgetRule et al.) —
   // re-export the ones consumers actually import explicitly.
-  export type { WidgetRule, WidgetRuleMap } from "../node_modules/@toast-ui/editor/types/editor";
+  export type { WidgetRule, WidgetRuleMap, PluginFn, EditorPlugin } from "../node_modules/@toast-ui/editor/types/editor";
 }

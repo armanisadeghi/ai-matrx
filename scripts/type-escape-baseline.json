@@ -2,19 +2,19 @@
   "_comment": "Type-escape-hatch ratchet baseline (TYPESCRIPT_STANDARDS.md §3). Counts only ever ratchet DOWN. Regenerate with `pnpm check:hatches --update` after a wave reduces them. CI gate: `pnpm check:hatches --strict`.",
   "updated": "2026-07-02",
   "counts": {
-    "anyAnnotation": 1109,
-    "asAny": 204,
-    "asUnknownAs": 558,
-    "angleAny": 137,
-    "recordAny": 151,
-    "tsIgnore": 43,
+    "anyAnnotation": 565,
+    "asAny": 136,
+    "asUnknownAs": 530,
+    "angleAny": 86,
+    "recordAny": 107,
+    "tsIgnore": 34,
     "tsNocheck": 14,
     "tsExpectError": 2,
-    "nonNullAssert": 432,
-    "nullishEmptyObject": 566,
-    "orEmptyObject": 89,
-    "orEmptyArray": 430,
-    "nullishEmptyString": 2057,
-    "orEmptyString": 876
+    "nonNullAssert": 317,
+    "nullishEmptyObject": 567,
+    "orEmptyObject": 84,
+    "orEmptyArray": 415,
+    "nullishEmptyString": 2070,
+    "orEmptyString": 854
   }
 }

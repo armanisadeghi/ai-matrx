@@ -40,7 +40,20 @@ export async function GET() {
         supabase
           .schema("platform")
           .from("categories")
-          .select(
+          // Parsing the aliased/JSON-path column list blows TS's instantiation
+          // depth (TS2589); explicit select generics pin the row type instead.
+          .select<
+            string,
+            {
+              id: string;
+              label: string;
+              placement_type: string | null;
+              parent_category_id: string | null;
+              is_active: string | null;
+              user_id: string | null;
+              organization_id: string | null;
+            }
+          >(
             "id,label:name,placement_type,parent_category_id:parent_id,is_active:metadata->>is_active,user_id:metadata->>user_id,organization_id",
           )
           .eq("dimension", "shortcut")
