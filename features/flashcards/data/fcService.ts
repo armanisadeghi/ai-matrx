@@ -280,6 +280,54 @@ export const fcService = {
     }
   },
 
+  /**
+   * Load cards by an ARBITRARY id list (cross-set) with their details, RETURNED
+   * IN THE CALLER'S ORDER. This is the primitive behind cross-set study surfaces
+   * (adaptive "Review due", weak-areas drill) where the card order is the FSRS
+   * due order from `studyService.listDue`, not a set's membership order. Missing
+   * or soft-deleted ids are skipped. `position` is null (no set context).
+   */
+  async getCardsByIds(ids: string[]): Promise<FcResult<CardWithDetails[]>> {
+    if (ids.length === 0) return { data: [], error: null };
+    try {
+      const { data: cardRows, error: cardErr } = await EDU()
+        .from("fc_card")
+        .select("*")
+        .in("id", ids)
+        .is("deleted_at", null);
+      if (cardErr) return fail("getCardsByIds", cardErr);
+
+      const { data: detailRows, error: detErr } = await EDU()
+        .from("fc_detail")
+        .select("*")
+        .in("card_id", ids)
+        .is("deleted_at", null)
+        .order("position", { ascending: true });
+      if (detErr) return fail("getCardsByIds", detErr);
+
+      const detailsByCard = new Map<string, FcDetailRow[]>();
+      for (const d of (detailRows ?? []) as FcDetailRow[]) {
+        const arr = detailsByCard.get(d.card_id) ?? [];
+        arr.push(d);
+        detailsByCard.set(d.card_id, arr);
+      }
+
+      const byId = new Map((cardRows ?? []).map((c) => [(c as FcCardRow).id, c as FcCardRow]));
+      const cards: CardWithDetails[] = ids
+        .map((id) => byId.get(id))
+        .filter((c): c is FcCardRow => !!c)
+        .map((c) => ({
+          ...c,
+          position: null,
+          details: detailsByCard.get(c.id) ?? [],
+        }));
+
+      return { data: cards, error: null };
+    } catch (e) {
+      return fail("getCardsByIds", e);
+    }
+  },
+
   async updateCard(
     cardId: string,
     patch: Partial<Pick<FcCardRow, "front" | "back" | "card_kind" | "difficulty" | "topic" | "lesson" | "personal_notes">>,
