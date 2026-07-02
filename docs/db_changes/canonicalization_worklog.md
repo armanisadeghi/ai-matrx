@@ -107,6 +107,23 @@ ACCESS CAVEAT: feeds grant resolution (`rag_source_has_library_grant`, `can_read
 ### 4.5 `users.user_follows` → `user(follower) → user(following)` role=`follows`  (0 rows · needs token `user` · func: get_user_feed)
 Do inside the `users`-schema sweep. 0 rows → no data move; register `user` token, rebuild `get_user_feed`, drop table.
 
+## 4.6 Ready-to-execute specs (fully analyzed 2026-07-02; execute WITH runtime verification)
+
+### `iam.org_industries` → `organization → industry` (1 row · ACCESS-CRITICAL)
+PREREQ: register token `industry`→`iam.industries` (`INSERT platform.entity_types(token,schema_name,table_name,label,default_visibility,is_component,is_versioned,is_active) VALUES('industry','iam','industries','Industry','internal',false,false,true)`) then `pnpm tsx scripts/generate-entity-types.ts`. (industries itself does NOT certify yet — registration only needs the row.)
+Edge: `organization → industry`, `metadata={is_primary, legacy_table, legacy_id:{organization_id,industry_id}}` (is_primary in metadata, NOT role — nothing reads role here).
+Repoint 4 fns — swap `iam.org_industries oi` for `platform.associations oi WHERE oi.source_type='organization' AND oi.target_type='industry'`, `oi.organization_id`→`oi.source_id`, `oi.industry_id`→`oi.target_id`:
+- `can_read_processed_document` (**gates doc reads**) + `rag_source_has_library_grant` (**gates RAG access**) — mechanical read swaps; **runtime-verify a library/industry-granted doc is still readable by an org member and NOT by an outsider.**
+- `industry_assign_org` — `RETURNS iam.org_industries` BREAKS on graveyard → change to `RETURNS void`; body = `assoc_add`-equivalent upsert + (if primary) clear `metadata.is_primary` on the org's other industry edges; keep the `library_audit_log` write + `_library_assert_super_admin`.
+- `industry_unassign_org` — delete the org→industry edge; keep audit log + super-admin assert.
+FE (1 direct read): `features/industries/service.ts:47` `.schema("iam").from("org_industries")` → `associationsService.listForSources('organization',[orgId],'industry')`. The two `.rpc()` callsites (:85,:97) are unchanged (fns repointed internally).
+
+### `users.user_follows` → `user → user` role=`follows` (0 rows · BLOCKED on user-entity home)
+0 rows = no data move. BLOCKER: register token `user` needs a decided home table (what do `follower_id`/`following_id` reference — `auth.users`? a public profile table?). Decide that first (part of the users-schema sweep). Then: register `user`, repoint `get_user_feed` (plpgsql, refs user_follows) to read `platform.associations` (source_type='user', target_type='user', role='follows'), graveyard. No FE `.from("user_follows")` usage.
+
+### `skill.project` → `skill → project` (0 rows · empty · low value)
+Tokens `skill`/`project` already exist. 0 rows = no data. Only work: repoint the PostgREST embed `SKILL_SELECT = "*, project(project_id)"` (`features/skills/redux/skillsThunks.ts:56`) — drop the embed, fetch skill→project edges via `associationsService.listForSources('skill',[skillIds],'project')`, merge in `skillsConverters.supabaseRowToSkillRow`. Then graveyard the empty table. (Deferred: empty table, adds FE-embed risk to an active feature for zero data benefit.)
+
 ## 5. Blocked / prereqs
 
 ### 5.1 `tool.executor` — canonicalize before `tool.binding` (262 rows · 5 funcs)
@@ -166,6 +183,12 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 | 2026-07-02 | `research.rs_keyword_source` | `research_source → research_keyword` (rank→`position`) | 3023 | (same migration) | (same file; keyword ranks via `listForTargets`) |
 
 Both verified: edge counts match junctions, tables retired to `graveyard` (data intact), tokens de-registered, FE type-clean. PENDING batch-finalize: `pnpm db-types` + aidream `python db/generate.py` (drop the two research-schema junction models). Runtime-test route: `/research` topic view → tag a source, filter by keyword (rank order), source-importance panel.
+
+| 2026-07-02 | `tool.bundle_member` | `tool → tool_bundle` role=`member` (sort_order→`position`, local_alias→`metadata`) | 88 | `tool_bundle_member_collapse.sql` | `dimensions`/`bundles`/`surfaces` services + admin API routes → `associationsService` (+ shared `bundleMemberEdge.ts`); admin routes write `platform.associations` directly (service-role) |
+
+bundle_member verified: 88 edges, table retired, all 4 dependent fns repointed (**+ fixed the pre-existing `tool_resolve_for_request` break**: unqualified `mcp_connection_status` → `SET search_path`). FE type-clean, 0 `bundle_member` refs, dead-relations registered. **aidream backend repoint IN PROGRESS** (adversarial sweep found 20+ matrx-orm consumers + a boot-blocker — the latter fixed in aidream `2a5d1062f`). Runtime-test: tool bundles in the tools admin + agent tool-resolution.
+
+**Process learning (now in the canonical-associations skill):** a flip is NOT done at DB+FE — it's done when DB + FE + **aidream consumers + ORM regen** are all repointed AND an adversarial agent confirms zero old-shape usage in BOTH repos. `table_impact` sees Postgres fns only; `check:dead-relations` (both repos) was blind to matrx-orm manager usage — a real safety-net gap the sweep exposed.
 
 ## 7. Open flags
 - RLS disabled on `platform.entity_relationships`, `platform.deprecated_relations` (internal metadata; anon-exposed — decide intentionally).

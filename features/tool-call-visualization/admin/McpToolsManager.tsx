@@ -921,7 +921,7 @@ export function McpToolsManager() {
       .in("tool_name", targetNames);
     const ok = await confirm({
       title: `Delete ${noun}?`,
-      description: `${refCount ?? 0} historical cx_tool_call rows reference these tool names. Deleting cascades through tool_binding, tool_bundle_member, tool_def_version, and tool_ui — but cx_tool_call.tool_name has no FK and will be orphaned. Prefer Deactivate unless you really mean it.`,
+      description: `${refCount ?? 0} historical cx_tool_call rows reference these tool names. Deleting cascades through tool_binding, tool_def_version, and tool_ui, and orphans the tool's bundle-membership associations — but cx_tool_call.tool_name has no FK and will be orphaned. Prefer Deactivate unless you really mean it.`,
       confirmLabel: "Delete forever",
       variant: "destructive",
     });

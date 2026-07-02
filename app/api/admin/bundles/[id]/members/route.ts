@@ -1,6 +1,10 @@
 // app/api/admin/bundles/[id]/members/route.ts
 //
-// Admin-gated insert for tool_bundle_member (RLS read-only, no write policy).
+// Admin-gated add of a bundle member. The legacy tool↔bundle junction collapsed
+// into `platform.associations` (a tool → tool_bundle edge, role='member'). The
+// service-role admin client is required: authenticated has NO direct grant on
+// platform.associations (writes normally go through the org-gated assoc_* RPCs),
+// and this server route has no user JWT for those RPCs to key off.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
@@ -35,12 +39,33 @@ export async function POST(
     }
 
     const supabase = createAdminClient();
-    const { error } = await supabase.schema("tool").from("bundle_member").insert({
-      bundle_id: bundleId,
-      tool_id,
-      local_alias,
-      sort_order: typeof sort_order === "number" ? sort_order : 100,
-    });
+
+    // The bundle owns the org the membership edge belongs to (mirrors the collapse).
+    const bundleRes = await supabase
+      .schema("tool").from("bundle")
+      .select("organization_id")
+      .eq("id", bundleId)
+      .single();
+    if (bundleRes.error) {
+      return NextResponse.json(
+        { error: "Bundle not found", details: bundleRes.error.message },
+        { status: 404 },
+      );
+    }
+
+    // One tool → tool_bundle 'member' edge: position = sort_order, alias in metadata.
+    const { error } = await supabase
+      .schema("platform").from("associations")
+      .insert({
+        source_type: "tool",
+        source_id: tool_id,
+        target_type: "tool_bundle",
+        target_id: bundleId,
+        organization_id: bundleRes.data.organization_id,
+        role: "member",
+        position: typeof sort_order === "number" ? sort_order : 100,
+        metadata: { local_alias },
+      });
 
     if (error) {
       return NextResponse.json(

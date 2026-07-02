@@ -3,11 +3,18 @@
 import { createClient } from "@/utils/supabase/client";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import {
+  TOOL_BUNDLE,
+  assocData,
+  edgeToBundleMemberRow,
+  type BundleMemberRow,
+} from "./bundleMemberEdge";
 
 type Tables = Database["public"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
 export type BundleRow = ToolTables["bundle"]["Row"];
-export type BundleMemberRow = ToolTables["bundle_member"]["Row"];
+export type { BundleMemberRow };
 export type BundleUpsert = ToolTables["bundle"]["Insert"];
 
 export interface BundleMemberWithTool {
@@ -65,7 +72,7 @@ export async function getBundle(id: string): Promise<BundleRow> {
  * `contributedToolIds` is exactly the set to add/remove for the agent, so the
  * picker never has to branch on shape.
  */
-/** A tool recorded as a member of a bundle (`tool_bundle_member` → `tool_def`). */
+/** A tool recorded as a member of a bundle (a tool → tool_bundle association edge). */
 export interface BundleMemberTool {
   id: string;
   name: string;
@@ -81,8 +88,8 @@ export interface AgentBundleOption {
   /** Auto-managed MCP-server bundle (members discovered at runtime). */
   isMcp: boolean;
   serverSlug: string | null;
-  /** Concrete member rows recorded in `tool_bundle_member`. MCP bundles report
-   * 0 until first discovery — they expand on demand via the lister. */
+  /** Concrete member count from the tool → tool_bundle 'member' edges. MCP
+   * bundles report 0 until first discovery — they expand on demand via the lister. */
   memberCount: number;
   /** The member tools, in sort order, for the "included tools" list. Empty for
    * auto-managed MCP bundles (their tools aren't known until runtime). */
@@ -107,41 +114,58 @@ export interface AgentBundleOption {
  */
 export async function listAgentBundleOptions(): Promise<AgentBundleOption[]> {
   const client = sb();
-  const [bundlesRes, membersRes] = await Promise.all([
-    client
-      .schema("tool").from("bundle")
-      .select("*")
-      .eq("is_active", true)
-      .order("is_system", { ascending: true })
-      .order("name", { ascending: true }),
-    client
-      .schema("tool").from("bundle_member")
-      .select("bundle_id, tool_id, sort_order, tool:definition(id, name, is_active)")
-      .order("sort_order", { ascending: true }),
-  ]);
+  const bundlesRes = await client
+    .schema("tool").from("bundle")
+    .select("*")
+    .eq("is_active", true)
+    .order("is_system", { ascending: true })
+    .order("name", { ascending: true });
   if (bundlesRes.error) throw bundlesRes.error;
-  if (membersRes.error) throw membersRes.error;
 
   const bundles = (bundlesRes.data ?? []) as BundleRow[];
-  const members = (membersRes.data ?? []) as Array<{
-    bundle_id: string;
-    tool_id: string;
-    sort_order: number;
-    tool: { id: string; name: string; is_active: boolean } | null;
-  }>;
 
-  // Member tools grouped by bundle, in sort order. We carry the names so the
-  // picker can show the "included tools" list, not just a count.
+  // Member tools come from the tool → tool_bundle 'member' edges (the collapsed
+  // legacy tool↔bundle junction). Each edge's sourceId is the member tool, its
+  // targetId the bundle, and position the old sort_order.
+  const { edges } = assocData(
+    await associationsService.listForTargets(
+      TOOL_BUNDLE,
+      bundles.map((b) => b.id),
+    ),
+  );
+
+  // Edges carry only ids; fetch each member tool's name/is_active for the list.
+  const memberToolIds = Array.from(new Set(edges.map((e) => e.sourceId)));
+  const toolMetaById = new Map<string, { name: string; isActive: boolean }>();
+  if (memberToolIds.length > 0) {
+    const toolsRes = await client
+      .schema("tool").from("definition")
+      .select("id, name, is_active")
+      .in("id", memberToolIds);
+    if (toolsRes.error) throw toolsRes.error;
+    for (const t of toolsRes.data ?? []) {
+      toolMetaById.set(t.id, { name: t.name, isActive: t.is_active ?? false });
+    }
+  }
+
+  // Member tools grouped by bundle, in sort order (edge.position = old sort_order).
+  // We carry the names so the picker can show the "included tools" list, not
+  // just a count.
   const membersByBundle = new Map<string, BundleMemberTool[]>();
-  for (const m of members) {
+  for (const e of [...edges].sort(
+    (a, b) =>
+      (a.position ?? Number.POSITIVE_INFINITY) -
+      (b.position ?? Number.POSITIVE_INFINITY),
+  )) {
+    const meta = toolMetaById.get(e.sourceId);
     const tool: BundleMemberTool = {
-      id: m.tool_id,
-      name: m.tool?.name ?? m.tool_id,
-      isActive: m.tool?.is_active ?? false,
+      id: e.sourceId,
+      name: meta?.name ?? e.sourceId,
+      isActive: meta?.isActive ?? false,
     };
-    const arr = membersByBundle.get(m.bundle_id);
+    const arr = membersByBundle.get(e.targetId);
     if (arr) arr.push(tool);
-    else membersByBundle.set(m.bundle_id, [tool]);
+    else membersByBundle.set(e.targetId, [tool]);
   }
 
   // Detect shared listers: any lister tool referenced by more than one active
@@ -195,38 +219,38 @@ export async function listAgentBundleOptions(): Promise<AgentBundleOption[]> {
 export async function listBundleMembers(
   bundleId: string,
 ): Promise<BundleMemberWithTool[]> {
-  const { data, error } = await sb()
-    .schema("tool").from("bundle_member")
-    .select("*, tool:definition(id, name, description, is_active)")
-    .eq("bundle_id", bundleId)
-    .order("sort_order", { ascending: true })
-    .order("local_alias", { ascending: true });
+  // A bundle's members are its INCOMING tool → tool_bundle 'member' edges.
+  const { edges } = assocData(
+    await associationsService.listForTargets(TOOL_BUNDLE, [bundleId]),
+  );
+  if (edges.length === 0) return [];
+
+  // Edges carry only tool ids; fetch each member tool's display fields.
+  const { data: toolRows, error } = await sb()
+    .schema("tool").from("definition")
+    .select("id, name, description, is_active")
+    .in("id", edges.map((e) => e.sourceId));
   if (error) throw error;
-  type Joined = BundleMemberRow & {
-    tool: {
-      id: string;
-      name: string;
-      description: string;
-      is_active: boolean | null;
-    } | null;
-  };
-  return ((data ?? []) as Joined[]).map((row) => ({
-    member: {
-      bundle_id: row.bundle_id,
-      tool_id: row.tool_id,
-      local_alias: row.local_alias,
-      sort_order: row.sort_order,
-      created_at: row.created_at,
-    },
-    tool: row.tool,
-  }));
+  const toolById = new Map((toolRows ?? []).map((t) => [t.id, t]));
+
+  // Reconstruct the prior ORDER BY sort_order, local_alias.
+  return edges
+    .map((e) => ({
+      member: edgeToBundleMemberRow(e),
+      tool: toolById.get(e.sourceId) ?? null,
+    }))
+    .sort((a, b) => {
+      const s = a.member.sort_order - b.member.sort_order;
+      return s !== 0 ? s : a.member.local_alias.localeCompare(b.member.local_alias);
+    });
 }
 
-// Writes to tool_bundle / tool_bundle_member can't go through the browser client:
-// both tables are RLS-protected with a read-only SELECT policy and no write
-// policy, so a user-session write silently affects zero rows. These mutations
-// are routed through admin-gated Next.js API routes that use the service client.
-// (Reads above stay client-side — public SELECT works fine.)
+// Writes to tool_bundle and to the tool → tool_bundle 'member' association edges
+// can't go through the browser client: tool.bundle is RLS write-protected, and
+// authenticated has NO direct grant on platform.associations at all — a
+// user-session write affects zero rows. These mutations are routed through
+// admin-gated Next.js API routes that use the service client. (Reads above stay
+// client-side — public SELECT / the org-gated assoc_* RPCs work fine.)
 async function adminFetch(url: string, init: RequestInit): Promise<any> {
   const res = await fetch(url, {
     ...init,

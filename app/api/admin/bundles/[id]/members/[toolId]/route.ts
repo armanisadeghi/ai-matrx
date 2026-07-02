@@ -1,11 +1,15 @@
 // app/api/admin/bundles/[id]/members/[toolId]/route.ts
 //
-// Admin-gated alias update + removal for tool_bundle_member
-// (RLS read-only, no write policy).
+// Admin-gated alias update + removal of one bundle member. The legacy tool↔bundle
+// junction collapsed into `platform.associations` (a tool → tool_bundle edge,
+// role='member'); the alias lives in the edge's metadata.local_alias. The
+// service-role admin client is required — authenticated has no direct grant on
+// platform.associations, and this route has no user JWT for the assoc_* RPCs.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireAdmin } from "@/utils/auth/adminUtils";
+import { isJsonObject } from "@/types/json";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -35,11 +39,42 @@ export async function PATCH(
     }
 
     const supabase = createAdminClient();
+
+    // The alias lives in the edge's metadata; merge to preserve other keys
+    // (e.g. the legacy_table / legacy_id provenance from the collapse).
+    const existing = await supabase
+      .schema("platform").from("associations")
+      .select("metadata")
+      .eq("source_type", "tool")
+      .eq("source_id", toolId)
+      .eq("target_type", "tool_bundle")
+      .eq("target_id", bundleId)
+      .eq("role", "member")
+      .maybeSingle();
+    if (existing.error) {
+      return NextResponse.json(
+        { error: "Failed to load bundle member", details: existing.error.message },
+        { status: 500 },
+      );
+    }
+    if (!existing.data) {
+      return NextResponse.json(
+        { error: "Bundle member not found" },
+        { status: 404 },
+      );
+    }
+    const prevMeta = isJsonObject(existing.data.metadata)
+      ? existing.data.metadata
+      : {};
+
     const { error } = await supabase
-      .schema("tool").from("bundle_member")
-      .update({ local_alias: body.local_alias })
-      .eq("bundle_id", bundleId)
-      .eq("tool_id", toolId);
+      .schema("platform").from("associations")
+      .update({ metadata: { ...prevMeta, local_alias: body.local_alias } })
+      .eq("source_type", "tool")
+      .eq("source_id", toolId)
+      .eq("target_type", "tool_bundle")
+      .eq("target_id", bundleId)
+      .eq("role", "member");
 
     if (error) {
       return NextResponse.json(
@@ -72,10 +107,13 @@ export async function DELETE(
 
     const supabase = createAdminClient();
     const { error } = await supabase
-      .schema("tool").from("bundle_member")
+      .schema("platform").from("associations")
       .delete()
-      .eq("bundle_id", bundleId)
-      .eq("tool_id", toolId);
+      .eq("source_type", "tool")
+      .eq("source_id", toolId)
+      .eq("target_type", "tool_bundle")
+      .eq("target_id", bundleId)
+      .eq("role", "member");
 
     if (error) {
       return NextResponse.json(

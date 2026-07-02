@@ -9,13 +9,24 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import {
+  TOOL,
+  TOOL_BUNDLE,
+  assocData,
+  edgeToBundleMemberRow,
+  type BundleMemberRow,
+} from "@/features/tool-registry/bundles/services/bundleMemberEdge";
 
 type Tables = Database["public"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
 
 export type ToolBindingRow = ToolTables["binding"]["Row"];
 export type ToolSurfaceDefaultsRow = ToolTables["surface_defaults"]["Row"];
-export type ToolBundleMemberRow = ToolTables["bundle_member"]["Row"];
+// Was the legacy tool↔bundle junction Row; that junction collapsed into
+// platform.associations (tool → tool_bundle, role='member'). Reconstructed shape
+// lives in bundleMemberEdge.
+export type ToolBundleMemberRow = BundleMemberRow;
 export type ToolBundleRow = ToolTables["bundle"]["Row"];
 export type ToolDefRow = ToolTables["definition"]["Row"];
 
@@ -118,30 +129,33 @@ export async function listSurfacesIncludingTool(
   if (toolRes.error) throw toolRes.error;
   const toolName = toolRes.data.name;
 
-  const [directRes, bundleRes] = await Promise.all([
-    // Direct inclusion: surface_defaults.always_include_tools contains the tool name.
-    sb()
-      .schema("tool").from("surface_defaults")
-      .select("surface_name")
-      .contains("always_include_tools", [toolName]),
-    // Bundle inclusion: find bundles that contain this tool, then surfaces that include those bundles.
-    sb()
-      .schema("tool").from("bundle_member")
-      .select("bundle:bundle(name)")
-      .eq("tool_id", toolId),
-  ]);
+  // Direct inclusion: surface_defaults.always_include_tools contains the tool name.
+  const directRes = await sb()
+    .schema("tool").from("surface_defaults")
+    .select("surface_name")
+    .contains("always_include_tools", [toolName]);
   if (directRes.error) throw directRes.error;
-  if (bundleRes.error) throw bundleRes.error;
+
+  // Bundle inclusion: this tool's outgoing tool → tool_bundle 'member' edges name
+  // the bundles it's in; then find surfaces that include those bundles.
+  const { edges: bundleEdges } = assocData(
+    await associationsService.listForSources(TOOL, [toolId], TOOL_BUNDLE),
+  );
 
   const out: SurfaceInclusion[] = (directRes.data ?? []).map((r) => ({
     surface_name: r.surface_name,
     via: "always_include_tools",
   }));
 
-  type BundleJoin = { bundle: { name: string } | null };
-  const bundleNames = ((bundleRes.data ?? []) as unknown as BundleJoin[])
-    .map((r) => r.bundle?.name)
-    .filter((n): n is string => Boolean(n));
+  let bundleNames: string[] = [];
+  if (bundleEdges.length > 0) {
+    const bundlesRes = await sb()
+      .schema("tool").from("bundle")
+      .select("name")
+      .in("id", bundleEdges.map((e) => e.targetId));
+    if (bundlesRes.error) throw bundlesRes.error;
+    bundleNames = (bundlesRes.data ?? []).map((b) => b.name);
+  }
 
   if (bundleNames.length > 0) {
     const surfacesViaBundle = await sb()
@@ -242,25 +256,31 @@ export async function removeToolFromSurface(args: {
 // ─── Bundles (reverse view) ──────────────────────────────────────────────────
 
 export async function listToolBundleMemberships(toolId: string): Promise<BundleMembership[]> {
-  const { data, error } = await sb()
-    .schema("tool").from("bundle_member")
-    .select("*, bundle:bundle(*)")
-    .eq("tool_id", toolId)
-    .order("created_at", { ascending: false });
+  // This tool's bundle memberships are its outgoing tool → tool_bundle 'member' edges.
+  const { edges } = assocData(
+    await associationsService.listForSources(TOOL, [toolId], TOOL_BUNDLE),
+  );
+  if (edges.length === 0) return [];
+
+  const { data: bundleRows, error } = await sb()
+    .schema("tool").from("bundle")
+    .select("*")
+    .in("id", edges.map((e) => e.targetId));
   if (error) throw error;
-  type Joined = ToolBundleMemberRow & { bundle: ToolBundleRow | null };
-  return ((data ?? []) as Joined[])
-    .filter((row): row is Joined & { bundle: ToolBundleRow } => row.bundle !== null)
-    .map((row) => ({
-      member: {
-        bundle_id: row.bundle_id,
-        tool_id: row.tool_id,
-        local_alias: row.local_alias,
-        sort_order: row.sort_order,
-        created_at: row.created_at,
-      },
-      bundle: row.bundle,
-    }));
+  const bundleById = new Map<string, ToolBundleRow>(
+    (bundleRows ?? []).map((b) => [b.id, b]),
+  );
+
+  // Preserve the prior "newest first" ordering (was ORDER BY created_at DESC).
+  return [...edges]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .map((e) => {
+      const bundle = bundleById.get(e.targetId);
+      return bundle
+        ? { member: edgeToBundleMemberRow(e), bundle }
+        : null;
+    })
+    .filter((m): m is BundleMembership => m !== null);
 }
 
 // ─── Gating (jsonb column on tool_def) ───────────────────────────────────────

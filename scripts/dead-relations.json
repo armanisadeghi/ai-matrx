@@ -992,6 +992,14 @@
       "new": "graveyard.prompt_app_executions",
       "since": "2026-06-29",
       "reason": "retired to graveyard; live execution tracking is app.execution."
+    },
+    {
+      "relation": "bundle_member",
+      "old": "tool.bundle_member",
+      "newSchema": "platform",
+      "new": "platform.associations",
+      "since": "2026-07-02",
+      "reason": "collapsed into platform.associations (tool → tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
     }
   ]
 }

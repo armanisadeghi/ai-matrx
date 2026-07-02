@@ -6,6 +6,11 @@ import type {
   SurfaceDriftReport,
   SurfaceValue,
 } from "@/features/surfaces/types";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import {
+  TOOL_BUNDLE,
+  assocData,
+} from "@/features/tool-registry/bundles/services/bundleMemberEdge";
 
 type UiTables = Database["ui"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -37,7 +42,6 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
   const [
     surfacesRes,
     surfaceDefaultsRes,
-    bundleMembersRes,
     bundlesRes,
     agentCountsRes,
     surfaceValueCountsRes,
@@ -50,24 +54,30 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
     c
       .schema("tool").from("surface_defaults")
       .select("surface_name, always_include_tools, always_include_bundles"),
-    c.schema("tool").from("bundle_member").select("bundle_id"),
     c.schema("tool").from("bundle").select("id, name"),
     c.schema("agent").from("agent_surface").select("surface_name"),
     c.schema("ui").from("ui_surface_value").select("surface_name"),
   ]);
   if (surfacesRes.error) throw surfacesRes.error;
   if (surfaceDefaultsRes.error) throw surfaceDefaultsRes.error;
-  if (bundleMembersRes.error) throw bundleMembersRes.error;
   if (bundlesRes.error) throw bundlesRes.error;
   if (agentCountsRes.error) throw agentCountsRes.error;
   if (surfaceValueCountsRes.error) throw surfaceValueCountsRes.error;
 
-  // Bundle name → member count, so we can expand always_include_bundles.
+  // Bundle name → member count, so we can expand always_include_bundles. Member
+  // counts come from the tool → tool_bundle 'member' association edges (the
+  // collapsed legacy tool↔bundle junction), keyed by bundle id (edge target).
   const bundleIdToName = new Map<string, string>();
   for (const b of bundlesRes.data ?? []) bundleIdToName.set(b.id, b.name);
+  const { edges: memberEdges } = assocData(
+    await associationsService.listForTargets(
+      TOOL_BUNDLE,
+      Array.from(bundleIdToName.keys()),
+    ),
+  );
   const bundleNameToMemberCount = new Map<string, number>();
-  for (const m of bundleMembersRes.data ?? []) {
-    const name = bundleIdToName.get(m.bundle_id);
+  for (const e of memberEdges) {
+    const name = bundleIdToName.get(e.targetId);
     if (!name) continue;
     bundleNameToMemberCount.set(
       name,
@@ -323,32 +333,36 @@ export async function getSurfaceUsage(
     if (defaultsRes.data.always_include_bundles.length > 0) {
       const { data: bundleRows, error: bErr } = await c
         .schema("tool").from("bundle")
-        .select(
-          "name, members:bundle_member(tool:definition(id, name, description, is_active))",
-        )
+        .select("id, name")
         .in("name", defaultsRes.data.always_include_bundles);
       if (bErr) throw bErr;
-      type BundleJoin = {
-        name: string;
-        members:
-          | {
-              tool: {
-                id: string;
-                name: string;
-                description: string;
-                is_active: boolean | null;
-              } | null;
-            }[]
-          | null;
-      };
-      for (const b of (bundleRows ?? []) as unknown as BundleJoin[]) {
-        for (const m of b.members ?? []) {
-          if (!m.tool) continue;
-          includedTools.push({
-            ...m.tool,
-            via: "always_include_bundles",
-            bundle_name: b.name,
-          });
+      const bundleList = bundleRows ?? [];
+      if (bundleList.length > 0) {
+        const bundleNameById = new Map(bundleList.map((b) => [b.id, b.name]));
+        // A bundle's tools are its INCOMING tool → tool_bundle 'member' edges.
+        const { edges } = assocData(
+          await associationsService.listForTargets(
+            TOOL_BUNDLE,
+            bundleList.map((b) => b.id),
+          ),
+        );
+        const memberToolIds = Array.from(new Set(edges.map((e) => e.sourceId)));
+        if (memberToolIds.length > 0) {
+          const { data: toolRows, error: tErr } = await c
+            .schema("tool").from("definition")
+            .select("id, name, description, is_active")
+            .in("id", memberToolIds);
+          if (tErr) throw tErr;
+          const toolById = new Map((toolRows ?? []).map((t) => [t.id, t]));
+          for (const e of edges) {
+            const tool = toolById.get(e.sourceId);
+            if (!tool) continue;
+            includedTools.push({
+              ...tool,
+              via: "always_include_bundles",
+              bundle_name: bundleNameById.get(e.targetId) ?? "",
+            });
+          }
         }
       }
     }
