@@ -78,7 +78,7 @@ export function AgentRoleCard({
 
       {/* floating hover actions over a backdrop, so they never eat name width */}
       <div className="absolute right-1 top-1 z-10 flex items-center gap-0.5 rounded-md bg-card/85 opacity-0 backdrop-blur transition-opacity group-hover/role:opacity-100">
-        <AgentPeekButton agentId={agentId} navigationIds={peekNavIds} />
+        <AgentPeekButton agentId={agentId} />
         {onEdit && (
           <button
             type="button"

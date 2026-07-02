@@ -278,10 +278,9 @@ function CanvasInner({ orchestratorId, accent, members, config, onEditMember }: 
 
   useEffect(() => {
     // Sync external membership/label/accent changes into RF-owned state, keyed on
-    // `sig`, preserving live positions/z-order. See buildNodes note above.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // `sig`, preserving live positions/z-order (updater form — the compiler is fine
+    // with it). See buildNodes note above.
     setNodes((cur) => buildNodes(cur));
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEdges(
       members.map((m) => ({
         id: `e-${m.agentId}`,

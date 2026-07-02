@@ -10,7 +10,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Plus, Search, Webhook } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -66,8 +66,6 @@ export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibr
       consumer.tab === "shared" ? shared : consumer.tab === "mine" ? owned : [...owned, ...shared];
     return base.filter((a) => !excluded.has(a.id));
   }, [consumer.tab, owned, shared, excluded]);
-
-  const navIds = useMemo(() => available.map((a) => a.id), [available]);
 
   const activeFilterCount =
     consumer.includedCats.length +
@@ -145,14 +143,11 @@ export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibr
                 if (e.key === "Enter") onAdd(a.id);
               }}
               className={cn(
-                "group flex cursor-grab items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-colors",
+                "group flex cursor-grab items-center gap-2 rounded-md border border-transparent px-2 py-1.5 transition-colors",
                 "hover:border-border hover:bg-muted/60 active:cursor-grabbing",
               )}
               title="Drag onto the canvas or click to add"
             >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Webhook className="h-3.5 w-3.5" />
-              </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-foreground">
                   {a.name || "Untitled Agent"}
@@ -161,8 +156,8 @@ export function AgentLibraryRail({ orchestratorId, memberIds, onAdd }: AgentLibr
                   <div className="truncate text-[11px] text-muted-foreground">{a.category}</div>
                 )}
               </div>
-              <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-                <AgentPeekButton agentId={a.id} navigationIds={navIds} />
+              <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <AgentPeekButton agentId={a.id} />
                 <Plus className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
