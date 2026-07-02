@@ -28,6 +28,7 @@ import {
 import { EditableJsonViewerProps } from "@/components/ui/JsonComponents/types";
 import JsonEditorItem from "./JsonEditorItem";
 import jsonUtils from "./newUitls";
+import { isJsonObject } from "@/types/json";
 
 const SAMPLE_ENTRY = {
   YourKey: "YourValue",
@@ -92,7 +93,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
       }
 
       try {
-        if (typeof data === "object") {
+        if (isJsonObject(data)) {
           setParsedData(data);
           setBasicJsonText(jsonUtils.stringify(data));
           return;

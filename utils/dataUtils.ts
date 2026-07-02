@@ -45,6 +45,10 @@ const KEEP_LOWER_CASE = [
     "as",
 ];
 
+function isWordReplaceKey(word: string): word is keyof typeof WORD_REPLACE_MAP {
+    return Object.prototype.hasOwnProperty.call(WORD_REPLACE_MAP, word);
+}
+
 const toTitleCase = (str: string | null | undefined) => {
     // Handle null, undefined, or empty string cases
     if (!str || typeof str !== 'string') {
@@ -61,9 +65,9 @@ const toTitleCase = (str: string | null | undefined) => {
         .map(word => {
             // Convert to lowercase for comparison
             const lowerWord = word.toLowerCase();
-            
+
             // Check if word should be replaced
-            if (WORD_REPLACE_MAP[lowerWord]) {
+            if (isWordReplaceKey(lowerWord)) {
                 return WORD_REPLACE_MAP[lowerWord];
             }
             

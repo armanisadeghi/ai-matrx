@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Plus, Copy, Check, Zap, ChevronDown, ChevronUp, ListFilter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 const UUIDArrayField = () => {
     const [inputValue, setInputValue] = useState('');
@@ -24,13 +25,13 @@ const UUIDArrayField = () => {
         setInputValue(uuid);
     };
 
-    const handleAdd = (e) => {
+    const handleAdd = (e?: React.SyntheticEvent) => {
         e?.preventDefault();
 
         if (!inputValue.trim()) return;
 
         if (!uuidRegex.test(inputValue)) {
-            alert('Please enter a valid UUID');
+            toast.error('Please enter a valid UUID');
             return;
         }
 
@@ -40,19 +41,19 @@ const UUIDArrayField = () => {
         }
     };
 
-  const handleRemove = (uuid, e) => {
+  const handleRemove = (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
         setUuids(uuids.filter(v => v !== uuid));
     };
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             handleAdd(e);
         }
     };
 
-  const copyToClipboard = async (uuid, e) => {
+  const copyToClipboard = async (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
         try {
             await navigator.clipboard.writeText(uuid);

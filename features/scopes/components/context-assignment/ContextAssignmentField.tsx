@@ -130,8 +130,7 @@ export type ContextCollapsibleLevel = "org" | "scopeType" | "project" | "task";
 /** Initial expanded state for multi-section collapsibles. Omitted → all collapsed.
  *  `true` expands every level; a per-level map expands only those levels. */
 export type DefaultExpandedSections =
-  | boolean
-  | Partial<Record<ContextCollapsibleLevel, boolean>>;
+  boolean | Partial<Record<ContextCollapsibleLevel, boolean>>;
 
 function levelInitiallyExpanded(
   config: DefaultExpandedSections | undefined,
@@ -175,6 +174,18 @@ function searchPlaceholderForDimensions(
   if (parts.length === 1) return `Search ${parts[0]}…`;
   const last = parts[parts.length - 1];
   return `Search ${parts.slice(0, -1).join(", ")} and ${last}…`;
+}
+
+function hasInitialSelectionContent(
+  sel: Partial<ContextSelection> | undefined,
+): boolean {
+  if (!sel) return false;
+  return (
+    !!sel.organizationId ||
+    (sel.scopeIds?.length ?? 0) > 0 ||
+    (sel.projectIds?.length ?? 0) > 0 ||
+    (sel.taskIds?.length ?? 0) > 0
+  );
 }
 
 export interface ContextAssignmentFieldProps {
@@ -780,25 +791,36 @@ export function ContextAssignmentField({
     [isAllOrgs, organizations, org],
   );
 
-  // Selection state
+  // Selection state — start empty so SSR and the first client paint match.
+  // Persisted Redux (`initialSelection`) can differ on hydration; sync below.
   const [query, setQuery] = useState("");
-  const [selScopes, setSelScopes] = useState<Set<string>>(
-    new Set(initialSelection?.scopeIds ?? []),
-  );
+  const [selScopes, setSelScopes] = useState<Set<string>>(() => new Set());
   // Explicit org selection — active/filter modes only. Selecting a scope does
   // NOT imply selecting its organization (product semantics: org and scope are
   // independent context dimensions; org rides along only when checked).
-  const [selOrgs, setSelOrgs] = useState<Set<string>>(
-    new Set(
-      initialSelection?.organizationId ? [initialSelection.organizationId] : [],
-    ),
+  const [selOrgs, setSelOrgs] = useState<Set<string>>(() => new Set());
+  const [selProjects, setSelProjects] = useState<Set<string>>(() => new Set());
+  const [selTasks, setSelTasks] = useState<Set<string>>(() => new Set());
+  const initialSelectionHydrated = useRef(
+    !hasInitialSelectionContent(initialSelection),
   );
-  const [selProjects, setSelProjects] = useState<Set<string>>(
-    new Set(initialSelection?.projectIds ?? []),
-  );
-  const [selTasks, setSelTasks] = useState<Set<string>>(
-    new Set(initialSelection?.taskIds ?? []),
-  );
+  useEffect(() => {
+    if (initialSelectionHydrated.current) return;
+    initialSelectionHydrated.current = true;
+    if (!initialSelection) return;
+    if (initialSelection.scopeIds?.length) {
+      setSelScopes(new Set(initialSelection.scopeIds));
+    }
+    if (initialSelection.organizationId) {
+      setSelOrgs(new Set([initialSelection.organizationId]));
+    }
+    if (initialSelection.projectIds?.length) {
+      setSelProjects(new Set(initialSelection.projectIds));
+    }
+    if (initialSelection.taskIds?.length) {
+      setSelTasks(new Set(initialSelection.taskIds));
+    }
+  }, [initialSelection]);
   const [adding, setAdding] = useState<string | null>(null);
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
@@ -1087,6 +1109,9 @@ export function ContextAssignmentField({
   useEffect(() => {
     onSelectionChangeRef.current?.(selection);
     if (mode !== "active") return;
+    // Wait until persisted initialSelection is applied post-mount — otherwise
+    // we'd re-dispatch the same Redux snapshot the host already owns.
+    if (!initialSelectionHydrated.current) return;
     if (skipInitialActiveApply.current) {
       skipInitialActiveApply.current = false;
       return;

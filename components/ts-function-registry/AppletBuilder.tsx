@@ -12,9 +12,13 @@ import { registerDatabaseFunctions } from "@/utils/ts-function-registry/register
 import { FunctionDependencies } from "@/utils/ts-function-registry/function-registry";
 import { supabase } from "@/utils/supabase/client";
 
+type AvailableFunction = ReturnType<typeof getAvailableFunctions>[number];
+
 export default function AppletBuilder() {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [availableFunctions, setAvailableFunctions] = useState<any[]>([]);
+  const [availableFunctions, setAvailableFunctions] = useState<
+    AvailableFunction[]
+  >([]);
   const [functionCategories, setFunctionCategories] = useState<string[]>([]);
   const [applet, setApplet] = useState<AppletLogic>({
     id: "new-applet",

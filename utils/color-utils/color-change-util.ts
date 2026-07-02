@@ -12,6 +12,13 @@ import hwbPlugin from 'colord/plugins/hwb';
 
 extend([namesPlugin, cmykPlugin, labPlugin, hwbPlugin]);
 
+type TailwindColorGroup = (typeof tailwindColors)[number];
+type TailwindShadeKey = keyof TailwindColorGroup['shades'];
+
+function isTailwindShadeKey(group: TailwindColorGroup, shade: string): shade is TailwindShadeKey {
+    return Object.prototype.hasOwnProperty.call(group.shades, shade);
+}
+
 /**
  * Function to find the hex value for a given Tailwind color string.
  * @param tailwindColorString - The Tailwind color string (e.g., 'slate-500').
@@ -20,7 +27,7 @@ extend([namesPlugin, cmykPlugin, labPlugin, hwbPlugin]);
 export function getColorFromTailwind(tailwindColorString: string): string {
     const [colorName, shade] = tailwindColorString.split('-');
     const colorGroup = tailwindColors.find(group => group.name.toLowerCase() === colorName.toLowerCase());
-    if (colorGroup && colorGroup.shades[shade]) {
+    if (colorGroup && isTailwindShadeKey(colorGroup, shade)) {
         return colorGroup.shades[shade];
     }
     return '';

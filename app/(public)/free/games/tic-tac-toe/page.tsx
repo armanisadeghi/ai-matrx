@@ -13,13 +13,17 @@ interface Particle {
   decay: number;
 }
 
+type Player = 'X' | 'O';
+type Cell = Player | null;
+type Board = Cell[];
+
 const TicTacToe = () => {
-  const [board, setBoard] = useState(Array(9).fill(null));
+  const [board, setBoard] = useState<Board>(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'won', 'draw'
-  const [winner, setWinner] = useState(null);
+  const [winner, setWinner] = useState<Player | null>(null);
   const [winningLine, setWinningLine] = useState<number[]>([]);
-  const [scores, setScores] = useState({ X: 0, O: 0, draws: 0 });
+  const [scores, setScores] = useState<Record<Player | 'draws', number>>({ X: 0, O: 0, draws: 0 });
   const [particles, setParticles] = useState<Particle[]>([]);
   const [gameMode, setGameMode] = useState('human'); // 'human' or 'ai'
 
@@ -29,7 +33,7 @@ const TicTacToe = () => {
     [0, 4, 8], [2, 4, 6] // diagonals
   ];
 
-  const checkWinner = (squares) => {
+  const checkWinner = (squares: Board): { winner: Player; line: number[] } | null => {
     for (let pattern of winPatterns) {
       const [a, b, c] = pattern;
       if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
@@ -39,7 +43,7 @@ const TicTacToe = () => {
     return null;
   };
 
-  const getBestMove = (squares, player) => {
+  const getBestMove = (squares: Board, player: Player) => {
     // Simple AI that tries to win, then block, then take center/corners
     const opponent = player === 'X' ? 'O' : 'X';
     
@@ -80,7 +84,7 @@ const TicTacToe = () => {
     return available[Math.floor(Math.random() * available.length)];
   };
 
-  const createParticles = (x, y) => {
+  const createParticles = (x: number, y: number) => {
     const newParticles: Particle[] = [];
     for (let i = 0; i < 15; i++) {
       newParticles.push({
@@ -141,7 +145,7 @@ const TicTacToe = () => {
     return undefined;
   }, [board, isXNext, gameStatus, gameMode]);
 
-  const handleClick = (index, isAI = false) => {
+  const handleClick = (index: number, isAI = false) => {
     if (board[index] || gameStatus !== 'playing') return;
 
     const newBoard = [...board];

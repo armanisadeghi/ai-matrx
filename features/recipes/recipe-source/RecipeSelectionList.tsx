@@ -71,11 +71,18 @@ export interface InitialConfig {
     latestVersion?: boolean;
 }
 
+/** Minimal shape this component actually writes to via `setNewApplet` —
+ *  only `compiledRecipeId` is ever set here. Callers may pass a setter for
+ *  a richer applet-draft type (it only needs to be a superset of this). */
+interface NewAppletDraft {
+    compiledRecipeId?: string | null;
+}
+
 interface RecipeSelectionListProps {
     initialSelectedRecipe?: string | null;
     onRecipeSelected?: (recipeId: string) => void;
     setCompiledRecipeId?: (id: string | null) => void;
-    setNewApplet?: React.Dispatch<React.SetStateAction<any>>;
+    setNewApplet?: React.Dispatch<React.SetStateAction<NewAppletDraft>>;
     initialConfig: InitialConfig | null;
     setRecipeSourceConfig?: (sourceConfig: RecipeConfig | null) => void;
     setRecipeNodeDefaults?: (nodeDefaults: RecipeNodeDefaults | null) => void;

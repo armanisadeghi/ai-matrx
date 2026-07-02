@@ -990,7 +990,18 @@ const layoutSettings = {
 // 4. Context Provider and Hook
 import React, { createContext, useContext } from 'react';
 
-const DensityContext = createContext({
+type DensityKey = keyof typeof globalDensitySettings;
+
+interface DensityContextValue {
+    density: DensityKey;
+    settings: {
+        global: (typeof globalDensitySettings)[DensityKey];
+        component: typeof componentSettings;
+        layout: typeof layoutSettings;
+    };
+}
+
+const DensityContext = createContext<DensityContextValue>({
     density: 'normal',
     settings: {
         global: globalDensitySettings.normal,
@@ -1007,7 +1018,13 @@ export const useDensity = () => {
     return context;
 };
 
-export const DensityProvider = ({ density = 'normal', children }) => {
+export const DensityProvider = ({
+    density = 'normal',
+    children,
+}: {
+    density?: DensityKey;
+    children: React.ReactNode;
+}) => {
     const settings = {
         global: globalDensitySettings[density],
         component: componentSettings,
@@ -1022,7 +1039,7 @@ export const DensityProvider = ({ density = 'normal', children }) => {
 };
 
 // 5. Example Usage in a Component
-export const ExampleCard = ({ title, children }) => {
+export const ExampleCard = ({ title, children }: { title: string; children: React.ReactNode }) => {
     const { density, settings } = useDensity();
     const cardStyles = settings.component.card[density];
 
@@ -1093,7 +1110,7 @@ const componentSpecificSettings = {
 };
 
 // Example usage in a component
-const ExampleComponent = ({ density = 'normal' }) => {
+const ExampleComponent = ({ density = 'normal' }: { density?: DensityKey }) => {
     // Combine settings from different levels
     const globalSettings = globalDensitySettings[density];
     const formSettings = componentCategorySettings.form[density];
@@ -1116,7 +1133,11 @@ const ExampleComponent = ({ density = 'normal' }) => {
 };
 
 // Helper function to merge settings from different levels
-const getMergedSettings = (density, componentType, componentId) => {
+const getMergedSettings = (
+    density: DensityKey,
+    componentType: keyof typeof componentCategorySettings,
+    componentId: keyof typeof componentSpecificSettings,
+) => {
     return {
         ...globalDensitySettings[density],
         ...(componentCategorySettings[componentType]?.[density] || {}),
