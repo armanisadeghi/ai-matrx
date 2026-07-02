@@ -176,11 +176,16 @@ const MultiAppletSelector: React.FC<MultiAppletSelectorProps> & {
   const renderIcon = (iconName: string | undefined) => {
     if (!iconName) return <BoxIcon className="h-4 w-4" />;
     
-    const IconComponent = ICON_OPTIONS[iconName];
+    const iconOptions: Record<string, React.ComponentType<{ className?: string }>> = ICON_OPTIONS;
+    const IconComponent = iconOptions[iconName];
     if (!IconComponent) return <BoxIcon className="h-4 w-4" />;
-    
+
     return <IconComponent className="h-4 w-4" />;
   };
+
+  // Helper to resolve a button background class for an arbitrary color name
+  const buttonBgVariants: Record<string, string> = COLOR_VARIANTS.buttonBg;
+  const getButtonBgClass = (colorName: string) => buttonBgVariants[colorName] || buttonBgVariants.emerald;
   
   // Function to render selected applets in the compact view
   const renderSelectedApplets = () => {
@@ -199,7 +204,7 @@ const MultiAppletSelector: React.FC<MultiAppletSelectorProps> & {
             key={applet.id} 
             className={`
               flex items-center gap-1.5 py-1.5 px-3
-              ${COLOR_VARIANTS.buttonBg[applet.primaryColor || 'emerald']}
+              ${getButtonBgClass(applet.primaryColor || 'emerald')}
             `}
           >
             <span className="flex items-center gap-1">
@@ -307,7 +312,7 @@ const MultiAppletSelector: React.FC<MultiAppletSelectorProps> & {
                       key={applet.id} 
                       className={`
                         flex items-center gap-1.5 py-1.5 px-3
-                        ${COLOR_VARIANTS.buttonBg[applet.primaryColor || 'emerald']}
+                        ${getButtonBgClass(applet.primaryColor || 'emerald')}
                       `}
                     >
                       <span className="flex items-center gap-1">

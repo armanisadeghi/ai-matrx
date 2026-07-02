@@ -88,9 +88,9 @@ const NodeRenderer: React.FC<NodeRendererProps> = ({ node, isRoot = false, anima
 
     const renderHeading = (node: OutputNode) => {
         const level = node.depth ? Math.min(node.depth + 1, 6) : 2;
-        const HeadingTag = `h${level}` as keyof React.JSX.IntrinsicElements;
+        const HeadingTag = `h${level}` as `h${1 | 2 | 3 | 4 | 5 | 6}`;
 
-        const sizeClasses = {
+        const sizeClasses: Record<`h${1 | 2 | 3 | 4 | 5 | 6}`, string> = {
             h1: "text-2xl",
             h2: "text-xl",
             h3: "text-lg",

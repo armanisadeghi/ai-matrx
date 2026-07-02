@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -51,22 +52,22 @@ const ImageCropper = ({
   const [aspect, setAspect] = useState<number | null>(
     availableAspectRatios.length ? availableAspectRatios[0].value : 1
   );
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
   // Upload state
   const [isProcessing, setIsProcessing] = useState(false);
   const { upload, uploading: isLoading } = useFileUpload();
 
-  const handleCropAreaComplete = useCallback((croppedArea, croppedAreaPixels) => {
+  const handleCropAreaComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
-  const createImage = (url): Promise<HTMLImageElement> =>
+  const createImage = (url: string): Promise<HTMLImageElement> =>
     new Promise((resolve, reject) => {
       const image = new Image();
       image.addEventListener('load', () => resolve(image));
       image.addEventListener('error', (error) => reject(error));
-      
+
       // This is crucial for avoiding "tainted canvas" errors
       if (url.startsWith('data:')) {
         image.src = url;
@@ -76,7 +77,7 @@ const ImageCropper = ({
       }
     });
 
-  const getCroppedImg = async (imageSrc, pixelCrop): Promise<Blob> => {
+  const getCroppedImg = async (imageSrc: string, pixelCrop: Area): Promise<Blob> => {
     try {
       const image = await createImage(imageSrc);
       const canvas = document.createElement('canvas');

@@ -100,8 +100,14 @@ const getSourceBadgeVariant = (source: string) => {
   }
 };
 
+interface ValueDisplayProps {
+  value: unknown;
+  expanded?: boolean;
+  isExpandable?: boolean;
+}
+
 // Component to format and display broker values
-const ValueDisplay = ({ value, expanded = false, isExpandable = false }) => {
+const ValueDisplay = ({ value, expanded = false, isExpandable = false }: ValueDisplayProps) => {
   if (value === undefined) {
     return <span className="text-gray-400 italic">undefined</span>;
   }

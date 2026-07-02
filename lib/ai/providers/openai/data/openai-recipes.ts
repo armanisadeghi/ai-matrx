@@ -122,7 +122,7 @@ export const recipes = {
 
 // Function to fetch a specific recipe by name
 export function getRecipeByName(recipeName: string) {
-    return recipes[recipeName] || null;
+    return (recipes as Record<string, (typeof recipes)[keyof typeof recipes]>)[recipeName] || null;
 }
 
 // Function to get the list of available recipes

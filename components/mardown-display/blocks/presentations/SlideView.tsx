@@ -517,7 +517,7 @@ function sectionEyebrow(slide: SlideData, layout: string): string | undefined {
   return undefined;
 }
 
-function splitBullets(bullets?: string[]): Array<{ bullets: string[] }> {
+function splitBullets(bullets?: string[]): Array<{ title?: string; bullets: string[] }> {
   const b = bullets ?? [];
   const mid = Math.ceil(b.length / 2);
   return [{ bullets: b.slice(0, mid) }, { bullets: b.slice(mid) }];

@@ -20,6 +20,10 @@ interface MarkdownClassifierProps {
   showCoordinatorSelector?: boolean;
 }
 
+function isMarkdownSampleId(id: string): id is keyof typeof markdownSamples {
+  return Object.prototype.hasOwnProperty.call(markdownSamples, id);
+}
+
 const MarkdownClassifier: React.FC<MarkdownClassifierProps> = ({
   initialMarkdown,
   initialCoordinatorId = 'candidate_profile',
@@ -88,7 +92,7 @@ const MarkdownClassifier: React.FC<MarkdownClassifierProps> = ({
 
   // Handle sample selection
   const handleSampleSelect = (sampleKey: string) => {
-    if (markdownSamples[sampleKey]) {
+    if (isMarkdownSampleId(sampleKey)) {
       const newMarkdown = markdownSamples[sampleKey];
       setMarkdown(newMarkdown);
       setParsedMarkdown(newMarkdown);

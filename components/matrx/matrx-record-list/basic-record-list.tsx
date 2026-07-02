@@ -26,13 +26,17 @@ const densityMap = {
   comfortable: "space-y-3",
 } as const;
 
-const sizeMap = {
+const sizeMap: Record<ComponentSize, string> = {
+  default: "text-base",
+  icon: "text-base",
   xs: "text-xs",
   sm: "text-sm",
   md: "text-base",
   lg: "text-lg",
   xl: "text-xl",
-} as const;
+  "2xl": "text-2xl",
+  "3xl": "text-3xl",
+};
 
 export function MatrxRecordList({
   records,

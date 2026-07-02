@@ -1,7 +1,7 @@
 import { GlobalContextMenu } from "../GlobalContextMenu";
 
 
-export const FileManagerItem = ({ path, bucketName }) => {
+export const FileManagerItem = ({ path, bucketName }: { path: string; bucketName: string }) => {
     return (
         <GlobalContextMenu
             module="fileManager"

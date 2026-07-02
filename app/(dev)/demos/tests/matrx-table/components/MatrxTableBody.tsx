@@ -3,6 +3,7 @@
 
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Row } from "react-table";
 import { TableBody } from "@/components/ui/table";
 import AnimatedTabModal from "@/components/matrx/AnimatedForm/AnimatedTabModal";
 import { TableData } from "@/types/tableTypes";
@@ -11,8 +12,8 @@ import MatrxTableCell from "./MatrxTableCell";
 import { FormState, TabData } from "@/types/AnimatedFormTypes";
 
 interface MatrxTableBodyProps {
-  page;
-  prepareRow;
+  page: Row<TableData>[];
+  prepareRow: (row: Row<TableData>) => void;
   actions?: string[];
   onAction?: (actionName: string, rowData: TableData) => void;
   truncateAt?: number;

@@ -10,7 +10,14 @@ export const createModuleSelectors = <
 >(
   moduleName: ModuleName,
 ) => {
-  const getModuleState = (state: RootState): T => state[moduleName] as T;
+  // MATRX-EXCEPTION: `moduleName` is a runtime `ModuleName` string used to index
+  // into the root Redux state at a slot the dynamic-module system registers per
+  // module (lib/redux/dynamic/moduleSchema.ts) — the root state type has no
+  // static key for it, so this cannot be typed without widening the whole
+  // store's type. Same rationale as lib/hooks/useModule.ts. The single cast to
+  // the generic T is the whole exception; no unknown-laundering needed.
+  const getModuleState = (state: RootState): T =>
+    (state as Record<string, unknown>)[moduleName] as T;
 
   const getInitiated = createSelector(
     [getModuleState],

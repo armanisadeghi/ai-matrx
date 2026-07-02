@@ -1,6 +1,9 @@
-export const getKeysAtPath = (data, path: string[] = []) => {
+import type { JsonValue } from "@/types/json";
+import type { PathArray } from "./types";
+
+export const getKeysAtPath = (data: JsonValue | null | undefined, path: string[] = []): string[] => {
     try {
-        let currentData = data;
+        let currentData: JsonValue | undefined = data ?? undefined;
 
         // Navigate to the current path
         for (const key of path) {
@@ -9,12 +12,15 @@ export const getKeysAtPath = (data, path: string[] = []) => {
             // Handle "Item X" and "Object X" formats
             if (key.startsWith("Item ")) {
                 const index = parseInt(key.replace("Item ", ""));
-                currentData = currentData[index];
+                currentData = Array.isArray(currentData) ? currentData[index] : undefined;
             } else if (key.startsWith("Object ")) {
                 const index = parseInt(key.replace("Object ", ""));
-                currentData = currentData[index];
+                currentData = Array.isArray(currentData) ? currentData[index] : undefined;
             } else {
-                currentData = currentData[key];
+                currentData =
+                    currentData && typeof currentData === "object" && !Array.isArray(currentData)
+                        ? currentData[key]
+                        : undefined;
             }
         }
 
@@ -46,9 +52,9 @@ export const getKeysAtPath = (data, path: string[] = []) => {
     }
 };
 
-export const getDataAtPath = (data, path: string[] = []) => {
+export const getDataAtPath = (data: JsonValue | null | undefined, path: string[] = []): JsonValue | null => {
     try {
-        let currentData = data;
+        let currentData: JsonValue | undefined = data ?? undefined;
 
         // Navigate through the path, but skip 'All' selections
         for (const key of path) {
@@ -57,16 +63,19 @@ export const getDataAtPath = (data, path: string[] = []) => {
             // Handle various key formats
             if (key.startsWith("Item ")) {
                 const index = parseInt(key.replace("Item ", ""));
-                currentData = currentData[index];
+                currentData = Array.isArray(currentData) ? currentData[index] : undefined;
             } else if (key.startsWith("Object ")) {
                 const index = parseInt(key.replace("Object ", ""));
-                currentData = currentData[index];
+                currentData = Array.isArray(currentData) ? currentData[index] : undefined;
             } else {
-                currentData = currentData[key];
+                currentData =
+                    currentData && typeof currentData === "object" && !Array.isArray(currentData)
+                        ? currentData[key]
+                        : undefined;
             }
         }
 
-        return currentData;
+        return currentData ?? null;
     } catch (error) {
         console.error("Error getting data at path:", error);
         return null;
@@ -74,7 +83,7 @@ export const getDataAtPath = (data, path: string[] = []) => {
 };
 
 // Helper to handle complex array structures
-export const getNextLevelOptions = (data) => {
+export const getNextLevelOptions = (data: JsonValue | null | undefined): string[] => {
     if (!data || typeof data !== "object") return ["All"];
 
     if (Array.isArray(data)) {
@@ -90,7 +99,7 @@ export const getNextLevelOptions = (data) => {
 };
 
 // Generate a comprehensive path description
-export const generatePathDescription = (currentPath) => {
+export const generatePathDescription = (currentPath: PathArray): string => {
     if (currentPath.length === 0) return "Root object";
 
     const pathElements: string[] = [];
@@ -121,7 +130,7 @@ export const generatePathDescription = (currentPath) => {
 };
 
 
-export const generateAccessPath = (currentPath) => {
+export const generateAccessPath = (currentPath: PathArray): string => {
     if (currentPath.length === 0) return "data";
 
     // Start with the base
@@ -153,7 +162,10 @@ export const generateAccessPath = (currentPath) => {
 };
 
 // Convert current path to enhanced bookmark format
-export const convertToEnhancedBookmark = (currentPath, ignorePrefix = undefined) => {
+export const convertToEnhancedBookmark = (
+    currentPath: PathArray,
+    ignorePrefix: string | undefined = undefined,
+): (string | number)[] => {
     try {
         // Build the full access path first
         const fullAccessPath = generateAccessPath(currentPath);
@@ -197,7 +209,7 @@ export const convertToEnhancedBookmark = (currentPath, ignorePrefix = undefined)
 };
 
 // Helper function to parse access path string to array
-export const parseAccessPathToArray = (accessPath) => {
+export const parseAccessPathToArray = (accessPath: string): (string | number)[] => {
     if (!accessPath) return [];
     
     // Handle paths like: data[0]["result"]["section_texts"] or data[*]["result"]
@@ -240,9 +252,13 @@ export const parseAccessPathToArray = (accessPath) => {
 };
 
 // Generate enhanced bookmark object
-export const generateEnhancedBookmarkObject = (currentPath, name, ignorePrefix = undefined) => {
+export const generateEnhancedBookmarkObject = (
+    currentPath: PathArray,
+    name: string,
+    ignorePrefix: string | undefined = undefined,
+): { name: string; path: (string | number)[] } => {
     const pathArray = convertToEnhancedBookmark(currentPath, ignorePrefix);
-    
+
     return {
         name: name,
         path: pathArray

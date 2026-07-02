@@ -28,7 +28,7 @@ const DEFAULT_MAX_FILE_SIZE = 1024 * 1024 * 50; // 50MB
 const DEFAULT_DISALLOWED_FILE_TYPES = [".exe", ".bat", ".sh"];
 
 // UTILITY: Takes the current path and a new segment (file or folder name) and returns the new full path
-export const getCreatePath = (segments, newSegment) => {
+export const getCreatePath = (segments: string[], newSegment: string) => {
   const trimmedSegment = newSegment.trim();
   return segments.length
     ? `${segments.join("/")}/${trimmedSegment}`
@@ -41,12 +41,12 @@ export const getFileNameWithoutExtension = (filename: string) => {
 };
 
 // Get parent path
-export const getParentPath = (segments) => {
+export const getParentPath = (segments: string[]) => {
   return segments.slice(0, -1);
 };
 
 // Check if path is root
-export const isRootPath = (segments) => {
+export const isRootPath = (segments: string[]) => {
   return segments.length === 0;
 };
 
@@ -59,7 +59,7 @@ export const sanitizeFileName = (filename: string) => {
 };
 
 // Format file size
-export const formatFileSize = (bytes) => {
+export const formatFileSize = (bytes: number) => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
@@ -73,7 +73,7 @@ export const getFileExtension = (filename: string) => {
 };
 
 // Generate unique filename if duplicate exists
-export const getUniqueFileName = (filename: string, existingFiles) => {
+export const getUniqueFileName = (filename: string, existingFiles: string[]) => {
   const name = getFileNameWithoutExtension(filename);
   const ext = getFileExtension(filename);
   let counter = 1;

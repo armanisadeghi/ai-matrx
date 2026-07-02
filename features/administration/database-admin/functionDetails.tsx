@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type ComponentType, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import SyntaxHighlighter from './SyntaxHighlighter';
 import { cn } from "@/lib/utils";
+import type { DatabaseFunction } from "./types";
 
-const FunctionDetails = ({ func, open, onOpenChange }) => {
+interface FunctionDetailsProps {
+    func: DatabaseFunction | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
+
+const FunctionDetails = ({ func, open, onOpenChange }: FunctionDetailsProps) => {
     const [activeTab, setActiveTab] = useState("definition");
     const [isEditing, setIsEditing] = useState(false);
     const [editedDefinition, setEditedDefinition] = useState("");
@@ -24,11 +31,21 @@ const FunctionDetails = ({ func, open, onOpenChange }) => {
         }
     }, [func]);
 
-    const handleCopy = (text) => {
+    const handleCopy = (text: string) => {
         navigator.clipboard.writeText(text);
     };
 
-    const CodeBlock = ({ children, label, actions, language = 'sql' }) => (
+    const CodeBlock = ({
+        children,
+        label,
+        actions,
+        language = 'sql',
+    }: {
+        children: string;
+        label?: string;
+        actions?: ReactNode;
+        language?: string;
+    }) => (
         <div className="space-y-2 w-full">
             {label && (
                 <div className="flex items-center justify-between">
@@ -48,7 +65,15 @@ const FunctionDetails = ({ func, open, onOpenChange }) => {
 
     if (!func) return null;
 
-    const DetailItem = ({ icon: Icon, label, value }) => (
+    const DetailItem = ({
+        icon: Icon,
+        label,
+        value,
+    }: {
+        icon: ComponentType<{ className?: string }>;
+        label: string;
+        value: ReactNode;
+    }) => (
         <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/5 w-full hover:bg-muted/10 transition-colors">
             <Icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
             <div className="space-y-1 min-w-0 flex-1">

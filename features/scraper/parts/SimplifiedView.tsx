@@ -4,10 +4,37 @@ import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { processOrganizedData, copyToClipboard } from "../utils/scraper-utils";
 
+interface SimplifiedViewOverview {
+  page_title?: string;
+  url?: string;
+}
+
+interface SimplifiedViewContentItem {
+  type: string;
+  content?: string;
+  items?: unknown[];
+}
+
+interface SimplifiedViewSection {
+  heading: {
+    level: number;
+    text: string;
+  };
+  content: SimplifiedViewContentItem[];
+}
+
+interface SimplifiedViewProps {
+  pageData: {
+    overview?: SimplifiedViewOverview;
+    textData?: string;
+    organizedData?: Record<string, unknown>;
+  } | null | undefined;
+}
+
 /**
  * Component for displaying content in a simplified reader-friendly format
  */
-const SimplifiedView = ({ pageData }) => {
+const SimplifiedView = ({ pageData }: SimplifiedViewProps) => {
   if (!pageData) {
     return (
       <div className="p-4 text-muted-foreground">No content available</div>
@@ -16,10 +43,13 @@ const SimplifiedView = ({ pageData }) => {
 
   const { overview, textData, organizedData } = pageData;
 
-  const processedContent = processOrganizedData(organizedData);
+  const processedContent: SimplifiedViewSection[] = organizedData
+    ? processOrganizedData(organizedData)
+    : [];
 
-  const handleCopy = (text) => {
-    copyToClipboard(text);
+  const handleCopy = (text: string | undefined) => {
+    // Guard: copyToClipboard(undefined) would copy the literal string "undefined".
+    if (text) copyToClipboard(text);
   };
 
   return (
@@ -67,7 +97,7 @@ const SimplifiedView = ({ pageData }) => {
                     </h4>
                   )}
                   <div className="space-y-3">
-                    {section.content.map((item, j) => (
+                    {section.content.map((item: SimplifiedViewContentItem, j: number) => (
                       <div key={j} className="text-muted-foreground">
                         {item.type === "paragraph" && (
                           <p className="leading-relaxed text-foreground/90">
@@ -76,7 +106,7 @@ const SimplifiedView = ({ pageData }) => {
                         )}
                         {item.type === "list" && (
                           <ul className="list-disc pl-5 space-y-1 text-foreground/90">
-                            {item.items.map((listItem, k) => (
+                            {(item.items ?? []).map((listItem: unknown, k: number) => (
                               <li key={k} className="leading-relaxed">
                                 {typeof listItem === "string" ? (
                                   listItem

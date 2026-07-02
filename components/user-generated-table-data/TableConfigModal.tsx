@@ -475,7 +475,7 @@ export default function TableConfigModal({
       json: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
       array: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
     };
-    return colors[dataType] || colors.string;
+    return (dataType in colors ? colors[dataType as keyof typeof colors] : undefined) || colors.string;
   };
 
   return (

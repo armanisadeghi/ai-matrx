@@ -265,7 +265,7 @@ export const RecipeSelectionList: React.FC<RecipeSelectionListProps> = ({
       }
 
       if (setNewApplet) {
-        setNewApplet((prev) => ({
+        setNewApplet((prev: Record<string, unknown>) => ({
           ...prev,
           compiledRecipeId: selectedRecipe,
         }));

@@ -54,7 +54,7 @@ function makeSetup(fetchImpl: (ctx: {
     const store = configureStore({
         reducer: { warm: slice.reducer },
         middleware: (gDM) =>
-            gDM().concat(() => (next) => (action) => {
+            gDM().concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                 dispatched.push(action);
                 return next(action);
             }),
@@ -255,7 +255,7 @@ describe("invokeRemoteFetch", () => {
         const store = configureStore({
             reducer: { warm: slice.reducer },
             middleware: (gDM) =>
-                gDM().concat(() => (next) => (action) => {
+                gDM().concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                     dispatched.push(action);
                     return next(action);
                 }),
@@ -325,7 +325,7 @@ describe("invokeRemoteFetch", () => {
         const store = configureStore({
             reducer: { warm: slice.reducer },
             middleware: (gDM) =>
-                gDM().concat(() => (next) => (action) => {
+                gDM().concat(() => (next: (action: unknown) => unknown) => (action: unknown) => {
                     dispatched.push(action);
                     return next(action);
                 }),

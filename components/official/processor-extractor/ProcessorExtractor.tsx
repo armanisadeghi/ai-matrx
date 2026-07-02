@@ -131,7 +131,7 @@ const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) =>
     };
 
     // Context menu handlers
-    const handleContextMenu = (e, path) => {
+    const handleContextMenu = (e: React.MouseEvent, path: PathArray) => {
         e.preventDefault();
 
         // Get the key name from the path
@@ -235,8 +235,8 @@ const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) =>
     const displayJsonStr = processedDisplayData ? formatJson(processedDisplayData, 2) : "";
 
     // Wrapper around isPathHidden from utilities
-    const isPathHidden = useCallback((path) => {
-        return checkPathHidden(path, hiddenPaths);
+    const isPathHidden = useCallback((path: string | PathArray | null) => {
+        return checkPathHidden(path ?? "", hiddenPaths);
     }, [hiddenPaths]);
 
     return (

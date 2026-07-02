@@ -9,7 +9,7 @@ interface ToolsLayoutProps {
     config: ToolEntityConfig;
 }
 
-export const ToolsLayout = ({ config }) => {
+export const ToolsLayout = ({ config }: ToolsLayoutProps) => {
     // Group entities by category
     const groupedEntities = toolEntities.reduce((acc, entityConfig) => {
         const category = entityConfig.category ?? 'other';

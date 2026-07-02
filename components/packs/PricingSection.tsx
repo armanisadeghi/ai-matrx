@@ -165,7 +165,7 @@ export function SimplePricingWithThreeTiers() {
     );
 }
 
-const Card = ({ plan, onClick }) => {
+const Card = ({ plan, onClick }: { plan: Plan; onClick: () => void }) => {
     return (
         <div
             className={cn(
@@ -223,7 +223,7 @@ const Card = ({ plan, onClick }) => {
                     </button>
                 </div>
                 <div className="mt-1 p-2 lg:p-3">
-                    {plan.features.map((feature, idx) => (
+                    {plan.features.map((feature: string, idx: number) => (
                         <Step key={idx}>{feature}</Step>
                     ))}
                 </div>
@@ -231,7 +231,7 @@ const Card = ({ plan, onClick }) => {
                     <Divider />
                 )}
                 <div className="p-2 lg:p-3">
-                    {plan.additionalFeatures?.map((feature, idx) => (
+                    {plan.additionalFeatures?.map((feature: string, idx: number) => (
                         <Step additional key={idx}>
                             {feature}
                         </Step>

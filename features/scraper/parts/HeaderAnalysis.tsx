@@ -36,7 +36,16 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
     );
   }, [headerAnalysis.groupedHeaders]);
 
-  const headerColors = {
+  const defaultHeaderColor = {
+    bg: "bg-gradient-to-r from-gray-500 to-slate-500",
+    text: "text-white",
+    hover: "hover:from-gray-600 hover:to-slate-600",
+  };
+
+  const headerColors: Record<
+    string,
+    { bg: string; text: string; hover: string }
+  > = {
     H1: {
       bg: "bg-gradient-to-r from-purple-600 to-indigo-600",
       text: "text-white",
@@ -69,7 +78,9 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
     },
   };
 
-  const headerSizes = {
+  const defaultHeaderSize = "text-sm font-normal";
+
+  const headerSizes: Record<string, string> = {
     H1: "text-2xl font-bold",
     H2: "text-xl font-semibold",
     H3: "text-lg font-medium",
@@ -200,7 +211,7 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                       <div
-                        className={`${headerColors[tag].bg} rounded-full h-3`}
+                        className={`${(headerColors[tag] ?? defaultHeaderColor).bg} rounded-full h-3`}
                         style={{ width: `${stats.percentage}%` }}
                       ></div>
                     </div>
@@ -297,11 +308,11 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                           className="border-none px-4"
                         >
                           <AccordionTrigger
-                            className={`${headerColors[tag].bg} ${headerColors[tag].hover} rounded-lg px-4 py-3 transition-all duration-200 shadow-sm`}
+                            className={`${(headerColors[tag] ?? defaultHeaderColor).bg} ${(headerColors[tag] ?? defaultHeaderColor).hover} rounded-lg px-4 py-3 transition-all duration-200 shadow-sm`}
                           >
                             <div className="flex items-center">
                               <span
-                                className={`${headerColors[tag].text} ${headerSizes[tag]}`}
+                                className={`${(headerColors[tag] ?? defaultHeaderColor).text} ${headerSizes[tag] ?? defaultHeaderSize}`}
                               >
                                 {tag}
                               </span>
@@ -319,7 +330,7 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
                                 className="p-4 rounded-lg bg-textured shadow-sm border-border hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                               >
                                 <span
-                                  className={`${headerSizes[tag]} text-gray-800 dark:text-gray-200`}
+                                  className={`${headerSizes[tag] ?? defaultHeaderSize} text-gray-800 dark:text-gray-200`}
                                 >
                                   {text}
                                 </span>

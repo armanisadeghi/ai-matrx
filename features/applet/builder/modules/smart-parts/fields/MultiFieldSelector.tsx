@@ -189,7 +189,7 @@ const MultiFieldSelector: React.FC<MultiFieldSelectorProps> & {
   
   // Get style by component type
   const getComponentStyle = (componentType: string) => {
-    const types = {
+    const types: Record<string, { bg: string; text: string; border: string }> = {
       'text': { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-800' },
       'number': { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-800' },
       'select': { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800' },

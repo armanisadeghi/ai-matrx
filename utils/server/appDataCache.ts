@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { extractErrorMessage } from '@/utils/errors';
 import { cache } from 'react';
+import { isJsonObject } from '@/types/json';
 
 // Define types for app data
 interface AppConfig {
@@ -29,6 +30,25 @@ interface AppData {
   applets: AppletConfig[];
 }
 
+function isAppConfig(value: unknown): value is AppConfig {
+  return (
+    isJsonObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.slug === 'string' &&
+    typeof value.creator === 'string'
+  );
+}
+
+function isAppletConfig(value: unknown): value is AppletConfig {
+  return (
+    isJsonObject(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.slug === 'string'
+  );
+}
+
 // Cache the fetch results using React's built-in cache
 export const getAppData = cache(async (slug: string | null = null, id: string | null = null): Promise<AppData | null> => {
   const cacheId = `${slug || ''}:${id || ''}`;
@@ -53,8 +73,8 @@ export const getAppData = cache(async (slug: string | null = null, id: string | 
     
     
     const { data, error, status } = await supabase.rpc("fetch_app_and_applet_config", {
-      p_id: id,
-      p_slug: slug,
+      p_id: id ?? undefined,
+      p_slug: slug ?? undefined,
     });
     
     const endTime = Date.now();
@@ -73,21 +93,28 @@ export const getAppData = cache(async (slug: string | null = null, id: string | 
       console.error(`[CACHE-DEBUG ${requestId}] No data returned from database`);
       return null;
     }
-    
+
     // Validate the data structure
-    if (!data.app_config) {
+    if (!isJsonObject(data) || !isAppConfig(data.app_config)) {
       console.error(`[CACHE-DEBUG ${requestId}] Invalid data structure - missing app_config:`, data);
       return null;
     }
-    
-    if (!Array.isArray(data.applets)) {
+
+    const rawApplets = data.applets;
+    // unknown[] so the isAppletConfig type-predicate filter overload applies
+    // (AppletConfig doesn't extend JsonValue's index signature).
+    const appletList: unknown[] = Array.isArray(rawApplets) ? rawApplets : rawApplets ? [rawApplets] : [];
+
+    if (!Array.isArray(rawApplets)) {
       console.error(`[CACHE-DEBUG ${requestId}] Invalid data structure - applets is not an array:`, data);
-      // Try to fix if possible
-      data.applets = data.applets ? [data.applets] : [];
     }
 
-    
-    return data as AppData;
+    const applets = appletList.filter(isAppletConfig);
+    if (applets.length !== appletList.length) {
+      console.error(`[CACHE-DEBUG ${requestId}] Some applets failed shape validation and were dropped:`, appletList);
+    }
+
+    return { app_config: data.app_config, applets };
   } catch (error) {
     const endTime = Date.now();
     console.error(`[CACHE-DEBUG ${requestId}] Unexpected error in getAppData (${endTime - startTime}ms):`, error);

@@ -41,13 +41,13 @@ export function ArmaniCollapsible(
         setIsSelecting(false);
     };
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: React.MouseEvent) => {
         if (e.buttons === 1) { // Left mouse button is pressed during movement
             setIsSelecting(true);
         }
     };
 
-    const handleClick = (e) => {
+    const handleClick = (e: React.MouseEvent) => {
         // Only trigger collapse/expand if user is not selecting text
         if (isSelecting || window.getSelection()?.toString()) {
             e.stopPropagation(); // Prevent triggering collapsible when text is selected

@@ -53,6 +53,6 @@ export const FeatureHelpDocs = {
     },
 };
 
-export const AIHelpButtonWithDocs = ({ helpDocs }) => {
+export const AIHelpButtonWithDocs = ({ helpDocs }: { helpDocs?: Record<string, string> }) => {
     return <AIHelpButton helpDocs={helpDocs} />;
 };

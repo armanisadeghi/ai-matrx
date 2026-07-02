@@ -253,11 +253,15 @@ const SmartAppletList = forwardRef<
         const renderIcon = (iconName: string | undefined) => {
             if (!iconName) return <BoxIcon className="h-5 w-5" />;
 
-            const IconComponent = ICON_OPTIONS[iconName];
+            const iconOptions: Record<string, React.ComponentType<{ className?: string }>> = ICON_OPTIONS;
+            const IconComponent = iconOptions[iconName];
             if (!IconComponent) return <BoxIcon className="h-5 w-5" />;
 
             return <IconComponent className="h-5 w-5" />;
         };
+        // Helpers to resolve color-variant classes for an arbitrary color name
+        const buttonBgVariants: Record<string, string> = COLOR_VARIANTS.buttonBg;
+        const textColorVariants: Record<string, string> = COLOR_VARIANTS.text;
         // Renders skeleton cards during loading state
         const renderSkeletons = () => {
             return Array(6)
@@ -526,7 +530,7 @@ const SmartAppletList = forwardRef<
                                                 <div className={`flex w-full gap-2 ${viewMode === "list" ? "flex-col" : ""}`}>
                                                     {onSelectApplet && (
                                                         <Button
-                                                            className={`flex-1 ${COLOR_VARIANTS.buttonBg[applet.accentColor || "emerald"]}`}
+                                                            className={`flex-1 ${buttonBgVariants[applet.accentColor || "emerald"] || buttonBgVariants.emerald}`}
                                                             size="sm"
                                                             onClick={() => onSelectApplet(applet)}
                                                         >
@@ -535,7 +539,7 @@ const SmartAppletList = forwardRef<
                                                     )}
                                                     {onEditApplet && (
                                                         <Button
-                                                            className={`flex-1 bg-transparent border border-current hover:bg-opacity-10 font-bold ${COLOR_VARIANTS.text[applet.accentColor || "emerald"]}`}
+                                                            className={`flex-1 bg-transparent border border-current hover:bg-opacity-10 font-bold ${textColorVariants[applet.accentColor || "emerald"] || textColorVariants.emerald}`}
                                                             size="sm"
                                                             variant="outline"
                                                             onClick={() => onEditApplet(applet)}

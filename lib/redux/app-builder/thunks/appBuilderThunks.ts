@@ -264,9 +264,14 @@ export const saveAppThunk = createAsyncThunk<
     }
 
     // Return consistently formatted result
+    // Extract appletIds from appletList for AppBuilder type compatibility
+    const appletIds = savedApp.appletList
+      ? savedApp.appletList.map((item) => item.appletId)
+      : [];
+
     return {
       ...savedApp,
-      appletIds: savedApp.appletIds || [],
+      appletIds,
       isDirty: false,
       isLocal: false,
       slugStatus: "unique",

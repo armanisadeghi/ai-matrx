@@ -16,7 +16,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-function AiAssistModal({ isOpen, onClose, defaultTab, message }) {
+interface AiAssistModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  defaultTab?: string;
+  message?: string;
+}
+
+function AiAssistModal({ isOpen, onClose, defaultTab, message }: AiAssistModalProps) {
   return (
     <Credenza open={isOpen} onOpenChange={onClose}>
       <CredenzaContent className="sm:max-w-[1250px]">

@@ -6,9 +6,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { Database, Play, AlertCircle } from "lucide-react";
 
-export const SQLEditor = ({ loading, error, onExecuteQuery }) => {
+interface SQLEditorProps {
+  loading: boolean;
+  error: string | null;
+  onExecuteQuery: (query: string) => Promise<unknown>;
+}
+
+export const SQLEditor = ({ loading, error, onExecuteQuery }: SQLEditorProps) => {
   const [sqlQuery, setSqlQuery] = useState("");
-  const [queryResult, setQueryResult] = useState(null);
+  const [queryResult, setQueryResult] = useState<unknown>(null);
 
   const handleExecuteQuery = async () => {
     try {
@@ -53,7 +59,7 @@ export const SQLEditor = ({ loading, error, onExecuteQuery }) => {
             </Alert>
           )}
 
-          {queryResult && (
+          {queryResult != null && (
             <div className="h-[min(28rem,50vh)] min-h-[16rem] rounded-md border overflow-hidden">
               <JsonInspector data={queryResult} defaultView="json" />
             </div>

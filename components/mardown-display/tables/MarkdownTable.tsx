@@ -33,7 +33,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToastManager } from "@/hooks/useToastManager";
-import { THEMES } from "../themes";
+import { THEMES, type DisplayTheme } from "../themes";
 import SaveTableModal from "./SaveTableModal";
 import { SendToWorkbookButton } from "./SendToWorkbookButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -214,7 +214,7 @@ interface MarkdownTableProps {
   };
   className?: string;
   fontSize?: number;
-  theme?: string;
+  theme?: DisplayTheme;
   onSave?: (tableData: { headers: string[]; rows: string[][] }) => void;
   content?: string;
   onContentChange?: (updatedMarkdown: string) => void;
@@ -262,7 +262,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const [editMode, setEditMode] = useState<"none" | "header" | number>("none");
   const tableFontsize = fontSize;
   const toast = useToastManager();
-  const tableTheme = THEMES[theme].table || THEMES.professional.table;
+  const tableTheme = THEMES[theme]?.table || THEMES.professional.table;
   const [showSaveModal, setShowSaveModal] = useState(false);
   const previousDataRef = useRef<string>("");
 

@@ -144,7 +144,7 @@ function buildPath(
   while (current && !guard.has(current.id)) {
     path.unshift(current);
     guard.add(current.id);
-    const parentId = current.parentCategoryId ?? null;
+    const parentId: string | null = current.parentCategoryId ?? null;
     current = parentId ? byId.get(parentId) : undefined;
   }
   return path;

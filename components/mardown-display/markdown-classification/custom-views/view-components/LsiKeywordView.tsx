@@ -12,20 +12,51 @@ import {
   MessageSquare,
   GripVertical,
 } from "lucide-react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import { PiMagicWandFill } from "react-icons/pi";
 
-const KeywordHierarchyDisplay = ({ data }) => {
-  const extracted = data?.extracted || {};
-  const [expandedSection, setExpandedSection] = useState("all"); // All sections open by default
+// Loosely-structured markdown-AST node produced by the structured-content
+// parser (see structured-ast-config-system). Genuinely open/dynamic shape —
+// narrowed at each use site.
+type ContentNode = {
+  type?: string;
+  depth?: number;
+  content?: string;
+  children?: ContentNode[];
+};
+
+type LsiSectionKey = "parentLSIs" | "childLSIs" | "longTailVariations" | "naturalLSIs";
+
+type KeywordData = {
+  primaryKeyword: string;
+  parentLSIs: string[];
+  childLSIs: string[];
+  longTailVariations: string[];
+  naturalLSIs: string[];
+};
+
+const LSI_SECTION_KEYS: LsiSectionKey[] = [
+  "parentLSIs",
+  "childLSIs",
+  "longTailVariations",
+  "naturalLSIs",
+];
+
+const isLsiSectionKey = (value: string): value is LsiSectionKey =>
+  (LSI_SECTION_KEYS as string[]).includes(value);
+
+const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
+  const extracted =
+    (data as { extracted?: { parsedContent?: unknown } } | undefined)?.extracted || {};
+  const [expandedSection, setExpandedSection] = useState<string | null>("all"); // All sections open by default
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [editingItem, setEditingItem] = useState<string | null>(null);
-  const [newKeywords, setNewKeywords] = useState({}); // Track new keywords for each section
-  const [keywordData, setKeywordData] = useState({
+  const [newKeywords, setNewKeywords] = useState<Record<string, string>>({}); // Track new keywords for each section
+  const [keywordData, setKeywordData] = useState<KeywordData>({
     primaryKeyword: "",
     parentLSIs: [],
     childLSIs: [],
@@ -36,11 +67,11 @@ const KeywordHierarchyDisplay = ({ data }) => {
   // Parse the structured data on mount
   useEffect(() => {
     // Handle both data.extracted.parsedContent and direct data array
-    const contentArray = data?.extracted?.parsedContent || data;
+    const contentArray = extracted?.parsedContent || data;
 
     if (contentArray && Array.isArray(contentArray)) {
-      const parseStructuredData = (content) => {
-        const sections = {
+      const parseStructuredData = (content: ContentNode[]): KeywordData => {
+        const sections: KeywordData = {
           primaryKeyword: "",
           parentLSIs: [],
           childLSIs: [],
@@ -51,7 +82,7 @@ const KeywordHierarchyDisplay = ({ data }) => {
         content.forEach((item) => {
           if (item.type === "heading" && item.depth === 1) {
             // Extract primary keyword
-            const match = item.content.match(/Primary Keyword:\s*(.+)/i);
+            const match = item.content?.match(/Primary Keyword:\s*(.+)/i);
             if (match) {
               sections.primaryKeyword = match[1].trim();
             }
@@ -61,18 +92,18 @@ const KeywordHierarchyDisplay = ({ data }) => {
             item.children
           ) {
             // Map section names to our data structure
-            const sectionMap = {
+            const sectionMap: Record<string, LsiSectionKey> = {
               "Parent LSIs": "parentLSIs",
               "Child LSIs": "childLSIs",
               "Long-Tail Variations": "longTailVariations",
               "Natural LSIs": "naturalLSIs",
             };
 
-            const sectionKey = sectionMap[item.content];
+            const sectionKey = item.content ? sectionMap[item.content] : undefined;
             if (sectionKey) {
               sections[sectionKey] = item.children
                 .filter((child) => child.type === "listItem - text - paragraph")
-                .map((child) => child.content);
+                .map((child) => child.content || "");
             }
           }
         });
@@ -80,9 +111,9 @@ const KeywordHierarchyDisplay = ({ data }) => {
         return sections;
       };
 
-      setKeywordData(parseStructuredData(contentArray));
+      setKeywordData(parseStructuredData(contentArray as ContentNode[]));
     }
-  }, [data]);
+  }, [data, extracted]);
 
   // Initialize new keywords tracking
   useEffect(() => {
@@ -94,24 +125,24 @@ const KeywordHierarchyDisplay = ({ data }) => {
     });
   }, []);
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const updateKeyword = (section, index, value) => {
+  const updateKeyword = (section: string, index: number, value: string) => {
     const newData = { ...keywordData };
     if (section === "primaryKeyword") {
       newData.primaryKeyword = value;
-    } else {
+    } else if (isLsiSectionKey(section)) {
       newData[section][index] = value;
     }
     setKeywordData(newData);
     setEditingItem(null);
   };
 
-  const addKeyword = (section) => {
+  const addKeyword = (section: string) => {
     const keyword = newKeywords[section];
-    if (keyword?.trim()) {
+    if (keyword?.trim() && isLsiSectionKey(section)) {
       const newData = { ...keywordData };
       newData[section].push(keyword.trim());
       setKeywordData(newData);
@@ -119,14 +150,15 @@ const KeywordHierarchyDisplay = ({ data }) => {
     }
   };
 
-  const removeKeyword = (section, index) => {
+  const removeKeyword = (section: string, index: number) => {
+    if (!isLsiSectionKey(section)) return;
     const newData = { ...keywordData };
     newData[section].splice(index, 1);
     setKeywordData(newData);
   };
 
-  const handleDragEnd = (result) => {
-    const { destination, source, draggableId } = result;
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source } = result;
 
     // If no destination, do nothing
     if (!destination) return;
@@ -142,6 +174,10 @@ const KeywordHierarchyDisplay = ({ data }) => {
     const sourceSection = source.droppableId;
     const destinationSection = destination.droppableId;
 
+    if (!isLsiSectionKey(sourceSection) || !isLsiSectionKey(destinationSection)) {
+      return;
+    }
+
     // Get the keyword being moved
     const keyword = keywordData[sourceSection][source.index];
 
@@ -156,7 +192,7 @@ const KeywordHierarchyDisplay = ({ data }) => {
     setKeywordData(newData);
   };
 
-  const handleNewKeywordChange = (section, value) => {
+  const handleNewKeywordChange = (section: string, value: string) => {
     setNewKeywords((prev) => ({ ...prev, [section]: value }));
   };
 
@@ -183,7 +219,7 @@ const KeywordHierarchyDisplay = ({ data }) => {
   };
 
   // Reorder sections to put naturalLSIs first
-  const sectionOrder = [
+  const sectionOrder: LsiSectionKey[] = [
     "naturalLSIs",
     "parentLSIs",
     "childLSIs",

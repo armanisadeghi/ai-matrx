@@ -62,7 +62,12 @@ export function AIHelpButton(
 
     const handleSaveImage = (quality: ImageQuality = 'full') => {
         if (lastContext?.screenshot) {
-            const imageData = lastContext.screenshot[quality];
+            // `ImageQuality` values don't map 1:1 onto `ScreenshotData` keys
+            // ('full' -> 'fullSize'); index through this map instead of the
+            // union directly, which would silently return `undefined` for 'full'.
+            const imageData = quality === 'full'
+                ? lastContext.screenshot.fullSize
+                : lastContext.screenshot[quality];
             const link = document.createElement('a');
             link.href = imageData;
             link.download = `page-screenshot-${quality}-${new Date().toISOString()}.png`;

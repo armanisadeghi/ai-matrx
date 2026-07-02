@@ -3,9 +3,9 @@ import {TableHeader, TableRow, TableHead} from "@/components/ui/table";
 import { motion } from "motion/react";
 import {ArrowUpDown} from "lucide-react";
 import {UseSortByColumnProps} from "react-table";
-import {TableData} from "@/types/tableTypes";
+import {TableData, TableHeaderProps} from "@/types/tableTypes";
 
-const MatrxTableHeader = ({headerGroups}) => {
+const MatrxTableHeader = ({headerGroups}: TableHeaderProps) => {
     return (
         <TableHeader>
             {headerGroups.map((headerGroup, headerGroupIndex) => {

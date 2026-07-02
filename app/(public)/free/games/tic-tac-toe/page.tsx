@@ -13,15 +13,19 @@ interface Particle {
   decay: number;
 }
 
+type Cell = 'X' | 'O' | null;
+type GameStatus = 'playing' | 'won' | 'draw';
+type GameMode = 'human' | 'ai';
+
 const TicTacToe = () => {
-  const [board, setBoard] = useState(Array(9).fill(null));
+  const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
-  const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'won', 'draw'
-  const [winner, setWinner] = useState(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus>('playing'); // 'playing', 'won', 'draw'
+  const [winner, setWinner] = useState<Cell>(null);
   const [winningLine, setWinningLine] = useState<number[]>([]);
   const [scores, setScores] = useState({ X: 0, O: 0, draws: 0 });
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [gameMode, setGameMode] = useState('human'); // 'human' or 'ai'
+  const [gameMode, setGameMode] = useState<GameMode>('human'); // 'human' or 'ai'
 
   const winPatterns = [
     [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
@@ -29,7 +33,7 @@ const TicTacToe = () => {
     [0, 4, 8], [2, 4, 6] // diagonals
   ];
 
-  const checkWinner = (squares) => {
+  const checkWinner = (squares: Cell[]): { winner: Cell; line: number[] } | null => {
     for (let pattern of winPatterns) {
       const [a, b, c] = pattern;
       if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
@@ -39,7 +43,7 @@ const TicTacToe = () => {
     return null;
   };
 
-  const getBestMove = (squares, player) => {
+  const getBestMove = (squares: Cell[], player: 'X' | 'O'): number => {
     // Simple AI that tries to win, then block, then take center/corners
     const opponent = player === 'X' ? 'O' : 'X';
     
@@ -76,11 +80,13 @@ const TicTacToe = () => {
     }
     
     // Take any available space
-    const available = squares.map((sq, i) => sq === null ? i : null).filter(val => val !== null);
+    const available = squares
+      .map((sq, i) => (sq === null ? i : null))
+      .filter((val): val is number => val !== null);
     return available[Math.floor(Math.random() * available.length)];
   };
 
-  const createParticles = (x, y) => {
+  const createParticles = (x: number, y: number) => {
     const newParticles: Particle[] = [];
     for (let i = 0; i < 15; i++) {
       newParticles.push({
@@ -113,11 +119,12 @@ const TicTacToe = () => {
 
   useEffect(() => {
     const result = checkWinner(board);
-    if (result) {
-      setWinner(result.winner);
+    if (result && result.winner) {
+      const winningPlayer = result.winner;
+      setWinner(winningPlayer);
       setWinningLine(result.line);
       setGameStatus('won');
-      setScores(prev => ({ ...prev, [result.winner]: prev[result.winner] + 1 }));
+      setScores(prev => ({ ...prev, [winningPlayer]: prev[winningPlayer] + 1 }));
       
       setTimeout(() => {
         createParticles(400, 300);
@@ -141,7 +148,7 @@ const TicTacToe = () => {
     return undefined;
   }, [board, isXNext, gameStatus, gameMode]);
 
-  const handleClick = (index, isAI = false) => {
+  const handleClick = (index: number, isAI = false) => {
     if (board[index] || gameStatus !== 'playing') return;
 
     const newBoard = [...board];

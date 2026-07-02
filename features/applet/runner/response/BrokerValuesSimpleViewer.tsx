@@ -19,10 +19,16 @@ const copyToClipboard = async (text: string) => {
   }
 };
 
+interface RecursiveValueViewerProps {
+  value: unknown;
+  path?: string;
+  depth?: number;
+}
+
 // Recursive component for displaying nested structures
-const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
+const RecursiveValueViewer = ({ value, path = "", depth = 0 }: RecursiveValueViewerProps) => {
   // For rendering primitive values
-  const renderPrimitive = (val, type) => {
+  const renderPrimitive = (val: unknown, type: string) => {
     if (val === null) return <span className="text-gray-500 italic">null</span>;
     if (val === undefined)
       return <span className="text-gray-500 italic">undefined</span>;
@@ -34,34 +40,36 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
             variant={val ? "success" : "destructive"}
             className="font-mono"
           >
-            {val.toString()}
+            {String(val)}
           </Badge>
         );
       case "number":
         return (
           <span className="font-mono text-blue-600 dark:text-blue-400">
-            {val}
+            {String(val)}
           </span>
         );
-      case "string":
+      case "string": {
+        const strVal = typeof val === "string" ? val : String(val);
         // Handle URLs specially
-        if (typeof val === "string" && val.startsWith("http")) {
+        if (strVal.startsWith("http")) {
           return (
             <a
-              href={val}
+              href={strVal}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline break-all"
             >
-              {val}
+              {strVal}
             </a>
           );
         }
         return (
           <span className="font-mono text-green-600 dark:text-green-400 break-all">
-            "{val}"
+            "{strVal}"
           </span>
         );
+      }
       default:
         return <span className="font-mono">{String(val)}</span>;
     }
@@ -151,7 +159,12 @@ const RecursiveValueViewer = ({ value, path = "", depth = 0 }) => {
   return renderPrimitive(value, typeof value);
 };
 
-const CopyButton = ({ text, size = "sm" }) => {
+interface CopyButtonProps {
+  text: string;
+  size?: "default" | "icon" | "sm" | "lg";
+}
+
+const CopyButton = ({ text, size = "sm" }: CopyButtonProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -165,7 +178,7 @@ const CopyButton = ({ text, size = "sm" }) => {
   return (
     <Button
       variant="ghost"
-      size={size as "default" | "icon" | "sm" | "lg"}
+      size={size}
       className="h-6 w-6 p-0 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
       onClick={handleCopy}
       title="Copy to clipboard"

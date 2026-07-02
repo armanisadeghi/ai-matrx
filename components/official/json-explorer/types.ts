@@ -1,3 +1,5 @@
+import type { PathBookmark } from "@/features/scraper/utils/json-path-navigation-util";
+
 export type PathSegment = [number, string]; // [rowIndex, selectedKey]
 export type PathArray = PathSegment[];
 
@@ -7,19 +9,13 @@ export interface JSONNodeValue {
     name?: string;
 }
 
-export interface PathBookmarkSegment {
-    type: 'key' | 'index';
-    value: string | number;
-}
-
-export interface Bookmark {
-    id: string;
-    name: string;
-    description?: string;
-    path: string;
-    segments: PathBookmarkSegment[];
-    createdAt: number;
-}
+// Unified with the canonical bookmark shape produced/consumed by
+// features/scraper/utils/json-path-navigation-util.ts (createPathBookmark,
+// saveBookmarks, loadBookmarks, exportBookmarks) — previously this was a
+// separately hand-declared "compatible" shape that drifted (optional
+// `description`, `segments[].value: string | number`) and caused type
+// errors at every call site that round-trips bookmarks through that module.
+export type Bookmark = PathBookmark;
 
 export interface BookmarkDialogProps {
     open: boolean;

@@ -20,8 +20,11 @@ extend([namesPlugin, cmykPlugin, labPlugin, hwbPlugin]);
 export function getColorFromTailwind(tailwindColorString: string): string {
     const [colorName, shade] = tailwindColorString.split('-');
     const colorGroup = tailwindColors.find(group => group.name.toLowerCase() === colorName.toLowerCase());
-    if (colorGroup && colorGroup.shades[shade]) {
-        return colorGroup.shades[shade];
+    if (colorGroup) {
+        const shadeEntry = Object.entries(colorGroup.shades).find(([key]) => key === shade);
+        if (shadeEntry) {
+            return shadeEntry[1];
+        }
     }
     return '';
 }

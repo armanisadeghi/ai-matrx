@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, MessageSquare } from 'lucide-react';
 import MarkdownRenderer from "@/components/mardown-display/MarkdownRenderer";
 import { ArmaniCollapsible } from '@/components/matrx/matrx-collapsible/armani-collapsible';
+import { useFlashcard } from "@/hooks/flashcard-app/useFlashcard";
 
-const FlashcardDisplay = ({ flashcardHook }) => {
+const FlashcardDisplay = ({ flashcardHook }: { flashcardHook: ReturnType<typeof useFlashcard> }) => {
     const {
         activeFlashcard,
         isFlipped,
         fontSize,
         handleFlip,
         handleAnswer,
-        handleAskQuestion,
+        textModalActions,
     } = flashcardHook;
 
     // Scale factors for different elements
@@ -22,7 +23,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
     const titleFontSize = fontSize + 2;
 
     // Convert fontSize to Tailwind class for ArmaniCollapsible titles
-    const getTitleFontSizeClass = (size) => {
+    const getTitleFontSizeClass = (size: number) => {
         if (size <= 16) return 'text-base';
         if (size <= 18) return 'text-lg';
         if (size <= 20) return 'text-xl';
@@ -71,7 +72,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                             >
                                 <div className="pl-6 text-zinc-100">
                                     <MarkdownRenderer
-                                        content={activeFlashcard.detailedExplanation}
+                                        content={activeFlashcard.detailedExplanation ?? ""}
                                         type="flashcard"
                                         fontSize={backFontSize}
                                     />
@@ -93,7 +94,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                             >
                                 <div className="pl-6 text-zinc-100">
                                     <MarkdownRenderer
-                                        content={activeFlashcard.example}
+                                        content={activeFlashcard.example ?? ""}
                                         type="flashcard"
                                         fontSize={backFontSize}
                                     />
@@ -117,7 +118,7 @@ const FlashcardDisplay = ({ flashcardHook }) => {
                         <Button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleAskQuestion();
+                                textModalActions.openAiModal();
                             }}
                             variant="secondary"
                             className="sm:px-4 px-2 text-sm sm:text-base"

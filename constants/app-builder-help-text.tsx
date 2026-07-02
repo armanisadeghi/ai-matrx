@@ -81,7 +81,7 @@ export const FieldLabelAndHelpText = ({ fieldName, fieldLabel, required }: AppBu
                 {fieldLabel || fieldName}
                 {required && <span className="pl-1 text-red-500">*</span>}
             </Label>
-            <HelpIcon text={fieldHelpTextItems[fieldName]} />
+            <HelpIcon text={(fieldHelpTextItems as Record<string, string>)[fieldName]} />
         </div>
     );
 };
@@ -93,7 +93,7 @@ export const ContainerLabelAndHelpText = ({ fieldName, fieldLabel, required }: A
                 {fieldLabel || fieldName}
                 {required && <span className="pl-1 text-red-500">*</span>}
             </Label>
-            <HelpIcon text={containerHelpTextItems[fieldName]} />
+            <HelpIcon text={(containerHelpTextItems as Record<string, string>)[fieldName]} />
         </div>
     );
 };

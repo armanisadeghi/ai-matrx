@@ -38,9 +38,11 @@ export const TabBase: React.FC<TabBaseProps> = ({
   const [localContent, setLocalContent] = useState<string>('');
   
   // Use metadata from constants if title/description not provided
-  const tabTitle = title || (tabMetadata[id]?.title || id);
-  const tabDescription = description || tabMetadata[id]?.description;
-  const isAlwaysEnabled = alwaysEnabled || tabMetadata[id]?.alwaysEnabled;
+  const metadata = id in tabMetadata ? tabMetadata[id as keyof typeof tabMetadata] : undefined;
+  const tabTitle = title || (metadata?.title || id);
+  const tabDescription = description || metadata?.description;
+  const isAlwaysEnabled =
+    alwaysEnabled || Boolean(metadata && 'alwaysEnabled' in metadata && metadata.alwaysEnabled);
   
   // This function allows child components to update their content - use useCallback to prevent infinite loops
   const updateContent = useCallback((content: string) => {

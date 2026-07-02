@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { getFunctionalityById } from "@/lib/services/functionality-helpers";
+import { getFunctionalityById, FunctionalityConfig } from "@/lib/services/functionality-helpers";
 import { v4 as uuidv4 } from "uuid";
 import {
   Dialog,
@@ -102,7 +102,7 @@ export function GeneratePromptForSystemModal({
   const supabase = createClient();
 
   const [functionalityConfigConfig, setFunctionalityConfig] =
-    useState<any>(null);
+    useState<FunctionalityConfig | null>(null);
   const [promptPurpose, setPromptPurpose] = useState("");
   const [additionalContext, setAdditionalContext] = useState("");
   const [promptName, setPromptName] = useState("");
@@ -305,7 +305,7 @@ export function GeneratePromptForSystemModal({
             <div>
               <span className="font-semibold">Required Variables:</span>
               <div className="flex flex-wrap gap-1 mt-1">
-                {functionalityConfig?.requiredVariables.map((v) => (
+                {functionalityConfig?.requiredVariables?.map((v) => (
                   <Badge key={v} variant="default" className="text-xs">
                     {"{{"}
                     {v}

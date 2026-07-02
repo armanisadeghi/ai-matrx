@@ -11,44 +11,44 @@ import { removeThinkingContent } from '@/components/matrx/buttons/markdown-copy-
  * @param {string} markdown - The markdown content to convert
  * @returns {string} - Clean HTML formatted for WordPress with matrx- classes
  */
-function convertMarkdownTables(html) {
+function convertMarkdownTables(html: string): string {
     // Match markdown table patterns
     const tableRegex = /^(\|.*\|)\s*\n(\|[-\s:|]*\|)\s*\n((?:\|.*\|\s*\n?)*)/gm;
-    
-    return html.replace(tableRegex, (match, headerRow, separatorRow, bodyRows) => {
+
+    return html.replace(tableRegex, (match: string, headerRow: string, separatorRow: string, bodyRows: string) => {
         // Parse header row
         const headers = headerRow.split('|')
-            .map(cell => cell.trim())
-            .filter(cell => cell !== '');
-        
+            .map((cell: string) => cell.trim())
+            .filter((cell: string) => cell !== '');
+
         // Parse body rows
         const rows = bodyRows.trim().split('\n')
-            .filter(row => row.trim())
-            .map(row => 
+            .filter((row: string) => row.trim())
+            .map((row: string) =>
                 row.split('|')
-                    .map(cell => cell.trim())
-                    .filter(cell => cell !== '')
+                    .map((cell: string) => cell.trim())
+                    .filter((cell: string) => cell !== '')
             );
-        
+
         // Build HTML table
         let tableHtml = '<table class="matrx-table">\n';
-        
+
         // Add header
         if (headers.length > 0) {
             tableHtml += '<thead class="matrx-table-head">\n<tr class="matrx-table-row">\n';
-            headers.forEach(header => {
+            headers.forEach((header: string) => {
                 tableHtml += `<th class="matrx-table-header">${header}</th>\n`;
             });
             tableHtml += '</tr>\n</thead>\n';
         }
-        
+
         // Add body
         if (rows.length > 0) {
             tableHtml += '<tbody class="matrx-table-body">\n';
-            rows.forEach(row => {
+            rows.forEach((row: string[]) => {
                 if (row.length > 0) {
                     tableHtml += '<tr class="matrx-table-row">\n';
-                    row.forEach(cell => {
+                    row.forEach((cell: string) => {
                         tableHtml += `<td class="matrx-table-cell">${cell}</td>\n`;
                     });
                     tableHtml += '</tr>\n';
@@ -56,7 +56,7 @@ function convertMarkdownTables(html) {
             });
             tableHtml += '</tbody>\n';
         }
-        
+
         tableHtml += '</table>\n';
         return tableHtml;
     });
@@ -84,14 +84,14 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
     html = html.replace(flashcardBlockRegex, (match, content) => {
         // Split by --- to get individual cards
         const cards = content.split(/\n*---\n*/g)
-            .map(card => card.trim())
-            .filter(card => card.length > 0);
-        
+            .map((card: string) => card.trim())
+            .filter((card: string) => card.length > 0);
+
         if (cards.length === 0) return '';
-        
+
         let flashcardsHtml = '<div class="matrx-flashcards-container">\n';
-        
-        cards.forEach((card) => {
+
+        cards.forEach((card: string) => {
             // Extract Front and Back content
             const frontMatch = card.match(/Front:\s*(.+?)(?=\n|$)/i);
             const backMatch = card.match(/Back:\s*([\s\S]+?)$/i);
@@ -440,25 +440,25 @@ export function markdownToWordPressHTML(markdown: string, includeThinking: boole
 
 /**
  * Formats JSON data for clipboard
- * @param {any} data - The JSON data to format
+ * @param data - The JSON data to format (arbitrary, possibly nested/stringified JSON)
  * @returns {string} - Formatted JSON string
  */
-export function formatJsonForClipboard(data) {
-    const cleanObject = (obj) => {
+export function formatJsonForClipboard(data: unknown): string {
+    const cleanObject = (obj: unknown): unknown => {
       if (typeof obj !== 'object' || obj === null) {
         return obj;
       }
-      
+
       if (Array.isArray(obj)) {
         return obj.map(cleanObject);
       }
-      
-      const cleaned = {};
-      for (const [key, value] of Object.entries(obj)) {
+
+      const cleaned: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
         if (typeof value === 'string') {
           try {
             // Try to parse stringified JSON and recurse
-            const parsed = JSON.parse(value);
+            const parsed: unknown = JSON.parse(value);
             cleaned[key] = cleanObject(parsed);
           } catch {
             // If it's not valid JSON, keep it as a string
@@ -470,7 +470,7 @@ export function formatJsonForClipboard(data) {
       }
       return cleaned;
     };
-    
+
     // Clean the data first, then stringify without extra escapes
     const cleanedData = cleanObject(data);
     return JSON.stringify(cleanedData, null, 2);

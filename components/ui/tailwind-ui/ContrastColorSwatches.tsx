@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
-const hslToHex = (h, s, l) => {
+const hslToHex = (h: number, s: number, l: number) => {
     l /= 100;
     const a = s * Math.min(l, 1 - l) / 100;
-    const f = n => {
+    const f = (n: number) => {
         const k = (n + h / 30) % 12;
         const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
         return Math.round(255 * color).toString(16).padStart(2, '0');
@@ -14,12 +14,12 @@ const hslToHex = (h, s, l) => {
     return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-const parseHSL = (hslString) => {
+const parseHSL = (hslString: string) => {
     const [h, s, l] = hslString.split(' ').map(parseFloat);
     return { h, s, l };
 }
 
-const ColorSwatch = ({ label, variable, contrastClass }) => {
+const ColorSwatch = ({ label, variable, contrastClass }: { label: string; variable: string; contrastClass: string }) => {
     const [color, setColor] = useState('#000000');
 
     useEffect(() => {
@@ -51,7 +51,7 @@ const ColorSwatch = ({ label, variable, contrastClass }) => {
     );
 };
 
-const ContrastColorSwatches = ({ contrast }) => {
+const ContrastColorSwatches = ({ contrast }: { contrast: string }) => {
     const colorVariables = [
         { label: 'Primary', variable: '--primary' },
         { label: 'Primary Foreground', variable: '--primary-foreground' },

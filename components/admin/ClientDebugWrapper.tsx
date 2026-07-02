@@ -19,10 +19,10 @@ export function ClientDebugWrapper({ user }: ClientDebugWrapperProps) {
         process.env.NEXT_PUBLIC_ENV === 'development' ||
         process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true';
 
-    const [isDebugEnabled, setIsDebugEnabled] = useState(() => {
+    const [isDebugEnabled, setIsDebugEnabled] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('debug-interface-enabled');
-            return saved ? JSON.parse(saved) : initialShouldShowDebug;
+            return saved ? Boolean(JSON.parse(saved)) : initialShouldShowDebug;
         }
         return initialShouldShowDebug;
     });

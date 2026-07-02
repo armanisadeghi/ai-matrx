@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 /**
  * Component for displaying action buttons
  */
-const ActionButtons = ({ url }) => {
+const ActionButtons = ({ url }: { url: string | null | undefined }) => {
   if (!url) {
     return null;
   }

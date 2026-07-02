@@ -80,11 +80,16 @@ export function usePageVerificationSummary(
     let cancelled = false;
     setState((s) => ({ ...s, loading: true, error: null }));
 
+    interface VerificationPageRow {
+      verified_at: string | null;
+      verification_flags: string[] | null;
+    }
+
     void (supabase as any)
       .schema("docproc").from("processed_document_pages")
       .select("verified_at, verification_flags")
       .eq("processed_document_id", processedDocumentId)
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: VerificationPageRow[] | null; error: { message: string } | null }) => {
         if (cancelled) return;
         if (error) {
           setState((s) => ({ ...s, loading: false, error: error.message }));

@@ -28,13 +28,17 @@ export const getValueColorClass = (value: any, disabled: boolean): string => {
 
     if (value === null) return 'text-red-500';
 
-    const colorMap = {
+    const colorMap: Partial<Record<'string' | 'number' | 'boolean', string>> = {
         string: 'text-green-500',
         number: 'text-blue-500',
         boolean: 'text-yellow-500'
     };
 
-    return colorMap[typeof value] || '';
+    const valueType = typeof value;
+    if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
+        return colorMap[valueType] || '';
+    }
+    return '';
 };
 
 /**

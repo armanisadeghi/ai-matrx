@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import MarkdownStream from "@/components/MarkdownStream";
+import type { AgentAppComponentProps } from "../../types";
 
 export default function FactCheckerApp({
   onExecute,
@@ -18,7 +19,7 @@ export default function FactCheckerApp({
   isStreaming,
   error,
   rateLimitInfo,
-}) {
+}: AgentAppComponentProps) {
   const [claim, setClaim] = useState("");
   const [submittedClaim, setSubmittedClaim] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState(false);

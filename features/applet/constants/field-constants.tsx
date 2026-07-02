@@ -573,7 +573,7 @@ export const ensureValidAutoCompleteValue = (autoCompleteValue?: string): string
     return autoCompleteValue;
 };
 
-export const componentCompatibility = {
+export const componentCompatibility: Partial<Record<ComponentType, string[]>> = {
     input: ["autoComplete", "maxLength", "spellCheck", "width", "valuePrefix", "valueSuffix"],
     textarea: ["rows", "maxLength", "spellCheck", "width"],
     select: ["width", "valuePrefix", "valueSuffix"],
@@ -584,7 +584,6 @@ export const componentCompatibility = {
     number: ["min", "max", "step", "width", "valuePrefix", "valueSuffix"],
     date: ["minDate", "maxDate", "width"],
     switch: ["onLabel", "offLabel", "width"],
-    button: ["width"],
     rangeSlider: ["min", "max", "step", "width", "valuePrefix", "valueSuffix"],
     numberPicker: ["min", "max", "step", "width", "valuePrefix", "valueSuffix"],
     jsonField: ["rows", "width"],

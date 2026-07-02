@@ -3,14 +3,19 @@ import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+interface ContentTabsProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
 /**
  * Component for content type tabs with horizontal scrolling for mobile
  */
-const ContentTabs = ({ activeTab, setActiveTab }) => {
+const ContentTabs = ({ activeTab, setActiveTab }: ContentTabsProps) => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const tabsRef = React.useRef<React.ComponentRef<typeof TabsList>>(null);
 
-  const scrollTabs = (direction) => {
+  const scrollTabs = (direction: "left" | "right") => {
     if (tabsRef.current) {
       const container = tabsRef.current;
       const scrollAmount = direction === "left" ? -200 : 200;

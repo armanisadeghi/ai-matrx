@@ -1,7 +1,19 @@
 // TabContent.jsx
 import React from 'react';
 
-const TabContent = ({ tabs, activeTab, onTabChange, renderContent }) => {
+interface TabContentTab {
+  key: string;
+  label: React.ReactNode;
+}
+
+interface TabContentProps {
+  tabs: TabContentTab[];
+  activeTab: string;
+  onTabChange: (key: string) => void;
+  renderContent: () => React.ReactNode;
+}
+
+const TabContent = ({ tabs, activeTab, onTabChange, renderContent }: TabContentProps) => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex border-b">

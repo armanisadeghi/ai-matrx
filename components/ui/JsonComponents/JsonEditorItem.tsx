@@ -103,6 +103,11 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
         onClick,
         color = "text-muted-foreground",
         hoverColor = "hover:text-foreground"
+    }: {
+        icon: React.ComponentType<{ className?: string }>;
+        onClick: () => void;
+        color?: string;
+        hoverColor?: string;
     }) => (
         <button
             onClick={onClick}

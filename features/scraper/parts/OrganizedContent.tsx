@@ -2,11 +2,27 @@
 import React from "react";
 import { processOrganizedData } from "../utils/scraper-utils";
 
+interface OrganizedContentSection {
+  heading: {
+    level: number;
+    text: string;
+  };
+  content: Array<
+    | { type: "paragraph"; content: string }
+    | { type: "list"; items: string[] }
+    | { type: "unknown"; keys: string[] }
+  >;
+}
+
+interface OrganizedContentProps {
+  organizedData: Record<string, unknown>;
+}
+
 /**
  * Component for displaying organized content
  */
-const OrganizedContent = ({ organizedData }) => {
-  const processedData = processOrganizedData(organizedData);
+const OrganizedContent = ({ organizedData }: OrganizedContentProps) => {
+  const processedData: OrganizedContentSection[] = processOrganizedData(organizedData);
 
   if (processedData.length === 0) {
     return (

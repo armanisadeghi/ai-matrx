@@ -575,8 +575,9 @@ class ScraperDataUtils {
     if (!organizedData || typeof organizedData !== "object") {
       return {};
     }
-    return Object.keys(organizedData).reduce((acc, key) => {
-      acc[key] = (organizedData as any)[key];
+    const source = organizedData as Record<string, unknown>;
+    return Object.keys(source).reduce((acc: Record<string, unknown>, key) => {
+      acc[key] = source[key];
       return acc;
     }, {});
   }

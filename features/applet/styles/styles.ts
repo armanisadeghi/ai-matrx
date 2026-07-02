@@ -123,19 +123,20 @@ export const getFieldComponentStyle = (componentType?: string) => {
       };
     }
     // If card has primaryColor, use that color's background variant
-    if (color && COLOR_VARIANTS.background[color]) {
+    const backgroundVariants: Record<string, string> = COLOR_VARIANTS.background;
+    if (color && backgroundVariants[color]) {
       // For light colored backgrounds, use dark text and vice versa
       const isDarkColor = [
-        'blue', 'green', 'purple', 'red', 'slate', 'zinc', 'neutral', 
+        'blue', 'green', 'purple', 'red', 'slate', 'zinc', 'neutral',
         'stone', 'emerald', 'teal', 'cyan', 'sky', 'violet', 'fuchsia'
       ].includes(color);
-      
+
       const isVeryLightColor = ['white', 'gray'].includes(color);
-      
+
       // Apply bg-{color}-100 for light mode and bg-{color}-900 for dark mode
       // NOTE: Using these specific classes to ensure they're included in the Tailwind bundle
       let cardBgClass;
-      
+
       switch (color) {
         case 'gray': cardBgClass = 'bg-gray-100 dark:bg-gray-900'; break;
         case 'rose': cardBgClass = 'bg-rose-100 dark:bg-rose-900'; break;
@@ -160,10 +161,10 @@ export const getFieldComponentStyle = (componentType?: string) => {
         case 'fuchsia': cardBgClass = 'bg-fuchsia-100 dark:bg-fuchsia-900'; break;
         default: cardBgClass = defaultCardBg;
       }
-      
+
       // For footer, use a slightly darker shade
       let cardFooterBgClass;
-      
+
       switch (color) {
         case 'gray': cardFooterBgClass = 'bg-gray-200 dark:bg-gray-800'; break;
         case 'rose': cardFooterBgClass = 'bg-rose-200 dark:bg-rose-800'; break;
@@ -188,20 +189,20 @@ export const getFieldComponentStyle = (componentType?: string) => {
         case 'fuchsia': cardFooterBgClass = 'bg-fuchsia-200 dark:bg-fuchsia-800'; break;
         default: cardFooterBgClass = defaultCardFooterBg;
       }
-      
+
       // Determine text color based on background
-      const titleClass = isVeryLightColor 
+      const titleClass = isVeryLightColor
         ? 'text-gray-900 dark:text-white'
-        : !isDarkColor 
-          ? 'text-gray-900 dark:text-white' 
+        : !isDarkColor
+          ? 'text-gray-900 dark:text-white'
           : 'text-white dark:text-white';
-          
+
       const descriptionClass = isVeryLightColor
         ? 'text-gray-600 dark:text-gray-300'
         : !isDarkColor
           ? 'text-gray-700 dark:text-gray-200'
           : 'text-gray-100 dark:text-gray-200';
-      
+
       return {
         cardBg: cardBgClass,
         cardFooterBg: cardFooterBgClass,
@@ -209,7 +210,7 @@ export const getFieldComponentStyle = (componentType?: string) => {
         descriptionClass,
       };
     }
-    
+
     // Default fallback
     return {
       cardBg: defaultCardBg,
@@ -240,15 +241,16 @@ export const getFieldComponentStyle = (componentType?: string) => {
     }
 
     // If card has primaryColor, use that color's background variant
-    if (color && COLOR_VARIANTS.background[color]) {
+    const appBackgroundVariants: Record<string, string> = COLOR_VARIANTS.background;
+    if (color && appBackgroundVariants[color]) {
       // For light colored backgrounds, use dark text and vice versa
       const isDarkColor = [
-        'blue', 'green', 'purple', 'red', 'slate', 'zinc', 'neutral', 
+        'blue', 'green', 'purple', 'red', 'slate', 'zinc', 'neutral',
         'stone', 'emerald', 'teal', 'cyan', 'sky', 'violet', 'fuchsia'
       ].includes(color);
-      
+
       const isVeryLightColor = ['white', 'gray'].includes(color);
-      
+
       // Apply bg-{color}-100 for light mode and bg-{color}-900 for dark mode
       // NOTE: Using these specific classes to ensure they're included in the Tailwind bundle
       let cardBgClass;

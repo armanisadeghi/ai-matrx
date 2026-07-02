@@ -2,7 +2,24 @@ import React, {useState, useEffect} from 'react';
 import {motion, AnimatePresence, useMotionValue, useTransform} from 'motion/react';
 import {X, Minus, Maximize2, Minimize2, Command} from 'lucide-react';
 
-const Window = ({id, title, content, onClose, onMinimize, onMaximize, onClick, isFullScreen, CustomComponent}) => {
+// Shape per the one consumer: app/(dev)/demos/tests/windows/page.dev.tsx
+interface WindowData {
+    id: number;
+    title: string;
+    content?: string;
+    CustomComponent: React.ComponentType;
+    minimized?: boolean;
+}
+
+interface WindowProps extends WindowData {
+    onClose: (id: number) => void;
+    onMinimize: (id: number) => void;
+    onMaximize: (id: number) => void;
+    onClick: (id: number) => void;
+    isFullScreen: boolean;
+}
+
+const Window = ({id, title, content, onClose, onMinimize, onMaximize, onClick, isFullScreen, CustomComponent}: WindowProps) => {
     const scale = useMotionValue(1);
     const boxShadow = useTransform(
         scale,
@@ -68,7 +85,15 @@ const Window = ({id, title, content, onClose, onMinimize, onMaximize, onClick, i
     );
 };
 
-const CommandPalette = ({isOpen, onClose, onCommand}) => (
+const CommandPalette = ({
+    isOpen,
+    onClose,
+    onCommand,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onCommand: (command: string) => void;
+}) => (
     <AnimatePresence>
         {isOpen && (
             <motion.div
@@ -101,14 +126,14 @@ const CommandPalette = ({isOpen, onClose, onCommand}) => (
     </AnimatePresence>
 );
 
-const WindowManager = ({windows: initialWindows}) => {
-    const [windows, setWindows] = useState(initialWindows);
-    const [fullScreenWindow, setFullScreenWindow] = useState(null);
+const WindowManager = ({windows: initialWindows}: {windows: WindowData[]}) => {
+    const [windows, setWindows] = useState<WindowData[]>(initialWindows);
+    const [fullScreenWindow, setFullScreenWindow] = useState<number | null>(null);
     const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
     const [backgroundPosition, setBackgroundPosition] = useState({x: 0, y: 0});
 
     useEffect(() => {
-        const handleKeyPress = (e) => {
+        const handleKeyPress = (e: KeyboardEvent) => {
             if (e.key === 'k' && e.metaKey) {
                 e.preventDefault();
                 setIsCommandPaletteOpen(prev => !prev);
@@ -118,27 +143,27 @@ const WindowManager = ({windows: initialWindows}) => {
         return () => window.removeEventListener('keydown', handleKeyPress);
     }, []);
 
-    const closeWindow = (id) => {
+    const closeWindow = (id: number) => {
         setWindows(windows.filter(window => window.id !== id));
         if (fullScreenWindow === id) setFullScreenWindow(null);
     };
 
-    const minimizeWindow = (id) => {
+    const minimizeWindow = (id: number) => {
         setWindows(windows.map(window =>
             window.id === id ? {...window, minimized: !window.minimized} : window
         ));
         if (fullScreenWindow === id) setFullScreenWindow(null);
     };
 
-    const maximizeWindow = (id) => {
+    const maximizeWindow = (id: number) => {
         setFullScreenWindow(fullScreenWindow === id ? null : id);
     };
 
-    const handleWindowClick = (id) => {
+    const handleWindowClick = (id: number) => {
         setFullScreenWindow(id);
     };
 
-    const handleCommand = (command) => {
+    const handleCommand = (command: string) => {
         console.log('Executing command:', command);
     };
 

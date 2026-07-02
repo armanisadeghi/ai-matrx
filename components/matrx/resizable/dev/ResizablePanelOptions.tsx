@@ -26,7 +26,13 @@ interface ResizableBottomPanelProps extends BasePanelProps {
 }
 
 // Collapsed button component
-const ExpandButton = ({ onClick, label = "Expand Panel" }) => (
+const ExpandButton = ({
+  onClick,
+  label = "Expand Panel",
+}: {
+  onClick: () => void;
+  label?: string;
+}) => (
   <div className="fixed bottom-4 right-4 z-50">
     <Button
       variant="outline"

@@ -2,10 +2,14 @@
 import React from "react";
 import { safeStringify } from "../utils/scraper-utils";
 
+interface StructuredDataProps {
+  structuredData: Record<string, unknown> | unknown[] | null | undefined;
+}
+
 /**
  * Component for displaying structured data
  */
-const StructuredData = ({ structuredData }) => {
+const StructuredData = ({ structuredData }: StructuredDataProps) => {
   if (!structuredData || Object.keys(structuredData).length === 0) {
     return (
       <div className="p-4 text-gray-500 dark:text-gray-400">

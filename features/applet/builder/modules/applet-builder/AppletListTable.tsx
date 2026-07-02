@@ -239,7 +239,8 @@ export default function AppletListTable({
     if (!iconName)
       return <AppWindow className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
 
-    const IconComponent = ICON_OPTIONS[iconName];
+    const iconOptions: Record<string, React.ComponentType<{ className?: string }>> = ICON_OPTIONS;
+    const IconComponent = iconOptions[iconName];
     if (!IconComponent)
       return <AppWindow className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
 
@@ -335,7 +336,7 @@ export default function AppletListTable({
       ? [
           {
             icon: <Pencil className="h-4 w-4" />,
-            onClick: (applet) => {
+            onClick: (applet: AppletBuilder) => {
               handleEditApplet(applet.id);
             },
           },
@@ -346,16 +347,16 @@ export default function AppletListTable({
       ? [
           {
             icon: <Trash2 className="h-4 w-4" />,
-            onClick: (applet) => {
+            onClick: (applet: AppletBuilder) => {
               handleDeleteApplet(applet);
             },
             className:
               "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300",
             requiresConfirmation: true,
             confirmationProps: {
-              getTitle: (applet) =>
+              getTitle: (applet: AppletBuilder) =>
                 `Delete Applet: ${applet.name || "Unnamed Applet"}`,
-              getDescription: (applet) =>
+              getDescription: (applet: AppletBuilder) =>
                 `This action cannot be undone. This will permanently delete "${applet.name || "Unnamed Applet"}" and remove it from any applications that use it.`,
               confirmButtonText: "Delete Applet",
             },

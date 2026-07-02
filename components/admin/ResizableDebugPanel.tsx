@@ -40,7 +40,11 @@ const STATES = {
     }
 };
 
-export default function ResizableDebugPanel({ children }) {
+interface ResizableDebugPanelProps {
+    children: React.ReactNode;
+}
+
+export default function ResizableDebugPanel({ children }: ResizableDebugPanelProps) {
     const [viewState, setViewState] = useState<'NORMAL' | 'MINIMIZED' | 'MAXIMIZED'>('NORMAL');
     const [size, setSize] = useState<Size>(STATES.NORMAL.size);
     const [isDragging, setIsDragging] = useState(false);

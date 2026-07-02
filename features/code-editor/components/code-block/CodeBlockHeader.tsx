@@ -582,7 +582,13 @@ const CodeBlockButtons: React.FC<CodeBlockButtonsProps> = ({
   );
 };
 
-export const EditButton = ({ isEditing, toggleEdit }) => {
+export const EditButton = ({
+  isEditing,
+  toggleEdit,
+}: {
+  isEditing: boolean;
+  toggleEdit?: (e: React.MouseEvent) => void;
+}) => {
   if (isEditing || !toggleEdit) return null;
 
   return (

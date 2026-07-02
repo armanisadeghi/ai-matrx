@@ -1,4 +1,4 @@
-const WORD_REPLACE_MAP = {
+const WORD_REPLACE_MAP: Record<string, string> = {
     api: "API",
     ui: "UI",
     url: "URL",

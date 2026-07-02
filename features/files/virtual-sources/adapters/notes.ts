@@ -24,6 +24,7 @@ import { StickyNote } from "lucide-react";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { registerVirtualSource } from "@/features/files/virtual-sources/registry";
 import { NotesInlinePreview } from "./NotesInlinePreview";
+import type { Database } from "@/types/database.types";
 import type {
   ListArgs,
   RenameArgs,
@@ -348,7 +349,9 @@ const notesAdapter: VirtualSourceAdapter = {
     const { data } = await supabase.rpc("get_note_versions", {
       p_note_id: id,
     });
-    return (data ?? []).map((row) => ({
+    type NoteVersionRow =
+      Database["public"]["Functions"]["get_note_versions"]["Returns"][number];
+    return (data ?? []).map((row: NoteVersionRow) => ({
       id: row.id,
       versionNumber: row.version_number,
       createdAt: row.created_at,

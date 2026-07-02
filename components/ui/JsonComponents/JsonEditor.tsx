@@ -3,6 +3,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { extractErrorMessage } from "@/utils/errors";
+import { isJsonObject } from "@/types/json";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +26,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../tooltip";
-import { EditableJsonViewerProps } from "@/components/ui/JsonComponents/types";
+import { EditableJsonViewerProps, ValidationError } from "@/components/ui/JsonComponents/types";
 import JsonEditorItem from "./JsonEditorItem";
 import jsonUtils from "./newUitls";
 
@@ -51,11 +52,11 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
   sampleEntry = SAMPLE_ENTRY,
   ...props
 }) => {
-  const [originalValue, setOriginalValue] = useState<any>(data);
-  const [parsedData, setParsedData] = useState<object>({});
+  const [originalValue, setOriginalValue] = useState<object | string | null | undefined>(data);
+  const [parsedData, setParsedData] = useState<Record<string, unknown>>({});
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [isCopied, setIsCopied] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<any>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [isEnhancedMode, setIsEnhancedMode] = useState(defaultEnhancedMode);
   const [basicJsonText, setBasicJsonText] = useState("");
   const [isAllExpanded, setIsAllExpanded] = useState(false);
@@ -92,7 +93,10 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
       }
 
       try {
-        if (typeof data === "object") {
+        // `typeof === "object"` alone admits arrays; the parsed-data state is a
+        // plain JSON object, so narrow with the canonical guard. Arrays and
+        // strings fall through to jsonUtils.parse below.
+        if (isJsonObject(data)) {
           setParsedData(data);
           setBasicJsonText(jsonUtils.stringify(data));
           return;
@@ -123,7 +127,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     initializeData();
   }, [data]);
 
-  const handleChange = (newData: object) => {
+  const handleChange = (newData: Record<string, unknown>) => {
     try {
       setParsedData(newData);
       const stringified = jsonUtils.stringify(newData);
@@ -226,7 +230,17 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     );
     handleChange(newData);
   };
-  const IconButton = ({ icon: Icon, tooltip, onClick, className = "" }) => (
+  const IconButton = ({
+    icon: Icon,
+    tooltip,
+    onClick,
+    className = "",
+  }: {
+    icon: React.ComponentType<{ className?: string }>;
+    tooltip: string;
+    onClick: () => void;
+    className?: string;
+  }) => (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>

@@ -31,20 +31,23 @@ const GenericTextareaContent: React.FC<GenericTextareaContentProps> = ({
     if (!updateContent) return;
     
     let formattedContent = '';
-    
-    if (content && promptTemplateSource[id]) {
+
+    const templateEntry = id in promptTemplateSource ? promptTemplateSource[id as keyof typeof promptTemplateSource] : undefined;
+
+    if (content && templateEntry) {
       // Get the template from constants if available
-      const prefix = promptTemplateSource[id].prefix || '';
-      const template = promptTemplateSource[id].template || '';
-      
+      const entryRecord = templateEntry as Record<string, unknown>;
+      const prefix = typeof entryRecord.prefix === 'string' ? entryRecord.prefix : '';
+      const template = typeof entryRecord.template === 'string' ? entryRecord.template : '';
+
       // Replace placeholder with actual content
-      const paramName = Object.keys(promptTemplateSource[id]).find(
-        key => promptTemplateSource[id][key] && typeof promptTemplateSource[id][key] === 'string' && 
-        promptTemplateSource[id][key].includes('{')
+      const paramName = Object.keys(entryRecord).find(
+        key => entryRecord[key] && typeof entryRecord[key] === 'string' &&
+        (entryRecord[key] as string).includes('{')
       );
-      
-      const paramMatch = paramName ? 
-        promptTemplateSource[id][paramName].match(/{([^}]+)}/) : 
+
+      const paramMatch = paramName ?
+        (entryRecord[paramName] as string).match(/{([^}]+)}/) :
         null;
       
       const paramPlaceholder = paramMatch ? paramMatch[0] : '';

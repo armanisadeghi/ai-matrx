@@ -977,7 +977,8 @@ export function UniversalContextMenuV2({
     boundAgentsLoading,
     showBoundAgents:
       Boolean(surfaceName) && resolvedPlacementMode["bound-agent"] !== "hide",
-    onBoundAgentSelect: (entry) => void handleBoundAgentExecute(entry),
+    onBoundAgentSelect: (entry: SurfaceBoundAgentEntry) =>
+      void handleBoundAgentExecute(entry),
     onEntrySelect: handleEntrySelect,
     onCopy: handleCopy,
     onCut: handleCut,

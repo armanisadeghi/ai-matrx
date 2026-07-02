@@ -10,6 +10,19 @@ import {
 } from "@/components/ui/tooltip";
 import { InfoIcon, ExternalLinkIcon } from "lucide-react";
 
+interface FeatureToggles {
+  keywordAnalysis: boolean;
+  factChecker: boolean;
+}
+
+interface PageHeaderProps {
+  title?: string | null;
+  url?: string | null;
+  status?: string;
+  featureToggles?: FeatureToggles;
+  setFeatureToggles: React.Dispatch<React.SetStateAction<FeatureToggles>>;
+}
+
 const PageHeader = ({
   title,
   url,
@@ -19,8 +32,8 @@ const PageHeader = ({
     factChecker: false,
   },
   setFeatureToggles,
-}) => {
-  const handleToggleChange = (feature) => {
+}: PageHeaderProps) => {
+  const handleToggleChange = (feature: keyof FeatureToggles) => {
     setFeatureToggles((prev) => ({
       ...prev,
       [feature]: !prev[feature],

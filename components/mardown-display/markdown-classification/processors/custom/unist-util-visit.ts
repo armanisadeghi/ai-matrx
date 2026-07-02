@@ -55,7 +55,7 @@ function getTextContent(node: Node & { value?: string; children?: Node[] }) {
 }
 
 // Clean title by removing emojis and numbering (e.g., "🔍 1. " -> "Keyword Research")
-function cleanTitle(text) {
+function cleanTitle(text: string) {
   return text.replace(/[^a-zA-Z\s()]+|\d+\.\s/g, '').trim();
 }
 

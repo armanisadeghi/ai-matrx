@@ -3,12 +3,28 @@ import FlexibleLoadingComponent from "@/components/mardown-display/markdown-clas
 import { useIsMobile } from "@/hooks/use-mobile";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 
-const CandidateProfileWithCollapseDisplay = ({ data }) => {
+interface CandidateExperience {
+  company?: string;
+  details?: string[];
+}
+
+interface CandidateProfileExtracted {
+  name?: string;
+  intro?: string;
+  key_experiences?: CandidateExperience[];
+  additional_accomplishments?: string[];
+  location?: string[];
+  compensation?: string[];
+  availability?: string[];
+  [key: string]: unknown;
+}
+
+const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: CandidateProfileExtracted } }) => {
   // Handle missing or malformed data gracefully
-  const extracted = data?.extracted || {};
+  const extracted: CandidateProfileExtracted = data?.extracted || {};
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  const toggleSection = (section) => {
+  const toggleSection = (section: string) => {
     if (expandedSection === section) {
       setExpandedSection(null);
     } else {

@@ -12,6 +12,7 @@ import {
   Link2,
   Layers,
 } from "lucide-react";
+import type { AgentAppComponentProps } from "../../types";
 
 export default function LSIKeywordGenerator({
   onExecute,
@@ -20,12 +21,12 @@ export default function LSIKeywordGenerator({
   isExecuting,
   error,
   rateLimitInfo,
-}) {
+}: AgentAppComponentProps) {
   const [variables, setVariables] = useState({
     primary_keyword: "",
   });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!variables.primary_keyword.trim()) return;
     await onExecute(variables);
@@ -34,7 +35,7 @@ export default function LSIKeywordGenerator({
   const isFormValid = variables.primary_keyword.trim().length > 0;
 
   // Parse the response to extract structured data
-  const parseResponse = (text) => {
+  const parseResponse = (text: string) => {
     if (!text) return null;
 
     type SectionKey = "parent" | "child" | "natural" | "related";

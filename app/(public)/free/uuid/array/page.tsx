@@ -24,7 +24,7 @@ const UUIDArrayField = () => {
         setInputValue(uuid);
     };
 
-    const handleAdd = (e) => {
+    const handleAdd = (e?: React.SyntheticEvent) => {
         e?.preventDefault();
 
         if (!inputValue.trim()) return;
@@ -40,19 +40,19 @@ const UUIDArrayField = () => {
         }
     };
 
-  const handleRemove = (uuid, e) => {
+  const handleRemove = (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
         setUuids(uuids.filter(v => v !== uuid));
     };
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             handleAdd(e);
         }
     };
 
-  const copyToClipboard = async (uuid, e) => {
+  const copyToClipboard = async (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
         try {
             await navigator.clipboard.writeText(uuid);

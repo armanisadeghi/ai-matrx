@@ -105,7 +105,7 @@ function convertPresentationToMarkdown(presentationData: PresentationData): stri
             }
             
             if (slide.bullets && slide.bullets.length > 0) {
-                slide.bullets.forEach(bullet => {
+                slide.bullets.forEach((bullet: string) => {
                     markdown += `- ${bullet}\n`;
                 });
                 markdown += '\n';

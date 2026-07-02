@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import React, { useState, useMemo } from "react";
 
 type FilterColumn = "type" | "details" | "remover";
+type SortColumn = "text" | FilterColumn;
 
 type RemovalItem = {
   text: string;
@@ -13,14 +14,18 @@ type RemovalItem = {
   remover: string;
 };
 
-const RemovalDetails = ({ allRemovals }) => {
+interface RemovalDetailsProps {
+  allRemovals: RemovalItem[];
+}
+
+const RemovalDetails = ({ allRemovals }: RemovalDetailsProps) => {
   const [selectedItem, setSelectedItem] = useState<RemovalItem | null>(null);
-  const [sortColumn, setSortColumn] = useState("text");
-  const [sortDirection, setSortDirection] = useState("asc");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("text");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [filterBlankText, setFilterBlankText] = useState(true);
   const [textFilter, setTextFilter] = useState("");
   const [filterModal, setFilterModal] = useState<FilterColumn | null>(null);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Record<FilterColumn, Set<string>>>({
     type: new Set(),
     details: new Set(),
     remover: new Set(),
@@ -34,14 +39,14 @@ const RemovalDetails = ({ allRemovals }) => {
     );
   }
 
-  const cleanText = (text) => text.replace(/\n+/g, " ").trim();
+  const cleanText = (text: string) => text.replace(/\n+/g, " ").trim();
 
-  const truncateText = (text, maxLength) => {
+  const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength) + "...";
   };
 
-  const handleSort = (column) => {
+  const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -50,9 +55,10 @@ const RemovalDetails = ({ allRemovals }) => {
     }
   };
 
-  const getDisplayValue = (value, map) => map[value] || value;
+  const getDisplayValue = (value: string, map: Record<string, string>) =>
+    map[value] || value;
 
-  const uniqueValues = (column) => {
+  const uniqueValues = (column: FilterColumn) => {
     const values = new Set(
       allRemovals.map((item) =>
         getDisplayValue(item[column], column === "type" ? typeMap : detailsMap),
@@ -61,7 +67,7 @@ const RemovalDetails = ({ allRemovals }) => {
     return Array.from(values);
   };
 
-  const handleFilterChange = (column, value) => {
+  const handleFilterChange = (column: FilterColumn, value: string) => {
     const newFilters = { ...filters };
     if (newFilters[column].has(value)) {
       newFilters[column].delete(value);
@@ -101,7 +107,7 @@ const RemovalDetails = ({ allRemovals }) => {
     }
 
     return data.sort((a, b) => {
-      const getValue = (item, col) => {
+      const getValue = (item: RemovalItem, col: SortColumn) => {
         if (col === "text") return cleanText(item.text).toLowerCase();
         if (col === "remover") return item.remover.toLowerCase();
         return getDisplayValue(

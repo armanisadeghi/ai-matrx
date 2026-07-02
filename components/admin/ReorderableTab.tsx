@@ -9,7 +9,13 @@ interface ReorderableTabsProps {
     onTabChange: (tab: string) => void;
 }
 
-const ReorderableTab = ({ value, isActive, onClick }) => {
+interface ReorderableTabProps {
+    value: string;
+    isActive: boolean;
+    onClick: () => void;
+}
+
+const ReorderableTab = ({ value, isActive, onClick }: ReorderableTabProps) => {
     const controls = useDragControls();
 
     return (

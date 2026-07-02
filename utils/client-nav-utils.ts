@@ -10,7 +10,7 @@ const DEFAULT_NAME_REPLACE_MAP = {
 };
 
 // Helper function to apply word replacements
-function applyWordReplacements(text, replaceMap = DEFAULT_NAME_REPLACE_MAP) {
+function applyWordReplacements(text: string, replaceMap: Record<string, string> = DEFAULT_NAME_REPLACE_MAP) {
     let formatted = text;
     Object.entries(replaceMap).forEach(([key, value]) => {
         // Create a regex that matches the key as a whole word (case insensitive)
@@ -80,7 +80,7 @@ export function getParsedPathNameAndSearchParams() {
 }
 
 // New function for customized replacement map usage
-export function getCurrentParsedPathNameWithCustomReplacements(customReplaceMap) {
+export function getCurrentParsedPathNameWithCustomReplacements(customReplaceMap: Record<string, string>) {
     const pathName = usePathname();
     const segments = pathName.split('/').filter(Boolean);
     
@@ -118,7 +118,7 @@ export function getCurrentParsedPathNameWithCustomReplacements(customReplaceMap)
 }
 
 // New function for customized path and search params
-export function getParsedPathNameAndSearchParamsWithCustomReplacements(customReplaceMap) {
+export function getParsedPathNameAndSearchParamsWithCustomReplacements(customReplaceMap: Record<string, string>) {
     const parsedPathName = getCurrentParsedPathNameWithCustomReplacements(customReplaceMap);
     const parsedSearchParams = getParsedSearchParams();
 

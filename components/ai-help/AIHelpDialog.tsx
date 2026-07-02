@@ -204,7 +204,7 @@ export function AIHelpDialog(
                                         <div className="flex-1 overflow-auto">
                                             <div className="border rounded-lg h-full">
                                                 <img
-                                                    src={lastContext.screenshot[imageQuality]}
+                                                    src={getCurrentImageData()}
                                                     alt="Page screenshot"
                                                     className="max-w-full h-auto"
                                                 />

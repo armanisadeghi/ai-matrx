@@ -1,31 +1,33 @@
 
-export const getKeysAtPath = (data, path: string[] = []) => {
+export const getKeysAtPath = (data: unknown, path: string[] = []) => {
     try {
-      let currentData = data;
-      
+      let currentData: unknown = data;
+
       // Navigate to the current path
       for (const key of path) {
         if (key === 'All') continue;
-        
+
         // Handle "Item X" and "Object X" formats
         if (key.startsWith('Item ')) {
           const index = parseInt(key.replace('Item ', ''));
-          currentData = currentData[index];
+          currentData = Array.isArray(currentData) ? currentData[index] : undefined;
         } else if (key.startsWith('Object ')) {
           const index = parseInt(key.replace('Object ', ''));
-          currentData = currentData[index];
+          currentData = Array.isArray(currentData) ? currentData[index] : undefined;
         } else {
-          currentData = currentData[key];
+          currentData = currentData && typeof currentData === 'object'
+            ? (currentData as Record<string, unknown>)[key]
+            : undefined;
         }
       }
-      
+
       // Return keys at current level
       if (currentData && typeof currentData === 'object') {
         if (Array.isArray(currentData)) {
           if (currentData.length === 0) {
             return ['All']; // Empty array
           }
-          
+
           // Always show array items as "Item X"
           return ['All', ...currentData.map((_, index) => `Item ${index}`)];
         } else {
@@ -39,48 +41,50 @@ export const getKeysAtPath = (data, path: string[] = []) => {
           }
         }
       }
-      
+
       return ['All'];
     } catch (error) {
       console.error("Error getting keys at path:", error);
       return ['All'];
     }
   };
-  
-  export const getDataAtPath = (data, path: string[] = []) => {
+
+  export const getDataAtPath = (data: unknown, path: string[] = []): unknown => {
     try {
-      let currentData = data;
-      
+      let currentData: unknown = data;
+
       // Navigate through the path, but skip 'All' selections
       for (const key of path) {
         if (key === 'All') continue;
-        
+
         // Handle various key formats
         if (key.startsWith('Item ')) {
           const index = parseInt(key.replace('Item ', ''));
-          currentData = currentData[index];
+          currentData = Array.isArray(currentData) ? currentData[index] : undefined;
         } else if (key.startsWith('Object ')) {
           const index = parseInt(key.replace('Object ', ''));
-          currentData = currentData[index];
+          currentData = Array.isArray(currentData) ? currentData[index] : undefined;
         } else {
-          currentData = currentData[key];
+          currentData = currentData && typeof currentData === 'object'
+            ? (currentData as Record<string, unknown>)[key]
+            : undefined;
         }
       }
-      
+
       return currentData;
     } catch (error) {
       console.error("Error getting data at path:", error);
       return null;
     }
   };
-  
+
   // Helper to handle complex array structures
-  export const getNextLevelOptions = (data) => {
+  export const getNextLevelOptions = (data: unknown) => {
     if (!data || typeof data !== 'object') return ['All'];
-    
+
     if (Array.isArray(data)) {
       if (data.length === 0) return ['All'];
-      
+
       // Special handling for arrays of arrays or arrays of objects
       return ['All', ...data.map((_, index) => `Item ${index}`)];
     } else {

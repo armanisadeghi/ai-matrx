@@ -45,13 +45,16 @@ const MatrxLabeledSwitch = React.forwardRef<
     React.ComponentRef<typeof SwitchPrimitives.Root>,
     BaseMatrxSwitchProps
 >(({ label, labelPosition = 'right', size = 'default', className, ...props }, ref) => {
-    const sizeClasses = {
+    const sizeClasses: Record<ComponentSize, string> = {
         xs: 'text-xs gap-1.5',
         sm: 'text-sm gap-2',
         default: 'text-sm gap-2',
         md: 'text-sm gap-2',
         lg: 'text-base gap-3',
         xl: 'text-lg gap-3',
+        '2xl': 'text-xl gap-3',
+        '3xl': 'text-2xl gap-4',
+        icon: 'text-sm gap-2',
     };
 
     return (
@@ -78,13 +81,16 @@ const MatrxIconSwitch = React.forwardRef<
     React.ComponentRef<typeof SwitchPrimitives.Root>,
     MatrxIconSwitchProps
 >(({ onIcon, offIcon, size = 'default', className, ...props }, ref) => {
-    const iconSizes = {
+    const iconSizes: Record<ComponentSize, number> = {
         xs: 12,
         sm: 14,
         default: 14,
         md: 14,
         lg: 16,
         xl: 18,
+        '2xl': 20,
+        '3xl': 24,
+        icon: 14,
     };
 
     const DefaultOnIcon = () => <Sun size={iconSizes[size]} />;
@@ -118,13 +124,16 @@ const MatrxSideIconSwitch = React.forwardRef<
     React.ComponentRef<typeof SwitchPrimitives.Root>,
     MatrxIconSwitchProps
 >(({ onIcon, offIcon, size = 'default', className, ...props }, ref) => {
-    const iconSizes = {
+    const iconSizes: Record<ComponentSize, number> = {
         xs: 12,
         sm: 14,
         default: 14,
         md: 14,
         lg: 16,
         xl: 18,
+        '2xl': 20,
+        '3xl': 24,
+        icon: 14,
     };
 
     const DefaultOnIcon = () => <Sun size={iconSizes[size]} />;
@@ -146,13 +155,16 @@ const MatrxIconToggle = React.forwardRef<
     React.ComponentRef<typeof SwitchPrimitives.Root>,
     MatrxIconSwitchProps
 >(({ onIcon, offIcon, size = 'default', className, ...props }, ref) => {
-    const iconSizes = {
+    const iconSizes: Record<ComponentSize, number> = {
         xs: 16,
         sm: 18,
         default: 18,
         md: 18,
         lg: 20,
         xl: 24,
+        '2xl': 28,
+        '3xl': 32,
+        icon: 18,
     };
 
     const DefaultOnIcon = () => <Sun size={iconSizes[size]} />;
