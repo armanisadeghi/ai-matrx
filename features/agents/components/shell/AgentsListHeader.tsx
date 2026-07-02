@@ -41,12 +41,6 @@ export function AgentsListHeader() {
       <Webhook className="w-4 h-4 text-muted-foreground shrink-0" />
       <span className="text-sm font-semibold text-foreground">Agents</span>
 
-      {alerts.length > 0 && (
-        <span className="hidden text-xs text-muted-foreground sm:inline">
-          {alerts.length} agent{alerts.length !== 1 ? "s" : ""} with drift
-        </span>
-      )}
-
       <Button
         asChild
         variant="ghost"
