@@ -1313,22 +1313,30 @@ export type Database = {
           constraints: Json | null
           context_window: number | null
           controls: Json | null
+          created_at: string
           created_by: string | null
           deleted_at: string | null
+          description: string | null
           endpoints: Json | null
           guest_fallback_id: string | null
           id: string
           is_deprecated: boolean | null
           is_premium: boolean | null
           is_primary: boolean | null
+          is_system: boolean
           max_tokens: number | null
+          metadata: Json
           mid_fallback_id: string | null
           model_class: string
           model_provider: string | null
           name: string
-          organization_id: string | null
+          organization_id: string
           pricing: Json | null
           provider: string | null
+          release_date: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -1339,22 +1347,30 @@ export type Database = {
           constraints?: Json | null
           context_window?: number | null
           controls?: Json | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          description?: string | null
           endpoints?: Json | null
           guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
           is_premium?: boolean | null
           is_primary?: boolean | null
+          is_system?: boolean
           max_tokens?: number | null
+          metadata?: Json
           mid_fallback_id?: string | null
           model_class: string
           model_provider?: string | null
           name: string
-          organization_id?: string | null
+          organization_id: string
           pricing?: Json | null
           provider?: string | null
+          release_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -1365,22 +1381,30 @@ export type Database = {
           constraints?: Json | null
           context_window?: number | null
           controls?: Json | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          description?: string | null
           endpoints?: Json | null
           guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
           is_premium?: boolean | null
           is_primary?: boolean | null
+          is_system?: boolean
           max_tokens?: number | null
+          metadata?: Json
           mid_fallback_id?: string | null
           model_class?: string
           model_provider?: string | null
           name?: string
-          organization_id?: string | null
+          organization_id?: string
           pricing?: Json | null
           provider?: string | null
+          release_date?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
@@ -1407,41 +1431,299 @@ export type Database = {
           },
         ]
       }
+      offering: {
+        Row: {
+          capabilities_override: Json
+          controls_override: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_available: boolean
+          is_system: boolean
+          metadata: Json
+          model_id: string
+          notes: string | null
+          organization_id: string
+          pricing: Json
+          priority: number
+          provider_model_id: string
+          service_id: string
+          updated_at: string
+          updated_by: string | null
+          usage_basis: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          capabilities_override?: Json
+          controls_override?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_available?: boolean
+          is_system?: boolean
+          metadata?: Json
+          model_id: string
+          notes?: string | null
+          organization_id: string
+          pricing?: Json
+          priority?: number
+          provider_model_id: string
+          service_id: string
+          updated_at?: string
+          updated_by?: string | null
+          usage_basis?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          capabilities_override?: Json
+          controls_override?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_available?: boolean
+          is_system?: boolean
+          metadata?: Json
+          model_id?: string
+          notes?: string | null
+          organization_id?: string
+          pricing?: Json
+          priority?: number
+          provider_model_id?: string
+          service_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          usage_basis?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "service"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider: {
         Row: {
           company_description: string | null
+          created_at: string
           created_by: string | null
           deleted_at: string | null
           documentation_link: string | null
           id: string
+          is_system: boolean
+          logo_url: string | null
+          metadata: Json
           models_link: string | null
-          name: string | null
-          organization_id: string | null
+          name: string
+          organization_id: string
           provider_models_cache: Json | null
+          slug: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          website_url: string | null
         }
         Insert: {
           company_description?: string | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           documentation_link?: string | null
           id?: string
+          is_system?: boolean
+          logo_url?: string | null
+          metadata?: Json
           models_link?: string | null
-          name?: string | null
-          organization_id?: string | null
+          name: string
+          organization_id: string
           provider_models_cache?: Json | null
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          website_url?: string | null
         }
         Update: {
           company_description?: string | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           documentation_link?: string | null
           id?: string
+          is_system?: boolean
+          logo_url?: string | null
+          metadata?: Json
           models_link?: string | null
-          name?: string | null
-          organization_id?: string | null
+          name?: string
+          organization_id?: string
           provider_models_cache?: Json | null
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      service: {
+        Row: {
+          auth_ref: Json
+          base_url: string | null
+          byok_secret_key: string | null
+          controls: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          id: string
+          internal_name: string
+          is_active: boolean
+          is_system: boolean
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          priority: number
+          request_defaults: Json
+          slug: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          wire_format: string
+        }
+        Insert: {
+          auth_ref?: Json
+          base_url?: string | null
+          byok_secret_key?: string | null
+          controls?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          id?: string
+          internal_name: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          priority?: number
+          request_defaults?: Json
+          slug: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wire_format: string
+        }
+        Update: {
+          auth_ref?: Json
+          base_url?: string | null
+          byok_secret_key?: string | null
+          controls?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          id?: string
+          internal_name?: string
+          is_active?: boolean
+          is_system?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          priority?: number
+          request_defaults?: Json
+          slug?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wire_format?: string
+        }
+        Relationships: []
+      }
+      setting: {
+        Row: {
+          canonical_max: number | null
+          canonical_min: number | null
+          canonical_values: Json | null
+          created_at: string
+          created_by: string | null
+          default_value: Json | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_system: boolean
+          key: string
+          metadata: Json
+          organization_id: string
+          ui: Json
+          updated_at: string
+          updated_by: string | null
+          value_type: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          canonical_max?: number | null
+          canonical_min?: number | null
+          canonical_values?: Json | null
+          created_at?: string
+          created_by?: string | null
+          default_value?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          key: string
+          metadata?: Json
+          organization_id: string
+          ui?: Json
+          updated_at?: string
+          updated_by?: string | null
+          value_type: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          canonical_max?: number | null
+          canonical_min?: number | null
+          canonical_values?: Json | null
+          created_at?: string
+          created_by?: string | null
+          default_value?: Json | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          key?: string
+          metadata?: Json
+          organization_id?: string
+          ui?: Json
+          updated_at?: string
+          updated_by?: string | null
+          value_type?: string
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
@@ -1547,7 +1829,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      model_offering: {
+        Row: {
+          effective_capabilities: Json | null
+          is_available: boolean | null
+          model_common_name: string | null
+          model_id: string | null
+          model_name: string | null
+          offering_id: string | null
+          points_per_million_cached_input: number | null
+          points_per_million_input: number | null
+          points_per_million_output: number | null
+          priority: number | null
+          service_name: string | null
+          service_slug: string | null
+          usage_basis: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
@@ -17938,6 +18245,7 @@ export type Database = {
           is_versioned: boolean
           label: string
           notes: string | null
+          rls_variant: string | null
           schema_name: string
           table_name: string
           table_ref: unknown
@@ -17961,6 +18269,7 @@ export type Database = {
           is_versioned?: boolean
           label: string
           notes?: string | null
+          rls_variant?: string | null
           schema_name: string
           table_name: string
           table_ref?: unknown
@@ -17984,6 +18293,7 @@ export type Database = {
           is_versioned?: boolean
           label?: string
           notes?: string | null
+          rls_variant?: string | null
           schema_name?: string
           table_name?: string
           table_ref?: unknown
@@ -20935,7 +21245,7 @@ export type Database = {
           id: string
           kind: string
           occurred_at: string
-          organization_id: string
+          organization_id: string | null
           payload: Json | null
           request_id: string | null
           resolution_note: string | null
@@ -20957,7 +21267,7 @@ export type Database = {
           id?: string
           kind: string
           occurred_at?: string
-          organization_id: string
+          organization_id?: string | null
           payload?: Json | null
           request_id?: string | null
           resolution_note?: string | null
@@ -20979,7 +21289,7 @@ export type Database = {
           id?: string
           kind?: string
           occurred_at?: string
-          organization_id?: string
+          organization_id?: string | null
           payload?: Json | null
           request_id?: string | null
           resolution_note?: string | null
@@ -21003,7 +21313,7 @@ export type Database = {
           id: string
           op_id: string
           op_type: string
-          organization_id: string
+          organization_id: string | null
           payload: Json
           primary_key: Json
           recovered_at: string | null
@@ -21025,7 +21335,7 @@ export type Database = {
           id?: string
           op_id: string
           op_type: string
-          organization_id: string
+          organization_id?: string | null
           payload: Json
           primary_key: Json
           recovered_at?: string | null
@@ -21047,7 +21357,7 @@ export type Database = {
           id?: string
           op_id?: string
           op_type?: string
-          organization_id?: string
+          organization_id?: string | null
           payload?: Json
           primary_key?: Json
           recovered_at?: string | null
