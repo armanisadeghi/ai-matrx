@@ -207,8 +207,27 @@ Expansions still to build: `<CompareTwoPicker>` (pick A / pick B), a standalone
 `/compare` route (the `/demos/diff` playground already does paste-two +
 compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen.
 
+> **Remaining rollout + known constraints + expansions:**
+> [`ROLLOUT_HANDOFF.md`](./ROLLOUT_HANDOFF.md) — pick-up-here backlog.
+
 ## Change Log
 
+- 2026-07-02 — Solidity audit + shared-surface rollout. **Fixed 8 audit bugs**
+  (adversarial workflow): DiffReview wiped resolutions on any parent re-render
+  (inline `diffOptions` identity → now depend on primitive fields; same in
+  TextDiff); `ignoreTrailingWhitespace` broke the merge round-trip (hunks.ts now
+  runs the merge model on RAW lines — whitespace-insensitivity is display-only);
+  unbounded LCS OOM (computeTextDiff degrades >~8M cells, computeWordDiff bails
+  >~1M — both round-trip); DiffReview nav cursor + TextDiff flashRow resets;
+  auto→Monaco wrap-on for text; CodeDiff height requirement documented. Engine
+  invariants covered by a 47-assertion round-trip test. **Notes Cleanup review**
+  gained a "By type | Full diff" toggle (canonical DiffViewer of the real
+  before→after; kept the per-operation cards + protected + debug). **Rolled
+  compare onto shared surfaces:** SettingsJsonEditor (→ agent-settings +
+  output-schema), ProTextarea AI-action popover (→ every consumer), transcript
+  EditableTextSegmentRow (→ all 3 columns), ChangeDiff approval-card block
+  updates (→ word-level InlineTextDiff). DiffArtifact dropped a redundant
+  React.lazy. Remaining backlog + constraints → `ROLLOUT_HANDOFF.md`.
 - 2026-07-02 — Feedback pass (from real large-file testing). **DiffReview** is
   now a resolution tool (pending/applied/rejected): accepting/rejecting resolves
   a hunk in place (renders as normal text + Undo) and drops it from the pending
