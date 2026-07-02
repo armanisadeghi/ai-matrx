@@ -207,9 +207,13 @@ interface SavedTableInfo {
 }
 
 interface MarkdownTableProps {
+  // headers/rows are declared optional (not just string[]) because this block
+  // renders LLM-authored JSON via the generic block registry — the payload is
+  // parsed content, not a compiler-checked call site, so a malformed/partial
+  // block genuinely can omit either field at runtime.
   data: {
-    headers: string[];
-    rows: string[][];
+    headers?: string[];
+    rows?: string[][];
     normalizedData?: Array<{ [key: string]: string }>;
   };
   className?: string;
@@ -324,8 +328,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
       const formattedTable = generateMarkdownTable();
       await navigator.clipboard.writeText(formattedTable);
       toast.success("Table copied to clipboard");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy table");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy table");
     }
   };
 
@@ -335,8 +339,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
         JSON.stringify(internalTableData.normalizedData, null, 2),
       );
       toast.success("JSON copied to clipboard");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy JSON");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy JSON");
     }
   };
 
@@ -348,8 +352,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
       } else {
         copyTableToClipboard();
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy markdown");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy markdown");
     }
   };
 
@@ -380,8 +384,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           className: "font-medium",
         },
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download CSV");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to download CSV");
     }
   };
 
@@ -417,8 +421,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           className: "font-medium",
         },
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download Markdown");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to download Markdown");
     }
   };
 

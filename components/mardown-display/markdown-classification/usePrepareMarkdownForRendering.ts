@@ -17,7 +17,7 @@ export const parseMarkdownToAst = async (
 ): Promise<AstNode> => {
   // Only run parser on the client side
   if (!isClient) {
-    return { type: "root", children: [] } as unknown as AstNode;
+    return { type: "root", children: [] };
   }
 
   try {
@@ -29,10 +29,13 @@ export const parseMarkdownToAst = async (
     ]);
 
     const processor = unified().use(remarkParse).use(remarkGfm);
+    // mdast's Root/RootContent union is broader than our closed local AstNode
+    // union (plugin-added node types) — no compile-time overlap between the
+    // two type hierarchies, so this stays the one sanctioned unknown-bridge.
     return processor.parse(markdownText) as unknown as AstNode;
   } catch (error) {
     console.error("Error parsing markdown to AST:", error);
-    return { type: "root", children: [] } as unknown as AstNode;
+    return { type: "root", children: [] };
   }
 };
 
@@ -65,7 +68,7 @@ export const usePrepareMarkdownForRendering = ({
     null,
   );
   const [viewId, setViewId] = useState<ViewId | null>(null);
-  const [processedData, setProcessedData] = useState<any | null>(null);
+  const [processedData, setProcessedData] = useState<unknown>(null);
 
   // Handle requested view
   useEffect(() => {

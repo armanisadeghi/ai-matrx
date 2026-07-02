@@ -4,7 +4,7 @@
  * Helper functions for filtering, sorting, and managing list state.
  */
 
-import { BaseListItem, HierarchicalListItem, FilterDefinition, SortOption } from './types';
+import { BaseListItem, HierarchicalListItem, FilterDefinition, SortOption, UnifiedListLayoutConfig } from './types';
 
 // ============================================================================
 // FILTERING UTILITIES
@@ -32,7 +32,7 @@ export function applySearchFilter<T extends BaseListItem>(
 export function applyCustomFilters<T extends BaseListItem>(
   items: T[],
   filters: FilterDefinition<T>[],
-  filterValues: Record<string, any>
+  filterValues: Record<string, unknown>
 ): T[] {
   return items.filter(item => {
     return filters.every(filter => {
@@ -82,7 +82,7 @@ export function applySorting<T extends BaseListItem>(
  */
 export function hasActiveFilters<T extends BaseListItem>(
   filters: FilterDefinition<T>[],
-  filterValues: Record<string, any>,
+  filterValues: Record<string, unknown>,
   sortBy: string,
   defaultSort: string = 'updated-desc'
 ): boolean {
@@ -116,19 +116,28 @@ export function hasActiveFilters<T extends BaseListItem>(
 // ============================================================================
 
 /**
- * Filter items by current folder
+ * Filter items by current folder.
+ *
+ * Reads `parentId` off the item's open index signature (BaseListItem allows
+ * arbitrary extra properties), so this works for both HierarchicalListItem
+ * and any BaseListItem that happens to carry a parentId field.
  */
-export function filterByFolder<T extends HierarchicalListItem>(
+export function filterByFolder<T extends BaseListItem>(
   items: T[],
   currentFolderId: string | null
 ): T[] {
+  const getParentId = (item: T): string | null | undefined => {
+    const raw = item.parentId;
+    return typeof raw === 'string' || raw === null || raw === undefined ? raw : undefined;
+  };
+
   if (currentFolderId === null) {
     // Root level: items with no parent
-    return items.filter(item => !item.parentId);
+    return items.filter(item => !getParentId(item));
   }
-  
+
   // Items with matching parent
-  return items.filter(item => item.parentId === currentFolderId);
+  return items.filter(item => getParentId(item) === currentFolderId);
 }
 
 /**
@@ -143,12 +152,9 @@ export function buildBreadcrumbPath<T extends HierarchicalListItem>(
   
   while (current) {
     path.unshift({ id: current.id, name: current.name });
-    
-    if (current.parentId) {
-      current = allItems.find(i => i.id === current!.parentId);
-    } else {
-      current = undefined;
-    }
+
+    const parentId = current.parentId;
+    current = parentId ? allItems.find(i => i.id === parentId) : undefined;
   }
   
   return path;
@@ -165,7 +171,8 @@ export function getDescendants<T extends HierarchicalListItem>(
   const queue: string[] = [folderId];
   
   while (queue.length > 0) {
-    const currentId = queue.shift()!;
+    const currentId = queue.shift();
+    if (currentId === undefined) break;
     const children = allItems.filter(item => item.parentId === currentId);
     
     descendants.push(...children);
@@ -240,19 +247,19 @@ export function extractUniqueTags<T extends BaseListItem>(
     
     try {
       // Handle string JSON
-      const parsedTags = typeof itemTags === 'string' 
-        ? JSON.parse(itemTags) 
+      const parsedTags: unknown = typeof itemTags === 'string'
+        ? JSON.parse(itemTags)
         : itemTags;
-      
+
       // Handle array
       if (Array.isArray(parsedTags)) {
         parsedTags.forEach(tag => tags.add(String(tag)));
       }
       // Handle object with tags property
       else if (parsedTags && typeof parsedTags === 'object' && 'tags' in parsedTags) {
-        const nestedTags = parsedTags.tags;
+        const nestedTags = (parsedTags as { tags: unknown }).tags;
         if (Array.isArray(nestedTags)) {
-          nestedTags.forEach((tag: any) => tags.add(String(tag)));
+          nestedTags.forEach((tag: unknown) => tags.add(String(tag)));
         }
       }
     } catch (e) {
@@ -272,8 +279,8 @@ export function extractUniqueTags<T extends BaseListItem>(
  */
 export function initializeFilterValues<T extends BaseListItem>(
   filters: FilterDefinition<T>[]
-): Record<string, any> {
-  const values: Record<string, any> = {};
+): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
   
   filters.forEach(filter => {
     if (filter.defaultValue !== undefined) {
@@ -305,7 +312,7 @@ export function initializeFilterValues<T extends BaseListItem>(
  */
 export function clearFilters<T extends BaseListItem>(
   filters: FilterDefinition<T>[]
-): Record<string, any> {
+): Record<string, unknown> {
   return initializeFilterValues(filters);
 }
 
@@ -342,10 +349,10 @@ export function canNavigate(currentNavigatingId: string | null): boolean {
  * Validate configuration object
  */
 export function validateConfig<T extends BaseListItem>(
-  config: any
+  config: Partial<UnifiedListLayoutConfig<T>>
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  
+
   // Check required fields
   if (!config.page) {
     errors.push('config.page is required');
@@ -354,7 +361,7 @@ export function validateConfig<T extends BaseListItem>(
       errors.push('config.page.title is required');
     }
   }
-  
+
   if (!config.search) {
     errors.push('config.search is required');
   } else {
@@ -368,11 +375,11 @@ export function validateConfig<T extends BaseListItem>(
       errors.push('config.search.filterFn is required');
     }
   }
-  
+
   if (!config.actions || !Array.isArray(config.actions)) {
     errors.push('config.actions must be an array');
   }
-  
+
   if (!config.layout) {
     errors.push('config.layout is required');
   } else {
@@ -383,7 +390,7 @@ export function validateConfig<T extends BaseListItem>(
       errors.push('config.layout.gap is required');
     }
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -397,7 +404,7 @@ export function validateConfig<T extends BaseListItem>(
 /**
  * Debounce function for search input
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -412,7 +419,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttle function for scroll events
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {

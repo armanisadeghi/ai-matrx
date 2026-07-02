@@ -16,19 +16,16 @@ export interface SectionData {
 }
 
 // Safety validation functions using centralized utilities
-const isValidSectionData = (item: any): item is SectionData => {
-  return (
-    item &&
-    typeof item === 'object' &&
-    isValidString(item.section) &&
-    isValidStringArray(item.content)
-  );
+const isValidSectionData = (item: unknown): item is SectionData => {
+  if (!item || typeof item !== 'object') return false;
+  const i = item as Record<string, unknown>;
+  return isValidString(i.section) && isValidStringArray(i.content);
 };
 
-const isValidData = (data: any): data is SectionData[] => {
+const isValidData = (data: unknown): data is SectionData[] => {
   return (
     Array.isArray(data) &&
-    data.every((section: any) => isValidSectionData(section))
+    data.every((section: unknown) => isValidSectionData(section))
   );
 };
 
@@ -252,23 +249,23 @@ const renderSectionContent = (section: SectionData) => {
   }
 };
 
-const SectionViewerV2 = ({ data }: { data: any }) => {
+const SectionViewerV2 = ({ data }: { data: unknown }) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const { copy, copied } = useCopyToClipboard();
-  
+
   // Safety check: if data is not in expected format, show JSON fallback
   if (!isValidData(data)) {
     return (
-      <JsonFallback 
-        data={data} 
+      <JsonFallback
+        data={data}
         title="Raw Data (JSON)"
         subtitle="Unexpected Format"
         className="w-full h-full p-4 bg-gray-50 dark:bg-gray-900"
       />
     );
   }
-  
-  const safeData = data as SectionData[];
+
+  const safeData = data;
   const selectedSection = safeData[selectedSectionIndex] || safeData[0];
   
   const handleCopy = async () => {

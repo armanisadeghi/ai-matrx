@@ -38,19 +38,19 @@ interface ProcessedSection {
     title: string;
     icon: React.ReactNode;
     content: string;
-    rawData?: any;
+    rawData?: unknown;
     isUnknown?: boolean;
     bookmarkPath?: string; // Path to this specific section for bookmarking
 }
 
 // Structure detection functions
-const isKeyValueObject = (data: any): boolean => {
+const isKeyValueObject = (data: unknown): data is Record<string, unknown> => {
     return (
-        data &&
+        !!data &&
         typeof data === "object" &&
         !Array.isArray(data) &&
         Object.keys(data).length > 0 &&
-        Object.values(data).every(
+        Object.values(data as Record<string, unknown>).every(
             (value) =>
                 typeof value === "string" ||
                 (typeof value === "object" && value !== null && ("parsed_json" in value || "parsed_table" in value || "content" in value))
@@ -58,7 +58,7 @@ const isKeyValueObject = (data: any): boolean => {
     );
 };
 
-const isSectionWithChildrenArray = (data: any): boolean => {
+const isSectionWithChildrenArray = (data: unknown): data is SectionWithChildren[] => {
     return (
         Array.isArray(data) &&
         data.length > 0 &&
@@ -66,11 +66,14 @@ const isSectionWithChildrenArray = (data: any): boolean => {
             (item) =>
                 item &&
                 typeof item === "object" &&
-                typeof item.type === "string" &&
-                Array.isArray(item.children) &&
-                item.children.every(
-                    (child: any) =>
-                        child && typeof child === "object" && typeof child.type === "string" && typeof child.content === "string"
+                typeof (item as Record<string, unknown>).type === "string" &&
+                Array.isArray((item as Record<string, unknown>).children) &&
+                ((item as Record<string, unknown>).children as unknown[]).every(
+                    (child: unknown) =>
+                        child &&
+                        typeof child === "object" &&
+                        typeof (child as Record<string, unknown>).type === "string" &&
+                        typeof (child as Record<string, unknown>).content === "string"
                 )
         )
     );
@@ -123,7 +126,7 @@ const convertChildrenToMarkdown = (children: ChildItem[]): string => {
         .join("\n");
 };
 
-const processKeyValueData = (data: Record<string, any>, bookmark?: string): ProcessedSection[] => {
+const processKeyValueData = (data: Record<string, unknown>, bookmark?: string): ProcessedSection[] => {
     return Object.entries(data).map(([key, value], index) => {
         const itemData = { [key]: value };
         const detectedType = detectSectionType(itemData);
@@ -181,35 +184,37 @@ const processSectionWithChildrenData = (data: SectionWithChildren[], bookmark?: 
 };
 
 // Fallback processor for unknown structures
-const processUnknownData = (data: any, bookmark?: string): ProcessedSection[] => {
+const processUnknownData = (data: unknown, bookmark?: string): ProcessedSection[] => {
     // Try to find content-like structures
     if (Array.isArray(data)) {
-        return data.map((item, index) => {
+        return data.map((item: unknown, index) => {
             if (item && typeof item === "object") {
+                const itemRecord = item as Record<string, unknown>;
                 // Look for content key
-                const contentKey = Object.keys(item).find(
+                const contentKey = Object.keys(itemRecord).find(
                     (key) =>
                         key.toLowerCase().includes("content") ||
                         key.toLowerCase().includes("text") ||
                         key.toLowerCase().includes("description")
                 );
 
-                if (contentKey && typeof item[contentKey] === "string") {
-                    const typeKey = Object.keys(item).find(
+                if (contentKey && typeof itemRecord[contentKey] === "string") {
+                    const typeKey = Object.keys(itemRecord).find(
                         (key) =>
                             key.toLowerCase().includes("type") ||
                             key.toLowerCase().includes("kind") ||
                             key.toLowerCase().includes("category")
                     );
 
-                    const title = typeKey ? getSectionTypeLabel(item[typeKey]) : `Item ${index + 1}`;
+                    const typeKeyValue = typeKey ? itemRecord[typeKey] : undefined;
+                    const title = typeof typeKeyValue === "string" ? getSectionTypeLabel(typeKeyValue) : `Item ${index + 1}`;
                     const bookmarkPath = bookmark ? `${bookmark}[${index}]` : `[${index}]`;
 
                     return {
                         id: `unknown-${index}`,
                         title,
                         icon: <UnknownIcon />,
-                        content: item[contentKey],
+                        content: itemRecord[contentKey] as string,
                         rawData: item,
                         isUnknown: true,
                         bookmarkPath,
@@ -247,7 +252,7 @@ const processUnknownData = (data: any, bookmark?: string): ProcessedSection[] =>
 };
 
 interface IntelligentViewerProps {
-    data: any;
+    data: unknown;
     bookmark?: string; // Optional bookmark path for navigation tracking
 }
 

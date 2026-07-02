@@ -8,8 +8,11 @@
  * canonical "refetch the page" wiring.
  *
  * Why this hook exists, not a direct subscribe at every callsite:
- *   - Centralizes the channel name convention (`udt_rows:<tableId>`), so
- *     multiple subscribers in the same client share one channel.
+ *   - Centralizes the channel name convention (`udt_rows:<tableId>`) and the
+ *     event-shape parsing. Each mount gets its own uniquely-suffixed channel
+ *     — @supabase/realtime-js dedupes `.channel()` by topic and throws if a
+ *     second `.on()` is added to an already-`subscribe()`d channel, so two
+ *     instances can no longer safely share one channel object.
  *   - Honors RLS automatically — the subscription server-side filters by the
  *     authenticated user's permission, matching the SELECT policy on
  *     udt_dataset_rows.
@@ -25,6 +28,7 @@
 import { useEffect } from "react";
 
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 
 export type TableRealtimeEvent = {
   kind: "INSERT" | "UPDATE" | "DELETE";
@@ -42,12 +46,12 @@ export function useTableRealtime(
     if (!enabled || !tableId) return undefined;
 
     const channel = supabase
-      .channel(`udt_rows:${tableId}`)
+      .channel(uniqueChannelTopic(`udt_rows:${tableId}`))
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "workbench",
           table: "udt_dataset_rows",
           filter: `table_id=eq.${tableId}`,
         },

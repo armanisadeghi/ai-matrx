@@ -311,7 +311,7 @@ export const StreamAwareChatMarkdown: React.FC<
           // Build ordered canonical blocks from the full event set at flush time
           const currentEvents = eventsRef.current;
           if (currentEvents) {
-            setCanonicalBlocks(buildCanonicalBlocks(currentEvents as any));
+            setCanonicalBlocks(buildCanonicalBlocks(currentEvents));
           }
           canonicalBlocksChangedRef.current = false;
           pendingCanonicalUpdateRef.current = false;

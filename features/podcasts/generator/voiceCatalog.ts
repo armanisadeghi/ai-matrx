@@ -8,7 +8,6 @@
 // (`cdn.matrxserver.com`) bound straight to <audio>; the Python server is never
 // in this read path. See docs/VOICE_CATALOG.md.
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 
 export type VoiceProvider = "google" | "elevenlabs" | (string & {});
@@ -47,12 +46,7 @@ const SELECT_COLS =
  *  Higher `quality_score` first so the picker favors better voices as they're
  *  rated; `name` is the stable tiebreaker. */
 export async function fetchVoices(): Promise<Voice[]> {
-  // `voices` isn't in the generated database.types.ts yet (added server-side;
-  // regenerating the FE types needs a Supabase access token). Query through an
-  // untyped client view so the typed client doesn't choke on the unknown table;
-  // the row shape is asserted as Voice[] below. Remove this cast once
-  // `pnpm db-types` is re-run and includes `voices`.
-  const supabase = createClient() as unknown as SupabaseClient;
+  const supabase = createClient();
   const { data, error } = await supabase
     .schema("ai").from("voices")
     .select(SELECT_COLS)

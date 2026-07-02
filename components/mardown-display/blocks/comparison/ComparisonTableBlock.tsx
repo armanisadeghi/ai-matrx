@@ -247,8 +247,8 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
 
     if (sortBy && sortDirection) {
       indices.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: string | number | boolean | undefined;
+        let bValue: string | number | boolean | undefined;
 
         if (sortBy === "name") {
           aValue = comparison.items[a];
@@ -329,7 +329,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
 
   const renderCellValue = (
     criterion: ComparisonCriterion,
-    value: any,
+    value: string | number | boolean,
     itemIndex: number,
   ) => {
     const isHighlighted = highlightedItem === comparison.items[itemIndex];

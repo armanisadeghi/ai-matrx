@@ -40,7 +40,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AssetPreset, Visibility } from "@/features/files";
+import type { Asset, AssetPreset, Visibility } from "@/features/files";
 import {
   useFileUpload,
   InlineMediaRef,
@@ -88,10 +88,8 @@ async function fileFromUrl(url: string): Promise<File> {
   return new File([blob], `image-${Date.now()}.${ext}`, { type: blob.type });
 }
 
-function assetToResult(
-  asset: ReturnType<typeof Object.assign>,
-): ImageUploaderResult {
-  const v = asset.variants ?? {};
+function assetToResult(asset: Asset): ImageUploaderResult {
+  const v = asset.variants;
   return {
     file_id: asset.file_id,
     primary_url: asset.primary_url,

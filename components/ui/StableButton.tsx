@@ -3,11 +3,10 @@
 import React, { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-interface StableButtonProps {
+interface StableButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'className'> {
   onClick: () => void;
   icon: React.ReactNode;
   className?: string;
-  [key: string]: any;
 }
 
 // Create a memoized version of the button to prevent unnecessary re-renders

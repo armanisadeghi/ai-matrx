@@ -7,7 +7,7 @@ export interface StoredQuery {
   id: string;
   query: string;
   timestamp: number;
-  result?: any;
+  result?: unknown;
   executionTime?: number;
   tags?: string[];
   description?: string;
@@ -19,7 +19,7 @@ const MAX_QUERIES = 100;
 /**
  * Save a successful query to localStorage
  */
-export const saveQuery = (query: string, result: any, executionTime?: number): StoredQuery => {
+export const saveQuery = (query: string, result: unknown, executionTime?: number): StoredQuery => {
   try {
     const queryHistory = getQueryHistory();
     

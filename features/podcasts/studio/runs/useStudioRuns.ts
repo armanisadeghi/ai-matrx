@@ -54,6 +54,7 @@ export function useStudioRuns() {
   // wider debounce coalesces heartbeat bursts during an active generation.
   useRunListRealtime({
     table: "agent_run",
+    schema: "chat",
     enabled: isAuthenticated,
     onChange: () => void load(),
     debounceMs: 1_000,

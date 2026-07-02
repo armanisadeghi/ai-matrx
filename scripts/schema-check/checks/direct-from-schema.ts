@@ -2,73 +2,65 @@
  * direct-from-schema — the gap the requirements call out: validate EVERY direct
  * supabase `.from()/.table()` against the LIVE snapshot, not a hand-maintained list.
  *
- * Two cases:
+ * Three cases:
  *   • `.schema("S").from("X")` — if (S,X) is not a live table/view but X lives in
  *     another schema, it's a wrong-schema/moved bug. HIGH signal, near-zero noise.
- *   • bare `.from("X")` on the canonical public client — resolves to public; if X
- *     now lives in another schema, that 404s at runtime (the reorg's classic break).
+ *   • bare `.from("X")` on the canonical public client (or a local alias/cast of
+ *     it — `const db = supabase as any`) — resolves to public; if X now lives in
+ *     another schema, that 404s at runtime (the reorg's classic break).
+ *   • `.from("X")` through a canonical schema-binder helper (`docprocDb(supabase)`,
+ *     or a local alias of one) — validated against THAT helper's bound schema,
+ *     same as an explicit `.schema()` call. Binders are auto-discovered from
+ *     `utils/supabase/*.ts` (see ../schema-binders.ts) so a wrong table through
+ *     the wrong binder is no longer invisible.
  *
- * Conservative by construction (this runs on every commit): bare-from is only
- * judged when the receiver is the plain `supabase` client. Function-style schema
- * binders (`graveyardDb(supabase).from(...)`) and ambiguous receivers (`db`,
- * `client`, params) are treated as unknown and skipped — no false positives.
- * Relations registered in dead-relations.json are deferred to that check.
+ * `X` may also be a local `const TABLE = "the_name"` string constant — resolved
+ * per-file before matching (see ../table-ref-resolution.ts), since `.from(TABLE)`
+ * is common and a bare regex on string literals alone would miss it. This is
+ * exactly how the page_extraction_jobs PGRST205 in
+ * docs/db_changes/canonicalization_worklog.md hid from every prior pass:
+ * variable table name + `db = supabase as any` receiver, neither of which the
+ * old literal-only / known-receiver-only checker could see through.
+ *
+ * Still conservative: an unresolved receiver (unknown function call, destructured
+ * param, etc.) or an unresolved table-name variable is skipped, not flagged — no
+ * false positives. Relations registered in dead-relations.json are deferred to
+ * that check (which shares this same chain-schema resolution — see ../chain-schema.ts —
+ * so a fix recognized here is recognized there too).
  *
  * Escape hatch: a `// schema-check-ignore` comment on the line silences it.
  */
 import { isIgnored, loc, registerCheck } from "../context";
 import { relationExists } from "../snapshot";
+import { buildTableConsts, resolveFromCalls } from "../table-ref-resolution";
+import { buildClientSchemas, resolvedChainSchema } from "../chain-schema";
 import type { Context, Finding } from "../types";
 
-const FROM_RE = /\.(from|table)\(\s*(['"`])([A-Za-z_][A-Za-z0-9_]*)\2/g;
-const SCHEMA_RE = /\.schema\(\s*['"]([a-z_][a-z0-9_]*)['"]\s*\)/g;
-// Receivers we KNOW default to the public schema (raw supabase client handles).
-const PUBLIC_CLIENTS = new Set(["supabase", "supabaseClient", "sb"]);
 // JS built-ins with a `.from(` that is not a supabase call.
 const NOT_SUPABASE = /\b(Array|Object|Buffer|Date|(?:Ui|I)nt(?:8|16|32)Array|Uint8ClampedArray|Float(?:32|64)Array|BigInt64Array|BigUint64Array)$/;
 
-/** The nearest `.schema("S")` in the method chain ending at line `i`, or null. */
-function chainSchema(lines: string[], i: number): { schema: string | null; chainStart: number } {
-  let chainStart = i;
-  while (chainStart > 0 && lines[chainStart].trim().startsWith(".")) chainStart--;
-  const chain = lines.slice(chainStart, i + 1).join("\n");
-  let last: string | null = null;
-  for (const m of chain.matchAll(SCHEMA_RE)) last = m[1];
-  return { schema: last, chainStart };
-}
-
-/** Leading receiver identifier of a chain, when it's a plain `<ident>.` member access. */
-function publicReceiver(lines: string[], chainStart: number): boolean {
-  const root = lines[chainStart]
-    .replace(/^\s*(?:export\s+)?(?:const|let|var)\s+[\w{}\[\],\s:]+=\s*/, "")
-    .replace(/^\s*(?:return|await|=>)\s*/g, "")
-    .trimStart();
-  const m = root.match(/^([A-Za-z_$][\w$]*)\s*([.(])/);
-  if (!m) return false;
-  // `<ident>(` is a call expression (e.g. a schema binder) — not a known public client.
-  return m[2] === "." && PUBLIC_CLIENTS.has(m[1]);
-}
-
 function check(ctx: Context): Finding[] {
-  const { snapshot: snap } = ctx;
+  const { snapshot: snap, schemaBinders } = ctx;
   if (snap.provenance === "none" || snap.tables.size === 0) return [];
   const findings: Finding[] = [];
 
   for (const file of ctx.codeFiles) {
     if (file.ext === ".sql") continue; // SQL handled by qualified-refs
     const { lines } = file;
+    const content = lines.join("\n");
+    const tableConsts = buildTableConsts(content);
+    const clientSchemas = buildClientSchemas(content, schemaBinders);
     for (let i = 0; i < lines.length; i++) {
       const text = lines[i];
       if (isIgnored(text)) continue;
-      FROM_RE.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = FROM_RE.exec(text))) {
-        const rel = m[3];
-        if (NOT_SUPABASE.test(text.slice(0, m.index))) continue;
+      for (const { index, rel } of resolveFromCalls(text, tableConsts)) {
+        if (NOT_SUPABASE.test(text.slice(0, index))) continue;
         if (ctx.deadOldNames.has(rel)) continue; // dead-relations owns it
 
-        const { schema, chainStart } = chainSchema(lines, i);
+        const { schema } = resolvedChainSchema(lines, i, schemaBinders, clientSchemas);
         const livesIn = [...(snap.relationSchemas.get(rel) ?? [])].sort();
+
+        if (schema === null) continue; // unresolved receiver — ambiguous, skip (no false positives)
 
         if (schema) {
           if (relationExists(snap, schema, rel)) continue;
@@ -91,9 +83,7 @@ function check(ctx: Context): Finding[] {
           continue;
         }
 
-        // No explicit schema in the chain → resolves to public, but only judge it
-        // when we're sure the receiver is the plain public client.
-        if (!publicReceiver(lines, chainStart)) continue;
+        // schema === "" → resolved to the public client (directly or via a bare alias/cast of it).
         if (relationExists(snap, "public", rel)) continue;
         if (livesIn.length) {
           findings.push({

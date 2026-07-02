@@ -6,7 +6,7 @@ type PathExpression = string;
 /**
  * Result of a path extraction operation
  */
-type ExtractionResult = any | any[] | undefined;
+type ExtractionResult = unknown;
 
 /**
  * Options for extraction behavior
@@ -36,46 +36,46 @@ interface ExtractionOptions {
  * @returns The extracted value(s) or undefined if not found
  */
 function extractValueByPath(
-  obj: any, 
-  path: PathExpression, 
+  obj: unknown,
+  path: PathExpression,
   options: ExtractionOptions = {}
 ): ExtractionResult {
   if (!obj || !path) {
     return options.nullForMissing ? null : undefined;
   }
-  
+
   const wildcardChar = options.wildcardChar || '*';
-  
+
   // Handle 'data.' prefix - strip it since our obj is already the root data
   const normalizedPath = path.startsWith('data.') ? path.substring(5) : path;
   const keys = normalizedPath.split('.');
-  
-  
+
+
   // Helper function to handle recursive path extraction
-  function extract(current: any, keyIndex: number): ExtractionResult {
+  function extract(current: unknown, keyIndex: number): ExtractionResult {
     // Base case: we've processed all keys
     if (keyIndex >= keys.length) return current;
-    
+
     // Null/undefined check
     if (current === null || current === undefined) {
       return options.nullForMissing ? null : undefined;
     }
-    
+
     const key = keys[keyIndex];
-    
+
     // Handle wildcard for arrays and objects
     if (key === wildcardChar) {
       // For arrays: map each element through the remaining path
       if (Array.isArray(current)) {
         return current.map(item => extract(item, keyIndex + 1));
-      } 
+      }
       // For objects: map each value through the remaining path
       else if (typeof current === 'object' && current !== null) {
         return Object.values(current).map(value => extract(value, keyIndex + 1));
       }
       return options.nullForMissing ? null : undefined;
     }
-    
+
     // Handle numeric indices for arrays
     if (Array.isArray(current) && /^\d+$/.test(key)) {
       const index = parseInt(key, 10);
@@ -83,17 +83,20 @@ function extractValueByPath(
         return options.nullForMissing ? null : undefined;
       }
     }
-    
+
     // Regular property access
-    
-    return extract(current[key], keyIndex + 1);
+    if (typeof current !== 'object' || current === null) {
+      return options.nullForMissing ? null : undefined;
+    }
+
+    return extract((current as Record<string, unknown>)[key], keyIndex + 1);
   }
-  
+
   // Handle results with nested arrays from wildcards
   function processResult(result: ExtractionResult): ExtractionResult {
-    
+
     if (!Array.isArray(result) || options.preserveArrays) return result;
-    
+
     // Check if result contains arrays that need flattening
     const needsFlattening = result.some(item => Array.isArray(item));
     if (needsFlattening) {
@@ -104,7 +107,7 @@ function extractValueByPath(
     }
     return result;
   }
-  
+
   const result = extract(obj, 0);
   const processedResult = processResult(result);
   return processedResult;
@@ -117,10 +120,10 @@ function extractValueByPath(
  * @returns A function that extracts values from objects
  */
 function createExtractor(
-  path: PathExpression, 
+  path: PathExpression,
   options: ExtractionOptions = {}
-): (obj: any) => ExtractionResult {
-  return (obj: any) => extractValueByPath(obj, path, options);
+): (obj: unknown) => ExtractionResult {
+  return (obj: unknown) => extractValueByPath(obj, path, options);
 }
 
 /**
@@ -131,8 +134,8 @@ function createExtractor(
  * @returns The extraction result
  */
 function extract(
-  obj: any, 
-  path: PathExpression, 
+  obj: unknown,
+  path: PathExpression,
   options: ExtractionOptions = {}
 ): ExtractionResult {
   return extractValueByPath(obj, path, options);

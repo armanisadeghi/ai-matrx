@@ -22,7 +22,7 @@ export function AgentFlexiblePanel({
       title={title}
       onClose={onClose}
       width={680}
-      height={500}
+      height={700}
       minWidth={300}
       minHeight={250}
       bodyClassName="p-0"

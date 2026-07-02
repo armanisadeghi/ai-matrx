@@ -64,6 +64,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { isJsonObject } from "@/types/json";
+
+// Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`) without `any`.
+function extractApiErrorMessage(body: unknown, fallback: string): string {
+  if (isJsonObject(body)) {
+    if (typeof body.detail === "string") return body.detail;
+    if (typeof body.message === "string") return body.message;
+  }
+  return fallback;
+}
 
 interface MarkdownTesterProps {
   className?: string;
@@ -983,9 +993,9 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
             },
           );
           if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
+            const d: unknown = await res.json().catch(() => ({}));
             throw new Error(
-              (d as any)?.detail || (d as any)?.message || `HTTP ${res.status}`,
+              extractApiErrorMessage(d, `HTTP ${res.status}`),
             );
           }
           const text = await res.text();
@@ -1023,9 +1033,9 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
             },
           );
           if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
+            const d: unknown = await res.json().catch(() => ({}));
             throw new Error(
-              (d as any)?.detail || (d as any)?.message || `HTTP ${res.status}`,
+              extractApiErrorMessage(d, `HTTP ${res.status}`),
             );
           }
           const { events } = parseNdjsonStream(res, controller.signal);

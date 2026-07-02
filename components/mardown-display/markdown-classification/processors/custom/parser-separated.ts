@@ -11,7 +11,7 @@ export interface CodeBlock {
 }
 
 export interface JsonBlock {
-    [key: string]: any; // Parsed JSON (object, array, primitive, or null)
+    [key: string]: unknown; // Parsed JSON (object, array, primitive, or null)
     parseError?: string; // Optional error message if parsing fails
 }
 
@@ -19,7 +19,7 @@ export interface Section {
     title: string;
     intro: string;
     items: ListItem[];
-    tables: { title: string; data: any }[];
+    tables: { title: string; data: unknown }[];
     codeBlocks: CodeBlock[];
     jsonBlocks: JsonBlock[];
     outro: string;

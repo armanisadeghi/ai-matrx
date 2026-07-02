@@ -224,7 +224,8 @@ function TreeNodeRow({
   // If filtering and this node isn't visible, hide it
   if (visibleSet && !visibleSet.has(node.id)) return null;
 
-  const isFolder = !!node.children && node.children.length > 0;
+  const children = node.children;
+  const isFolder = !!children && children.length > 0;
   const isExpanded = isFolder && expandedSet.has(node.id);
   const isActive = node.id === activeId;
   const isMatched = matchedSet?.has(node.id) ?? false;
@@ -262,7 +263,7 @@ function TreeNodeRow({
           {hasUnsaved && <UnsavedDot />}
         </button>
         {isExpanded &&
-          node.children!.map((child) => (
+          (children ?? []).map((child) => (
             <TreeNodeRow
               key={child.id}
               node={child}

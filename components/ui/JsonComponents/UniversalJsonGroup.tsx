@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
@@ -61,7 +61,7 @@ const LayoutControls: React.FC<LayoutControlsProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
-      <Select value={layout} onValueChange={onLayoutChange as any}>
+      <Select value={layout} onValueChange={(value) => onLayoutChange(value as LayoutType)}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Select layout" />
         </SelectTrigger>
@@ -93,7 +93,7 @@ const LayoutControls: React.FC<LayoutControlsProps> = ({
         </SelectContent>
       </Select>
 
-      <Select value={minimizedPosition} onValueChange={onPositionChange as any}>
+      <Select value={minimizedPosition} onValueChange={(value) => onPositionChange(value as MinimizedPosition)}>
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Minimized position" />
         </SelectTrigger>
@@ -113,15 +113,15 @@ const safeCalculateJsonMetrics = (data: object | string): JsonMetrics => {
     const stringified = typeof data === "string" ? data : JSON.stringify(data);
     const parsed = typeof data === "string" ? JSON.parse(data) : data;
 
-    const countKeys = (obj: any): number => {
+    const countKeys = (obj: unknown): number => {
       if (!obj || typeof obj !== "object") return 0;
-      return Object.keys(obj).reduce(
-        (acc, key) => acc + 1 + countKeys(obj[key]),
+      return Object.values(obj).reduce(
+        (acc: number, value) => acc + 1 + countKeys(value),
         0,
       );
     };
 
-    const getDepth = (obj: any): number => {
+    const getDepth = (obj: unknown): number => {
       if (!obj || typeof obj !== "object") return 0;
       return 1 + Math.max(0, ...Object.values(obj).map(getDepth));
     };
@@ -328,7 +328,7 @@ export const UniversalJsonGroup: React.FC<UniversalJsonGroupProps> = ({
     setMetrics(newMetrics);
   }, [components]);
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(components);

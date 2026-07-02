@@ -15,6 +15,7 @@ import type {
     SupabaseClient,
 } from "@supabase/supabase-js";
 
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import type { SchedulerSurface } from "./surfaces";
 import type { SchTaskRow } from "./types";
 
@@ -51,7 +52,8 @@ export function subscribeToTasks(
     supabase: SupabaseClient,
     opts: SubscribeOptions,
 ): () => Promise<void> {
-    const channelName = opts.channelName ?? `sch_task:${opts.userId}`;
+    const channelName =
+        opts.channelName ?? uniqueChannelTopic(`sch_task:${opts.userId}`);
 
     const deliver = (
         eventType: TaskEventType,
@@ -89,7 +91,7 @@ export function subscribeToTasks(
             "postgres_changes",
             {
                 event: "INSERT",
-                schema: "public",
+                schema: "scheduler",
                 table: "sch_task",
                 filter: `user_id=eq.${opts.userId}`,
             },
@@ -105,7 +107,7 @@ export function subscribeToTasks(
             "postgres_changes",
             {
                 event: "UPDATE",
-                schema: "public",
+                schema: "scheduler",
                 table: "sch_task",
                 filter: `user_id=eq.${opts.userId}`,
             },
@@ -121,7 +123,7 @@ export function subscribeToTasks(
             "postgres_changes",
             {
                 event: "DELETE",
-                schema: "public",
+                schema: "scheduler",
                 table: "sch_task",
                 filter: `user_id=eq.${opts.userId}`,
             },

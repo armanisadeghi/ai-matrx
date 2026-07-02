@@ -10,8 +10,15 @@ import { getCoordinatorSelectOptions, getCoordinatorConfig, getSpecificViewCompo
 import MarkdownInput from './MarkdownInput';
 import MarkdownProcessingTabs from './MarkdownProcessingTabs';
 import { ViewId } from './custom-views/view-registry';
-// @ts-ignore - usePrepareMarkdownForRendering is a hook but used as function here
-import { usePrepareMarkdownForRendering as prepareMarkdownForRendering } from './usePrepareMarkdownForRendering';
+import { AstNode } from './processors/types';
+// This component previously imported the `usePrepareMarkdownForRendering` HOOK
+// and called it like a plain async function (`await prepareMarkdownForRendering(...)`)
+// inside `useEffect`/event handlers — a Rules-of-Hooks violation (hooks may only
+// be called at component top level) that also didn't match the hook's real
+// signature (single options object, not 3 positional args) or its return
+// shape (stateful hook result, not a Promise). The plain async function that
+// actually matches this call pattern is `processMarkdownForRenderingWithCoordinator`.
+import { processMarkdownForRenderingWithCoordinator } from './markdown-processor-util';
 
 interface MarkdownClassifierProps {
   initialMarkdown?: string;
@@ -36,9 +43,8 @@ const MarkdownClassifier: React.FC<MarkdownClassifierProps> = ({
   const [selectedCoordinatorId, setSelectedCoordinatorId] = useState<string>(initialCoordinatorId);
   const [selectedViewId, setSelectedViewId] = useState<ViewId | null>(null);
   
-  const [ast, setAst] = useState<any>(null);
-  const [processedData, setProcessedData] = useState<any>(null);
-  const [coordinatorConfig, setCoordinatorConfig] = useState<any>(null);
+  const [ast, setAst] = useState<AstNode | null>(null);
+  const [processedData, setProcessedData] = useState<unknown>(null);
   const [availableViews, setAvailableViews] = useState<ViewId[]>([]);
 
   // Always update preview when markdown changes
@@ -50,20 +56,22 @@ const MarkdownClassifier: React.FC<MarkdownClassifierProps> = ({
   useEffect(() => {
     const processMarkdown = async () => {
       try {
-        // @ts-ignore - prepareMarkdownForRendering expects 3 arguments but only 2 are provided
-        const result = await prepareMarkdownForRendering(markdown, selectedCoordinatorId, selectedViewId);
-        
+        const result = await processMarkdownForRenderingWithCoordinator({
+          markdown,
+          coordinatorId: selectedCoordinatorId,
+        });
+
         setAst(result.ast);
         setProcessedData(result.processedData);
-        setCoordinatorConfig(result.coordinatorDefinition);
-        
+
         // Set available views and default view
-        if (result.coordinatorDefinition) {
-          setAvailableViews(result.coordinatorDefinition.availableViews);
-          
+        const coordinatorDefinition = getCoordinatorConfig(selectedCoordinatorId);
+        if (coordinatorDefinition) {
+          setAvailableViews(coordinatorDefinition.availableViews);
+
           // Only set default view if no view is selected or the selected view isn't available
-          if (!selectedViewId || !result.coordinatorDefinition.availableViews.includes(selectedViewId)) {
-            setSelectedViewId(result.coordinatorDefinition.defaultView);
+          if (!selectedViewId || !coordinatorDefinition.availableViews.includes(selectedViewId)) {
+            setSelectedViewId(coordinatorDefinition.defaultView);
           }
         }
       } catch (error) {
@@ -102,8 +110,10 @@ const MarkdownClassifier: React.FC<MarkdownClassifierProps> = ({
   // Handle parse button click
   const handleParseClick = async () => {
     try {
-      // @ts-ignore - prepareMarkdownForRendering expects 3 arguments but only 2 are provided
-      const result = await prepareMarkdownForRendering(markdown, selectedCoordinatorId, selectedViewId);
+      const result = await processMarkdownForRenderingWithCoordinator({
+        markdown,
+        coordinatorId: selectedCoordinatorId,
+      });
       setAst(result.ast);
       setProcessedData(result.processedData);
     } catch (error) {

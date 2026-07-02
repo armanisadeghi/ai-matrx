@@ -41,7 +41,7 @@ export interface Bookmark extends TypeInfo {
 
 // UI-specific types
 export interface JSONNodeValue {
-    value: any;
+    value: unknown;
     type: string;
     name?: string;
 }

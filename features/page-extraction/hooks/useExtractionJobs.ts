@@ -9,6 +9,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { listJobsForFile } from "@/features/page-extraction/api/jobs";
 import type { PageExtractionJob } from "@/features/page-extraction/types";
 import {
@@ -65,12 +66,12 @@ function attachRealtime(fileId: string): void {
   }
   const supabase = createClient();
   const channel = supabase
-    .channel(`page-extraction-jobs:${fileId}`)
+    .channel(uniqueChannelTopic(`page-extraction-jobs:${fileId}`))
     .on(
       "postgres_changes",
       {
         event: "*",
-        schema: "public",
+        schema: "docproc",
         table: "page_extraction_jobs",
         filter: `file_id=eq.${fileId}`,
       },

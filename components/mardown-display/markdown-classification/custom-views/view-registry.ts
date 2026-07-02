@@ -34,12 +34,24 @@ export const viewComponents = {
     keywordHierarchyView: lazy(() => import("./view-components/LsiKeywordView")),
 };
 
+export interface ViewExtractor {
+    brokerId: string;
+    path: string;
+    type: string;
+}
+
+// Each view component declares its own concrete `data` shape (AstNode,
+// CandidateProfileData, OutputContent, ...) — the registry is intentionally
+// heterogeneous, so `React.ComponentType<any>` here is the correct escape
+// valve for "any one of these incompatible component prop shapes", not a
+// data-boundary hatch. Callers (ViewRenderer/ViewWrapper) pass `unknown` data
+// through; each concrete component validates/narrows internally.
 export interface ViewDefinition {
     id: ViewId;
     label: string;
     description: string;
     component: React.ComponentType<any>;
-    extractors: any[];
+    extractors: ViewExtractor[];
 }
 
 const CANDIDATE_PROFILE_VIEW_DEFINITION: ViewDefinition = {

@@ -1,3 +1,5 @@
+import type { JsonValue } from "@/types/json";
+
 // Using the enums you provided
 export enum LineCategory {
     HEADER = "header",
@@ -157,7 +159,7 @@ export interface ModelConfig {
     recipe_id?: string | null;
     recipe_version?: string | null;
     // Allow for additional config properties
-    [key: string]: any;
+    [key: string]: JsonValue | undefined;
 }
 
 // Known section types - extend this union as needed
@@ -186,7 +188,7 @@ export interface ClassifiedSection {
     content: string[];
     // Optional metadata for sections
     metadata?: {
-        [key: string]: any;
+        [key: string]: JsonValue | undefined;
     };
 }
 
@@ -197,14 +199,14 @@ export interface ClassifiedMetadata {
     config?: ModelConfig;
     classified_output?: ClassifiedSection[];
     // Allow for additional metadata fields
-    [key: string]: any;
+    [key: string]: JsonValue | ClassifiedSection[] | ModelConfig | undefined;
 }
 
 // Root response interface
 export interface ClassifiedResponse {
     metadata: ClassifiedMetadata;
     // Allow for additional top-level properties
-    [key: string]: any;
+    [key: string]: JsonValue | ClassifiedMetadata | undefined;
 }
 
 // Utility types for working with the classified output

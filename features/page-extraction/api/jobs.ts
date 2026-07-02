@@ -1,13 +1,8 @@
 /**
  * features/page-extraction/api/jobs.ts
  *
- * Supabase CRUD for page_extraction_jobs. Direct browser reads/writes are
- * RLS-gated to owners + org members.
- *
- * The generated `Database` types in `types/database.types.ts` don't yet
- * include the page_extraction_* tables (they're regenerated after the
- * migration runs). We cast through `any` here for Phase 1 — once the types
- * are regenerated, the casts can be removed and full type safety returns.
+ * Supabase CRUD for page_extraction_jobs (`docproc` schema). Direct browser
+ * reads/writes are RLS-gated to owners + org members.
  */
 
 "use client";
@@ -20,7 +15,7 @@ import type {
 } from "@/features/page-extraction/types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
+const db = (supabase as any).schema("docproc");
 
 const TABLE = "page_extraction_jobs";
 
@@ -137,7 +132,9 @@ export async function hardDeleteJob(jobId: string): Promise<void> {
  * update's error was never even checked).
  */
 export async function clearJobResults(jobId: string): Promise<void> {
-  const { error } = await db.rpc("page_extraction_clear_job_results", {
+  // RPC functions stay in `public` regardless of the `docproc` table move —
+  // call through the unscoped client, not `db` (which is `.schema("docproc")`).
+  const { error } = await supabase.rpc("page_extraction_clear_job_results", {
     p_job_id: jobId,
   });
   if (error) throw error;

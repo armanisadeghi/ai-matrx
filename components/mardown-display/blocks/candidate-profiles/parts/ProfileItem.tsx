@@ -2,14 +2,14 @@
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu/context-menu";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash } from "lucide-react";
-import { ProfileItemType } from "../parseMarkdownProfile";
+import { ExperienceItemType, ProfileItemType, ProfileSectionType } from "../parseMarkdownProfile";
 
 // Props interface
 type ProfileItemProps = {
   item: ProfileItemType;
   openEditModal: (
     type: "section" | "experience" | "item",
-    item: any,
+    item: ProfileSectionType | ExperienceItemType | ProfileItemType,
     action?: "edit" | "add",
     parentId?: string
   ) => void;

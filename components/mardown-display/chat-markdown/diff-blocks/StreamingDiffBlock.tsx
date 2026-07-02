@@ -17,7 +17,7 @@ import { SearchReplaceDiffRenderer } from "./renderers/SearchReplaceDiffRenderer
 import { DiffLoadingIndicator } from "./DiffLoadingIndicator";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
 import { cn } from "@/lib/utils";
-import type { DiffStyle, StreamingDiffState } from "./types";
+import type { DiffStyle, StreamingDiffState, ParsedDiffBlock, SearchReplaceBlock } from "./types";
 
 interface StreamingDiffBlockProps {
   content: string;
@@ -163,7 +163,7 @@ StreamingDiffBlock.displayName = "StreamingDiffBlock";
  */
 function renderDiffByStyle(
   style: DiffStyle,
-  parsedData: any,
+  parsedData: ParsedDiffBlock | null,
   language: string,
   isStreamActive: boolean,
   className?: string,
@@ -172,7 +172,7 @@ function renderDiffByStyle(
     case "search-replace":
       return (
         <SearchReplaceDiffRenderer
-          data={parsedData}
+          data={parsedData as SearchReplaceBlock}
           language={language}
           isStreamActive={isStreamActive}
           className={className}
@@ -184,13 +184,14 @@ function renderDiffByStyle(
     //   return <UnifiedDiffRenderer data={parsedData} ... />;
 
     case "unknown":
-    default:
+    default: {
       // Fallback to code block
+      const fallbackData = parsedData as Partial<SearchReplaceBlock> | null;
       return (
         <CodeBlock
           code={
-            parsedData?.search ||
-            parsedData?.replace ||
+            fallbackData?.search ||
+            fallbackData?.replace ||
             "// Unknown diff format"
           }
           language="diff"
@@ -198,5 +199,6 @@ function renderDiffByStyle(
           className={className}
         />
       );
+    }
   }
 }

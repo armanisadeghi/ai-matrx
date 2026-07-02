@@ -28,17 +28,17 @@ export const normalizeHiddenPaths = (paths: string[]): string[] => {
 
 /**
  * Process data with hidden paths to hide specified parts of the data structure
- * @param {any} data - Data to process
+ * @param {unknown} data - Data to process
  * @param {string[]} hiddenPaths - Array of paths to hide
  * @param {string} currentFullPath - Current path being processed (default: "data")
- * @returns {any} - Processed data with hidden elements replaced
+ * @returns {unknown} - Processed data with hidden elements replaced
  */
-export const processDataWithHiddenPaths = (data: any, hiddenPaths: string[], currentFullPath = "data"): any => {
+export const processDataWithHiddenPaths = (data: unknown, hiddenPaths: string[], currentFullPath = "data"): unknown => {
   // Normalize hidden paths for consistent comparison
   const normalizedHiddenPaths = normalizeHiddenPaths(hiddenPaths);
 
   // Function to process data with normalized hidden paths
-  const processData = (data: any, currentFullPath = "data"): any => {
+  const processData = (data: unknown, currentFullPath = "data"): unknown => {
     // Check if the current path itself should be hidden
     if (normalizedHiddenPaths.some(hiddenPath => {
       // Check exact match
@@ -69,18 +69,19 @@ export const processDataWithHiddenPaths = (data: any, hiddenPaths: string[], cur
         return processData(item, childPath);
       });
     } else {
-      const result: Record<string, any> = {};
+      const result: Record<string, unknown> = {};
+      const dataRecord = data as Record<string, unknown>;
 
       // Process object properties
-      for (const key in data) {
+      for (const key in dataRecord) {
         // For object properties, use dot notation consistently
         // Check if the key is a valid JS identifier
         const childPath = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key)
           ? `${currentFullPath}.${key}`
           : `${currentFullPath}["${key}"]`;
-          
+
         // Process recursively
-        result[key] = processData(data[key], childPath);
+        result[key] = processData(dataRecord[key], childPath);
       }
       return result;
     }
@@ -95,7 +96,7 @@ export const processDataWithHiddenPaths = (data: any, hiddenPaths: string[], cur
  * @param {string[]} hiddenPaths - Array of hidden paths
  * @returns {boolean} - Whether the path is hidden
  */
-export const isPathHidden = (path: string | PathArray, hiddenPaths: string[]): boolean => {
+export const isPathHidden = (path: string | PathArray | null, hiddenPaths: string[]): boolean => {
   if (!path) return false;
 
   let relativePath: string;

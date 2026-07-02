@@ -8,6 +8,7 @@
 
 import { useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fetchScheduledTask } from "../redux/tasks/thunks";
@@ -37,12 +38,12 @@ export function useTaskListStream() {
     if (!userId) return undefined;
 
     const channel = supabase
-      .channel(`sch_task-list-${userId}`)
+      .channel(uniqueChannelTopic(`sch_task-list-${userId}`))
       .on(
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "scheduler",
           table: "sch_task",
           filter: `user_id=eq.${userId}`,
         },
@@ -60,7 +61,7 @@ export function useTaskListStream() {
         "postgres_changes",
         {
           event: "UPDATE",
-          schema: "public",
+          schema: "scheduler",
           table: "sch_task",
           filter: `user_id=eq.${userId}`,
         },
@@ -83,7 +84,7 @@ export function useTaskListStream() {
         "postgres_changes",
         {
           event: "DELETE",
-          schema: "public",
+          schema: "scheduler",
           table: "sch_task",
           filter: `user_id=eq.${userId}`,
         },

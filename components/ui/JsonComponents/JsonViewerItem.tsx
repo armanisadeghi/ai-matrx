@@ -3,10 +3,11 @@ import { ChevronDown, BracketsIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ArrayItem, InlineArray, ValueDisplay } from './renderers';
 import { isSimpleArray } from './utils';
+import type { JsonValue } from '@/types/json';
 
 export interface JsonViewerItemProps {
     keyName: string;
-    value: any;
+    value: JsonValue;
     isExpanded: boolean;
     onToggle: (key: string) => void;
     isKeyExpanded: (key: string) => boolean;
@@ -30,7 +31,7 @@ const JsonViewerItem: React.FC<JsonViewerItemProps> = ({
     const isObject = typeof value === 'object' && value !== null;
     const isArray = Array.isArray(value);
     const hasContent = isObject && Object.keys(value).length > 0;
-    const isSmallArray = isArray && isSimpleArray(value);
+    const isSmallArray = isArray && isSimpleArray(value as JsonValue[]);
 
     return (
         <div className={cn(
@@ -79,12 +80,12 @@ const JsonViewerItem: React.FC<JsonViewerItemProps> = ({
                     )}
 
                     {isSmallArray && hasContent && (
-                        <InlineArray arr={value} disabled={disabled} />
+                        <InlineArray arr={value as JsonValue[]} disabled={disabled} />
                     )}
 
                     {isArray && !isSmallArray && hasContent && !isExpanded && (
                         <span className="text-muted-foreground ml-1 transition-opacity duration-200">
-                            [{value.length} items]
+                            [{(value as JsonValue[]).length} items]
                         </span>
                     )}
                 </div>
@@ -99,15 +100,15 @@ const JsonViewerItem: React.FC<JsonViewerItemProps> = ({
                 >
                     {isArray ? (
                         <div className="flex flex-col border-l border-border/30">
-                            {value.map((item: any, index: number) => (
+                            {(value as JsonValue[]).map((item: JsonValue, index: number) => (
                                 <React.Fragment key={index}>
-                                    {typeof item === 'object' && item !== null ? (
+                                    {typeof item === 'object' && item !== null && !Array.isArray(item) ? (
                                         Object.entries(item).map(([k, v], idx, arr) => (
                                             <JsonViewerItem
                                                 key={`${path}.${index}.${k}`}
                                                 path={`${path}.${index}.${k}`}
                                                 keyName={k}
-                                                value={v}
+                                                value={v ?? null}
                                                 isExpanded={isKeyExpanded(`${path}.${index}.${k}`)}
                                                 onToggle={onToggle}
                                                 isKeyExpanded={isKeyExpanded}
@@ -121,7 +122,7 @@ const JsonViewerItem: React.FC<JsonViewerItemProps> = ({
                                             item={item}
                                             itemPath={`${path}.${index}`}
                                             index={index}
-                                            isLastItem={index === value.length - 1}
+                                            isLastItem={index === (value as JsonValue[]).length - 1}
                                             disabled={disabled}
                                         />
                                     )}
@@ -129,12 +130,12 @@ const JsonViewerItem: React.FC<JsonViewerItemProps> = ({
                             ))}
                         </div>
                     ) : (
-                        Object.entries(value).map(([k, v], index, arr) => (
+                        Object.entries(value as object).map(([k, v], index, arr) => (
                             <JsonViewerItem
                                 key={`${path}.${k}`}
                                 path={`${path}.${k}`}
                                 keyName={k}
-                                value={v}
+                                value={(v as JsonValue) ?? null}
                                 isExpanded={isKeyExpanded(`${path}.${k}`)}
                                 onToggle={onToggle}
                                 isKeyExpanded={isKeyExpanded}

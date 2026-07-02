@@ -41,10 +41,10 @@ export default function StateViewerWindow({
 
   const sidebarTabs = tabs.filter((t) => t.id !== TAB_INDEX_ID);
   const sortedTabs = [...sidebarTabs].sort((a, b) =>
-    (a.label ?? "").localeCompare(b.label ?? ""),
+    a.label.localeCompare(b.label),
   );
   const filteredTabs = sortedTabs.filter((t) => {
-    const label = t.label?.toLowerCase() ?? "";
+    const label = t.label.toLowerCase();
     return label.includes(searchQuery.toLowerCase());
   });
 

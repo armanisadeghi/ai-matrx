@@ -32,20 +32,20 @@ export interface ClassifiedSection {
 }
 
 // Safety validation functions
-const isValidClassifiedSection = (item: any): item is ClassifiedSection => {
+const isValidClassifiedSection = (item: unknown): item is ClassifiedSection => {
+  if (!item || typeof item !== 'object') return false;
+  const i = item as Record<string, unknown>;
   return (
-    item &&
-    typeof item === 'object' &&
-    typeof item.section === 'string' &&
-    Array.isArray(item.content) &&
-    item.content.every((c: any) => typeof c === 'string')
+    typeof i.section === 'string' &&
+    Array.isArray(i.content) &&
+    i.content.every((c: unknown) => typeof c === 'string')
   );
 };
 
-const isValidClassifiedData = (data: any): data is ClassifiedSection[] => {
+const isValidClassifiedData = (data: unknown): data is ClassifiedSection[] => {
   return (
     Array.isArray(data) &&
-    data.every((section: any) => isValidClassifiedSection(section))
+    data.every((section: unknown) => isValidClassifiedSection(section))
   );
 };
 
@@ -138,7 +138,7 @@ const renderContent = (section: ClassifiedSection) => {
   );
 };
 
-const SectionViewer = ({ data }: { data: any }) => {
+const SectionViewer = ({ data }: { data: unknown }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const { copied, copy } = useCopyToClipboard();
 
@@ -147,7 +147,7 @@ const SectionViewer = ({ data }: { data: any }) => {
     return <JsonFallback data={data} onCopy={() => {}} className="bg-inherit" />;
   }
 
-  const safeData = data as ClassifiedSection[];
+  const safeData = data;
 
   const copyToClipboard = async (content: string[], index: number) => {
     if (!content || !Array.isArray(content)) {

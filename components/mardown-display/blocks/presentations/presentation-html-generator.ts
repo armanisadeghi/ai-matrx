@@ -4,12 +4,16 @@
  */
 
 import { PresentationData } from './Slideshow';
+import { resolveDeckTheme } from './presets';
+import { palette } from './SlideView';
 
 /**
  * Generates a complete standalone HTML page with an interactive presentation
  */
 export function generatePresentationHTML(presentationData: PresentationData): string {
-    const { slides, theme } = presentationData;
+    const { slides } = presentationData;
+    const resolvedTheme = resolveDeckTheme(presentationData.theme);
+    const theme = { ...palette(resolvedTheme), backgroundColor: resolvedTheme.backgroundColor || "#F8FAFC" };
     
     // Generate slide HTML
     const slidesHTML = slides.map((slide, index) => {
@@ -17,7 +21,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
             return `
                 <div class="slide" data-slide="${index}">
                     <div class="slide-content intro-slide">
-                        <h1 class="slide-title" style="color: ${theme.primaryColor};">
+                        <h1 class="slide-title" style="color: ${theme.primary};">
                             ${parseMarkdownAndEscape(slide.title)}
                         </h1>
                         ${slide.subtitle ? `<p class="slide-subtitle">${parseMarkdownAndEscape(slide.subtitle)}</p>` : ''}
@@ -30,7 +34,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
                     <div class="bullets-container">
                         ${slide.bullets.map((bullet: string) => `
                             <div class="bullet-item">
-                                <div class="bullet-dot" style="background-color: ${theme.primaryColor};"></div>
+                                <div class="bullet-dot" style="background-color: ${theme.primary};"></div>
                                 <div class="bullet-text">${parseMarkdownAndEscape(bullet)}</div>
                             </div>
                         `).join('')}
@@ -41,7 +45,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
             return `
                 <div class="slide" data-slide="${index}">
                     <div class="slide-content">
-                        <h2 class="slide-heading" style="color: ${theme.primaryColor};">
+                        <h2 class="slide-heading" style="color: ${theme.primary};">
                             ${parseMarkdownAndEscape(slide.title)}
                         </h2>
                         ${slide.description ? `<p class="slide-description">${parseMarkdownAndEscape(slide.description)}</p>` : ''}
@@ -446,9 +450,9 @@ export function generatePresentationHTML(presentationData: PresentationData): st
  * Helper to parse markdown and escape HTML
  * Converts **bold** to <strong>bold</strong> and escapes other HTML
  */
-function parseMarkdownAndEscape(text: string): string {
+function parseMarkdownAndEscape(text: string | undefined): string {
     // First escape HTML special characters
-    const escaped = text.replace(/[&<>"']/g, (m) => {
+    const escaped = (text ?? '').replace(/[&<>"']/g, (m) => {
         const map: Record<string, string> = {
             '&': '&amp;',
             '<': '&lt;',

@@ -84,6 +84,16 @@ import type {
   RenderBlockEvent,
 } from "@/types/python-generated/stream-events";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
+import { isJsonObject } from "@/types/json";
+
+// Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`) without `any`.
+function extractApiErrorMessage(body: unknown, fallback: string): string {
+  if (isJsonObject(body)) {
+    if (typeof body.detail === "string") return body.detail;
+    if (typeof body.message === "string") return body.message;
+  }
+  return fallback;
+}
 
 interface ContentBlocksManagerProps {
   className?: string;
@@ -259,9 +269,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             },
           );
           if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
+            const d: unknown = await res.json().catch(() => ({}));
             throw new Error(
-              (d as any)?.detail || (d as any)?.message || `HTTP ${res.status}`,
+              extractApiErrorMessage(d, `HTTP ${res.status}`),
             );
           }
           const text = await res.text();
@@ -299,9 +309,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
             },
           );
           if (!res.ok) {
-            const d = await res.json().catch(() => ({}));
+            const d: unknown = await res.json().catch(() => ({}));
             throw new Error(
-              (d as any)?.detail || (d as any)?.message || `HTTP ${res.status}`,
+              extractApiErrorMessage(d, `HTTP ${res.status}`),
             );
           }
           const { events } = parseNdjsonStream(res, controller.signal);
@@ -339,7 +349,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     type: "block" | "category" | null;
-    item: any | null;
+    item: ContentBlockDB | Category | null;
     hasChildren?: boolean;
     hasBlocks?: number;
   }>({
@@ -377,9 +387,8 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       // First pass: create all category objects
       allCategoriesData.forEach((cat) => {
-        const meta = (cat.metadata ?? {}) as {
-          is_active?: string | boolean | null;
-        };
+        const meta = isJsonObject(cat.metadata) ? cat.metadata : undefined;
+        const metaIsActive = meta?.is_active;
         categoriesMap.set(cat.id, {
           id: cat.id,
           parent_category_id: cat.parent_id,
@@ -387,7 +396,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           icon_name: cat.icon ?? "",
           color: cat.color ?? "#3b82f6",
           sort_order: cat.position ?? 0,
-          is_active: meta.is_active !== false && meta.is_active !== "false",
+          is_active: metaIsActive !== false && metaIsActive !== "false",
           children: [],
         });
       });
@@ -397,7 +406,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         if (category.parent_category_id) {
           const parent = categoriesMap.get(category.parent_category_id);
           if (parent) {
-            parent.children!.push(category);
+            (parent.children ??= []).push(category);
           }
         } else {
           rootCategories.push(category);
@@ -488,7 +497,10 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
     setIsCreateDialogOpen(true);
   };
 
-  const handleEditChange = (field: string, value: any) => {
+  const handleEditChange = <K extends keyof ContentBlockDB>(
+    field: K,
+    value: ContentBlockDB[K],
+  ) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
   };
@@ -733,13 +745,16 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       await loadData();
       return data.id; // Return UUID
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating category - full error:", error);
       return null;
     }
   };
 
-  const handleUpdateCategory = async (categoryId: string, updates: any) => {
+  const handleUpdateCategory = async (
+    categoryId: string,
+    updates: Partial<Category> & { placement_type?: string | null },
+  ) => {
     try {
       const supabase = createClient();
       // Remap old column names to platform.categories columns

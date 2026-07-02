@@ -29,6 +29,7 @@ import {
 import { EditableJsonViewerProps, ValidationError } from "@/components/ui/JsonComponents/types";
 import JsonEditorItem from "./JsonEditorItem";
 import jsonUtils from "./newUitls";
+import type { JsonValue } from "@/types/json";
 
 const SAMPLE_ENTRY = {
   YourKey: "YourValue",
@@ -192,12 +193,15 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     });
   }, []);
 
-  const getAllKeys = (obj: any): string[] => {
+  const getAllKeys = (obj: Record<string, unknown>): string[] => {
     let keys: string[] = [];
     for (const key in obj) {
       keys.push(key);
-      if (typeof obj[key] === "object" && obj[key] !== null) {
-        keys = keys.concat(getAllKeys(obj[key]).map((k) => `${key}.${k}`));
+      const value = obj[key];
+      if (typeof value === "object" && value !== null) {
+        keys = keys.concat(
+          getAllKeys(value as Record<string, unknown>).map((k) => `${key}.${k}`),
+        );
       }
     }
     return keys;
@@ -320,7 +324,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
               <JsonEditorItem
                 key={key}
                 keyName={key}
-                value={value}
+                value={value as JsonValue}
                 depth={0}
                 isExpanded={expandedKeys.has(key)}
                 onToggle={() => toggleExpand(key)}

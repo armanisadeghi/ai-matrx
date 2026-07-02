@@ -5,7 +5,7 @@ import { isEqual } from "lodash";
 
 interface DebugLogProps {
   title?: string;
-  values: Record<string, any>;
+  values: Record<string, unknown>;
   indent?: number;
 }
 
@@ -17,12 +17,12 @@ interface DebugLogProps {
  * <DebugLog title="Button state" values={{ isLoading, isDisabled, data }} />
  */
 const DebugLog = memo(({ title = "Debug", values, indent = 2 }: DebugLogProps) => {
-  const prevValuesRef = useRef<Record<string, any>>(values);
+  const prevValuesRef = useRef<Record<string, unknown>>(values);
 
   useEffect(() => {
     // Only log if values have changed
     if (!isEqual(prevValuesRef.current, values)) {
-      const changes: Record<string, { prev: any; new: any }> = {};
+      const changes: Record<string, { prev: unknown; new: unknown }> = {};
       
       // Find changed values
       Object.keys(values).forEach(key => {

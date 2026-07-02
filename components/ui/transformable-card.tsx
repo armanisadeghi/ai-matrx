@@ -151,26 +151,26 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
   );
 
   // Handle mouse movement over the card for visual effects
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!cardRef.current || isPill || isDragging) return;
-    
+
     const { clientX, clientY } = e;
     const { width, height, left, top } = cardRef.current.getBoundingClientRect();
-    
+
     const centerX = left + width / 2;
     const centerY = top + height / 2;
-    
+
     // Calculate delta from center of card
     const deltaX = clientX - centerX;
     const deltaY = clientY - centerY;
-    
+
     // Set mouse position values (used for effects, not positioning)
     mouseX.set(deltaX);
     mouseY.set(deltaY);
-    
+
     // Start the drag manually when user holds the mouse button down (works better with dragControls)
     if (e.buttons === 1) {
-      dragControls.start(e as unknown as PointerEvent, { snapToCursor: false });
+      dragControls.start(e, { snapToCursor: false });
     }
   };
 
@@ -442,7 +442,7 @@ export const TransformableCard: React.FC<TransformableCardProps> = ({
         }}
         animate={controls}
         whileHover={{ scale: 1.02 }}
-        onMouseMove={handleMouseMove}
+        onPointerMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={cn(
           "relative min-h-80 w-80 overflow-hidden rounded-md bg-white p-6 border-2 border-indigo-400 dark:border-indigo-600 shadow-md dark:bg-gray-800 transition-all",

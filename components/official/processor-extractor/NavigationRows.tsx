@@ -5,7 +5,7 @@ import { getDataAtPath } from "./utils/json-path-navigation-util";
 import { PathArray } from "./types";
 
 export interface NavigationRowsProps {
-  originalData: any;
+  originalData: unknown;
   currentPath: PathArray;
   onKeySelect: (rowIndex: number, key: string) => void;
   onContextMenu?: (e: React.MouseEvent, path: PathArray) => void;

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectCanvasIsAvailable, type CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import { selectCanvasIsAvailable, type CanvasContent, type CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import IconButton from "@/components/official/IconButton";
 
 export interface ContentBlockAction {
@@ -38,8 +38,8 @@ export interface ContentBlockWrapperProps {
     // Canvas integration
     enableCanvas?: boolean;
     canvasType?: CanvasContentType;
-    canvasData?: any;
-    canvasMetadata?: Record<string, any>;
+    canvasData?: CanvasContent["data"];
+    canvasMetadata?: CanvasContent["metadata"];
     taskId?: string; // Task ID for canvas deduplication
     
     // Save/Download functionality

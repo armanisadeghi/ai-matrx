@@ -1,4 +1,5 @@
 // utils/jsonFormatting.ts
+import type { JsonValue } from "@/types/json";
 
 /**
  * Checks if a string matches ISO date format
@@ -12,7 +13,7 @@ export const isISODate = (str: string): boolean => {
 /**
  * Format values consistently for display, handling special cases like dates
  */
-export const formatValue = (val: any): string => {
+export const formatValue = (val: JsonValue): string => {
     if (val === null) return 'null';
     if (typeof val === 'string' && isISODate(val)) {
         return JSON.stringify(new Date(val).toISOString());
@@ -23,7 +24,7 @@ export const formatValue = (val: any): string => {
 /**
  * Get the appropriate text color class based on value type
  */
-export const getValueColorClass = (value: any, disabled: boolean): string => {
+export const getValueColorClass = (value: JsonValue, disabled: boolean): string => {
     if (disabled) return 'text-muted-foreground';
 
     if (value === null) return 'text-red-500';
@@ -36,7 +37,7 @@ export const getValueColorClass = (value: any, disabled: boolean): string => {
 
     const valueType = typeof value;
     if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
-        return colorMap[valueType] || '';
+        return colorMap[valueType] ?? '';
     }
     return '';
 };
@@ -44,7 +45,7 @@ export const getValueColorClass = (value: any, disabled: boolean): string => {
 /**
  * Check if an array is small and simple enough to render inline
  */
-export const isSimpleArray = (value: any[]): boolean => {
+export const isSimpleArray = (value: JsonValue[]): boolean => {
     return value.length <= 4 && value.every(item =>
         typeof item !== 'object' ||
         (item === null) ||
@@ -52,7 +53,7 @@ export const isSimpleArray = (value: any[]): boolean => {
     );
 };
 
-export const stabilizeData = (data: any): any => {
+export const stabilizeData = (data: JsonValue): JsonValue => {
     if (data === null || data === undefined) return data;
 
     if (typeof data === 'string') {
@@ -68,9 +69,9 @@ export const stabilizeData = (data: any): any => {
     }
 
     if (typeof data === 'object') {
-        const stabilized: Record<string, any> = {};
+        const stabilized: Record<string, JsonValue> = {};
         for (const key of Object.keys(data).sort()) { // Sort keys for stable order
-            stabilized[key] = stabilizeData(data[key]);
+            stabilized[key] = stabilizeData((data as Record<string, JsonValue>)[key] ?? null);
         }
         return stabilized;
     }

@@ -140,7 +140,7 @@ const VIEWER_OPTIONS = [
 type ViewerType = (typeof VIEWER_OPTIONS)[number]["value"];
 
 interface DynamicViewerTesterProps {
-    data: any;
+    data: unknown;
     className?: string;
     bookmark?: string;
 }
@@ -175,15 +175,21 @@ export const DynamicViewerTester: React.FC<DynamicViewerTesterProps> = ({ data, 
     };
 
     const renderViewer = () => {
+        // This tester intentionally feeds the SAME unknown data into every
+        // viewer option — including ones whose declared prop shape doesn't
+        // match — to see which viewer the data is actually compatible with.
+        // The per-viewer type is asserted here (not proven); `ViewerErrorBoundary`
+        // around the switch's caller is the runtime safety net for a genuine
+        // mismatch, exactly as this component is designed to exercise.
         switch (selectedViewer) {
             case "RawJsonExplorer":
                 return <RawJsonExplorer pageData={data} />;
             case "LinesViewer":
-                return <LinesViewer data={data} />;
+                return <LinesViewer data={data as import("./lines-viewer").LineItem[]} />;
             case "SectionViewerV2":
                 return <SectionViewerV2 data={data} />;
             case "SectionGroupTab":
-                return <SectionGroupTab data={data} />;
+                return <SectionGroupTab data={data as import("../types").SectionGroup} />;
             case "SectionsViewer":
                 return <SectionsViewer data={data} />;
             case "SectionViewer":
@@ -193,7 +199,7 @@ export const DynamicViewerTester: React.FC<DynamicViewerTesterProps> = ({ data, 
             case "IntelligentViewer":
                 return <IntelligentViewer data={data} bookmark={bookmark} />;
             case "FlatSectionViewer":
-                return <FlatSectionViewer data={data} bookmark={bookmark} />;
+                return <FlatSectionViewer data={data as Record<string, string>} bookmark={bookmark} />;
             default:
                 return (
                     <div className="h-full flex items-center justify-center text-gray-500">

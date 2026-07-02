@@ -27,8 +27,8 @@ interface UnifiedFilterModalProps<T extends BaseListItem> {
   onClose: () => void;
   config: UnifiedListLayoutConfig<T>;
   items: T[];
-  filterValues: Record<string, any>;
-  onFilterValuesChange: (values: Record<string, any>) => void;
+  filterValues: Record<string, unknown>;
+  onFilterValuesChange: (values: Record<string, unknown>) => void;
   sortBy: string;
   onSortChange: (sortBy: string) => void;
 }
@@ -121,7 +121,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
     );
   }, [localFilterValues, localSortBy, customFilters, config.filters]);
 
-  const handleFilterChange = (filterId: string, value: any) => {
+  const handleFilterChange = (filterId: string, value: unknown) => {
     setLocalFilterValues((prev) => ({
       ...prev,
       [filterId]: value,
@@ -130,9 +130,9 @@ export function UnifiedFilterModal<T extends BaseListItem>({
 
   const toggleTag = (filterId: string, tag: string) => {
     setLocalFilterValues((prev) => {
-      const currentTags = prev[filterId] || [];
+      const currentTags = Array.isArray(prev[filterId]) ? (prev[filterId] as string[]) : [];
       const newTags = currentTags.includes(tag)
-        ? currentTags.filter((t: string) => t !== tag)
+        ? currentTags.filter((t) => t !== tag)
         : [...currentTags, tag];
 
       return {
@@ -162,6 +162,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
     // Select filter
     if (filter.type === "select") {
       const options = filterOptions[filter.id] || [];
+      const selectValue = typeof value === "string" ? value : "";
 
       return (
         <div key={filter.id}>
@@ -169,7 +170,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
             {filter.label}
           </label>
           <Select
-            value={value}
+            value={selectValue}
             onValueChange={(newValue) =>
               handleFilterChange(filter.id, newValue)
             }
@@ -195,7 +196,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
     // Tags filter
     if (filter.type === "tags") {
       const options = filterOptions[filter.id] || [];
-      const selectedTags = value || [];
+      const selectedTags = Array.isArray(value) ? (value as string[]) : [];
 
       return (
         <div key={filter.id}>
@@ -232,7 +233,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
             {filter.label}
           </label>
           <Switch
-            checked={value || false}
+            checked={typeof value === "boolean" ? value : false}
             onCheckedChange={(checked) =>
               handleFilterChange(filter.id, checked)
             }
@@ -244,7 +245,7 @@ export function UnifiedFilterModal<T extends BaseListItem>({
     // Multi-select filter (similar to select but allows multiple)
     if (filter.type === "multiselect") {
       const options = filterOptions[filter.id] || [];
-      const selectedValues = value || [];
+      const selectedValues = Array.isArray(value) ? (value as string[]) : [];
 
       return (
         <div key={filter.id}>

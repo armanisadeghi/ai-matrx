@@ -6,9 +6,9 @@ import React, { useMemo, useState } from "react";
 import { PathArray } from "../types";
 
 interface SplitViewProps {
-  originalData: any;
+  originalData: unknown;
   wildcardPath: string;
-  children: (item: any, index: number) => React.ReactNode;
+  children: (item: unknown, index: number) => React.ReactNode;
   maxItems?: number;
   currentPath?: PathArray;
 }
@@ -64,13 +64,13 @@ const SplitView: React.FC<SplitViewProps> = ({
           if (segment.startsWith('Item ')) {
             const itemIndex = parseInt(segment.replace('Item ', ''));
             if (Array.isArray(currentItem) && itemIndex < currentItem.length) {
-              currentItem = currentItem[itemIndex];
+              currentItem = currentItem[itemIndex] as unknown;
             } else {
               return undefined; // Invalid index
             }
           } else {
             // Regular property access
-            currentItem = currentItem[segment];
+            currentItem = (currentItem as Record<string, unknown>)[segment];
           }
         }
         

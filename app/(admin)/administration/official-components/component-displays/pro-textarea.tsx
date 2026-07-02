@@ -134,7 +134,8 @@ export default function ProTextareaDisplay({
               kind: "custom",
               severity: "warning",
               path: "/enabled",
-              message: "Disabled payloads can be saved, but agents may ignore them.",
+              message:
+                "Disabled payloads can be saved, but agents may ignore them.",
               source: "demo custom validator",
             },
           ];
@@ -259,7 +260,14 @@ import { Field } from '@/components/official/Field';
         {/* 1. Bare placeholder — the simplest possible usage */}
         <Variant
           title="1. Bare textarea"
-          features={["placeholder", "voice", "… menu", "clean up", "no label"]}
+          features={[
+            "placeholder",
+            "voice",
+            "… menu",
+            "text stats",
+            "clean up",
+            "no label",
+          ]}
           code={`<ProTextarea
   value={v}
   onChange={(e) => setV(e.target.value)}
@@ -635,9 +643,7 @@ import { Field } from '@/components/official/Field';
                 {jsonValidation?.errors.length ?? 0}
               </div>
               <div className="rounded-md border border-border bg-muted/30 px-3 py-2">
-                <span className="font-semibold text-foreground">
-                  Warnings:
-                </span>{" "}
+                <span className="font-semibold text-foreground">Warnings:</span>{" "}
                 {jsonValidation?.warnings.length ?? 0}
               </div>
             </div>

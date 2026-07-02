@@ -16,6 +16,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { listResultsForFile } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 
@@ -63,12 +64,12 @@ export function useExtractionResultsForFile(
     if (!fileId) return undefined;
     const supabase = createClient();
     const channel = supabase
-      .channel(`page-extraction-results:file:${fileId}`)
+      .channel(uniqueChannelTopic(`page-extraction-results:file:${fileId}`))
       .on(
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "docproc",
           table: "page_extraction_results",
           filter: `file_id=eq.${fileId}`,
         },

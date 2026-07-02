@@ -56,22 +56,27 @@ export const getValueByPath = (data: unknown, pathString: string): unknown => {
   }
 
   const pathSegments = parsePathString(pathString);
-  let current: any = data;
+  let current: unknown = data;
 
   try {
     for (const segment of pathSegments) {
+      if (current === undefined || current === null || typeof current !== 'object') {
+        return undefined;
+      }
+      const currentRecord = current as Record<string, unknown>;
+
       if (segment.type === 'key') {
-        if (segment.value === 'parsed_content' && typeof current.parsed_content === 'string') {
+        if (segment.value === 'parsed_content' && typeof currentRecord.parsed_content === 'string') {
           try {
-            current = JSON.parse(current.parsed_content);
+            current = JSON.parse(currentRecord.parsed_content);
           } catch {
-            current = current.parsed_content;
+            current = currentRecord.parsed_content;
           }
         } else {
-          current = current[segment.value];
+          current = currentRecord[segment.value];
         }
       } else {
-        current = current[segment.value];
+        current = currentRecord[segment.value];
       }
 
       if (current === undefined || current === null) return current;
@@ -168,18 +173,10 @@ export const importBookmarks = (jsonString: string): Bookmark[] => {
 
 // Clean and optionally stringify JSON data
 export const cleanJson = (data: unknown, indent: number, returnAsString: boolean): unknown => {
-  const cleanRecursively = (input: any, visited: WeakSet<object> = new WeakSet()): any => {
+  const cleanRecursively = (input: unknown, visited: WeakSet<object> = new WeakSet()): unknown => {
     if (input === null || typeof input !== 'object') return input;
     if (visited.has(input)) return null;
     visited.add(input);
-
-    if (typeof input === 'string') {
-      try {
-        return cleanRecursively(JSON.parse(input), visited);
-      } catch {
-        return input;
-      }
-    }
 
     if (Array.isArray(input)) {
       return input.map(item => cleanRecursively(item, visited));
@@ -200,18 +197,23 @@ export const formatJson = (data: unknown, indent?: number): string => cleanJson(
 // Get keys at specified path
 export const getKeysAtPath = (data: unknown, path: string[]): string[] => {
   try {
-    let currentData: any = data;
+    let currentData: unknown = data;
 
     for (const key of path) {
       if (key === 'All') continue;
+      if (currentData === undefined || currentData === null || typeof currentData !== 'object') {
+        currentData = undefined;
+        continue;
+      }
+      const currentRecord = currentData as Record<string, unknown>;
       if (key === '*') {
         currentData = Array.isArray(currentData) ? currentData[0] : currentData;
       } else if (key.startsWith('Item ')) {
-        currentData = currentData[parseInt(key.replace('Item ', ''))];
+        currentData = currentRecord[String(parseInt(key.replace('Item ', '')))];
       } else if (key.startsWith('Object ')) {
-        currentData = currentData[parseInt(key.replace('Object ', ''))];
+        currentData = currentRecord[String(parseInt(key.replace('Object ', '')))];
       } else {
-        currentData = currentData[key];
+        currentData = currentRecord[key];
       }
     }
 
@@ -234,19 +236,24 @@ export const getKeysAtPath = (data: unknown, path: string[]): string[] => {
 // Retrieve data at specified path
 export const getDataAtPath = (data: unknown, path: string[]): unknown => {
   try {
-    let currentData: any = data;
+    let currentData: unknown = data;
 
     for (const key of path) {
       if (key === 'All') continue;
+      if (currentData === undefined || currentData === null || typeof currentData !== 'object') {
+        currentData = undefined;
+        continue;
+      }
+      const currentRecord = currentData as Record<string, unknown>;
       if (key === '*') {
         // For wildcards, use the first item (index 0) in the array
         currentData = Array.isArray(currentData) ? currentData[0] : currentData;
       } else if (key.startsWith('Item ')) {
-        currentData = currentData[parseInt(key.replace('Item ', ''))];
+        currentData = currentRecord[String(parseInt(key.replace('Item ', '')))];
       } else if (key.startsWith('Object ')) {
-        currentData = currentData[parseInt(key.replace('Object ', ''))];
+        currentData = currentRecord[String(parseInt(key.replace('Object ', '')))];
       } else {
-        currentData = currentData[key];
+        currentData = currentRecord[key];
       }
     }
 
@@ -332,16 +339,17 @@ export const getPathAndTypeInfo = (data: unknown, currentPath: PathArray): PathW
       return { path: pathString, type: 'Undefined', subtype: null, depth: 0, isEmpty: true, count: 0, readibleType: 'Undefined' };
     }
 
-    const calculateDepth = (val: any, visited: WeakSet<object> = new WeakSet()): number => {
+    const calculateDepth = (val: unknown, visited: WeakSet<object> = new WeakSet()): number => {
       if (!val || typeof val !== 'object' || visited.has(val)) return 0;
       visited.add(val);
       if (Array.isArray(val)) {
         if (val.length === 0) return 1;
         return 1 + Math.max(...val.map(item => calculateDepth(item, visited)), 0);
       }
-      const keys = Object.keys(val);
+      const valRecord = val as Record<string, unknown>;
+      const keys = Object.keys(valRecord);
       if (keys.length === 0) return 1;
-      return 1 + Math.max(...keys.map(key => calculateDepth(val[key], visited)), 0);
+      return 1 + Math.max(...keys.map(key => calculateDepth(valRecord[key], visited)), 0);
     };
 
     const depth = calculateDepth(value);
@@ -395,7 +403,7 @@ export const convertUiPathToExtractorPath = (pathArray: PathArray): string => {
   return accessPath;
 }
 
-export const getWildcardData = (data: any, wildcardPath: string, options = {}) => {
+export const getWildcardData = (data: unknown, wildcardPath: string, options = {}) => {
   return ObjectPathExtractor.extractValueByPath(data, wildcardPath, options);
 };
 

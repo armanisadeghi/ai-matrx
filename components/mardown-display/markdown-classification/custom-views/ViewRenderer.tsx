@@ -2,9 +2,10 @@
 
 import { ViewId, getDefaultViewComponent, getViewComponent } from "./view-registry";
 import { getDefaultViewId } from "../markdown-coordinator";
+import type { AstNode } from "../processors/types";
 
 interface DefaultViewRendererProps {
-    data: any;
+    data: unknown;
     coordinatorId: string;
     className?: string;
     isLoading?: boolean;
@@ -32,7 +33,7 @@ export const DefaultViewRenderer = ({
 
 
 interface DirectViewRendererProps {
-    data: any;
+    data: unknown;
     viewId: ViewId;
     className?: string;
     isLoading?: boolean;
@@ -60,7 +61,7 @@ export const DirectViewRenderer = ({
 
 
 interface AstViewRendererProps {
-    ast: any;
+    ast: AstNode;
     viewId: ViewId;
     className?: string;
     isLoading?: boolean;
@@ -89,7 +90,7 @@ export const AstViewRenderer = ({
 
 
 interface ViewRendererProps {
-    data: any;
+    data: unknown;
     requestedViewId?: ViewId | "default";
     coordinatorId?: string;
     className?: string;

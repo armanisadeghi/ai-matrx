@@ -1,5 +1,5 @@
 // Import your existing utilities
-import { parseMatrxMetadata, MATRX_PATTERN } from '@/features/rich-text-editor/utils/patternUtils'; // adjust import path
+import { parseMatrxMetadata, MATRX_PATTERN, type MatrxMetadata } from '@/features/rich-text-editor/utils/patternUtils'; // adjust import path
 import type { WidgetRule } from '@toast-ui/editor';
 
 // Create a widget-specific pattern WITHOUT 'gs' flags (Toast UI needs this)
@@ -144,9 +144,9 @@ export const matrxWidgetRules: WidgetRule[] = [
 ];
 
 // Optional: Event listener you can add to listen for widget clicks
-export const addMatrxWidgetListener = (callback: (metadata: any) => void) => {
-    document.addEventListener('matrxWidgetClick', (event: any) => {
-        callback(event.detail); // event.detail contains your metadata
+export const addMatrxWidgetListener = (callback: (metadata: MatrxMetadata) => void) => {
+    document.addEventListener('matrxWidgetClick', (event: Event) => {
+        callback((event as CustomEvent<MatrxMetadata>).detail); // event.detail contains your metadata
     });
 };
 

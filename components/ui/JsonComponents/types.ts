@@ -1,4 +1,5 @@
 import React from "react";
+import type { JsonValue } from "@/types/json";
 
 export type JsonData = object | string;
 
@@ -60,21 +61,14 @@ export interface EditableJsonViewerProps extends React.HTMLAttributes<HTMLDivEle
     sampleEntry?: object | string | null
 }
 
-export interface ValidationError {
-    line: number;
-    column: number;
-    message: string;
-}
-
-
 export interface JsonEditorItemProps {
     keyName: string;
-    value: any;
+    value: JsonValue;
     depth: number;
     isExpanded: boolean;
     onToggle: () => void;
-    onEdit: (newKey: string, newValue: any) => void;
-    onAdd: (newKey: string, newValue: any, index: number) => void;
+    onEdit: (newKey: string, newValue: JsonValue) => void;
+    onAdd: (newKey: string, newValue: JsonValue, index: number) => void;
     onDelete: () => void;
     error?: ValidationError;
     lockKeys: boolean;

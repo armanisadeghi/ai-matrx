@@ -12,7 +12,7 @@ interface AdvancedCollapsibleProps {
   icon: ReactNode;
   title: ReactNode;
   initialOpen?: boolean;
-  onStateChange?: (state: any) => void;
+  onStateChange?: (state: boolean) => void;
   children: ReactNode;
   className?: string;
   contentClassName?: string;

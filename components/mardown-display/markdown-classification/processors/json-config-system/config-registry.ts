@@ -5,14 +5,22 @@ import {
     appSuggestionsConfig,
     googleSeoConfig,
 } from "./configs";
+import type { MarkdownConfig } from "./config-processor";
 import { BREAKING_CONFIGS } from "../combined-processor-config-system/configs";
+import type { BreakConfig } from "../combined-processor-config-system/break-config-processor";
 import { STRUCTURED_CONFIGS } from "../structured-ast-config-system/configs";
+import type { StructuredConfig } from "../structured-ast-config-system/structured-ast-processor";
+
+// The registry is intentionally heterogeneous: each processorType carries a
+// structurally different config shape, discriminated at use by
+// `PROCESSOR_CONFIG_TYPE_MAP` / the processor that consumes it.
+type JsonProcessorConfig = MarkdownConfig | BreakConfig[] | StructuredConfig | Record<string, never>;
 
 interface JsonProcessorConfigDefinition {
     id: string;
     name: string;
     type: string;
-    config: any;
+    config: JsonProcessorConfig;
     description: string;
     processorType: "jsonConfig" | "breakConfig" | "noConfig" | "structuredAst";
 }

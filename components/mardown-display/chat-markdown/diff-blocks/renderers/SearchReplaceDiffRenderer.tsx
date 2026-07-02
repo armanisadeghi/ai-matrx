@@ -28,24 +28,20 @@ import { GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { Prism as SyntaxHighlighterBase } from "react-syntax-highlighter";
+import type { SyntaxHighlighterProps } from "react-syntax-highlighter";
 import {
   vscDarkPlus,
   vs,
 } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import type { SearchReplaceBlock } from "../types";
 
-// Type assertion for React 19 compatibility
-const SyntaxHighlighter = SyntaxHighlighterBase as any;
-
-interface SearchReplaceData {
-  search: string;
-  replace: string;
-  searchComplete: boolean;
-  replaceComplete: boolean;
-  isComplete: boolean;
-}
+// react-syntax-highlighter's class component predates React 19's stricter JSX
+// element-type checking; the library's own prop types are sound, so we cast
+// the component type (not the props) to keep prop-level type safety.
+const SyntaxHighlighter = SyntaxHighlighterBase as unknown as React.FC<SyntaxHighlighterProps>;
 
 interface SearchReplaceDiffRendererProps {
-  data: SearchReplaceData;
+  data: SearchReplaceBlock;
   language?: string;
   isStreamActive?: boolean;
   className?: string;

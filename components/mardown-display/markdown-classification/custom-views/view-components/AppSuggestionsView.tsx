@@ -7,7 +7,7 @@ interface AppSuggestion {
     app_name?: string;
     app_description?: string;
     image_description?: string;
-    [key: string]: any; // Allow for other properties
+    [key: string]: unknown; // Allow for other properties
 }
 
 interface AppSuggestionsData {
@@ -15,7 +15,7 @@ interface AppSuggestionsData {
         suggestions?: AppSuggestion[];
         title?: string;
     };
-    [key: string]: any; // Allow for other properties
+    [key: string]: unknown; // Allow for other properties
 }
 
 interface AppSuggestionsDisplayProps {

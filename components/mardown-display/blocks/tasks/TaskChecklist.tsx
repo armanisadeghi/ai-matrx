@@ -218,8 +218,9 @@ const TaskChecklist = ({
           return true;
         }
 
-        if (items[i].children) {
-          const found = updateTaskInArray(items[i].children!);
+        const children = items[i].children;
+        if (children) {
+          const found = updateTaskInArray(children);
           if (found) return true;
         }
       }
@@ -254,8 +255,9 @@ const TaskChecklist = ({
             return true;
           }
 
-          if (items[i].children) {
-            const found = addSubtaskToParent(items[i].children!);
+          const children = items[i].children;
+          if (children) {
+            const found = addSubtaskToParent(children);
             if (found) return true;
           }
         }
@@ -277,8 +279,9 @@ const TaskChecklist = ({
             return true;
           }
 
-          if (items[i].children) {
-            const found = addTaskRelativeToTarget(items[i].children!);
+          const children = items[i].children;
+          if (children) {
+            const found = addTaskRelativeToTarget(children);
             if (found) return true;
           }
         }
@@ -302,8 +305,9 @@ const TaskChecklist = ({
           return true;
         }
 
-        if (items[i].children) {
-          const found = removeTaskFromArray(items[i].children!);
+        const children = items[i].children;
+        if (children) {
+          const found = removeTaskFromArray(children);
           if (found) return true;
         }
       }

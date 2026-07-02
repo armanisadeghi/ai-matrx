@@ -62,7 +62,18 @@ function normalizedToLegacyResult(
   normalized: NormalizedFile,
   file: File,
 ): UploadedFileResult {
-  const url = normalized.url ?? "";
+  if (!normalized.url) {
+    // `upload(...)` is called with `createShareLink: true`, which is expected
+    // to always stitch a browser-safe URL onto the NormalizedFile. A missing
+    // URL here means that durable-URL step silently failed — surface it
+    // loudly instead of masking it as an empty-string URL that downstream
+    // consumers would otherwise treat as "no image" rather than "upload
+    // partially failed".
+    throw new Error(
+      `Upload of "${file.name}" completed without a durable URL (fileId: ${normalized.fileId ?? "none"})`,
+    );
+  }
+  const url = normalized.url;
   const metadata = synthesizeMetadata(file);
   const details: EnhancedFileDetails = getFileDetailsByUrl(
     url,

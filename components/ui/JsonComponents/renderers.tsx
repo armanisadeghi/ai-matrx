@@ -3,9 +3,10 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { formatValue, getValueColorClass } from './utils';
+import type { JsonValue } from '@/types/json';
 
 interface ArrayItemProps {
-    item: any;
+    item: JsonValue;
     itemPath: string;
     index: number;
     isLastItem: boolean;
@@ -35,7 +36,7 @@ export const ArrayItem: React.FC<ArrayItemProps> = ({
 };
 
 interface InlineArrayProps {
-    arr: any[];
+    arr: JsonValue[];
     disabled: boolean;
 }
 
@@ -56,7 +57,7 @@ export const InlineArray: React.FC<InlineArrayProps> = ({ arr, disabled }) => {
     );
 };
 
-export const ValueDisplay: React.FC<{ value: any; disabled: boolean }> = ({ value, disabled }) => {
+export const ValueDisplay: React.FC<{ value: JsonValue; disabled: boolean }> = ({ value, disabled }) => {
     return (
         <span className={cn("text-md", getValueColorClass(value, disabled))}>
             {formatValue(value)}

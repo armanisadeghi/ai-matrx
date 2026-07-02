@@ -74,9 +74,6 @@ const MathProblemBlock: React.FC<MathProblemBlockProps> = ({ problemData: initia
             canvasData={problemData}
             canvasMetadata={{
                 title: problem.title,
-                course: problem.course_name,
-                topic: problem.topic_name,
-                module: problem.module_name
             }}
             onDownload={handleDownload}
             onUpload={handleUpload}

@@ -105,7 +105,7 @@ function extractNestedListText(list: AstNode): string[] {
 
 interface IntroOutroListProcessorInput {
     ast: AstNode;
-    config: any;
+    config: Record<string, unknown>;
 }
 
 export function introOutroNestedListProcessor({ ast, config }: IntroOutroListProcessorInput): OutputContent {

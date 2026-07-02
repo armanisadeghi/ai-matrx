@@ -1060,7 +1060,7 @@ export const ProTextarea = React.forwardRef<
                     title={
                       menuMode === "boundAgent"
                         ? (selectedAgentName ?? "Bound agent")
-                        : activeAgentAction!.popoverTitle
+                        : (activeAgentAction?.popoverTitle ?? "Agent action")
                     }
                     phase={agentAction.phase}
                     isBusy={agentAction.isBusy}

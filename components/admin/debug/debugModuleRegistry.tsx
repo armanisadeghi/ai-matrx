@@ -23,7 +23,7 @@ export interface DebugModule {
   id: string;
   name: string;
   icon: LucideIcon;
-  component: ComponentType<any>;
+  component: ComponentType;
   description: string;
   color?: string; // Optional custom color for the icon
 }

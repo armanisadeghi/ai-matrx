@@ -87,7 +87,8 @@ export function processStructuredAST(nodes: OutputNode[], config: StructuredConf
                         (!trigger.content || node.content === trigger.content)
                     ) {
                         const childContent = collectAllChildContent(node);
-                        currentGroup[fieldKey] = ((currentGroup[fieldKey] as string[]) || []).concat(childContent);
+                        const existing = currentGroup[fieldKey];
+                        currentGroup[fieldKey] = (Array.isArray(existing) ? existing : []).concat(childContent);
                     }
                 }
                 // Handle specific content path

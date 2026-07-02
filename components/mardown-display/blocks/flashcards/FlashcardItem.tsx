@@ -7,7 +7,7 @@ import type { MarkdownStyleConfig } from "@/components/mardown-display/chat-mark
 import { CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import type { ReviewResult } from "@/features/flashcards/types";
 
-const centeredParagraph = ({ node, children, ...props }: any) => (
+const centeredParagraph = ({ node, children, ...props }: React.ComponentProps<"p"> & { node?: unknown }) => (
   <p className="text-center" {...props}>{children}</p>
 );
 

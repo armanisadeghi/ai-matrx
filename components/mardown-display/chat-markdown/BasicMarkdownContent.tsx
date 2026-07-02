@@ -59,6 +59,7 @@ function splitWithVariables(text: string): React.ReactNode[] {
 }
 
 import type { Components, ExtraProps } from "react-markdown";
+import type { Element } from "hast";
 
 /** Props react-markdown passes to a `<code>` renderer/element — the only fields this file reads off `child.props`. */
 type MarkdownCodeElementProps = React.HTMLAttributes<HTMLElement> &
@@ -117,7 +118,7 @@ const getDirectionFontSize = (direction: "rtl" | "ltr") => {
 // Simple List Item Component
 const ListItemComponent: React.FC<{
   children: React.ReactNode;
-  node?: any;
+  node?: Element;
 }> = ({ children, node }) => {
   // Detect direction for list item content
   const itemText =
@@ -129,7 +130,10 @@ const ListItemComponent: React.FC<{
   const itemDirection = detectTextDirection(itemText);
 
   // Check if this is a task list item (contains a checkbox)
-  const isTaskItem = node?.properties?.className?.includes("task-list-item");
+  const nodeClassName = node?.properties?.className;
+  const isTaskItem = Array.isArray(nodeClassName)
+    ? nodeClassName.includes("task-list-item")
+    : typeof nodeClassName === "string" && nodeClassName.includes("task-list-item");
 
   // For task items, just return the content without additional styling.
   // NOTE: do NOT use `display: flex` here — it turns every adjacent text/element
@@ -185,8 +189,8 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
   const directionClasses = getDirectionClasses(textDirection);
 
   // Memoize LinkComponent wrapper to prevent recreation during streaming
-  const LinkWrapper = useMemo(() => {
-    return ({ node, href, children, ...props }: any) => (
+  const LinkWrapper: NonNullable<Components["a"]> = useMemo(() => {
+    return ({ node, href, children, ...props }) => (
       <LinkComponent href={href}>{children}</LinkComponent>
     );
   }, []); // Empty deps - this doesn't need to change
@@ -416,7 +420,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
   const components = useMemo(
     () =>
       ({
-        input: ({ node, type, checked, disabled, ...props }: any) => {
+        input: ({ node, type, checked, disabled, ...props }) => {
           if (type === "checkbox") {
             return (
               <Checkbox
@@ -428,7 +432,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           }
           return <input type={type} {...props} />;
         },
-        p: ({ node, children, ...props }: any) => {
+        p: ({ node, children, ...props }) => {
           // Blank line placeholder — render as an empty line with no extra margin
           const childArray = React.Children.toArray(children);
           if (childArray.length === 1 && childArray[0] === "\u00A0") {
@@ -454,13 +458,16 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           let isMathOnly = false;
 
           if (childArray.length === 1) {
-            const child = childArray[0] as any;
+            const child = childArray[0];
             // Check if it's a React element with katex className
             if (
               child &&
               typeof child === "object" &&
+              "props" in child &&
               child.props &&
-              child.props.className
+              typeof child.props === "object" &&
+              "className" in child.props &&
+              typeof child.props.className === "string"
             ) {
               isMathOnly = child.props.className.includes("katex");
             }
@@ -468,15 +475,22 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
           // Detect direction for this specific paragraph
           // Better text extraction that handles nested React elements
-          const extractTextFromChildren = (children: any): string => {
+          const extractTextFromChildren = (children: React.ReactNode): string => {
             if (typeof children === "string") return children;
             if (Array.isArray(children)) {
               return children
                 .map((child) => extractTextFromChildren(child))
                 .join("");
             }
-            if (children && typeof children === "object" && children.props) {
-              return extractTextFromChildren(children.props.children);
+            if (
+              children &&
+              typeof children === "object" &&
+              "props" in children &&
+              children.props &&
+              typeof children.props === "object" &&
+              "children" in children.props
+            ) {
+              return extractTextFromChildren(children.props.children as React.ReactNode);
             }
             return "";
           };
@@ -507,11 +521,13 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             </p>
           );
         },
-        strong: ({ node, children, ...props }: any) => {
-          const parentTagName = node.parent?.tagName?.toLowerCase() || "";
-          const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-            parentTagName,
-          );
+        strong: ({ node, children, ...props }) => {
+          // NOTE: react-markdown's hast nodes (via hast-util-to-jsx-runtime)
+          // never carry a `.parent` reference, so this can never detect a
+          // heading ancestor — isInHeading is always false. Left as `false`
+          // (not the always-false `node.parent` read it replaced) until real
+          // ancestor tracking is added; see BasicMarkdownContent.tsx audit.
+          const isInHeading = false;
 
           // Detect direction for bold text content
           const boldText =
@@ -533,11 +549,10 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             </strong>
           );
         },
-        em: ({ node, children, ...props }: any) => {
-          const parentTagName = node.parent?.tagName?.toLowerCase() || "";
-          const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-            parentTagName,
-          );
+        em: ({ node, children, ...props }) => {
+          // See the identical note in the `strong` renderer above: react-markdown
+          // hast nodes never carry `.parent`, so this is always false.
+          const isInHeading = false;
 
           // Detect direction for italic text content
           const italicText =
@@ -746,7 +761,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             </pre>
           );
         },
-        code: ({ node, inline, className, children, ...props }: any) => {
+        code: ({ node, className, children, ...props }) => {
           // Fenced code blocks are handled by the `pre` component above.
           // Here we only render inline code spans.
           const langClass = className || "";
@@ -808,7 +823,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           />
         ),
         br: ({ node, ...props }) => <br />,
-        div: ({ node, className, children, ...props }: any) => {
+        div: ({ node, className, children, ...props }) => {
           // Regular div - no special handling needed
           return (
             <div className={className} {...props}>
@@ -816,7 +831,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             </div>
           );
         },
-        span: ({ node, className, children, ...props }: any) => {
+        span: ({ node, className, children, ...props }) => {
           // Regular span - no special handling needed
           return (
             <span className={className} {...props}>
@@ -824,10 +839,10 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             </span>
           );
         },
-        "matrx-variable": ({ node, ...props }: any) => (
-          <MatrxVariableInline {...props} />
+        "matrx-variable": ({ node, ...props }) => (
+          <MatrxVariableInline {...(props as React.ComponentProps<typeof MatrxVariableInline>)} />
         ),
-        table: ({ node, children, ...props }: any) => (
+        table: ({ node, children, ...props }) => (
           <div>
             <div className="my-3 overflow-x-auto rounded-md border border-border">
               <table className="w-full text-sm border-collapse" {...props}>
@@ -847,15 +862,15 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             ) : null}
           </div>
         ),
-        thead: ({ node, children, ...props }: any) => (
+        thead: ({ node, children, ...props }) => (
           <thead className="bg-muted/50" {...props}>
             {children}
           </thead>
         ),
-        tbody: ({ node, children, ...props }: any) => (
+        tbody: ({ node, children, ...props }) => (
           <tbody {...props}>{children}</tbody>
         ),
-        tr: ({ node, children, ...props }: any) => (
+        tr: ({ node, children, ...props }) => (
           <tr
             className="border-t border-border/30 hover:bg-muted/20 transition-colors"
             {...props}
@@ -863,7 +878,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             {children}
           </tr>
         ),
-        th: ({ node, children, ...props }: any) => (
+        th: ({ node, children, ...props }) => (
           <th
             className="px-3 py-1.5 text-left text-xs font-semibold text-foreground border-r border-border/30 last:border-r-0"
             {...props}
@@ -871,7 +886,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             {children}
           </th>
         ),
-        td: ({ node, children, ...props }: any) => (
+        td: ({ node, children, ...props }) => (
           <td
             className="px-3 py-1.5 text-foreground border-r border-border/30 last:border-r-0"
             {...props}

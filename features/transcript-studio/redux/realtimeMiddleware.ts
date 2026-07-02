@@ -23,6 +23,7 @@
 // Pattern stolen from features/notes/redux/realtimeMiddleware.ts.
 import type { Middleware } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { RootState } from "@/lib/redux/store";
 import {
@@ -90,12 +91,12 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
     // Subscribe to sessions table once after the first list fetch
     if (fetchSessionsThunk.fulfilled.match(action) && userId && !sessionsChannel) {
       sessionsChannel = supabase
-        .channel(`studio-sessions-rt:${userId}`)
+        .channel(uniqueChannelTopic(`studio-sessions-rt:${userId}`))
         .on(
           "postgres_changes",
           {
             event: "*",
-            schema: "public",
+            schema: "transcripts",
             table: "studio_sessions",
             filter: `user_id=eq.${userId}`,
           },
@@ -126,14 +127,14 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
         activeSessionId = nextActiveId;
         const sid = nextActiveId;
         activeSessionChannel = supabase
-          .channel(`studio-segments-rt:${sid}`)
+          .channel(uniqueChannelTopic(`studio-segments-rt:${sid}`))
 
           // ── studio_raw_segments ────────────────────────────────────
           .on(
             "postgres_changes",
             {
               event: "INSERT",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_raw_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -152,7 +153,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "UPDATE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_raw_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -171,7 +172,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "DELETE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_raw_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -196,7 +197,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "INSERT",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_cleaned_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -218,7 +219,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "UPDATE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_cleaned_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -249,7 +250,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "DELETE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_cleaned_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -270,7 +271,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "INSERT",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_concept_items",
               filter: `session_id=eq.${sid}`,
             },
@@ -289,7 +290,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "UPDATE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_concept_items",
               filter: `session_id=eq.${sid}`,
             },
@@ -308,7 +309,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "DELETE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_concept_items",
               filter: `session_id=eq.${sid}`,
             },
@@ -326,7 +327,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "INSERT",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_module_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -345,7 +346,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "UPDATE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_module_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -364,7 +365,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "DELETE",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_module_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -385,7 +386,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "*",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_recording_segments",
               filter: `session_id=eq.${sid}`,
             },
@@ -420,7 +421,7 @@ export const transcriptStudioRealtimeMiddleware: Middleware =
             "postgres_changes",
             {
               event: "*",
-              schema: "public",
+              schema: "transcripts",
               table: "studio_documents",
               filter: `session_id=eq.${sid}`,
             },

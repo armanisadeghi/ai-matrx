@@ -16,6 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Plus, Save, Trash2, Loader2, Brain } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { getUserId } from "@/utils/auth/getUserId";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
@@ -64,12 +65,12 @@ export default function MemoryManager() {
     const userId = getUserId();
     if (!userId) return undefined;
     const channel = supabase
-      .channel(`user-memory:${userId}`)
+      .channel(uniqueChannelTopic(`user-memory:${userId}`))
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "users",
           table: "user_memory",
           filter: `user_id=eq.${userId}`,
         },

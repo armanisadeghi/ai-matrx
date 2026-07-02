@@ -2,7 +2,8 @@
 
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { DownloadCloud } from "lucide-react";
+import { DownloadCloud, List } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { ImportShortcutsBrowserModal } from "@/features/agent-shortcuts/components/ImportShortcutsBrowserModal";
@@ -90,14 +91,22 @@ export default function AdminShortcutsPage() {
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
         toolbarSlot={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setImporterOpen(true)}
-          >
-            <DownloadCloud className="h-4 w-4 mr-2" />
-            Import from Shortcut
-          </Button>
+          <>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/administration/system-agents/shortcuts/all">
+                <List className="h-4 w-4 mr-2" />
+                Browse all shortcuts
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImporterOpen(true)}
+            >
+              <DownloadCloud className="h-4 w-4 mr-2" />
+              Import from Shortcut
+            </Button>
+          </>
         }
       />
 

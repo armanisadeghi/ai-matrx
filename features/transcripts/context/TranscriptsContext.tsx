@@ -10,6 +10,7 @@ import React, {
   ReactNode,
 } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import type {
   Transcript,
   CreateTranscriptInput,
@@ -86,10 +87,10 @@ export function TranscriptsProvider({ children }: { children: ReactNode }) {
     fetchAllTranscripts();
 
     const channel = supabase
-      .channel("transcripts-changes")
+      .channel(uniqueChannelTopic("transcripts-changes"))
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "transcripts" },
+        { event: "*", schema: "transcripts", table: "transcripts" },
         () => {
           fetchAllTranscripts();
         },

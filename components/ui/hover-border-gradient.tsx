@@ -18,7 +18,7 @@ export function HoverBorderGradient({
   children: React.ReactNode;
   containerClassName?: string;
   className?: string;
-  as?: any;
+  as?: React.ElementType;
   duration?: number;
   clockwise?: boolean;
 } & React.HTMLAttributes<HTMLElement>) {

@@ -10,19 +10,22 @@
 // fixed-interval poll, which is blind between ticks and wastes calls when
 // nothing is happening.
 //
-// Requirements: `table` is a public-schema table in the `supabase_realtime`
-// publication, RLS-scoped to its owner (so the `<ownerColumn>=eq.<uid>` filter
-// only ever delivers the user's own rows). Mirrors the proven scheduling
-// pattern (features/scheduling/hooks/useRunStream.ts).
+// Requirements: `table` is a table in the `supabase_realtime` publication,
+// RLS-scoped to its owner (so the `<ownerColumn>=eq.<uid>` filter only ever
+// delivers the user's own rows). Mirrors the proven scheduling pattern
+// (features/scheduling/hooks/useRunStream.ts).
 
 import { useEffect, useRef } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export interface UseRunListRealtimeOptions {
-  /** Public-schema run table to watch (must be in supabase_realtime). */
+  /** Run table to watch (must be in supabase_realtime). */
   table: string;
+  /** Postgres schema `table` lives in. Default `public`. */
+  schema?: string;
   /** Fired (debounced) on any INSERT/UPDATE of the user's rows — refetch here. */
   onChange: () => void;
   /** Owner column the table is RLS-scoped + filtered by. Default `user_id`. */
@@ -35,6 +38,7 @@ export interface UseRunListRealtimeOptions {
 
 export function useRunListRealtime({
   table,
+  schema = "public",
   onChange,
   ownerColumn = "user_id",
   enabled = true,
@@ -58,9 +62,9 @@ export function useRunListRealtime({
     };
     const filter = `${ownerColumn}=eq.${userId}`;
     const channel = supabase
-      .channel(`run-list-${table}-${userId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table, filter }, fire)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table, filter }, fire)
+      .channel(uniqueChannelTopic(`run-list-${table}-${userId}`))
+      .on("postgres_changes", { event: "INSERT", schema, table, filter }, fire)
+      .on("postgres_changes", { event: "UPDATE", schema, table, filter }, fire)
       .subscribe((status) => {
         // Realtime can drop silently (network blip, server restart). On a
         // recovered subscription, refetch once so the list can't stay frozen
@@ -79,5 +83,5 @@ export function useRunListRealtime({
       document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
-  }, [enabled, userId, table, ownerColumn, debounceMs]);
+  }, [enabled, userId, table, schema, ownerColumn, debounceMs]);
 }

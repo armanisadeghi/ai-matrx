@@ -23,6 +23,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { listResults } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 
@@ -88,12 +89,16 @@ export function useExtractionResults(
       ? `run_id=eq.${opts.runId}`
       : `job_id=eq.${jobId}`;
     const channel = supabase
-      .channel(`page-extraction-results:${jobId}:${opts.runId ?? "all"}`)
+      .channel(
+        uniqueChannelTopic(
+          `page-extraction-results:${jobId}:${opts.runId ?? "all"}`,
+        ),
+      )
       .on(
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "docproc",
           table: "page_extraction_results",
           filter,
         },
@@ -117,7 +122,7 @@ export function useExtractionResults(
         "postgres_changes",
         {
           event: "UPDATE",
-          schema: "public",
+          schema: "docproc",
           table: "page_extraction_results",
           filter,
         },

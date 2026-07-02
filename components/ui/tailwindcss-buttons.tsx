@@ -4,8 +4,16 @@ import reactElementToJSXString from "react-element-to-jsx-string";
 import { toast } from "sonner";
 import { ButtonsCard } from "../ui/buttons-card";
 
+interface TailwindButtonEntry {
+    name: string;
+    description: string;
+    component: React.ReactNode;
+    showDot?: boolean;
+    code?: string;
+}
+
 export function TailwindcssButtons() {
-    const copy = (button: any) => {
+    const copy = (button: TailwindButtonEntry) => {
         if (button.code) {
             copyToClipboard(button.code);
             return;

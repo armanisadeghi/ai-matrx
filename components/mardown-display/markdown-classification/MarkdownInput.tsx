@@ -46,8 +46,7 @@ const MarkdownInput: React.FC<MarkdownInputProps> = ({
             onClick={handleContainerClick}
         >
             <ResizablePanelGroup
-                // @ts-ignore - direction prop exists but type definitions may be outdated
-                direction="vertical"
+                orientation="vertical"
                 className="h-full"
                 onPointerDown={(e) => e.stopPropagation()}
             >
@@ -73,7 +72,7 @@ const MarkdownInput: React.FC<MarkdownInputProps> = ({
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     components={{
-                                        code: (props) => <CodeComponent mode={mode} {...(props as any)} />,
+                                        code: (props) => <CodeComponent mode={mode} {...props} />,
                                     }}
                                 >
                                     {parsedMarkdown}

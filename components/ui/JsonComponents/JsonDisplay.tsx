@@ -4,7 +4,7 @@ import { cleanJson } from '@/utils/json/json-cleaner-utility';
 import { cn } from '@/lib/utils';
 
 interface JsonDisplayProps {
-  data: any;
+  data: unknown;
   className?: string;
   indentLevel?: number;
   maxHeight?: string;

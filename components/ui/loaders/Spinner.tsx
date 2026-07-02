@@ -62,18 +62,25 @@ interface SpinnerProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'color
     label?: string;
 }
 
+type SpinnerVariantSize = "default" | "xs" | "sm" | "md" | "lg" | "xl";
+
+const normalizeSpinnerSize = (size: ComponentSize): SpinnerVariantSize => {
+    if (size === "icon") return "sm";
+    if (size === "2xl" || size === "3xl") return "xl";
+    return size;
+};
+
 const Spinner = forwardRef<HTMLDivElement, SpinnerProps>(
     ({ className, size = "default", variant = "primary", label, ...props }, ref) => {
         // Normalize size to match spinnerVariants supported sizes
-        const normalizedSize = size === "icon" ? "sm" : size === "2xl" || size === "3xl" ? "xl" : size;
-        
+        const normalizedSize = normalizeSpinnerSize(size);
+
         return (
             <div
                 ref={ref}
                 role="status"
                 aria-label={label || "Loading"}
-                // @ts-ignore - COMPLEX: Size type mismatch - normalizedSize may include "icon" which isn't in spinnerVariants
-                className={cn(spinnerVariants({ size: normalizedSize as any, variant, className }))}
+                className={cn(spinnerVariants({ size: normalizedSize, variant, className }))}
                 {...props}
             >
                 <div className="relative">

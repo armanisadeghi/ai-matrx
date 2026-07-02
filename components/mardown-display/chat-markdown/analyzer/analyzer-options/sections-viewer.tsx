@@ -13,35 +13,35 @@ export interface ContentSection {
 }
 
 // Safety validation functions
-const isValidContentItem = (item: any): item is ContentItem => {
+const isValidContentItem = (item: unknown): item is ContentItem => {
+  if (!item || typeof item !== 'object') return false;
+  const i = item as Record<string, unknown>;
   return (
-    item &&
-    typeof item === 'object' &&
-    typeof item.type === 'string' &&
-    typeof item.content === 'string' &&
-    (item.children === undefined || (Array.isArray(item.children) && item.children.every((child: any) => isValidContentItem(child))))
+    typeof i.type === 'string' &&
+    typeof i.content === 'string' &&
+    (i.children === undefined || (Array.isArray(i.children) && i.children.every((child: unknown) => isValidContentItem(child))))
   );
 };
 
-const isValidContentSection = (section: any): section is ContentSection => {
+const isValidContentSection = (section: unknown): section is ContentSection => {
+  if (!section || typeof section !== 'object') return false;
+  const s = section as Record<string, unknown>;
   return (
-    section &&
-    typeof section === 'object' &&
-    typeof section.type === 'string' &&
-    Array.isArray(section.children) &&
-    section.children.every((item: any) => isValidContentItem(item))
+    typeof s.type === 'string' &&
+    Array.isArray(s.children) &&
+    s.children.every((item: unknown) => isValidContentItem(item))
   );
 };
 
-const isValidContentData = (data: any): data is ContentSection[] => {
+const isValidContentData = (data: unknown): data is ContentSection[] => {
   return (
     Array.isArray(data) &&
-    data.every((section: any) => isValidContentSection(section))
+    data.every((section: unknown) => isValidContentSection(section))
   );
 };
 
 // JSON Fallback Component
-const JsonFallback = ({ data, onCopy }: { data: any; onCopy: () => void }) => {
+const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) => {
   const [copied, setCopied] = useState(false);
   
   const handleCopy = async () => {
@@ -267,16 +267,16 @@ const extractSummaryFromSection = (section: ContentSection): string => {
   return 'Content Section';
 };
 
-const SectionsViewer = ({ data }: { data: any }) => {
+const SectionsViewer = ({ data }: { data: unknown }) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const [copiedData, setCopiedData] = useState<boolean>(false);
-  
+
   // Safety check: if data is not in expected format, show JSON fallback
   if (!isValidContentData(data)) {
     return <JsonFallback data={data} onCopy={() => setCopiedData(true)} />;
   }
 
-  const safeData = data as ContentSection[];
+  const safeData = data;
   const selectedSection = safeData[selectedSectionIndex] || safeData[0];
   
   const copyToClipboard = async () => {

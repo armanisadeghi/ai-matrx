@@ -8,7 +8,7 @@ interface ChatCollapsibleWrapperProps {
     title: ReactNode;
     controls?: ReactNode; // Optional controls that render outside the trigger
     initialOpen?: boolean;
-    onStateChange?: (state: any) => void;
+    onStateChange?: (state: boolean) => void;
     children: ReactNode;
     className?: string;
     maxWidth?: string;

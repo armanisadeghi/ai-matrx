@@ -315,12 +315,13 @@ export function uploadQuizState(): Promise<QuizState> {
  * Get questions that were answered incorrectly
  */
 export function getIncorrectQuestions(state: QuizState): OriginalQuestion[] {
-  if (!state.results || state.results.incorrectQuestionIds.length === 0) {
+  const results = state.results;
+  if (!results || results.incorrectQuestionIds.length === 0) {
     return [];
   }
 
-  return state.originalQuestions.filter(q => 
-    state.results!.incorrectQuestionIds.includes(q.id)
+  return state.originalQuestions.filter(q =>
+    results.incorrectQuestionIds.includes(q.id)
   );
 }
 

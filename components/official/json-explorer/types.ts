@@ -4,7 +4,7 @@ export type PathSegment = [number, string]; // [rowIndex, selectedKey]
 export type PathArray = PathSegment[];
 
 export interface JSONNodeValue {
-    value: any;
+    value: unknown;
     type: string;
     name?: string;
 }
@@ -37,7 +37,7 @@ export interface BookmarksDialogProps {
 }
 
 export interface NavigationRowsProps {
-  originalData: any;
+  originalData: unknown;
   currentPath: PathArray;
   onKeySelect: (rowIndex: number, key: string) => void;
   onContextMenu?: (e: React.MouseEvent, path: PathArray) => void;

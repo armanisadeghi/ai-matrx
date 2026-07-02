@@ -377,8 +377,8 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
       const formattedTable = generateMarkdownTable();
       await navigator.clipboard.writeText(formattedTable);
       toast.success("Table copied to clipboard");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy table");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy table");
     }
   };
 
@@ -388,8 +388,8 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
         JSON.stringify(tableData.normalizedData, null, 2),
       );
       toast.success("JSON copied to clipboard");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy JSON");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy JSON");
     }
   };
 
@@ -401,8 +401,8 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
       } else {
         copyTableToClipboard();
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy markdown");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy markdown");
     }
   };
 
@@ -433,8 +433,8 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
           className: "font-medium",
         },
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download CSV");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to download CSV");
     }
   };
 
@@ -470,8 +470,8 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
           className: "font-medium",
         },
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download Markdown");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to download Markdown");
     }
   };
 

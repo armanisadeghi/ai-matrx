@@ -18,6 +18,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   isAllJobsView,
@@ -64,12 +65,12 @@ export function usePageRunsRealtime(opts: {
     if (!fileId || !effectiveJobId || !activeRunId) return undefined;
     const supabase = createClient();
     const channel = supabase
-      .channel(`page-runs-rt:${activeRunId}`)
+      .channel(uniqueChannelTopic(`page-runs-rt:${activeRunId}`))
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "docproc",
           table: "page_extraction_page_runs",
           filter: `run_id=eq.${activeRunId}`,
         },

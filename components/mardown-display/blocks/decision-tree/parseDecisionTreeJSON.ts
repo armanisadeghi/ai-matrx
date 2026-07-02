@@ -146,73 +146,6 @@ export function validateDecisionTree(tree: DecisionTreeData): boolean {
 }
 
 /**
- * Creates a sample decision tree for testing/demo purposes
- */
-export function createSampleDecisionTree(): DecisionTreeData {
-  return {
-    title: 'Bug Diagnosis Guide',
-    description: 'Step-by-step workflow for diagnosing and handling software bugs',
-    root: {
-      id: 'root',
-      question: 'Is the error reproducible?',
-      description: 'Can you consistently reproduce the error with the same steps?',
-      type: 'question',
-      priority: 'high',
-      yes: {
-        id: 'root-yes',
-        question: 'Does it happen in production?',
-        description: 'Is this error occurring in the live production environment?',
-        type: 'question',
-        priority: 'high',
-        yes: {
-          id: 'root-yes-yes',
-          action: 'Create hotfix immediately',
-          description: 'This is a critical production issue that needs immediate attention',
-          type: 'action',
-          priority: 'high',
-          category: 'urgent',
-          estimatedTime: '2-4 hours'
-        },
-        no: {
-          id: 'root-yes-no',
-          action: 'Log as development issue',
-          description: 'Create a detailed bug report and assign to development team',
-          type: 'action',
-          priority: 'medium',
-          category: 'development',
-          estimatedTime: '30 minutes'
-        }
-      },
-      no: {
-        id: 'root-no',
-        question: 'Are there any error logs or patterns?',
-        description: 'Check if there are any logged errors or patterns that might help',
-        type: 'question',
-        priority: 'medium',
-        yes: {
-          id: 'root-no-yes',
-          action: 'Analyze logs and monitor patterns',
-          description: 'Review error logs and set up monitoring to capture more data',
-          type: 'action',
-          priority: 'medium',
-          category: 'monitoring',
-          estimatedTime: '1-2 hours'
-        },
-        no: {
-          id: 'root-no-no',
-          action: 'Monitor and collect more data',
-          description: 'Set up additional logging and monitoring to gather more information',
-          type: 'action',
-          priority: 'low',
-          category: 'monitoring',
-          estimatedTime: '1 hour'
-        }
-      }
-    }
-  };
-}
-
-/**
  * Converts decision tree data back to JSON format
  */
 export function decisionTreeToJSON(tree: DecisionTreeData): string {
@@ -335,37 +268,4 @@ export function findAllPaths(tree: DecisionTreeData): Array<{
   
   traverse(tree.root);
   return paths;
-}
-
-/**
- * Attempts to parse either JSON or create from template
- */
-export function parseDecisionTreeContent(content: string): DecisionTreeData {
-  // First try to parse as JSON
-  try {
-    return parseDecisionTreeJSON(content);
-  } catch (jsonError) {
-    // If JSON parsing fails, create a simple decision tree
-    console.warn('JSON parsing failed, creating simple decision tree:', jsonError);
-    
-    return {
-      title: 'Decision Tree',
-      description: 'Generated from content',
-      root: {
-        id: 'root',
-        question: 'Do you need help with this decision?',
-        type: 'question',
-        yes: {
-          id: 'root-yes',
-          action: 'Review the available options and make an informed choice',
-          type: 'action'
-        },
-        no: {
-          id: 'root-no',
-          action: 'Proceed with confidence in your decision',
-          type: 'action'
-        }
-      }
-    };
-  }
 }

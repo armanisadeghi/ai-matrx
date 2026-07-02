@@ -175,6 +175,8 @@ import {
   FcBusiness,
 } from "react-icons/fc";
 import { FaBrave } from "react-icons/fa6";
+import type { IconType } from "react-icons";
+import type { LucideIcon } from "lucide-react";
 import { isLucideModuleIconExport } from "@/utils/icons/lucide-module-icon";
 import {
   isMatrxSvgIconValue,
@@ -182,9 +184,15 @@ import {
   parseMatrxSvgPublicPath,
 } from "@/utils/icons/matrx-public-svg-registry";
 
+/**
+ * Union of the two icon component shapes this registry holds: Lucide's
+ * ForwardRefExoticComponent icons and react-icons' function-component IconType.
+ */
+export type IconComponentType = LucideIcon | IconType;
+
 // Statically imported Lucide icons map (commonly used icons for optimal bundle size)
 // Exported so callers can spread it as a scope without importing the full lucide namespace.
-export const staticLucideIconMap: Record<string, any> = {
+export const staticLucideIconMap: Record<string, IconComponentType> = {
   Zap,
   Home,
   User,
@@ -324,7 +332,7 @@ export const staticLucideIconMap: Record<string, any> = {
 };
 
 // Custom icons map for manually imported icons (react-icons)
-const customIconMap: Record<string, any> = {
+const customIconMap: Record<string, IconComponentType> = {
   FaBrave,
   FcGoogle,
   FcBrokenLink,
@@ -360,7 +368,7 @@ const customIconMap: Record<string, any> = {
 };
 
 // Cache for dynamically loaded icons to prevent re-importing
-const dynamicIconCache: Record<string, any> = {};
+const dynamicIconCache: Record<string, IconComponentType> = {};
 
 /**
  * Finite list for the curated icon gallery: every statically bundled Lucide name,
@@ -466,7 +474,7 @@ const IconResolver: React.FC<IconResolverProps> = ({
   style,
 }) => {
   const svgSrc = iconName ? parseMatrxSvgPublicPath(iconName) : null;
-  const [DynamicIcon, setDynamicIcon] = useState<any>(null);
+  const [DynamicIcon, setDynamicIcon] = useState<IconComponentType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -505,9 +513,10 @@ const IconResolver: React.FC<IconResolverProps> = ({
       setIsLoading(true);
       try {
         const iconModule = await import("lucide-react");
-        const IconComponent = iconModule[iconName as keyof typeof iconModule];
+        const exported: unknown = iconModule[iconName as keyof typeof iconModule];
 
-        if (IconComponent) {
+        if (isLucideModuleIconExport(iconName, exported)) {
+          const IconComponent = exported as LucideIcon;
           dynamicIconCache[iconName] = IconComponent;
           setDynamicIcon(() => IconComponent);
         } else {
@@ -595,7 +604,7 @@ export const getIconComponent = (
  */
 export const renderIcon = (
   iconName: string | null | undefined,
-  props?: React.ComponentProps<any>,
+  props?: React.ComponentProps<IconComponentType>,
   fallbackIcon: string = "Zap",
 ) => {
   const IconComponent = getIconComponent(iconName, fallbackIcon);

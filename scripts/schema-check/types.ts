@@ -91,6 +91,8 @@ export interface Context {
   deadOldNames: Set<string>;
   /** Whether to include WARN findings (the `--warn` flag). */
   warn: boolean;
+  /** Canonical `<name>Db(client)` schema-binder functions found in utils/supabase/, e.g. "docprocDb" -> "docproc". */
+  schemaBinders: Map<string, string>;
 }
 
 export type Check = (ctx: Context) => Finding[];

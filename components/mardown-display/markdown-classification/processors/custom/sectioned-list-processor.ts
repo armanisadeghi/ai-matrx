@@ -127,7 +127,7 @@ function processTable(table: AstNode): { headers: string[]; rows: string[][] } {
 
 interface SectionedListProcessorInput {
     ast: AstNode;
-    config?: any;
+    config?: Record<string, unknown>;
 }
 
 export function sectionedListProcessor({ ast, config }: SectionedListProcessorInput): OutputContent {

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Copy, Check, FileText, Code, Table, List, Hash, Type, BookOpen, 
+import {
+  Copy, Check, FileText, Code, Table, List, Hash, Type, BookOpen,
   CheckSquare, Braces, Minus, Archive, Link, Quote, Image,
   Info, AlertCircle, HelpCircle, Star
 } from 'lucide-react';
+import type { JsonValue } from '@/types/json';
 
 // ==========================================
 // SECTION TYPE DEFINITIONS
@@ -99,7 +100,7 @@ export type CommonSectionType =
 export interface BaseContentItem {
   type: string;
   content: string;
-  [key: string]: any;
+  [key: string]: JsonValue | undefined;
 }
 
 export interface BaseSection {
@@ -107,41 +108,42 @@ export interface BaseSection {
   type?: string;
   content?: string[];
   children?: BaseContentItem[];
-  [key: string]: any;
+  [key: string]: JsonValue | BaseContentItem[] | undefined;
 }
 
-export const isValidString = (value: any): value is string => {
+export const isValidString = (value: unknown): value is string => {
   return typeof value === 'string';
 };
 
-export const isValidStringArray = (value: any): value is string[] => {
+export const isValidStringArray = (value: unknown): value is string[] => {
   return Array.isArray(value) && value.every(item => typeof item === 'string');
 };
 
-export const isValidContentItem = (item: any): item is BaseContentItem => {
+export const isValidContentItem = (item: unknown): item is BaseContentItem => {
   return (
-    item &&
+    !!item &&
     typeof item === 'object' &&
-    typeof item.type === 'string' &&
-    typeof item.content === 'string'
+    typeof (item as Record<string, unknown>).type === 'string' &&
+    typeof (item as Record<string, unknown>).content === 'string'
   );
 };
 
-export const isValidContentItemArray = (items: any): items is BaseContentItem[] => {
+export const isValidContentItemArray = (items: unknown): items is BaseContentItem[] => {
   return Array.isArray(items) && items.every(item => isValidContentItem(item));
 };
 
-export const isValidBaseSection = (section: any): section is BaseSection => {
+export const isValidBaseSection = (section: unknown): section is BaseSection => {
   if (!section || typeof section !== 'object') return false;
-  
-  const hasStringContent = section.content && isValidStringArray(section.content);
-  const hasChildrenContent = section.children && isValidContentItemArray(section.children);
-  const hasSectionType = typeof section.section === 'string' || typeof section.type === 'string';
-  
+
+  const s = section as Record<string, unknown>;
+  const hasStringContent = !!s.content && isValidStringArray(s.content);
+  const hasChildrenContent = !!s.children && isValidContentItemArray(s.children);
+  const hasSectionType = typeof s.section === 'string' || typeof s.type === 'string';
+
   return hasSectionType && (hasStringContent || hasChildrenContent);
 };
 
-export const isValidBaseSectionArray = (data: any): data is BaseSection[] => {
+export const isValidBaseSectionArray = (data: unknown): data is BaseSection[] => {
   return Array.isArray(data) && data.every(section => isValidBaseSection(section));
 };
 
@@ -383,7 +385,7 @@ export const stringArrayToText = (strings: string[]): string => {
 // ==========================================
 
 interface JsonFallbackProps {
-  data: any;
+  data: unknown;
   onCopy?: () => void;
   title?: string;
   subtitle?: string;
@@ -455,7 +457,7 @@ export const JsonFallback: React.FC<JsonFallbackProps> = ({
 };
 
 interface InvalidDataDisplayProps {
-  data: any;
+  data: unknown;
   title?: string;
   className?: string;
 }
@@ -525,12 +527,17 @@ export const extractSummaryFromContent = (content: string[] | string, maxLength:
   return cleanText.length > maxLength ? cleanText.substring(0, maxLength) + '...' : cleanText;
 };
 
-export const countValidItems = (items: any[]): number => {
+export const countValidItems = (items: unknown[]): number => {
   if (!Array.isArray(items)) return 0;
-  return items.filter(item => item != null && 
-    ((typeof item === 'string' && item.trim()) || 
-     (typeof item === 'object' && item.content && typeof item.content === 'string' && item.content.trim()))
-  ).length;
+  return items.filter(item => {
+    if (item == null) return false;
+    if (typeof item === 'string') return !!item.trim();
+    if (typeof item === 'object') {
+      const content = (item as Record<string, unknown>).content;
+      return typeof content === 'string' && !!content.trim();
+    }
+    return false;
+  }).length;
 };
 
 // ==========================================
@@ -571,44 +578,46 @@ export const useSelectedIndex = (maxIndex: number) => {
 /**
  * Detects if content has enhanced parsed data (parsed_json, parsed_table)
  */
-export const hasEnhancedContent = (data: any): boolean => {
+export const hasEnhancedContent = (data: unknown): boolean => {
   if (!data || typeof data !== 'object') return false;
-  
+
+  const d = data as Record<string, unknown>;
   // Check for parsed_json or parsed_table at root level
-  if (data.parsed_json || data.parsed_table) return true;
-  
+  if (d.parsed_json || d.parsed_table) return true;
+
   // Check for parsed content in children
-  if (Array.isArray(data.children)) {
-    return data.children.some((child: any) => hasEnhancedContent(child));
+  if (Array.isArray(d.children)) {
+    return d.children.some((child: unknown) => hasEnhancedContent(child));
   }
-  
+
   // Check for parsed content in nested objects
-  if (Array.isArray(data.content)) {
-    return data.content.some((item: any) => hasEnhancedContent(item));
+  if (Array.isArray(d.content)) {
+    return d.content.some((item: unknown) => hasEnhancedContent(item));
   }
-  
+
   return false;
 };
 
 /**
  * Extracts enhanced content when available, falls back to regular content
  */
-export const getEnhancedContent = (data: any): string => {
-  if (!data) return '';
-  
+export const getEnhancedContent = (data: unknown): string => {
+  if (!data || typeof data !== 'object') return '';
+
+  const d = data as Record<string, unknown>;
   // Priority: parsed_json > parsed_table > regular content
-  if (data.parsed_json) {
-    return typeof data.parsed_json === 'string' ? data.parsed_json : JSON.stringify(data.parsed_json, null, 2);
+  if (d.parsed_json) {
+    return typeof d.parsed_json === 'string' ? d.parsed_json : JSON.stringify(d.parsed_json, null, 2);
   }
-  
-  if (data.parsed_table) {
-    return typeof data.parsed_table === 'string' ? data.parsed_table : JSON.stringify(data.parsed_table, null, 2);
+
+  if (d.parsed_table) {
+    return typeof d.parsed_table === 'string' ? d.parsed_table : JSON.stringify(d.parsed_table, null, 2);
   }
-  
+
   // Fallback to regular content
-  if (typeof data.content === 'string') return data.content;
-  if (Array.isArray(data.content)) return data.content.join('\n');
-  
+  if (typeof d.content === 'string') return d.content;
+  if (Array.isArray(d.content)) return d.content.join('\n');
+
   return '';
 };
 
@@ -646,37 +655,38 @@ export const groupDynamicKeys = (keys: string[]): Record<string, string[]> => {
 /**
  * Enhanced type detection that handles extensions and registrations
  */
-export const detectSectionType = (data: any): string => {
+export const detectSectionType = (data: unknown): string => {
   if (!data || typeof data !== 'object') return 'unknown_section';
-  
+
+  const d = data as Record<string, unknown>;
   // Direct type field
-  if (typeof data.type === 'string') {
-    return data.type;
+  if (typeof d.type === 'string') {
+    return d.type;
   }
-  
+
   // Key-based detection (for key-value objects)
-  const keys = Object.keys(data);
+  const keys = Object.keys(d);
   if (keys.length === 1) {
     const key = keys[0];
     const { baseKey } = normalizeDynamicKey(key);
-    
+
     // Check if it's a known section type
     if (baseKey.endsWith('_section')) {
       return baseKey;
     }
   }
-  
+
   // Enhanced content detection
-  if (hasEnhancedContent(data)) {
-    if (data.parsed_json) return 'json_block_section';
-    if (data.parsed_table) return 'table_block_section';
+  if (hasEnhancedContent(d)) {
+    if (d.parsed_json) return 'json_block_section';
+    if (d.parsed_table) return 'table_block_section';
   }
-  
+
   // Fallback detection
-  if (data.section || data.content) {
+  if (d.section || d.content) {
     return 'other_section_type';
   }
-  
+
   return 'unknown_section';
 };
 
@@ -697,7 +707,7 @@ export const preprocessContentForLineBreaks = (content: string): string => {
 interface TypeHandler {
   icon: React.ReactNode;
   label: string;
-  renderer?: React.ComponentType<any>;
+  renderer?: React.ComponentType<Record<string, unknown>>;
 }
 
 class TypeHandlerRegistry {

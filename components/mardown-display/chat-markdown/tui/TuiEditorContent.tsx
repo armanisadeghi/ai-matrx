@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import type { Editor as TuiEditorReactComp } from "@toast-ui/react-editor";
+import type { EditorPlugin, WidgetRule } from "@toast-ui/editor";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import EditorLoading from "../../text-block/editorLoading";
 
@@ -203,9 +204,9 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
  }, ref) => {
     const editorRef = useRef<TuiEditorReactComp>(null);
     const mode = useThemeMode();
-    const [colorSyntaxPlugin, setColorSyntaxPlugin] = useState<any>(null);
+    const [colorSyntaxPlugin, setColorSyntaxPlugin] = useState<EditorPlugin | null>(null);
     const [isClient, setIsClient] = useState(false);
-    const [widgetRules, setWidgetRules] = useState<any[]>([]);
+    const [widgetRules, setWidgetRules] = useState<WidgetRule[]>([]);
     const [convertedContent, setConvertedContent] = useState<string>("");
     const [isThemeReady, setIsThemeReady] = useState(false);
     const hasAppliedInitialTheme = useRef(false);
@@ -224,7 +225,7 @@ const TuiEditorContent = React.forwardRef<TuiEditorContentRef, TuiEditorContentP
     }, [mode, isActive, editMode]);
     
     // Helper function to apply theme - extracted for reuse
-    const applyTheme = useCallback((editorElement: any) => {
+    const applyTheme = useCallback((editorElement: HTMLElement | null | undefined) => {
         try {
             const editorContainer = editorElement?.querySelector?.(".toastui-editor-defaultUI");
             if (editorContainer) {
@@ -478,14 +479,15 @@ export type { TuiEditorContentProps, TuiEditorContentRef };
 
 // Helper function to add event listener for MATRX widget clicks
 export const addMatrxWidgetListener = (callback: (data: { id: string, name: string }) => void) => {
-    const handleMatrxClick = (event: any) => {
-        if (event.detail) {
-            callback(event.detail);
+    const handleMatrxClick = (event: Event) => {
+        const detail = (event as CustomEvent<{ id: string; name: string }>).detail;
+        if (detail) {
+            callback(detail);
         }
     };
-    
+
     window.addEventListener('matrxWidgetClick', handleMatrxClick);
-    
+
     return () => {
         window.removeEventListener('matrxWidgetClick', handleMatrxClick);
     };

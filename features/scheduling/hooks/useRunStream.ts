@@ -8,6 +8,7 @@
 
 import { useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeRun, upsertRun } from "../redux/runs/slice";
 import { patchTask } from "../redux/tasks/slice";
@@ -34,12 +35,12 @@ export function useRunStream(taskId: string | null | undefined) {
     if (!taskId) return undefined;
 
     const channel = supabase
-      .channel(`sch_run-${taskId}`)
+      .channel(uniqueChannelTopic(`sch_run-${taskId}`))
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "scheduler",
           table: "sch_run",
           filter: `task_id=eq.${taskId}`,
         },
@@ -57,7 +58,7 @@ export function useRunStream(taskId: string | null | undefined) {
         "postgres_changes",
         {
           event: "UPDATE",
-          schema: "public",
+          schema: "scheduler",
           table: "sch_task",
           filter: `id=eq.${taskId}`,
         },

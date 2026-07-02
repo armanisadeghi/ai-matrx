@@ -16,7 +16,7 @@ export interface BookmarkDialogProps {
   bookmarkDescription: string;
   setBookmarkDescription: (desc: string) => void;
   onSave: () => void;
-  originalData: any;
+  originalData: unknown;
   configKey?: string;
 }
 

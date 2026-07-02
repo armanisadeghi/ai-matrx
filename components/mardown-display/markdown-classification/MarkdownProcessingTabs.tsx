@@ -13,7 +13,7 @@ import { AstNode } from "./processors/types";
 interface MarkdownProcessingTabsProps {
     ast: AstNode | null;
     parsedMarkdown: string;
-    processedData: any;
+    processedData: unknown;
     selectedCoordinatorId: string;
     selectedViewId: ViewId | null;
     mode: "light" | "dark";
@@ -103,7 +103,7 @@ const MarkdownProcessingTabs = ({
 
 
                     {processedData || ast ? (
-                        isDirectAstRenderer ? (
+                        isDirectAstRenderer && ast && selectedViewId ? (
                             <AstViewRenderer
                                 viewId={selectedViewId}
                                 ast={ast}

@@ -1745,7 +1745,6 @@ export type Database = {
           metadata: Json
           name: string
           organization_id: string
-          owner_id: string | null
           preview_url: string | null
           provider: string
           provider_voice_id: string
@@ -1777,7 +1776,6 @@ export type Database = {
           metadata?: Json
           name: string
           organization_id: string
-          owner_id?: string | null
           preview_url?: string | null
           provider: string
           provider_voice_id: string
@@ -1809,7 +1807,6 @@ export type Database = {
           metadata?: Json
           name?: string
           organization_id?: string
-          owner_id?: string | null
           preview_url?: string | null
           provider?: string
           provider_voice_id?: string

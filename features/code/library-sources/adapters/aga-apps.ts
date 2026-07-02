@@ -48,6 +48,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
   icon: SquareStack,
   tabIdPrefix: PREFIX,
   multiField: false,
+  realtimeTable: { schema: "app", table: "definition" },
 
   parseTabId,
   makeTabId,

@@ -1196,7 +1196,11 @@ const AdvancedTranscriptViewer = ({
           <div className="py-4 space-y-4">
             <RadioGroup
               value={copyFormat}
-              onValueChange={(v) => setCopyFormat(v as any)}
+              onValueChange={(v) => {
+                if (v === "text-only" || v === "with-timestamps" || v === "complete") {
+                  setCopyFormat(v);
+                }
+              }}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="text-only" id="text-only" />

@@ -15,6 +15,10 @@
  *   the natural home for future actions). It floats over the text (no reserved
  *   right gutter) and only appears while the mouse is over the field — never
  *   from focus alone — so it stays out of the way while typing.
+ * - **Text stats** — character/word counts via a pinned stats bar (ON by
+ *   default when the "…" menu is shown) and a "Text stats" detail view in the
+ *   menu. Pass `enableTextStats={false}` to hide entirely; users can toggle the
+ *   bar off from the menu.
  * - **Submit button** — opt-in via `onSubmit`. Renders a transparent Send
  *   tap button at the right edge. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit.
@@ -97,6 +101,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  ProTextFieldStatsBar,
+  ProTextFieldStatsMenuItems,
+  ProTextFieldStatsPanel,
+} from "./ProTextFieldStats";
+
+/** Popover view state for ProInput's "…" menu. */
+type ProInputMenuMode = "menu" | "stats";
 
 /** Real HTMLInputElement with optional expando methods set by ProInput. */
 export interface ProInputElement extends HTMLInputElement {
@@ -116,6 +128,13 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
   protectTranscription?: boolean;
   /** Show the Copy action inside the "…" menu. Default: true. */
   showCopyButton?: boolean;
+  /**
+   * Text stats (chars, words) in the "…" menu + optional pinned stats bar. ON
+   * by default when the menu is shown. Pass `false` to hide entirely.
+   */
+  enableTextStats?: boolean;
+  /** Initial pinned stats bar visibility. Default: true. */
+  defaultShowTextStatsBar?: boolean;
   /**
    * Voice input + mic device picker. Default true. Set false for search bars,
    * filters, and any field where Enter must submit a form — mic controls inside
@@ -186,6 +205,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       onRequestClose,
       protectTranscription = true,
       showCopyButton = true,
+      enableTextStats = true,
+      defaultShowTextStatsBar = true,
       enableVoice = true,
       onSubmit,
       submitDisabled,
@@ -209,6 +230,10 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const inputId = idProp ?? (floatingLabel ? generatedId : undefined);
     const [hasCopied, setHasCopied] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuMode, setMenuMode] = useState<ProInputMenuMode>("menu");
+    const [showTextStatsBar, setShowTextStatsBar] = useState(
+      defaultShowTextStatsBar,
+    );
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
@@ -364,6 +389,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const showClear = clearable && hasContent;
     // The "…" menu has at least one item when copy is enabled (extensible).
     const showMenu = !disabled && showCopyButton;
+    const showTextStats = enableTextStats && showMenu;
+    const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
     const rightPadding = rightPaddingClass(!!onSubmit, showClear);
 
     const isInvalid =
@@ -495,7 +522,13 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             )}
 
             {showMenu && (
-              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+              <Popover
+                open={menuOpen}
+                onOpenChange={(open) => {
+                  setMenuOpen(open);
+                  if (!open) setMenuMode("menu");
+                }}
+              >
                 <PopoverTrigger asChild>
                   {hasCopied ? (
                     <CheckTapButton
@@ -517,21 +550,52 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                   align="end"
                   side="bottom"
                   sideOffset={6}
-                  className="w-48 p-1"
+                  className={cn(
+                    "p-0",
+                    menuMode === "stats" ? "w-56" : "w-48 p-1",
+                  )}
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  {showCopyButton && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void handleCopy();
-                        setMenuOpen(false);
-                      }}
-                      className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </button>
+                  {menuMode === "menu" ? (
+                    <div className="flex flex-col p-1">
+                      {showCopyButton && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleCopy();
+                            setMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </button>
+                      )}
+                      {showTextStats && (
+                        <>
+                          {showCopyButton && (
+                            <div
+                              className="my-1 h-px bg-border"
+                              role="separator"
+                            />
+                          )}
+                          <ProTextFieldStatsMenuItems
+                            showStatsBar={showTextStatsBar}
+                            onToggleStatsBar={() =>
+                              setShowTextStatsBar((prev) => !prev)
+                            }
+                            onOpenStatsPanel={() => setMenuMode("stats")}
+                          />
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <ProTextFieldStatsPanel
+                      text={valueAsString}
+                      variant="input"
+                      onBack={() => setMenuMode("menu")}
+                      onClose={() => setMenuOpen(false)}
+                    />
                   )}
                 </PopoverContent>
               </Popover>
@@ -662,6 +726,10 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {showPinnedTextStatsBar && (
+          <ProTextFieldStatsBar text={valueAsString} variant="input" />
+        )}
       </div>
     );
   },

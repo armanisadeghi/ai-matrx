@@ -133,7 +133,7 @@ const extractSummaryFromSection = (section: ContentSection): string => {
   return 'Content Section';
 };
 
-const SectionViewerWithSidebar = ({ data }: { data: any }) => {
+const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const [showJsonExplorer, setShowJsonExplorer] = useState<boolean>(false);
   const { copied, copy } = useCopyToClipboard();

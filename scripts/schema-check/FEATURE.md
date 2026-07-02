@@ -50,7 +50,7 @@ printed on every run.
 | `schema-exposure` | error | a `.schema("S")` whose `S` is not live, not PostgREST-exposed (`pgrst.db_schemas` → 404), or not in the `pnpm db-types --schema` list (no generated types). |
 | `dead-relations-registry` | error | a `scripts/dead-relations.json` entry whose declared **new home** isn't live — it guides every agent to a wrong schema (it caught `reg.*` when the tables were in `rag`). |
 | `dead-relations` | error | refs to a registered MOVED/RETIRED **old** name — bare `.from("notes")`, `public.notes`, `Database["public"]["Tables"]["notes"]`. The original guard; rich per-move messages. |
-| `direct-from-schema` | error/warn | every direct `.from()/.schema()` vs the live snapshot: `.schema("S").from("X")` where `(S,X)` isn't live but `X` lives elsewhere; bare `.from("X")` on the `supabase` client that resolves to public but `X` moved. |
+| `direct-from-schema` | error/warn | every direct `.from()/.schema()` vs the live snapshot: `.schema("S").from("X")` where `(S,X)` isn't live but `X` lives elsewhere; bare `.from("X")` on the `supabase` client (or a local alias/cast of it) that resolves to public but `X` moved; `.from("X")` through a canonical schema-binder (`docprocDb(supabase)` or an alias of one) validated against that binder's bound schema. Also resolves `X` through a local `const TABLE = "the_name"` string constant, not just a literal argument. |
 | `typed-refs` | error/warn | hand-written `Database["S"]["Tables"]["X"]` where `(S,X)` is not a live table. |
 | `qualified-refs` | error/warn | raw `schema.table` strings (SQL/filters) pointing at a relation that moved — e.g. `public.organizations` → `iam.organizations`. |
 
@@ -74,10 +74,25 @@ is introduced** — one registry, every guard reads it.
 
 - **`scripts/` is not scanned** — it's dev tooling full of example `schema.table`
   strings and `.from()` patterns (including these guards).
-- **Schema binders are skipped, not mis-flagged.** `graveyardDb(supabase).from("ai_runs")`
-  (a call-expression receiver; `graveyardDb` = `client.schema("graveyard")`) is
-  treated as unknown — bare-from is judged **only** on the plain `supabase` client.
-- **Comments / log strings → WARN**, not error (often correct documentation of a move).
+- **Schema binders are resolved, not skipped.** `docprocDb`/`workspaceDb`/`graveyardDb`/etc.
+  (any `export function xDb(client) { return client.schema("S") }` under
+  `utils/supabase/*.ts`) are auto-discovered by [`schema-binders.ts`](./schema-binders.ts)
+  and validated exactly like an explicit `.schema("S")` — `docprocDb(supabase).from("Y")`
+  and `const db = docprocDb(supabase); db.from("Y")` both check `Y` against `docproc`.
+  A receiver that's still genuinely unknown (unrecognized function, destructured param)
+  stays skipped — no false positives.
+- **A `const TABLE = "the_name"` string constant resolves too**, not just a literal
+  `.from("the_name")` argument — see [`table-ref-resolution.ts`](./table-ref-resolution.ts).
+  This (plus the previous bullet) is exactly how `page_extraction_jobs` hid from
+  every prior pass: `const TABLE = "page_extraction_jobs"` + `const db = supabase as any`
+  (a bare-alias cast, also now resolved — see [`chain-schema.ts`](./chain-schema.ts))
+  in `features/page-extraction/api/jobs.ts`. `direct-from-schema` and `dead-relations`
+  share this resolution so a fix one check recognizes, the other does too.
+- **Comments / log strings → WARN**, not error (often correct documentation of a
+  move) — implemented in `qualified-refs`. **`dead-relations` has no such
+  awareness**: its `bare` match runs on raw line text, so a `.from("old_name")`
+  inside a JSDoc example reads as real code (ERROR, not WARN). Keep doc examples
+  off real dead-relation names, or use a placeholder.
 - **Views are live relations** — `.from("a_view")` is never "dead".
 - **`// schema-check-ignore`** on a line silences a finding there.
 
@@ -86,8 +101,14 @@ is introduced** — one registry, every guard reads it.
 Drop a module in `checks/` that calls `registerCheck("name", fn)`, then add its
 import to [`checks/index.ts`](./checks/index.ts). It receives the shared
 [`Context`](./types.ts) (`snapshot`, `codeFiles`, `dbTypesSchemas`,
-`deadRelations`, `deadOldNames`, `warn`) and returns `Finding[]`. That's the whole
-extension story — when a reorg bites a tab, encode it so it never does again.
+`deadRelations`, `deadOldNames`, `warn`, `schemaBinders`) and returns `Finding[]`.
+For a check that reasons about `.from()`/`.table()` calls, use
+[`table-ref-resolution.ts`](./table-ref-resolution.ts) (table-name-variable
+resolution) and [`chain-schema.ts`](./chain-schema.ts) (client-alias/binder
+schema resolution) rather than re-deriving them — `direct-from-schema` and
+`dead-relations` share both so they never disagree on the same call site. That's
+the whole extension story — when a reorg bites a tab, encode it so it never does
+again.
 
 ## Files
 
@@ -96,16 +117,30 @@ extension story — when a reorg bites a tab, encode it so it never does again.
 - `snapshot.ts` / `get-current-schema.ts` — load / refresh the live-truth snapshot.
 - `generated-files.ts` — the autogenerated-artifact registry.
 - `db-types-parse.ts` — parse `database.types.ts` + the `db-types --schema` list.
+- `schema-binders.ts` — auto-discovers `utils/supabase/*Db.ts` schema-binder helpers (name → bound schema).
+- `table-ref-resolution.ts` — resolves `.from(X)` where `X` is a literal OR a local `const X = "name"` string constant.
+- `chain-schema.ts` — resolves the effective schema of a `.from()` call chain: explicit `.schema()`, a binder call/alias, or a public-client alias/cast.
 - `checks/` — one file per check, self-registering.
 
 ## Future enhancements
 
-- Resolve known schema binders (`graveyardDb` → `graveyard`) so `binder(x).from("Y")`
-  is validated instead of skipped.
 - An RPC-name check (`.rpc("x")` vs `pg_proc`).
+- Comment-awareness for `dead-relations` (downgrade to WARN like `qualified-refs` does).
 
 ## Change Log
 
+- **2026-07-02** — Closed the exact gap that let `page_extraction_jobs`
+  (`docproc.page_extraction_jobs`, registered in `dead-relations.json`) 404 in
+  prod undetected: `features/page-extraction/api/jobs.ts` held the table name in
+  `const TABLE = "page_extraction_jobs"` and queried through `const db = supabase as any`
+  — a literal-only, known-receiver-only regex never saw either. Added
+  `table-ref-resolution.ts` (resolves `.from(TABLE)` via a local string const) and
+  `chain-schema.ts` (resolves a bare-alias/cast of `supabase`, and any canonical
+  `<name>Db(client)` schema-binder call or alias of one, via `schema-binders.ts`
+  auto-discovering `utils/supabase/*.ts`) — shared by both `direct-from-schema`
+  and `dead-relations` so they agree. Added `utils/supabase/docprocDb.ts`
+  (the schema was missing a canonical binder despite ~20 ad-hoc `.schema("docproc")`
+  call sites elsewhere already using the right schema by hand).
 - **2026-06-28** — Built. Added `public.schema_truth_snapshot()` RPC + committed
   snapshot; 8 pluggable checks; autogenerated-file banner; wired `check:schema*`
   + advisory step in `pnpm validate`; repointed `check:dead-relations` (pre-commit)

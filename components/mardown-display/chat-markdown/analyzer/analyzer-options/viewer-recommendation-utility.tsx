@@ -9,54 +9,63 @@ export interface ViewerRecommendation {
   sampleCount?: number;
 }
 
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
 // Pattern detection functions for each viewer (ordered by specificity)
 
 // 1. SectionGroupTab - Most specific structure
-const detectSectionGroupPattern = (data: any): ViewerRecommendation | null => {
+const detectSectionGroupPattern = (data: unknown): ViewerRecommendation | null => {
+  const record = asRecord(data);
   if (
-    data &&
-    typeof data === 'object' &&
-    Array.isArray(data.sections) &&
-    data.sections.length > 0 &&
-    data.sections.every((section: any) =>
-      section &&
-      typeof section === 'object' &&
-      typeof section.position === 'number' &&
-      Array.isArray(section.lines) &&
-      section.lines.every((line: any) =>
-        line &&
-        typeof line === 'object' &&
-        typeof line.position === 'number' &&
-        typeof line.category === 'string' &&
-        typeof line.line === 'string' &&
-        line.metadata &&
-        line.segmentation
-      )
-    )
+    record &&
+    Array.isArray(record.sections) &&
+    record.sections.length > 0 &&
+    record.sections.every((section: unknown) => {
+      const s = asRecord(section);
+      return (
+        s &&
+        typeof s.position === 'number' &&
+        Array.isArray(s.lines) &&
+        s.lines.every((line: unknown) => {
+          const l = asRecord(line);
+          return (
+            l &&
+            typeof l.position === 'number' &&
+            typeof l.category === 'string' &&
+            typeof l.line === 'string' &&
+            l.metadata &&
+            l.segmentation
+          );
+        })
+      );
+    })
   ) {
     return {
       viewerName: 'SectionGroupTab',
       confidence: 'high',
       reasoning: 'Data structure matches SectionGroup with sections containing lines with metadata and segmentation',
       matchedPattern: 'SectionGroup',
-      sampleCount: data.sections.length
+      sampleCount: record.sections.length
     };
   }
   return null;
 };
 
 // 2. SectionViewer/SectionViewerWithSidebar - ClassifiedSection pattern
-const detectClassifiedSectionPattern = (data: any): ViewerRecommendation | null => {
+const detectClassifiedSectionPattern = (data: unknown): ViewerRecommendation | null => {
   if (
     Array.isArray(data) &&
     data.length > 0 &&
-    data.every((item: any) =>
-      item &&
-      typeof item === 'object' &&
-      typeof item.section === 'string' &&
-      Array.isArray(item.content) &&
-      item.content.every((c: any) => typeof c === 'string')
-    )
+    data.every((item: unknown) => {
+      const i = asRecord(item);
+      return (
+        i &&
+        typeof i.section === 'string' &&
+        Array.isArray(i.content) &&
+        i.content.every((c: unknown) => typeof c === 'string')
+      );
+    })
   ) {
     return {
       viewerName: 'SectionViewer / SectionViewerWithSidebar',
@@ -70,18 +79,20 @@ const detectClassifiedSectionPattern = (data: any): ViewerRecommendation | null 
 };
 
 // 3. section-viewer-V2 - SectionData pattern
-const detectSectionDataPattern = (data: any): ViewerRecommendation | null => {
+const detectSectionDataPattern = (data: unknown): ViewerRecommendation | null => {
   if (
     Array.isArray(data) &&
     data.length > 0 &&
-    data.every((item: any) =>
-      item &&
-      typeof item === 'object' &&
-      typeof item.section === 'string' &&
-      Array.isArray(item.content) &&
-      item.content.every((c: any) => typeof c === 'string') &&
-      !item.section_type // Distinguish from ClassifiedSection which might have section_type
-    )
+    data.every((item: unknown) => {
+      const i = asRecord(item);
+      return (
+        i &&
+        typeof i.section === 'string' &&
+        Array.isArray(i.content) &&
+        i.content.every((c: unknown) => typeof c === 'string') &&
+        !i.section_type // Distinguish from ClassifiedSection which might have section_type
+      );
+    })
   ) {
     return {
       viewerName: 'section-viewer-V2',
@@ -95,22 +106,22 @@ const detectSectionDataPattern = (data: any): ViewerRecommendation | null => {
 };
 
 // 4. sections-viewer - ContentSection pattern
-const detectContentSectionPattern = (data: any): ViewerRecommendation | null => {
+const detectContentSectionPattern = (data: unknown): ViewerRecommendation | null => {
   if (
     Array.isArray(data) &&
     data.length > 0 &&
-    data.every((section: any) =>
-      section &&
-      typeof section === 'object' &&
-      typeof section.type === 'string' &&
-      Array.isArray(section.children) &&
-      section.children.every((item: any) =>
-        item &&
-        typeof item === 'object' &&
-        typeof item.type === 'string' &&
-        typeof item.content === 'string'
-      )
-    )
+    data.every((section: unknown) => {
+      const s = asRecord(section);
+      return (
+        s &&
+        typeof s.type === 'string' &&
+        Array.isArray(s.children) &&
+        s.children.every((item: unknown) => {
+          const c = asRecord(item);
+          return c && typeof c.type === 'string' && typeof c.content === 'string';
+        })
+      );
+    })
   ) {
     return {
       viewerName: 'sections-viewer',
@@ -124,17 +135,14 @@ const detectContentSectionPattern = (data: any): ViewerRecommendation | null => 
 };
 
 // 5. lines-viewer - LineItem pattern
-const detectLineItemPattern = (data: any): ViewerRecommendation | null => {
+const detectLineItemPattern = (data: unknown): ViewerRecommendation | null => {
   if (
     Array.isArray(data) &&
     data.length > 0 &&
-    data.every((item: any) =>
-      item &&
-      typeof item === 'object' &&
-      typeof item.type === 'string' &&
-      typeof item.content === 'string' &&
-      !item.children // Distinguish from ContentSection children
-    )
+    data.every((item: unknown) => {
+      const i = asRecord(item);
+      return i && typeof i.type === 'string' && typeof i.content === 'string' && !i.children; // Distinguish from ContentSection children
+    })
   ) {
     return {
       viewerName: 'lines-viewer',
@@ -148,17 +156,16 @@ const detectLineItemPattern = (data: any): ViewerRecommendation | null => {
 };
 
 // 6. FlatSectionViewer - Flat section pattern (specific key-value object)
-const detectFlatSectionPattern = (data: any): ViewerRecommendation | null => {
+const detectFlatSectionPattern = (data: unknown): ViewerRecommendation | null => {
+  const record = asRecord(data);
   if (
-    data &&
-    typeof data === 'object' &&
-    !Array.isArray(data) &&
-    Object.keys(data).length > 0 &&
-    Object.values(data).every(value => typeof value === 'string') &&
+    record &&
+    Object.keys(record).length > 0 &&
+    Object.values(record).every(value => typeof value === 'string') &&
     // Check if keys follow section naming patterns
-    Object.keys(data).some(key => 
-      key.includes('_section') || 
-      key.includes('header_') || 
+    Object.keys(record).some(key =>
+      key.includes('_section') ||
+      key.includes('header_') ||
       key.includes('paragraph') ||
       key.includes('text') ||
       /[a-zA-Z_]+_\d+$/.test(key) // Pattern with numbers like header_h2_section_2
@@ -169,56 +176,58 @@ const detectFlatSectionPattern = (data: any): ViewerRecommendation | null => {
       confidence: 'high',
       reasoning: 'Data structure is a flat object with section-like keys and string content - perfect for FlatSectionViewer with consistent numbering and raw/rendered toggle',
       matchedPattern: 'Flat Section Object',
-      sampleCount: Object.keys(data).length
+      sampleCount: Object.keys(record).length
     };
   }
   return null;
 };
 
 // 7. IntelligentViewer - Key-Value Object pattern (generic fallback)
-const detectKeyValuePattern = (data: any): ViewerRecommendation | null => {
+const detectKeyValuePattern = (data: unknown): ViewerRecommendation | null => {
+  const record = asRecord(data);
   if (
-    data &&
-    typeof data === 'object' &&
-    !Array.isArray(data) &&
-    Object.keys(data).length > 0 &&
-    Object.values(data).every(value => typeof value === 'string')
+    record &&
+    Object.keys(record).length > 0 &&
+    Object.values(record).every(value => typeof value === 'string')
   ) {
     return {
       viewerName: 'IntelligentViewer',
       confidence: 'medium',
       reasoning: 'Data structure is a flat object with string values - suitable for key-value rendering',
       matchedPattern: 'Key-Value Object',
-      sampleCount: Object.keys(data).length
+      sampleCount: Object.keys(record).length
     };
   }
   return null;
 };
 
 // 8. IntelligentViewer - Section-with-Children pattern
-const detectSectionWithChildrenPattern = (data: any): ViewerRecommendation | null => {
+const detectSectionWithChildrenPattern = (data: unknown): ViewerRecommendation | null => {
   if (
     Array.isArray(data) &&
     data.length > 0 &&
-    data.every((item: any) =>
-      item &&
-      typeof item === 'object' &&
-      typeof item.type === 'string' &&
-      Array.isArray(item.children) &&
-      item.children.every((child: any) =>
-        child &&
-        typeof child === 'object' &&
-        typeof child.type === 'string' &&
-        typeof child.content === 'string'
-      )
-    ) &&
+    data.every((item: unknown) => {
+      const i = asRecord(item);
+      return (
+        i &&
+        typeof i.type === 'string' &&
+        Array.isArray(i.children) &&
+        i.children.every((child: unknown) => {
+          const c = asRecord(child);
+          return c && typeof c.type === 'string' && typeof c.content === 'string';
+        })
+      );
+    }) &&
     // This is similar to ContentSection but we need to distinguish
     // IntelligentViewer handles this pattern but sections-viewer is more specific
-    !data.every((section: any) => 
-      section.children.every((item: any) => 
-        ['header_h1', 'header_h2', 'header_h3', 'bullet', 'paragraph', 'line_break'].includes(item.type)
-      )
-    )
+    !data.every((section: unknown) => {
+      const s = asRecord(section);
+      const children = s?.children;
+      return Array.isArray(children) && children.every((item: unknown) => {
+        const c = asRecord(item);
+        return c && typeof c.type === 'string' && ['header_h1', 'header_h2', 'header_h3', 'bullet', 'paragraph', 'line_break'].includes(c.type);
+      });
+    })
   ) {
     return {
       viewerName: 'IntelligentViewer',
@@ -232,7 +241,7 @@ const detectSectionWithChildrenPattern = (data: any): ViewerRecommendation | nul
 };
 
 // Main recommendation function
-export const getViewerRecommendation = (data: any): ViewerRecommendation => {
+export const getViewerRecommendation = (data: unknown): ViewerRecommendation => {
   // Try detectors in order of specificity (most specific first)
   const detectors = [
     detectSectionGroupPattern,
@@ -262,7 +271,7 @@ export const getViewerRecommendation = (data: any): ViewerRecommendation => {
 };
 
 // Helper function to get multiple recommendations (useful for debugging)
-export const getAllViewerRecommendations = (data: any): ViewerRecommendation[] => {
+export const getAllViewerRecommendations = (data: unknown): ViewerRecommendation[] => {
   const detectors = [
     { name: 'SectionGroup', fn: detectSectionGroupPattern },
     { name: 'ClassifiedSection', fn: detectClassifiedSectionPattern },
@@ -275,7 +284,7 @@ export const getAllViewerRecommendations = (data: any): ViewerRecommendation[] =
   ];
 
   const recommendations: ViewerRecommendation[] = [];
-  
+
   for (const detector of detectors) {
     const recommendation = detector.fn(data);
     if (recommendation) {
@@ -287,18 +296,25 @@ export const getAllViewerRecommendations = (data: any): ViewerRecommendation[] =
 };
 
 // Quick analysis function for debugging
-export const analyzeDataStructure = (data: any): {
+export const analyzeDataStructure = (data: unknown): {
   dataType: string;
   isArray: boolean;
   arrayLength?: number;
   topLevelKeys?: string[];
-  sampleStructure?: any;
+  sampleStructure?: unknown;
   recommendations: ViewerRecommendation[];
 } => {
   const isArray = Array.isArray(data);
   const dataType = typeof data;
-  
-  let result: any = {
+
+  const result: {
+    dataType: string;
+    isArray: boolean;
+    arrayLength?: number;
+    topLevelKeys?: string[];
+    sampleStructure?: unknown;
+    recommendations: ViewerRecommendation[];
+  } = {
     dataType,
     isArray,
     recommendations: getAllViewerRecommendations(data)
@@ -309,17 +325,18 @@ export const analyzeDataStructure = (data: any): {
     if (data.length > 0) {
       result.sampleStructure = {
         firstItem: data[0],
-        keysInFirstItem: typeof data[0] === 'object' ? Object.keys(data[0]) : null
+        keysInFirstItem: typeof data[0] === 'object' && data[0] !== null ? Object.keys(data[0] as object) : null
       };
     }
   } else if (dataType === 'object' && data !== null) {
-    result.topLevelKeys = Object.keys(data);
+    const record = data as Record<string, unknown>;
+    result.topLevelKeys = Object.keys(record);
     result.sampleStructure = {
-      keyCount: Object.keys(data).length,
-      firstFewKeys: Object.keys(data).slice(0, 3),
-      valueTypes: Object.values(data).slice(0, 3).map(v => typeof v)
+      keyCount: Object.keys(record).length,
+      firstFewKeys: Object.keys(record).slice(0, 3),
+      valueTypes: Object.values(record).slice(0, 3).map(v => typeof v)
     };
   }
 
   return result;
-}; 
+};

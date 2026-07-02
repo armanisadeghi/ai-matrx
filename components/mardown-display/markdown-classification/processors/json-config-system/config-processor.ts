@@ -1,4 +1,5 @@
 import { AstNode, NodeType } from '../types';
+import type { JsonValue } from '@/types/json';
 
 // Update MarkdownConfig to use NodeType for type fields
 export type MarkdownConfig = {
@@ -131,7 +132,7 @@ export interface MarkdownProcessor {
 }
 
 export interface MarkdownProcessorResult {
-  extracted: Record<string, any>; // Consider tightening this type if possible
+  extracted: Record<string, JsonValue>;
   miscellaneous: string[];
 }
 
@@ -178,7 +179,7 @@ function extractData(
   index: number,
   extraction: MarkdownConfig['sections'][number]['extraction'],
   processed: Set<number>
-): any {
+): JsonValue {
   switch (extraction.type) {
     case 'text':
       let text = extractTextFromNode(node).trim();
@@ -236,7 +237,7 @@ function extractData(
       return lines;
 
     case 'nested':
-      const results: any[] = [];
+      const results: JsonValue[] = [];
       if (ast.type !== 'root' || !hasChildren(ast)) return results;
 
       let currentIndex = index + 1;
@@ -266,7 +267,7 @@ function extractData(
 
             // Handle list nodes specially
             if (currNode.type === 'list' && struct.extract.some(ex => ex.matchNext?.type === 'listItem')) {
-              const item: Record<string, any> = {};
+              const item: Record<string, JsonValue> = {};
               if (hasChildren(currNode)) {
                 currNode.children.forEach((listItem: AstNode) => {
                   struct.extract.forEach(ex => {
@@ -306,7 +307,7 @@ function extractData(
               }
             } else {
               // General node handling
-              const item: Record<string, any> = {};
+              const item: Record<string, JsonValue> = {};
               for (const ex of struct.extract) {
                 if (ex.type === 'text') {
                   let text: string | string[] = extractTextFromNode(currNode).trim();

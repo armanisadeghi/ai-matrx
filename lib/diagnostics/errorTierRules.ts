@@ -108,6 +108,17 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "cross-origin-script-error",
+    tier: "yellow",
+    reason:
+      "Browser cross-origin 'Script error.' — CORS hides the real stack; usually a browser extension or third-party CDN worker, not first-party app code.",
+    addedAt: "2026-07-02",
+    match: {
+      source: "runtime-exception",
+      messageIncludes: "Script error",
+    },
+  },
+  {
     id: "resize-observer-loop",
     tier: "yellow",
     reason:
@@ -168,7 +179,10 @@ function asList<T>(v: OneOrMany<T> | undefined): T[] | undefined {
   return Array.isArray(v) ? v : [v];
 }
 
-function someEq<T>(want: OneOrMany<T> | undefined, got: T | undefined): boolean {
+function someEq<T>(
+  want: OneOrMany<T> | undefined,
+  got: T | undefined,
+): boolean {
   const list = asList(want);
   if (!list) return true; // field not constrained
   if (got === undefined || got === null) return false;
@@ -242,7 +256,10 @@ export function classifyTier(e: CapturedError): TierClassification {
 // MATRX-EXCEPTION: `?? ""` is the honest default for an explicitly-optional
 // slug input (pure string derivation for a rule-stub id, not a boundary write).
 function slug(s: string | undefined, fallback: string): string {
-  const base = (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const base = (s ?? "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
   return base || fallback;
 }
 

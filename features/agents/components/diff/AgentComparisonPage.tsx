@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState, useTransition } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -20,7 +21,19 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AgentDiffViewer } from "./AgentDiffViewer";
+
+const AgentDiffViewer = dynamic(
+  () => import("./AgentDiffViewer").then((m) => m.AgentDiffViewer),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 p-4 space-y-3">
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    ),
+  },
+);
 
 interface SideState {
   agentId: string | null;

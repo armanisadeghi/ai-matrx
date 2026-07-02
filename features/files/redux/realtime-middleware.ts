@@ -218,7 +218,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         },
         (payload) => handleVersionPayload(payload),
       )
-      // Permissions — canonical grant store `public.permissions`. Filtered to
+      // Permissions — canonical grant store `iam.permissions`. Filtered to
       // grants made TO this user; the handler additionally guards
       // `resource_type === 'file'` since this table holds grants for every
       // resource type. (org-grant rows have no granted_to_user_id, so they
@@ -227,7 +227,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "iam",
           table: "permissions",
           filter: `granted_to_user_id=eq.${userId}`,
         },

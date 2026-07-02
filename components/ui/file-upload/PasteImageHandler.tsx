@@ -135,8 +135,17 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
               shareLinkPermissionLevel: "read",
             },
           );
+          if (!normalized.url) {
+            // `createShareLink: true` is expected to always stitch a
+            // browser-safe URL onto the NormalizedFile. A missing URL means
+            // that step silently failed — surface it instead of handing
+            // callers a fake empty-string URL.
+            throw new Error(
+              `Pasted image upload completed without a durable URL (fileId: ${normalized.fileId ?? "none"})`,
+            );
+          }
           const result: PasteImageUploadResult = {
-            url: normalized.url ?? "",
+            url: normalized.url,
             type: classifyFileType(file.type),
             fileId: normalized.fileId,
             pageUrl: normalized.shareToken

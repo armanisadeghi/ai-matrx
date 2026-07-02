@@ -24,9 +24,9 @@ import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
 import { useQuestionnaireContext } from "./QuestionnaireContext";
 
-type QuestionOption = { name: string };
+export type QuestionOption = { name: string };
 
-type QuestionSection = {
+export type QuestionSection = {
   title: string;
   intro?: string;
   items?: QuestionOption[];

@@ -27,7 +27,7 @@ export interface BaseListItem {
   id: string;
   name: string;
   description?: string;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 /**
@@ -167,12 +167,12 @@ export interface FilterDefinition<T extends BaseListItem> {
    * @param value - The filter value (type depends on filter type)
    * @returns true if item passes filter
    */
-  filterFn: (item: T, value: any) => boolean;
-  
+  filterFn: (item: T, value: unknown) => boolean;
+
   /**
    * Default value for this filter
    */
-  defaultValue?: any;
+  defaultValue?: unknown;
   
   /**
    * Custom component for rendering this filter
@@ -189,16 +189,16 @@ export interface FilterModalComponentProps<T extends BaseListItem> {
   isOpen: boolean;
   onClose: () => void;
   items: T[];
-  currentFilters: Record<string, any>;
-  onFiltersChange: (filters: Record<string, any>) => void;
+  currentFilters: Record<string, unknown>;
+  onFiltersChange: (filters: Record<string, unknown>) => void;
   sortBy: string;
   onSortChange: (sortBy: string) => void;
 }
 
 export interface CustomFilterComponentProps<T extends BaseListItem> {
   filter: FilterDefinition<T>;
-  value: any;
-  onChange: (value: any) => void;
+  value: unknown;
+  onChange: (value: unknown) => void;
   items: T[];
 }
 
@@ -568,7 +568,7 @@ export interface RenderCardActions<T extends BaseListItem> {
 export interface UnifiedListLayoutState {
   searchTerm: string;
   sortBy: string;
-  filterValues: Record<string, any>;
+  filterValues: Record<string, unknown>;
   viewMode: 'grid' | 'list' | 'tree';
   selectedIds: string[];
   navigatingId: string | null;
@@ -589,7 +589,7 @@ export interface UnifiedListLayoutState {
  */
 export interface FilterState {
   id: string;
-  value: any;
+  value: unknown;
   active: boolean;
 }
 

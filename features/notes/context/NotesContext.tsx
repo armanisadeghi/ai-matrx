@@ -19,6 +19,7 @@ import {
 import { findEmptyNewNote, generateUniqueLabel } from "../utils/noteUtils";
 import type { Note, CreateNoteInput, UpdateNoteInput } from "../types";
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import { toast } from "sonner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
@@ -189,12 +190,12 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     channel = supabase
-      .channel(`notes-realtime:${userId}`)
+      .channel(uniqueChannelTopic(`notes-realtime:${userId}`))
       .on(
         "postgres_changes",
         {
           event: "*",
-          schema: "public",
+          schema: "workbench",
           table: "notes",
           filter: `created_by=eq.${userId}`,
         },

@@ -461,7 +461,7 @@ const ModernKeywordAnalyzerDisplay = ({ data }: { data: KeywordAnalyzerData | Ou
 };
 
 interface ModernKeywordAnalyzerProps {
-  data: any;
+  data: KeywordAnalyzerData | OutputNode[];
   isLoading?: boolean;
 }
 

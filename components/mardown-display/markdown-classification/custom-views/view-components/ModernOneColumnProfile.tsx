@@ -271,7 +271,7 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
 };
 
 interface ModernOneColumnProfileProps {
-  data: any;
+  data: CandidateProfileData;
   isLoading?: boolean;
 }
 

@@ -261,333 +261,333 @@ export const BlockComponents = {
   BasicMarkdownContent,
 
   // CodeBlock is lazy-loaded to avoid circular dependency with Redux
-  CodeBlock: (props: any) => (
+  CodeBlock: (props: React.ComponentProps<typeof CodeBlock>) => (
     <LazyBlockWrapper>
       <CodeBlock {...props} />
     </LazyBlockWrapper>
   ),
 
-  HtmlInlinePreview: (props: any) => (
+  HtmlInlinePreview: (props: React.ComponentProps<typeof HtmlInlinePreview>) => (
     <LazyBlockWrapper>
       <HtmlInlinePreview {...props} />
     </LazyBlockWrapper>
   ),
 
-  ReactCodeBlock: (props: any) => (
+  ReactCodeBlock: (props: React.ComponentProps<typeof ReactCodeBlock>) => (
     <LazyBlockWrapper>
       <ReactCodeBlock {...props} />
     </LazyBlockWrapper>
   ),
 
   // Wrapped lazy components
-  ThinkingVisualization: (props: any) => (
+  ThinkingVisualization: (props: React.ComponentProps<typeof ThinkingVisualization>) => (
     <LazyBlockWrapper>
       <ThinkingVisualization {...props} />
     </LazyBlockWrapper>
   ),
-  ReasoningVisualization: (props: any) => (
+  ReasoningVisualization: (props: React.ComponentProps<typeof ReasoningVisualization>) => (
     <LazyBlockWrapper>
       <ReasoningVisualization {...props} />
     </LazyBlockWrapper>
   ),
-  ConsolidatedReasoningVisualization: (props: any) => (
+  ConsolidatedReasoningVisualization: (props: React.ComponentProps<typeof ConsolidatedReasoningVisualization>) => (
     <LazyBlockWrapper>
       <ConsolidatedReasoningVisualization {...props} />
     </LazyBlockWrapper>
   ),
-  ImageBlock: (props: any) => (
+  ImageBlock: (props: React.ComponentProps<typeof ImageBlock>) => (
     <LazyBlockWrapper>
       <ImageBlock {...props} />
     </LazyBlockWrapper>
   ),
-  VideoBlock: (props: any) => (
+  VideoBlock: (props: React.ComponentProps<typeof VideoBlock>) => (
     <LazyBlockWrapper>
       <VideoBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MatrxFileBlock: (props: any) => (
+  MatrxFileBlock: (props: React.ComponentProps<typeof MatrxFileBlock>) => (
     <LazyBlockWrapper>
       <MatrxFileBlock {...props} />
     </LazyBlockWrapper>
   ),
-  YouTubeEmbedBlock: (props: any) => (
+  YouTubeEmbedBlock: (props: React.ComponentProps<typeof YouTubeEmbedBlock>) => (
     <LazyBlockWrapper>
       <YouTubeEmbedBlock {...props} />
     </LazyBlockWrapper>
   ),
-  TranscriptBlock: (props: any) => (
+  TranscriptBlock: (props: React.ComponentProps<typeof TranscriptBlock>) => (
     <LazyBlockWrapper>
       <TranscriptBlock {...props} />
     </LazyBlockWrapper>
   ),
-  TasksBlock: (props: any) => (
+  TasksBlock: (props: React.ComponentProps<typeof TasksBlock>) => (
     <LazyBlockWrapper>
       <TasksBlock {...props} />
     </LazyBlockWrapper>
   ),
-  StructuredPlanBlock: (props: any) => (
+  StructuredPlanBlock: (props: React.ComponentProps<typeof StructuredPlanBlock>) => (
     <LazyBlockWrapper>
       <StructuredPlanBlock {...props} />
     </LazyBlockWrapper>
   ),
-  FlashcardsBlock: (props: any) => (
+  FlashcardsBlock: (props: React.ComponentProps<typeof FlashcardsBlock>) => (
     <LazyBlockWrapper>
       <FlashcardsBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MultipleChoiceQuiz: (props: any) => (
+  MultipleChoiceQuiz: (props: React.ComponentProps<typeof MultipleChoiceQuiz>) => (
     <LazyBlockWrapper>
       <MultipleChoiceQuiz {...props} />
     </LazyBlockWrapper>
   ),
-  Slideshow: (props: any) => (
+  Slideshow: (props: React.ComponentProps<typeof Slideshow>) => (
     <LazyBlockWrapper>
       <Slideshow {...props} />
     </LazyBlockWrapper>
   ),
-  RecipeViewer: (props: any) => (
+  RecipeViewer: (props: React.ComponentProps<typeof RecipeViewer>) => (
     <LazyBlockWrapper>
       <RecipeViewer {...props} />
     </LazyBlockWrapper>
   ),
-  TimelineBlock: (props: any) => (
+  TimelineBlock: (props: React.ComponentProps<typeof TimelineBlock>) => (
     <LazyBlockWrapper>
       <TimelineBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ResearchBlock: (props: any) => (
+  ResearchBlock: (props: React.ComponentProps<typeof ResearchBlock>) => (
     <LazyBlockWrapper>
       <ResearchBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ResourceCollectionBlock: (props: any) => (
+  ResourceCollectionBlock: (props: React.ComponentProps<typeof ResourceCollectionBlock>) => (
     <LazyBlockWrapper>
       <ResourceCollectionBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ProgressTrackerBlock: (props: any) => (
+  ProgressTrackerBlock: (props: React.ComponentProps<typeof ProgressTrackerBlock>) => (
     <LazyBlockWrapper>
       <ProgressTrackerBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ComparisonTableBlock: (props: any) => (
+  ComparisonTableBlock: (props: React.ComponentProps<typeof ComparisonTableBlock>) => (
     <LazyBlockWrapper>
       <ComparisonTableBlock {...props} />
     </LazyBlockWrapper>
   ),
-  TroubleshootingBlock: (props: any) => (
+  TroubleshootingBlock: (props: React.ComponentProps<typeof TroubleshootingBlock>) => (
     <LazyBlockWrapper>
       <TroubleshootingBlock {...props} />
     </LazyBlockWrapper>
   ),
-  DecisionTreeBlock: (props: any) => (
+  DecisionTreeBlock: (props: React.ComponentProps<typeof DecisionTreeBlock>) => (
     <LazyBlockWrapper>
       <DecisionTreeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  InteractiveDiagramBlock: (props: any) => (
+  InteractiveDiagramBlock: (props: React.ComponentProps<typeof InteractiveDiagramBlock>) => (
     <LazyBlockWrapper>
       <InteractiveDiagramBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MermaidBlock: (props: any) => (
+  MermaidBlock: (props: React.ComponentProps<typeof MermaidBlock>) => (
     <LazyBlockWrapper>
       <MermaidBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SvgBlock: (props: any) => (
+  SvgBlock: (props: React.ComponentProps<typeof SvgBlock>) => (
     <LazyBlockWrapper>
       <SvgBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ChartBlock: (props: any) => (
+  ChartBlock: (props: React.ComponentProps<typeof ChartBlock>) => (
     <LazyBlockWrapper>
       <ChartBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ItemPresentationBlock: (props: any) => (
+  ItemPresentationBlock: (props: React.ComponentProps<typeof ItemPresentationBlock>) => (
     <LazyBlockWrapper>
       <ItemPresentationBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MatrxEnvelopeBlock: (props: any) => (
+  MatrxEnvelopeBlock: (props: React.ComponentProps<typeof MatrxEnvelopeBlock>) => (
     <LazyBlockWrapper>
       <MatrxEnvelopeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SchemaProposalBlock: (props: any) => (
+  SchemaProposalBlock: (props: React.ComponentProps<typeof SchemaProposalBlock>) => (
     <LazyBlockWrapper>
       <SchemaProposalBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MathProblemBlock: (props: any) => (
+  MathProblemBlock: (props: React.ComponentProps<typeof MathProblemBlock>) => (
     <LazyBlockWrapper>
       <MathProblemBlock {...props} />
     </LazyBlockWrapper>
   ),
-  QuestionnaireRenderer: (props: any) => (
+  QuestionnaireRenderer: (props: React.ComponentProps<typeof QuestionnaireRenderer>) => (
     <LazyBlockWrapper>
       <QuestionnaireProvider>
         <QuestionnaireRenderer {...props} />
       </QuestionnaireProvider>
     </LazyBlockWrapper>
   ),
-  MarkdownTable: (props: any) => (
+  MarkdownTable: (props: React.ComponentProps<typeof MarkdownTable>) => (
     <LazyBlockWrapper>
       <MarkdownTable {...props} />
     </LazyBlockWrapper>
   ),
-  StreamingTableRenderer: (props: any) => (
+  StreamingTableRenderer: (props: React.ComponentProps<typeof StreamingTableRenderer>) => (
     <LazyBlockWrapper>
       <StreamingTableRenderer {...props} />
     </LazyBlockWrapper>
   ),
-  StreamingDiffBlock: (props: any) => (
+  StreamingDiffBlock: (props: React.ComponentProps<typeof StreamingDiffBlock>) => (
     <LazyBlockWrapper>
       <StreamingDiffBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SearchReplaceBlock: (props: any) => (
+  SearchReplaceBlock: (props: React.ComponentProps<typeof SearchReplaceBlock>) => (
     <LazyBlockWrapper>
       <SearchReplaceBlock {...props} />
     </LazyBlockWrapper>
   ),
-  InlineDecisionBlock: (props: any) => (
+  InlineDecisionBlock: (props: React.ComponentProps<typeof InlineDecisionBlock>) => (
     <LazyBlockWrapper>
       <InlineDecisionBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ArtifactBlock: (props: any) => (
+  ArtifactBlock: (props: React.ComponentProps<typeof ArtifactBlock>) => (
     <LazyBlockWrapper>
       <ArtifactBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ArtifactRefBlock: (props: any) => (
+  ArtifactRefBlock: (props: React.ComponentProps<typeof ArtifactRefBlock>) => (
     <LazyBlockWrapper>
       <ArtifactRefBlock {...props} />
     </LazyBlockWrapper>
   ),
-  EditorErrorBlock: (props: any) => (
+  EditorErrorBlock: (props: React.ComponentProps<typeof EditorErrorBlock>) => (
     <LazyBlockWrapper>
       <EditorErrorBlock {...props} />
     </LazyBlockWrapper>
   ),
-  EditorCodeSnippetBlock: (props: any) => (
+  EditorCodeSnippetBlock: (props: React.ComponentProps<typeof EditorCodeSnippetBlock>) => (
     <LazyBlockWrapper>
       <EditorCodeSnippetBlock {...props} />
     </LazyBlockWrapper>
   ),
-  AudioCitationBlock: (props: any) => (
+  AudioCitationBlock: (props: React.ComponentProps<typeof AudioCitationBlock>) => (
     <LazyBlockWrapper>
       <AudioCitationBlock {...props} />
     </LazyBlockWrapper>
   ),
-  YamlBlock: (props: any) => (
+  YamlBlock: (props: React.ComponentProps<typeof YamlBlock>) => (
     <LazyBlockWrapper>
       <YamlBlock {...props} />
     </LazyBlockWrapper>
   ),
-  XmlBlock: (props: any) => (
+  XmlBlock: (props: React.ComponentProps<typeof XmlBlock>) => (
     <LazyBlockWrapper>
       <XmlBlock {...props} />
     </LazyBlockWrapper>
   ),
-  CsvBlock: (props: any) => (
+  CsvBlock: (props: React.ComponentProps<typeof CsvBlock>) => (
     <LazyBlockWrapper>
       <CsvBlock {...props} />
     </LazyBlockWrapper>
   ),
-  JsonBlock: (props: any) => (
+  JsonBlock: (props: React.ComponentProps<typeof JsonBlock>) => (
     <LazyBlockWrapper>
       <JsonBlock {...props} />
     </LazyBlockWrapper>
   ),
-  TomlBlock: (props: any) => (
+  TomlBlock: (props: React.ComponentProps<typeof TomlBlock>) => (
     <LazyBlockWrapper>
       <TomlBlock {...props} />
     </LazyBlockWrapper>
   ),
-  TreeBlock: (props: any) => (
+  TreeBlock: (props: React.ComponentProps<typeof TreeBlock>) => (
     <LazyBlockWrapper>
       <TreeBlock {...props} />
     </LazyBlockWrapper>
   ),
-  MarkdownPreviewBlock: (props: any) => (
+  MarkdownPreviewBlock: (props: React.ComponentProps<typeof MarkdownPreviewBlock>) => (
     <LazyBlockWrapper>
       <MarkdownPreviewBlock {...props} />
     </LazyBlockWrapper>
   ),
-  AudioOutputBlock: (props: any) => (
+  AudioOutputBlock: (props: React.ComponentProps<typeof AudioOutputBlock>) => (
     <LazyBlockWrapper>
       <AudioOutputBlock {...props} />
     </LazyBlockWrapper>
   ),
-  ImageOutputBlock: (props: any) => (
+  ImageOutputBlock: (props: React.ComponentProps<typeof UnifiedImageBlockRenderer>) => (
     <LazyBlockWrapper>
       <UnifiedImageBlockRenderer {...props} />
     </LazyBlockWrapper>
   ),
-  VideoOutputBlock: (props: any) => (
+  VideoOutputBlock: (props: React.ComponentProps<typeof VideoOutputBlock>) => (
     <LazyBlockWrapper>
       <VideoOutputBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SearchResultsBlock: (props: any) => (
+  SearchResultsBlock: (props: React.ComponentProps<typeof SearchResultsBlock>) => (
     <LazyBlockWrapper>
       <SearchResultsBlock {...props} />
     </LazyBlockWrapper>
   ),
-  SearchErrorBlock: (props: any) => (
+  SearchErrorBlock: (props: React.ComponentProps<typeof SearchErrorBlock>) => (
     <LazyBlockWrapper>
       <SearchErrorBlock {...props} />
     </LazyBlockWrapper>
   ),
-  FunctionResultBlock: (props: any) => (
+  FunctionResultBlock: (props: React.ComponentProps<typeof FunctionResultBlock>) => (
     <LazyBlockWrapper>
       <FunctionResultBlock {...props} />
     </LazyBlockWrapper>
   ),
-  WorkflowStepBlock: (props: any) => (
+  WorkflowStepBlock: (props: React.ComponentProps<typeof WorkflowStepBlock>) => (
     <LazyBlockWrapper>
       <WorkflowStepBlock {...props} />
     </LazyBlockWrapper>
   ),
-  CategorizationResultBlock: (props: any) => (
+  CategorizationResultBlock: (props: React.ComponentProps<typeof CategorizationResultBlock>) => (
     <LazyBlockWrapper>
       <CategorizationResultBlock {...props} />
     </LazyBlockWrapper>
   ),
-  FetchResultsBlock: (props: any) => (
+  FetchResultsBlock: (props: React.ComponentProps<typeof FetchResultsBlock>) => (
     <LazyBlockWrapper>
       <FetchResultsBlock {...props} />
     </LazyBlockWrapper>
   ),
-  PodcastCompleteBlock: (props: any) => (
+  PodcastCompleteBlock: (props: React.ComponentProps<typeof PodcastCompleteBlockLazy>) => (
     <LazyBlockWrapper>
       <PodcastCompleteBlockLazy {...props} />
     </LazyBlockWrapper>
   ),
-  PodcastStageBlock: (props: any) => (
+  PodcastStageBlock: (props: React.ComponentProps<typeof PodcastStageBlockLazy>) => (
     <LazyBlockWrapper>
       <PodcastStageBlockLazy {...props} />
     </LazyBlockWrapper>
   ),
-  ScrapeBatchCompleteBlock: (props: any) => (
+  ScrapeBatchCompleteBlock: (props: React.ComponentProps<typeof ScrapeBatchCompleteBlock>) => (
     <LazyBlockWrapper>
       <ScrapeBatchCompleteBlock {...props} />
     </LazyBlockWrapper>
   ),
-  StructuredInputWarningBlock: (props: any) => (
+  StructuredInputWarningBlock: (props: React.ComponentProps<typeof StructuredInputWarningBlock>) => (
     <LazyBlockWrapper>
       <StructuredInputWarningBlock {...props} />
     </LazyBlockWrapper>
   ),
-  DisplayQuestionnaireBlock: (props: any) => (
+  DisplayQuestionnaireBlock: (props: React.ComponentProps<typeof DisplayQuestionnaireBlock>) => (
     <LazyBlockWrapper>
       <DisplayQuestionnaireBlock {...props} />
     </LazyBlockWrapper>
   ),
-  UnknownDataEventBlock: (props: any) => (
+  UnknownDataEventBlock: (props: React.ComponentProps<typeof UnknownDataEventBlock>) => (
     <LazyBlockWrapper>
       <UnknownDataEventBlock {...props} />
     </LazyBlockWrapper>

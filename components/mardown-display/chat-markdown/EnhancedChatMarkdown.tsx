@@ -65,7 +65,7 @@ export interface ChatMarkdownDisplayProps {
   className?: string;
   isStreamActive?: boolean;
   onContentChange?: (newContent: string) => void;
-  analysisData?: any;
+  analysisData?: Record<string, unknown>;
   messageId?: string;
   allowFullScreenEditor?: boolean;
   hideCopyButton?: boolean;

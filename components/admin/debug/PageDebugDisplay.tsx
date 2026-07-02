@@ -3,7 +3,7 @@
 import React from 'react';
 
 interface PageDebugDisplayProps {
-    debugData: Record<string, any>;
+    debugData: Record<string, unknown>;
 }
 
 const PageDebugDisplay: React.FC<PageDebugDisplayProps> = ({ debugData }) => {

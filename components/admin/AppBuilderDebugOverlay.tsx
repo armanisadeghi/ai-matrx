@@ -31,7 +31,7 @@ interface AppBuilderDebugOverlayProps {
   position?: PositionType;
 }
 
-const JsonDisplay: React.FC<{ data: any }> = ({ data }) => {
+const JsonDisplay: React.FC<{ data: unknown }> = ({ data }) => {
   return (
     <div className="w-full h-full p-4 overflow-auto bg-zinc-100 dark:bg-zinc-900 font-mono text-sm">
       <pre className="whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
@@ -42,7 +42,7 @@ const JsonDisplay: React.FC<{ data: any }> = ({ data }) => {
 };
 
 interface TabContentWithSubtabsProps {
-  data: any;
+  data: unknown;
 }
 
 const TabContentWithSubtabs: React.FC<TabContentWithSubtabsProps> = ({

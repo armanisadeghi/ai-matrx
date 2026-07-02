@@ -1,11 +1,14 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import type { QuestionOption, QuestionSection } from './QuestionnaireRenderer';
+
+type FormState = Record<string, unknown>;
 
 interface QuestionnaireContextType {
-    getFormState: (questionnaireId: string) => any;
-    setFormState: (questionnaireId: string, state: any) => void;
-    updateFormData: (questionnaireId: string, questionTitle: string, value: any, questionType?: string, options?: any[]) => void;
-    initializeQuestions: (questionnaireId: string, sections: any[]) => void;
+    getFormState: (questionnaireId: string) => FormState;
+    setFormState: (questionnaireId: string, state: FormState) => void;
+    updateFormData: (questionnaireId: string, questionTitle: string, value: unknown, questionType?: string, options?: QuestionOption[]) => void;
+    initializeQuestions: (questionnaireId: string, sections: QuestionSection[]) => void;
     clearQuestionnaire: (questionnaireId: string) => void;
 }
 
@@ -25,7 +28,7 @@ interface QuestionnaireProviderProps {
 
 export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ children }) => {
     // Store form states for multiple questionnaires by ID
-    const formStates = useRef<Map<string, any>>(new Map());
+    const formStates = useRef<Map<string, FormState>>(new Map());
     const [, setForceUpdate] = useState({});
 
     // Force re-render when form state changes
@@ -34,7 +37,7 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
     }, []);
 
     // Helper functions for question processing
-    const isOtherOption = useCallback((option: any) => {
+    const isOtherOption = useCallback((option: QuestionOption) => {
         if (!option || typeof option !== "object") return false;
         if (!option.name || typeof option.name !== "string") return false;
         const lowerName = option.name.toLowerCase();
@@ -70,41 +73,41 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
         return "TEXT";
     }, []);
 
-    const normalizeOptions = useCallback((options: any[] = [], intro = "", questionType = "") => {
+    const normalizeOptions = useCallback((options: QuestionOption[] = [], intro = "", questionType = "") => {
         if (!options || options.length === 0) return [];
-        
+
         // Filter out any "Other" options provided by the model
         const filteredOptions = options.filter(option => !isOtherOption(option));
-        
+
         // Determine question type if not provided
         const type = questionType || extractType(intro);
         const normalizedType = getQuestionType(type);
-        
+
         // Always add "Other" for CHECKBOX and DROPDOWN types (default behavior)
         if (normalizedType === "CHECKBOX" || normalizedType === "DROPDOWN") {
             filteredOptions.push({ name: "Other" });
         }
-        
+
         return filteredOptions;
     }, [isOtherOption, extractType, getQuestionType]);
 
-    const findOptionsForQuestion = useCallback((sections: any[], questionTitle: string) => {
+    const findOptionsForQuestion = useCallback((sections: QuestionSection[], questionTitle: string) => {
         const questionIndex = sections.findIndex((section) => section.title === questionTitle);
         if (questionIndex === -1) return [];
 
         const currentSection = sections[questionIndex];
-        
+
         // First, check if the question section itself has items (new format)
         if (currentSection.items && currentSection.items.length > 0) {
             return currentSection.items;
         }
-        
+
         // Fall back to checking for a separate "Options:" section (old format)
         const nextSection = sections[questionIndex + 1];
         if (nextSection?.title === "Options:") {
             return nextSection.items || [];
         }
-        
+
         return [];
     }, []);
 
@@ -138,18 +141,18 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
         return { min: 0, max: 100 };
     }, []);
 
-    const getFormState = useCallback((questionnaireId: string) => {
-        return formStates.current.get(questionnaireId) || {};
+    const getFormState = useCallback((questionnaireId: string): FormState => {
+        return formStates.current.get(questionnaireId) ?? {};
     }, []);
 
-    const setFormState = useCallback((questionnaireId: string, state: any) => {
+    const setFormState = useCallback((questionnaireId: string, state: FormState) => {
         formStates.current.set(questionnaireId, state);
         forceUpdate();
     }, [forceUpdate]);
 
-    const updateCheckboxData = useCallback((questionTitle: string, options: any[], selectedValues: any[]) => {
+    const updateCheckboxData = useCallback((questionTitle: string, options: QuestionOption[], selectedValues: unknown[]): FormState => {
         // Helper function to check if an option is an "Other" option
-        const checkIfOtherOption = (option: any) => {
+        const checkIfOtherOption = (option: QuestionOption) => {
             if (!option || typeof option !== "object") return false;
             if (!option.name || typeof option.name !== "string") return false;
             const lowerName = option.name.toLowerCase();
@@ -158,14 +161,14 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
         };
 
         // Create comprehensive checkbox data structure
-        const checkboxData: any = {};
-        
+        const checkboxData: FormState = {};
+
         // Process all regular options
         options.forEach(option => {
             const optionName = option.name;
             if (checkIfOtherOption(option)) {
                 // Handle "Other" option - store the actual text value directly
-                const otherValue = selectedValues.find(val => 
+                const otherValue = selectedValues.find((val): val is string =>
                     typeof val === "string" && val.startsWith("Other:")
                 );
                 if (otherValue) {
@@ -182,10 +185,10 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
         return checkboxData;
     }, []);
 
-    const updateDropdownData = useCallback((questionTitle: string, options: any[], selectedValue: string) => {
+    const updateDropdownData = useCallback((questionTitle: string, options: QuestionOption[], selectedValue: string): FormState => {
         // Create comprehensive dropdown data structure
-        const dropdownData: any = {};
-        
+        const dropdownData: FormState = {};
+
         // Process all options
         options.forEach(option => {
             const optionName = option.name;
@@ -205,32 +208,32 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
     }, [isOtherOption]);
 
     const updateFormData = useCallback((
-        questionnaireId: string, 
-        questionTitle: string, 
-        value: any, 
-        questionType: string = 'TEXT', 
-        options: any[] = []
+        questionnaireId: string,
+        questionTitle: string,
+        value: unknown,
+        questionType: string = 'TEXT',
+        options: QuestionOption[] = []
     ) => {
         // Create a shallow copy to avoid mutating the original state object
-        const currentState = { ...(formStates.current.get(questionnaireId) || {}) };
-        
+        const currentState = { ...(formStates.current.get(questionnaireId) ?? {}) };
+
         if (questionType === "CHECKBOX") {
-            const checkboxData = updateCheckboxData(questionTitle, options, value);
+            const checkboxData = updateCheckboxData(questionTitle, options, value as unknown[]);
             currentState[questionTitle] = checkboxData;
         } else if (questionType === "DROPDOWN") {
-            const dropdownData = updateDropdownData(questionTitle, options, value);
+            const dropdownData = updateDropdownData(questionTitle, options, value as string);
             currentState[questionTitle] = dropdownData;
         } else {
             currentState[questionTitle] = value;
         }
-        
+
         formStates.current.set(questionnaireId, currentState);
         forceUpdate();
     }, [updateCheckboxData, updateDropdownData, forceUpdate]);
 
-    const initializeQuestions = useCallback((questionnaireId: string, sections: any[]) => {
+    const initializeQuestions = useCallback((questionnaireId: string, sections: QuestionSection[]) => {
         // Create a shallow copy to avoid mutating the original state object
-        const currentState = { ...(formStates.current.get(questionnaireId) || {}) };
+        const currentState: FormState = { ...(formStates.current.get(questionnaireId) ?? {}) };
         let hasNewQuestions = false;
         let questionIndex = 0;
 
@@ -246,7 +249,7 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
                 // Only initialize if question doesn't already exist
                 if (!(numberedTitle in currentState)) {
                     hasNewQuestions = true;
-                    
+
                     switch (questionType) {
                         case "SLIDER": {
                             const range = extractSliderRange(section.intro);
@@ -258,7 +261,7 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
                             break;
                         case "CHECKBOX": {
                             // Initialize checkbox with all options as "Not Selected"
-                            const checkboxData: any = {};
+                            const checkboxData: FormState = {};
                             options.forEach(option => {
                                 if (isOtherOption(option)) {
                                     checkboxData["Other"] = "Not Selected";
@@ -271,7 +274,7 @@ export const QuestionnaireProvider: React.FC<QuestionnaireProviderProps> = ({ ch
                         }
                         case "DROPDOWN": {
                             // Initialize dropdown with all options as "Not Selected"
-                            const dropdownData: any = {};
+                            const dropdownData: FormState = {};
                             options.forEach(option => {
                                 if (isOtherOption(option)) {
                                     dropdownData["Other"] = "Not Selected";

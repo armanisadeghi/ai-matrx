@@ -17,6 +17,7 @@ import {
   GOOGLE_SLIDES_SCOPE,
 } from "./presentation-export";
 import { PresentationData } from "./Slideshow";
+import type { SlideData } from "./SlideView";
 import { useGoogleAPIOptional } from "@/providers/google-provider/GoogleApiProvider";
 import { PresentationPublishModal } from "./PresentationPublishModal";
 import { useHTMLPages } from "@/features/html-pages/hooks/useHTMLPages";
@@ -30,7 +31,7 @@ interface PresentationExportMenuProps {
   presentationData: PresentationData;
   presentationTitle?: string;
   slideContainerRef: React.RefObject<HTMLDivElement | null>;
-  slides: any[];
+  slides: SlideData[];
 }
 
 const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
@@ -296,9 +297,9 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
   };
 
   // Helper to convert markdown bold to HTML
-  const parseMarkdownToHTML = (text: string): string => {
+  const parseMarkdownToHTML = (text: string | undefined): string => {
     // Replace **text** with <strong>text</strong>
-    return text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    return (text ?? "").replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
   };
 
   const exportPDFWithAllSlides = async () => {
@@ -338,7 +339,7 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
                         </div>
                     `;
         } else {
-          const bulletsHTML = slide.bullets
+          const bulletsHTML = (slide.bullets ?? [])
             .map(
               (bullet: string) => `
                         <div style="display: flex; gap: 12px; padding: 12px; margin-bottom: 8px; background: #F9FAFB; border-radius: 8px;">

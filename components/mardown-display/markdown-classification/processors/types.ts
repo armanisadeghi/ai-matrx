@@ -197,5 +197,5 @@ export interface Position {
 
   // Type guard for checking if a node has children
   export function hasChildren(node: AstNode): node is AstNode & { children: AstNode[] } {
-    return 'children' in node && Array.isArray((node as any).children);
+    return 'children' in node && Array.isArray(node.children);
   }

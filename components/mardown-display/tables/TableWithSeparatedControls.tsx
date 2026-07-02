@@ -117,8 +117,8 @@ const TableControls: React.FC<TableControlsProps> = ({
       const formattedTable = generateMarkdownTable();
       await navigator.clipboard.writeText(formattedTable);
       toast.success("Table copied to clipboard");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy table");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy table");
     }
   }, [generateMarkdownTable, toast]);
 
@@ -128,8 +128,8 @@ const TableControls: React.FC<TableControlsProps> = ({
         JSON.stringify(debouncedTableData.normalizedData, null, 2),
       );
       toast.success("JSON copied to clipboard");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy JSON");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy JSON");
     }
   }, [debouncedTableData.normalizedData, toast]);
 
@@ -141,8 +141,8 @@ const TableControls: React.FC<TableControlsProps> = ({
       } else {
         copyTableToClipboard();
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to copy markdown");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to copy markdown");
     }
   }, [content, copyTableToClipboard, toast]);
 
@@ -173,8 +173,8 @@ const TableControls: React.FC<TableControlsProps> = ({
           className: "font-medium",
         },
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download CSV");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to download CSV");
     }
   }, [tableData.headers, tableData.rows, toast]);
 
@@ -210,8 +210,8 @@ const TableControls: React.FC<TableControlsProps> = ({
           className: "font-medium",
         },
       });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download Markdown");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to download Markdown");
     }
   }, [content, tableData.headers, toast]);
 
@@ -491,8 +491,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   useEffect(() => {
     if (data) {
       setTableData({
-        headers: data.headers || [],
-        rows: data.rows || [],
+        headers: data.headers,
+        rows: data.rows,
         normalizedData: data.normalizedData,
       });
     }
@@ -568,8 +568,8 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   const handleCancel = useCallback(() => {
     if (data) {
       setTableData({
-        headers: data.headers || [],
-        rows: data.rows || [],
+        headers: data.headers,
+        rows: data.rows,
         normalizedData: data.normalizedData,
       });
     }

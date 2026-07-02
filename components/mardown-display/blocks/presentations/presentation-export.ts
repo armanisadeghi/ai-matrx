@@ -1,4 +1,12 @@
 import { PresentationData } from "./Slideshow";
+import { resolveDeckTheme } from "./presets";
+import { palette } from "./SlideView";
+import type { JsonObject } from "@/types/json";
+
+// Google Slides `presentations.batchUpdate` request objects — heterogeneous
+// (createSlide/createShape/insertText/updateTextStyle/...), no local type
+// package for the Slides REST API; open JSON per request is the honest shape.
+type SlidesBatchRequest = JsonObject;
 
 /**
  * Central presentation export utilities
@@ -162,9 +170,9 @@ const stripMarkdown = (text: string): string => {
  * Helper to parse markdown text with bold formatting for PowerPoint
  * Returns array of text segments with formatting
  */
-const parseMarkdownForPPT = (text: string): Array<{ text: string; options?: { bold?: boolean } }> => {
+const parseMarkdownForPPT = (text: string | undefined): Array<{ text: string; options?: { bold?: boolean } }> => {
     const segments: Array<{ text: string; options?: { bold?: boolean } }> = [];
-    const parts = text.split(/(\*\*.*?\*\*)/g);
+    const parts = (text ?? '').split(/(\*\*.*?\*\*)/g);
     
     parts.forEach(part => {
         if (part.startsWith('**') && part.endsWith('**')) {
@@ -204,8 +212,9 @@ export const exportToPowerPoint = async (
         const pptx = new pptxgen();
         
         const { filename = 'presentation' } = options;
-        const { slides, theme } = presentationData;
-        
+        const { slides } = presentationData;
+        const theme = palette(resolveDeckTheme(presentationData.theme));
+
         // Set presentation properties
         pptx.author = 'AI Matrx';
         pptx.title = slides[0]?.title || filename;
@@ -232,8 +241,8 @@ export const exportToPowerPoint = async (
                     h: '6%',
                     align: 'center',
                     fontSize: 14,
-                    color: theme.primaryColor.replace('#', ''),
-                    fill: { color: theme.primaryColor.replace('#', '') + '20' },
+                    color: theme.primary.replace('#', ''),
+                    fill: { color: theme.primary.replace('#', '') + '20' },
                     bold: true
                 });
                 
@@ -246,7 +255,7 @@ export const exportToPowerPoint = async (
                     h: '20%',
                     align: 'center',
                     fontSize: 44,
-                    color: theme.primaryColor.replace('#', ''),
+                    color: theme.primary.replace('#', ''),
                     bold: true,
                     valign: 'middle'
                 });
@@ -274,7 +283,7 @@ export const exportToPowerPoint = async (
                     w: '90%',
                     h: '12%',
                     fontSize: 36,
-                    color: theme.primaryColor.replace('#', ''),
+                    color: theme.primary.replace('#', ''),
                     bold: true,
                     valign: 'bottom'
                 });
@@ -292,7 +301,7 @@ export const exportToPowerPoint = async (
                 });
                 
                 // Add bullets with markdown support
-                const bulletPoints = slideData.bullets.map((bullet: string) => {
+                const bulletPoints = (slideData.bullets ?? []).map((bullet: string) => {
                     const segments = parseMarkdownForPPT(bullet);
                     return {
                         text: stripMarkdown(bullet), // For simple bullets
@@ -355,9 +364,9 @@ const hexToRgb = (hex: string): { red: number; green: number; blue: number } => 
 /**
  * Create text elements with markdown bold support for Google Slides
  */
-const createTextWithFormatting = (text: string, startIndex: number = 0) => {
+const createTextWithFormatting = (text: string | undefined, startIndex: number = 0) => {
     const boldRanges: Array<{ startIndex: number; endIndex: number }> = [];
-    let plainText = text;
+    let plainText = text ?? '';
     let currentIndex = startIndex;
     
     // Find all **bold** patterns and their positions
@@ -410,8 +419,9 @@ export const exportToGoogleSlides = async (
 
     try {
         const { filename = 'presentation' } = options;
-        const { slides, theme } = presentationData;
-        
+        const { slides } = presentationData;
+        const theme = palette(resolveDeckTheme(presentationData.theme));
+
         // Step 1: Create a new presentation
         const createResponse = await fetch('https://slides.googleapis.com/v1/presentations', {
             method: 'POST',
@@ -433,7 +443,7 @@ export const exportToGoogleSlides = async (
         const presentationId = presentation.presentationId;
         
         // Step 2: Build requests to add slides and content
-        const requests: any[] = [];
+        const requests: SlidesBatchRequest[] = [];
         
         // Remove the default blank slide
         if (presentation.slides && presentation.slides.length > 0) {
@@ -496,7 +506,7 @@ export const exportToGoogleSlides = async (
                 });
 
                 // Style badge
-                const primaryColor = hexToRgb(theme.primaryColor);
+                const primaryColor = hexToRgb(theme.primary);
                 requests.push({
                     updateTextStyle: {
                         objectId: badgeBoxId,
@@ -655,7 +665,7 @@ export const exportToGoogleSlides = async (
                     }
                 });
 
-                const primaryColor = hexToRgb(theme.primaryColor);
+                const primaryColor = hexToRgb(theme.primary);
                 requests.push({
                     updateTextStyle: {
                         objectId: titleBoxId,
@@ -715,7 +725,7 @@ export const exportToGoogleSlides = async (
                 });
 
                 // Add bullets
-                const bulletText = slide.bullets.map((b: string) => stripMarkdown(b)).join('\n');
+                const bulletText = (slide.bullets ?? []).map((b: string) => stripMarkdown(b)).join('\n');
                 requests.push({
                     createShape: {
                         objectId: bulletsBoxId,

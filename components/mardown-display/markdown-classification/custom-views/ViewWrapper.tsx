@@ -6,7 +6,7 @@ import { ViewId, getViewComponent, getViewSelectOptions } from './view-registry'
 interface ViewWrapperProps {
   initialView: ViewId;
   showOptions?: boolean;
-  data: any;
+  data: unknown;
   className?: string;
 }
 

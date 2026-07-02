@@ -1,5 +1,6 @@
 // jsonUtils.ts
 import JSON5 from 'json5';
+import type { JsonValue, JsonObject } from '@/types/json';
 
 export interface ValidationError {
   message: string;
@@ -8,7 +9,7 @@ export interface ValidationError {
 }
 
 export interface ParseResult {
-  data: any;
+  data: JsonValue;
   error?: string;
 }
 
@@ -16,11 +17,11 @@ export const jsonUtils = {
   /**
    * Core parsing function - uses JSON5 for more permissive parsing
    */
-  parse(input: any): ParseResult {
+  parse(input: unknown): ParseResult {
     try {
       // Already an object
       if (typeof input === 'object' && input !== null) {
-        return { data: input };
+        return { data: input as JsonValue };
       }
 
       // Empty/null checks
@@ -30,7 +31,7 @@ export const jsonUtils = {
 
       // Convert to string and parse with JSON5
       const stringValue = String(input).trim();
-      const data = JSON5.parse(stringValue);
+      const data = JSON5.parse(stringValue) as JsonValue;
       return { data };
     } catch (err) {
       return {
@@ -43,7 +44,7 @@ export const jsonUtils = {
   /**
    * Stringify with formatting options
    */
-  stringify(data: any, pretty = true): string {
+  stringify(data: JsonValue | undefined, pretty = true): string {
     if (data === undefined) return '';
     if (data === null) return 'null';
 
@@ -57,7 +58,7 @@ export const jsonUtils = {
   /**
    * Validate JSON and return any errors
    */
-  validate(input: any): ValidationError[] {
+  validate(input: unknown): ValidationError[] {
     try {
       if (typeof input === 'object') {
         JSON5.stringify(input);
@@ -69,7 +70,7 @@ export const jsonUtils = {
     } catch (err) {
       const error = err as Error;
       const match = error.message.match(/line (\d+) column (\d+)/);
-      
+
       return [{
         message: error.message,
         line: match ? parseInt(match[1], 10) : undefined,
@@ -82,29 +83,33 @@ export const jsonUtils = {
    * Transform operations on JSON objects
    */
   transform(
-    data: any,
+    data: JsonObject,
     operation: 'edit' | 'add' | 'delete',
     path: string[],
-    value?: any
-  ): any {
-    const result = { ...data };
-    let current = result;
+    value?: JsonValue
+  ): JsonObject {
+    const result: JsonObject = { ...data };
+    let current: JsonObject | JsonValue[] = result;
     const lastIndex = path.length - 1;
 
     for (let i = 0; i < lastIndex; i++) {
       const key = path[i];
-      current[key] = { ...current[key] };
-      current = current[key];
+      const nested = (current as JsonObject)[key];
+      const clonedNested: JsonObject | JsonValue[] = Array.isArray(nested)
+        ? [...nested]
+        : { ...(nested as JsonObject) };
+      (current as JsonObject)[key] = clonedNested;
+      current = clonedNested;
     }
 
     const lastKey = path[lastIndex];
     switch (operation) {
       case 'edit':
-        current[lastKey] = value;
+        (current as JsonObject)[lastKey] = value;
         break;
       case 'add':
         if (Array.isArray(current)) {
-          current.splice(parseInt(lastKey), 0, value);
+          current.splice(parseInt(lastKey), 0, value ?? null);
         } else {
           current[lastKey] = value;
         }
@@ -125,26 +130,28 @@ export const jsonUtils = {
    * Tree navigation helpers
    */
   tree: {
-    getAllKeys(obj: any, prefix = ''): string[] {
-      if (!obj || typeof obj !== 'object') {
+    getAllKeys(obj: JsonValue, prefix = ''): string[] {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
         return [];
       }
-  
+
       return Object.entries(obj).reduce((keys: string[], [key, value]) => {
         const currentPath = prefix ? `${prefix}.${key}` : key;
         keys.push(currentPath);
-        
+
         if (value && typeof value === 'object') {
           keys.push(...this.getAllKeys(value, currentPath));
         }
-        
+
         return keys;
       }, []);
     },
 
-    getValueAtPath(obj: any, path: string[]): any {
-      return path.reduce((current, key) => 
-        current && typeof current === 'object' ? current[key] : undefined, 
+    getValueAtPath(obj: JsonValue, path: string[]): JsonValue | undefined {
+      return path.reduce<JsonValue | undefined>((current, key) =>
+        current && typeof current === 'object' && !Array.isArray(current)
+          ? current[key]
+          : undefined,
         obj
       );
     }

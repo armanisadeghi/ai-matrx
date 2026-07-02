@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import type { MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import type { MarkdownComponentOverrides, MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -97,7 +97,7 @@ interface CardSlideProps {
 }
 
 // p override that forces text-center — used for front & single-line back faces.
-const centeredParagraph = ({ node, children, ...props }: any) => (
+const centeredParagraph = ({ node, children, ...props }: React.ComponentProps<"p"> & { node?: unknown }) => (
   <p className="text-center" {...props}>
     {children}
   </p>
@@ -176,7 +176,7 @@ interface FitTextFaceProps {
   content: string;
   centered: boolean;
   isStreamActive?: boolean;
-  componentOverrides?: Record<string, React.ComponentType<any>>;
+  componentOverrides?: MarkdownComponentOverrides;
 }
 
 const FitTextFace: React.FC<FitTextFaceProps> = ({

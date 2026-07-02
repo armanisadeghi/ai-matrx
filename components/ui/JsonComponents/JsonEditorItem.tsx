@@ -3,23 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Edit, Save, X, Plus, Trash } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-import { ValidationError } from "./types";
+import type { JsonEditorItemProps } from "./types";
 import { jsonUtils } from './newUitls';
-
-interface JsonEditorItemProps {
-    keyName: string;
-    value: any;
-    depth: number;
-    isExpanded: boolean;
-    onToggle: () => void;
-    onEdit: (newKey: string, newValue: any) => void;
-    onAdd: (newKey: string, newValue: any, index: number) => void;
-    onDelete: () => void;
-    error?: ValidationError;
-    lockKeys?: boolean;
-    readOnly?: boolean;
-    index: number;
-}
+import type { JsonValue, JsonObject } from '@/types/json';
 
 const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
     keyName,
@@ -75,25 +61,28 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
         setEditedValue(typeof value === 'object' ? '' : jsonUtils.stringify(value, false));
     };
 
-    const getValueColor = (val: any) => {
+    const getValueColor = (val: JsonValue) => {
         if (typeof val === 'string') return "text-emerald-600 dark:text-emerald-400";
         if (typeof val === 'number') return "text-blue-600 dark:text-blue-400";
         if (typeof val === 'boolean') return "text-amber-600 dark:text-amber-400";
         return "text-foreground";
     };
 
-    const handleNestedEdit = (k: string, newKey: string, newValue: any) => {
-        const newObj = jsonUtils.transform(value, 'edit', [k], { [newKey]: newValue });
+    const asJsonObject = (): JsonObject =>
+        typeof value === 'object' && value !== null && !Array.isArray(value) ? value : {};
+
+    const handleNestedEdit = (k: string, newKey: string, newValue: JsonValue) => {
+        const newObj = jsonUtils.transform(asJsonObject(), 'edit', [k], { [newKey]: newValue });
         onEdit(keyName, newObj);
     };
 
-    const handleNestedAdd = (k: string, newKey: string, newValue: any, index: number) => {
-        const newObj = jsonUtils.transform(value, 'add', [String(index)], { [newKey]: newValue });
+    const handleNestedAdd = (k: string, newKey: string, newValue: JsonValue, index: number) => {
+        const newObj = jsonUtils.transform(asJsonObject(), 'add', [String(index)], { [newKey]: newValue });
         onEdit(keyName, newObj);
     };
 
     const handleNestedDelete = (k: string) => {
-        const newObj = jsonUtils.transform(value, 'delete', [k]);
+        const newObj = jsonUtils.transform(asJsonObject(), 'delete', [k]);
         onEdit(keyName, newObj);
     };
 
@@ -123,7 +112,7 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
         </button>
     );
 
-    const renderValue = (val: any) => {
+    const renderValue = (val: JsonValue) => {
         if (typeof val === 'string') return `"${val}"`;
         if (val === null) return 'null';
         if (val === undefined) return 'undefined';
@@ -233,11 +222,11 @@ const JsonEditorItem: React.FC<JsonEditorItemProps> = ({
                         exit={{opacity: 0, height: 0}}
                         transition={{duration: 0.2}}
                     >
-                        {Object.entries(value).map(([k, v], i) => (
+                        {Object.entries(asJsonObject()).map(([k, v], i) => (
                             <JsonEditorItem
                                 key={k}
                                 keyName={k}
-                                value={v}
+                                value={v ?? null}
                                 depth={depth + 1}
                                 isExpanded={false}
                                 onToggle={() => {}}

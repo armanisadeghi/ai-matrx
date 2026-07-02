@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import {
   selectCodeTabs,
   selectTabById,
@@ -45,17 +46,23 @@ export function useTabRealtimeWatcher(): void {
       if (!adapter) continue;
       const parsed = adapter.parseTabId(tabId);
       if (!parsed) continue;
-      const table = adapter.sourceId;
+      // adapter.sourceId is just this adapter's internal label, not
+      // necessarily the real schema-qualified table name — use the
+      // adapter-declared realtimeTable instead. Adapters without one (e.g. a
+      // decommissioned source) have no live table to watch; skip rather than
+      // filter on a guessed name that would silently never match.
+      if (!adapter.realtimeTable) continue;
+      const { schema, table } = adapter.realtimeTable;
       const rowId = parsed.rowId;
 
-      const channelName = `code-tab-rt:${table}:${rowId}`;
+      const channelName = uniqueChannelTopic(`code-tab-rt:${table}:${rowId}`);
       const channel = supabase
         .channel(channelName)
         .on(
           "postgres_changes" as never,
           {
             event: "UPDATE",
-            schema: "public",
+            schema,
             table,
             filter: `id=eq.${rowId}`,
           },

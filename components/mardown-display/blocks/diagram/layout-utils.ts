@@ -201,11 +201,11 @@ export const getRadialLayout = (
 ): { nodes: Node[]; edges: Edge[] } => {
   if (nodes.length === 0) return { nodes, edges };
 
-  let centerNode = centerNodeId
+  const foundCenterNode = centerNodeId
     ? nodes.find((n) => n.id === centerNodeId)
     : findCenterNode(nodes, edges);
 
-  if (!centerNode) centerNode = nodes[0];
+  const centerNode = foundCenterNode ?? nodes[0];
 
   const centerX = 400;
   const centerY = 300;
@@ -213,11 +213,11 @@ export const getRadialLayout = (
   const angleStep = (2 * Math.PI) / (nodes.length - 1);
 
   const layoutedNodes = nodes.map((node, index) => {
-    if (node.id === centerNode!.id) {
+    if (node.id === centerNode.id) {
       return { ...node, position: { x: centerX, y: centerY } };
     }
     const adjustedIndex =
-      index > nodes.findIndex((n) => n.id === centerNode!.id)
+      index > nodes.findIndex((n) => n.id === centerNode.id)
         ? index - 1
         : index;
     const angle = adjustedIndex * angleStep;
@@ -343,8 +343,12 @@ export const getPedigreeLayout = (
   nodes.forEach((node) => {
     const gen: number =
       typeof node.data.generation === "number" ? node.data.generation : 0;
-    if (!generationMap.has(gen)) generationMap.set(gen, []);
-    generationMap.get(gen)!.push(node);
+    const genNodes = generationMap.get(gen);
+    if (genNodes) {
+      genNodes.push(node);
+    } else {
+      generationMap.set(gen, [node]);
+    }
   });
 
   // If no generation data, fall back to dagre TB
@@ -364,14 +368,14 @@ export const getPedigreeLayout = (
 
   const generations = Array.from(generationMap.keys()).sort((a, b) => a - b);
   const maxNodesInGen = Math.max(
-    ...generations.map((g) => generationMap.get(g)!.length),
+    ...generations.map((g) => generationMap.get(g)?.length ?? 0),
   );
   const totalWidth = maxNodesInGen * (NODE_WIDTH + NODE_SPACING);
 
   const layoutedNodes = nodes.map((node) => {
     const gen: number =
       typeof node.data.generation === "number" ? node.data.generation : 0;
-    const genNodes = generationMap.get(gen)!;
+    const genNodes = generationMap.get(gen) ?? [];
     const indexInGen = genNodes.findIndex((n) => n.id === node.id);
     const genWidth = genNodes.length * (NODE_WIDTH + NODE_SPACING);
     const xOffset = (totalWidth - genWidth) / 2;

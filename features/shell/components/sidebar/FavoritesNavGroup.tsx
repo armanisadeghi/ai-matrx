@@ -15,6 +15,7 @@
 // client (no hydration mismatch). Once preferences rehydrate, the flyout
 // version takes over.
 
+import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFavoriteItems } from "@/lib/redux/preferences/userPreferenceSelectors";
 import NavFlyoutGroup from "./NavFlyoutGroup";
@@ -34,8 +35,17 @@ const MANAGE_CHILD: ShellNavChild = {
 
 export default function FavoritesNavGroup() {
   const favorites = useAppSelector(selectFavoriteItems);
+  const [hydrated, setHydrated] = useState(false);
 
-  const children: ShellNavChild[] = favorites.map((f) => ({
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  // Match SSR on the first client render — preferences may already be in Redux
+  // from sync rehydrate, but the server always rendered with [].
+  const visibleFavorites = hydrated ? favorites : [];
+
+  const children: ShellNavChild[] = visibleFavorites.map((f) => ({
     label: f.label,
     href: f.href,
     iconName: f.iconName ?? "Star",

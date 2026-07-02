@@ -14,6 +14,7 @@
 import { useEffect } from "react";
 
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 
 export type WorkbookRealtimeEvent = {
   snapshotId: string;
@@ -32,12 +33,12 @@ export function useWorkbookRealtime(
     if (!enabled || !workbookId) return undefined;
 
     const channel = supabase
-      .channel(`udt_workbook_snapshots:${workbookId}`)
+      .channel(uniqueChannelTopic(`udt_workbook_snapshots:${workbookId}`))
       .on(
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "workbench",
           table: "udt_workbook_snapshots",
           filter: `workbook_id=eq.${workbookId}`,
         },

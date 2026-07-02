@@ -6,13 +6,13 @@ import DefaultErrorFallback from '@/components/mardown-display/markdown-classifi
 import { Loader2 } from 'lucide-react';
 
 interface DynamicViewProps {
-  data: any;
+  data: unknown;
   isLoading?: boolean;
   title?: string;
 }
 
 // Component to recursively render any data structure
-const DynamicDataRenderer = ({ data, depth = 0 }: { data: any; depth?: number }) => {
+const DynamicDataRenderer = ({ data, depth = 0 }: { data: unknown; depth?: number }) => {
   // Base case: null or undefined
   if (data === null || data === undefined) {
     return <span className="text-slate-400 dark:text-slate-500 italic">No data</span>;
@@ -42,21 +42,21 @@ const DynamicDataRenderer = ({ data, depth = 0 }: { data: any; depth?: number })
   }
 
   // Handle objects
-  const keys = Object.keys(data);
-  if (keys.length === 0) {
+  const entries = Object.entries(data as Record<string, unknown>);
+  if (entries.length === 0) {
     return <span className="text-slate-400 dark:text-slate-500 italic">Empty object</span>;
   }
 
   return (
     <div className={`space-y-2 ${depth > 0 ? 'pl-4' : ''}`}>
-      {keys.map((key) => (
+      {entries.map(([key, value]) => (
         <div key={key} className="group">
           <div className="flex flex-col">
             <h3 className={`font-medium text-slate-800 dark:text-slate-200 ${depth === 0 ? 'text-lg capitalize border-b border-slate-200 dark:border-slate-700 pb-1 mb-2' : ''}`}>
               {key.replace(/_/g, ' ')}
             </h3>
             <div className="pl-2">
-              <DynamicDataRenderer data={data[key]} depth={depth + 1} />
+              <DynamicDataRenderer data={value} depth={depth + 1} />
             </div>
           </div>
         </div>
@@ -65,7 +65,7 @@ const DynamicDataRenderer = ({ data, depth = 0 }: { data: any; depth?: number })
   );
 };
 
-const DynamicDataDisplay = ({ data, title }: { data: any; title?: string }) => {
+const DynamicDataDisplay = ({ data, title }: { data: unknown; title?: string }) => {
   return (
     <div className="max-w-5xl mx-auto rounded-xl overflow-hidden shadow-lg bg-white dark:bg-slate-800 transition-colors duration-200">
       {/* Header */}

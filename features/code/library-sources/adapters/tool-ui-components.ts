@@ -124,6 +124,7 @@ export const toolUiComponentsAdapter: LibrarySourceAdapter = {
   icon: Wrench,
   tabIdPrefix: PREFIX,
   multiField: true,
+  realtimeTable: { schema: "tool", table: "ui" },
 
   parseTabId,
   makeTabId,

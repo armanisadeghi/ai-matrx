@@ -14,6 +14,7 @@
 import { useEffect } from "react";
 
 import { supabase } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 
 export type DocumentRealtimeEvent = {
   snapshotId: string;
@@ -32,12 +33,12 @@ export function useDocumentRealtime(
     if (!enabled || !documentId) return undefined;
 
     const channel = supabase
-      .channel(`udt_document_snapshots:${documentId}`)
+      .channel(uniqueChannelTopic(`udt_document_snapshots:${documentId}`))
       .on(
         "postgres_changes",
         {
           event: "INSERT",
-          schema: "public",
+          schema: "workbench",
           table: "udt_document_snapshots",
           filter: `document_id=eq.${documentId}`,
         },

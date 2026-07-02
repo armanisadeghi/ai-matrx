@@ -5,15 +5,17 @@ import { Copy, Check, Bookmark, ExternalLink, FileText } from "lucide-react";
 import { addUtmSource } from "@/utils/url-utm";
 
 // Error Boundary for Link Component
+interface LinkErrorBoundaryProps {
+  children: React.ReactNode;
+  href?: string;
+  fallbackChildren?: React.ReactNode;
+}
+
 class LinkErrorBoundary extends React.Component<
-  {
-    children: React.ReactNode;
-    href?: string;
-    fallbackChildren?: React.ReactNode;
-  },
+  LinkErrorBoundaryProps,
   { hasError: boolean }
 > {
-  constructor(props: any) {
+  constructor(props: LinkErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }

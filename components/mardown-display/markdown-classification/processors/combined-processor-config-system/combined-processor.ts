@@ -9,11 +9,11 @@ export interface AstNode {
   type: string;
   children?: AstNode[];
   value?: string;
+  depth?: number;
   position?: {
     start: { line: number; column: number; offset: number };
     end: { line: number; column: number; offset: number };
   };
-  [key: string]: any;
 }
 
 interface ProcessorInput {

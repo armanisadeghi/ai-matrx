@@ -11,7 +11,7 @@ const isClient = typeof window !== "undefined";
 export const parseMarkdownToAst = async (markdownText: string): Promise<AstNode> => {
     // Only run parser on the client side
     if (!isClient) {
-        return { type: "root", children: [] } as unknown as AstNode;
+        return { type: "root", children: [] };
     }
 
     try {
@@ -26,7 +26,7 @@ export const parseMarkdownToAst = async (markdownText: string): Promise<AstNode>
         return processor.parse(markdownText) as unknown as AstNode;
     } catch (error) {
         console.error("Error parsing markdown to AST:", error);
-        return { type: "root", children: [] } as unknown as AstNode;
+        return { type: "root", children: [] };
     }
 };
 
@@ -45,7 +45,7 @@ interface PrepareMarkdownForRenderingParams {
 export const processMarkdownForRendering = async ({ markdown, processorId, processorConfigId = "noConfig" }: PrepareMarkdownForRenderingParams) => {
     // Return default values when not on client side
     if (!isClient) {
-        const emptyAst = { type: "root", children: [] } as unknown as AstNode;
+        const emptyAst: AstNode = { type: "root", children: [] };
         return {
             ast: emptyAst,
             processedData: { content: emptyAst, metadata: {} },
@@ -69,7 +69,7 @@ interface ProcessMarkdownForRenderingWithCoordinatorParams {
 export const processMarkdownForRenderingWithCoordinator = async ({ markdown, coordinatorId }: ProcessMarkdownForRenderingWithCoordinatorParams) => {
     // Return default values when not on client side
     if (!isClient) {
-        const emptyAst = { type: "root", children: [] } as unknown as AstNode;
+        const emptyAst: AstNode = { type: "root", children: [] };
         return {
             ast: emptyAst,
             processedData: { content: emptyAst, metadata: {} },

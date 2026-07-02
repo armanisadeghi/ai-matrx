@@ -313,16 +313,16 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({ research, taskId }) => {
 
                 {/* Tab Navigation */}
                 <div className="flex flex-wrap gap-2">
-                  {[
+                  {([
                     { id: 'overview', label: 'Overview', icon: Eye },
                     { id: 'findings', label: 'Findings', icon: Search },
                     { id: 'analysis', label: 'Analysis', icon: BarChart3 },
                     { id: 'recommendations', label: 'Recommendations', icon: Lightbulb },
                     { id: 'debug', label: 'Debug', icon: AlertTriangle }
-                  ].map(tab => (
+                  ] as const).map(tab => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
+                      onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         activeTab === tab.id
                           ? 'bg-textured text-emerald-700 dark:text-emerald-300 shadow-md border border-emerald-300 dark:border-emerald-700'
@@ -387,7 +387,12 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({ research, taskId }) => {
                       <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                       <select
                         value={selectedFilter}
-                        onChange={(e) => setSelectedFilter(e.target.value as any)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          if (next === 'all' || next === 'HIGH' || next === 'MEDIUM' || next === 'LOW') {
+                            setSelectedFilter(next);
+                          }
+                        }}
                         className="text-sm px-3 py-1.5 rounded-lg bg-textured border-border text-gray-700 dark:text-gray-300"
                       >
                         <option value="all">All Confidence Levels</option>

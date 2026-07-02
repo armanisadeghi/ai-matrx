@@ -133,7 +133,8 @@ function buildSvgDocument(
   // ── SVG nodes ──
   const nodesSvg = positioned
     .map((node) => {
-      const pos = posMap.get(node.id)!;
+      const pos = posMap.get(node.id);
+      if (!pos) return "";
       const nodeType = (node.nodeType ||
         node.type ||
         "default") as keyof typeof SVG_COLORS;

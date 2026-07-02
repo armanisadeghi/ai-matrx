@@ -16,14 +16,14 @@ import { extractValueByPath } from "../utils/wildcard-utils";
 
 // Define a type for a callback function that will handle data and path updates
 interface DataChangeHandler {
-    (newData: any, newPath: PathArray): void;
+    (newData: unknown, newPath: PathArray): void;
 }
 
 // Define PathManagementProps interface without bookmarks prop
 interface PathManagementProps {
     jsonStr: string;
     currentPath: PathArray;
-    originalData: any;
+    originalData: unknown;
     onReset: () => void;
     onDataChange?: DataChangeHandler;
     configKey?: string;

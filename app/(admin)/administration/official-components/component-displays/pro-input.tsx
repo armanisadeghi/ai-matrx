@@ -131,7 +131,13 @@ import { Field } from '@/components/official/Field';
 
         <Variant
           title="1. Bare input"
-          features={["placeholder", "voice", "… menu", "no label"]}
+          features={[
+            "placeholder",
+            "voice",
+            "… menu",
+            "text stats",
+            "no label",
+          ]}
           code={`<ProInput
   value={v}
   onChange={(e) => setV(e.target.value)}

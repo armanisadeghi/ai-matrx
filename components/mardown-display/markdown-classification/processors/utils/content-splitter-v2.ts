@@ -24,6 +24,7 @@
  */
 
 import { isMatrxEnvelope } from "@/features/matrx-envelope/envelope";
+import { isJsonObject } from "@/types/json";
 import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
 import type { MissingBlockType } from "@/types/python-generated/missing-types";
 import {
@@ -124,13 +125,13 @@ export function normalizeCodeLanguage(
 interface ExtractionResult {
   content: string;
   nextIndex: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface StreamingState {
   isComplete: boolean;
   shouldShow: boolean;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface ParsingContext {
@@ -148,46 +149,57 @@ interface ParsingContext {
 const JSON_BLOCK_PATTERNS = {
   quiz: {
     rootKey: "quiz_title",
-    validate: (parsed: any) =>
-      parsed?.quiz_title &&
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
+      parsed.quiz_title &&
       Array.isArray(parsed.multiple_choice) &&
       parsed.multiple_choice.length > 0,
   },
   presentation: {
     rootKey: "presentation",
-    validate: (parsed: any) =>
-      parsed?.presentation?.slides && Array.isArray(parsed.presentation.slides),
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
+      isJsonObject(parsed.presentation) &&
+      Array.isArray(parsed.presentation.slides),
   },
   decision_tree: {
     rootKey: "decision_tree",
-    validate: (parsed: any) =>
-      parsed?.decision_tree?.title && parsed.decision_tree.root,
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
+      isJsonObject(parsed.decision_tree) &&
+      parsed.decision_tree.title &&
+      parsed.decision_tree.root,
   },
   comparison_table: {
     rootKey: "comparison",
-    validate: (parsed: any) =>
-      parsed?.comparison?.title &&
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
+      isJsonObject(parsed.comparison) &&
+      parsed.comparison.title &&
       Array.isArray(parsed.comparison.items) &&
       Array.isArray(parsed.comparison.criteria),
   },
   diagram: {
     rootKey: "diagram",
-    validate: (parsed: any) =>
-      parsed?.diagram?.title && Array.isArray(parsed.diagram.nodes),
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
+      isJsonObject(parsed.diagram) &&
+      parsed.diagram.title &&
+      Array.isArray(parsed.diagram.nodes),
   },
   math_problem: {
     rootKey: "math_problem",
-    validate: (parsed: any) =>
-      parsed?.math_problem && typeof parsed.math_problem === "object",
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) && parsed.math_problem && typeof parsed.math_problem === "object",
   },
   // A clickable reference to a platform entity (agent, note, task, file, …).
   // Deliberately forgiving: any object under the key with a string `type`
   // qualifies — the renderer handles unknown types via a neutral fallback.
   item_presentation: {
     rootKey: "item_presentation",
-    validate: (parsed: any) =>
-      parsed?.item_presentation &&
-      typeof parsed.item_presentation === "object" &&
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
+      isJsonObject(parsed.item_presentation) &&
       typeof parsed.item_presentation.type === "string",
   },
   // An output-schema proposal — what the "JSON Schema Generator" agent emits:
@@ -197,9 +209,8 @@ const JSON_BLOCK_PATTERNS = {
   // that merely begins with a "name" key never misfires into this block.
   schema_proposal: {
     rootKey: "name",
-    validate: (parsed: any) =>
-      parsed &&
-      typeof parsed === "object" &&
+    validate: (parsed: unknown) =>
+      isJsonObject(parsed) &&
       typeof parsed.name === "string" &&
       parsed.schema !== null &&
       typeof parsed.schema === "object" &&
@@ -352,19 +363,19 @@ function validateJsonBlock(
 
 const questionnaireCache = new Map<
   string,
-  { content: string; hash: string; metadata: any }
+  { content: string; hash: string; metadata: Record<string, unknown> }
 >();
 const flashcardCache = new Map<
   string,
-  { content: string; hash: string; metadata: any }
+  { content: string; hash: string; metadata: Record<string, unknown> }
 >();
 const recipeCache = new Map<
   string,
-  { content: string; hash: string; metadata: any }
+  { content: string; hash: string; metadata: Record<string, unknown> }
 >();
 const tableCache = new Map<
   string,
-  { content: string; hash: string; metadata: any }
+  { content: string; hash: string; metadata: Record<string, unknown> }
 >();
 
 // ============================================================================
@@ -788,7 +799,7 @@ function validateStreamingXmlBlock(
   type: keyof typeof XML_TAG_BLOCKS,
   content: string,
   foundClosingTag: boolean,
-): { content: string; metadata: any } {
+): { content: string; metadata: Record<string, unknown> } {
   // Simple blocks that don't need streaming logic
   if (!["questionnaire", "flashcards", "cooking_recipe"].includes(type)) {
     return {
@@ -819,7 +830,7 @@ function validateStreamingXmlBlock(
 function validateQuestionnaireStreaming(
   content: string,
   foundClosingTag: boolean,
-): { content: string; metadata: any } {
+): { content: string; metadata: Record<string, unknown> } {
   const lines = content.split("\n");
   const completeQuestions: string[] = [];
   let currentQuestion: string[] = [];
@@ -887,7 +898,7 @@ function validateQuestionnaireStreaming(
 function validateFlashcardStreaming(
   content: string,
   foundClosingTag: boolean,
-): { content: string; metadata: any } {
+): { content: string; metadata: Record<string, unknown> } {
   const lines = content.split("\n");
   const completeCards: string[] = [];
   let currentCard: string[] = [];
@@ -961,7 +972,7 @@ function validateFlashcardStreaming(
 function validateRecipeStreaming(
   content: string,
   foundClosingTag: boolean,
-): { content: string; metadata: any } {
+): { content: string; metadata: Record<string, unknown> } {
   const hasTitle = /^###\s+.+$/m.test(content);
   const hasIngredients = /####\s*Ingredients?:/i.test(content);
   const hasInstructions = /####\s*Instructions?:/i.test(content);
@@ -1233,7 +1244,7 @@ function extractTable(startIndex: number, lines: string[]): ExtractionResult {
 function analyzeTableCompletionWithCache(
   tableLines: string[],
   tableHasEnded: boolean,
-): { content: string; metadata: any } {
+): { content: string; metadata: Record<string, unknown> } {
   if (tableLines.length < 2) {
     return {
       content: "",

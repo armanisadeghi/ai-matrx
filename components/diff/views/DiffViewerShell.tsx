@@ -124,12 +124,14 @@ export function DiffViewerShell({
           />
         </TabsContent>
         <TabsContent value="raw-json" className="flex-1 overflow-hidden mt-0">
-          <RawJsonView
-            oldValue={oldValue}
-            newValue={newValue}
-            oldLabel={oldLabel}
-            newLabel={newLabel}
-          />
+          {mode === "raw-json" ? (
+            <RawJsonView
+              oldValue={oldValue}
+              newValue={newValue}
+              oldLabel={oldLabel}
+              newLabel={newLabel}
+            />
+          ) : null}
         </TabsContent>
       </Tabs>
     </div>

@@ -125,7 +125,7 @@ function extractListItems(list: AstNode): string[] {
 
 interface HeadingListProcessorInput {
     ast: AstNode;
-    config: any;
+    config: Record<string, unknown>;
 }
 
 export function headingListProcessor({ ast, config }: HeadingListProcessorInput): OutputContent {

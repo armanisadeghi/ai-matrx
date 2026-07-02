@@ -1,4 +1,4 @@
-import combinedProcessor, { AstNode } from '../custom/combined-processor';
+import combinedProcessor, { AstNode, OutputNode } from '../custom/combined-processor';
 
 // Configuration type for defining break points
 export interface BreakConfig {
@@ -16,7 +16,7 @@ export interface ProcessedContent {
 }
 
 // Main utility function to process AST
-function processAST(nodes: AstNode[], config: BreakConfig[]): ProcessedContent {
+function processAST(nodes: OutputNode[], config: BreakConfig[]): ProcessedContent {
   const result: ProcessedContent = {};
   let currentKey: string | null = null;
   let currentContent: string[] = [];
@@ -27,7 +27,7 @@ function processAST(nodes: AstNode[], config: BreakConfig[]): ProcessedContent {
   });
 
   // Recursive function to process a single node
-  function processNode(node: AstNode, depth: number) {
+  function processNode(node: OutputNode, depth: number) {
     // Check if this node triggers a break
     const breakConfig = config.find((cfg) =>
       (!cfg.breakOn.type || node.type === cfg.breakOn.type) &&
@@ -44,7 +44,9 @@ function processAST(nodes: AstNode[], config: BreakConfig[]): ProcessedContent {
       // Set new current key
       currentKey = breakConfig.key;
       // Include the break node's content
-      currentContent.push(node.content);
+      if (node.content) {
+        currentContent.push(node.content);
+      }
     } else {
       // Add content to current content list if no break
       if (node.content) {

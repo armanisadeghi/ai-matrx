@@ -7,6 +7,18 @@ import { ViewId } from "./custom-views/view-registry";
 import ViewRenderer from "./custom-views/ViewRenderer";
 import { getDefaultViewId } from "./markdown-coordinator";
 import { processMarkdownForRenderingWithCoordinator } from "./markdown-processor-util";
+import type { AstNode } from "./processors/types";
+import { isJsonObject } from "@/types/json";
+
+// The coordinator's processor output is genuinely dynamic (each coordinator
+// wires up a different processor with a different result shape) — `extracted`
+// / `miscellaneous` are the two fields this component actually reads, both
+// handled defensively below (Array.isArray / typeof checks), so they stay
+// loosely typed rather than asserted into a concrete shape.
+interface CoordinatorProcessedData {
+  extracted?: unknown;
+  miscellaneous?: unknown;
+}
 
 const isClient = typeof window !== "undefined";
 
@@ -31,8 +43,8 @@ const DirectMarkdownRenderer = ({
 }: DirectMarkdownRendererProps) => {
   const dispatch = useAppDispatch();
   const [error, setError] = useState<string | null>(null);
-  const [ast, setAst] = useState<any>(null);
-  const [processedData, setProcessedData] = useState<any>(null);
+  const [ast, setAst] = useState<AstNode | null>(null);
+  const [processedData, setProcessedData] = useState<CoordinatorProcessedData | null>(null);
 
   const viewId = getDefaultViewId(coordinatorId);
 
@@ -48,7 +60,7 @@ const DirectMarkdownRenderer = ({
           coordinatorId,
         });
         setAst(result.ast);
-        setProcessedData(result.processedData);
+        setProcessedData(isJsonObject(result.processedData) ? result.processedData : null);
         setError(null);
       } catch (err) {
         setError(`Error processing markdown: ${err}`);

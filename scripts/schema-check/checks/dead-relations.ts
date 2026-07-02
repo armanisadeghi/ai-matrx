@@ -12,6 +12,8 @@
  * everything else — they defer any relation listed here so there's no double-report.
  */
 import { isIgnored, loc, registerCheck } from "../context";
+import { buildTableConsts, resolveFromCalls } from "../table-ref-resolution";
+import { buildClientSchemas, resolvedChainSchema } from "../chain-schema";
 import type { Context, Finding } from "../types";
 
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -20,30 +22,36 @@ function check(ctx: Context): Finding[] {
   const findings: Finding[] = [];
   for (const file of ctx.codeFiles) {
     const { lines } = file;
+    // Resolves `.from(TABLE)` where TABLE is a local `const TABLE = "old_name"`,
+    // and a chain already repointed via an explicit `.schema()`, a canonical
+    // `<name>Db(client)` binder, or a local alias of either — not just a string
+    // literal argument / literal `.schema("new")` text. See ../table-ref-resolution.ts
+    // and ../chain-schema.ts (shared with direct-from-schema so the two checks agree).
+    const isCode = file.ext !== ".sql";
+    const content = lines.join("\n");
+    const tableConsts = isCode ? buildTableConsts(content) : new Map<string, string>();
+    const clientSchemas = isCode ? buildClientSchemas(content, ctx.schemaBinders) : new Map<string, string>();
     for (const entry of ctx.deadRelations) {
       const r = esc(entry.relation);
       const oldSchema = entry.old.split(".")[0];
       const os = esc(oldSchema);
       const ns = entry.newSchema;
-      const bare = new RegExp(`\\.(from|table)\\(\\s*['"\\\`]${r}['"\\\`]`);
       const qualified = new RegExp(`\\b${os}\\.${r}\\b`);
       const typed = new RegExp(
         `Database\\[\\s*['"]${os}['"]\\s*\\]\\[\\s*['"]Tables['"]\\s*\\]\\[\\s*['"]${r}['"]`,
       );
       lines.forEach((text, i) => {
         if (isIgnored(text)) return;
-        // The `.schema("<new>")` qualifier is often on a PRECEDING line of a
-        // multiline chain — evaluate the new-schema signal over the whole chain.
-        let chainStart = i;
-        while (chainStart > 0 && lines[chainStart].trim().startsWith(".")) chainStart--;
-        const chain = lines.slice(chainStart, i + 1).join("\n");
-        const hasNewSchema =
-          chain.includes(`schema("${ns}")`) ||
-          chain.includes(`schema('${ns}')`) ||
-          chain.includes(`"${ns}"`) ||
-          chain.includes(`'${ns}'`);
+        const hasBare = resolveFromCalls(text, tableConsts).some((c) => c.rel === entry.relation);
+        const resolvedSchema = isCode
+          ? resolvedChainSchema(lines, i, ctx.schemaBinders, clientSchemas).schema
+          : null;
+        // The `.schema("<new>")` qualifier (or an equivalent binder/alias) is often
+        // established on a PRECEDING line of a multiline chain, or upstream of this
+        // file entirely for a binder — `resolvedChainSchema` already accounts for both.
+        const hasNewSchema = resolvedSchema === ns;
         let kind = "";
-        if (bare.test(text) && !hasNewSchema) kind = "bare .from/.table (resolves to old schema)";
+        if (hasBare && !hasNewSchema) kind = "bare .from/.table (resolves to old schema)";
         else if (typed.test(text)) kind = `Database["${oldSchema}"] type ref`;
         else if (qualified.test(text) && !text.includes(entry.new)) kind = `qualified ${entry.old}`;
         if (!kind) return;

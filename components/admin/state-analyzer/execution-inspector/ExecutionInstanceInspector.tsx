@@ -1085,8 +1085,8 @@ export default function ExecutionInstanceInspector({
   const agentFilterLower = agentFilter.toLowerCase();
   const agentList = Object.values(agents)
     .filter((a) => {
-      const name = a.name?.toLowerCase() ?? "";
-      const id = a.id?.toLowerCase() ?? "";
+      const name = a.name.toLowerCase();
+      const id = a.id.toLowerCase();
       return name.includes(agentFilterLower) || id.includes(agentFilterLower);
     })
     .sort((a, b) => {
@@ -1094,7 +1094,7 @@ export default function ExecutionInstanceInspector({
       const bc = agentInstanceCount[b.id] || 0;
       if (ac > 0 && bc === 0) return -1;
       if (ac === 0 && bc > 0) return 1;
-      return (a.name || "").localeCompare(b.name || "");
+      return a.name.localeCompare(b.name);
     });
 
   const filteredConvIds = effectiveAgentId

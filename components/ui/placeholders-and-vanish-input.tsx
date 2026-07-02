@@ -11,6 +11,12 @@ type PixelParticle = {
   color: string;
 };
 
+type RawPixelSample = {
+  x: number;
+  y: number;
+  color: [number, number, number, number];
+};
+
 export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
@@ -80,7 +86,7 @@ export function PlaceholdersAndVanishInput({
 
     const imageData = ctx.getImageData(0, 0, 800, 800);
     const pixelData = imageData.data;
-    const newData: any[] = [];
+    const newData: RawPixelSample[] = [];
 
     for (let t = 0; t < 800; t++) {
       let i = 4 * t * 800;

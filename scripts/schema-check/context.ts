@@ -8,6 +8,7 @@ import { extname, join, relative } from "node:path";
 import { classifyGenerated } from "./generated-files";
 import { parseDbTypesSchemaList } from "./db-types-parse";
 import { loadSnapshot } from "./snapshot";
+import { discoverSchemaBinders } from "./schema-binders";
 import type { Check, CodeFile, Context, DeadRelation, Finding } from "./types";
 
 const SCAN_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".sql"]);
@@ -96,6 +97,7 @@ export function buildContext(root: string, warn: boolean): Context {
     deadRelations,
     deadOldNames,
     warn,
+    schemaBinders: discoverSchemaBinders(root),
   };
 }
 

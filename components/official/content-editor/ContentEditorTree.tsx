@@ -111,7 +111,8 @@ export function ContentEditorTree({
     node: ContentEditorTreeNode,
     depth: number,
   ): React.ReactNode => {
-    const isFolder = node.children !== undefined;
+    const children = node.children;
+    const isFolder = children !== undefined;
     const isExpanded = expandedSet.has(node.id);
     const state = getState(node.id);
     const leafIcon = node.icon ?? FileText;
@@ -147,7 +148,7 @@ export function ContentEditorTree({
             </button>
           </li>
           {isExpanded &&
-            node.children!.map((child) => renderNode(child, depth + 1))}
+            children.map((child) => renderNode(child, depth + 1))}
         </React.Fragment>
       );
     }

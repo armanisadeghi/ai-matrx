@@ -11,6 +11,7 @@ import {
   Folder,
   GitBranch,
   LayoutDashboard,
+  List,
   Loader2,
   Zap,
 } from "lucide-react";
@@ -37,6 +38,11 @@ const NAV_ITEMS = [
     label: "Shortcuts",
     href: "/administration/system-agents/shortcuts",
     icon: Zap,
+  },
+  {
+    label: "All Shortcuts",
+    href: "/administration/system-agents/shortcuts/all",
+    icon: List,
   },
   {
     label: "Categories",

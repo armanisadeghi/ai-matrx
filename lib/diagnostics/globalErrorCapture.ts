@@ -54,12 +54,32 @@ export function installGlobalErrorCapture(): void {
       // object and an empty message — skip those, they aren't JS exceptions.
       if (!event.message && !event.error) return;
       const err = event.error;
+      const scriptUrl = event.filename || undefined;
+      const scriptLine = event.lineno || undefined;
+      const scriptColumn = event.colno || undefined;
+      const baseRaw =
+        err != null
+          ? serializeThrown(err)
+          : event.message
+            ? { message: event.message }
+            : undefined;
+      const raw =
+        scriptUrl || scriptLine || scriptColumn
+          ? {
+              ...(typeof baseRaw === "object" && baseRaw !== null
+                ? (baseRaw as Record<string, unknown>)
+                : { thrown: baseRaw }),
+              scriptUrl,
+              line: scriptLine,
+              column: scriptColumn,
+            }
+          : baseRaw;
       captureError({
         source: "runtime-exception",
         message: event.message || extractErrorMessage(err) || "Uncaught error",
         name: err instanceof Error ? err.name : undefined,
         stack: err instanceof Error ? err.stack : undefined,
-        raw: serializeThrown(err ?? event.message),
+        raw,
       });
     } catch {
       /* capture must never break the page */
@@ -120,8 +140,7 @@ export function installGlobalErrorCapture(): void {
           )
           .join(" ");
         const errArg = args.find((a) => a instanceof Error) as
-          | Error
-          | undefined;
+          Error | undefined;
         captureError({
           source: "console-error",
           message: message || "console.error",

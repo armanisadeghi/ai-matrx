@@ -8,6 +8,8 @@ import type {
     CustomAppletConfig,
     AppletContainer,
     FieldDefinition,
+    AppletSourceConfig,
+    ComponentProps,
 } from "@/types/customAppTypes";
 
 // Type definitions
@@ -25,9 +27,9 @@ type AppletConfig = {
     accent_color: string;
     layout_type: string;
     containers: Container[];
-    data_source_config: any;
-    result_component_config: any;
-    next_step_config: any;
+    data_source_config: AppletSourceConfig | undefined;
+    result_component_config: unknown;
+    next_step_config: unknown;
     compiled_recipe_id: string;
     subcategory_id: string | null;
     image_url: string;
@@ -63,7 +65,7 @@ type ContainerField = {
     iconName: string;
     defaultValue: string;
     includeOther: boolean;
-    componentProps: any;
+    componentProps: ComponentProps;
     options?: Array<{
         id: string;
         label: string;
@@ -183,9 +185,9 @@ export function customAppletConfigToAppletViewerConfig(
         accent_color: c.accentColor ?? "",
         layout_type: c.layoutType ?? "",
         containers,
-        data_source_config: c.dataSourceConfig ?? {},
-        result_component_config: c.resultComponentConfig ?? {},
-        next_step_config: c.nextStepConfig ?? {},
+        data_source_config: c.dataSourceConfig,
+        result_component_config: c.resultComponentConfig,
+        next_step_config: c.nextStepConfig,
         compiled_recipe_id: c.compiledRecipeId ?? "",
         subcategory_id: c.subcategoryId ?? null,
         image_url: c.imageUrl ?? "",

@@ -25,13 +25,28 @@ export type StreamingDiffState =
   | 'fallback';      // Couldn't parse, show as code
 
 /**
- * Parsed SEARCH/REPLACE block
+ * Parsed SEARCH/REPLACE block (streaming-aware — tracks per-block completion)
  */
 export interface SearchReplaceBlock {
   search: string;
   replace: string;
+  searchComplete: boolean;
+  replaceComplete: boolean;
   isComplete: boolean;
 }
+
+/**
+ * Parsed unified diff (line-based) block
+ */
+export interface UnifiedDiffBlock {
+  lines: string[];
+}
+
+/**
+ * Union of every shape a diff style handler's parse() can return.
+ * Extend this when a new DiffStyleHandler is added.
+ */
+export type ParsedDiffBlock = SearchReplaceBlock | UnifiedDiffBlock;
 
 /**
  * Result of diff style detection
@@ -53,7 +68,7 @@ export interface DiffStyleDetection {
 export interface DiffStyleHandler {
   name: string;
   detect: (content: string) => DiffStyleDetection;
-  parse: (content: string) => any; // Style-specific parsed result
+  parse: (content: string) => ParsedDiffBlock; // Style-specific parsed result
   canShowPartial: boolean; // Whether we can show partial content
 }
 

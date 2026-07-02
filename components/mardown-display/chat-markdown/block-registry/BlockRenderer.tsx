@@ -21,6 +21,7 @@ import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import { parseYouTubeUrl } from "@/lib/media/youtube";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
+import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -618,19 +619,26 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
 
     case "image":
+      // The splitter only emits an "image" block when it parsed a URL out of
+      // the markdown — but guard honestly rather than asserting: a missing
+      // src would otherwise silently reach ImageBlock's required `src: string`
+      // prop as `undefined`, and it fetches that src unconditionally.
+      if (!block.src) return null;
       return (
         <BlockComponents.ImageBlock
           key={index}
-          src={block.src!}
+          src={block.src}
           alt={block.alt}
         />
       );
 
     case "video":
+      // Same guard as "image" above — VideoBlock also requires a real src.
+      if (!block.src) return null;
       return (
         <BlockComponents.VideoBlock
           key={index}
-          src={block.src!}
+          src={block.src}
           alt={block.alt}
         />
       );
@@ -955,7 +963,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       return (
         <BlockComponents.SearchReplaceBlock
           key={index}
-          serverData={block.serverData as any}
+          serverData={block.serverData}
           content={block.serverData ? undefined : block.content}
           language={(block.metadata?.language as string) || "typescript"}
           isStreamActive={isStreamActive}
@@ -964,13 +972,12 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
 
     case "decision": {
-      const decisionData = block.serverData
-        ? (block.serverData as any)
-        : block.metadata?.decision;
+      const candidateDecision: unknown = block.serverData ?? block.metadata?.decision;
 
-      if (!decisionData || !decisionData.options?.length) {
+      if (!isInlineDecision(candidateDecision) || candidateDecision.options.length === 0) {
         return renderBasicMarkdown(block.content);
       }
+      const decisionData = candidateDecision;
 
       if (block.metadata?.isComplete === false) {
         return (

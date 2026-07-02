@@ -228,7 +228,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: CandidateProfileD
 };
 
 interface CandidateProfileWithCollapseProps {
-  data: any;
+  data: CandidateProfileData;
   isLoading?: boolean;
 }
 

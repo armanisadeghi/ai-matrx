@@ -215,7 +215,7 @@ const CandidateProfileWithCollapseDisplay = ({ data }: { data: { extracted?: Can
 };
 
 interface CandidateProfileWithCollapseProps {
-  data: any;
+  data: { extracted?: CandidateProfileExtracted };
   isLoading?: boolean;
 }
 

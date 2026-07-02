@@ -67,7 +67,7 @@ export function UnifiedListLayout<T extends BaseListItem>({
     const [sortBy, setSortBy] = useState(
         config.filters?.defaultSort || config.filters?.sortOptions[0]?.value || ""
     );
-    const [filterValues, setFilterValues] = useState<Record<string, any>>(
+    const [filterValues, setFilterValues] = useState<Record<string, unknown>>(
         config.filters?.customFilters
             ? initializeFilterValues(config.filters.customFilters)
             : {}
@@ -102,7 +102,7 @@ export function UnifiedListLayout<T extends BaseListItem>({
 
         // Apply hierarchy filter if enabled
         if (config.hierarchy?.enabled) {
-            result = filterByFolder(result as any, currentFolderId) as T[];
+            result = filterByFolder(result, currentFolderId);
         }
 
         // Apply search filter
@@ -242,13 +242,15 @@ export function UnifiedListLayout<T extends BaseListItem>({
                 }
             },
             onShare: config.itemActions?.onShare
-                ? () => config.itemActions!.onShare!(item.id)
+                ? () => config.itemActions?.onShare?.(item.id)
                 : undefined,
-            customActions: config.itemActions?.customActions?.map(action => ({
-                id: action.id,
-                onClick: () => action.onClick(item),
-                disabled: action.disabled ? action.disabled(item) : false,
-            })) || [],
+            customActions: config.itemActions?.customActions
+                ? config.itemActions.customActions.map(action => ({
+                      id: action.id,
+                      onClick: () => action.onClick(item),
+                      disabled: action.disabled ? action.disabled(item) : false,
+                  }))
+                : [],
             isNavigating: navigatingId === item.id,
             isAnyNavigating: navigatingId !== null,
             isDeleting: deletingIds.has(item.id),

@@ -129,39 +129,39 @@ export interface MarkdownHeadingConfig {
 
 export interface MarkdownComponentOverrides {
   /** Fully replace the `<a>` renderer. Receives { node, href, children, ...props } */
-  a?: React.ComponentType<any>;
+  a?: Components["a"];
   /** Fully replace the `<p>` renderer */
-  p?: React.ComponentType<any>;
+  p?: Components["p"];
   /** Fully replace the `<strong>` renderer */
-  strong?: React.ComponentType<any>;
+  strong?: Components["strong"];
   /** Fully replace the `<em>` renderer */
-  em?: React.ComponentType<any>;
+  em?: Components["em"];
   /** Fully replace the `<blockquote>` renderer */
-  blockquote?: React.ComponentType<any>;
+  blockquote?: Components["blockquote"];
   /** Fully replace the `<ul>` renderer */
-  ul?: React.ComponentType<any>;
+  ul?: Components["ul"];
   /** Fully replace the `<ol>` renderer */
-  ol?: React.ComponentType<any>;
+  ol?: Components["ol"];
   /** Fully replace the `<li>` renderer */
-  li?: React.ComponentType<any>;
+  li?: Components["li"];
   /** Fully replace the `<h1>` renderer */
-  h1?: React.ComponentType<any>;
+  h1?: Components["h1"];
   /** Fully replace the `<h2>` renderer */
-  h2?: React.ComponentType<any>;
+  h2?: Components["h2"];
   /** Fully replace the `<h3>` renderer */
-  h3?: React.ComponentType<any>;
+  h3?: Components["h3"];
   /** Fully replace the `<h4>` renderer */
-  h4?: React.ComponentType<any>;
+  h4?: Components["h4"];
   /** Fully replace the `<code>` renderer */
-  code?: React.ComponentType<any>;
+  code?: Components["code"];
   /** Fully replace the `<pre>` renderer */
-  pre?: React.ComponentType<any>;
+  pre?: Components["pre"];
   /** Fully replace the `<img>` renderer */
-  img?: React.ComponentType<any>;
+  img?: Components["img"];
   /** Fully replace the `<hr>` renderer */
-  hr?: React.ComponentType<any>;
+  hr?: Components["hr"];
   /** Fully replace the `<table>` renderer (default: hidden) */
-  table?: React.ComponentType<any>;
+  table?: Components["table"];
 }
 
 export interface MarkdownStyleConfig {
@@ -334,9 +334,9 @@ export const ConfigurableMarkdownContent: React.FC<
   // ---------------------------------------------------------------------------
   // Link wrapper — stable, respects componentOverrides.a
   // ---------------------------------------------------------------------------
-  const LinkWrapper = useMemo(() => {
+  const LinkWrapper: NonNullable<Components["a"]> = useMemo(() => {
     if (componentOverrides?.a) return componentOverrides.a;
-    return ({ node, href, children, ...props }: any) => (
+    return ({ node, href, children, ...props }) => (
       <LinkComponent href={href}>{children}</LinkComponent>
     );
   }, [componentOverrides?.a]);
@@ -465,18 +465,25 @@ export const ConfigurableMarkdownContent: React.FC<
   const components = useMemo(
     () => {
       // Helper: extract plain text from React children (used for direction detection)
-      const extractText = (children: any): string => {
+      const extractText = (children: React.ReactNode): string => {
         if (typeof children === "string") return children;
         if (Array.isArray(children)) return children.map(extractText).join("");
-        if (children && typeof children === "object" && children.props) {
-          return extractText(children.props.children);
+        if (
+          children &&
+          typeof children === "object" &&
+          "props" in children &&
+          children.props &&
+          typeof children.props === "object" &&
+          "children" in children.props
+        ) {
+          return extractText(children.props.children as React.ReactNode);
         }
         return "";
       };
 
       return {
         // ---- input (checkbox) ----
-        input: ({ node, type, checked, disabled, onChange, ...props }: any) => {
+        input: ({ node, type, checked, disabled, onChange, ...props }) => {
           if (type === "checkbox") {
             return (
               <Checkbox
@@ -495,7 +502,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- p ----
         p:
           componentOverrides?.p ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const childArray = React.Children.toArray(children);
 
             if (childArray.length === 1 && childArray[0] === "\u00A0") {
@@ -504,11 +511,15 @@ export const ConfigurableMarkdownContent: React.FC<
 
             let isMathOnly = false;
             if (childArray.length === 1) {
-              const child = childArray[0] as any;
+              const child = childArray[0];
               if (
                 child &&
                 typeof child === "object" &&
-                child.props?.className
+                "props" in child &&
+                child.props &&
+                typeof child.props === "object" &&
+                "className" in child.props &&
+                typeof child.props.className === "string"
               ) {
                 isMathOnly = child.props.className.includes("katex");
               }
@@ -557,11 +568,12 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- strong ----
         strong:
           componentOverrides?.strong ??
-          (({ node, children, ...props }: any) => {
-            const parentTagName = node.parent?.tagName?.toLowerCase() || "";
-            const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-              parentTagName,
-            );
+          (({ node, children, ...props }) => {
+            // react-markdown hast nodes never carry `.parent` (hast-util-to-jsx-runtime
+            // does not attach ancestor refs), so this can never detect a heading
+            // ancestor — isInHeading is always false. See the identical note in
+            // BasicMarkdownContent.tsx.
+            const isInHeading = false;
             const boldText = extractText(children);
             const boldDirection = detectTextDirection(boldText);
 
@@ -582,11 +594,9 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- em ----
         em:
           componentOverrides?.em ??
-          (({ node, children, ...props }: any) => {
-            const parentTagName = node.parent?.tagName?.toLowerCase() || "";
-            const isInHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(
-              parentTagName,
-            );
+          (({ node, children, ...props }) => {
+            // See the identical note in the `strong` renderer above.
+            const isInHeading = false;
             const italicText = extractText(children);
             const italicDirection = detectTextDirection(italicText);
 
@@ -610,7 +620,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- blockquote ----
         blockquote:
           componentOverrides?.blockquote ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const blockquoteText = extractText(children);
             const blockquoteDirection = detectTextDirection(blockquoteText);
             const isRtl = blockquoteDirection === "rtl";
@@ -642,7 +652,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- ul ----
         ul:
           componentOverrides?.ul ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const listText = extractText(children);
             const listDirection = detectTextDirection(listText);
 
@@ -668,7 +678,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- ol ----
         ol:
           componentOverrides?.ol ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const listText = extractText(children);
             const listDirection = detectTextDirection(listText);
 
@@ -694,11 +704,13 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- li ----
         li:
           componentOverrides?.li ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const itemText = extractText(children);
             const itemDirection = detectTextDirection(itemText);
-            const isTaskItem =
-              node?.properties?.className?.includes("task-list-item");
+            const nodeClassName = node?.properties?.className;
+            const isTaskItem = Array.isArray(nodeClassName)
+              ? nodeClassName.includes("task-list-item")
+              : typeof nodeClassName === "string" && nodeClassName.includes("task-list-item");
 
             if (isTaskItem) {
               return (
@@ -736,7 +748,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- headings ----
         h1:
           componentOverrides?.h1 ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const headingText = extractText(children);
             const headingDirection = detectTextDirection(headingText);
             return (
@@ -756,7 +768,7 @@ export const ConfigurableMarkdownContent: React.FC<
 
         h2:
           componentOverrides?.h2 ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const headingText = extractText(children);
             const headingDirection = detectTextDirection(headingText);
             return (
@@ -776,7 +788,7 @@ export const ConfigurableMarkdownContent: React.FC<
 
         h3:
           componentOverrides?.h3 ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const headingText = extractText(children);
             const headingDirection = detectTextDirection(headingText);
             return (
@@ -796,7 +808,7 @@ export const ConfigurableMarkdownContent: React.FC<
 
         h4:
           componentOverrides?.h4 ??
-          (({ node, children, ...props }: any) => {
+          (({ node, children, ...props }) => {
             const headingText = extractText(children);
             const headingDirection = detectTextDirection(headingText);
             return (
@@ -817,7 +829,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- pre ----
         pre:
           componentOverrides?.pre ??
-          (({ node, children, ...props }: any) => (
+          (({ node, children, ...props }) => (
             <pre className={spacing.preMy} {...props}>
               {children}
             </pre>
@@ -826,14 +838,19 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- code (inline only) ----
         code:
           componentOverrides?.code ??
-          (({ node, inline, className, children, ...props }: any) => {
+          (({ node, className, children, ...props }) => {
             const isCodeBlock =
               Array.isArray(children) &&
               children.length === 1 &&
               typeof children[0] === "string" &&
               children[0] === "pygame";
 
-            if (!isCodeBlock && (inline === true || inline === undefined)) {
+            // NOTE: react-markdown (v9+) never passes an `inline` prop to the
+            // `code` renderer — that API was removed with react-markdown v7/v8.
+            // The `isCodeBlock` check above is therefore the only gate; this
+            // renderer always returns the inline `<code>` styling unless the
+            // "pygame" sentinel matches (pre-existing behavior, unchanged).
+            if (!isCodeBlock) {
               return (
                 <code
                   className={cn(
@@ -857,7 +874,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- img ----
         img:
           componentOverrides?.img ??
-          (({ node, ...props }: any) => (
+          (({ node, ...props }) => (
             <img
               className={cn("max-w-full h-auto rounded-md", spacing.imgMy)}
               {...props}
@@ -868,7 +885,7 @@ export const ConfigurableMarkdownContent: React.FC<
         // ---- hr ----
         hr:
           componentOverrides?.hr ??
-          (({ node, ...props }: any) => (
+          (({ node, ...props }) => (
             <hr
               className={cn(
                 spacing.hrMy,
@@ -881,15 +898,15 @@ export const ConfigurableMarkdownContent: React.FC<
           )),
 
         // ---- br ----
-        br: ({ node, ...props }: any) => <br />,
+        br: ({ node, ...props }) => <br />,
 
         // ---- div / span (pass-through) ----
-        div: ({ node, className, children, ...props }: any) => (
+        div: ({ node, className, children, ...props }) => (
           <div className={className} {...props}>
             {children}
           </div>
         ),
-        span: ({ node, className, children, ...props }: any) => (
+        span: ({ node, className, children, ...props }) => (
           <span className={className} {...props}>
             {children}
           </span>

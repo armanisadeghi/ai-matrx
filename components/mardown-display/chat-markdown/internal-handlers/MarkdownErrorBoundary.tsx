@@ -2,15 +2,17 @@ import React, { ErrorInfo } from "react";
 import { captureReactRenderError } from "@/lib/diagnostics/captureReactError";
 
 // Error boundary component for catching React errors
+interface MarkdownErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+}
+
 export class MarkdownErrorBoundary extends React.Component<
-  {
-    children: React.ReactNode;
-    fallback: React.ReactNode;
-    onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  },
+  MarkdownErrorBoundaryProps,
   { hasError: boolean }
 > {
-  constructor(props: any) {
+  constructor(props: MarkdownErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }

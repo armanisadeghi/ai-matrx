@@ -16,7 +16,7 @@ import PathManagement from "./path-management/PathManagement";
 import SplitView from "./path-management/SplitView";
 
 interface ProcessorExtractorProps {
-    jsonData: any;
+    jsonData: unknown;
     configKey?: string;
 }
 
@@ -236,7 +236,7 @@ const ProcessorExtractor = ({ jsonData, configKey }: ProcessorExtractorProps) =>
 
     // Wrapper around isPathHidden from utilities
     const isPathHidden = useCallback((path: string | PathArray | null) => {
-        return checkPathHidden(path ?? "", hiddenPaths);
+        return checkPathHidden(path, hiddenPaths);
     }, [hiddenPaths]);
 
     return (

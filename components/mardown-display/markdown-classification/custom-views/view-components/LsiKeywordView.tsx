@@ -17,6 +17,7 @@ import FlexibleLoadingComponent from "@/components/mardown-display/markdown-clas
 import { useIsMobile } from "@/hooks/use-mobile";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
 import { PiMagicWandFill } from "react-icons/pi";
+import { isJsonObject } from "@/types/json";
 
 // Loosely-structured markdown-AST node produced by the structured-content
 // parser (see structured-ast-config-system). Genuinely open/dynamic shape —
@@ -49,8 +50,8 @@ const isLsiSectionKey = (value: string): value is LsiSectionKey =>
   (LSI_SECTION_KEYS as string[]).includes(value);
 
 const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
-  const extracted =
-    (data as { extracted?: { parsedContent?: unknown } } | undefined)?.extracted || {};
+  const dataExtracted = isJsonObject(data) && isJsonObject(data.extracted) ? data.extracted : undefined;
+  const extracted = dataExtracted ?? {};
   const [expandedSection, setExpandedSection] = useState<string | null>("all"); // All sections open by default
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
@@ -535,7 +536,7 @@ const KeywordHierarchyDisplay = ({ data }: { data: unknown }) => {
 };
 
 interface KeywordHierarchyProps {
-  data: any;
+  data: unknown;
   isLoading?: boolean;
 }
 

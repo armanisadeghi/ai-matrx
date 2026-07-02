@@ -263,9 +263,10 @@ const TypeScriptErrorViewer: React.FC = () => {
     }
 
     if (sortConfig.key) {
+      const key = sortConfig.key;
       result.sort((a, b) => {
-        const aValue = a[sortConfig.key!];
-        const bValue = b[sortConfig.key!];
+        const aValue = a[key];
+        const bValue = b[key];
 
         if (aValue === null)
           return sortConfig.direction === "ascending" ? -1 : 1;

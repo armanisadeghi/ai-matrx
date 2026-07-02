@@ -151,6 +151,17 @@ export interface LibrarySourceAdapter {
   tabIdPrefix: string;
   /** Whether rows expose multiple code columns (folder-per-row). */
   multiField: boolean;
+  /**
+   * Real Postgres location of the source table, for `useTabRealtimeWatcher`
+   * to filter `postgres_changes` on — deliberately separate from `sourceId`,
+   * which is just this adapter's internal label and is NOT guaranteed to
+   * match the actual schema-qualified table (e.g. `sourceId:
+   * "tool_ui_components"` reads from `tool.ui`). Omit for adapters with no
+   * live backing table (e.g. a decommissioned/stubbed source) — the watcher
+   * skips subscribing when this is absent rather than filtering on a
+   * guessed name.
+   */
+  realtimeTable?: { schema: string; table: string };
 
   /** Parse a tab id like "prompt-app:<uuid>" → `{ rowId }` or
    *  "tool-ui:<uuid>:<field>" → `{ rowId, fieldId }`. Returns null if

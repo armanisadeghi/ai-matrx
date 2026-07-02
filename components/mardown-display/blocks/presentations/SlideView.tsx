@@ -45,7 +45,8 @@ export interface SlideData {
   extra?: Record<string, unknown>;
 }
 
-const palette = (t: SlideTheme) => ({
+/** Resolve a theme's colors to guaranteed non-empty hex strings (deck fields are all optional). */
+export const palette = (t: SlideTheme) => ({
   primary: t.primaryColor || "#4F46E5",
   secondary: t.secondaryColor || "#7C3AED",
   accent: t.accentColor || "#06B6D4",

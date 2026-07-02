@@ -7,9 +7,10 @@ import {cn} from '@/lib/utils';
 import {Copy, ChevronDown, ChevronUp, Minimize2, Expand} from 'lucide-react';
 import JsonViewerItem from './JsonViewerItem';
 import {stabilizeData} from './utils';
+import type {JsonValue} from '@/types/json';
 
 interface JsonViewerProps extends React.HTMLAttributes<HTMLDivElement> {
-    data: any;
+    data: object | string;
     className?: string;
     initialExpanded?: boolean;
     maxHeight?: string;
@@ -30,18 +31,18 @@ export const JsonViewer: React.FC<JsonViewerProps> = (
     const [isCopied, setIsCopied] = useState(false);
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
-    const parsedData = useMemo(() => {
-        let initialData;
+    const parsedData = useMemo((): JsonValue | null => {
+        let initialData: JsonValue | null;
         if (typeof data === 'string') {
             try {
-                initialData = JSON.parse(data);
+                initialData = JSON.parse(data) as JsonValue;
             } catch {
                 return null;
             }
         } else {
-            initialData = typeof data === 'object' && data !== null ? data : null;
+            initialData = typeof data === 'object' && data !== null ? (data as JsonValue) : null;
         }
-        return stabilizeData(initialData);
+        return initialData === null ? null : stabilizeData(initialData);
     }, [data]);
 
     const copyToClipboard = useCallback(() => {
@@ -72,7 +73,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = (
         [expandedKeys]
     );
 
-    const hasExpandableItems = useCallback((obj: any): boolean => {
+    const hasExpandableItems = useCallback((obj: JsonValue | null): boolean => {
         if (typeof obj !== 'object' || obj === null) return false;
         return Object.values(obj).some(value =>
             typeof value === 'object' && value !== null && Object.keys(value).length > 0
@@ -90,13 +91,15 @@ export const JsonViewer: React.FC<JsonViewerProps> = (
         setExpandedKeys(new Set());
     }, [disabled]);
 
-    const getAllKeys = useCallback((obj: any, currentPath = ''): string[] => {
+    const getAllKeys = useCallback((obj: JsonValue | null, currentPath = ''): string[] => {
+        if (typeof obj !== 'object' || obj === null) return [];
         let keys: string[] = [];
         for (const key in obj) {
+            const child = (obj as Record<string, JsonValue | undefined>)[key];
             const fullPath = currentPath ? `${currentPath}.${key}` : key;
-            if (typeof obj[key] === 'object' && obj[key] !== null && Object.keys(obj[key]).length > 0) {
+            if (typeof child === 'object' && child !== null && Object.keys(child).length > 0) {
                 keys.push(fullPath);
-                keys = keys.concat(getAllKeys(obj[key], fullPath));
+                keys = keys.concat(getAllKeys(child, fullPath));
             }
         }
         return keys;
@@ -157,12 +160,12 @@ export const JsonViewer: React.FC<JsonViewerProps> = (
                 </div>
             )}
             <div className="pl-1 pt-1 pb-2 pr-10">
-                {parsedData && Object.entries(parsedData).map(([key, value], index, arr) => (
+                {parsedData && typeof parsedData === 'object' && Object.entries(parsedData).map(([key, value], index, arr) => (
                     <JsonViewerItem
                         key={key}
                         path={key}
                         keyName={key}
-                        value={value}
+                        value={(value as JsonValue) ?? null}
                         isExpanded={isKeyExpanded(key)}
                         onToggle={toggleExpand}
                         isKeyExpanded={isKeyExpanded}

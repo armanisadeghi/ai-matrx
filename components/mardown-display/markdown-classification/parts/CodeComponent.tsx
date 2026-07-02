@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ReactNode } from "react";
+import type { ComponentPropsWithoutRef } from "react";
+import type { ExtraProps } from "react-markdown";
 import { dracula, prism } from "react-syntax-highlighter/dist/cjs/styles/prism";
 
 // Import SyntaxHighlighter properly
@@ -9,26 +10,25 @@ const SyntaxHighlighter = dynamic(
     () => import("react-syntax-highlighter").then((mod) => mod.Prism),
     { ssr: false }
   );
-  
-// Define our own CodeProps type since we can't import directly
-interface CodeProps {
-    mode: "dark" | "light";
-    node?: any;
-    inline?: boolean;
-    className?: string;
-    children: ReactNode;
-    [key: string]: any;
-  }
-  
+
+// react-markdown v10 passes JSX.IntrinsicElements['code'] & ExtraProps to the
+// `code` component override — there is no `inline` prop (removed upstream);
+// code vs inline-code is distinguished by the presence of a `language-*`
+// className on the node, which the `match` check below already handles.
+type CodeProps = ComponentPropsWithoutRef<"code"> &
+    ExtraProps & {
+        mode: "dark" | "light";
+    };
+
 // Define code rendering component with proper typing
-export const CodeComponent = ({ mode, node, inline, className, children, ...props }: CodeProps) => {
+export const CodeComponent = ({ mode, node, className, children, ...props }: CodeProps) => {
     const match = /language-(\w+)/.exec(className || "");
     // DATA CONTRACT: code renders verbatim. Previously we stripped the
     // trailing newline via `.replace(/\n$/, "")`, which breaks the "never
     // mutate content" contract — round-tripping an edit would silently
     // lose the final newline.
     const codeString = String(children);
-    return !inline && match ? (
+    return match ? (
         <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
             {/* We need to render this conditionally to avoid type errors with the dynamic import */}
             {mode === "dark" ? (

@@ -97,10 +97,14 @@ function parseMap(raw: string): MapSpec | { error: string } {
   if (markers.length === 0)
     return { error: "Map `markers` need at least one {lat, lng} point." };
   const c = o.center as unknown;
-  const center =
-    Array.isArray(c) && num(c[0]) != null && num(c[1]) != null
-      ? ([num(c[0])!, num(c[1])!] as [number, number])
-      : undefined;
+  let center: [number, number] | undefined;
+  if (Array.isArray(c)) {
+    const centerLat = num(c[0]);
+    const centerLng = num(c[1]);
+    if (centerLat != null && centerLng != null) {
+      center = [centerLat, centerLng];
+    }
+  }
   return {
     title: typeof o.title === "string" ? o.title : undefined,
     center,

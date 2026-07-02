@@ -13,6 +13,16 @@ interface ComparisonTableData {
   criteria: ComparisonCriterion[];
 }
 
+// Shape of a single criterion as it arrives from unvalidated user/LLM JSON —
+// values are genuinely unknown until normalizeValues() type-guards them.
+interface RawCriterion {
+  name: string;
+  values: unknown[];
+  type?: ComparisonCriterion['type'];
+  weight?: number;
+  higherIsBetter?: boolean;
+}
+
 /**
  * Parses JSON content into structured comparison table data
  * 
@@ -72,13 +82,13 @@ export function parseComparisonJSON(content: string): ComparisonTableData {
     }
     
     // Process and normalize criteria
-    const processedCriteria: ComparisonCriterion[] = comparisonData.criteria.map((criterion: any) => {
+    const processedCriteria: ComparisonCriterion[] = (comparisonData.criteria as RawCriterion[]).map((criterion) => {
       // Determine type if not specified
-      let type = criterion.type || inferTypeFromValues(criterion.values);
-      
+      const type: ComparisonCriterion['type'] = criterion.type || inferTypeFromValues(criterion.values);
+
       // Normalize values based on type
       const normalizedValues = normalizeValues(criterion.values, type);
-      
+
       return {
         name: criterion.name,
         values: normalizedValues,
@@ -104,16 +114,16 @@ export function parseComparisonJSON(content: string): ComparisonTableData {
 /**
  * Infers the data type from an array of values
  */
-function inferTypeFromValues(values: any[]): ComparisonCriterion['type'] {
+function inferTypeFromValues(values: unknown[]): ComparisonCriterion['type'] {
   if (values.length === 0) return 'text';
-  
+
   // Check if all values are boolean
   if (values.every(v => typeof v === 'boolean')) {
     return 'boolean';
   }
-  
+
   // Check if all values are numbers (ratings)
-  if (values.every(v => typeof v === 'number')) {
+  if (values.every((v): v is number => typeof v === 'number')) {
     // If numbers are between 1-5, assume it's a rating
     if (values.every(v => v >= 1 && v <= 5)) {
       return 'rating';
@@ -121,17 +131,17 @@ function inferTypeFromValues(values: any[]): ComparisonCriterion['type'] {
     // Otherwise, could be cost or general numeric
     return 'cost';
   }
-  
+
   // Check if values look like cost indicators ($ symbols)
   if (values.every(v => typeof v === 'string' && /^\$+$/.test(v.trim()))) {
     return 'cost';
   }
-  
+
   // Check if values contain cost-like numbers
   if (values.some(v => typeof v === 'string' && /\$\d+/.test(v))) {
     return 'cost';
   }
-  
+
   // Default to text
   return 'text';
 }
@@ -139,7 +149,7 @@ function inferTypeFromValues(values: any[]): ComparisonCriterion['type'] {
 /**
  * Normalizes values based on their type
  */
-function normalizeValues(values: any[], type: ComparisonCriterion['type']): (string | number | boolean)[] {
+function normalizeValues(values: unknown[], type: ComparisonCriterion['type']): (string | number | boolean)[] {
   return values.map(value => {
     switch (type) {
       case 'boolean':
@@ -182,9 +192,11 @@ function normalizeValues(values: any[], type: ComparisonCriterion['type']): (str
           if (['cheap', 'low', 'inexpensive'].includes(lowerValue)) return '$';
           if (['moderate', 'medium', 'average'].includes(lowerValue)) return '$$';
           if (['expensive', 'high', 'premium'].includes(lowerValue)) return '$$$';
+          return value;
         }
-        return value;
-        
+        if (typeof value === 'boolean') return value;
+        return String(value);
+
       case 'text':
       default:
         return String(value);

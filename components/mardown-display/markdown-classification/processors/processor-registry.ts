@@ -15,44 +15,6 @@ const getParserSeparated = () => import("./custom/parser-separated").then(mod =>
 const getParserEnhanced = () => import("./custom/enhanced-parser").then(mod => mod.default);
 const getParseMarkdownSimple = () => import("./custom/simple-markdown-parser").then(mod => mod.default);
 
-export interface Position {
-    start: { line: number; column: number; offset: number };
-    end: { line: number; column: number; offset: number };
-}
-
-export interface ContentItem {
-    id: number;
-    title: string;
-    text: string;
-}
-
-export interface ContentSection {
-    title: string;
-    text: string;
-}
-
-export interface OutputContent {
-    intro: ContentSection;
-    items: ContentItem[];
-    outro: ContentSection;
-}
-
-// Generic processor input - can be either AST-based or markdown-based
-export interface ProcessorInput {
-    [key: string]: any;
-}
-
-// Legacy interface for backward compatibility
-export interface MarkdownProcessor<T = any> {
-    ast: AstNode;
-    config: T;
-}
-
-export interface MarkdownProcessorResult {
-    extracted: Record<string, any>;
-    miscellaneous: string[];
-}
-
 // Individual processor definitions
 const INTRO_OUTRO_LIST_DEFINITION = {
     id: "intro-outro-list",
@@ -211,39 +173,46 @@ export const hasProcessor = (processorId: string) => {
     return PROCESSOR_REGISTRY.some(p => p.id === processorId);
 };
 
+// Every lazy-loaded processor module takes a differently-shaped named-field
+// input (`{ast}`, `{ast, config}`, `{markdown}`, ...) and returns a
+// differently-shaped result — this registry dispatches to whichever one is
+// requested by id, so the input/output are genuinely unknown at this layer;
+// each caller of a specific processor knows (and asserts) its own shape.
+type ProcessorDynamicInput = Record<string, unknown>;
+
 export const getProcessorFunction = (processorId: string) => {
     const processorEntry = getProcessorEntry(processorId);
     if (!processorEntry) return null;
-    
+
     // Return a function that handles the dynamic import and calling internally
-    return async (input: any) => {
+    return async (input: ProcessorDynamicInput) => {
         const processorModule = await processorEntry.processor();
         return processorModule(input);
     };
 };
 
-export const executeProcessor = async <T = any>(
-    processorId: string, 
-    ast: AstNode, 
-    config: any
+export const executeProcessor = async <T = unknown>(
+    processorId: string,
+    ast: AstNode,
+    config: unknown
 ): Promise<T | null> => {
     const processorFunction = getProcessorFunction(processorId);
     if (!processorFunction) return null;
-    
-    return processorFunction({ ast, config }) as Promise<T>;
+
+    return (await processorFunction({ ast, config })) as T;
 };
 
-export const executeProcessorWithConfigId = async <T = any>(
-    processorId: string, 
-    ast: AstNode, 
+export const executeProcessorWithConfigId = async <T = unknown>(
+    processorId: string,
+    ast: AstNode,
     configId: string
 ): Promise<T | null> => {
     const config = getConfigObject(configId);
     if (!config) return null;
     const processorFunction = getProcessorFunction(processorId);
     if (!processorFunction) return null;
-    
-    return processorFunction({ ast, config }) as Promise<T>;
+
+    return (await processorFunction({ ast, config })) as T;
 };
 
 export const executeMarkdownParser = async (markdown: string, parserId: string) => {
@@ -261,12 +230,12 @@ export const executeMarkdownParser = async (markdown: string, parserId: string) 
  * Intelligent processor function that handles any combination of inputs
  * and automatically determines what to pass to the processor based on its definition
  */
-export const executeIntelligentProcessor = async <T = any>(
+export const executeIntelligentProcessor = async <T = unknown>(
     processorId: string,
     options: {
         ast?: AstNode;
         markdown?: string;
-        config?: any;
+        config?: unknown;
         configId?: string;
     }
 ): Promise<T | null> => {
@@ -291,8 +260,8 @@ export const executeIntelligentProcessor = async <T = any>(
     const needsConfig = processorEntry.config !== "noConfig";
     
     // Prepare the input object
-    const processorInput: any = {};
-    
+    const processorInput: ProcessorDynamicInput = {};
+
     // Handle AST requirement
     if (needsAst) {
         if (ast) {
@@ -302,7 +271,7 @@ export const executeIntelligentProcessor = async <T = any>(
             // We need AST but only have markdown, convert it
             console.log(`Converting markdown to AST for processor "${processorId}"`);
             try {
-                processorInput.ast = parseMarkdownToAst(markdown);
+                processorInput.ast = await parseMarkdownToAst(markdown);
             } catch (error) {
                 console.warn(`Failed to convert markdown to AST for processor "${processorId}":`, error);
                 return {} as T;

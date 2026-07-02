@@ -3,7 +3,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, C
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Edit, Trash, Plus } from "lucide-react";
-import { ExperienceItemType, ProfileItemType } from "../parseMarkdownProfile";
+import { ExperienceItemType, ProfileItemType, ProfileSectionType } from "../parseMarkdownProfile";
 
 // Props interface
 type ExperienceItemProps = {
@@ -11,7 +11,7 @@ type ExperienceItemProps = {
   sectionId: string;
   openEditModal: (
     type: "section" | "experience" | "item",
-    item: any,
+    item: ProfileSectionType | ExperienceItemType | ProfileItemType,
     action?: "edit" | "add",
     parentId?: string
   ) => void;

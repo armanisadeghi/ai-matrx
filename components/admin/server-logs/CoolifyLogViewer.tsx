@@ -760,22 +760,22 @@ function SelectionBar({
   onClear,
   onSelectAll,
 }: SelectionBarProps) {
-  const hasRange = anchor !== null && tail !== null;
+  const range = anchor !== null && tail !== null ? { anchor, tail } : null;
 
   return (
     <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-primary/10 border-b border-primary/30 text-xs">
       <span className="text-primary font-medium tabular-nums">
-        {hasRange
+        {range
           ? `${selectedCount} lines selected`
           : anchor !== null
             ? "Shift+click to extend range"
             : ""}
       </span>
-      {hasRange && (
+      {range && (
         <>
           <span className="text-muted-foreground">·</span>
           <span className="text-muted-foreground tabular-nums">
-            lines {Math.min(anchor!, tail!) + 1}–{Math.max(anchor!, tail!) + 1}
+            lines {Math.min(range.anchor, range.tail) + 1}–{Math.max(range.anchor, range.tail) + 1}
           </span>
         </>
       )}

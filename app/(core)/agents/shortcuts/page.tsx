@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { List } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DuplicateShortcutModal } from "@/features/agent-shortcuts/components/DuplicateShortcutModal";
 import { PromoteToGlobalModal } from "@/features/agent-shortcuts/components/PromoteToGlobalModal";
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
@@ -77,6 +80,14 @@ export default function UserShortcutsPage() {
         onEdit={handleEdit}
         onDuplicate={handleDuplicate}
         onPromoteToGlobal={isAdmin ? handlePromoteToGlobal : undefined}
+        toolbarSlot={
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/agents/shortcuts/all">
+              <List className="h-4 w-4 mr-2" />
+              Browse all shortcuts
+            </Link>
+          </Button>
+        }
       />
 
       <ShortcutForm
