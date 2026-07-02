@@ -28,6 +28,7 @@ import {
   useEdgesState,
   type Node,
   type Edge,
+  type NodeProps,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
