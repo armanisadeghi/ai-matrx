@@ -10,7 +10,7 @@
  * Route: /demos/diff-gallery
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 // Canonical family
 import { DiffViewer } from "@/components/diff/DiffViewer";
 import { DiffReview } from "@/components/diff/DiffReview";
+import { LegacyDiffChip } from "@/components/diff/LegacyDiffChip";
 import { CodeDiff } from "@/components/diff/code/CodeDiff";
 import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 import { AnimatedDiffReveal } from "@/components/diff/text/AnimatedDiffReveal";
@@ -179,6 +180,7 @@ function Card({
   route,
   children,
   tall,
+  chip,
 }: {
   title: string;
   tone: "canonical" | "legacy" | "heavy";
@@ -186,6 +188,7 @@ function Card({
   route?: { href: string; label: string };
   children: React.ReactNode;
   tall?: boolean;
+  chip?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
@@ -193,6 +196,7 @@ function Card({
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{title}</span>
           <Badge tone={tone}>{tone}</Badge>
+          {chip}
           {route && (
             <a
               href={route.href}
@@ -219,8 +223,8 @@ export default function DiffGalleryPage() {
   const [scenarioId, setScenarioId] = useState("markdown");
   const scenario =
     SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
-  const [original, setOriginal] = useState(scenario.original);
-  const [modified, setModified] = useState(scenario.modified);
+  const [originalInput, setOriginal] = useState(scenario.original);
+  const [modifiedInput, setModified] = useState(scenario.modified);
   const [language, setLanguage] = useState(scenario.language);
   const [animKey, setAnimKey] = useState(0);
   const [animActive, setAnimActive] = useState(false);
@@ -231,6 +235,11 @@ export default function DiffGalleryPage() {
     setModified(s.modified);
     setLanguage(s.language);
   };
+
+  // Keep the textareas snappy: the (many, heavy) diff cards re-render off the
+  // deferred value at a lower priority instead of on every keystroke.
+  const original = useDeferredValue(originalInput);
+  const modified = useDeferredValue(modifiedInput);
 
   // RawJsonView / structured shells want objects.
   const [jsonOld, jsonNew] = useMemo(() => {
@@ -288,14 +297,14 @@ export default function DiffGalleryPage() {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <textarea
-            value={original}
+            value={originalInput}
             onChange={(e) => setOriginal(e.target.value)}
             spellCheck={false}
             className="h-20 w-full resize-none rounded border border-border bg-background p-2 font-mono text-xs outline-none"
             placeholder="Original / Before"
           />
           <textarea
-            value={modified}
+            value={modifiedInput}
             onChange={(e) => setModified(e.target.value)}
             spellCheck={false}
             className="h-20 w-full resize-none rounded border border-border bg-background p-2 font-mono text-xs outline-none"
@@ -470,6 +479,12 @@ export default function DiffGalleryPage() {
             title="Legacy A1 — generateUnifiedDiff"
             tone="legacy"
             verdict="Hand-rolled LCS, whole-line red/green, NO word-level, no view options. What the canonical engine replaced. (Still used by a few code-editor consumers.)"
+            chip={
+              <LegacyDiffChip
+                label="legacy LCS"
+                reason="Hand-rolled LCS util; still imported by TabDiffView / ContextAware editors / useAICodeEditor, so it can't be deleted until those migrate"
+              />
+            }
           >
             <div className="h-full p-2">
               <LegacyUnifiedDiff a={original} b={modified} />
@@ -480,6 +495,12 @@ export default function DiffGalleryPage() {
             title="Legacy A3 — diffAnalysis segments"
             tone="legacy"
             verdict="Run-level segment spans, removals struck through, no word-level. Was the note-conflict diff before the canonical swap."
+            chip={
+              <LegacyDiffChip
+                label="legacy segments"
+                reason="Note-diff util kept only as the summary/stats source; its segment renderer was replaced by the canonical DiffViewer in NoteConflictWindow"
+              />
+            }
           >
             <div className="h-full p-2">
               <LegacyAnalyzeDiff a={original} b={modified} />
@@ -539,6 +560,7 @@ export default function DiffGalleryPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{r.name}</span>
                   <Badge tone="heavy">coupled</Badge>
+                  <LegacyDiffChip label="why?" reason={r.note} />
                   {r.route && (
                     <a
                       href={r.route}
