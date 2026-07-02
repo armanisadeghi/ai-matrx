@@ -56,13 +56,18 @@ import { DiffReview } from "@/components/diff/DiffReview";
 <DiffReview original={a} modified={b} onApply={(mergedText) => save(mergedText)} />
 ```
 
-`DiffReview` turns a comparison into an **editing tool**: the user accepts (take
-the new lines) or rejects (keep the old lines) each **hunk**, sees the running
-result, and Applies → `onApply(mergedText)`. Headless of any source — the caller
-owns what "apply" means (write a note / code file / context value / resolve a
-conflict). Engine in `text/engine/hunks.ts` (`getHunks` + `applyHunks`; all
-hunks accepted === `modified`, none === `original`). Use `DiffViewer` for a
-read-only comparison, `DiffReview` when the user should selectively merge.
+`DiffReview` turns a comparison into an **editing tool** with a resolution
+mindset: every hunk is **pending / applied / rejected**. Accept (take new) or
+Reject (keep old) RESOLVES a hunk — it leaves the pending diffs and that region
+renders as normal resolved text in place, with an Undo chip. Accept-all /
+Reject-all clear all remaining pending at once; `Apply` calls
+`onApply(mergedText)`. Headless of any source — the caller owns what "apply"
+means (note / code file / context value / conflict). Built for real files: the
+diff is computed ONCE (`text/engine/hunks.ts` `getDiffStructure` /
+`mergeFromDecisions` — no re-diff on resolve/expand/navigate), unchanged context
+folds to a few lines around each change, and Prev/Next jump between changes. Use
+`DiffViewer` (also folds + navigates, wrap-on by default) for read-only;
+`DiffReview` to selectively merge.
 
 ### Light engine highlights (what the old diffs lacked)
 
@@ -204,6 +209,21 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
 
 ## Change Log
 
+- 2026-07-02 — Feedback pass (from real large-file testing). **DiffReview** is
+  now a resolution tool (pending/applied/rejected): accepting/rejecting resolves
+  a hunk in place (renders as normal text + Undo) and drops it from the pending
+  diffs; accept-all/reject-all clear the rest. **Large files:** both `DiffReview`
+  and `TextDiff` compute the diff ONCE (no re-diff on interaction — fixes the
+  multi-second stalls), fold unchanged context to ~3 lines around each change
+  (expandable), and add Prev/Next change navigation. **Wrap is on by default**
+  in `TextDiff`. **Reveal animation** (`useDiffReveal`) is smoother + slower —
+  word-boundary snapping, higher frame rate, capped step, generous budget. New
+  **`LegacyDiffChip`** (admin-only, lazy `selectIsAdmin`) marks non-canonical
+  renderers in situ (`TabDiffView`, `TripleDiffView`, `SearchReplaceDiffRenderer`)
+  — hover explains why it wasn't migrated, click opens `/demos/diff-gallery`.
+  New **`/demos/diff-gallery`** route renders every diff renderer against one
+  input for side-by-side comparison. `DiffCollapsible` gained an optional
+  `headerRight` slot.
 - 2026-06-27 — Rollout pass 2: replacements + the merge tool. **New capability —
   `DiffReview`** (`components/diff/DiffReview.tsx` + `text/engine/hunks.ts`):
   per-hunk accept/reject → `onApply(mergedText)`, turning the read-only system
