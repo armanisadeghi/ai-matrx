@@ -3474,6 +3474,93 @@ export type Database = {
           },
         ]
       }
+      conversation_value: {
+        Row: {
+          chars: number
+          content: string | null
+          content_json: Json | null
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string
+          id: string
+          json_schema: Json | null
+          key: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          source_agent_id: string | null
+          source_call_id: string | null
+          source_execution_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          chars?: number
+          content?: string | null
+          content_json?: Json | null
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description: string
+          id?: string
+          json_schema?: Json | null
+          key: string
+          kind?: string
+          metadata?: Json
+          organization_id: string
+          source_agent_id?: string | null
+          source_call_id?: string | null
+          source_execution_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          chars?: number
+          content?: string | null
+          content_json?: Json | null
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          json_schema?: Json | null
+          key?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          source_agent_id?: string | null
+          source_call_id?: string | null
+          source_execution_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_value_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_value_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media: {
         Row: {
           conversation_id: string
@@ -4132,6 +4219,7 @@ export type Database = {
           iteration: number
           message_id: string | null
           metadata: Json
+          model_stub_at: string | null
           organization_id: string
           output: string | null
           output_chars: number
@@ -4154,6 +4242,7 @@ export type Database = {
           updated_by: string | null
           user_id: string
           user_request_id: string | null
+          value_ref_key: string | null
           version: number
         }
         Insert: {
@@ -4179,6 +4268,7 @@ export type Database = {
           iteration?: number
           message_id?: string | null
           metadata?: Json
+          model_stub_at?: string | null
           organization_id: string
           output?: string | null
           output_chars?: number
@@ -4201,6 +4291,7 @@ export type Database = {
           updated_by?: string | null
           user_id: string
           user_request_id?: string | null
+          value_ref_key?: string | null
           version?: number
         }
         Update: {
@@ -4226,6 +4317,7 @@ export type Database = {
           iteration?: number
           message_id?: string | null
           metadata?: Json
+          model_stub_at?: string | null
           organization_id?: string
           output?: string | null
           output_chars?: number
@@ -4248,6 +4340,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           user_request_id?: string | null
+          value_ref_key?: string | null
           version?: number
         }
         Relationships: [
@@ -28498,6 +28591,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "embeddings_oai_3_small_1536_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: true
+            referencedRelation: "kg_chunks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      embeddings_voyage_4_large_1024: {
+        Row: {
+          chunk_id: string
+          embedded_at: string
+          embedding: string
+          organization_id: string | null
+          owner_id: string
+        }
+        Insert: {
+          chunk_id: string
+          embedded_at?: string
+          embedding: string
+          organization_id?: string | null
+          owner_id: string
+        }
+        Update: {
+          chunk_id?: string
+          embedded_at?: string
+          embedding?: string
+          organization_id?: string | null
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "embeddings_voyage_4_large_1024_chunk_id_fkey"
             columns: ["chunk_id"]
             isOneToOne: true
             referencedRelation: "kg_chunks"

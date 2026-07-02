@@ -649,7 +649,7 @@ function ScopeSidebar({
         <KindToggle value={scope.kindFilter} onChange={scope.setKindFilter} />
         <label
           className="flex items-center gap-2 text-xs cursor-pointer"
-          title="Re-orders the fused candidates with Cohere's rerank-v3.5 cross-encoder (reads each candidate against your query text). Retrieval itself runs on OpenAI embeddings; when the whole window scores low-confidence the fusion order is kept instead."
+          title="Re-orders the fused candidates with Cohere's rerank-v4.0-pro cross-encoder (reads each candidate against your query text). Retrieval itself runs on Voyage voyage-4-large embeddings; when the whole window scores low-confidence the fusion order is kept instead."
         >
           <Checkbox
             checked={scope.rerank}
