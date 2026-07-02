@@ -299,11 +299,10 @@ URLs and work fine; the new pipeline regressed.
   `console.log("[audio-block] resolved", …)` (no longer a `console.error` overlay,
   since this is a tracked backend gap). When the backend serves durable URLs this
   note can close.
-- **Run the heal on the 5-episode backlog** — `aidream/scripts/flip_files_public.py`
-  is built + dry-run-verified; the real flip (16 files, 2 users) needs an explicit
-  go-ahead because it mutates production media. After the flip, rewrite each
-  `pc_episodes` media column to the CDN URL and mark the matching
-  `mtx_media_heal_queue` rows `healed`. **PENDING USER AUTHORIZATION (Q2, asked 2026-06-29).**
+- **5-episode public backlog — RESOLVED (verified 2026-07-02).** The `pc_episodes`
+  heal already ran: all 42 episodes now hold durable CDN/public URLs (**0 signed/
+  expiring**, live-verified), and the matching `mtx_media_heal_queue` rows are
+  `healed`. The public episode/show pages no longer break.
 - **Backend layer 1 (generation-time durability) — DEPLOYED (verified 2026-06-29).**
   `_persist_episode` → `make_urls_durable` is in aidream HEAD (commit `b7b206833`)
   and aidream auto-deploys on push to main, so newly generated episodes now persist
@@ -313,9 +312,12 @@ URLs and work fine; the new pipeline regressed.
   drains `mtx_media_heal_queue` by calling a small aidream "flip file + rewrite
   column" endpoint (wrap `flip_files_public.py`'s logic in a service-token route).
   This makes the heal continuous instead of a manual run.
-- **`pc_studio_runs` array columns** (`image_urls[]`, `video_urls[]`) — 1 run is
-  queued. These are internal generation records (not the public-facing break), so
-  lower priority; the same primitive heals them, just element-by-element.
+- **`pc_studio_runs` internal residue — RESOLVED (2026-07-02).** 18 broken test
+  studio runs (2026-06-11..17, expiring signed URLs in `image_urls[]`/`video_urls[]`/
+  `audio_url`, no inbound FKs) couldn't be healed from the frontend env (needs AWS)
+  and were internal test data — deleted them + cleared their `mtx_media_heal_queue`
+  entries. `pending` heal-queue backlog is now **0**; 12 durable runs + the 27
+  `healed` audit rows kept. No expiring URL remains anywhere in the podcast data.
 - **Public pages still use raw `<img>`** — DONE for podcasts. Remaining sweep:
   agent-app `appImageUrl` renders (`features/applet/home/**`, `Banner.tsx`) and the
   `/p/[slug]` public app surfaces — their source columns are already guarded
@@ -387,7 +389,9 @@ URLs and work fine; the new pipeline regressed.
 ### D2 — Org/scope authorization boundary is open (deferred to the pre-launch security overhaul)
 **Severity: critical — full multi-tenant compromise via raw supabase-js. Deferred by explicit decision (2026-06-10): app is not live; features first, dedicated security overhaul next week. Build anything NEW with proper auth anyway.**
 
-**Triage 2026-06-29 — RAISED TO USER (Q1, decision pending).** The "next week" overhaul date has passed. Recommended: land the cheap, high-impact slice NOW — `REVOKE` anon EXECUTE on the unauthenticated scope DEFINER RPCs (`create_scope`/`update_scope`/`delete_scope`/`create_scope_type`) + add `is_org_member`/`is_org_admin` preambles (model: `ctx_set_entity_scopes_auth.sql`), plus a guard trigger blocking org-owner self-takeover — while leaving the broader `organization_members` RLS rework for the overhaul (tightening it blindly risks breaking invite-accept). Awaiting the user's go/no-go.
+**Cheap slice LANDED 2026-07-02 (commit `97fa489f9` · `migrations/scope_rpcs_org_membership_guard.sql`).** Item 3 (unauthenticated scope DEFINER RPCs) is closed: `create_scope`/`create_scope_type`/`update_scope`/`delete_scope`/`delete_scope_type` now carry an `iam.has_org_access(<resolved org>)` guard + `SET search_path`, and anon EXECUTE is REVOKED on all six scope write RPCs (`set_scope_context_value` already had a membership guard). Verified live. **Progress since the audit (verified 2026-07-02):** `organization_members` was canonicalized to `iam.memberships` with canonical RLS — item 1 (org takeover: INSERT now `WITH CHECK iam.has_org_access(org) AND created_by=auth.uid()`) and item 4 (membership disclosure: SELECT no longer `qual=true`) are **already closed**.
+
+**Still open (deferred to the security overhaul, higher-risk):** item 2 (role self-escalation — `iam.memberships` UPDATE `WITH CHECK` guards the org but not the role column) and item 5 residuals. These stay parked because tightening membership-role writes risks breaking invite-accept/role-management flows and needs the dedicated overhaul.
 
 **What.** The browser talks to Supabase directly with the user's JWT, so RLS + RPC bodies are the only write-authorization boundary — and they are open in five independent ways (all live-verified against `txzxabzwovsujtloxrus`):
 1. **Org takeover.** `organization_members` INSERT policy is `WITH CHECK (true)` — any authenticated user can insert themselves as `owner` of ANY org, then passes every `EXISTS(member where role in owner/admin)` check repo-wide. No guarding trigger.
