@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { ExternalLink, PanelRight } from "lucide-react";
 import { useFileNode } from "@/features/files";
-import { useOpenSourceInspectorWindow } from "@/features/overlays/openers/sourceInspectorWindow";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
 import { cn } from "@/lib/utils";
 import type { ToolAccent } from "../../types";
 import { ToolGlyph } from "../_shared-entity/ToolGlyph";
@@ -39,15 +38,15 @@ function RagPeekBody({
   hit,
   href,
   topScore,
-  canInspect,
-  onInspect,
+  onOpen,
 }: {
   hit: NormalizedHit;
   href: string;
   topScore: number;
-  canInspect: boolean;
-  onInspect: () => void;
+  onOpen: () => void;
 }) {
+  const isDoc =
+    hit.source_kind === "cld_file" || hit.source_kind === "library_doc";
   const tier = scoreTier(hit.score);
   const rel = relativeStrength(hit.score, topScore);
   const entities = hit.entities.slice(0, 6);
@@ -117,16 +116,16 @@ function RagPeekBody({
 
       {/* Actions */}
       <div className="flex items-center gap-2 border-t border-border pt-2">
-        {canInspect ? (
-          <button
-            type="button"
-            onClick={onInspect}
-            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
-          >
-            <PanelRight className="h-3.5 w-3.5" />
-            {hit.page_number != null ? `Inspect page ${hit.page_number}` : "Inspect source"}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={onOpen}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+          {isDoc && hit.page_number != null
+            ? `Inspect page ${hit.page_number}`
+            : "Open in window"}
+        </button>
         <a
           href={href}
           target="_blank"
@@ -156,10 +155,10 @@ export function RagSourceCard({
   const Icon = g.icon;
   const href = hrefForNormalized(hit);
   const isFile = hit.source_kind === "cld_file";
-  // Document-backed sources (a real file or a library doc) have page-anchored
-  // extraction, so they open the rich Source Inspector; everything else just
-  // deep-links its own viewer in a new tab.
-  const canInspect =
+  // Document-backed sources open the rich Source Inspector; every other kind
+  // opens its own in-app window (note / transcript / scraper). Only kinds
+  // without a window fall back to a new tab — all handled by useOpenCitation.
+  const isDoc =
     hit.source_kind === "cld_file" || hit.source_kind === "library_doc";
 
   // Resolve a friendly name: the hit's own name → the eagerly-loaded cloud-files
@@ -168,9 +167,9 @@ export function RagSourceCard({
   const { file } = useFileNode(hit.source_id);
   const resolvedName = hit.file_name ?? (isFile ? file?.fileName ?? null : null);
 
-  const openInspector = useOpenSourceInspectorWindow();
-  const inspect = () =>
-    openInspector({
+  const openCitation = useOpenCitation();
+  const open = () =>
+    openCitation({
       sourceKind: hit.source_kind,
       sourceId: hit.source_id,
       chunkId: hit.chunk_id,
@@ -201,13 +200,7 @@ export function RagSourceCard({
         </span>
       }
       body={
-        <RagPeekBody
-          hit={hit}
-          href={href}
-          topScore={topScore}
-          canInspect={canInspect}
-          onInspect={inspect}
-        />
+        <RagPeekBody hit={hit} href={href} topScore={topScore} onOpen={open} />
       }
     >
       <div className="group/row flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 transition-colors hover:bg-muted/40">
@@ -233,39 +226,25 @@ export function RagSourceCard({
           {hit.score.toFixed(2)}
         </span>
 
-        {/* Open — document sources → Source Inspector (lands on the cited page);
-            everything else → deep-link its viewer in a new tab. */}
-        {canInspect ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              inspect();
-            }}
-            title={
-              hit.page_number != null
-                ? `Inspect page ${hit.page_number} of the source`
-                : "Inspect source"
-            }
-            aria-label="Open source inspector"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <PanelRight className="h-4 w-4" />
-          </button>
-        ) : (
-          <Link
-            href={href}
-            prefetch={false}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            title="Open source in a new tab"
-            aria-label="Open source in a new tab"
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Link>
-        )}
+        {/* Open in the best in-app window: document → Source Inspector (lands on
+            the cited page); note/transcript/scraped → their own windows; kinds
+            without a window fall back to a new tab (all via useOpenCitation). */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            open();
+          }}
+          title={
+            isDoc && hit.page_number != null
+              ? `Inspect page ${hit.page_number} of the source`
+              : "Open source in a window"
+          }
+          aria-label="Open source"
+          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <PanelRight className="h-4 w-4" />
+        </button>
       </div>
     </PartPeekPopover>
   );

@@ -22,6 +22,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
+import {
+  useOpenCitation,
+  shouldOpenInNewTab,
+} from "@/features/rag/components/source-inspector/useOpenCitation";
 
 import { fetchEntityMentions } from "../service/kgGraphService";
 import { fetchSourceNames } from "../service/sourceNames";
@@ -218,6 +222,7 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
   const [sourceNames, setSourceNames] = useState<Map<string, string>>(
     new Map(),
   );
+  const openCitation = useOpenCitation();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -356,6 +361,17 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => {
+                          if (shouldOpenInNewTab(e)) return;
+                          e.preventDefault();
+                          openCitation({
+                            sourceKind: group.sourceKind ?? "",
+                            sourceId: group.sourceId ?? "",
+                            href,
+                            chunkId: group.occurrences[0]?.chunkId ?? null,
+                            snippet: group.occurrences[0]?.snippet ?? null,
+                          });
+                        }}
                         className="inline-flex shrink-0 items-center gap-1 text-[11px] text-primary hover:underline"
                       >
                         Open <ExternalLink className="h-3 w-3" />

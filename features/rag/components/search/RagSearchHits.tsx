@@ -21,12 +21,16 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
-import { ExternalLink, FileText, NotebookText, Code2 } from "lucide-react";
+import { ExternalLink, PanelRight, FileText, NotebookText, Code2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesMap } from "@/features/files/redux/selectors";
 import { cn } from "@/lib/utils";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
+import {
+  useOpenCitation,
+  shouldOpenInNewTab,
+  citationOpensInWindow,
+} from "@/features/rag/components/source-inspector/useOpenCitation";
 
 export interface RagSearchHitsProps {
   hits: RagSearchHit[];
@@ -103,6 +107,7 @@ export function RagSearchHits({
             hit={hit}
             origin={origin}
             label={resolveSourceLabel(hit, filesById)}
+            query={query}
             onClick={onHitClick}
           />
         ))}
@@ -124,11 +129,13 @@ function RagSearchHitRow({
   hit,
   origin,
   label,
+  query,
   onClick,
 }: {
   hit: RagSearchHit;
   origin: "files" | "chat" | "admin";
   label: string;
+  query?: string;
   onClick?: (hit: RagSearchHit) => void;
 }) {
   const Icon = iconForSourceKind(hit.source_kind);
@@ -140,6 +147,22 @@ function RagSearchHitRow({
       : typeof pageRaw === "string"
         ? Number.parseInt(pageRaw, 10)
         : null;
+
+  const openCitation = useOpenCitation();
+  const opensInWindow = citationOpensInWindow(hit.source_kind);
+  const openInWindow = () =>
+    openCitation({
+      sourceKind: hit.source_kind,
+      sourceId: hit.source_id,
+      href,
+      chunkId: hit.chunk_id,
+      pageNumber,
+      pageNumbers: pageNumber != null ? [pageNumber] : null,
+      snippet: hit.snippet,
+      fileName: label,
+      score: hit.score,
+      query: query ?? null,
+    });
 
   const body = (
     <div className="flex items-start gap-3 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent/40">
@@ -171,10 +194,16 @@ function RagSearchHitRow({
           ) : null}
         </div>
       </div>
-      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+      {opensInWindow ? (
+        <PanelRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+      ) : (
+        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+      )}
     </div>
   );
 
+  // An explicit onClick handler (a caller wiring a custom side-panel, etc.)
+  // always wins — we don't override it.
   if (onClick) {
     return (
       <li>
@@ -190,16 +219,22 @@ function RagSearchHitRow({
     );
   }
 
+  // Default: plain click opens the source in its in-app window; keep the href
+  // so modifier / middle click still opens the canonical viewer in a new tab.
   return (
     <li>
-      <Link
+      <a
         href={href}
-        prefetch={false}
+        onClick={(e) => {
+          if (shouldOpenInNewTab(e)) return;
+          e.preventDefault();
+          openInWindow();
+        }}
         className="block"
         data-rag-origin={origin}
       >
         {body}
-      </Link>
+      </a>
     </li>
   );
 }

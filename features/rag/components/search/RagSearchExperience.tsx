@@ -76,6 +76,11 @@ import {
 } from "@/features/rag/api/search-lab";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
+import {
+  useOpenCitation,
+  shouldOpenInNewTab,
+  citationOpensInWindow,
+} from "@/features/rag/components/source-inspector/useOpenCitation";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
@@ -301,6 +306,7 @@ function RichHitCard({
     pageNumber,
     hit.chunk_id,
   );
+  const openCitation = useOpenCitation();
 
   // Lane provenance — why did this hit surface? A hit with no vector/lexical
   // rank that arrived purely via KG entity co-occurrence is the classic
@@ -367,9 +373,24 @@ function RichHitCard({
             href={href}
             target="_blank"
             rel="noreferrer"
+            onClick={(e) => {
+              if (shouldOpenInNewTab(e)) return;
+              e.preventDefault();
+              openCitation({
+                sourceKind: hit.source_kind,
+                sourceId: hit.source_id,
+                href,
+                chunkId: hit.chunk_id,
+                pageNumber,
+                pageNumbers: pageNumber != null ? [pageNumber] : null,
+                snippet,
+                fileName: fileName ?? null,
+                score: typeof hit.score === "number" ? hit.score : null,
+              });
+            }}
             className="text-primary hover:underline text-[11px] whitespace-nowrap"
           >
-            open ↗
+            {citationOpensInWindow(hit.source_kind) ? "open" : "open ↗"}
           </a>
         )}
       </div>
