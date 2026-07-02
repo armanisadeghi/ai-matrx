@@ -8,6 +8,17 @@
 import { computeTextDiff } from "./computeTextDiff";
 import type { TextDiffOptions } from "./types";
 
+// The MERGE model must round-trip exactly: accept-all === modified, none ===
+// original. `ignoreTrailingWhitespace` makes the LCS classify lines while
+// ignoring trailing whitespace but still stores the RAW old side for unchanged
+// lines — so merging would emit old trailing whitespace where the new side
+// differs, breaking the round-trip. Whitespace-insensitivity is a DISPLAY
+// concern (TextDiff/InlineTextDiff keep it); the hunk/merge model always runs on
+// RAW lines so both invariants hold.
+function mergeOptions(options?: TextDiffOptions): TextDiffOptions {
+  return { ...options, ignoreTrailingWhitespace: false };
+}
+
 export interface DiffHunk {
   /** 0-based index in document order. */
   index: number;
@@ -27,7 +38,7 @@ export function getHunks(
   modified: string,
   options?: TextDiffOptions,
 ): DiffHunk[] {
-  const { inline } = computeTextDiff(original, modified, options);
+  const { inline } = computeTextDiff(original, modified, mergeOptions(options));
   const hunks: DiffHunk[] = [];
   let i = 0;
   while (i < inline.length) {
@@ -85,7 +96,7 @@ export function getDiffStructure(
   modified: string,
   options?: TextDiffOptions,
 ): { items: DiffStructureItem[]; hunkCount: number } {
-  const { inline } = computeTextDiff(original, modified, options);
+  const { inline } = computeTextDiff(original, modified, mergeOptions(options));
   const items: DiffStructureItem[] = [];
   let i = 0;
   let hunkIndex = 0;
@@ -151,7 +162,7 @@ export function applyHunks(
   options?: TextDiffOptions,
 ): string {
   const accepted = new Set(acceptedIndices);
-  const { inline } = computeTextDiff(original, modified, options);
+  const { inline } = computeTextDiff(original, modified, mergeOptions(options));
   const out: string[] = [];
   let hunkIndex = -1;
   let i = 0;

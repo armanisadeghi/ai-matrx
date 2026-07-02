@@ -83,6 +83,84 @@ function similarity(segments: WordSegment[], total: number): number {
 
 const PAIR_SIMILARITY_THRESHOLD = 0.25;
 
+/**
+ * Cap on the LCS dp matrix (oldLines × newLines). The dense O(n·m) table would
+ * OOM the tab on huge inputs — and consumers that BYPASS DiffViewer's Monaco
+ * routing (InlineTextDiff for agent ```diff fences, DiffReview) have no other
+ * guard. Above this we degrade to a whole-block replace (no matrix). ~2800²
+ * lines is allowed, comfortably above real files; the light engine is not meant
+ * for multi-thousand-line diffs (those route to Monaco via DiffViewer).
+ */
+const MAX_LCS_CELLS = 8_000_000;
+
+/** Whole-block result (no line matching) — used when the input is too large to
+ * run LCS. Old block reads as removed, new block as added; round-trips exactly
+ * (merge all === modified, none === original). */
+function degradedResult(oldLines: string[], newLines: string[]): TextDiffResult {
+  const inline: InlineDiffLine[] = [];
+  const rows: DiffRow[] = [];
+  oldLines.forEach((content, i) => {
+    inline.push({
+      type: "removed",
+      content,
+      oldLineNumber: i + 1,
+      newLineNumber: null,
+    });
+    rows.push({
+      type: "removed",
+      left: { lineNumber: i + 1, content },
+      right: { lineNumber: null, content: null },
+    });
+  });
+  newLines.forEach((content, i) => {
+    inline.push({
+      type: "added",
+      content,
+      oldLineNumber: null,
+      newLineNumber: i + 1,
+    });
+    rows.push({
+      type: "added",
+      left: { lineNumber: null, content: null },
+      right: { lineNumber: i + 1, content },
+    });
+  });
+  return {
+    inline,
+    rows,
+    stats: {
+      additions: newLines.length,
+      deletions: oldLines.length,
+      modifications: 0,
+      unchanged: 0,
+    },
+    hasChanges: true,
+    whitespaceOnly: false,
+  };
+}
+
+/** All-unchanged result (identical inputs) built without the LCS matrix. */
+function unchangedResult(lines: string[], newLines: string[]): TextDiffResult {
+  const inline: InlineDiffLine[] = lines.map((content, i) => ({
+    type: "unchanged" as const,
+    content,
+    oldLineNumber: i + 1,
+    newLineNumber: i + 1,
+  }));
+  const rows: DiffRow[] = lines.map((content, i) => ({
+    type: "unchanged" as const,
+    left: { lineNumber: i + 1, content },
+    right: { lineNumber: i + 1, content: newLines[i] ?? content },
+  }));
+  return {
+    inline,
+    rows,
+    stats: { additions: 0, deletions: 0, modifications: 0, unchanged: lines.length },
+    hasChanges: false,
+    whitespaceOnly: false,
+  };
+}
+
 export function computeTextDiff(
   original: string,
   modified: string,
@@ -99,6 +177,14 @@ export function computeTextDiff(
 
   const oldLines = original.split("\n");
   const newLines = modified.split("\n");
+
+  // Size bail: too large for the dense LCS matrix. Identical inputs are cheap to
+  // report as unchanged; otherwise degrade to a whole-block replace.
+  if (oldLines.length * newLines.length > MAX_LCS_CELLS) {
+    return original === modified
+      ? unchangedResult(oldLines, newLines)
+      : degradedResult(oldLines, newLines);
+  }
 
   const ops = computeLineOps(oldLines.map(norm), newLines.map(norm));
 

@@ -68,6 +68,9 @@ export function CodeDiff({
   const isDark = theme ? theme === "dark" : docDark;
 
   return (
+    // NOTE: Monaco uses height="100%", so a callsite must give this a definite
+    // height (parent with a fixed/flex height). In an auto-height parent it
+    // collapses to 0px — bound the height at the callsite (see FEATURE.md).
     <div className={cn("flex flex-col h-full min-h-0 bg-card", className)}>
       {showLabels && (originalLabel || modifiedLabel) && (
         <div className="shrink-0 flex items-center px-3 py-1 border-b border-border bg-muted/30 text-xs text-muted-foreground">

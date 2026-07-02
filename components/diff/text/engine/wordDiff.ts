@@ -58,6 +58,11 @@ export interface WordDiff {
  * Compute word/char-level segments for a single changed line pair.
  * `left` reconstructs `oldLine`, `right` reconstructs `newLine`.
  */
+/** Token-matrix cap. A pathological line pair (e.g. a 50k-char minified line
+ * under character granularity) would allocate a huge dense matrix. Above this
+ * we skip token matching and report the whole line as removed→added. */
+const MAX_WORD_CELLS = 1_000_000;
+
 export function computeWordDiff(
   oldLine: string,
   newLine: string,
@@ -65,6 +70,16 @@ export function computeWordDiff(
 ): WordDiff {
   const a = tokenize(oldLine, granularity);
   const b = tokenize(newLine, granularity);
+
+  // Size bail: too many tokens for the dense matrix — treat the line as a whole
+  // replacement (exact reconstruction preserved).
+  if (a.length * b.length > MAX_WORD_CELLS) {
+    return {
+      left: oldLine ? [{ type: "removed", value: oldLine }] : [],
+      right: newLine ? [{ type: "added", value: newLine }] : [],
+    };
+  }
+
   const dp = lcsTable(a, b);
 
   const leftRev: WordSegment[] = [];

@@ -222,9 +222,18 @@ export function TextDiff({
   const effOriginalLabel = swapped ? modifiedLabel : originalLabel;
   const effModifiedLabel = swapped ? originalLabel : modifiedLabel;
 
+  // Depend on the PRIMITIVE option fields, not `diffOptions` object identity —
+  // an inline `{...}` from a parent would otherwise re-run the LCS and reset
+  // fold/nav on every parent render.
+  const { wordLevel, granularity, ignoreTrailingWhitespace } = diffOptions ?? {};
   const result = useMemo(
-    () => computeTextDiff(effOriginal, effModified, diffOptions),
-    [effOriginal, effModified, diffOptions],
+    () =>
+      computeTextDiff(effOriginal, effModified, {
+        wordLevel,
+        granularity,
+        ignoreTrailingWhitespace,
+      }),
+    [effOriginal, effModified, wordLevel, granularity, ignoreTrailingWhitespace],
   );
 
   const whitespace = wrap
@@ -247,10 +256,12 @@ export function TextDiff({
   );
   const changeStarts = useMemo(() => groupStarts(changed), [changed]);
 
-  // Reset fold/nav state when the inputs or view change.
+  // Reset fold/nav state when the inputs or view change. flashRow is cleared too
+  // because row indices are per-view (split walks rows, inline walks inline).
   useEffect(() => {
     setExpandedRuns(new Set());
     navCursor.current = -1;
+    setFlashRow(null);
   }, [result, view]);
 
   const gotoChange = (dir: 1 | -1) => {

@@ -94,6 +94,11 @@ export function DiffViewer({
   if (resolved === "monaco") {
     // Monaco has no single-pane highlight view; fall back to inline for it.
     const monacoView = (view ?? defaultView) === "split" ? "split" : "inline";
+    // When "auto" routes to Monaco purely on SIZE for text/markdown/omitted
+    // language (not a code language), default word-wrap ON to match the light
+    // engine — otherwise big prose renders in a non-wrapping code editor.
+    const lang = (language ?? "").toLowerCase();
+    const isTextLang = !lang || TEXT_LANGUAGES.has(lang);
     return (
       <CodeDiff
         original={original}
@@ -103,7 +108,7 @@ export function DiffViewer({
         modifiedLabel={modifiedLabel}
         view={monacoView}
         readOnly={readOnly}
-        wordWrap={wrap}
+        wordWrap={wrap ?? isTextLang}
         showLabels={showToolbar}
         className={className}
       />

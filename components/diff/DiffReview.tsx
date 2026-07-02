@@ -103,29 +103,36 @@ export function DiffReview({
   diffOptions,
   className,
 }: DiffReviewProps) {
-  // Compute the whole diff ONCE. Everything below derives from this — no re-diff
-  // on resolve, expand, or navigate.
+  // Compute the whole diff ONCE. Depend on the PRIMITIVE option fields, not the
+  // `diffOptions` object identity — a parent passing an inline `{...}` each
+  // render would otherwise re-run the LCS and (via the reset effects below) wipe
+  // every accept/reject and collapse every expansion on every parent render.
+  const { wordLevel, granularity, ignoreTrailingWhitespace } = diffOptions ?? {};
   const structure = useMemo(
-    () => getDiffStructure(original, modified, diffOptions),
-    [original, modified, diffOptions],
+    () =>
+      getDiffStructure(original, modified, {
+        wordLevel,
+        granularity,
+        ignoreTrailingWhitespace,
+      }),
+    [original, modified, wordLevel, granularity, ignoreTrailingWhitespace],
   );
   const { items, hunkCount } = structure;
-
-  // Per-hunk resolution. Missing === "pending".
-  const [status, setStatus] = useState<Record<number, HunkStatus>>({});
-  useEffect(() => {
-    setStatus({});
-  }, [structure]);
-
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  useEffect(() => {
-    setExpanded(new Set());
-  }, [structure]);
 
   const [flash, setFlash] = useState<number | null>(null);
   const hunkRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const cursorRef = useRef(-1);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Per-hunk resolution. Missing === "pending". Reset (and reset nav) only when
+  // the diff STRUCTURE actually changes — now stable across parent re-renders.
+  const [status, setStatus] = useState<Record<number, HunkStatus>>({});
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    setStatus({});
+    setExpanded(new Set());
+    cursorRef.current = -1;
+  }, [structure]);
 
   const statusOf = (i: number): HunkStatus => status[i] ?? "pending";
 
