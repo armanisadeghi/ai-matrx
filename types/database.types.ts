@@ -1304,7 +1304,7 @@ export type Database = {
         }
         Relationships: []
       }
-      model: {
+      model_definition: {
         Row: {
           api_class: string | null
           capabilities: Json | null
@@ -1388,14 +1388,14 @@ export type Database = {
             foreignKeyName: "ai_model_guest_fallback_id_fkey"
             columns: ["guest_fallback_id"]
             isOneToOne: false
-            referencedRelation: "model"
+            referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "ai_model_mid_fallback_id_fkey"
             columns: ["mid_fallback_id"]
             isOneToOne: false
-            referencedRelation: "model"
+            referencedRelation: "model_definition"
             referencedColumns: ["id"]
           },
           {
@@ -3420,54 +3420,6 @@ export type Database = {
           {
             foreignKeyName: "cx_conversation_parent_conversation_id_fkey"
             columns: ["parent_conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversation_summary"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversation_documents: {
-        Row: {
-          conversation_id: string
-          created_at: string
-          document_id: string
-          enabled: boolean
-          id: string
-          kind: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          created_at?: string
-          document_id: string
-          enabled?: boolean
-          id?: string
-          kind?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          conversation_id?: string
-          created_at?: string
-          document_id?: string
-          enabled?: boolean
-          id?: string
-          kind?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_documents_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversation"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversation_documents_conversation_id_fkey"
-            columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversation_summary"
             referencedColumns: ["id"]
@@ -11439,6 +11391,39 @@ export type Database = {
           metadata?: Json | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      conversation_documents: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          document_id: string
+          enabled: boolean
+          id: string
+          kind: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          document_id: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          document_id?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -21841,32 +21826,6 @@ export type Database = {
           provider: string
         }[]
       }
-      add_one_ai_model: {
-        Args: {
-          p_capabilities?: Json
-          p_class: string
-          p_common_name?: string
-          p_context_window?: number
-          p_controls?: Json
-          p_endpoints?: Json
-          p_id: string
-          p_max_tokens?: number
-          p_name: string
-          p_provider?: string
-        }
-        Returns: {
-          capabilities: Json
-          class: string
-          common_name: string
-          context_window: number
-          controls: Json
-          endpoints: Json
-          id: string
-          max_tokens: number
-          name: string
-          provider: string
-        }[]
-      }
       add_one_arg: {
         Args: {
           p_data_type?: Database["public"]["Enums"]["data_type"]
@@ -24179,21 +24138,6 @@ export type Database = {
           provider: string
         }[]
       }
-      fetch_all_ai_model: {
-        Args: never
-        Returns: {
-          capabilities: Json
-          class: string
-          common_name: string
-          context_window: number
-          controls: Json
-          endpoints: Json
-          id: string
-          max_tokens: number
-          name: string
-          provider: string
-        }[]
-      }
       fetch_all_arg: {
         Args: never
         Returns: {
@@ -24467,21 +24411,6 @@ export type Database = {
           id: string
           name: string
           params: Json
-          provider: string
-        }[]
-      }
-      fetch_by_id_ai_model: {
-        Args: { record_id: string }
-        Returns: {
-          capabilities: Json
-          class: string
-          common_name: string
-          context_window: number
-          controls: Json
-          endpoints: Json
-          id: string
-          max_tokens: number
-          name: string
           provider: string
         }[]
       }
@@ -27462,21 +27391,6 @@ export type Database = {
           p_id: string
           p_name: string
           p_params?: Json
-          p_provider?: string
-        }
-        Returns: undefined
-      }
-      upsert_ai_model: {
-        Args: {
-          p_capabilities?: Json
-          p_class: string
-          p_common_name?: string
-          p_context_window?: number
-          p_controls?: Json
-          p_endpoints?: Json
-          p_id: string
-          p_max_tokens?: number
-          p_name: string
           p_provider?: string
         }
         Returns: undefined
@@ -31104,13 +31018,6 @@ export type Database = {
           url: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "rs_keyword_source_keyword_id_fkey"
-            columns: ["keyword_id"]
-            isOneToOne: false
-            referencedRelation: "rs_keyword"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "rs_source_topic_id_fkey"
             columns: ["topic_id"]
@@ -38131,7 +38038,6 @@ export type Database = {
       working_documents: {
         Row: {
           content: string
-          conversation_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -38142,12 +38048,10 @@ export type Database = {
           title: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
         }
         Insert: {
           content?: string
-          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -38158,12 +38062,10 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Update: {
           content?: string
-          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -38174,7 +38076,6 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
         }
         Relationships: []
