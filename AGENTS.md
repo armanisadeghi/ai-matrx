@@ -211,7 +211,7 @@ Stale docs cascade across parallel agents and corrupt the mental model of every 
 - **Backgrounds:** `bg-textured` for main backgrounds
 - **Loading:** Use component library loading states — no plain text "Loading..."
 - **Layout:** Space-efficient, minimal padding/gaps
-- **Page wrapper:** `<div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">`
+- **Page wrapper (`(core)` AppShell):** `<PageHeader>…</PageHeader>` + `<div className="h-full overflow-hidden">` — never `h-page` or `calc(100dvh - header)` on `(core)` routes. See `features/shell/components/header/variants/USAGE.md`.
 
 ### 🚫 Browser dialogs are BANNED — zero tolerance
 

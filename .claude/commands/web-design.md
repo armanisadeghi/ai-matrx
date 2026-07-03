@@ -75,12 +75,13 @@ Every shadcn/ui primitive should have a project wrapper:
 
 ## Project Conventions
 
-### Header Height
-```css
---header-height: 2.5rem; /* 40px */
-```
+### Header & page height (`(core)` AppShell)
 
-Full-height: `h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden`
+Route chrome → `<PageHeader>`. Body wrapper → `h-full overflow-hidden`.
+
+**Do not** use `h-page` or `calc(100dvh - var(--header-height))` on `(core)` routes — `.shell-main` is already full viewport.
+
+Full pattern: `features/shell/components/header/variants/USAGE.md`
 
 ### Backgrounds
 ```tsx

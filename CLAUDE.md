@@ -116,7 +116,7 @@ The `app/` tree splits into purpose-named route groups. **Working on core produc
 
 **"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store.
 
-**Shell:** `(core)` and `(admin)` both render the one modern shell — `AppShell` (`features/shell/components/AppShell.tsx`): full sidebar + header + `#shell-header-center`. Don't fork a separate admin layout (the old `ResponsiveLayout` is gone from `(admin)`). Admin pins the header to its legacy 2.5rem with content **below** it (not scrolling behind) via a scoped `.shell-main` rule in `styles/shell.css` — that's why admin pages keep `h-[calc(100dvh-2.5rem)]`. `(transitional)`/`(legacy)` still use `ResponsiveLayout`.
+**Shell:** `(core)` and `(admin)` both render `AppShell` (`features/shell/components/AppShell.tsx`): sidebar + transparent header + `#shell-header-center`. **`(core)` routes:** route chrome via `<PageHeader>`, body `h-full overflow-hidden` — see [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md). **Admin exception:** content sits below the header (not behind it) via scoped `styles/shell.css` rules — admin pages may use `h-[calc(100dvh-2.5rem)]`. `(transitional)`/`(legacy)` still use `ResponsiveLayout`.
 
 **Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers demos under `(dev)/demos/` and links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<name>/page.dev.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
 
@@ -299,7 +299,7 @@ Cross-project issue tracker.
 - **Backgrounds:** `bg-textured` for main backgrounds.
 - **Colors:** semantic classes only (`bg-card`, `bg-muted`, `bg-accent`, `text-foreground`, `text-muted-foreground`, `text-primary`, `border-border`). Tokens, elevations (`--elevation-1/2/3`), and gradients (`--gradient-1/2/3`) defined in `app/globals.css`. CSS migration guide: `.cursor/rules/css-updates.mdc`.
 - **Loading:** component-library loading states. Never plain "Loading…" text.
-- **Layout:** space-efficient, minimal padding/gaps. Page wrapper: `<div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">`.
+- **Layout:** space-efficient, minimal padding/gaps. **`(core)` AppShell routes:** route chrome in `<PageHeader>`, body wrapper `h-full overflow-hidden` — **never** `h-page` or `calc(100dvh - header)` (`.shell-main` is already full viewport). See [`features/shell/components/header/variants/USAGE.md`](./features/shell/components/header/variants/USAGE.md).
 - **Navigation:** `useTransition` + `startTransition` for all route changes. Loading overlay on the active element. Disable interactive elements during transitions. Guard against duplicate clicks.
 
 ### Browser dialogs are banned

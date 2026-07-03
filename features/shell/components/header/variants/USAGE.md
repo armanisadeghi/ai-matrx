@@ -1,47 +1,69 @@
 # Header Variants — Usage Guide
 
+**Canonical reference for `(core)` AppShell routes.** Read this before adding page headers or full-height wrappers.
+
+## Shared header row
+
+The top row is **shared space**: the shell owns the edges; the route owns the center.
+
+| Zone | Owner | Contents |
+|---|---|---|
+| Far left | Shell | Hamburger / sidebar toggle |
+| Center (`#shell-header-center`) | Route via `<PageHeader>` | Title, back, pickers, primary actions |
+| Far right | Shell | Org reminder, canvas toggle, user avatar |
+
+`<PageHeader>` (Server Component) portals children into `#shell-header-center` via `PageHeaderPortal`. Injected content is **one flat row** — transparent root, no `bg-card`, no `border-b`. Use `ChevronLeftTapButton` / `TapTargetButton` for icons.
+
+**Never render a page-level toolbar in the body** (`<header border-b bg-card>` with title + refresh + New). That duplicates the shell row, pushes actions behind the avatar (hence `pr-12` hacks), and leaves a dead band at the bottom when combined with header-height subtraction.
+
+Reference routes: `/chat/[conversationId]`, `/tasks`, `/agents/[id]/build`.
+
+Audit: `pnpm check:page-headers` (strict: `pnpm check:page-headers:strict`).
+
+## Body height — `(core)` AppShell
+
+`.shell-main` is pulled up with `margin-top: calc(-1 * var(--shell-header-h))`, so it **already fills the viewport**. Content extends behind the transparent glass header.
+
+**Use `h-full` on the page body wrapper — never `h-page`, `h-[calc(100dvh-var(--header-height))]`, or `calc(100dvh - 2.5rem)`.** Subtracting the header again creates an empty strip at the bottom.
+
+| Body type | Wrapper | Top spacing |
+|---|---|---|
+| Scrolling surface (chat, agent run) | `h-full overflow-hidden` | None on wrapper — content scrolls behind the glass header |
+| Resizable panels (`/tasks`, agent build) | `h-full overflow-hidden` | Per-panel `pt-[var(--shell-header-h)]` only where static top UI must clear the header (file tabs, titles) |
+| Single full-page editor (`/tasks/[id]`) | `h-full overflow-hidden` + `paddingTop: var(--shell-header-h)` on wrapper | Whole surface starts below the header |
+
+Sub-toolbars **below** the header zone (filters, search) are fine. Forbidden: a **page title bar** in the body.
+
+**Exceptions:** `/administration/*` and `(transitional)`/`(legacy)` `ResponsiveLayout` — content sits below the header, not behind it. There, `.h-page` / `calc(100dvh - var(--header-height))` is correct. Do not apply those wrappers to `(core)` routes.
+
 ## Route pages — required pattern
-
-**Never render a top toolbar inside the page body** (`border-b border-border bg-card` bars with back/title/refresh). The shell header already owns the left edge (sidebar toggle) and right edge (avatar). In-body bars with `ml-auto` / `justify-between` push actions behind the avatar.
-
-**Correct pattern** (see `app/(core)/agents/[id]/build/page.tsx` and `app/(core)/tasks/[id]/page.tsx`):
 
 ```tsx
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import IconButton from "@/features/shell/components/IconButton";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { RotateCw } from "lucide-react";
 
 export default function MyPage() {
   return (
     <>
       <PageHeader>
-        <div className="flex items-center w-full min-w-0 gap-0 px-0">
+        <div className="flex items-center w-full min-w-0 gap-0 p-0">
           <ChevronLeftTapButton href="/back" variant="transparent" ariaLabel="Back" />
           <h1 className="ml-2 text-sm font-medium text-foreground truncate">My Page</h1>
-          <div className="ml-auto shrink-0 flex items-center">
-            <IconButton icon={<RotateCw className="h-4 w-4" />} onClick={refresh} label="Refresh" />
-          </div>
         </div>
       </PageHeader>
-      <div
-        className="h-full overflow-hidden"
-        style={{ paddingTop: "var(--shell-header-h)" }}
-      >
-        {/* page body — no bg-card / border-b faux headers */}
+      <div className="h-full overflow-hidden">
+        {/* page body — no faux headers, no header-height calc */}
       </div>
     </>
   );
 }
 ```
 
-Rules for the center injection zone:
-- **Exact shell header height** — one flat row (`text-sm` title + tap targets). No extra padding, borders, or `bg-card` on the inject row.
-- **One icon max** on the left (back) and **one icon max** on the right (primary action) within the center zone — never viewport-edge toolbars in the page body.
-- **Body content** sits below the transparent shell header via `paddingTop: var(--shell-header-h)`.
-- Use `HeaderStructured` / variants only when you need their specific UX (dropdown center, pills, tabs) — not for a simple back + title + action row.
-
-Audit existing routes: `pnpm check:page-headers` (strict: `pnpm check:page-headers:strict`).
+Center injection zone rules:
+- **Exact shell header height** — one flat row (`text-sm` title + tap targets).
+- **Transparent root** — no `bg-card`, borders, or extra padding on the inject row.
+- **Tap targets** — `ChevronLeftTapButton` / `TapTargetButton`; don't wrap them in extra `p-*` / `gap-*`.
+- Use `HeaderStructured` / variants only when you need dropdown center, pills, or tabs — not for a simple back + title row.
 
 ---
 

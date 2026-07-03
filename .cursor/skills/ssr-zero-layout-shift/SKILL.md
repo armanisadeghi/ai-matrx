@@ -104,16 +104,18 @@ The static shell (layout, labels, known UI) prerenders immediately. Async data f
 ```tsx
 export default function Dashboard() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
-      <header className="h-14 flex items-center border-b px-4">
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-      </header>
-      <div className="flex-1 grid grid-cols-3 gap-4 p-4">
-        <Suspense fallback={<StatCardSkeleton />}><RevenueCard /></Suspense>
-        <Suspense fallback={<StatCardSkeleton />}><UsersCard /></Suspense>
-        <Suspense fallback={<StatCardSkeleton />}><OrdersCard /></Suspense>
+    <>
+      <PageHeader>
+        <h1 className="text-sm font-medium truncate">Dashboard</h1>
+      </PageHeader>
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex-1 grid grid-cols-3 gap-4 p-4">
+          <Suspense fallback={<StatCardSkeleton />}><RevenueCard /></Suspense>
+          <Suspense fallback={<StatCardSkeleton />}><UsersCard /></Suspense>
+          <Suspense fallback={<StatCardSkeleton />}><OrdersCard /></Suspense>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 ```

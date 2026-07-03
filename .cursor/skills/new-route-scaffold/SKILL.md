@@ -250,7 +250,8 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
 Must mirror the exact dimensions of the shell. Every element has explicit `h-` and `w-`. No content-derived sizing. See [route-architecture.md](route-architecture.md) for the full skeleton example from the notes route.
 
 Key rules:
-- Outer container: `h-[calc(100dvh-var(--header-height))] flex overflow-hidden`
+- Outer container: `h-full flex overflow-hidden` (AppShell `.shell-main` is already full viewport — do not subtract header height)
+- Route chrome: `<PageHeader>` — never an in-body faux header bar
 - Sidebar: `w-[280px] shrink-0` — must match the real aside exactly
 - No spinners — `<Skeleton>` components only
 - `[id]/loading.tsx` mirrors the content area only (layout persists across navigation)
@@ -445,7 +446,7 @@ All shell components are Server Components. Client Component islands are pushed 
 
 **Component tree:**
 ```
-[Feature]Shell (Server) — h-[calc(100dvh-var(--header-height))] flex overflow-hidden
+[Feature]Shell (Server) — h-full flex overflow-hidden (+ PageHeader for route chrome)
 ├── [Feature]Sidebar (Server — w-[NNpx] shrink-0 frame)         ← ask Arman for width
 │   └── [Feature]SidebarClient (Client — Redux reads, interactions)
 └── [Feature]MainArea (Server — flex-1 min-w-0 frame)
@@ -456,7 +457,8 @@ All shell components are Server Components. Client Component islands are pushed 
 ```
 
 **Key layout rules:**
-- Outermost: `h-[calc(100dvh-var(--header-height))]` — never `h-screen`
+- Outermost: `h-full overflow-hidden` — never `h-screen`, `h-page`, or `calc(100dvh - header)` on `(core)` routes
+- Route chrome: `<PageHeader>` — see `features/shell/components/header/variants/USAGE.md`
 - Sidebar: `w-[280px] shrink-0` — ask Arman for the exact width
 - Main area: `flex-1 min-w-0 overflow-hidden`
 - Scroll regions: `overflow-y-auto` only on the inner list container
@@ -516,7 +518,7 @@ Every `loading.tsx` must satisfy:
 - [ ] `NoteEditorPlaceholder` (or equivalent) clearly marked as stub for later replacement
 - [ ] Navigation entry added (or confirmed already present)
 - [ ] No `useEffect` in hydrators
-- [ ] No `h-screen` or `min-h-screen` anywhere — use `h-dvh` / `h-[calc(100dvh-...)]`
+- [ ] No `h-screen` or `min-h-screen` anywhere — use `h-dvh` for marketing pages; `h-full` for `(core)` AppShell bodies
 - [ ] No inline styles (unless Arman explicitly approves for testing)
 - [ ] Lints pass on all new files
 
@@ -528,6 +530,7 @@ These skills contain the rules this workflow is built on. When in doubt, they wi
 
 - **`nextjs-ssr-architecture`** — `.cursor/skills/nextjs-ssr-architecture/SKILL.md` — server/client component boundaries, Suspense rules, hydration pattern
 - **`ssr-zero-layout-shift`** — `.cursor/skills/ssr-zero-layout-shift/SKILL.md` — skeleton design, fixed-dimension containers, CLS prevention
+- **Shell header + page height** — `features/shell/components/header/variants/USAGE.md` — `<PageHeader>`, `h-full`, when `.h-page` applies
 - **`redux-selector-rules`** — `.cursor/skills/redux-selector-rules/SKILL.md` — selector patterns, curried selector caching, avoiding re-render loops
 - **Route rules** — `app/(a)/_read_first_route_rules/RULES.md` — mandatory, read before every session on this route group
 

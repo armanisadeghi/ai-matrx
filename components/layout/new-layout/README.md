@@ -62,8 +62,11 @@ export function FeatureHeader(props: FeatureHeaderProps) {
 ```
 
 ### 3. Integrate in Feature Page
+
+> **Legacy `ResponsiveLayout` only.** `(core)` AppShell routes use `<PageHeader>` + `h-full` — see `features/shell/components/header/variants/USAGE.md`.
+
 ```tsx
-// In your main feature component
+// Legacy (transitional) ResponsiveLayout feature page
 import { FeatureHeader } from '@/components/layout/new-layout/PageSpecificHeader';
 
 export function FeaturePage() {

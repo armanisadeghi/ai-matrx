@@ -11988,6 +11988,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -40408,6 +40468,23 @@
               }
             ],
             "title": "Cost Cap Per Call"
+          },
+          "result_mode": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "reference",
+              "inline_once"
+            ],
+            "title": "Result Mode",
+            "description": "How the child agent's result returns to the caller. 'inline' — the full output in the tool_result (default). 'reference' — the output is stored in the conversation value store and the caller receives only a bounded descriptor (key + description + size + a paste-able reference fence); the child's tokens are NOT streamed to the client. 'inline_once' — full output this turn AND stored, so it can be stubbed from history once consumed.",
+            "default": "inline"
+          },
+          "handoff": {
+            "type": "boolean",
+            "title": "Handoff",
+            "description": "Agent-as-Router (Pattern 1): a successful call ENDS the caller's loop — the child's answer streams to the client and persists as the conversation's own assistant response; control returns to the caller only on error. Mutually exclusive with result_mode != 'inline' (a handoff answer IS the response, never a descriptor).",
+            "default": false
           }
         },
         "type": "object",
@@ -44956,7 +45033,7 @@
         },
         "type": "object",
         "title": "CacheBypass",
-        "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tool_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Evict the agent definition from ``AgxAgent`` / ``AgxVersion``\n    caches in the ORM ``StateManager``. Required after the agent\n    definition has been edited. Scoped to the single agent the route\n    is executing when ``apply_cache_bypass`` is given an ``agent_id``;\n    otherwise a whole-model flush.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``AiModel`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
+        "description": "Opt-in cache invalidation flags attached to an AI request body.\n\nAll fields default to ``False`` — callers pay nothing for the feature\nwhen they do not use it.\n\nconversation\n    Bust ``AgentCache`` for the current conversation AND flush every\n    ``Cx*`` model in the ORM ``StateManager``. Required when the\n    caller has written to ``cx_message`` / ``cx_tool_call`` /\n    ``cx_media`` directly (e.g. via Supabase client).\nagent\n    Evict the agent definition from ``AgxAgent`` / ``AgxVersion``\n    caches in the ORM ``StateManager``. Required after the agent\n    definition has been edited. Scoped to the single agent the route\n    is executing when ``apply_cache_bypass`` is given an ``agent_id``;\n    otherwise a whole-model flush.\ntools\n    Flush the ``Tools`` model cache in the ORM ``StateManager``.\n    Required after a tool definition has been edited.\nmodels\n    Flush the ``ModelDefinition`` cache AND rebuild the standalone\n    ``_pricing_lookup_cache``. Required after an AI model row has\n    been added / edited / repriced."
       },
       "CallTimelineResponse": {
         "properties": {
@@ -50934,7 +51011,7 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "description": "Unique tool name. Must match [a-zA-Z0-9_-]{1,64}."
+            "description": "Unique tool name. Must match [a-zA-Z0-9_:-]{1,64}; a ':' namespace separator is serialized to '__' at the provider boundary."
           },
           "description": {
             "type": "string",
@@ -52616,6 +52693,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -60670,7 +60802,7 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "description": "Unique tool name. Must match [a-zA-Z0-9_-]{1,64}."
+            "description": "Unique tool name. Must match [a-zA-Z0-9_:-]{1,64}; a ':' namespace separator is serialized to '__' at the provider boundary."
           },
           "description": {
             "type": "string",
@@ -71129,6 +71261,11 @@
             "type": "string",
             "title": "Name"
           },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name",
+            "default": ""
+          },
           "description": {
             "type": "string",
             "title": "Description",
@@ -71153,7 +71290,7 @@
           "execution"
         ],
         "title": "RealtimeTool",
-        "description": "One tool declared to a realtime session, in xAI function shape.\n\n``parameters`` is the JSON Schema lifted verbatim from ``tool_def.parameters``\n(the same bytes the turn-based path hands the provider) — never re-derived."
+        "description": "One tool declared to a realtime session, in xAI function shape.\n\n``parameters`` is the JSON Schema lifted verbatim from ``tool_def.parameters``\n(the same bytes the turn-based path hands the provider) — never re-derived.\n\n``name`` is the provider-safe WIRE spelling (``:`` → ``__``,\n``matrx_ai.config.wire_names``) — the only form xAI accepts.\n``canonical_name`` carries the internal spelling so a CLIENT-executed\ntool can be matched against the client's own catalog (which speaks\ncanonical names, same as the turn-based ``tool_delegated`` event).\nIdentical to ``name`` whenever the canonical form is already wire-safe."
       },
       "RealtimeToolsRequest": {
         "properties": {
@@ -76465,6 +76602,11 @@
             },
             "type": "array",
             "title": "Matched Entities"
+          },
+          "rerank_status": {
+            "type": "string",
+            "title": "Rerank Status",
+            "default": "off"
           }
         },
         "additionalProperties": false,

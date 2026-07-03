@@ -41,9 +41,10 @@ Research Route: Example: app/(public)/p/research/topics/[topicId]/sources/page.t
 
 
 ### Layout & Headers
-- Use `PageSpecificHeader` portal to inject content into the app header — never create a page-level title/header inside the page body
-- Page wrapper: `min-h-[calc(100dvh-var(--header-height))] bg-textured` for scrollable pages, or `h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden` for fixed-height pages
-- Never add descriptions, subtitles, or explanatory text — enterprise users don't need it
+- **`(core)` routes:** inject route chrome with `<PageHeader>` (`features/shell/components/header/PageHeader.tsx`) — never a page-level title/header bar in the body (`border-b bg-card`)
+- **Body wrapper:** `h-full overflow-hidden` on `(core)` AppShell routes — never `h-page` or `calc(100dvh - header)` (`.shell-main` is already full viewport)
+- **Admin/legacy only:** `.h-page` or `calc(100dvh - var(--header-height))` where content sits below the header
+- Full pattern: `features/shell/components/header/variants/USAGE.md`
 
 ### Scrolling
 - Single scroll area only — the page scrolls, nothing nested

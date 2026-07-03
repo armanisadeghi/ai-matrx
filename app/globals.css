@@ -1382,7 +1382,9 @@
     margin-top: max(0.75rem, env(safe-area-inset-top, 0px));
   }
 
-  /* Page height utilities - automatically accounts for header height */
+  /* Page height utilities — subtract header height.
+     Use ONLY on /administration/* and (transitional)/(legacy) ResponsiveLayout.
+     (core) AppShell routes: use h-full — .shell-main is already full viewport. */
   .h-page {
     height: calc(100dvh - var(--header-height));
   }

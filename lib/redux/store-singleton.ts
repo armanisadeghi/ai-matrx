@@ -30,6 +30,10 @@ let storeInstance: AppStore | null = null;
 
 export function setStoreSingleton(store: AppStore): void {
   storeInstance = store;
+  // TEMP DEBUG — remove before commit
+  if (typeof window !== "undefined") {
+    (window as unknown as { __APP_STORE__: AppStore }).__APP_STORE__ = store;
+  }
 }
 
 export function getStoreSingleton(): AppStore | null {

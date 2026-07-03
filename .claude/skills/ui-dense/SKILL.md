@@ -42,7 +42,7 @@ Your blind spot is density *without* hierarchy collapsing into noise — these a
 - **Hierarchy via type scale, weight, and our `--elevation-*` tokens — never boxes-in-boxes.** Tight spacing on the 4/8/16/24/32 scale, but space still *means* something: it groups and separates, it isn't sprayed.
 - **Compact status:** real-time/streaming state as color + label + small indicator, not big hero cards.
 - **Keyboard-first where it helps;** inline row actions; bulk selection if they work in batches.
-- **Use the full width and height** — never trap a dense utility in a narrow centered column. (`.h-page`, full-bleed layouts.)
+- **Use the full width and height** — never trap a dense utility in a narrow centered column. `(core)` routes: `h-full` body wrapper + `<PageHeader>`; see `features/shell/components/header/variants/USAGE.md`.
 
 ## Guardrail
 

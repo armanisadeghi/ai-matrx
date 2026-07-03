@@ -6,7 +6,7 @@
 **consumedBy:** components/image/unsplash/desktop/EnhancedImageViewer.tsx, EnhancedUnsplashGallery.tsx, demo/EnhancedSearchDemo.tsx, mobile/MobileUnsplashViewer.tsx, mobile/MobileUnsplashGallery.tsx - all read .urls.regular/.full, .user.name, .alt_description, .description, .exif.* that UnsplashPhoto does not declare
 **conflict:** The hook's declared UnsplashPhoto type is far narrower than the real runtime shape (unsplash-js Basic). Every scope-file consumer that reads urls/user/exif/description was already relying on fields the hook's own type hides - previously masked entirely by `any` on the consuming side. I widened the consuming components to an honest `Photo`/`UnsplashDisplayPhoto` interface matching the real API shape (matching MobileUnsplashGallery.tsx's pre-existing isDisplayPhoto guard precedent), but the hook itself still exposes the too-narrow type, so passing its `photos`/`toggleFavorite`/`downloadImage` into the now-strict components required one documented `as Photo[]`/`as UnsplashDisplayPhoto[]` cast per call site (with an explanatory comment), since actually fixing the root cause means widening UnsplashPhoto in the hook file, which is out of my scope (components/matrx, components/image, components/animated only).
 **decisionNeeded:** Should hooks/images/useUnsplashGallery.ts's `UnsplashPhoto` type be widened to match unsplash-js's real `Basic`/`Random` return shape (or import it directly), eliminating the need for the two documented `as Photo[]` casts left in components/image/unsplash/desktop/EnhancedUnsplashGallery.tsx and mobile/MobileUnsplashGallery.tsx? This is a one-file, low-risk widening (the real data already has every field) but the hook is out of my scope.
-**Status:** PENDING
+**Status:** DECIDED: widen `UnsplashPhoto` in `hooks/images/useUnsplashGallery.ts` to match unsplash-js's real `Basic`/`Random` shape (import it directly if practical). Remove the two documented `as Photo[]`/`as UnsplashDisplayPhoto[]` casts in `EnhancedUnsplashGallery.tsx` and `MobileUnsplashGallery.tsx` once the hook's type matches.
 
 ### BRIEF 2: app/api/webhooks/resend/route.ts:199 — data-shape mismatch requiring a lookup RPC
 **data:** Resend webhook data.to (recipient email address, string|string[])
@@ -14,7 +14,7 @@
 **consumedBy:** users.user_email_preferences.user_id (auth UUID column) via .eq() filter
 **conflict:** No email->user_id resolver exists in the codebase (checked: no getUserByEmail helper, no RPC in database.types.ts). auth.admin.listUsers() only supports pagination, not a targeted email lookup.
 **decisionNeeded:** Either (A) add a SECURITY DEFINER RPC that resolves auth.users.email -> id for admin-client use, or (B) accept periodic full listUsers() scans for this low-volume webhook. Left the type honestly narrowed (typeof data.to === 'string' ? data.to : '') and flagged in a code comment rather than building unreviewed DB surface.
-**Status:** PENDING
+**Status:** DECIDED: add a SECURITY DEFINER RPC that resolves `auth.users.email -> id` for admin-client use, called from the Resend webhook handler. This touches `auth.users` — read/apply the `protected-resources` skill before writing the RPC (gate correctly even though this is a service-role/webhook context, not a user-initiated write).
 
 ### BRIEF 3: app/(admin)/administration/agent-apps/edit/[id]/page.tsx:45 — as unknown as (declared type narrower than real data)
 **data:** AgentAppAdminView (hand-declared view interface in lib/services/agent-apps-admin-service.ts) is missing component_code/variable_schema/layout_config/styling_config/shell_kind/shell_config/slot_overrides/slot_code/component_language/allowed_imports/app_kind that AgentApp (and the AgentAppEditor that consumes it) require.
@@ -22,7 +22,7 @@
 **consumedBy:** AgentAppEditor (features/agent-apps/components/AgentAppEditor.tsx) reads app.component_code directly via useState(app.component_code).
 **conflict:** AgentAppAdminView (declared) vs Database["app"]["Tables"]["definition"]["Row"] (actual) — the view type is a strict subset with several required-on-AgentApp fields entirely absent.
 **decisionNeeded:** Should AgentAppAdminView be widened/replaced with the full definition Row (or a proper AgentAppSummary vs AgentAppFull split, following the AgentAppSummary precedent another session just added to features/agent-apps/types.ts for the list-view case), so this edit page can drop the cast entirely? That's a change to lib/services/agent-apps-admin-service.ts, outside my app/(admin)-only scope.
-**Status:** PENDING
+**Status:** HOLD — needs a live session with the user. Agent apps is a critical, actively-evolving new feature (not old code being cleaned up), so the Summary-vs-Full type split decision needs the user's direct involvement rather than a batch call. Do not fix unattended.
 
 ### BRIEF 4: app/(admin)/administration/utils/text-cleaner/utilities/ErrorManager.ts:85 — dynamic require + implicit any (not in my priority list but adjacent)
 **data:** const errorProcessors = require('./errorProcessors'); const processor = errorProcessors[processorName]; — CommonJS require() inside an ESM/TS module, indexed by a computed string key, so `processor` and `errorProcessors[processorName]` are implicitly `any`.
@@ -30,4 +30,4 @@
 **consumedBy:** Same function, immediately calls processor(cleanedError) and reads processed.essential/.basic/.verbose/.errorType.
 **conflict:** This wasn't flagged by pnpm check:hatches (the scanner doesn't pattern-match `require(...)` or computed-member `any`), so it's outside my mandate to touch without evidence it's currently a live hatch per the tool, but it is a real dynamic-any pattern that would resist a `pnpm type-check` pass.
 **decisionNeeded:** Should this be converted to a static import map (Record<string, (error: string) => PartialParsedError>) built from the named exports of errorProcessors.ts, removing the require() entirely? Left untouched since it wasn't in the enumerated hatch list and changing dispatch mechanics risks behavior drift in this already-fragile dev-tooling module.
-**Status:** PENDING
+**Status:** DECIDED: convert to a static import map — `Record<string, (error: string) => PartialParsedError>` built from `errorProcessors.ts`'s named exports — removing the `require()` and the implicit `any` entirely.

@@ -60,7 +60,7 @@
       "additionalProperties": false,
       "properties": {
         "name": {
-          "description": "Unique tool name. Must match [a-zA-Z0-9_-]{1,64}.",
+          "description": "Unique tool name. Must match [a-zA-Z0-9_:-]{1,64}; a ':' namespace separator is serialized to '__' at the provider boundary.",
           "title": "Name",
           "type": "string"
         },

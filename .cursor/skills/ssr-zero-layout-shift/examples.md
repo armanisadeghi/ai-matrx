@@ -13,19 +13,20 @@ Full page with cached column config, dynamic user-specific data, and interactive
 import { Suspense } from 'react'
 import { cacheLife, cacheTag } from 'next/cache'
 import { cookies } from 'next/headers'
+import PageHeader from '@/features/shell/components/header/PageHeader'
 
 export default function AgentsPage() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
-      {/* Static shell — instant */}
-      <header className="h-14 flex items-center justify-between border-b px-4">
-        <h1 className="text-lg font-semibold">Agents</h1>
-        <Suspense fallback={<div className="h-9 w-24 animate-pulse rounded-md bg-muted" />}>
-          <CreateAgentButton />
-        </Suspense>
-      </header>
-
-      <div className="flex-1 overflow-hidden p-4 space-y-4">
+    <>
+      <PageHeader>
+        <div className="flex items-center justify-between w-full min-w-0">
+          <h1 className="text-sm font-semibold truncate">Agents</h1>
+          <Suspense fallback={<div className="h-9 w-24 animate-pulse rounded-md bg-muted" />}>
+            <CreateAgentButton />
+          </Suspense>
+        </div>
+      </PageHeader>
+      <div className="h-full flex flex-col overflow-hidden">
         {/* Cached: column definitions rarely change */}
         <Suspense fallback={<FilterBarSkeleton />}>
           <FilterBar />
@@ -36,7 +37,7 @@ export default function AgentsPage() {
           <AgentTable />
         </Suspense>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -129,11 +130,15 @@ Server Component form shell with multiple data-fetching dropdowns, each streamin
 ```tsx
 // app/(authenticated)/agents/new/page.tsx
 import { Suspense } from 'react'
+import PageHeader from '@/features/shell/components/header/PageHeader'
 
 export default function NewAgentPage() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden p-6">
-      <h1 className="text-xl font-semibold mb-6">Create Agent</h1>
+    <>
+      <PageHeader>
+        <h1 className="text-sm font-semibold truncate">Create Agent</h1>
+      </PageHeader>
+      <div className="h-full flex flex-col overflow-hidden p-6">
 
       <form className="max-w-lg space-y-6">
         {/* Static field — instant */}
@@ -172,7 +177,8 @@ export default function NewAgentPage() {
           Create Agent
         </button>
       </form>
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -225,15 +231,15 @@ Three content tiers in one page: static shell, cached stats, dynamic user feed.
 import { Suspense } from 'react'
 import { cacheLife, cacheTag } from 'next/cache'
 import { cookies } from 'next/headers'
+import PageHeader from '@/features/shell/components/header/PageHeader'
 
 export default function DashboardPage() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
-      {/* Tier 1: Static shell */}
-      <header className="h-14 flex items-center border-b px-4">
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-      </header>
-
+    <>
+      <PageHeader>
+        <h1 className="text-sm font-semibold truncate">Dashboard</h1>
+      </PageHeader>
+      <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto p-4 space-y-6">
         {/* Tier 2: Cached — revalidates hourly */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -256,7 +262,8 @@ export default function DashboardPage() {
           </Suspense>
         </section>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
 

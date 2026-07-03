@@ -163,7 +163,7 @@ export function ExtractionCatalogClient() {
   );
 
   return (
-    <div className="w-full h-page flex flex-col overflow-hidden bg-textured">
+    <div className="w-full h-full flex flex-col overflow-hidden bg-textured">
       {/* Header */}
       <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 min-w-0">

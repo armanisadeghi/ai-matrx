@@ -446,7 +446,7 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-page w-full flex-col overflow-hidden bg-textured">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-textured">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <Button

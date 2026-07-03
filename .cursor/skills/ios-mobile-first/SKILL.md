@@ -19,7 +19,7 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 2. **Always `pb-safe`** — on fixed bottom elements
 3. **Always 16px inputs** — prevents iOS zoom (`text-base` + `style={{ fontSize: '16px' }}`)
 4. **Always 44pt touch targets** — minimum `h-10 w-10`
-5. **Always `--header-height`** — never hardcode
+5. **Header tokens:** `--shell-header-h` / `--header-height` — never hardcode in calc
 6. **Always Drawer on mobile** — never Dialog
 7. **Never tabs on mobile** — stack vertically
 8. **Never nested scrolling** — single scroll area per view
@@ -51,35 +51,33 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 // .mb-safe { margin-bottom: env(safe-area-inset-bottom, 1rem); }
 ```
 
-### Header Height
+### Header Height & Page Layout (`(core)` AppShell)
+
+`.shell-main` fills the viewport (negative margin pull-up). **Body wrapper: `h-full overflow-hidden` — do not subtract header height.**
 
 ```tsx
-// ✅ Uses CSS variable (--header-height: 2.5rem)
+// ✅ (core) full-height workspace — chat, tasks, agent build
+<>
+  <PageHeader>{/* route chrome */}</PageHeader>
+  <div className="h-full flex flex-col overflow-hidden">
+    <div className="flex-1 overflow-y-auto pb-safe">{/* scroll area */}</div>
+  </div>
+</>
+
+// ✅ Per-panel clearance when static top UI must sit below the glass header
+<div className="h-full overflow-auto pt-[var(--shell-header-h)]">{/* file tabs, titles */}</div>
+
+// ❌ Double-subtracts header inside shell-main → empty band at bottom
 <div className="h-[calc(100dvh-var(--header-height))]">
+<div className="h-page">
 
 // ❌ Hardcoded
 <div className="h-[calc(100vh-40px)]">
 ```
 
-### Page Layouts
+**When header subtraction IS correct:** `/administration/*` and `(transitional)`/`(legacy)` `ResponsiveLayout` — content below the header, not behind it. Use `.h-page` or `calc(100dvh - var(--header-height))` there only.
 
-```tsx
-// Full-height page below header
-<div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-  <div className="flex-1 overflow-y-auto pb-safe">{/* Scrollable content */}</div>
-</div>
-
-// With fixed bottom bar
-<div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-  <div className="flex-1 overflow-y-auto">{/* Content */}</div>
-  <div className="flex-shrink-0 pb-safe bg-card border-t">{/* Actions */}</div>
-</div>
-
-// Standard scrollable page
-<div className="min-h-dvh">
-  <div className="container mx-auto py-6 px-4">{/* Content */}</div>
-</div>
-```
+Full pattern: `features/shell/components/header/variants/USAGE.md`
 
 ---
 

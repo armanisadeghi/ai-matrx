@@ -236,6 +236,11 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   sagaMiddleware.run(rootSagaInstance);
 
   setStoreSingleton(storeWithSync);
+  // TEMP DEBUG — remove before commit
+  if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+    (window as unknown as { __APP_STORE__: unknown }).__APP_STORE__ =
+      storeWithSync;
+  }
   // Register this store's sagaMiddleware so `runSaga` from this module
   // (and any consumer that imports it) always runs on the active store.
   setRunSaga((saga) => sagaMiddleware.run(saga));

@@ -150,16 +150,21 @@ body { font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); }
 
 ## 📍 Project-Specific Conventions
 
-### Header Height
+### Header & page height (`(core)` AppShell)
 
 ```css
---header-height: 2.5rem; /* 40px - unified for mobile and desktop */
+--header-height: 2.5rem; /* legacy/admin — see --shell-header-h in shell.css */
 ```
 
-**Full-height pattern:**
+**Full-height `(core)` pattern:**
 ```tsx
-<div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
+<>
+  <PageHeader>{/* route chrome */}</PageHeader>
+  <div className="h-full flex flex-col overflow-hidden">{/* body */}</div>
+</>
 ```
+
+See `features/shell/components/header/variants/USAGE.md`. Use `.h-page` / header subtraction only on `/administration/*` and legacy layouts.
 
 ### Textured Backgrounds
 

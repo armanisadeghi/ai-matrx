@@ -417,9 +417,12 @@ export default async function AuthenticatedLayout({
   }
   
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    <>
+      <PageHeader>{/* route chrome if needed */}</PageHeader>
+      <div className="h-full flex flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </>
   )
 }
 ```

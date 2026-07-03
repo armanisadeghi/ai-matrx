@@ -123,8 +123,8 @@ function main() {
   }
   console.log(
     "Fix: wrap header controls in <PageHeader> (features/shell/components/header/PageHeader.tsx).\n" +
-      "     Use HeaderStructured / AgentHeader pattern — one icon max on each edge of the center zone.\n" +
-      "     Body content gets paddingTop: var(--shell-header-h).\n",
+      "     Body wrapper: h-full overflow-hidden on (core) routes — never h-page or calc(100dvh - header).\n" +
+      "     See features/shell/components/header/variants/USAGE.md\n",
   );
 
   process.exit(strict ? 1 : 0);

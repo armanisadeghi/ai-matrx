@@ -62,16 +62,16 @@ http://localhost:3000/api/dev-login?token=${DEV_LOGIN_TOKEN}&next=/tasks
 - Space-efficient layouts (minimal padding/gaps, maintain readability)
 - Desktop-first, mobile-responsive
 - Component library loading states (no plain text)
-- Proper Layout.tsx or page wrapper: `<div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">`
+- **`(core)` page layout:** `<PageHeader>` for route chrome + `h-full overflow-hidden` body — see `features/shell/components/header/variants/USAGE.md`
 </ui_ux_guidelines>
 
 <mobile_layout_essentials>
 1. **Viewport Heights:** Use `h-dvh`, `min-h-dvh`, `max-h-dvh` (NEVER `h-screen` or `min-h-screen`)
 2. **Safe Areas:** Always add `pb-safe` to fixed bottom elements
-3. **Header Height:** Use `--header-height` (2.5rem/h-10) — never hardcode
-4. **Full-height pages:** `h-[calc(100dvh-var(--header-height))]` for content below header
+3. **Header tokens:** Use `--shell-header-h` / `--header-height` — never hardcode `2.5rem` in calc
+4. **Full-height `(core)` pages:** `h-full overflow-hidden` on the body wrapper — `.shell-main` is already full viewport; do NOT subtract header height (`h-page`, `calc(100dvh - …)`)
 5. **iOS Zoom Prevention:** Input/textarea must be `≥16px` font-size (`text-base` + inline style)
-6. **Header Injection:** Use `<PageSpecificHeader>` component — never create custom headers
+6. **Header injection:** Use `<PageHeader>` (`features/shell/components/header/PageHeader.tsx`) — never a page-level `<header border-b bg-card>` in the body
 7. **Dialogs:** NEVER use Dialog on mobile — use `useIsMobile()` + Drawer (bottom sheet)
 8. **Tabs:** NEVER use tabs on mobile — stack sections vertically with dividers
 9. **Scrolling:** NEVER nest scroll areas on mobile — single scroll area per view

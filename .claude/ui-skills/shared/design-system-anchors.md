@@ -12,9 +12,11 @@ The concrete, real things to reuse instead of inventing. Paths are relative to r
 | Depth / layering | `--elevation-1/2/3` (via `bg-elevation-1` etc.) | random `shadow-2xl` stacks |
 | Glass (see below) | `bg-glass` `hover:bg-glass-hover` `active:bg-glass-active` `border border-glass-edge` `backdrop-blur-glass` `backdrop-saturate-glass` `shadow-glass`/`shadow-glass-lg` | hand-rolled `bg-white/10 backdrop-blur-md` |
 | Page background | `bg-textured` | flat `bg-white`/`bg-black` |
+| Route header (`(core)`) | `<PageHeader>` → `features/shell/components/header/PageHeader.tsx` | in-body `<header border-b bg-card>` |
 | Card background | `bg-card` (or `bg-card-textured`) | nested opaque boxes |
 | Gradients (sparingly) | `--gradient-1/2/3` | invented purple→blue |
-| Full-height page | `.h-page` / `.min-h-page` / `.max-h-page` (auto-subtract `--header-height`, 2.5rem) | `h-screen`, `h-[calc(100vh-40px)]` hardcoded |
+| Full-height `(core)` page | `h-full overflow-hidden` on body wrapper + `<PageHeader>` for route chrome | `h-page`, `h-screen`, `calc(100dvh - header)` inside AppShell |
+| Full-height admin/legacy | `.h-page` / `.min-h-page` (subtracts `--header-height`) | applying `.h-page` to `(core)` routes |
 | Scrollbars | `.scrollbar-thin` / `.scrollbar-hide` | default chunky bars |
 | Safe area (mobile fixed bottom) | `.pb-safe` `.mb-safe` | nothing |
 

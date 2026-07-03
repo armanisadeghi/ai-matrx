@@ -208,7 +208,7 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 
 export default function Page() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-hidden">
+    <div className="h-full overflow-hidden">
       <Group id="demo-baseline" orientation="horizontal" className="h-full w-full">
         <Panel id="left" defaultSize="50%" minSize="20%">
           <div className="h-full p-4">Left</div>
@@ -256,7 +256,7 @@ async function readLayoutCookie(): Promise<Layout | undefined> {
 export default async function Page() {
   const defaultLayout = await readLayoutCookie();
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-hidden">
+    <div className="h-full overflow-hidden">
       <ClientGroup
         id={GROUP_ID}
         cookieName={COOKIE_NAME}

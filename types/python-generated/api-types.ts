@@ -4597,6 +4597,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -14394,6 +14418,19 @@ export interface components {
             max_calls_per_conversation?: number | null;
             /** Cost Cap Per Call */
             cost_cap_per_call?: number | null;
+            /**
+             * Result Mode
+             * @description How the child agent's result returns to the caller. 'inline' — the full output in the tool_result (default). 'reference' — the output is stored in the conversation value store and the caller receives only a bounded descriptor (key + description + size + a paste-able reference fence); the child's tokens are NOT streamed to the client. 'inline_once' — full output this turn AND stored, so it can be stubbed from history once consumed.
+             * @default inline
+             * @enum {string}
+             */
+            result_mode: "inline" | "reference" | "inline_once";
+            /**
+             * Handoff
+             * @description Agent-as-Router (Pattern 1): a successful call ENDS the caller's loop — the child's answer streams to the client and persists as the conversation's own assistant response; control returns to the caller only on error. Mutually exclusive with result_mode != 'inline' (a handoff answer IS the response, never a descriptor).
+             * @default false
+             */
+            handoff: boolean;
         };
         /** AgentUsageReportResponse */
         AgentUsageReportResponse: {
@@ -16187,7 +16224,7 @@ export interface components {
          *         Flush the ``Tools`` model cache in the ORM ``StateManager``.
          *         Required after a tool definition has been edited.
          *     models
-         *         Flush the ``AiModel`` cache AND rebuild the standalone
+         *         Flush the ``ModelDefinition`` cache AND rebuild the standalone
          *         ``_pricing_lookup_cache``. Required after an AI model row has
          *         been added / edited / repriced.
          */
@@ -18144,7 +18181,7 @@ export interface components {
         CustomTool: {
             /**
              * Name
-             * @description Unique tool name. Must match [a-zA-Z0-9_-]{1,64}.
+             * @description Unique tool name. Must match [a-zA-Z0-9_:-]{1,64}; a ':' namespace separator is serialized to '__' at the provider boundary.
              */
             name: string;
             /**
@@ -18715,6 +18752,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -21697,7 +21761,7 @@ export interface components {
             kind: "inline";
             /**
              * Name
-             * @description Unique tool name. Must match [a-zA-Z0-9_-]{1,64}.
+             * @description Unique tool name. Must match [a-zA-Z0-9_:-]{1,64}; a ':' namespace separator is serialized to '__' at the provider boundary.
              */
             name: string;
             /**
@@ -25384,10 +25448,22 @@ export interface components {
          *
          *     ``parameters`` is the JSON Schema lifted verbatim from ``tool_def.parameters``
          *     (the same bytes the turn-based path hands the provider) — never re-derived.
+         *
+         *     ``name`` is the provider-safe WIRE spelling (``:`` → ``__``,
+         *     ``matrx_ai.config.wire_names``) — the only form xAI accepts.
+         *     ``canonical_name`` carries the internal spelling so a CLIENT-executed
+         *     tool can be matched against the client's own catalog (which speaks
+         *     canonical names, same as the turn-based ``tool_delegated`` event).
+         *     Identical to ``name`` whenever the canonical form is already wire-safe.
          */
         RealtimeTool: {
             /** Name */
             name: string;
+            /**
+             * Canonical Name
+             * @default
+             */
+            canonical_name: string;
             /**
              * Description
              * @default
@@ -27540,6 +27616,11 @@ export interface components {
             entity_map?: components["schemas"]["SearchEntityOut"][];
             /** Matched Entities */
             matched_entities?: string[];
+            /**
+             * Rerank Status
+             * @default off
+             */
+            rerank_status: string;
         };
         /** SearchSourceRef */
         SearchSourceRef: {
@@ -39420,6 +39501,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

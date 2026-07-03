@@ -133,7 +133,7 @@ lib/agents/data.ts              # NEW — server-only data access, import 'serve
 
 Every page follows this strict pattern from the skills:
 
-1. **Server Component defines the fixed-dimension outer shell first.** `h-[calc(100dvh-var(--header-height))]` on the wrapper. Dimensions are locked before any data arrives.
+1. **Server Component defines the fixed-dimension outer shell first.** `(core)` routes: `<PageHeader>` + `h-full overflow-hidden` on the body wrapper — never `calc(100dvh - header)` (`.shell-main` is already full viewport). See `features/shell/components/header/variants/USAGE.md`.
 2. **`<Suspense>` boundaries wrap only the async-data components** — not the whole page. The static shell (labels, layout, nav chrome) renders instantly outside any boundary.
 3. **Skeletons are dimension-matched.** Every `loading.tsx` and every `<Suspense fallback>` has the same explicit height/width/padding as the real component. No content-derived sizing.
 4. **`'use client'` only on the smallest interactive unit.** The page file itself is always a Server Component. Client components are islands inside server shells.
@@ -284,15 +284,15 @@ export const metadata: Metadata = {
 export default async function AgentsListPage() {
   const seeds = await getAgentListSeed()  // agx_get_list(p_limit:30)
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-      {/* Hydrates 30 partial records into Redux — renders null */}
+    <>
+      <PageHeader>
+        <AgentsListHeader />
+      </PageHeader>
       <AgentListHydrator seeds={seeds} />
-      {/* Static shell — dimensions locked */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        {/* AgentsGrid is a Client Component — its useEffect backfills all agents */}
+      <div className="h-full overflow-y-auto p-4 md:p-6">
         <AgentsGrid />
       </div>
-    </div>
+    </>
   )
 }
 ```
@@ -326,16 +326,16 @@ export default async function AgentDetailLayout({
   const agent = await getAgent(id)  // cache() deduplicates with generateMetadata call
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden">
-      {/* Hydrates full agent into Redux — renders null, useRef guard */}
+    <>
+      <PageHeader>
+        <AgentHeader agentId={id} agentName={agent.name} />
+      </PageHeader>
       <AgentHydrator definition={agent} />
-      {/* Server-rendered header — fixed h-14, no JS */}
-      <AgentHeader agent={agent} />
-      {/* Client island — only usePathname + Link, thin */}
-      <AgentTabNav agentId={id} />
-      {/* Child pages stream in here */}
-      <main className="flex-1 overflow-hidden">{children}</main>
-    </div>
+      <div className="h-full flex flex-col overflow-hidden">
+        <AgentTabNav agentId={id} />
+        <main className="flex-1 overflow-hidden">{children}</main>
+      </div>
+    </>
   )
 }
 ```
