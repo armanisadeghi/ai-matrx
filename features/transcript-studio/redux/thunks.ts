@@ -423,28 +423,16 @@ export const fetchRecordingSegmentsThunk = createAsyncThunk<
   { sessionId: string }
 >(
   "transcriptStudio/fetchRecordingSegments",
-  async ({ sessionId }, { dispatch, getState, rejectWithValue }) => {
+  async ({ sessionId }, { dispatch, rejectWithValue }) => {
     try {
       const segments = await listRecordingSegments(sessionId);
       dispatch(recordingSegmentsLoaded({ sessionId, segments }));
-      const after = (getState() as RootState).transcriptStudio
-        .recordingSegmentIdsBySession[sessionId];
-      // TEMP DEBUG
-      console.error(
-        "[DBG fetchRecordingSegments] " +
-          JSON.stringify({
-            sessionId,
-            fetched: segments.length,
-            inStoreAfter: after?.length ?? "MISSING",
-          }),
-      );
       return segments;
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
           : "Failed to load recording segments";
-      console.error("[DBG fetchRecordingSegments] FAILED", message);
       return rejectWithValue(message);
     }
   },

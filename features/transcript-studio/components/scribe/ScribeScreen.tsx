@@ -24,10 +24,7 @@ import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectSessionById,
-  selectRecordingSegmentCount,
-} from "../../redux/selectors";
+import { selectSessionById } from "../../redux/selectors";
 import { activeSessionIdSet } from "../../redux/slice";
 import {
   deleteSessionThunk,
@@ -86,17 +83,6 @@ const MODE_TABS: ModeTab[] = [
 export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
-  // TEMP DEBUG
-  const _dbgRecCount = useAppSelector(selectRecordingSegmentCount(sessionId));
-  console.error(
-    "[DBG ScribeScreen] render " +
-      JSON.stringify({
-        sessionId,
-        hasSession: !!session,
-        title: session?.title ?? null,
-        recCount: _dbgRecCount,
-      }),
-  );
   const [screen, setScreen] = useState<Screen>("capture");
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
