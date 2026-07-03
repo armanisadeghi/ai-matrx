@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Save, X, Plus, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DEFAULT_DATABASE_SCHEMA } from "../../config";
 
 type EnumFormProps =
   | {
@@ -35,7 +36,9 @@ export default function EnumForm(props: EnumFormProps) {
 
   // Initialize form state
   const [name, setName] = useState(enumData?.name || "");
-  const [schema, setSchema] = useState(enumData?.schema || "public");
+  const [schema, setSchema] = useState(
+    enumData?.schema || DEFAULT_DATABASE_SCHEMA,
+  );
   const [description, setDescription] = useState(enumData?.description || "");
   const [values, setValues] = useState<string[]>(enumData?.values || [""]);
   const [newValues, setNewValues] = useState<string[]>([""]);
@@ -212,7 +215,7 @@ export default function EnumForm(props: EnumFormProps) {
               id="schema"
               value={schema}
               onChange={(e) => setSchema(e.target.value)}
-              placeholder="public"
+              placeholder={DEFAULT_DATABASE_SCHEMA}
               required
               disabled={isEdit} // Can't change schema in edit mode
               className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700"

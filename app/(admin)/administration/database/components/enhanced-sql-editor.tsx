@@ -38,14 +38,13 @@ import { saveQuery } from "@/components/admin/query-history/query-storage";
 import { toast } from "sonner";
 import { CategoryNotesModal } from "@/features/notes/actions/CategoryNotesModal";
 import type { Note } from "@/features/notes/types";
+import { DEFAULT_DATABASE_SCHEMA } from "../config";
 
-// Define SQL queries as constants to avoid JSX parsing issues
-const SQL_LIST_TABLES =
-  "SELECT * FROM information_schema.tables WHERE table_schema = 'public'";
+// Example queries — schema in snippets is illustrative; swap via the editor.
+const SQL_LIST_TABLES = `SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema NOT IN ('pg_catalog', 'information_schema') ORDER BY table_schema, table_name`;
 const SQL_TABLE_COLUMNS =
-  "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'your_table_name'";
-const SQL_TABLE_SIZES =
-  "SELECT table_name, pg_size_pretty(pg_total_relation_size(quote_ident(table_name))) AS size FROM information_schema.tables WHERE table_schema = 'public' ORDER BY pg_total_relation_size(quote_ident(table_name)) DESC";
+  "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = '{{schema}}' AND table_name = 'your_table_name'";
+const SQL_TABLE_SIZES = `SELECT table_schema, table_name, pg_size_pretty(pg_total_relation_size(format('%I.%I', table_schema, table_name))) AS size FROM information_schema.tables WHERE table_schema = '${DEFAULT_DATABASE_SCHEMA}' ORDER BY pg_total_relation_size(format('%I.%I', table_schema, table_name)) DESC`;
 const SQL_KILL_IDLE =
   "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle' AND state_change < current_timestamp - INTERVAL '30 minutes'";
 

@@ -18478,6 +18478,43 @@ export type Database = {
       }
     }
     Functions: {
+      create_entity_table:
+        | {
+            Args: {
+              p_category?: boolean
+              p_default_visibility?: string
+              p_fields?: string[]
+              p_label?: string
+              p_listed?: boolean
+              p_org_default?: boolean
+              p_schema: string
+              p_soft_delete?: boolean
+              p_table: string
+              p_token: string
+              p_variant?: string
+              p_versioned?: boolean
+              p_visibility?: boolean
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_category: boolean
+              p_fields: string[]
+              p_gin_jsonb: boolean
+              p_label: string
+              p_listed: boolean
+              p_org_default: boolean
+              p_schema: string
+              p_soft_delete: boolean
+              p_table: string
+              p_token: string
+              p_variant: string
+              p_versioned: boolean
+              p_visibility: string
+            }
+            Returns: string
+          }
       dead_relation_read: {
         Args: { p_new: string; p_old: string }
         Returns: boolean
@@ -20463,6 +20500,57 @@ export type Database = {
         }
         Relationships: []
       }
+      flexible_data: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          id: string
+          label: string
+          metadata: Json
+          organization_id: string
+          slug: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          id?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          slug?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       forbidden_urls: {
         Row: {
           created_at: string
@@ -21990,6 +22078,7 @@ export type Database = {
         Args: { p_actor: string }
         Returns: undefined
       }
+      _version_diff_json: { Args: { a: Json; b: Json }; Returns: Json }
       accept_context_item_suggestion: {
         Args: { p_suggestion_id: string }
         Returns: Json
@@ -23364,6 +23453,38 @@ export type Database = {
           target_id: string
         }[]
       }
+      assoc_link: {
+        Args: {
+          p_label?: string
+          p_metadata?: Json
+          p_position?: number
+          p_role?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: string
+      }
+      assoc_list: {
+        Args: {
+          p_direction?: string
+          p_id: string
+          p_role?: string
+          p_type: string
+        }
+        Returns: {
+          assoc_id: string
+          created_at: string
+          direction: string
+          edge_position: number
+          label: string
+          metadata: Json
+          other_id: string
+          other_type: string
+          role: string
+        }[]
+      }
       assoc_remove: {
         Args: {
           p_role?: string
@@ -23388,6 +23509,16 @@ export type Database = {
           p_target_type: string
         }
         Returns: undefined
+      }
+      assoc_unlink: {
+        Args: {
+          p_role?: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: number
       }
       auth_is_org_admin: {
         Args: { org_id: string; user_id: string }
@@ -24373,6 +24504,10 @@ export type Database = {
         Args: { p_schema: string; p_table: string }
         Returns: boolean
       }
+      entity_soft_delete: {
+        Args: { p_id: string; p_token: string }
+        Returns: boolean
+      }
       entity_types_list: {
         Args: never
         Returns: {
@@ -24390,6 +24525,10 @@ export type Database = {
           table_name: string
           token: string
         }[]
+      }
+      entity_undelete: {
+        Args: { p_id: string; p_token: string }
+        Returns: boolean
       }
       execute_admin_query: { Args: { query: string }; Returns: Json }
       execute_complex_save: {
@@ -27997,6 +28136,45 @@ export type Database = {
           is_format_valid: boolean
           slug: string
         }[]
+      }
+      version_current: {
+        Args: { p_id: string; p_token: string }
+        Returns: Json
+      }
+      version_diff: {
+        Args: { p_from: number; p_id: string; p_to: number; p_token: string }
+        Returns: Json
+      }
+      version_diff_current: {
+        Args: { p_from: number; p_id: string; p_token: string }
+        Returns: Json
+      }
+      version_list: {
+        Args: {
+          p_id: string
+          p_limit?: number
+          p_offset?: number
+          p_token: string
+        }
+        Returns: {
+          actor_id: string
+          is_current: boolean
+          occurred_at: string
+          operation: string
+          version: number
+        }[]
+      }
+      version_prune: {
+        Args: { p_id: string; p_keep?: number; p_token: string }
+        Returns: number
+      }
+      version_restore: {
+        Args: { p_id: string; p_token: string; p_version: number }
+        Returns: number
+      }
+      version_snapshot: {
+        Args: { p_id: string; p_token: string; p_version: number }
+        Returns: Json
       }
       war_room_threads: {
         Args: { room_id: string }

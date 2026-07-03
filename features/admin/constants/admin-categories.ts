@@ -1,7 +1,7 @@
 /**
  * features/admin/constants/admin-categories.ts
  *
- * SINGLE SOURCE OF TRUTH for the admin tool catalog (25 categories, ~80 tools).
+ * SINGLE SOURCE OF TRUTH for the admin tool catalog (~80 tools).
  *
  * Pure data — NO React, NO JSX, NO icon-component imports. Icons are stored as
  * string names and rendered lazily via `IconResolver`
@@ -75,20 +75,6 @@ export const adminCategoriesData: AdminCategory[] = [
           "Track pending requests, max_tokens hits, tool call errors, and system failures.",
         iconName: "AlertCircle",
         link: "/administration/cx-dashboard/errors",
-      },
-    ],
-  },
-  {
-    name: "Experimental",
-    iconName: "Beaker",
-    iconColor: "text-fuchsia-600",
-    features: [
-      {
-        title: "Experimental Routes",
-        description:
-          "Access all experimental, demo, and test routes organized by feature area for easy testing and development",
-        iconName: "Beaker",
-        link: "/administration/experimental-routes",
       },
     ],
   },
@@ -272,12 +258,12 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "System Agents",
+    name: "Agents: System",
     iconName: "Zap",
     iconColor: "text-rose-600",
     features: [
       {
-        title: "System Agents Dashboard",
+        title: "Agents: System — Dashboard",
         description:
           "Hub for every global-scope agent surface: builtin agents, shortcuts, categories, content blocks, and system agent apps.",
         iconName: "Zap",
@@ -285,7 +271,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "System agents — list",
+        title: "Agents: System — List",
         description:
           "Browse, build, and run builtin (global) agents. Includes agents converted from user definitions.",
         iconName: "Bot",
@@ -293,7 +279,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Shortcuts — list",
+        title: "Agents: System — Shortcuts",
         description:
           "Browse and edit global agent shortcuts, enabled contexts, and agent bindings.",
         iconName: "Zap",
@@ -301,7 +287,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Shortcut categories",
+        title: "Agents: System — Categories",
         description:
           "Placement hierarchy, icons, and enabled contexts for agent shortcut groups.",
         iconName: "Zap",
@@ -309,7 +295,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Content blocks",
+        title: "Agents: System — Content Blocks",
         description:
           "Reusable insertable blocks surfaced under agent shortcut categories.",
         iconName: "Zap",
@@ -317,7 +303,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "System agent apps",
+        title: "Agents: System — Apps",
         description:
           "Global-scope agent apps available to every user. Distinct from moderation of user-published apps.",
         iconName: "Bot",
@@ -325,7 +311,7 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agent lineage",
+        title: "Agents: System — Lineage",
         description:
           "See what each system agent gives rise to — derived agents, shortcuts, and apps.",
         iconName: "GitBranch",
@@ -543,20 +529,6 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "Server Cache",
-    iconName: "Server",
-    iconColor: "text-green-600",
-    features: [
-      {
-        title: "Server Cache",
-        description:
-          "Refresh and manage server-side caches including AI models and other cached data",
-        iconName: "RefreshCw",
-        link: "/administration/server-cache",
-      },
-    ],
-  },
-  {
     name: "User Feedback & Announcements",
     iconName: "MessageSquare",
     iconColor: "text-orange-600",
@@ -599,7 +571,7 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "Component Demos",
+    name: "Demos",
     iconName: "Layout",
     iconColor: "text-teal-600",
     features: [
@@ -609,6 +581,13 @@ export const adminCategoriesData: AdminCategory[] = [
           "Browse and test all official UI components with live demos, code examples, and documentation.",
         iconName: "Layout",
         link: "/administration/official-components",
+      },
+      {
+        title: "Experimental Routes",
+        description:
+          "Access all experimental, demo, and test routes organized by feature area for easy testing and development",
+        iconName: "Beaker",
+        link: "/administration/experimental-routes",
       },
     ],
   },
@@ -694,13 +673,6 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/canonicalization",
         isNew: true,
       },
-    ],
-  },
-  {
-    name: "Schema",
-    iconName: "Database",
-    iconColor: "text-cyan-600",
-    features: [
       {
         title: "Schema Visualizer",
         description:
@@ -718,10 +690,17 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
-    name: "TypeScript",
-    iconName: "Code",
-    iconColor: "text-indigo-600",
+    name: "Extras",
+    iconName: "Wrench",
+    iconColor: "text-green-600",
     features: [
+      {
+        title: "Server Cache",
+        description:
+          "Refresh and manage server-side caches including AI models and other cached data",
+        iconName: "RefreshCw",
+        link: "/administration/server-cache",
+      },
       {
         title: "TypeScript Error Analyzer",
         description:

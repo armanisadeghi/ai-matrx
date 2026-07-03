@@ -18,7 +18,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   cleanJson,
-  defaultJsonExpandDepth,
   formatJson,
   formatJsonAtExpandDepth,
   getJsonStructuralDepth,
@@ -56,11 +55,7 @@ const JsonEditorPane = dynamic(
 );
 
 export type JsonInspectorView =
-  | "json"
-  | "explorer"
-  | "tree"
-  | "truncator"
-  | "edit";
+  "json" | "explorer" | "tree" | "truncator" | "edit";
 
 /** Raw JSON tab expand depth: 0 = minified, max = fully pretty-printed. */
 export type JsonRawExpandDepth = number;
@@ -76,6 +71,12 @@ export interface JsonInspectorProps {
   backLabel?: string;
   /** Initial view. Defaults to "json". */
   defaultView?: JsonInspectorView;
+  /**
+   * Initial Raw JSON expand depth (0 = compact, structural max = full).
+   * Defaults to full depth for `data` so the payload is shown as-is until
+   * the user picks a compaction level.
+   */
+  defaultExpandDepth?: JsonRawExpandDepth;
   /**
    * When provided, an additional "Edit" tab appears with a real JSON text
    * editor (CodeMirror 6 — JSON syntax, inline lint squigglies). The handler
@@ -136,12 +137,28 @@ const TRUNCATOR_PANE_CLS =
 const EDITOR_PANE_CLS =
   "flex-1 min-h-0 overflow-hidden mt-0 border-none outline-none ring-0 data-[state=active]:flex data-[state=active]:flex-col bg-white dark:bg-zinc-900";
 
+function clampExpandDepth(depth: number, maxDepth: number): number {
+  return Math.min(Math.max(0, depth), maxDepth);
+}
+
+function resolveDefaultExpandDepth(
+  data: unknown,
+  maxDepth: number,
+  defaultExpandDepth?: JsonRawExpandDepth,
+): number {
+  if (defaultExpandDepth !== undefined) {
+    return clampExpandDepth(defaultExpandDepth, maxDepth);
+  }
+  return maxDepth;
+}
+
 export function JsonInspector({
   data,
   label,
   onBack,
   backLabel = "Back",
   defaultView = "json",
+  defaultExpandDepth,
   onUpdate,
   editorReadOnly = false,
   className,
@@ -166,13 +183,27 @@ export function JsonInspector({
     () => new Set<JsonInspectorView>([defaultView]),
   );
   const [copied, setCopied] = useState(false);
-  const [expandDepth, setExpandDepth] = useState(() =>
-    defaultJsonExpandDepth(data),
+  const resolvedDefaultExpandDepth = useMemo(
+    () => resolveDefaultExpandDepth(data, maxExpandDepth, defaultExpandDepth),
+    [data, maxExpandDepth, defaultExpandDepth],
   );
+  const [expandDepthTouched, setExpandDepthTouched] = useState(false);
+  const [expandDepth, setExpandDepth] = useState(resolvedDefaultExpandDepth);
 
   useEffect(() => {
+    if (!expandDepthTouched) {
+      setExpandDepth(resolvedDefaultExpandDepth);
+      return;
+    }
     setExpandDepth((current) => Math.min(current, maxExpandDepth));
-  }, [maxExpandDepth]);
+  }, [data, maxExpandDepth, resolvedDefaultExpandDepth, expandDepthTouched]);
+
+  const handleExpandDepthChange = (
+    next: number | ((current: number) => number),
+  ) => {
+    setExpandDepthTouched(true);
+    setExpandDepth(next);
+  };
 
   const rawJsonText = useMemo(
     () => formatJsonAtExpandDepth(data, expandDepth),
@@ -309,7 +340,7 @@ export function JsonInspector({
                 <>
                   <button
                     type="button"
-                    onClick={() => setExpandDepth(0)}
+                    onClick={() => handleExpandDepthChange(0)}
                     className={cn(
                       RAW_DEPTH_BTN_CLS,
                       expandDepth === 0 && RAW_DEPTH_BTN_ACTIVE_CLS,
@@ -323,7 +354,7 @@ export function JsonInspector({
                   <button
                     type="button"
                     onClick={() =>
-                      setExpandDepth((depth) => Math.max(0, depth - 1))
+                      handleExpandDepthChange((depth) => Math.max(0, depth - 1))
                     }
                     disabled={expandDepth <= 0}
                     className={RAW_DEPTH_STEPPER_BTN_CLS}
@@ -341,7 +372,7 @@ export function JsonInspector({
                   <button
                     type="button"
                     onClick={() =>
-                      setExpandDepth((depth) =>
+                      handleExpandDepthChange((depth) =>
                         Math.min(maxExpandDepth, depth + 1),
                       )
                     }
@@ -354,7 +385,7 @@ export function JsonInspector({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setExpandDepth(maxExpandDepth)}
+                    onClick={() => handleExpandDepthChange(maxExpandDepth)}
                     className={cn(
                       RAW_DEPTH_BTN_CLS,
                       expandDepth >= maxExpandDepth && RAW_DEPTH_BTN_ACTIVE_CLS,
@@ -378,7 +409,7 @@ export function JsonInspector({
                     <button
                       key={depth}
                       type="button"
-                      onClick={() => setExpandDepth(depth)}
+                      onClick={() => handleExpandDepthChange(depth)}
                       className={cn(
                         RAW_DEPTH_BTN_CLS,
                         expandDepth === depth && RAW_DEPTH_BTN_ACTIVE_CLS,

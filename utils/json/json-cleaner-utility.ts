@@ -7,9 +7,10 @@ export const cleanJson = (
     input: unknown,
     visited: WeakSet<object> = new WeakSet(),
   ): unknown => {
-    // Handle null or non-object types (the `typeof === "object"` check above
-    // means a string branch below is unreachable for non-JSON.parse'd input,
-    // matching prior behavior — `typeof input === "string"` never holds here).
+    // Handle null, undefined, or non-object types.
+    if (input === undefined) {
+      return null;
+    }
     if (input === null || typeof input !== "object") {
       return input;
     }
@@ -68,17 +69,26 @@ function withBlockIndent(text: string, indent: string): string {
     .join("\n");
 }
 
+function jsonPrimitiveString(value: unknown): string {
+  const serialized = JSON.stringify(value);
+  return serialized === undefined ? "undefined" : serialized;
+}
+
 function stringifyAtExpandDepth(
   value: unknown,
   expandDepth: number,
   depth: number,
 ): string {
+  if (value === undefined) {
+    return "undefined";
+  }
+
   if (value === null || typeof value !== "object") {
-    return JSON.stringify(value);
+    return jsonPrimitiveString(value);
   }
 
   if (depth >= expandDepth) {
-    return JSON.stringify(value);
+    return jsonPrimitiveString(value);
   }
 
   const innerPad = INDENT_UNIT.repeat(depth + 1);

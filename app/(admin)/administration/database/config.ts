@@ -4,6 +4,9 @@ import { ModulePage } from "@/components/matrx/navigation/types";
 export const DATABASE_MODULE_NAME = "Database Administration";
 export const DATABASE_MODULE_HOME = "/administration/database";
 
+/** UI default only — list filters and create forms start here; fetches stay schema-agnostic. */
+export const DEFAULT_DATABASE_SCHEMA = "public";
+
 export const databasePages: ModulePage[] = [
   {
     title: "SQL Editor",

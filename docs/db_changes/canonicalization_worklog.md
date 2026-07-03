@@ -107,23 +107,6 @@ ACCESS CAVEAT: feeds grant resolution (`rag_source_has_library_grant`, `can_read
 ### 4.5 `users.user_follows` → `user(follower) → user(following)` role=`follows`  (0 rows · needs token `user` · func: get_user_feed)
 Do inside the `users`-schema sweep. 0 rows → no data move; register `user` token, rebuild `get_user_feed`, drop table.
 
-## 4.6 Ready-to-execute specs (fully analyzed 2026-07-02; execute WITH runtime verification)
-
-### `iam.org_industries` → `organization → industry` (1 row · ACCESS-CRITICAL)
-PREREQ: register token `industry`→`iam.industries` (`INSERT platform.entity_types(token,schema_name,table_name,label,default_visibility,is_component,is_versioned,is_active) VALUES('industry','iam','industries','Industry','internal',false,false,true)`) then `pnpm tsx scripts/generate-entity-types.ts`. (industries itself does NOT certify yet — registration only needs the row.)
-Edge: `organization → industry`, `metadata={is_primary, legacy_table, legacy_id:{organization_id,industry_id}}` (is_primary in metadata, NOT role — nothing reads role here).
-Repoint 4 fns — swap `iam.org_industries oi` for `platform.associations oi WHERE oi.source_type='organization' AND oi.target_type='industry'`, `oi.organization_id`→`oi.source_id`, `oi.industry_id`→`oi.target_id`:
-- `can_read_processed_document` (**gates doc reads**) + `rag_source_has_library_grant` (**gates RAG access**) — mechanical read swaps; **runtime-verify a library/industry-granted doc is still readable by an org member and NOT by an outsider.**
-- `industry_assign_org` — `RETURNS iam.org_industries` BREAKS on graveyard → change to `RETURNS void`; body = `assoc_add`-equivalent upsert + (if primary) clear `metadata.is_primary` on the org's other industry edges; keep the `library_audit_log` write + `_library_assert_super_admin`.
-- `industry_unassign_org` — delete the org→industry edge; keep audit log + super-admin assert.
-FE (1 direct read): `features/industries/service.ts:47` `.schema("iam").from("org_industries")` → `associationsService.listForSources('organization',[orgId],'industry')`. The two `.rpc()` callsites (:85,:97) are unchanged (fns repointed internally).
-
-### `users.user_follows` → `user → user` role=`follows` (0 rows · BLOCKED on user-entity home)
-0 rows = no data move. BLOCKER: register token `user` needs a decided home table (what do `follower_id`/`following_id` reference — `auth.users`? a public profile table?). Decide that first (part of the users-schema sweep). Then: register `user`, repoint `get_user_feed` (plpgsql, refs user_follows) to read `platform.associations` (source_type='user', target_type='user', role='follows'), graveyard. No FE `.from("user_follows")` usage.
-
-### `skill.project` → `skill → project` (0 rows · empty · low value)
-Tokens `skill`/`project` already exist. 0 rows = no data. Only work: repoint the PostgREST embed `SKILL_SELECT = "*, project(project_id)"` (`features/skills/redux/skillsThunks.ts:56`) — drop the embed, fetch skill→project edges via `associationsService.listForSources('skill',[skillIds],'project')`, merge in `skillsConverters.supabaseRowToSkillRow`. Then graveyard the empty table. (Deferred: empty table, adds FE-embed risk to an active feature for zero data benefit.)
-
 ## 5. Blocked / prereqs
 
 ### 5.1 `tool.executor` — canonicalize before `tool.binding` (262 rows · 5 funcs)
@@ -156,12 +139,6 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 - `audit.table_impact(schema,table)` — **PREFLIGHT**: every fn touching the table · `dependency` (precise|text-qualified) · `currently_broken` · exact `referenced_columns[]`. Run before any rename/drop to get the blast radius.
 - `audit.m2m_candidates` · `audit.unregistered_candidates` · `audit.stale_registry` · `audit.refresh_log`.
 
-**Factual candidates — the two fixes that make the utilities trustworthy (2026-07-02):**
-1. **`audit.is_m2m_shape(regclass)`** — the real definition of a junction: ≥2 FKs to entity tables AND a unique/PK key that IS those FK columns (± ordering/role). `refresh()` gates `m2m_candidates` on it, so an *entity* that merely references 2 others (surrogate `id` PK, FK pair not unique) never appears. Cut the list from ~110 noise → **6 genuine junctions** (`skill.project`, `tool.bundle_member`, `tool.binding` [blocked], `applet_containers`/`container_fields` [skip], `flashcard_set_relations` [deprecate]).
-2. **`meta.audit_exemption` + `meta.exempt(check, schema, table, reason)` / `meta.unexempt(...)`** — the ONE general method for known exceptions across every check. `refresh()` filters each candidate/gate insert against it. `check_name` ∈ `m2m_candidate` · `unregistered_candidate` · `stale_registry` · `gate:<check_name>` (suppress a specific accepted verify_canonical FAIL/WARN). New false positive → one `meta.exempt(...)` call, never a function edit. A shape-true-but-semantically-not-a-link table (config entity / grant / KG edge) is the intended use: `context_item_values`, `webhook_deliveries`, `data_store_grants`, `kg_edges`, `agent_surface`, `ui_surface_agent_pref` are exempted from `m2m_candidate`. **Every new utility MUST consult `meta.audit_exemption` so it reports factually.**
-
-**RLS variants — the `'system'` variant (2026-07-02, added by the aidream AI-catalog reshape; migration `ai_002_rls_system_variant`, file in aidream `db/migrations/`):** `iam.apply_rls` now takes a variant. `'system'` = the standard entity policy set, except `std_select` ALSO passes `visibility='public'` for any authenticated user — for platform catalog data (AI providers/models/services) that everyone reads but only owners/admins write. The variant is recorded in the new `platform.entity_types.rls_variant` column (`NULL` = legacy inference → standard), and `iam.verify_canonical` / `canonical_certify` resolve it automatically from the registry — a system-variant table certifies against the system policy shapes, no `meta.exempt` needed.
-
 ## 5c. Snapshot — 2026-07-01 (COMPLETE gate)
 - 199 registered live tables → **9 fully certified · 190 not**. (Old partial gate falsely implied 63 OK — it never checked triggers/FKs/version/metadata/updated_by/org-NOT-NULL. ~800 hidden FAILs.)
 - Gate: **1039 FAIL / 242 WARN**. Dependency edges mapped: **1731**.
@@ -171,38 +148,39 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 
 ## 5d. Per-table flip loop — touch once, never return
 1. `SELECT * FROM iam.verify_canonical(s,t,tok);` → full fix list.
-2. `SELECT * FROM audit.table_impact(s,t);` → every dependent **DB fn** + exact columns → blast radius BEFORE editing.
-2b. **FE blast radius (`table_impact` does NOT cover this).** `table_impact` maps Postgres fn deps only — NOT the frontend. A collapse/move also breaks every `supabase.schema('<s>').from('<t>')` / `.rpc()` in the app. `grep -rn '"<table>"' features/ lib/ app/ components/` BEFORE the flip; repoint those reads/writes onto the canonical path (M2M → `associationsService`, the `platform.associations` chokepoint) as PART of the flip, never after. (rs_source_tag/rs_keyword_source had 0 DB fns but 9 FE `.from()` callsites — the collapse broke research until repointed.)
-3. ONE migration: canonicalize the table (cols/FKs/triggers, RLS via `iam.apply_rls`) **+ repoint every fn from step 2**. Data migration guards: idempotent (guard on the source still existing), atomic count-verify (`RAISE`→rollback on mismatch), de-register the token + drop its `entity_relationships` rows before `SET SCHEMA graveyard`.
+2. `SELECT * FROM audit.table_impact(s,t);` → every dependent fn + exact columns → blast radius BEFORE editing.
+3. ONE migration: canonicalize the table (cols/FKs/triggers, RLS via `iam.apply_rls`) **+ repoint every fn from step 2**.
 4. `SELECT audit.refresh();`
 5. `SELECT iam.canonical_certify_ok(s,t,tok);` must be `true`. If not → `iam.canonical_certify(s,t,tok)` and fix.
-6. Repoint app/client code (step 2b) + `pnpm db-types` + aidream `python db/generate.py`. Log to `platform.deprecated_relations` + §6. Ledger the migration file.
+6. Only then touch app/client code. Log to `platform.deprecated_relations` + §6.
+
+## 5e. New-table provisioner — one call, always canonical
+`platform.create_entity_table(...)` builds a fully canonical table and **self-verifies via the complete gate — the whole thing rolls back if it's anything less than certified.** Custom fields land RIGHT AFTER `id`; base + visibility + category follow (better default views). Works for **any schema**.
+**All params REQUIRED (no defaults)** — agents must state every choice, nothing happens by accident:
+`p_schema, p_table, p_token, p_label, p_fields text[], p_variant('entity'|'component'|'ledger'|'system'), p_versioned bool, p_soft_delete bool, p_visibility ('none'|a platform.visibility value), p_category bool, p_listed bool, p_org_default bool, p_gin_jsonb bool`.
+Does, in order: id+custom+base columns → indexes (organization_id, created_by, category_id, GIN on jsonb customs if `p_gin_jsonb`) → `platform.entity_types` registration → trigger trio (+`_stamp_org_default`, +`_version_capture('<token>')` when versioned) → `iam.apply_rls` → `iam.verify_canonical` (RAISE on any FAIL). Only base cols (always) are implicit; every behavior is an explicit arg.
+Example (`flexible_data`, entire thing):
+```sql
+SELECT platform.create_entity_table('public','flexible_data','flexible_data','Flexible Data',
+  ARRAY['label text NOT NULL','data jsonb NOT NULL DEFAULT ''{}''::jsonb'],
+  'entity', true, true, 'private', true, false, true, true);
+```
+Self-tested: col order `id → <customs> → organization_id → … → visibility → category_id`; 5 triggers; 6 policies; certified=true.
+
+## 5f. Canonical version RPCs — generic over `history.row_versions` (React-facing, in `public`)
+One append-only snapshot store: `history.row_versions(entity_type=token, row_id, version, operation, row_data jsonb, actor_id, occurred_at)`, fed by `platform._version_capture(token)`. `_touch_row` bumps `version` on UPDATE. These RPCs work for **any** versioned token with zero per-entity code. All enforce `iam.has_access` (viewer for reads, editor for restore).
+- `public.version_list(token, id, limit=50, offset=0)` → `(version, operation, actor_id, occurred_at, is_current)` timeline.
+- `public.version_snapshot(token, id, version)` → full row jsonb at that version.
+- `public.version_current(token, id)` → live row jsonb.
+- `public.version_diff(token, id, from, to)` → `{changed:{field:{from,to}}, total_changes}` (excludes version/updated_at/updated_by noise).
+- `public.version_diff_current(token, id, from)` → diff a version vs live.
+- `public.version_restore(token, id, version)` → **promote/copy an old version into live** (content cols only; bumps version; captures a new snapshot; non-destructive). Returns new version.
+- `public.version_prune(token, id, keep=20)` → drop old snapshots (keeps v1 + newest N).
+React: `supabase.rpc('version_list',{p_token:'fc_card',p_id:id})`, `supabase.rpc('version_restore',{p_token,p_id,p_version})`, etc.
+Verified end-to-end (create→3 edits→history/diff/restore→v4). ⚠️ **DRIFT TO RETIRE:** legacy `get_version_history/_snapshot/_diff`, `promote_version`, `restore_version`, `purge_old_versions` are hardcoded `IF token='prompt'…` switches over bespoke `*_versions` tables (prompt/note/agent/tool/code_file). Migrate callers to the generic `version_*` family; drop the per-entity version tables + `trg_*_snapshot_version` triggers as each entity moves onto `history.row_versions`.
 
 ## 6. Done log (mirror of `platform.deprecated_relations`)
-| date | old_ref | new edge | rows | migration | FE repoint |
-|---|---|---|---|---|---|
-| 2026-07-02 | `research.rs_source_tag` | `research_source → research_tag` | 46 | `research_m2m_collapse_source_tag_keyword.sql` | `features/research/service.ts` (7 fns → `associationsService`); `research_tag` added to `ASSOCIATION_TARGET_TYPES` |
-| 2026-07-02 | `research.rs_keyword_source` | `research_source → research_keyword` (rank→`position`) | 3023 | (same migration) | (same file; keyword ranks via `listForTargets`) |
-
-Both verified: edge counts match junctions, tables retired to `graveyard` (data intact), tokens de-registered, FE type-clean. PENDING batch-finalize: `pnpm db-types` + aidream `python db/generate.py` (drop the two research-schema junction models). Runtime-test route: `/research` topic view → tag a source, filter by keyword (rank order), source-importance panel.
-
-| 2026-07-02 | `tool.bundle_member` | `tool → tool_bundle` role=`member` (sort_order→`position`, local_alias→`metadata`) | 88 | `tool_bundle_member_collapse.sql` | `dimensions`/`bundles`/`surfaces` services + admin API routes → `associationsService` (+ shared `bundleMemberEdge.ts`); admin routes write `platform.associations` directly (service-role) |
-
-bundle_member verified: 88 edges, table retired, all 4 dependent fns repointed (**+ fixed the pre-existing `tool_resolve_for_request` break**: unqualified `mcp_connection_status` → `SET search_path`). FE type-clean, 0 `bundle_member` refs, dead-relations registered. **aidream backend repoint IN PROGRESS** (adversarial sweep found 20+ matrx-orm consumers + a boot-blocker — the latter fixed in aidream `2a5d1062f`). Runtime-test: tool bundles in the tools admin + agent tool-resolution.
-
-| 2026-07-02 | `chat.conversation_documents` | `working_document → conversation` (opt-in `enabled` + `kind` → edge `metadata`) | 14 | `working_document_canonicalize_step3_drop_legacy.sql` | already on `associationsService` (`cx-working-document.service.ts`); fixed 1 explicit `conversation_id` select in `listRecentUserDocuments` |
-
-step 3 verified + applied 2026-07-02 (during scheduled downtime). DB: `workbench.working_documents` dropped legacy `conversation_id`/`user_id` (provenance → `metadata.origin_conversation_id`, backfilled 14 rows; ownership → `created_by`); `chat.conversation_documents` → `graveyard` (all 14 links already in `platform.associations`, 21 edges, 0 unmigrated; 0 dependent fns). Ledgered (`_schema_migrations`, sha `fa22c166…`), FE `pnpm db-types` + schema snapshot refreshed, dead-relation registered. **aidream co-requisite done in lockstep** (boot `schema_check` would otherwise fail its next redeploy): `db/expected_schema.json` (dropped cols + junction entry), `schema_check.py` CRITICAL_TABLES (removed `chat.conversation_documents`), ORM regen-by-hand — `WorkingDocuments` model/auto_config/manager (dropped `conversation_id`/`user_id` fields + `_by_*` helpers), retired `ConversationDocuments` model + manager + `conversation` inverse-FK/relation helpers + auto_config. Runtime writeback (`context_writeback.py`) was already new-shape (created_by/updated_by + `metadata.origin_conversation_id`). Runtime-test: chat working-document + scratchpad create/edit, cross-conversation link, docs rail.
-
-| 2026-07-02 | `ai.model` (rename, not a collapse) | `ai.model_definition` — AI-catalog reshape | — | aidream `ai_001_*` + `ai_002_rls_system_variant` (aidream `db/migrations/`) | `pnpm db-types` + `gen:entity-types` regenerated (commits `c1eacf24a`, `f152a0355`) |
-
-ai schema catalog (aidream AI-catalog reshape): `ai.model` renamed to `ai.model_definition` (aidream `ai_001`); `ai.provider` + `ai.model_definition` canonicalized (base cols, triggers, `'system'` RLS variant — see §5b); `ai.service` / `ai.offering` / `ai.setting` created (+ view `ai.model_offering`); all five tokens (`ai_provider`, `ai_model`, `ai_service`, `ai_offering`, `ai_setting`) certified — 0 FAIL / 0 WARN; `ai.offering` m2m-exempted (`meta.exempt('m2m_candidate', …)` — entity with FK pair, not a link table).
-
-| 2026-07-02 | `ai.voices` (canonicalize, not a collapse) | token `voice` — `'system'` RLS variant | 51 | aidream `ai_010_canonicalize_voices.sql` (ledgered) | `pnpm db-types` regenerated; `voiceCatalog.ts` untyped-client cast removed (voices now in types) |
-
-`ai.voices` certified 0 FAIL / 0 WARN 2026-07-02: dropped dead `owner_id` (all NULL), nulled bogus `created_by` (held the matrx-system ORG uuid, not a user — same NULL convention as `ai.provider`), added `created_by`/`updated_by` FKs → `auth.users`, replaced broken `voices_organization_id_fkey` (`ON DELETE SET NULL NOT VALID` on a NOT NULL col) with the plain sibling-convention FK, swapped legacy `set_updated_at` for the canonical trio (`_stamp`/`_touch`/`_history('voice')`, `is_versioned=true`) + `_stamp_org_default`, registry `rls_variant='system'` + `iam.apply_rls(…,'system')`. RLS runtime-verified: FE query shape (`voiceCatalog.ts`) returns all 51 rows as BOTH `authenticated` and `anon` — under the old legacy-entity policy set authenticated catalog reads had no passing policy (pub_read was anon-only). aidream ORM regen done (`Voices.owner_id` gone, FK fields added; only auto-generated `*_by_owner_id` manager helpers were dropped — no hand-written consumers). Runtime-test: podcast generator voice picker (`/podcasts` create flow) — voices list + samples load signed-in AND signed-out.
-
-**Process learning (now in the canonical-associations skill):** a flip is NOT done at DB+FE — it's done when DB + FE + **aidream consumers + ORM regen** are all repointed AND an adversarial agent confirms zero old-shape usage in BOTH repos. `table_impact` sees Postgres fns only; `check:dead-relations` (both repos) was blind to matrx-orm manager usage — a real safety-net gap the sweep exposed.
+_none migrated yet_
 
 ## 7. Open flags
 - RLS disabled on `platform.entity_relationships`, `platform.deprecated_relations` (internal metadata; anon-exposed — decide intentionally).

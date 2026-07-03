@@ -248,6 +248,7 @@ export function useSqlFunctions({
 
   return {
     functions: filteredFunctions,
+    allFunctions: functions,
     loading,
     error,
     isRefreshing,

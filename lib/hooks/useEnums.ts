@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 import {
   getDatabaseEnums,
   searchEnums,
@@ -8,8 +8,15 @@ import {
   updateEnum,
   deleteEnum,
   getEnumUsage,
-} from '@/actions/admin/enum-functions';
-import { DatabaseEnum, EnumFilter, EnumSort, CreateEnumRequest, UpdateEnumRequest, EnumUsage } from '@/types/enum-types';
+} from "@/actions/admin/enum-functions";
+import {
+  DatabaseEnum,
+  EnumFilter,
+  EnumSort,
+  CreateEnumRequest,
+  UpdateEnumRequest,
+  EnumUsage,
+} from "@/types/enum-types";
 
 export interface UseEnumsProps {
   initialData?: DatabaseEnum[];
@@ -20,7 +27,7 @@ export interface UseEnumsProps {
 export function useEnums({
   initialData,
   defaultFilter,
-  defaultSort = { field: 'name', direction: 'asc' },
+  defaultSort = { field: "name", direction: "asc" },
 }: UseEnumsProps = {}) {
   // State
   const [enums, setEnums] = useState<DatabaseEnum[]>(initialData ?? []);
@@ -35,22 +42,29 @@ export function useEnums({
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Fetch enums
-  const fetchEnums = useCallback(async (skipIfInitialData = true) => {
-    if (initialData && skipIfInitialData) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await getDatabaseEnums();
-      setEnums(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred while fetching enums'));
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [initialData]);
+  const fetchEnums = useCallback(
+    async (skipIfInitialData = true) => {
+      if (initialData && skipIfInitialData) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await getDatabaseEnums();
+        setEnums(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err
+            : new Error("An error occurred while fetching enums"),
+        );
+      } finally {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [initialData],
+  );
 
   // Refresh enums
   const refreshEnums = useCallback(async () => {
@@ -62,13 +76,17 @@ export function useEnums({
   const searchEnumsFiltered = useCallback(async (searchFilter: EnumFilter) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await searchEnums(searchFilter);
       setEnums(data);
       setFilter(searchFilter);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred while searching enums'));
+      setError(
+        err instanceof Error
+          ? err
+          : new Error("An error occurred while searching enums"),
+      );
     } finally {
       setLoading(false);
     }
@@ -78,7 +96,7 @@ export function useEnums({
   const createEnumType = useCallback(async (request: CreateEnumRequest) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const success = await createEnum(request);
       if (success) {
@@ -92,7 +110,11 @@ export function useEnums({
         return false;
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred while creating enum'));
+      setError(
+        err instanceof Error
+          ? err
+          : new Error("An error occurred while creating enum"),
+      );
       setLoading(false);
       return false;
     }
@@ -102,7 +124,7 @@ export function useEnums({
   const updateEnumType = useCallback(async (request: UpdateEnumRequest) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const success = await updateEnum(request);
       if (success) {
@@ -116,7 +138,11 @@ export function useEnums({
         return false;
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred while updating enum'));
+      setError(
+        err instanceof Error
+          ? err
+          : new Error("An error occurred while updating enum"),
+      );
       setLoading(false);
       return false;
     }
@@ -126,7 +152,7 @@ export function useEnums({
   const deleteEnumType = useCallback(async (schema: string, name: string) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const success = await deleteEnum(schema, name);
       if (success) {
@@ -140,69 +166,80 @@ export function useEnums({
         return false;
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred while deleting enum'));
+      setError(
+        err instanceof Error
+          ? err
+          : new Error("An error occurred while deleting enum"),
+      );
       setLoading(false);
       return false;
     }
   }, []);
 
   // Get enum usage
-  const fetchEnumUsage = useCallback(async (schema: string, name: string): Promise<EnumUsage[]> => {
-    try {
-      return await getEnumUsage(schema, name);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('An error occurred while fetching enum usage'));
-      return [];
-    }
-  }, []);
+  const fetchEnumUsage = useCallback(
+    async (schema: string, name: string): Promise<EnumUsage[]> => {
+      try {
+        return await getEnumUsage(schema, name);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err
+            : new Error("An error occurred while fetching enum usage"),
+        );
+        return [];
+      }
+    },
+    [],
+  );
 
   // Filter and sort enums
   const applyFilterAndSort = useCallback(() => {
     let result = [...enums];
-    
+
     // Apply filters
     if (filter.name) {
       const nameFilter = filter.name.toLowerCase();
-      result = result.filter(enumType =>
-        enumType.name.toLowerCase().includes(nameFilter)
+      result = result.filter((enumType) =>
+        enumType.name.toLowerCase().includes(nameFilter),
       );
     }
 
     if (filter.schema) {
       const schemaFilter = filter.schema.toLowerCase();
-      result = result.filter(enumType =>
-        enumType.schema.toLowerCase().includes(schemaFilter)
+      result = result.filter((enumType) =>
+        enumType.schema.toLowerCase().includes(schemaFilter),
       );
     }
 
     if (filter.hasValue) {
       const hasValueFilter = filter.hasValue.toLowerCase();
-      result = result.filter(enumType =>
-        enumType.values.some(value =>
-          value.toLowerCase().includes(hasValueFilter)
-        )
+      result = result.filter((enumType) =>
+        enumType.values.some((value) =>
+          value.toLowerCase().includes(hasValueFilter),
+        ),
       );
     }
-    
+
     // Apply sorting
     result.sort((a, b) => {
       let fieldA: string | number;
       let fieldB: string | number;
 
       switch (sort.field) {
-        case 'name':
+        case "name":
           fieldA = a.name;
           fieldB = b.name;
           break;
-        case 'schema':
+        case "schema":
           fieldA = a.schema;
           fieldB = b.schema;
           break;
-        case 'values_count':
+        case "values_count":
           fieldA = a.values.length;
           fieldB = b.values.length;
           break;
-        case 'usage_count':
+        case "usage_count":
           fieldA = a.usage_count || 0;
           fieldB = b.usage_count || 0;
           break;
@@ -210,22 +247,20 @@ export function useEnums({
           fieldA = a.name;
           fieldB = b.name;
       }
-      
-      if (typeof fieldA === 'string' && typeof fieldB === 'string') {
-        return sort.direction === 'asc' 
+
+      if (typeof fieldA === "string" && typeof fieldB === "string") {
+        return sort.direction === "asc"
           ? fieldA.localeCompare(fieldB)
           : fieldB.localeCompare(fieldA);
       }
-      
-      if (typeof fieldA === 'number' && typeof fieldB === 'number') {
-        return sort.direction === 'asc' 
-          ? fieldA - fieldB
-          : fieldB - fieldA;
+
+      if (typeof fieldA === "number" && typeof fieldB === "number") {
+        return sort.direction === "asc" ? fieldA - fieldB : fieldB - fieldA;
       }
-      
+
       return 0;
     });
-    
+
     setFilteredEnums(result);
   }, [enums, filter, sort]);
 
@@ -236,14 +271,15 @@ export function useEnums({
 
   // Update filter
   const updateFilter = useCallback((newFilter: EnumFilter) => {
-    setFilter(prev => ({ ...prev, ...newFilter }));
+    setFilter((prev) => ({ ...prev, ...newFilter }));
   }, []);
 
   // Update sort
-  const updateSort = useCallback((field: EnumSort['field']) => {
-    setSort(prev => ({
+  const updateSort = useCallback((field: EnumSort["field"]) => {
+    setSort((prev) => ({
       field,
-      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
+      direction:
+        prev.field === field && prev.direction === "asc" ? "desc" : "asc",
     }));
   }, []);
 
@@ -262,13 +298,14 @@ export function useEnums({
   return {
     // Data
     enums: filteredEnums,
+    allEnums: enums,
     loading,
     error,
     isRefreshing,
     selectedEnum,
     filter,
     sort,
-    
+
     // Actions
     refreshEnums,
     searchEnums: searchEnumsFiltered,
@@ -280,4 +317,4 @@ export function useEnums({
     updateFilter,
     updateSort,
   };
-} 
+}

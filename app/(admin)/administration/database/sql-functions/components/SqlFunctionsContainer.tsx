@@ -26,6 +26,7 @@ import SqlFunctionsList from "./SqlFunctionsList";
 import SqlFunctionDetail from "./SqlFunctionDetail";
 import SqlFunctionForm from "./SqlFunctionForm";
 import { getSqlFunctionKey } from "../utils/functionIdentity";
+import { DEFAULT_DATABASE_SCHEMA } from "../../config";
 
 interface SqlFunctionsContainerProps {
   initialFunctions?: SqlFunction[];
@@ -44,6 +45,7 @@ export default function SqlFunctionsContainer({
 
   const {
     functions,
+    allFunctions,
     loading,
     error,
     isRefreshing,
@@ -59,16 +61,16 @@ export default function SqlFunctionsContainer({
     updateSort,
   } = useSqlFunctions({
     initialData: initialFunctions,
-    defaultFilter: { schema: "public" },
+    defaultFilter: { schema: DEFAULT_DATABASE_SCHEMA },
   });
 
   const uniqueSchemas = useMemo(() => {
     const schemas = new Set<string>();
-    functions.forEach((func) => {
+    allFunctions.forEach((func) => {
       if (func.schema) schemas.add(func.schema);
     });
     return Array.from(schemas).sort();
-  }, [functions]);
+  }, [allFunctions]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

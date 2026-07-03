@@ -30,6 +30,7 @@ import { List, Search, RefreshCw, Plus, X } from "lucide-react";
 import EnumsList from "../../sql-functions/components/EnumsList";
 import EnumDetail from "../../sql-functions/components/EnumDetail";
 import EnumForm from "../../sql-functions/components/EnumForm";
+import { DEFAULT_DATABASE_SCHEMA } from "../../config";
 
 interface EnumsContainerProps {
   initialEnums?: DatabaseEnum[];
@@ -50,6 +51,7 @@ export default function EnumsContainer({
   // Use the Enums hook
   const {
     enums,
+    allEnums,
     loading,
     error,
     isRefreshing,
@@ -66,19 +68,18 @@ export default function EnumsContainer({
     updateSort,
   } = useEnums({
     initialData: initialEnums,
-    defaultFilter: { schema: "public" },
+    defaultFilter: { schema: DEFAULT_DATABASE_SCHEMA },
   });
 
-  // Extract all unique schemas from enums
   const uniqueSchemas = useMemo(() => {
     const schemas = new Set<string>();
-    enums.forEach((enumType) => {
+    allEnums.forEach((enumType) => {
       if (enumType.schema) {
         schemas.add(enumType.schema);
       }
     });
     return Array.from(schemas).sort();
-  }, [enums]);
+  }, [allEnums]);
 
   // Handle form submission for search
   const handleSearch = (e: React.FormEvent) => {

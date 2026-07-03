@@ -1,0 +1,1001 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Play, Loader2, RotateCcw, Check, CircleAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { cn } from "@/lib/utils";
+import type { KindSchema } from "./kind-schemas";
+import type { KindStreamEvent } from "./kind-stream-parser";
+import { runKindJsonStreamTest } from "./dev-test-harness";
+import {
+  buildValidationReport,
+  eventPathKey,
+  pathLabel,
+  type ValidationReport,
+} from "./validation-report";
+import {
+  BLOCK_SCHEMAS_CATEGORY_ID,
+  FlexibleDataError,
+  getBlockSchemaSlugs,
+  listBlockSamples,
+  listBlockSchemas,
+  SAMPLE_BLOCK_DATA_CATEGORY_ID,
+  type BlockSample,
+  type BlockSchemaEntry,
+} from "./flexible-data-service";
+
+const DEFAULT_STREAM_SETTINGS = {
+  delayMs: 20,
+  minChunkSize: 1,
+  maxChunkSize: 12,
+};
+
+/** Nesting depth = how many array items deep (root = 0, cards[0] = 1, …). */
+function kindDepth(path: Array<string | number>): number {
+  return path.filter((segment) => typeof segment === "number").length;
+}
+
+function countActiveKindWaits(events: KindStreamEvent[]): number {
+  const active = new Set<string>();
+  for (const event of events) {
+    if (event.type === "pending_kind") {
+      active.add(eventPathKey(event.path));
+    }
+    if (event.type === "kind_wait_end") {
+      active.delete(eventPathKey(event.path));
+    }
+  }
+  return active.size;
+}
+
+function isKindWaitActiveAt(
+  events: KindStreamEvent[],
+  pendingIndex: number,
+): boolean {
+  const pending = events[pendingIndex];
+  if (pending?.type !== "pending_kind") return false;
+
+  const key = eventPathKey(pending.path);
+  for (let i = pendingIndex + 1; i < events.length; i++) {
+    const event = events[i];
+    if (event.type === "kind_wait_end" && eventPathKey(event.path) === key) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const DEPTH_PALETTE = [
+  {
+    border: "border-l-primary",
+    badge: "bg-primary/15 text-primary",
+    enter: "text-primary",
+    bg: "bg-primary/5",
+  },
+  {
+    border: "border-l-secondary",
+    badge: "bg-secondary/15 text-secondary",
+    enter: "text-secondary",
+    bg: "bg-secondary/5",
+  },
+  {
+    border: "border-l-accent-2",
+    badge: "bg-accent-2/15 text-accent-2",
+    enter: "text-accent-2",
+    bg: "bg-accent-2/5",
+  },
+  {
+    border: "border-l-warning",
+    badge: "bg-warning/15 text-warning",
+    enter: "text-warning",
+    bg: "bg-warning/5",
+  },
+  {
+    border: "border-l-info",
+    badge: "bg-info/15 text-info",
+    enter: "text-info",
+    bg: "bg-info/5",
+  },
+] as const;
+
+function depthStyle(depth: number) {
+  return DEPTH_PALETTE[depth % DEPTH_PALETTE.length];
+}
+
+function fieldPreview(key: string, value: unknown): string | null {
+  if (key === "__kind") return null;
+  if (value === null) return `${key}: null`;
+  if (typeof value === "string") {
+    const trimmed = value.length > 72 ? `${value.slice(0, 72)}…` : value;
+    return `${key}: ${trimmed}`;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return `${key}: ${String(value)}`;
+  }
+  if (Array.isArray(value)) {
+    return `${key}: [${value.length} items]`;
+  }
+  return null;
+}
+
+function ValidationSummaryBanner({ report }: { report: ValidationReport }) {
+  if (report.status === "idle") return null;
+
+  const statusStyles = {
+    valid: "border-success/40 bg-success/10 text-success",
+    partial: "border-warning/50 bg-warning/10 text-warning",
+    failed: "border-destructive/50 bg-destructive/10 text-destructive",
+    idle: "",
+  } as const;
+
+  const statusLabel = {
+    valid: "All objects validated against schema",
+    partial: `${report.rawFallbacks.length} object${report.rawFallbacks.length === 1 ? "" : "s"} failed validation — kept as raw JSON`,
+    failed: report.streamError ?? "Stream failed",
+    idle: "",
+  } as const;
+
+  return (
+    <div
+      className={cn(
+        "shrink-0 rounded-lg border px-3 py-2 text-xs",
+        statusStyles[report.status],
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-semibold">{statusLabel[report.status]}</span>
+        {report.status !== "failed" && (
+          <span className="text-muted-foreground">
+            {report.validatedObjects.length} validated
+            {report.rawFallbacks.length > 0
+              ? ` · ${report.rawFallbacks.length} raw fallback`
+              : ""}
+            {report.optionalMissing.length > 0
+              ? ` · ${report.optionalMissing.length} optional missing`
+              : ""}
+            {report.extraFields.length > 0
+              ? ` · ${report.extraFields.length} extra field`
+              : ""}
+          </span>
+        )}
+      </div>
+      {report.rawFallbacks.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5 font-mono text-[11px]">
+          {report.rawFallbacks.map((fallback, index) => (
+            <li key={`${fallback.pathLabel}-${index}`} className="truncate">
+              <span className="font-semibold">{fallback.pathLabel}</span>
+              {" — "}
+              {fallback.reason}
+            </li>
+          ))}
+        </ul>
+      )}
+      {(report.optionalMissing.length > 0 || report.extraFields.length > 0) && (
+        <ul className="mt-1.5 space-y-0.5 font-mono text-[11px] text-muted-foreground">
+          {report.optionalMissing.map((notice, index) => (
+            <li
+              key={`opt-${notice.pathLabel}-${notice.field}-${index}`}
+              className="truncate"
+            >
+              <span className="font-semibold">{notice.pathLabel}</span>
+              {" — optional "}
+              <span className="text-info">{notice.field}</span>
+              {" not provided"}
+            </li>
+          ))}
+          {report.extraFields.map((notice, index) => (
+            <li
+              key={`extra-${notice.pathLabel}-${notice.field}-${index}`}
+              className="truncate"
+            >
+              <span className="font-semibold">{notice.pathLabel}</span>
+              {" — extra field "}
+              <span className="text-muted-foreground">{notice.field}</span>
+              {" ignored"}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function KindEventTimeline({ events }: { events: KindStreamEvent[] }) {
+  return (
+    <div className="space-y-0.5 font-mono text-xs">
+      {events.map((event, index) => {
+        const path = "path" in event ? (event.path ?? []) : [];
+        const depth = kindDepth(path);
+        const palette = depthStyle(depth);
+        const indent = depth * 12;
+        const meta = `@ ${pathLabel(path)} · ${event.at}`;
+
+        const rowCls = (extra?: string) =>
+          cn(
+            "flex min-h-6 items-center gap-2 rounded border border-border/60 border-l-4 py-0.5 pl-2 pr-2",
+            palette.border,
+            palette.bg,
+            extra,
+          );
+
+        const badgeCls = cn(
+          "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase leading-none",
+          palette.badge,
+        );
+
+        switch (event.type) {
+          case "kind_identified":
+            return (
+              <div
+                key={index}
+                className={rowCls()}
+                style={{ marginLeft: indent }}
+              >
+                <span className={badgeCls}>
+                  {path.length === 0 ? "root" : "kind"}
+                </span>
+                <span className={cn("shrink-0 font-semibold", palette.enter)}>
+                  identified
+                </span>
+                <span className="min-w-0 truncate font-semibold text-foreground">
+                  {event.kind}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {meta}
+                </span>
+              </div>
+            );
+
+          case "array_start":
+            return (
+              <div
+                key={index}
+                className="flex min-h-5 items-center gap-2 py-px text-[11px] text-muted-foreground"
+                style={{ paddingLeft: indent }}
+              >
+                <span className="shrink-0">──</span>
+                <span className="truncate">
+                  {event.field}[] opened · {pathLabel(event.path)}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px]">{event.at}</span>
+              </div>
+            );
+
+          case "object_start": {
+            const itemIndex = path[path.length - 1];
+            const isListItem = typeof itemIndex === "number";
+            return (
+              <div
+                key={index}
+                className={rowCls()}
+                style={{ marginLeft: indent }}
+              >
+                <span className={badgeCls}>
+                  {isListItem ? `#${(itemIndex as number) + 1}` : "open"}
+                </span>
+                <span className={cn("shrink-0 font-semibold", palette.enter)}>
+                  opening
+                </span>
+                <span className="min-w-0 truncate text-muted-foreground">
+                  {pathLabel(event.path)}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+          }
+
+          case "pending_kind": {
+            const stillWaiting = isKindWaitActiveAt(events, index);
+            return (
+              <div
+                key={index}
+                className={rowCls(stillWaiting ? "" : "opacity-70")}
+                style={{ marginLeft: indent }}
+              >
+                {stillWaiting ? (
+                  <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
+                ) : (
+                  <Check className="size-3 shrink-0 text-primary" />
+                )}
+                <span className={badgeCls}>
+                  {stillWaiting ? "wait" : "waited"}
+                </span>
+                <span className="min-w-0 truncate text-muted-foreground">
+                  {stillWaiting
+                    ? `awaiting ${pathLabel(event.path)}.__kind`
+                    : `wait ended · ${pathLabel(event.path)}`}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+          }
+
+          case "kind_wait_end":
+            return (
+              <div
+                key={index}
+                className={rowCls()}
+                style={{ marginLeft: indent }}
+              >
+                {event.outcome === "identified" ? (
+                  <Check className="size-3 shrink-0 text-primary" />
+                ) : (
+                  <CircleAlert className="size-3 shrink-0 text-warning" />
+                )}
+                <span className={badgeCls}>
+                  {event.outcome === "identified" ? "resolved" : "fallback"}
+                </span>
+                <span className="min-w-0 truncate text-foreground">
+                  {event.outcome === "identified"
+                    ? `__kind → ${event.kind}`
+                    : (event.reason ?? "kept as raw JSON")}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {meta}
+                </span>
+              </div>
+            );
+
+          case "optional_field_missing":
+            return (
+              <div
+                key={index}
+                className="flex min-h-5 items-center gap-2 rounded border border-info/40 bg-info/5 px-2 py-px text-[11px]"
+                style={{ marginLeft: indent }}
+              >
+                <span className="shrink-0 rounded bg-info/15 px-1 py-px text-[9px] font-semibold uppercase text-info">
+                  optional
+                </span>
+                <span className="min-w-0 truncate text-muted-foreground">
+                  {pathLabel(event.path)} — {event.field} not provided
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+
+          case "extra_field":
+            return (
+              <div
+                key={index}
+                className="flex min-h-5 items-center gap-2 rounded border border-border/80 bg-muted/20 px-2 py-px text-[11px]"
+                style={{ marginLeft: indent }}
+              >
+                <span className="shrink-0 rounded bg-muted px-1 py-px text-[9px] font-semibold uppercase text-muted-foreground">
+                  extra
+                </span>
+                <span className="min-w-0 truncate text-muted-foreground">
+                  {pathLabel(event.path)} — {event.field} (not in schema)
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+
+          case "raw_object":
+            return (
+              <div
+                key={index}
+                className="flex min-h-6 flex-col gap-0.5 rounded border border-warning/60 bg-warning/10 px-2 py-1"
+                style={{ marginLeft: indent }}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <CircleAlert className="size-3 shrink-0 text-warning" />
+                  <span className="shrink-0 rounded bg-warning/15 px-1 py-px text-[10px] font-semibold uppercase text-warning">
+                    unvalidated
+                  </span>
+                  <span className="min-w-0 truncate text-[11px] font-medium text-foreground">
+                    {pathLabel(event.path)}
+                  </span>
+                  <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                    {event.at}
+                  </span>
+                </div>
+                <span className="text-[10px] text-warning">{event.reason}</span>
+              </div>
+            );
+
+          case "object_complete":
+            return (
+              <div
+                key={index}
+                className={rowCls("border-success/40")}
+                style={{ marginLeft: indent }}
+              >
+                <Check className="size-3 shrink-0 text-success" />
+                <span className="shrink-0 rounded bg-success/15 px-1 py-px text-[10px] font-semibold uppercase text-success">
+                  validated
+                </span>
+                <span className="min-w-0 truncate font-semibold text-foreground">
+                  {event.kind}
+                </span>
+                <span className="min-w-0 truncate text-muted-foreground">
+                  {pathLabel(event.path)}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+
+          case "field": {
+            const preview = fieldPreview(event.key, event.value);
+            if (!preview) return null;
+            return (
+              <div
+                key={index}
+                className="flex min-h-5 items-center gap-2 truncate py-px text-[11px] text-foreground/80"
+                style={{ paddingLeft: indent + 8 }}
+              >
+                <span className="shrink-0 rounded bg-success/10 px-1 py-px text-[9px] font-semibold uppercase text-success">
+                  schema
+                </span>
+                <span className="min-w-0 truncate">{preview}</span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+          }
+
+          case "complete": {
+            const hasFallbacks = events.some((e) => e.type === "raw_object");
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "flex min-h-6 items-center gap-2 rounded border px-2 py-0.5",
+                  hasFallbacks
+                    ? "border-warning/40 bg-warning/10"
+                    : "border-primary/40 bg-primary/10",
+                )}
+              >
+                <span
+                  className={cn(
+                    "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase",
+                    hasFallbacks
+                      ? "bg-warning/15 text-warning"
+                      : "bg-primary/15 text-primary",
+                  )}
+                >
+                  complete
+                </span>
+                <span className="min-w-0 truncate font-semibold text-foreground">
+                  {event.kind}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+          }
+
+          case "error":
+            return (
+              <div
+                key={index}
+                className="flex min-h-6 items-center gap-2 rounded border border-destructive/50 bg-destructive/10 px-2 py-0.5"
+              >
+                <span className="shrink-0 rounded bg-destructive/15 px-1 py-px text-[10px] font-semibold uppercase text-destructive">
+                  error
+                </span>
+                <span className="min-w-0 truncate text-destructive">
+                  {event.reason}
+                </span>
+                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                  {event.at}
+                </span>
+              </div>
+            );
+        }
+      })}
+    </div>
+  );
+}
+
+function parseInputJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return { __parseError: true, raw: text };
+  }
+}
+
+function SettingField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  type?: "text" | "number";
+}) {
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
+}
+
+export default function JsonBlockDetectorPage() {
+  const [samples, setSamples] = useState<BlockSample[]>([]);
+  const [samplesLoading, setSamplesLoading] = useState(true);
+  const [samplesError, setSamplesError] = useState<string | null>(null);
+  const [selectedSampleId, setSelectedSampleId] = useState("");
+  const [blockSchemaEntries, setBlockSchemaEntries] = useState<
+    BlockSchemaEntry[]
+  >([]);
+  const [selectedSchemaId, setSelectedSchemaId] = useState("");
+  const [inputText, setInputText] = useState("");
+  const [streamSettings, setStreamSettings] = useState(DEFAULT_STREAM_SETTINGS);
+  const [events, setEvents] = useState<KindStreamEvent[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [schemas, setSchemas] = useState<Record<string, KindSchema> | null>(
+    null,
+  );
+  const [schemasLoading, setSchemasLoading] = useState(true);
+  const [schemasError, setSchemasError] = useState<string | null>(null);
+  const cancelRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDemoData() {
+      setSchemasLoading(true);
+      setSamplesLoading(true);
+      setSchemasError(null);
+      setSamplesError(null);
+
+      const [schemaResult, sampleResult] = await Promise.allSettled([
+        listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID),
+        listBlockSamples(SAMPLE_BLOCK_DATA_CATEGORY_ID),
+      ]);
+
+      if (cancelled) return;
+
+      if (schemaResult.status === "fulfilled") {
+        setSchemas(schemaResult.value.schemas);
+        setBlockSchemaEntries(schemaResult.value.entries);
+        const firstSchema = schemaResult.value.entries[0];
+        if (firstSchema) {
+          setSelectedSchemaId(firstSchema.id);
+        }
+      } else {
+        const error = schemaResult.reason;
+        setSchemas(null);
+        setBlockSchemaEntries([]);
+        setSchemasError(
+          error instanceof FlexibleDataError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : "Failed to load block schemas.",
+        );
+      }
+
+      if (sampleResult.status === "fulfilled") {
+        const loadedSamples = sampleResult.value;
+        setSamples(loadedSamples);
+        const first = loadedSamples[0];
+        if (first) {
+          setSelectedSampleId(first.id);
+          setInputText(first.content);
+        }
+      } else {
+        const error = sampleResult.reason;
+        setSamples([]);
+        setSamplesError(
+          error instanceof FlexibleDataError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : "Failed to load sample block data.",
+        );
+      }
+
+      setSchemasLoading(false);
+      setSamplesLoading(false);
+    }
+
+    void loadDemoData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const blockSchemaSlugs = useMemo(
+    () => (schemas ? getBlockSchemaSlugs(schemas) : []),
+    [schemas],
+  );
+
+  const sampleData = useMemo(() => parseInputJson(inputText), [inputText]);
+
+  const selectedBlockSchema = useMemo(() => {
+    const entry = blockSchemaEntries.find(
+      (item) => item.id === selectedSchemaId,
+    );
+    if (!entry) return null;
+    return {
+      slug: entry.slug,
+      label: entry.label,
+      fields: entry.fields,
+    };
+  }, [blockSchemaEntries, selectedSchemaId]);
+
+  const reset = () => {
+    cancelRef.current = true;
+    setEvents([]);
+    setIsRunning(false);
+  };
+
+  const handleSampleChange = (id: string) => {
+    setSelectedSampleId(id);
+    const sample = samples.find((s) => s.id === id);
+    if (sample) setInputText(sample.content);
+    setEvents([]);
+  };
+
+  const runStream = async () => {
+    if (!schemas) return;
+
+    cancelRef.current = false;
+    setEvents([]);
+    setIsRunning(true);
+
+    try {
+      await runKindJsonStreamTest(inputText, {
+        parser: { schemas },
+        stream: {
+          delayMs: streamSettings.delayMs,
+          minChunkSize: streamSettings.minChunkSize,
+          maxChunkSize: streamSettings.maxChunkSize,
+        },
+        isCancelled: () => cancelRef.current,
+        onEvent(event) {
+          setEvents((prev) => [...prev, event]);
+        },
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const validationReport = useMemo(
+    () => buildValidationReport(events),
+    [events],
+  );
+
+  const inspectorData = useMemo(() => {
+    if (events.length === 0) return null;
+
+    return {
+      validation: validationReport,
+      events,
+    };
+  }, [events, validationReport]);
+
+  const hasError = validationReport.hasStreamError;
+  const isComplete = validationReport.status !== "idle" && !isRunning;
+  const rawObjectCount = validationReport.rawFallbacks.length;
+  const activeKindWaits = useMemo(() => countActiveKindWaits(events), [events]);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col p-4">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(220px,26%)] gap-4">
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="shrink-0 rounded-lg border border-border bg-card p-3">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-sm font-semibold text-foreground">
+                  Settings
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  {schemasLoading
+                    ? "Loading Block Schemas from flexible_data…"
+                    : schemasError
+                      ? schemasError
+                      : `${blockSchemaSlugs.length} block schemas — parsing via __kind`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={runStream}
+                  disabled={
+                    isRunning ||
+                    !inputText.trim() ||
+                    schemasLoading ||
+                    samplesLoading ||
+                    !schemas ||
+                    !!schemasError ||
+                    samples.length === 0 ||
+                    !!samplesError
+                  }
+                >
+                  {isRunning ? (
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  ) : (
+                    <Play className="mr-1.5 size-3.5" />
+                  )}
+                  Run stream
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={reset}
+                  disabled={!isRunning && events.length === 0}
+                >
+                  <RotateCcw className="mr-1.5 size-3.5" />
+                  Reset
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-3">
+              <SettingField
+                label="delayMs"
+                type="number"
+                value={streamSettings.delayMs}
+                onChange={(v) =>
+                  setStreamSettings((s) => ({
+                    ...s,
+                    delayMs: Number(v) || 0,
+                  }))
+                }
+              />
+              <SettingField
+                label="minChunkSize"
+                type="number"
+                value={streamSettings.minChunkSize}
+                onChange={(v) =>
+                  setStreamSettings((s) => ({
+                    ...s,
+                    minChunkSize: Math.max(1, Number(v) || 1),
+                  }))
+                }
+              />
+              <SettingField
+                label="maxChunkSize"
+                type="number"
+                value={streamSettings.maxChunkSize}
+                onChange={(v) =>
+                  setStreamSettings((s) => ({
+                    ...s,
+                    maxChunkSize: Math.max(1, Number(v) || 1),
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            {validationReport.status !== "idle" && (
+              <ValidationSummaryBanner report={validationReport} />
+            )}
+
+            <div className="flex shrink-0 items-center gap-2 text-sm">
+              <span className="font-semibold text-foreground">Results</span>
+              <span className="text-muted-foreground">
+                {events.length === 0
+                  ? "— run stream to test"
+                  : `${events.length} event${events.length === 1 ? "" : "s"}`}
+              </span>
+              {isRunning && (
+                <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+              )}
+              {activeKindWaits > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Loader2 className="size-3 animate-spin" />
+                  waiting on __kind
+                  {activeKindWaits > 1 ? ` (${activeKindWaits})` : ""}
+                </span>
+              )}
+              {hasError && (
+                <span className="text-destructive text-xs font-medium">
+                  stream failed
+                </span>
+              )}
+              {isComplete &&
+                !hasError &&
+                validationReport.status === "valid" && (
+                  <span className="text-success text-xs font-medium">
+                    all validated
+                  </span>
+                )}
+              {isComplete &&
+                !hasError &&
+                validationReport.status === "partial" && (
+                  <span className="text-warning text-xs font-medium">
+                    {rawObjectCount} unvalidated
+                  </span>
+                )}
+            </div>
+
+            <p className="shrink-0 text-[11px] text-muted-foreground">
+              Required missing →{" "}
+              <span className="font-medium text-warning">unvalidated</span> (raw
+              JSON). Optional missing →{" "}
+              <span className="font-medium text-info">optional</span> notice.
+              Extra keys → <span className="font-medium">extra</span> notice
+              (still validates). Field rows are schema-known keys only.
+            </p>
+
+            <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-3">
+              {events.length === 0 ? (
+                <p className="font-mono text-xs italic text-muted-foreground">
+                  Schema-validated parser events appear here as chunks arrive.
+                </p>
+              ) : (
+                <KindEventTimeline events={events} />
+              )}
+            </div>
+
+            {inspectorData && (
+              <div className="flex min-h-0 max-h-[40%] shrink-0 flex-col overflow-hidden">
+                <JsonInspector
+                  data={inspectorData}
+                  label="Validation report"
+                  editorReadOnly
+                  className="min-h-0 flex-1"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <aside className="flex min-h-0 flex-col gap-2 border-l border-border pl-4">
+          <Tabs
+            defaultValue="samples"
+            className="flex min-h-0 flex-1 flex-col gap-2"
+          >
+            <TabsList className="grid h-8 w-full shrink-0 grid-cols-2">
+              <TabsTrigger value="samples" className="text-xs">
+                Sample Block Data
+              </TabsTrigger>
+              <TabsTrigger value="schemas" className="text-xs">
+                Block Schemas
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent
+              value="samples"
+              className="mt-0 flex min-h-0 flex-1 flex-col gap-2 data-[state=inactive]:hidden"
+            >
+              <div className="flex shrink-0 flex-col gap-1">
+                <Select
+                  value={selectedSampleId}
+                  onValueChange={handleSampleChange}
+                  disabled={
+                    samplesLoading || samples.length === 0 || !!samplesError
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full text-xs">
+                    <SelectValue
+                      placeholder={
+                        samplesLoading
+                          ? "Loading samples…"
+                          : samplesError
+                            ? "Failed to load"
+                            : "No samples"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {samples.map((sample) => (
+                      <SelectItem key={sample.id} value={sample.id}>
+                        {sample.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {samplesError && (
+                  <p className="text-xs text-destructive">{samplesError}</p>
+                )}
+                {!samplesLoading && !samplesError && samples.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {samples.length} rows in Sample Block Data
+                  </p>
+                )}
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <JsonInspector
+                  data={sampleData}
+                  label="Input"
+                  defaultView="json"
+                  onUpdate={(next) => {
+                    setInputText(JSON.stringify(next, null, 2));
+                    setEvents([]);
+                  }}
+                  className="min-h-0 flex-1"
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent
+              value="schemas"
+              className="mt-0 flex min-h-0 flex-1 flex-col gap-2 data-[state=inactive]:hidden"
+            >
+              <div className="flex shrink-0 flex-col gap-1">
+                <Select
+                  value={selectedSchemaId}
+                  onValueChange={setSelectedSchemaId}
+                  disabled={
+                    schemasLoading ||
+                    blockSchemaEntries.length === 0 ||
+                    !!schemasError
+                  }
+                >
+                  <SelectTrigger className="h-8 w-full text-xs">
+                    <SelectValue
+                      placeholder={
+                        schemasLoading
+                          ? "Loading block schemas…"
+                          : schemasError
+                            ? "Failed to load"
+                            : "No block schemas"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {blockSchemaEntries.map((entry) => (
+                      <SelectItem key={entry.id} value={entry.id}>
+                        {entry.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {schemasError && (
+                  <p className="text-xs text-destructive">{schemasError}</p>
+                )}
+                {!schemasLoading &&
+                  !schemasError &&
+                  blockSchemaEntries.length > 0 && (
+                    <p className="text-[10px] text-muted-foreground">
+                      {blockSchemaEntries.length} rows in Block Schemas
+                    </p>
+                  )}
+              </div>
+
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <JsonInspector
+                  data={selectedBlockSchema}
+                  label="Block Schema"
+                  defaultView="json"
+                  editorReadOnly
+                  className="min-h-0 flex-1"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </aside>
+      </div>
+    </div>
+  );
+}

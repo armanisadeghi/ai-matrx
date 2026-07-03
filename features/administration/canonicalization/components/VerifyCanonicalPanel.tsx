@@ -17,7 +17,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, ShieldQuestion, Wand2, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  ShieldQuestion,
+  Wand2,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +43,7 @@ import { GateStatusBadge } from "./StatusBadge";
 import { RLS_VARIANTS } from "../utils/queryBuilders";
 import type { CanonicalCertifyRow, VerifyCanonicalRow } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
+import { DEFAULT_DATABASE_SCHEMA } from "@/app/(admin)/administration/database/config";
 
 interface VerifyResult {
   checks: VerifyCanonicalRow[];
@@ -108,7 +115,11 @@ function GateChip({
           : "border-destructive/30 bg-destructive/10 text-destructive",
       )}
     >
-      {ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+      {ok ? (
+        <CheckCircle2 className="h-3.5 w-3.5" />
+      ) : (
+        <XCircle className="h-3.5 w-3.5" />
+      )}
       {ok ? okLabel : notOkLabel}
     </span>
   );
@@ -228,7 +239,8 @@ export function VerifyCanonicalPanel() {
         });
         const data = await readJsonObject(res);
         if (!res.ok) throw new Error(errorMessageFrom(data, res));
-        if (!isVerifyResult(data)) throw new Error("Unexpected verify response shape");
+        if (!isVerifyResult(data))
+          throw new Error("Unexpected verify response shape");
         setResult(data);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
@@ -254,7 +266,11 @@ export function VerifyCanonicalPanel() {
     // (e.g. clicking a different Summary row while this page stays
     // mounted) — not on every keystroke of a manual edit below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.get("schema"), searchParams.get("table"), searchParams.get("token")]);
+  }, [
+    searchParams.get("schema"),
+    searchParams.get("table"),
+    searchParams.get("token"),
+  ]);
 
   const failCount = useMemo(
     () =>
@@ -277,7 +293,7 @@ export function VerifyCanonicalPanel() {
           <Input
             value={schema}
             onChange={(e) => setSchema(e.target.value)}
-            placeholder="public"
+            placeholder={DEFAULT_DATABASE_SCHEMA}
             className="h-8 w-28 text-base"
           />
         </div>
@@ -327,8 +343,15 @@ export function VerifyCanonicalPanel() {
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" className="h-8" onClick={() => void runVerify()} disabled={running}>
-          {running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+        <Button
+          size="sm"
+          className="h-8"
+          onClick={() => void runVerify()}
+          disabled={running}
+        >
+          {running ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : null}
           Run
         </Button>
 
@@ -362,7 +385,10 @@ export function VerifyCanonicalPanel() {
                 defaultSort={{ key: "status", dir: "asc" }}
                 emptyMessage="No checks returned."
                 toolbarExtra={
-                  <Badge variant="outline" className="h-6 shrink-0 whitespace-nowrap text-[10px]">
+                  <Badge
+                    variant="outline"
+                    className="h-6 shrink-0 whitespace-nowrap text-[10px]"
+                  >
                     Checklist · {result?.checks.length ?? 0}
                   </Badge>
                 }
@@ -376,7 +402,10 @@ export function VerifyCanonicalPanel() {
                 csvFilename="canonicalization-verify-blocking.csv"
                 emptyMessage="Empty — perfect. Nothing is blocking certification."
                 toolbarExtra={
-                  <Badge variant="outline" className="h-6 shrink-0 whitespace-nowrap text-[10px]">
+                  <Badge
+                    variant="outline"
+                    className="h-6 shrink-0 whitespace-nowrap text-[10px]"
+                  >
                     Blocking · {result?.certifyBlocking.length ?? 0}
                   </Badge>
                 }
