@@ -51,29 +51,27 @@ export async function refreshAccessToken(
   userId: string,
 ): Promise<string | null> {
   // Fetch current credentials via the decrypt RPC
-  const { data: creds, error: credsError } = await supabase.rpc(
-    "get_mcp_credentials",
-    {
+  // get_mcp_credentials is a LEFT JOIN-backed RETURNS TABLE fn: refresh_token /
+  // token_expires_at / oauth_token_endpoint / oauth_client_id are genuinely NULL
+  // at runtime for connections that haven't completed OAuth. Postgres RETURNS
+  // TABLE can't express per-column nullability, so the generator types them all
+  // as non-null `string`; McpCredentials restores the real nullability and we
+  // pin it with `.returns<>()`, so no downstream cast is needed.
+  const { data: creds, error: credsError } = await supabase
+    .rpc("get_mcp_credentials", {
       p_server_id: serverId,
       p_user_id: userId,
-    },
-  );
+    })
+    .returns<McpCredentials[]>();
 
-  if (credsError || !creds || (Array.isArray(creds) && creds.length === 0)) {
+  if (credsError || !creds || creds.length === 0) {
     console.error(
       `[MCP Token Refresh] No credentials found for server ${serverId}`,
     );
     return null;
   }
 
-  const credential = Array.isArray(creds) ? creds[0] : creds;
-  // MATRX-EXCEPTION: get_mcp_credentials' generated Returns row types every
-  // column as non-nullable `string`, but this comes from a LEFT JOIN-backed
-  // RPC where refresh_token/token_expires_at/oauth_token_endpoint/
-  // oauth_client_id can genuinely be NULL at runtime for connections that
-  // haven't completed OAuth — the interface below is intentionally more
-  // defensive than the generated contract. See ESCALATION brief.
-  const typedCred = credential as unknown as McpCredentials;
+  const typedCred = creds[0];
 
   if (!typedCred.refresh_token) {
     console.warn(
@@ -200,23 +198,18 @@ export async function getValidToken(
   serverId: string,
   userId: string,
 ): Promise<string | null> {
-  const { data: creds, error } = await supabase.rpc("get_mcp_credentials", {
-    p_server_id: serverId,
-    p_user_id: userId,
-  });
+  const { data: creds, error } = await supabase
+    .rpc("get_mcp_credentials", {
+      p_server_id: serverId,
+      p_user_id: userId,
+    })
+    .returns<McpCredentials[]>();
 
-  if (error || !creds || (Array.isArray(creds) && creds.length === 0)) {
+  if (error || !creds || creds.length === 0) {
     return null;
   }
 
-  const credential = Array.isArray(creds) ? creds[0] : creds;
-  // MATRX-EXCEPTION: get_mcp_credentials' generated Returns row types every
-  // column as non-nullable `string`, but this comes from a LEFT JOIN-backed
-  // RPC where refresh_token/token_expires_at/oauth_token_endpoint/
-  // oauth_client_id can genuinely be NULL at runtime for connections that
-  // haven't completed OAuth — the interface below is intentionally more
-  // defensive than the generated contract. See ESCALATION brief.
-  const typedCred = credential as unknown as McpCredentials;
+  const typedCred = creds[0];
 
   // If token is still valid, return it
   if (!isTokenExpiringSoon(typedCred.token_expires_at)) {
