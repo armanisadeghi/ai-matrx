@@ -584,9 +584,11 @@ export default function MenuContent(props: MenuContentProps) {
       await launchAgent(entry.agentId, {
         surfaceKey: `${sourceFeature}:bound-agent:${entry.agentId}`,
         sourceFeature,
+        // displayMode is the menu's only launch concern (render the agent in a
+        // modal). autoRun is deliberately NOT set here so it inherits the safe
+        // default (open-and-wait) — a mapped agent must never fire on render.
         config: {
           displayMode: "modal-full",
-          autoRun: true,
           allowChat: true,
           showVariablePanel: true,
         },

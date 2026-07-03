@@ -12,7 +12,7 @@ export const metadata = createRouteMetadata("/demos/api-tests", {
 export default async function ApiTestsIndexPage() {
   return (
     <RouteIndexPage
-      directory={join(process.cwd(), "app", "(public)", "demos", "api-tests")}
+      directory={join(process.cwd(), "app", "(dev)", "demos", "api-tests")}
       basePath="/demos/api-tests"
       title="API tests"
       description="Public demo routes for agents, chat, health, PDF, tools, and Matrx AI subsets."

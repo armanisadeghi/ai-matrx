@@ -4241,6 +4241,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/runtime/workflows/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Workflow Executions
+         * @description Every runtime execution tree linked to a workflow run (`wf_run.id`) — one per
+         *     detached run/resume segment on the spine. An AgentPlan launched from a chat shows up
+         *     here AND nested under its conversation's tree (conversation → workflow → agent-node).
+         */
+        get: operations["workflow_executions_admin_runtime_workflows__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/runtime/executions/{execution_id}/tree": {
         parameters: {
             query?: never;
@@ -38771,6 +38793,37 @@ export interface operations {
             header?: never;
             path: {
                 conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationExecutionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_executions_admin_runtime_workflows__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
             };
             cookie?: never;
         };

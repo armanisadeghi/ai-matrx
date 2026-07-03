@@ -1,16 +1,19 @@
 import { join } from "path";
-import GoogleApisLayoutClient from "./GoogleApisLayoutClient";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/tests", {
-  titlePrefix: "Google APIs",
+  titlePrefix: "Animated menu",
   title: "Tests",
-  description: "Google APIs integration tests",
-  letter: "GA",
+  description: "Animated menu motion experiments",
+  letter: "AM",
 });
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function AnimatedMenuLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RouteHeaderData
       directory={join(
@@ -19,12 +22,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "(dev)",
         "demos",
         "tests",
-        "google-apis",
+        "animation-tests",
+        "animated-menu",
       )}
-      moduleHome="/demos/tests/google-apis"
-      moduleName="Google APIs"
+      moduleHome="/demos/tests/animation-tests/animated-menu"
+      moduleName="Animated menu"
     >
-      <GoogleApisLayoutClient>{children}</GoogleApisLayoutClient>
+      {children}
     </RouteHeaderData>
   );
 }

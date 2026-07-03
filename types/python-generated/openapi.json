@@ -10829,6 +10829,49 @@
         }
       }
     },
+    "/admin/runtime/workflows/{run_id}": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "Workflow Executions",
+        "description": "Every runtime execution tree linked to a workflow run (`wf_run.id`) — one per\ndetached run/resume segment on the spine. An AgentPlan launched from a chat shows up\nhere AND nested under its conversation's tree (conversation → workflow → agent-node).",
+        "operationId": "workflow_executions_admin_runtime_workflows__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationExecutionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/runtime/executions/{execution_id}/tree": {
       "get": {
         "tags": [

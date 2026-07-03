@@ -116,6 +116,23 @@ so EVERY consumer — the right-click menu AND `ProTextarea`'s "…" menu — in
 defaults identically; a surface-bound agent is never shown twice. The "Agents"
 submenu renders even with no `surfaceName` (defaults still apply).
 
+## Launching an agent must NEVER force auto-run
+
+`autoRun` bypasses the user entirely — the request goes straight to the model with
+no chance to type or edit. So the menu **never sets `autoRun` when it launches an
+agent**; it passes only its real concern (`displayMode: "modal-full"`, so the agent
+renders in a modal) and lets `autoRun` inherit the safe default (open-and-wait). A
+mapped agent must open its input/variable panel and wait for the user to trigger.
+
+- **Mapped (surface-bound) agents** — `handleBoundAgentExecute` in both renderers.
+  It omits `autoRun`; the launch thunk defaults it to `false`.
+- **Shortcuts** — carry their own persisted `auto_run` flag (set by the user); the
+  launch thunk honors it (`autoRun ?? shortcut.autoRun`). The menu doesn't touch it.
+
+(Both renderers previously hardcoded `autoRun: true` here, forcing every mapped
+agent to fire on render. The one-line-per-renderer hardcode was the sole authority
+— the bound-agent path reads no per-agent autoRun.)
+
 ## v1 features restored
 
 The hard-won pieces are carried over (and improved): the floating selection icon (`components/FloatingSelectionIcon.tsx`, enterprise `TextSelect` icon), the selection preview bar (generalized — shows the resolved **content** when there's no manual selection, so the user always sees what the menu will act on), and the macOS-safe selection capture/restore (`utils/selection-tracking.ts`).
@@ -148,6 +165,14 @@ For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe
 
 ## Change Log
 
+- `2026-07-03` — **Killed the hardcoded auto-run.** Both renderers'
+  `handleBoundAgentExecute` hardcoded `autoRun: true`, forcing every mapped agent
+  launched from the context menu to fire on render — no chance for the user to type
+  or edit anything (`autoRun` bypasses input entirely). The menu now omits `autoRun`
+  so it inherits the safe open-and-wait default. Also fixed the root cause:
+  `DEFAULT_AGENT_EXECUTION_CONFIG.autoRun` was `true` — a broken default (an unset
+  value must never auto-fire) — now `false`. A shortcut's explicit `auto_run` flag
+  is unaffected and still wins.
 - `2026-06-24` — v3 built. Inert shell + lazy MenuContent + value-resolution core with the no-fake-menu guards (content self-resolution + loud dev diagnostics) and the always-present baseline + surface-value passthrough contract. Reuses rich-document (Copy-as/Export/Convert), context-assignment (Attach To), sharing (Share), the unified-menu + bound-agents fetch (deduped — bound-agents service gained a cache), Compare, Quick Actions. Registered `findReplace` + `contextAssignment` overlays; AI result display left to the launcher (no redundant overlay). Restored the floating icon (TextSelect), generalized selection/content preview bar, and macOS-safe selection capture. v2 frozen.
 - `2026-06-24` — Demo is the rollout reference: `/demos/context-menu/canonical` rebuilt all-v3 (bare / editable / read-only display + agents / notes / code surface wirings); v2 snapshot preserved at `/demos/context-menu/canonical-v2`. Agent + Code demo panels migrated to v3. Renamed the rich-document download action to **"Download as Markdown"** (`FileDown` icon) — it always blobs `.md`. Print already correct via reuse (`printMarkdownContent`, no heavy-dep import). Open: dual-destination save (local + cloud `SaveAsDialog`), HTML/CSV/Excel conversion modules, broader capability pull-in from the assistant action menu.
 - `2026-06-24` — Production rollout COMPLETE + `context-menu-v3` skill added. All ~20 v2 render-consumers migrated to Editable/NonEditableContextMenu (incl. `AgentConversationDisplay` replacing `MarkdownContextMenuProvider` with inlined v3 + preserved `resolveContextOnOpen`, plus 3 audit-missed consumers found by grep verification: research init/synthesis, files preview). v2 menu component has no production consumers. Remaining v2-deletion blockers documented in the migration section.

@@ -1,16 +1,19 @@
 import { join } from "path";
-import GoogleApisLayoutClient from "./GoogleApisLayoutClient";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/tests", {
-  titlePrefix: "Google APIs",
+  titlePrefix: "Sample nested",
   title: "Tests",
-  description: "Google APIs integration tests",
-  letter: "GA",
+  description: "Nested app shell layout samples",
+  letter: "SN",
 });
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function SampleNestedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RouteHeaderData
       directory={join(
@@ -19,12 +22,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "(dev)",
         "demos",
         "tests",
-        "google-apis",
+        "app-shell-test",
+        "single-option",
+        "sample-nested",
       )}
-      moduleHome="/demos/tests/google-apis"
-      moduleName="Google APIs"
+      moduleHome="/demos/tests/app-shell-test/single-option/sample-nested"
+      moduleName="Sample nested"
     >
-      <GoogleApisLayoutClient>{children}</GoogleApisLayoutClient>
+      {children}
     </RouteHeaderData>
   );
 }

@@ -183,7 +183,13 @@ export const DEFAULT_AGENT_EXECUTION_CONFIG: AgentExecutionConfig = {
   displayMode: "modal-full",
   showVariablePanel: false,
   variablesPanelStyle: "inline",
-  autoRun: true,
+  // autoRun bypasses the user ENTIRELY — the request goes straight to the model
+  // with no chance to type or edit anything. That can NEVER be a safe default:
+  // an unset value must open-and-wait, not fire blind. A shortcut/app that wants
+  // one-click execution sets its own explicit `auto_run` flag, which overrides
+  // this. (Was `true`, which forced blind auto-fire wherever an explicit flag
+  // was missing.)
+  autoRun: false,
   allowChat: true,
   showDefinitionMessages: false,
   showDefinitionMessageContent: false,

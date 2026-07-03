@@ -1,16 +1,19 @@
 import { join } from "path";
-import GoogleApisLayoutClient from "./GoogleApisLayoutClient";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/tests", {
-  titlePrefix: "Google APIs",
+  titlePrefix: "Single option",
   title: "Tests",
-  description: "Google APIs integration tests",
-  letter: "GA",
+  description: "App shell single-option layout tests",
+  letter: "SO",
 });
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function SingleOptionLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RouteHeaderData
       directory={join(
@@ -19,12 +22,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "(dev)",
         "demos",
         "tests",
-        "google-apis",
+        "app-shell-test",
+        "single-option",
       )}
-      moduleHome="/demos/tests/google-apis"
-      moduleName="Google APIs"
+      moduleHome="/demos/tests/app-shell-test/single-option"
+      moduleName="Single option"
     >
-      <GoogleApisLayoutClient>{children}</GoogleApisLayoutClient>
+      {children}
     </RouteHeaderData>
   );
 }

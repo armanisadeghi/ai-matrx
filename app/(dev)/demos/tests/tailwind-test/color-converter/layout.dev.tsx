@@ -1,16 +1,19 @@
 import { join } from "path";
-import GoogleApisLayoutClient from "./GoogleApisLayoutClient";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/tests", {
-  titlePrefix: "Google APIs",
+  titlePrefix: "Color converter",
   title: "Tests",
-  description: "Google APIs integration tests",
-  letter: "GA",
+  description: "Tailwind color conversion utilities",
+  letter: "CC",
 });
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function ColorConverterLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <RouteHeaderData
       directory={join(
@@ -19,12 +22,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "(dev)",
         "demos",
         "tests",
-        "google-apis",
+        "tailwind-test",
+        "color-converter",
       )}
-      moduleHome="/demos/tests/google-apis"
-      moduleName="Google APIs"
+      moduleHome="/demos/tests/tailwind-test/color-converter"
+      moduleName="Color converter"
     >
-      <GoogleApisLayoutClient>{children}</GoogleApisLayoutClient>
+      {children}
     </RouteHeaderData>
   );
 }

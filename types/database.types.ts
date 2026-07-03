@@ -282,6 +282,13 @@ export type Database = {
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agx_agent_surface_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "menu_surface"
+            referencedColumns: ["surface_name"]
+          },
         ]
       }
       cmp_comparison_entries: {
@@ -941,6 +948,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "agx_shortcut_surface_fk"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "menu_surface"
+            referencedColumns: ["surface_name"]
+          },
+          {
             foreignKeyName: "agx_shortcut_version_fk"
             columns: ["agent_version_id"]
             isOneToOne: false
@@ -1232,22 +1246,7 @@ export type Database = {
           version: number | null
           visibility: Database["platform"]["Enums"]["visibility"] | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agx_agent_surface_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "card"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agx_agent_surface_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
@@ -36184,6 +36183,7 @@ export type Database = {
           description: string
           execution_mode: string
           executor_name: string | null
+          id: string
           is_active: boolean
           name: string
           parent_surface_name: string | null
@@ -36198,6 +36198,7 @@ export type Database = {
           description?: string
           execution_mode?: string
           executor_name?: string | null
+          id?: string
           is_active?: boolean
           name: string
           parent_surface_name?: string | null
@@ -36212,6 +36213,7 @@ export type Database = {
           description?: string
           execution_mode?: string
           executor_name?: string | null
+          id?: string
           is_active?: boolean
           name?: string
           parent_surface_name?: string | null
