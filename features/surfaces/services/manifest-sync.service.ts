@@ -34,16 +34,20 @@ import type {
   SurfaceAgentRole,
   SurfaceAgentRoleDrift,
   SurfaceDriftReport,
+  SurfaceUrlPatternDrift,
   SurfaceValue,
   SurfaceValueDrift,
   UnknownNamespace,
   ValueMapping,
 } from "@/features/surfaces/types";
 import { isValueMapping } from "@/features/surfaces/types";
+import {
+  resolveSurfaceUrlPattern,
+  getDefaultUrlPatternForSurface,
+} from "@/features/surfaces/utils/surface-url-pattern";
 
 type Sb = SupabaseClient<Database>;
-type UiSurfaceValueRow =
-  Database["ui"]["Tables"]["ui_surface_value"]["Row"];
+type UiSurfaceValueRow = Database["ui"]["Tables"]["ui_surface_value"]["Row"];
 type UiSurfaceValueInsert =
   Database["ui"]["Tables"]["ui_surface_value"]["Insert"];
 type UiSurfaceAgentRoleRow =
@@ -135,9 +139,7 @@ function manifestRoleRowFor(
   };
 }
 
-function dbRowToSurfaceAgentRole(
-  row: UiSurfaceAgentRoleRow,
-): SurfaceAgentRole {
+function dbRowToSurfaceAgentRole(row: UiSurfaceAgentRoleRow): SurfaceAgentRole {
   return {
     name: row.name,
     label: row.label,
@@ -199,7 +201,8 @@ export async function listSurfaceValues(
   surfaceName: string,
 ): Promise<SurfaceValue[]> {
   const { data, error } = await sb
-    .schema("ui").from("ui_surface_value")
+    .schema("ui")
+    .from("ui_surface_value")
     .select("*")
     .eq("surface_name", surfaceName)
     .order("sort_order", { ascending: true })
@@ -214,17 +217,21 @@ export async function listSurfaceValues(
 
 export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // 1. Pull all DB rows we care about.
-  const [allDbRowsRes, allDbRoleRowsRes, configNamespaceRowsRes, agentBindingsRes] =
-    await Promise.all([
-      sb.schema("ui").from("ui_surface_value").select("*"),
-      sb.schema("ui").from("ui_surface_agent_role").select("*"),
-      sb.schema("ui").from("ui_surface_config").select("namespace"),
-      sb
-        .schema("agent")
-        .from("agent_surface")
-        .select("id, surface_name, value_mappings")
-        .neq("value_mappings", "{}"),
-    ]);
+  const [
+    allDbRowsRes,
+    allDbRoleRowsRes,
+    configNamespaceRowsRes,
+    agentBindingsRes,
+  ] = await Promise.all([
+    sb.schema("ui").from("ui_surface_value").select("*"),
+    sb.schema("ui").from("ui_surface_agent_role").select("*"),
+    sb.schema("ui").from("ui_surface_config").select("namespace"),
+    sb
+      .schema("agent")
+      .from("agent_surface")
+      .select("id, surface_name, value_mappings")
+      .neq("value_mappings", "{}"),
+  ]);
 
   if (allDbRowsRes.error) throw allDbRowsRes.error;
   if (allDbRoleRowsRes.error) throw allDbRoleRowsRes.error;
@@ -244,7 +251,10 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     }
     inner.set(row.name, row);
   }
-  const dbRolesBySurface = new Map<string, Map<string, UiSurfaceAgentRoleRow>>();
+  const dbRolesBySurface = new Map<
+    string,
+    Map<string, UiSurfaceAgentRoleRow>
+  >();
   for (const row of dbRoleRows) {
     let inner = dbRolesBySurface.get(row.surface_name);
     if (!inner) {
@@ -390,6 +400,42 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     manifestSurfaceNames,
   );
 
+  // 9. url_pattern drift — compare ui_surface rows against code defaults.
+  const surfacesRes = await sb
+    .schema("ui")
+    .from("ui_surface")
+    .select("name, url_pattern");
+  if (surfacesRes.error) throw surfacesRes.error;
+  const manifestBySurface = new Map(
+    ALL_MANIFESTS.map((m) => [m.surfaceName, m] as const),
+  );
+  const urlPatternDrifts: SurfaceUrlPatternDrift[] = [];
+  for (const row of surfacesRes.data ?? []) {
+    const manifest = manifestBySurface.get(row.name);
+    const expected = manifest
+      ? resolveSurfaceUrlPattern(manifest)
+      : getDefaultUrlPatternForSurface(row.name);
+    if (!expected) continue;
+    const db = row.url_pattern?.trim() || null;
+    if (!db) {
+      urlPatternDrifts.push({
+        surfaceName: row.name,
+        kind: "missing_in_db",
+        manifest: expected,
+        db: null,
+      });
+      continue;
+    }
+    if (db !== expected) {
+      urlPatternDrifts.push({
+        surfaceName: row.name,
+        kind: "diff",
+        manifest: expected,
+        db,
+      });
+    }
+  }
+
   return {
     manifestsMissingInDb,
     dbValuesNotInManifest,
@@ -399,6 +445,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
     roleDiffs,
     unknownNamespaces,
     brokenAgentMappings,
+    urlPatternDrifts,
   };
 }
 
@@ -468,6 +515,8 @@ export interface ApplyManifestSyncResult {
   sweptPrefCount: number;
   /** Manifests skipped because their `surfaceName` isn't in `ui_surface`. */
   skippedMissingSurface: string[];
+  /** `ui_surface.url_pattern` rows updated from manifests / route defaults. */
+  urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
   /** Post-sync drift report (should be empty unless something raced). */
   driftAfter: SurfaceDriftReport;
 }
@@ -577,10 +626,12 @@ export async function applyManifestSync(
       .map((m) => {
         // surface name pattern is `<client>/<slug>` — the client must exist already.
         const [clientName] = m.surfaceName.split("/");
+        const urlPattern = resolveSurfaceUrlPattern(m);
         return {
           name: m.surfaceName,
           client_name: clientName ?? "matrx-user",
           description: "",
+          ...(urlPattern ? { url_pattern: urlPattern } : {}),
         };
       });
     if (missing.length > 0) {
@@ -599,7 +650,8 @@ export async function applyManifestSync(
   const upserted: ApplyManifestSyncResult["upserted"] = [];
   if (upsertRows.length > 0) {
     const upsertRes = await sb
-      .schema("ui").from("ui_surface_value")
+      .schema("ui")
+      .from("ui_surface_value")
       .upsert(upsertRows, { onConflict: "surface_name,name" })
       .select("surface_name, name");
     if (upsertRes.error) throw upsertRes.error;
@@ -618,7 +670,8 @@ export async function applyManifestSync(
   const roleUpserted: ApplyManifestSyncResult["roleUpserted"] = [];
   if (roleUpsertRows.length > 0) {
     const roleUpsertRes = await sb
-      .schema("ui").from("ui_surface_agent_role")
+      .schema("ui")
+      .from("ui_surface_agent_role")
       .upsert(roleUpsertRows, { onConflict: "surface_name,name" })
       .select("surface_name, name");
     if (roleUpsertRes.error) throw roleUpsertRes.error;
@@ -627,11 +680,58 @@ export async function applyManifestSync(
     }
   }
 
+  // 3c. Mirror url_pattern onto ui_surface for registered manifests.
+  const urlPatternsUpdated: ApplyManifestSyncResult["urlPatternsUpdated"] = [];
+  for (const manifest of targetManifests) {
+    const urlPattern = resolveSurfaceUrlPattern(manifest);
+    if (!urlPattern) continue;
+    const upd = await sb
+      .schema("ui")
+      .from("ui_surface")
+      .update({ url_pattern: urlPattern })
+      .eq("name", manifest.surfaceName)
+      .select("name");
+    if (upd.error) throw upd.error;
+    if ((upd.data ?? []).length > 0) {
+      urlPatternsUpdated.push({
+        surfaceName: manifest.surfaceName,
+        urlPattern,
+      });
+    }
+  }
+
+  // 3d. Backfill url_pattern for any other ui_surface row still empty when a
+  //     route-map entry or client/local heuristic exists.
+  const allSurfacesRes = await sb
+    .schema("ui")
+    .from("ui_surface")
+    .select("name, url_pattern");
+  if (allSurfacesRes.error) throw allSurfacesRes.error;
+  const manifestSurfaceSet = new Set(targetManifests.map((m) => m.surfaceName));
+  for (const row of allSurfacesRes.data ?? []) {
+    if (manifestSurfaceSet.has(row.name)) continue;
+    if (row.url_pattern?.trim()) continue;
+    const urlPattern = getDefaultUrlPatternForSurface(row.name);
+    if (!urlPattern) continue;
+    const upd = await sb
+      .schema("ui")
+      .from("ui_surface")
+      .update({ url_pattern: urlPattern })
+      .eq("name", row.name)
+      .is("url_pattern", null)
+      .select("name");
+    if (upd.error) throw upd.error;
+    if ((upd.data ?? []).length > 0) {
+      urlPatternsUpdated.push({ surfaceName: row.name, urlPattern });
+    }
+  }
+
   // 4. Delete stale rows (db_only) for surfaces we manage in manifests.
   const deleted: ApplyManifestSyncResult["deleted"] = [];
   if (deleteStale) {
     const allDb = await sb
-      .schema("ui").from("ui_surface_value")
+      .schema("ui")
+      .from("ui_surface_value")
       .select("surface_name, name");
     if (allDb.error) throw allDb.error;
 
@@ -649,7 +749,8 @@ export async function applyManifestSync(
     );
     for (const row of toDelete) {
       const del = await sb
-        .schema("ui").from("ui_surface_value")
+        .schema("ui")
+        .from("ui_surface_value")
         .delete()
         .eq("surface_name", row.surface_name)
         .eq("name", row.name);
@@ -665,7 +766,8 @@ export async function applyManifestSync(
   let sweptPrefCount = 0;
   if (deleteStale) {
     const allDbRoles = await sb
-      .schema("ui").from("ui_surface_agent_role")
+      .schema("ui")
+      .from("ui_surface_agent_role")
       .select("surface_name, name");
     if (allDbRoles.error) throw allDbRoles.error;
 
@@ -683,7 +785,8 @@ export async function applyManifestSync(
     );
     for (const row of rolesToDelete) {
       const prefCount = await sb
-        .schema("ui").from("ui_surface_agent_pref")
+        .schema("ui")
+        .from("ui_surface_agent_pref")
         .select("*", { count: "exact", head: true })
         .eq("surface_name", row.surface_name)
         .eq("role_name", row.name);
@@ -691,7 +794,8 @@ export async function applyManifestSync(
       sweptPrefCount += prefCount.count ?? 0;
 
       const del = await sb
-        .schema("ui").from("ui_surface_agent_role")
+        .schema("ui")
+        .from("ui_surface_agent_role")
         .delete()
         .eq("surface_name", row.surface_name)
         .eq("name", row.name);
@@ -710,6 +814,7 @@ export async function applyManifestSync(
     roleDeleted,
     sweptPrefCount,
     skippedMissingSurface,
+    urlPatternsUpdated,
     driftAfter,
   };
 }

@@ -19,12 +19,13 @@
  * capabilities / agent definition only.
  */
 
-interface RouteMapping {
+export interface SurfaceRouteMapping {
   prefix: string;
   surface: string;
 }
 
-const SURFACE_BY_ROUTE_PREFIX: readonly RouteMapping[] = [
+/** Route prefixes used at runtime and to derive default `ui_surface.url_pattern`. */
+export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   // Specific agent flows — placed BEFORE the broader /agents prefix.
   { prefix: "/agents/builder", surface: "matrx-user/agent-builder" },
   { prefix: "/agents/run-history", surface: "matrx-user/agent-run-history" },
@@ -94,7 +95,7 @@ export function surfaceFromPathname(
   // Strip the (authenticated) route group prefix Next.js doesn't include in the
   // URL but TS App Router sometimes reports.
   const stripped = pathname.replace(/^\/?\(authenticated\)/, "");
-  for (const { prefix, surface } of SURFACE_BY_ROUTE_PREFIX) {
+  for (const { prefix, surface } of SURFACE_ROUTE_MAPPINGS) {
     if (
       stripped === prefix ||
       stripped.startsWith(prefix + "/") ||

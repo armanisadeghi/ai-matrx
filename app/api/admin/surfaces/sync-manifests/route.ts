@@ -1,6 +1,9 @@
 // POST /api/admin/surfaces/sync-manifests
 //
-// Applies the code-side SurfaceManifest registry into `ui.ui_surface_value`.
+// Applies the code-side SurfaceManifest registry into:
+//   - ui.ui_surface_value
+//   - ui.ui_surface_agent_role
+//   - ui.ui_surface.url_pattern (from manifest.urlPattern or route defaults)
 // Body shape (all optional):
 //   { deleteStale?: boolean; createMissingSurfaces?: boolean }
 //

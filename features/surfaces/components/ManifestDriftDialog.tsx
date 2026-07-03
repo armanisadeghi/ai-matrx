@@ -73,7 +73,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
       report.dbRolesNotInManifest.length +
       report.roleDiffs.length +
       report.unknownNamespaces.length +
-      report.brokenAgentMappings.length
+      report.brokenAgentMappings.length +
+      report.urlPatternDrifts.length
     : 0;
 
   return (
@@ -218,6 +219,35 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                     key={`ns-${ns.source}-${ns.surfaceName ?? ""}-${ns.namespace}`}
                     ns={ns}
                   />
+                ))}
+              </Section>
+
+              <Section
+                title="URL pattern drift"
+                count={report.urlPatternDrifts.length}
+                tone="amber"
+                description="ui_surface.url_pattern missing or differs from code defaults. Sync to apply."
+              >
+                {report.urlPatternDrifts.map((d) => (
+                  <div
+                    key={`url-${d.surfaceName}`}
+                    className="px-2 py-1.5 text-[11px] space-y-0.5"
+                  >
+                    <div className="font-mono text-foreground">
+                      {d.surfaceName}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      code=<code className="font-mono">{d.manifest}</code>
+                      {d.db ? (
+                        <>
+                          {" "}
+                          db=<code className="font-mono">{d.db}</code>
+                        </>
+                      ) : (
+                        " (empty in DB)"
+                      )}
+                    </div>
+                  </div>
                 ))}
               </Section>
 

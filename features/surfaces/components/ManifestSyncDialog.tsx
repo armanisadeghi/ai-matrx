@@ -40,7 +40,8 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
         res.upserted.length +
         res.deleted.length +
         res.roleUpserted.length +
-        res.roleDeleted.length;
+        res.roleDeleted.length +
+        res.urlPatternsUpdated.length;
       if (changeCount === 0) {
         toast.success("Already in sync — no changes applied.");
       } else {
@@ -67,8 +68,9 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
             <p className="text-muted-foreground">
               Applies the code-side{" "}
               <code className="font-mono">SurfaceManifest</code> declarations to
-              the <code className="font-mono">ui_surface_value</code> and{" "}
-              <code className="font-mono">ui_surface_agent_role</code> tables.
+              the <code className="font-mono">ui_surface_value</code>,{" "}
+              <code className="font-mono">ui_surface_agent_role</code>, and{" "}
+              <code className="font-mono">ui_surface.url_pattern</code> columns.
               Rows are upserted to match code exactly; nothing else changes.
             </p>
             <label className="flex items-start gap-2 cursor-pointer">
@@ -83,8 +85,8 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 <p className="text-[11px] text-muted-foreground">
                   Remove DB <code className="font-mono">ui_surface_value</code>{" "}
                   and <code className="font-mono">ui_surface_agent_role</code>{" "}
-                  rows no longer declared in any registered manifest. Deleting
-                  a role also sweeps its{" "}
+                  rows no longer declared in any registered manifest. Deleting a
+                  role also sweeps its{" "}
                   <code className="font-mono">ui_surface_agent_pref</code> rows
                   (FK cascade); the count is reported below.
                 </p>
@@ -134,15 +136,17 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <span className="tabular-nums font-mono">
                 {result.roleDeleted.length}
               </span>
-              <span className="text-muted-foreground">
-                Agent prefs swept:
-              </span>
+              <span className="text-muted-foreground">Agent prefs swept:</span>
               <span className="tabular-nums font-mono">
                 {result.sweptPrefCount}
               </span>
               <span className="text-muted-foreground">Surfaces skipped:</span>
               <span className="tabular-nums font-mono">
                 {result.skippedMissingSurface.length}
+              </span>
+              <span className="text-muted-foreground">URL patterns set:</span>
+              <span className="tabular-nums font-mono">
+                {result.urlPatternsUpdated.length}
               </span>
               <span className="text-muted-foreground">Remaining drift:</span>
               <span className="tabular-nums font-mono">
@@ -153,7 +157,8 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                   result.driftAfter.dbRolesNotInManifest.length +
                   result.driftAfter.roleDiffs.length +
                   result.driftAfter.unknownNamespaces.length +
-                  result.driftAfter.brokenAgentMappings.length}
+                  result.driftAfter.brokenAgentMappings.length +
+                  result.driftAfter.urlPatternDrifts.length}
               </span>
             </div>
             {result.skippedMissingSurface.length > 0 && (

@@ -25,11 +25,7 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 /** Logical type of a surface value. Most are stringified for LLMs at runtime. */
 export type SurfaceValueType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "object"
-  | "array";
+  "string" | "number" | "boolean" | "object" | "array";
 
 export interface SurfaceValue {
   /**
@@ -114,6 +110,13 @@ export interface SurfaceConfigNamespaceDecl {
 export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
+  /**
+   * Canonical route for this surface (e.g. `/notes`, `/agents/builder`,
+   * `/transcripts/scribe/:sessionId`). Mirrored to `ui_surface.url_pattern`
+   * by manifest sync. When omitted, sync derives a default from the route
+   * map or a simple client/local heuristic.
+   */
+  urlPattern?: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
   /** Agent positions this surface uses. Mirrored to ui_surface_agent_role. */
@@ -138,10 +141,7 @@ export interface SurfaceManifest {
 
 /** Map types v1. Adding a new type is a TS branch + resolver case; no SQL changes. */
 export type ValueMappingType =
-  | "surface_value"
-  | "direct_value"
-  | "prompt_user"
-  | "unmapped";
+  "surface_value" | "direct_value" | "prompt_user" | "unmapped";
 
 /**
  * One mapping entry. Discriminated by `mapType`. Stored in JSONB so the DB
@@ -237,6 +237,16 @@ export interface BrokenMapping {
   mapping: ValueMapping;
 }
 
+/** Single drift entry for `ui_surface.url_pattern` not synced from code. */
+export interface SurfaceUrlPatternDrift {
+  surfaceName: string;
+  kind: "missing_in_db" | "diff";
+  /** Resolved from manifest + route map. */
+  manifest: string;
+  /** Current DB value (null when missing). */
+  db: string | null;
+}
+
 export interface SurfaceDriftReport {
   /** Surface values that exist in code manifests but not in DB. */
   manifestsMissingInDb: SurfaceValueDrift[];
@@ -254,6 +264,8 @@ export interface SurfaceDriftReport {
   unknownNamespaces: UnknownNamespace[];
   /** Broken `surface_value` mappings in `agx_agent_surface.value_mappings`. */
   brokenAgentMappings: BrokenMapping[];
+  /** Surfaces whose `ui_surface.url_pattern` differs from code defaults. */
+  urlPatternDrifts: SurfaceUrlPatternDrift[];
 }
 
 // ---------------------------------------------------------------------------

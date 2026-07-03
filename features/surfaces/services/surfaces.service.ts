@@ -47,12 +47,14 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
     surfaceValueCountsRes,
   ] = await Promise.all([
     c
-      .schema("ui").from("ui_surface")
+      .schema("ui")
+      .from("ui_surface")
       .select("*")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true }),
     c
-      .schema("tool").from("surface_defaults")
+      .schema("tool")
+      .from("surface_defaults")
       .select("surface_name, always_include_tools, always_include_bundles"),
     c.schema("tool").from("bundle").select("id, name"),
     c.schema("agent").from("agent_surface").select("surface_name"),
@@ -133,8 +135,11 @@ export interface SurfaceOption {
  */
 export async function listSurfaceOptions(): Promise<SurfaceOption[]> {
   const { data, error } = await sb()
-    .schema("ui").from("ui_surface")
-    .select("name, client_name, description, executor_name, parent_surface_name")
+    .schema("ui")
+    .from("ui_surface")
+    .select(
+      "name, client_name, description, executor_name, parent_surface_name",
+    )
     .eq("is_active", true)
     .order("client_name", { ascending: true })
     .order("name", { ascending: true });
@@ -147,7 +152,8 @@ export async function getSurfaceByName(
   name: string,
 ): Promise<UiSurfaceRow | null> {
   const { data, error } = await sb()
-    .schema("ui").from("ui_surface")
+    .schema("ui")
+    .from("ui_surface")
     .select("*")
     .eq("name", name)
     .maybeSingle();
@@ -159,7 +165,8 @@ export async function createSurface(
   row: UiSurfaceUpsert,
 ): Promise<UiSurfaceRow> {
   const { data, error } = await sb()
-    .schema("ui").from("ui_surface")
+    .schema("ui")
+    .from("ui_surface")
     .insert(row)
     .select()
     .single();
@@ -182,10 +189,13 @@ export async function updateSurface(
   const { description, ...rest } = patch;
   const updatePayload: UiTables["ui_surface"]["Update"] = {
     ...rest,
-    ...(description !== undefined ? { description: description ?? undefined } : {}),
+    ...(description !== undefined
+      ? { description: description ?? undefined }
+      : {}),
   };
   const { error } = await sb()
-    .schema("ui").from("ui_surface")
+    .schema("ui")
+    .from("ui_surface")
     .update(updatePayload)
     .eq("name", name);
   if (error) throw error;
@@ -197,14 +207,19 @@ export async function bulkSetSurfacesActive(
 ): Promise<void> {
   if (names.length === 0) return;
   const { error } = await sb()
-    .schema("ui").from("ui_surface")
+    .schema("ui")
+    .from("ui_surface")
     .update({ is_active: isActive })
     .in("name", names);
   if (error) throw error;
 }
 
 export async function deleteSurface(name: string): Promise<void> {
-  const { error } = await sb().schema("ui").from("ui_surface").delete().eq("name", name);
+  const { error } = await sb()
+    .schema("ui")
+    .from("ui_surface")
+    .delete()
+    .eq("name", name);
   if (error) throw error;
 }
 
@@ -212,7 +227,8 @@ export async function listClientNames(): Promise<
   { name: string; description: string | null; is_active: boolean | null }[]
 > {
   const { data, error } = await sb()
-    .schema("ui").from("ui_client")
+    .schema("ui")
+    .from("ui_client")
     .select("name, description, is_active")
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });
@@ -226,7 +242,8 @@ export async function createUiClient(args: {
   sortOrder?: number;
 }): Promise<void> {
   const { error } = await sb()
-    .schema("ui").from("ui_client")
+    .schema("ui")
+    .from("ui_client")
     .insert({
       name: args.name,
       description: args.description ?? undefined,
@@ -246,7 +263,11 @@ export async function bulkCreateSurfaces(
 
 export async function bulkDeleteSurfaces(names: string[]): Promise<void> {
   if (names.length === 0) return;
-  const { error } = await sb().schema("ui").from("ui_surface").delete().in("name", names);
+  const { error } = await sb()
+    .schema("ui")
+    .from("ui_surface")
+    .delete()
+    .in("name", names);
   if (error) throw error;
 }
 
@@ -261,7 +282,8 @@ export async function renameSurface(
   newName: string,
 ): Promise<void> {
   const { error } = await sb()
-    .schema("ui").from("ui_surface")
+    .schema("ui")
+    .from("ui_surface")
     .update({ name: newName })
     .eq("name", oldName);
   if (error) throw error;
@@ -299,16 +321,19 @@ export async function getSurfaceUsage(
   const c = sb();
   const [defaultsRes, agentsRes, uiRes] = await Promise.all([
     c
-      .schema("tool").from("surface_defaults")
+      .schema("tool")
+      .from("surface_defaults")
       .select("always_include_tools, always_include_bundles")
       .eq("surface_name", surfaceName)
       .maybeSingle(),
     c
-      .schema("agent").from("agent_surface")
+      .schema("agent")
+      .from("agent_surface")
       .select("agent:definition(id, name)")
       .eq("surface_name", surfaceName),
     c
-      .schema("tool").from("ui")
+      .schema("tool")
+      .from("ui")
       .select("id, tool_name, display_name, is_active")
       .eq("surface_name", surfaceName)
       .order("tool_name", { ascending: true }),
@@ -322,7 +347,8 @@ export async function getSurfaceUsage(
   if (defaultsRes.data) {
     if (defaultsRes.data.always_include_tools.length > 0) {
       const { data: directTools, error } = await c
-        .schema("tool").from("definition")
+        .schema("tool")
+        .from("definition")
         .select("id, name, description, is_active")
         .in("name", defaultsRes.data.always_include_tools);
       if (error) throw error;
@@ -332,7 +358,8 @@ export async function getSurfaceUsage(
     }
     if (defaultsRes.data.always_include_bundles.length > 0) {
       const { data: bundleRows, error: bErr } = await c
-        .schema("tool").from("bundle")
+        .schema("tool")
+        .from("bundle")
         .select("id, name")
         .in("name", defaultsRes.data.always_include_bundles);
       if (bErr) throw bErr;
@@ -349,7 +376,8 @@ export async function getSurfaceUsage(
         const memberToolIds = Array.from(new Set(edges.map((e) => e.sourceId)));
         if (memberToolIds.length > 0) {
           const { data: toolRows, error: tErr } = await c
-            .schema("tool").from("definition")
+            .schema("tool")
+            .from("definition")
             .select("id, name, description, is_active")
             .in("id", memberToolIds);
           if (tErr) throw tErr;
@@ -455,7 +483,8 @@ export async function listSurfaceValues(
   surfaceName: string,
 ): Promise<SurfaceValue[]> {
   const { data, error } = await sb()
-    .schema("ui").from("ui_surface_value")
+    .schema("ui")
+    .from("ui_surface_value")
     .select("*")
     .eq("surface_name", surfaceName)
     .order("sort_order", { ascending: true })
@@ -487,7 +516,8 @@ export async function listAgentBindings(surfaceName: string) {
  */
 export async function listToolBindings(surfaceName: string) {
   const defaultsRes = await sb()
-    .schema("tool").from("surface_defaults")
+    .schema("tool")
+    .from("surface_defaults")
     .select("always_include_tools, arg_defaults")
     .eq("surface_name", surfaceName)
     .maybeSingle();
@@ -502,7 +532,8 @@ export async function listToolBindings(surfaceName: string) {
   if (toolNames.length === 0) return [];
 
   const toolsRes = await sb()
-    .schema("tool").from("definition")
+    .schema("tool")
+    .from("definition")
     .select("id, name, category, is_active")
     .in("name", toolNames);
   if (toolsRes.error) throw toolsRes.error;
@@ -524,7 +555,8 @@ export async function getSurfaceToolDefaults(
   surfaceName: string,
 ): Promise<ToolSurfaceDefaultsRow | null> {
   const { data, error } = await sb()
-    .schema("tool").from("surface_defaults")
+    .schema("tool")
+    .from("surface_defaults")
     .select("*")
     .eq("surface_name", surfaceName)
     .maybeSingle();
@@ -542,7 +574,8 @@ export async function upsertSurfaceToolDefaults(
   patch: Partial<Omit<ToolSurfaceDefaultsUpsert, "surface_name">>,
 ): Promise<ToolSurfaceDefaultsRow> {
   const { data, error } = await sb()
-    .schema("tool").from("surface_defaults")
+    .schema("tool")
+    .from("surface_defaults")
     .upsert(
       { surface_name: surfaceName, ...patch },
       { onConflict: "surface_name" },
@@ -580,6 +613,7 @@ export async function syncManifests(
   roleDeleted: { surfaceName: string; roleName: string }[];
   sweptPrefCount: number;
   skippedMissingSurface: string[];
+  urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
   driftAfter: SurfaceDriftReport;
 }> {
   const res = await fetch("/api/admin/surfaces/sync-manifests", {
@@ -599,6 +633,7 @@ export async function syncManifests(
       roleDeleted: { surfaceName: string; roleName: string }[];
       sweptPrefCount: number;
       skippedMissingSurface: string[];
+      urlPatternsUpdated: { surfaceName: string; urlPattern: string }[];
       driftAfter: SurfaceDriftReport;
     };
   };
