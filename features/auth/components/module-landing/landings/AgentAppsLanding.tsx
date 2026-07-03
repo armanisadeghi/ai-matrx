@@ -115,7 +115,7 @@ export default function AgentAppsLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop teaching colleagues to prompt"
       finalCtaDescription="Wrap the agent. Ship the app. Watch adoption climb. Free to start, no credit card."
-      relatedModules={["/agents", "/chat", "/agent-context"]}
+      relatedModules={["/agents", "/chat", "/scopes"]}
     />
   );
 }

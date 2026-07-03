@@ -38,7 +38,7 @@ const KEYS = {
     ["hierarchy-ancestors", type, id] as const,
 };
 
-// ─── Full tree (legacy HierarchyNode shape for HierarchyTreePage) ────
+// ─── Full tree (legacy HierarchyNode shape) ────
 
 export function useHierarchyTree() {
   return useQuery({

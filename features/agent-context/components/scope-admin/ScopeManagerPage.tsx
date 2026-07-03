@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink } from "lucide-react";
-import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,
@@ -95,17 +93,6 @@ export function ScopeManagerPage({
               dispatch(fetchScopes({ org_id: organizationId }));
             }}
           />
-          <Link
-            href={`/agent-context/hierarchy?id=${organizationId}&type=organization`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg border border-dashed border-border p-2 text-left hover:bg-muted/50 transition-colors"
-          >
-            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="text-[10px] text-muted-foreground">
-              Open in Context Hub
-            </span>
-          </Link>
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto bg-background">

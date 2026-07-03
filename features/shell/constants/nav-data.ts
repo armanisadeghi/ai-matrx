@@ -378,15 +378,6 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
-      {
-        label: "Context",
-        href: "/agent-context",
-        iconName: "BookOpen",
-        description: "Manage context items, templates, and knowledge (legacy)",
-        color: "cyan",
-        profileMenu: true,
-        dashboard: true,
-      },
       // Actions — collected at the bottom below a divider. `?create=1` opens
       // the canonical Create Organization modal on the launcher page.
       {

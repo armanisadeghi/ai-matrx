@@ -13,7 +13,7 @@
 //
 // Visuals: click-to-expand inline list (NOT hover flyout) so it works on
 // mobile, inside bottom sheets, and inside tab dropdowns. The picker is
-// self-contained — no dependency on legacy `ContextPickerPrimitives`.
+// fully self-contained.
 
 "use client";
 

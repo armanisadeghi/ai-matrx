@@ -880,9 +880,7 @@ export default [
             'features/scopes/service/scopesService.ts',
             // Phase-5 retirement queue — these files will be deleted or
             // rewritten to go through scopesService.
-            'features/agent-context/service/contextService.ts',
             'features/agent-context/service/hierarchyService.ts',
-            'features/agent-context/hooks/useContextItems.ts',
             'features/agent-context/redux/organizationsSlice.ts',
             'features/agent-context/redux/projectsSlice.ts',
             'features/agent-context/redux/tasksSlice.ts',

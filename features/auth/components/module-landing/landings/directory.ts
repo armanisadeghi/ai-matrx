@@ -15,7 +15,6 @@ import {
   Table,
   Mic,
   AudioLines,
-  BookOpen,
   FlaskConical,
   Aperture,
   FileSpreadsheet,
@@ -212,14 +211,6 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Layers,
     teaser:
       "Model your team's dimensions — clients, repos, cases — and wire them into every action.",
-    group: "Org & Context",
-  },
-  {
-    label: "Context",
-    href: "/agent-context",
-    icon: BookOpen,
-    teaser:
-      "Typed broker slots, scoped defaults, full resolution traces — context that actually resolves.",
     group: "Org & Context",
   },
 ];
