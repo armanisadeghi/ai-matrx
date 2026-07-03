@@ -31,6 +31,7 @@ import {
   Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useScrollFade } from "@/components/ui/scroll-fade";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -93,6 +94,8 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const [showArtifactDebug, setShowArtifactDebug] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  // Dynamic fade on the body scroll edges (declared before any early return).
+  const bodyFade = useScrollFade<HTMLDivElement>();
 
   // Which item is this pane responsible for? `single` and `top` show the
   // current item; `bottom` shows the secondary.
@@ -418,7 +421,13 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
       {showArtifactDebug && <CanvasArtifactDebugPanel item={item} />}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-overlay">
+      {/* Scroll-edge fade: signals "there's more below/above" so a clipped
+          questionnaire/artifact never reads as "what you see is all there is". */}
+      <div
+        ref={bodyFade.ref}
+        style={bodyFade.style}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-overlay"
+      >
         {viewMode === "preview" ? (
           <CanvasBody content={content} />
         ) : (
