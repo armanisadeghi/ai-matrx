@@ -36184,6 +36184,7 @@ export type Database = {
           description: string
           execution_mode: string
           executor_name: string | null
+          id: string
           is_active: boolean
           name: string
           parent_surface_name: string | null
@@ -36198,6 +36199,7 @@ export type Database = {
           description?: string
           execution_mode?: string
           executor_name?: string | null
+          id?: string
           is_active?: boolean
           name: string
           parent_surface_name?: string | null
@@ -36212,6 +36214,7 @@ export type Database = {
           description?: string
           execution_mode?: string
           executor_name?: string | null
+          id?: string
           is_active?: boolean
           name?: string
           parent_surface_name?: string | null

@@ -148,10 +148,17 @@ export const deleteAgentSurfaceBindingThunk = createAsyncThunk<
   void,
   { bindingId: string },
   ThunkApi
->("agentSurfaceBindings/delete", async ({ bindingId }, { dispatch }) => {
-  await deleteAgentSurfaceBinding(bindingId);
-  dispatch(removeBinding(bindingId));
-});
+>(
+  "agentSurfaceBindings/delete",
+  async ({ bindingId }, { dispatch, getState }) => {
+    // The association edge is addressed by (source, target, role) — reconstruct
+    // it from the binding held in state rather than by a bare id.
+    const binding = getState().agentSurfaceBindings.byId[bindingId];
+    if (!binding) return;
+    await deleteAgentSurfaceBinding(binding);
+    dispatch(removeBinding(bindingId));
+  },
+);
 
 /**
  * Batch upsert bindings across many surfaces for one agent. Each surface is an

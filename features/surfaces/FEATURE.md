@@ -29,9 +29,37 @@ The original `UiSurfaceCrud` (under `/admin/lookups`) is a flat table. With
 
 The v2 page solves all four.
 
-## ⛔️ CONDEMNED: agent↔surface binding via `agent.agent_surface`
+## ✅ agent↔surface binding is now a canonical association (was CONDEMNED)
 
-> **Status: being removed. Do not extend.** `features/surfaces/services/agent-surface-bindings.service.ts` binds an agent to a surface through the bespoke `agent_surface` M2M table. The whole mechanism is wrong under the current canonical model and is slated for replacement. The write paths emit `console.error` beacons at runtime (captured into the Error Inspector) because a *successful* broken write is worse than a failure — it silently mis-binds.
+> **Status: cut over to `platform.associations` (2026-07-03).** The agent→surface
+> binding is a canonical association EDGE — `source='agent'` → `target='surface'`
+> (the new first-class `surface` entity = `ui.ui_surface.id`). `agent-surface-bindings.service.ts`
+> now routes every read/write through `associationsService`; the bespoke
+> `agent.agent_surface` M2M is dormant and staged for graveyard (Stage 3). The
+> four historical defects (P1–P4) and how the edge model resolves each:
+>
+> - **P1 — project/task single FKs** → a binding's tier lives in the edge `role`
+>   (`binding:p:<id>` / `binding:t:<id>`); project/task applicability is M2M-capable,
+>   not a lone column. (Live data had 0 project/task bindings.)
+> - **P2 — single scope/scope-type** → scope tags on a binding stay on
+>   `platform.associations` (the `agent_surface_binding` entity was already
+>   scope-tagged via `setEntityScopes`); the org tier is the edge `organization_id`.
+> - **P3 — passive vs explicit context** → the binding UI passes the user's
+>   EXPLICIT org selection as `orgId`; the service never reads `appContextSlice`.
+> - **P4 — wrong mechanism** → resolved: one canonical path, `assoc_*` via
+>   `associationsService`. No new M2M.
+>
+> **Edge model:** org tier → `organization_id` (personal org keeps a user binding
+> private via `iam.has_org_access`; shared org = member-visible — same semantics as
+> the old RLS); tier discriminator + uniqueness → `role`
+> (`binding:u:<user>`/`binding:o:<org>`/`binding:p:<project>`/`binding:t:<task>`/`binding:g`);
+> `value_mappings` + tier bookkeeping → edge `metadata`. Migrations:
+> `agent_surface_to_associations.sql` (Stage 1: surface UUID + `surface` entity +
+> count-verified backfill), `agent_surface_associations_repoint_reads.sql` (Stage 2:
+> `agent.menu_surface` view + `create_shortcut_from_agent_surface` RPC),
+> `agent_surface_graveyard.sql` (Stage 3, GATED).
+
+### Historical rationale (the four defects that condemned `agent_surface`)
 
 Four distinct defects (the code is annotated `P1`–`P4`):
 
@@ -131,6 +159,7 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
+- **2026-07-03** — **Cut the agent↔surface binding over to `platform.associations` (Stages 1–2 applied + verified live; Stage 3 gated).** Product decision executed: surfaces are now a first-class UUID entity (`ui.ui_surface.id` + registered `surface` token in `platform.entity_types`; added to `ASSOCIATION_TARGET_TYPES`). The agent→surface link is a canonical edge (`source='agent'` → `target='surface'`), replacing the bespoke `agent.agent_surface` M2M. **Stage 1** (`agent_surface_to_associations.sql`, applied + ledgered): added `ui_surface.id`, registered `surface`, count-verified backfill of all 30 live bindings → associations (24 user-tier on personal orgs → private via `has_org_access`; 6 org-tier on shared orgs → member-visible; 0 project/task/global). Edge model: org tier → `organization_id`; tier+uniqueness → `role` (`binding:u:<user>`/`binding:o:<org>`/…); `value_mappings`+bookkeeping → `metadata`. **Stage 2** (`agent_surface_associations_repoint_reads.sql`, applied + ledgered): repointed `agent.menu_surface` view + `create_shortcut_from_agent_surface` RPC onto associations (both backward-compatible — legacy `agent_surface.id` still resolves — and proven set-equivalent to the old view). **FE:** `agent-surface-bindings.service.ts` fully rewritten onto `associationsService` with its public API preserved (so the ~10 runtime/admin consumers are untouched); the delete thunk now reconstructs the edge from the binding in state. `id` now means the association id. Generated types (`entity-types.generated.ts`, `database.types.ts`) hand-mirrored to the DB — **re-run `pnpm gen:entity-types` + `pnpm db-types` to normalize** (blocked in the authoring session: `pnpm install` 403 on a GitHub-tarball dep). **Gated (Stage 3, `agent_surface_graveyard.sql`, NOT applied):** retire `agent.agent_surface` after soak — depends on repointing the remaining admin readers (`surfaces.service.ts` stats/usage/`listAgentBindings`, `manifest-sync.service.ts`, `remediate-mapping` route), which intentionally still read the frozen table (off the binding hot path). See `docs/handoffs/AGENT_SURFACE_ASSOCIATIONS_STATUS.md`.
 - **2026-06-30** — **Condemned the `agent_surface` agent↔surface binding mechanism (see "⛔️ CONDEMNED" section).** Annotated `agent-surface-bindings.service.ts` with `P1`–`P4` (project/task single-FK → M2M; single-scope → M2M; passive active-context vs explicit user selection; bespoke M2M → canonical `platform.associations`). Write paths (`upsertAgentSurfaceBinding`, `bulkUpsertAgentSurfaceBindings`) now fire a `console.error` beacon (Error-Inspector captured) so a silently-successful mis-binding is impossible to miss; read path warns. Added a TEMPORARY compile bridge on the NOT-NULL `organization_id` insert (cast, not a fix — runtime unchanged) so the build stays green while the association-backed replacement is built. No behavior change; module slated for deletion. Also corrected the stale "one scope per scope_type" header in `lib/redux/slices/appContextSlice.ts` (multi-select since 2026-06-12) and documented the active-vs-user-selected context distinction there.
 - **2026-06-27** — **Killed the cross-schema embed `PGRST200` in the context-menu agent hydration.** `fetchMenuAgentsFromDb` (`services/surface-bound-agents.service.ts`) was selecting `agent.agent_surface` with embeds `agent:definition!inner(...)` + `organization:organizations(...)` — but once `agent_surface` moved into the `agent` schema, the embed to public `organizations` is cross-schema and PostgREST cannot resolve it (`Could not find a relationship between 'agent_surface' and 'organizations'`). Repointed to the new pre-joined, RLS-safe view **`agent.menu_surface`** (`.select("*")`, same `.in("surface_name", …)` filter); a thin `toBindingRow()` maps the view's hoisted scalars + `agent`/`organizations` jsonb into the existing internal `BindingRow` shape, so the bucketing/dedup logic is untouched. Agent ownership now reads `agent.created_by` (the column the old `definition.user_id` embed exposed — verified identical). The view inner-joins the safe `agent.card`, so only agents whose card is visible to the caller appear (builtins are public → global menu unaffected). Verified live against PostgREST (200, embeds resolve). Same-class cleanups in the same change: deleted the **dead, broken** `getSurfacesForAgent` (`lib/agents/data.ts` — zero callers, carried the identical `ui_surface` cross-schema embed), and fixed the **live** `getSurfaceUsage` tool-bundle embed (`services/surfaces.service.ts`) whose relation names (`tool_bundle_member`/`tool_def`) didn't exist → corrected to `bundle_member`/`definition`.
 - **2026-06-25** — **Fixed the cross-surface binding leak + added a batch editor.** *Leak:* in the 5-panel shell (`columns/BindingColumn.tsx`) the center form derived its target binding **only** from `?binding=<id>`, so selecting an already-bound surface from the left list (which clears `?binding=`) opened a blank "new" form seeded from the `matrx-default/default` binding — showing the wrong mappings and, on Save, **silently overwriting that surface's real binding** (upsert matches by `(agent, surface, scope)`). Fix: (1) **auto-adopt** — when a surface is selected with no `?binding=`, edit its existing binding (prefer the user's scope row) instead of a seeded new form; (2) **gate the Default seed** to surfaces with *no* binding at all (`!surfaceHasBinding`) so it stays a pure UI starting point; (3) **deep-clone** mappings (`structuredClone`) so a seeded form can never mutate the Redux-held Default binding. Each Save still writes exactly one row. *Batch:* new `SurfaceBindingsBatchEditor` (`admin/batch/`) at `/agents/[id]/surfaces/batch` (+ admin twin) — copy an existing binding as a template (or blank), pick one scope tier, and stamp the same value-mappings onto many surfaces at once. Reuses `BatchSurfaceSelector`, `ShortcutScopePicker`, `SurfaceVariableBindingList`, and `buildBindingTargets`. Writes via `bulkUpsertAgentSurfaceBindings` (service) / `bulkUpsertAgentSurfaceBindingsThunk` — **N independent single-row upserts** (reusing `upsertAgentSurfaceBinding`/`findBinding`, no `onConflict` since uniqueness is 5 per-tier partial indexes) with per-surface success/failure reporting. Entry point: a **Batch** button in `SurfacesListColumn` (threaded `basePath`).

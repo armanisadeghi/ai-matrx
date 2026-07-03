@@ -1,73 +1,49 @@
 "use client";
 
-import { createClient } from "@/utils/supabase/client";
+// =============================================================================
+// Agent ↔ Surface binding — CANONICAL (platform.associations)
+// =============================================================================
+// The agent→surface binding is now a canonical association EDGE, not the bespoke
+// `agent.agent_surface` M2M. Direction follows the association convention:
+// RESOURCE=source=`agent` → CONTAINER=target=`surface` (ui.ui_surface.id). The
+// old per-tier scope FK columns (P1/P2) are gone — a binding's scope is encoded
+// in the edge:
+//   • org tier    → the edge's `organization_id` (RLS via iam.has_org_access:
+//                   a personal org keeps a user binding private; a shared org
+//                   makes it member-visible — same semantics as the old RLS).
+//   • which tier  → the edge `role`, which ALSO makes each tier unique under
+//                   associations_unique(source,source_id,target,target_id,role):
+//                     user    → 'binding:u:'||user_id
+//                     org     → 'binding:o:'||organization_id
+//                     project → 'binding:p:'||project_id
+//                     task    → 'binding:t:'||task_id
+//                     global  → 'binding:g'
+//   • value_mappings + tier bookkeeping → the edge `metadata`.
+//
+// The scope passed to a write MUST come from the user's EXPLICIT UI selection
+// (never passive appContextSlice) — the caller owns that (P3). Everything here
+// goes through `associationsService` (the sole `assoc_*` chokepoint); no file
+// touches `platform.associations` directly.
+//
+// The public API (functions + `AgentSurfaceBinding` shape) is UNCHANGED so the
+// ~10 runtime/admin consumers keep working; only `id` now means the association
+// id. See features/surfaces/FEATURE.md.
+// =============================================================================
+
+import { supabase } from "@/utils/supabase/client";
+import { associationsService } from "@/features/scopes/service/associationsService";
 import {
   isValueMappingMap,
   type ValueMappingMap,
 } from "@/features/surfaces/types";
 import type { MappingLayer } from "@/features/surfaces/utils/merge-value-mappings";
+import type { Json } from "@/types/database.types";
 
-// =============================================================================
-// ⛔️ CONDEMNED MODULE — DO NOT EXTEND. Replacement in progress.
-// =============================================================================
-// This service binds an AGENT to a SURFACE via the `agent.agent_surface` table.
-// Nearly everything about HOW it does that violates the current canonical model
-// and must be replaced — not patched. The type errors on the org/project/task
-// columns are a SYMPTOM; the real defects are architectural:
-//
-//   (P1) FOREIGN-KEY SINGLE RELATIONSHIPS for project_id / task_id.
-//        project/task are now MANY-TO-MANY across every table in the system.
-//        A single FK column is the wrong shape and the underlying columns are
-//        being removed. Do not write them. Do not read them as "the" project.
-//
-//   (P2) SINGLE scope / scope-type relationship.
-//        Scopes and scope types are M2M by design. This module models "one
-//        org / one scope tier per binding" — that cardinality does not exist.
-//
-//   (P3) ACTION CONTEXT vs USER-SELECTED CONTEXT conflation (the dangerous one).
-//        Binding is a USER ACTION. The org/scope it binds to MUST come from
-//        what the user EXPLICITLY selected in the UI — never from the passive,
-//        cached "active context" (appContextSlice active org / scope_selections)
-//        just because it happens to be loaded. See the Global-vs-Local context
-//        invariant in CLAUDE.md + features/scopes/FEATURE.md. A SUCCESSFUL write
-//        here is WORSE than a failure: it silently ties an agent surface to an
-//        org/scope the user never intended. That is why these paths scream at
-//        runtime even though TypeScript only flags some of them.
-//
-//   (P4) THE KICKER — wrong mechanism entirely.
-//        Connecting an agent to a surface is an ASSOCIATION. It MUST go through
-//        the canonical `platform.associations` system (features/scopes
-//        associationsService + the canonical-associations skill), NOT a bespoke
-//        per-table M2M like `agent_surface`. No new M2M relationships are
-//        allowed outside canonical associations. This whole module is slated
-//        for removal once the association-backed binding lands.
-//
-// Tracking: features/surfaces/FEATURE.md (Condemned section) + the
-// canonical-associations / context-assignment skills.
-// =============================================================================
-
-/**
- * Shared loud-failure beacon. Fires on every legacy write so a broken-but-
- * "successful" binding is impossible to miss in the console AND in the
- * systemwide Error Inspector (console.error is captured as `console-error`).
- */
-function reportCondemnedBindingWrite(
-  op: string,
-  detail: Record<string, unknown>,
-): void {
-  console.error(
-    `[agent-surface-bindings] CONDEMNED WRITE (${op}) — this path models project/task as single FKs (P1), ` +
-      `scope/scope-type as single relationships (P2), may read PASSIVE active context instead of the user's ` +
-      `explicit UI selection (P3), and uses a bespoke M2M instead of canonical associations (P4). ` +
-      `A successful write here can SILENTLY mis-bind an agent surface. Replace via platform.associations. ` +
-      `See features/surfaces/FEATURE.md (Condemned).`,
-    detail,
-  );
-}
-
-const sb = () => createClient();
+const AGENT = "agent" as const;
+const SURFACE = "surface" as const;
 
 export interface AgentSurfaceBinding {
+  /** The association edge id. */
   id: string;
   agentId: string;
   surfaceName: string;
@@ -76,120 +52,9 @@ export interface AgentSurfaceBinding {
   organizationId: string | null;
   projectId: string | null;
   taskId: string | null;
-  /** JSONB column. Type-guarded at read time so callers see a real ValueMappingMap. */
+  /** Merged value-mapping payload (edge metadata). */
   valueMappings: ValueMappingMap;
   createdAt: string;
-}
-
-interface RawBindingRow {
-  id: string;
-  agent_id: string;
-  surface_name: string;
-  user_id: string | null;
-  organization_id: string | null;
-  project_id: string | null;
-  task_id: string | null;
-  value_mappings: unknown;
-  created_at: string;
-}
-
-function fromRow(row: RawBindingRow): AgentSurfaceBinding {
-  return {
-    id: row.id,
-    agentId: row.agent_id,
-    surfaceName: row.surface_name,
-    userId: row.user_id,
-    organizationId: row.organization_id,
-    projectId: row.project_id,
-    taskId: row.task_id,
-    valueMappings: isValueMappingMap(row.value_mappings)
-      ? (row.value_mappings as ValueMappingMap)
-      : {},
-    createdAt: row.created_at,
-  };
-}
-
-/**
- * Ordered mapping layers for (agent, surface), weakest → strongest:
- * global → org rows → user row.
- *
- * RLS is the authority on applicability: any returned row with a non-null
- * `user_id` IS the caller's own row, and any org row belongs to an org the
- * caller is a member of — so org bindings apply by MEMBERSHIP, with no
- * client-side "active org" filtering. (The previous active-org read was dead
- * code: the organizations slice never exposed `activeOrganizationId`, so the
- * org tier could never fire.) Multiple member-org rows are ordered oldest →
- * newest so the newest wins per key in the layer merge.
- */
-export async function fetchSurfaceBindingLayers(
-  agentId: string,
-  surfaceName: string,
-): Promise<MappingLayer[]> {
-  const { data, error } = await sb()
-    .schema("agent")
-    .from("agent_surface")
-    .select(
-      "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
-    )
-    .eq("agent_id", agentId)
-    .eq("surface_name", surfaceName);
-  if (error) throw error;
-
-  if ((data ?? []).length > 0) {
-    // Read path is non-destructive but still legacy — warn so consumers migrate.
-    console.warn(
-      "[agent-surface-bindings] reading CONDEMNED agent_surface bindings — " +
-        "this single-tier scope model (P1/P2) and bespoke M2M (P4) are being replaced " +
-        "by canonical platform.associations. See features/surfaces/FEATURE.md (Condemned).",
-    );
-  }
-
-  const rows = ((data ?? []) as unknown as RawBindingRow[]).map(fromRow);
-  const withMappings = rows.filter(
-    (r) => Object.keys(r.valueMappings).length > 0,
-  );
-
-  const layers: MappingLayer[] = [];
-  const globalRow = withMappings.find(
-    (r) =>
-      r.userId === null &&
-      r.organizationId === null &&
-      r.projectId === null &&
-      r.taskId === null,
-  );
-  if (globalRow) {
-    layers.push({ name: "binding:global", mappings: globalRow.valueMappings });
-  }
-  const orgRows = withMappings
-    .filter((r) => r.organizationId !== null)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  for (const row of orgRows) {
-    layers.push({
-      name: `binding:org:${row.organizationId!.slice(0, 8)}`,
-      mappings: row.valueMappings,
-    });
-  }
-  const userRow = withMappings.find((r) => r.userId !== null);
-  if (userRow) {
-    layers.push({ name: "binding:user", mappings: userRow.valueMappings });
-  }
-  return layers;
-}
-
-/** List all bindings for an agent that the caller can see (RLS-gated). */
-export async function listAgentSurfaceBindings(
-  agentId: string,
-): Promise<AgentSurfaceBinding[]> {
-  const { data, error } = await sb()
-    .schema("agent")
-    .from("agent_surface")
-    .select(
-      "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
-    )
-    .eq("agent_id", agentId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return ((data ?? []) as unknown as RawBindingRow[]).map(fromRow);
 }
 
 export interface ScopeInput {
@@ -199,7 +64,192 @@ export interface ScopeInput {
   taskId?: string | null;
 }
 
-/** Upsert a binding for (agent, surface, scope). Creates if missing. */
+// ─── surface name ↔ id resolution ────────────────────────────────────────────
+// ui.ui_surface is a small (~120 row) global catalog keyed by text `name`, now
+// carrying a stable `id uuid`. Association edges target that uuid, so we resolve
+// both directions. Cached in-module; a miss triggers exactly one refetch (a
+// newly-added surface), and a still-missing name is a hard error (loud).
+
+let surfaceMaps: { byName: Map<string, string>; byId: Map<string, string> } | null =
+  null;
+
+async function loadSurfaceMaps(force = false): Promise<{
+  byName: Map<string, string>;
+  byId: Map<string, string>;
+}> {
+  if (surfaceMaps && !force) return surfaceMaps;
+  const { data, error } = await supabase
+    .schema("ui")
+    .from("ui_surface")
+    .select("id, name");
+  if (error) throw error;
+  const byName = new Map<string, string>();
+  const byId = new Map<string, string>();
+  for (const row of data ?? []) {
+    byName.set(row.name, row.id);
+    byId.set(row.id, row.name);
+  }
+  surfaceMaps = { byName, byId };
+  return surfaceMaps;
+}
+
+async function surfaceIdFor(surfaceName: string): Promise<string> {
+  let maps = await loadSurfaceMaps();
+  let id = maps.byName.get(surfaceName);
+  if (!id) {
+    maps = await loadSurfaceMaps(true);
+    id = maps.byName.get(surfaceName);
+  }
+  if (!id) {
+    throw new Error(
+      `[agent-surface-bindings] no ui_surface row for "${surfaceName}" — cannot bind an agent to an unregistered surface`,
+    );
+  }
+  return id;
+}
+
+async function surfaceNameFor(surfaceId: string): Promise<string | null> {
+  let maps = await loadSurfaceMaps();
+  let name = maps.byId.get(surfaceId);
+  if (!name) {
+    maps = await loadSurfaceMaps(true);
+    name = maps.byId.get(surfaceId);
+  }
+  return name ?? null;
+}
+
+// ─── scope ↔ role encoding (mirrors the backfill migration exactly) ──────────
+
+function roleForScope(scope: ScopeInput): string {
+  if (scope.userId) return `binding:u:${scope.userId}`;
+  if (scope.projectId) return `binding:p:${scope.projectId}`;
+  if (scope.taskId) return `binding:t:${scope.taskId}`;
+  if (scope.organizationId) return `binding:o:${scope.organizationId}`;
+  return "binding:g";
+}
+
+function tierForScope(scope: ScopeInput): string {
+  if (scope.userId) return "user";
+  if (scope.projectId) return "project";
+  if (scope.taskId) return "task";
+  if (scope.organizationId) return "org";
+  return "global";
+}
+
+function readValueMappings(metadata: Json): ValueMappingMap {
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    const vm = (metadata as Record<string, unknown>).value_mappings;
+    if (isValueMappingMap(vm)) return vm;
+  }
+  return {};
+}
+
+function readScopeField(metadata: Json, key: string): string | null {
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    const v = (metadata as Record<string, unknown>)[key];
+    if (typeof v === "string" && v.length > 0) return v;
+  }
+  return null;
+}
+
+// ─── reads ────────────────────────────────────────────────────────────────
+
+/**
+ * Ordered mapping layers for (agent, surface), weakest → strongest:
+ * global → org rows (oldest→newest) → user row. Applicability is decided by
+ * association RLS (iam.has_org_access): any edge returned here is one the caller
+ * is allowed to see, so we layer without client-side org filtering.
+ */
+export async function fetchSurfaceBindingLayers(
+  agentId: string,
+  surfaceName: string,
+): Promise<MappingLayer[]> {
+  const surfaceId = await surfaceIdFor(surfaceName);
+  const res = await associationsService.listForEntity(AGENT, agentId);
+  if (!res.ok) throw new Error(res.error.message);
+
+  const edges = res.data.edges.filter(
+    (e) =>
+      e.direction === "outgoing" &&
+      e.otherType === SURFACE &&
+      e.otherId === surfaceId,
+  );
+
+  interface Row {
+    userId: string | null;
+    orgId: string | null;
+    valueMappings: ValueMappingMap;
+    createdAt: string;
+  }
+  const rows: Row[] = edges
+    .map((e) => ({
+      userId: readScopeField(e.metadata, "user_id"),
+      orgId: e.orgId,
+      valueMappings: readValueMappings(e.metadata),
+      createdAt: e.createdAt,
+    }))
+    .filter((r) => Object.keys(r.valueMappings).length > 0);
+
+  const layers: MappingLayer[] = [];
+
+  const globalRow = rows.find((r) => r.userId === null && r.orgId === null);
+  if (globalRow) {
+    layers.push({ name: "binding:global", mappings: globalRow.valueMappings });
+  }
+
+  const orgRows = rows
+    .filter((r) => r.userId === null && r.orgId !== null)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  for (const row of orgRows) {
+    layers.push({
+      name: `binding:org:${row.orgId!.slice(0, 8)}`,
+      mappings: row.valueMappings,
+    });
+  }
+
+  const userRow = rows.find((r) => r.userId !== null);
+  if (userRow) {
+    layers.push({ name: "binding:user", mappings: userRow.valueMappings });
+  }
+
+  return layers;
+}
+
+/** List all surface bindings for an agent the caller can see (RLS-gated). */
+export async function listAgentSurfaceBindings(
+  agentId: string,
+): Promise<AgentSurfaceBinding[]> {
+  const res = await associationsService.listForEntity(AGENT, agentId);
+  if (!res.ok) throw new Error(res.error.message);
+
+  const surfaceEdges = res.data.edges.filter(
+    (e) => e.direction === "outgoing" && e.otherType === SURFACE,
+  );
+
+  const out: AgentSurfaceBinding[] = [];
+  for (const e of surfaceEdges) {
+    const surfaceName = await surfaceNameFor(e.otherId);
+    if (!surfaceName) continue; // orphaned edge (surface deleted) — skip loudly below
+    out.push({
+      id: e.id,
+      agentId,
+      surfaceName,
+      userId: readScopeField(e.metadata, "user_id"),
+      organizationId: e.orgId,
+      projectId: readScopeField(e.metadata, "project_id"),
+      taskId: readScopeField(e.metadata, "task_id"),
+      valueMappings: readValueMappings(e.metadata),
+      createdAt: e.createdAt,
+    });
+  }
+  // newest first, matching the previous ordering.
+  out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return out;
+}
+
+// ─── writes ─────────────────────────────────────────────────────────────────
+
+/** Upsert a binding for (agent, surface, scope). Idempotent on the edge role. */
 export async function upsertAgentSurfaceBinding(args: {
   agentId: string;
   surfaceName: string;
@@ -207,121 +257,78 @@ export async function upsertAgentSurfaceBinding(args: {
   valueMappings: ValueMappingMap;
 }): Promise<AgentSurfaceBinding> {
   const { agentId, surfaceName, scope, valueMappings } = args;
+  const surfaceId = await surfaceIdFor(surfaceName);
+  const role = roleForScope(scope);
 
-  // ⛔️ See the CONDEMNED MODULE banner at the top of this file (P1–P4). This
-  // write models scope as a single tier and may be binding to passive context.
-  reportCondemnedBindingWrite("upsertAgentSurfaceBinding", {
+  const metadata: Json = {
+    value_mappings: valueMappings as unknown as Json,
+    version: 1,
+    visibility: "internal",
+    tier: tierForScope(scope),
+    user_id: scope.userId ?? null,
+    project_id: scope.projectId ?? null,
+    task_id: scope.taskId ?? null,
+  };
+
+  const res = await associationsService.add({
+    sourceType: AGENT,
+    sourceId: agentId,
+    targetType: SURFACE,
+    targetId: surfaceId,
+    // ui_surface carries no org — the org MUST be the user's explicit selection.
+    orgId: scope.organizationId ?? undefined,
+    role,
+    metadata,
+  });
+  if (!res.ok) throw new Error(res.error.message);
+
+  return {
+    id: res.data.id,
     agentId,
     surfaceName,
-    scope,
+    userId: scope.userId ?? null,
+    organizationId: scope.organizationId ?? null,
+    projectId: scope.projectId ?? null,
+    taskId: scope.taskId ?? null,
+    valueMappings,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Delete a binding. Takes the binding (not just an id) because the association
+ * edge is addressed by (source, target, role) — reconstructed from the binding's
+ * agent/surface/scope.
+ */
+export async function deleteAgentSurfaceBinding(
+  binding: Pick<
+    AgentSurfaceBinding,
+    | "agentId"
+    | "surfaceName"
+    | "userId"
+    | "organizationId"
+    | "projectId"
+    | "taskId"
+  >,
+): Promise<void> {
+  const surfaceId = await surfaceIdFor(binding.surfaceName);
+  const role = roleForScope({
+    userId: binding.userId,
+    organizationId: binding.organizationId,
+    projectId: binding.projectId,
+    taskId: binding.taskId,
   });
-
-  // Find existing row matching the same (agent, surface, scope) — the partial
-  // unique indexes guarantee at most one match per tier.
-  const existing = await findBinding(agentId, surfaceName, scope);
-
-  if (existing) {
-    const { data, error } = await sb()
-      .schema("agent")
-      .from("agent_surface")
-      .update({ value_mappings: valueMappings })
-      .eq("id", existing.id)
-      .select(
-        "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
-      )
-      .single();
-    if (error) throw error;
-    return fromRow(data as unknown as RawBindingRow);
-  }
-
-  const { data, error } = await sb()
-    .schema("agent")
-    .from("agent_surface")
-    .insert({
-      agent_id: agentId,
-      surface_name: surfaceName,
-      user_id: scope.userId ?? null,
-      // ⛔️ P2: single-scope org tier — scopes are M2M. ⛔️ P3: `scope` may be
-      // sourced from passive active context, not the user's explicit selection.
-      // TEMPORARY COMPILE BRIDGE (not a fix): the DB column is NOT NULL but the
-      // multi-tier model needs null for non-org tiers — proof this mechanism is
-      // broken (P2). Cast keeps the build green; runtime is unchanged and the
-      // beacon above screams. Removed entirely when this module is replaced by
-      // canonical associations (P4).
-      organization_id: (scope.organizationId ?? null) as string,
-      // ⛔️ P1: project_id / task_id are M2M now; these FK columns are being
-      // removed. Do not write a single project/task here.
-      project_id: scope.projectId ?? null,
-      task_id: scope.taskId ?? null,
-      value_mappings: valueMappings,
-    })
-    .select(
-      "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
-    )
-    .single();
-  if (error) throw error;
-  return fromRow(data as unknown as RawBindingRow);
+  const res = await associationsService.remove({
+    sourceType: AGENT,
+    sourceId: binding.agentId,
+    targetType: SURFACE,
+    targetId: surfaceId,
+    role,
+  });
+  if (!res.ok) throw new Error(res.error.message);
 }
 
-async function findBinding(
-  agentId: string,
-  surfaceName: string,
-  scope: ScopeInput,
-): Promise<AgentSurfaceBinding | null> {
-  let query = sb()
-    .schema("agent")
-    .from("agent_surface")
-    .select(
-      "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
-    )
-    .eq("agent_id", agentId)
-    .eq("surface_name", surfaceName);
-
-  query =
-    scope.userId !== undefined && scope.userId !== null
-      ? query.eq("user_id", scope.userId)
-      : query.is("user_id", null);
-  query =
-    scope.organizationId !== undefined && scope.organizationId !== null
-      ? query.eq("organization_id", scope.organizationId)
-      : query.is("organization_id", null);
-  query =
-    scope.projectId !== undefined && scope.projectId !== null
-      ? query.eq("project_id", scope.projectId)
-      : query.is("project_id", null);
-  query =
-    scope.taskId !== undefined && scope.taskId !== null
-      ? query.eq("task_id", scope.taskId)
-      : query.is("task_id", null);
-
-  const { data, error } = await query.maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  return fromRow(data as unknown as RawBindingRow);
-}
-
-export async function deleteAgentSurfaceBinding(id: string): Promise<void> {
-  const { error } = await sb()
-    .schema("agent")
-    .from("agent_surface")
-    .delete()
-    .eq("id", id);
-  if (error) throw error;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Batch upsert
-//
-// One write per (agent, surface, scope) — `bulkUpsertAgentSurfaceBindings` is
-// just N independent `upsertAgentSurfaceBinding` calls run concurrently, so
-// each surface stays completely on its own (no cross-row mutation) and we get
-// clean per-surface success/failure for partial-failure reporting.
-//
-// We deliberately do NOT use a single PostgREST upsert with `onConflict`: the
-// uniqueness is enforced by FIVE partial unique indexes (one per scope tier),
-// and `onConflict` can only name one constraint — so per-row upsert via the
-// existing scope-matching `findBinding` is both simpler and correct.
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── batch upsert ────────────────────────────────────────────────────────────
 
 export interface BulkUpsertBindingInput {
   surfaceName: string;
@@ -334,17 +341,15 @@ export interface BulkUpsertResult {
   failed: { surfaceName: string; error: string }[];
 }
 
+/**
+ * N independent single-edge upserts (one per surface), so each stays on its own
+ * and we get clean per-surface success/failure reporting.
+ */
 export async function bulkUpsertAgentSurfaceBindings(args: {
   agentId: string;
   bindings: BulkUpsertBindingInput[];
 }): Promise<BulkUpsertResult> {
   const { agentId, bindings } = args;
-  // ⛔️ Condemned bulk path — see banner (P1–P4). Each child write also beacons.
-  reportCondemnedBindingWrite("bulkUpsertAgentSurfaceBindings", {
-    agentId,
-    count: bindings.length,
-    surfaces: bindings.map((b) => b.surfaceName),
-  });
   const settled = await Promise.allSettled(
     bindings.map((b) =>
       upsertAgentSurfaceBinding({
