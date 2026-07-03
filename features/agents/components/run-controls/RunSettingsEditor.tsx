@@ -33,11 +33,13 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import {
   selectApiVersion,
   selectPathOverrides,
+  selectAiApiVersion,
   setApiVersion,
   setPathOverride,
+  setAiApiVersion,
   clearApiOverrides,
 } from "@/lib/redux/slices/apiConfigSlice";
-import { ENDPOINTS, SPINE_V2_PATH_OVERRIDES } from "@/lib/api/endpoints";
+import { ENDPOINTS } from "@/lib/api/endpoints";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
@@ -104,21 +106,8 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   const apiVersion = useAppSelector(selectApiVersion);
   const pathOverrides = useAppSelector(selectPathOverrides);
   const globalManualOverride = pathOverrides[ENDPOINTS.ai.manual] ?? "";
-  const spineOn = Object.entries(SPINE_V2_PATH_OVERRIDES).every(
-    ([canonical, replacement]) => pathOverrides[canonical] === replacement,
-  );
-  const toggleSpine = (on: boolean) => {
-    for (const [canonical, replacement] of Object.entries(
-      SPINE_V2_PATH_OVERRIDES,
-    )) {
-      dispatch(
-        setPathOverride({
-          canonicalPath: canonical,
-          replacement: on ? replacement : "",
-        }),
-      );
-    }
-  };
+  const aiApiVersion = useAppSelector(selectAiApiVersion);
+  const isV2 = aiApiVersion === "v2";
   const [sysModalOpen, setSysModalOpen] = useState(false);
   const openSystemInstructionWindow = useOpenSystemInstructionWindow();
 
@@ -348,20 +337,22 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
               API routing (test)
             </div>
 
-            {/* One-switch repoint of all three chat surfaces onto the v2
-                runtime-execution spine (chat + agents + conversations). */}
+            {/* AI runtime version — v1/v2 spine. Scoped to the four covered AI
+                surfaces (chat, manual, agents, conversations); everything else
+                stays v1. Mirror of the sidebar API-version toggle. */}
             <SettingRow
-              id={`spine-v2-${conversationId}`}
-              label="Run on v2 spine (all chat surfaces)"
-              checked={spineOn}
-              onChange={toggleSpine}
+              id={`ai-api-version-${conversationId}`}
+              label="AI runtime v2 spine"
+              checked={isV2}
+              onChange={(on) => dispatch(setAiApiVersion(on ? "v2" : "v1"))}
             />
             <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
-              Repoints <code className="font-mono">/ai/manual</code>,{" "}
+              Routes <code className="font-mono">/ai/manual</code>,{" "}
+              <code className="font-mono">/ai/chat</code>,{" "}
               <code className="font-mono">/ai/agents/*</code> and{" "}
               <code className="font-mono">/ai/conversations/*</code> to their{" "}
-              <code className="font-mono">/ai/v2/*</code> siblings app-wide.
-              Same body, same server. Persists across reloads.
+              <code className="font-mono">/v2/ai/*</code> siblings app-wide. Same
+              body, same server. Persists across reloads.
             </p>
 
             <Separator className="!my-1.5" />
@@ -394,7 +385,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
               />
               <p className="text-[10px] leading-snug text-muted-foreground/70">
                 Overrides the Builder’s POST path for this conversation only
-                (e.g. <code className="font-mono">/ai/v2/chat</code>). Same
+                (e.g. <code className="font-mono">/v2/ai/chat</code>). Same
                 request body, same server — only the path changes. Empty ={" "}
                 <code className="font-mono">{ENDPOINTS.ai.manual}</code>.
               </p>

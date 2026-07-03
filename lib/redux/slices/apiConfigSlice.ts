@@ -35,6 +35,11 @@ import {
 } from "@reduxjs/toolkit";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
 import { logApiTarget } from "@/lib/api/log-api-target";
+import {
+  AI_API_VERSION_DEFAULT,
+  aiVersionPathOverrides,
+  type AiApiVersion,
+} from "@/lib/api/ai-api-version";
 
 // ============================================================================
 // TYPES
@@ -121,11 +126,21 @@ interface ApiConfigState {
   /**
    * Exact-match endpoint path overrides — canonical path (the ENDPOINTS /
    * schema template, e.g. "/ai/manual") → full replacement path
-   * (e.g. "/ai/v2/chat"). Wins over `apiVersion`. This is the surgical
+   * (e.g. "/v2/ai/manual"). Wins over `apiVersion`. This is the surgical
    * "send THIS call somewhere else for a test" escape hatch — change both the
    * version and the core route without editing code.
    */
   pathOverrides: Record<string, string>;
+
+  /**
+   * Admin override for the AI runtime API version (the v1/v2 spine). `null`
+   * means "follow the code-level default" (`AI_API_VERSION_DEFAULT`); a set
+   * value pins this browser to that version and persists across reloads —
+   * exactly like the localhost/production server choice. Scoped to the four
+   * covered AI surfaces only (see lib/api/ai-api-version.ts); never a blanket
+   * path prefix. Read the EFFECTIVE version via `selectAiApiVersion`.
+   */
+  aiApiVersionOverride: AiApiVersion | null;
 }
 
 // ── Persistence ─────────────────────────────────────────────────────────────
@@ -139,6 +154,7 @@ interface PersistedApiConfig {
   customUrl: string | null;
   apiVersion: string | null;
   pathOverrides: Record<string, string>;
+  aiApiVersionOverride: AiApiVersion | null;
 }
 
 function loadPersistedServer(): PersistedApiConfig {
@@ -147,6 +163,7 @@ function loadPersistedServer(): PersistedApiConfig {
     customUrl: null,
     apiVersion: null,
     pathOverrides: {},
+    aiApiVersionOverride: null,
   };
   if (typeof window === "undefined") return fallback;
   try {
@@ -176,6 +193,11 @@ function loadPersistedServer(): PersistedApiConfig {
         parsed.pathOverrides && typeof parsed.pathOverrides === "object"
           ? parsed.pathOverrides
           : {},
+      aiApiVersionOverride:
+        parsed.aiApiVersionOverride === "v1" ||
+        parsed.aiApiVersionOverride === "v2"
+          ? parsed.aiApiVersionOverride
+          : null,
     };
   } catch {
     return fallback;
@@ -190,6 +212,7 @@ function persistServer(state: ApiConfigState): void {
       customUrl: state.customUrl,
       apiVersion: state.apiVersion,
       pathOverrides: state.pathOverrides,
+      aiApiVersionOverride: state.aiApiVersionOverride,
     };
     window.localStorage.setItem(PERSIST_KEY, JSON.stringify(payload));
   } catch {
@@ -206,6 +229,7 @@ const initialState: ApiConfigState = {
   recentCalls: [],
   apiVersion: _persisted.apiVersion,
   pathOverrides: _persisted.pathOverrides,
+  aiApiVersionOverride: _persisted.aiApiVersionOverride,
 };
 
 // ============================================================================
@@ -383,7 +407,7 @@ const apiConfigSlice = createSlice({
 
     /**
      * Override a single canonical endpoint path with a full replacement path
-     * (e.g. "/ai/manual" → "/ai/v2/chat"). Pass an empty/whitespace
+     * (e.g. "/ai/manual" → "/v2/ai/manual"). Pass an empty/whitespace
      * replacement to remove the override. Persisted across reloads.
      */
     setPathOverride: (
@@ -403,6 +427,21 @@ const apiConfigSlice = createSlice({
     /** Remove a single endpoint path override. */
     clearPathOverride: (state, action: PayloadAction<string>) => {
       delete state.pathOverrides[action.payload];
+      persistServer(state);
+    },
+
+    /**
+     * Set the AI runtime API version override (v1/v2 spine). Pass `null` to
+     * clear the override and follow the code-level default
+     * (`AI_API_VERSION_DEFAULT`). Persisted across reloads. Applies ONLY to the
+     * four covered AI surfaces — never a blanket path prefix. See
+     * lib/api/ai-api-version.ts.
+     */
+    setAiApiVersion: (
+      state,
+      action: PayloadAction<AiApiVersion | null>,
+    ) => {
+      state.aiApiVersionOverride = action.payload;
       persistServer(state);
     },
 
@@ -467,6 +506,7 @@ export const {
   setApiVersion,
   setPathOverride,
   clearPathOverride,
+  setAiApiVersion,
   clearApiOverrides,
   setServerHealthChecking,
   setServerHealthResult,
@@ -501,14 +541,46 @@ export const selectPathOverrides = (
 ): Record<string, string> => state.apiConfig.pathOverrides;
 
 /**
+ * The raw AI-version admin override (`null` = following the code default). Use
+ * this to tell whether the toggle has been explicitly flipped; use
+ * `selectAiApiVersion` for the version actually in effect.
+ */
+export const selectAiApiVersionOverride = (
+  state: StateWithApiConfig,
+): AiApiVersion | null => state.apiConfig.aiApiVersionOverride;
+
+/**
+ * The EFFECTIVE AI runtime API version: the admin override when set, otherwise
+ * the code-level default (`AI_API_VERSION_DEFAULT`). This is what every AI call
+ * site reads to decide v1 vs v2.
+ */
+export const selectAiApiVersion = (
+  state: StateWithApiConfig,
+): AiApiVersion =>
+  state.apiConfig.aiApiVersionOverride ?? AI_API_VERSION_DEFAULT;
+
+/**
  * The combined endpoint-override config — ready to hand straight to
  * `resolveEndpointPath(path, config)`. Memoized so it is referentially stable
  * between override changes.
+ *
+ * The AI version (v1/v2 spine) is folded in as the BASE layer of path
+ * overrides — scoped to only the four covered AI surfaces — so every call
+ * through the registry picks up v2 automatically. Explicit admin `pathOverrides`
+ * are spread last and therefore win over the version default (the surgical
+ * "send THIS call elsewhere" escape hatch still overrides).
  */
 export const selectEndpointOverrideConfig = createSelector(
   selectApiVersion,
   selectPathOverrides,
-  (apiVersion, pathOverrides) => ({ apiVersion, pathOverrides }),
+  selectAiApiVersion,
+  (apiVersion, pathOverrides, aiApiVersion) => ({
+    apiVersion,
+    pathOverrides: {
+      ...aiVersionPathOverrides(aiApiVersion),
+      ...pathOverrides,
+    },
+  }),
 );
 
 /** Whether any API override (version or path) is currently active. */

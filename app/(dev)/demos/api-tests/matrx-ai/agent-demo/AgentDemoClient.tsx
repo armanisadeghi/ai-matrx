@@ -355,7 +355,7 @@ export default function AgentDemoClient() {
 
     try {
       const res = await fetch(
-        `${config.serverUrl}/ai/agents/${agentId.trim()}`,
+        `${config.serverUrl}${config.withVersion(`/ai/agents/${agentId.trim()}`)}`,
         {
           method: "POST",
           headers: {

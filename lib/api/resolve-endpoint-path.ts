@@ -11,7 +11,7 @@
 //   1. pathOverrides — an exact-match map from a canonical endpoint path
 //      (the ENDPOINTS / generated-schema template, e.g. "/ai/manual" or
 //      "/ai/agents/{agent_id}") to a full replacement path
-//      (e.g. "/ai/v2/chat"). This handles ANY change — version bump AND a
+//      (e.g. "/v2/ai/manual"). This handles ANY change — version bump AND a
 //      core route rename — with zero code edits. This is the escape hatch
 //      for "I need this one specific call to go somewhere else right now".
 //

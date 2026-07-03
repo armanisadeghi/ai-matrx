@@ -86,7 +86,8 @@ All 10 slices use the same key structure: `byInstanceId: Record<string, T>`.
 ### Step C — Fire and Stream
 
 1. **Auth** — `apiConfigSlice` (baseUrl) + `userSlice` (Bearer token or fingerprint) build headers.
-2. **Routing** — `selectLatestConversationId(instanceId)` checks history first, `activeRequests` as fallback. Turn 1 → `POST /api/ai/agents/{agentId}`. Turn 2+ → `POST /api/ai/conversations/{conversationId}` with a narrowed body.
+2. **Routing** — `selectLatestConversationId(instanceId)` checks history first, `activeRequests` as fallback. Turn 1 → `POST /ai/agents/{agentId}`. Turn 2+ → `POST /ai/conversations/{conversationId}` with a narrowed body.
+   - **AI runtime version (v1/v2 spine):** every AI path is version-resolved by `resolveEndpointPath` via `selectEndpointOverrideConfig`, which folds in the scoped overrides from `lib/api/ai-api-version.ts`. The default is **v2** (`AI_API_VERSION_DEFAULT`) — turn 1 actually POSTs `/v2/ai/agents/{id}`, turn 2+ `/v2/ai/conversations/{id}`, Builder `/v2/ai/manual`. `/v2` is inserted at the **front** of the in-app path (`/v2/ai/*`, never `/ai/v2/*`) and is scoped to ONLY the four covered surfaces (chat/manual/agents/conversations) — cancel, warm, resume, fork-and-run, blocks, etc. stay on v1. Admins flip v1⇄v2 live via the sidebar **AI v2/AI v1** toggle (or the Run Settings panel); the choice persists per browser. Flip `AI_API_VERSION_DEFAULT` to `"v1"` for an instant, code-level, app-wide revert.
 3. **Optimistic turn** — `addUserTurn` fires before `createRequest` so the user's message appears instantly.
 4. **`createRequest`** — Row in `activeRequests.byRequestId`, status `"pending"`.
 5. **NDJSON stream loop** — `parseNdjsonStream(response)` yields typed events, each dispatched to its dedicated reducer:

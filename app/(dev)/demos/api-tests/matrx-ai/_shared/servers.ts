@@ -19,4 +19,8 @@ export const SERVER_PRESETS: readonly ServerPreset[] = [
 export const CUSTOM_URL_VALUE = '__custom__';
 export const STORAGE_KEY_SERVER = 'matrx-ai-test-server';
 export const STORAGE_KEY_TOKEN = 'matrx-ai-test-token';
+// AI runtime API version (v1/v2 spine) for the standalone demos. Kept in
+// localStorage alongside the server/token so the demos share the same v2
+// switch as the rest of the app without pulling in Redux.
+export const STORAGE_KEY_VERSION = 'matrx-ai-test-api-version';
 export const DEFAULT_SERVER_URL = SERVER_PRESETS[0].url;

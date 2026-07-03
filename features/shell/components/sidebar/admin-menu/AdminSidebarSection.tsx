@@ -12,12 +12,14 @@
 //   - Creator Hub toggle (window panel; self-gates to creators)
 //   - Debug indicator toggle (self-gates to super-admin)
 //   - Localhost / Production server toggle (self-gates to admin)
+//   - AI runtime v1 / v2 API-version toggle (self-gates to admin)
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 import SidebarAdminIndicatorToggle from "../../controls/SidebarAdminIndicatorToggle";
+import SidebarApiVersionToggle from "../../controls/SidebarApiVersionToggle";
 import SidebarCreatorHubToggle from "../../controls/SidebarCreatorHubToggle";
 import SidebarEnvToggle from "../../controls/SidebarEnvToggle";
 import SidebarErrorInspectorToggle from "../../controls/SidebarErrorInspectorToggle";
@@ -46,6 +48,7 @@ export default function AdminSidebarSection() {
       <SidebarCreatorHubToggle />
       <SidebarAdminIndicatorToggle />
       <SidebarEnvToggle />
+      <SidebarApiVersionToggle />
     </div>
   );
 }

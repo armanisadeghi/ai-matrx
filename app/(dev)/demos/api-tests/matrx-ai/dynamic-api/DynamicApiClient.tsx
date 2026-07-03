@@ -536,7 +536,11 @@ export default function DynamicApiClient() {
 
     const controller = new AbortController();
     abortRef.current = controller;
-    const url = `${config.serverUrl}${path.startsWith("/") ? path : "/" + path}`;
+    // Covered AI surfaces ride the selected v1/v2 spine; every other path
+    // (the generic API tester's real purpose) is untouched.
+    const url = `${config.serverUrl}${config.withVersion(
+      path.startsWith("/") ? path : "/" + path,
+    )}`;
 
     const reqHeaders: Record<string, string> = {};
     for (const h of headers) {
@@ -620,7 +624,9 @@ export default function DynamicApiClient() {
       e.summary.toLowerCase().includes(endpointFilter.toLowerCase()),
   );
 
-  const fullUrl = `${config.serverUrl}${path.startsWith("/") ? path : "/" + path}`;
+  const fullUrl = `${config.serverUrl}${config.withVersion(
+    path.startsWith("/") ? path : "/" + path,
+  )}`;
   const elapsedMs = timing.end
     ? timing.end - timing.start
     : timing.start

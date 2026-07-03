@@ -18,11 +18,25 @@
 import { useCallback, useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useApiAuth } from "./useApiAuth";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectAiApiVersion,
+  selectResolvedBaseUrl,
+} from "@/lib/redux/slices/apiConfigSlice";
+import { applyAiApiVersion } from "@/lib/api/ai-api-version";
 
 export function useBackendApi() {
   const { getHeaders, waitForAuth } = useApiAuth();
   const backendUrl = useAppSelector(selectResolvedBaseUrl);
+  const aiApiVersion = useAppSelector(selectAiApiVersion);
+
+  // Version the AI runtime path centrally: covered AI surfaces (chat, manual,
+  // agents/{id}, conversations/{id}) get their `/v2` sibling when v2 is active;
+  // every other endpoint passes through untouched. So any caller of this hook
+  // (e.g. useRunAgent) rides the same v2 switch as the rest of the app.
+  const resolvePath = useCallback(
+    (endpoint: string) => applyAiApiVersion(endpoint, aiApiVersion),
+    [aiApiVersion],
+  );
 
   const getApiHeaders = useCallback(
     (includeContentType = true) => {
@@ -42,7 +56,7 @@ export function useBackendApi() {
   const post = useCallback(
     async (endpoint: string, body: unknown, signal?: AbortSignal) => {
       await waitForAuth();
-      const url = `${backendUrl}${endpoint}`;
+      const url = `${backendUrl}${resolvePath(endpoint)}`;
       const response = await fetch(url, {
         method: "POST",
         headers: getApiHeaders(),
@@ -61,13 +75,13 @@ export function useBackendApi() {
 
       return response;
     },
-    [backendUrl, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
   );
 
   const get = useCallback(
     async (endpoint: string, signal?: AbortSignal) => {
       await waitForAuth();
-      const url = `${backendUrl}${endpoint}`;
+      const url = `${backendUrl}${resolvePath(endpoint)}`;
       const response = await fetch(url, {
         method: "GET",
         headers: getApiHeaders(),
@@ -85,13 +99,13 @@ export function useBackendApi() {
 
       return response;
     },
-    [backendUrl, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
   );
 
   const upload = useCallback(
     async (endpoint: string, formData: FormData, signal?: AbortSignal) => {
       await waitForAuth();
-      const response = await fetch(`${backendUrl}${endpoint}`, {
+      const response = await fetch(`${backendUrl}${resolvePath(endpoint)}`, {
         method: "POST",
         headers: getApiHeaders(false),
         body: formData,
@@ -109,13 +123,13 @@ export function useBackendApi() {
 
       return response;
     },
-    [backendUrl, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
   );
 
   const customFetch = useCallback(
     async (endpoint: string, options: RequestInit = {}) => {
       await waitForAuth();
-      return fetch(`${backendUrl}${endpoint}`, {
+      return fetch(`${backendUrl}${resolvePath(endpoint)}`, {
         ...options,
         headers: {
           ...getApiHeaders(),
@@ -123,7 +137,7 @@ export function useBackendApi() {
         },
       });
     },
-    [backendUrl, getApiHeaders, waitForAuth],
+    [backendUrl, resolvePath, getApiHeaders, waitForAuth],
   );
 
   return useMemo(

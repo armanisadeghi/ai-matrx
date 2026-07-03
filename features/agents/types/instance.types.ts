@@ -558,7 +558,7 @@ export interface BuilderAdvancedSettings {
    * Creator/admin-only, THIS conversation only: override the backend route the
    * Builder's manual execution POSTs to. Normally the Builder always hits
    * `/ai/manual` (the live-definition execution path). Set this to test the
-   * SAME request body against a different route — e.g. "/ai/v2/chat" — without
+   * SAME request body against a different route — e.g. "/v2/ai/manual" — without
    * editing code. The base URL / server selection (incl. localhost) is
    * untouched; only the path changes. null/empty → use `ENDPOINTS.ai.manual`.
    *

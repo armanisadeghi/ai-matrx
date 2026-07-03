@@ -293,6 +293,35 @@ export function ServerBar({
           </Select>
         </div>
 
+        {/* AI runtime version (v1/v2 spine) — same switch concept as the app
+            sidebar toggle, scoped to the covered AI surfaces. */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                config.setApiVersion(
+                  config.apiVersion === "v2" ? "v1" : "v2",
+                )
+              }
+              className="h-7 text-xs px-2.5 gap-1.5 flex-shrink-0 font-mono"
+              style={
+                config.apiVersion === "v1" ? { color: "#facc15" } : undefined
+              }
+              aria-pressed={config.apiVersion === "v2"}
+            >
+              AI {config.apiVersion}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent className="text-xs">
+            AI runtime:{" "}
+            {config.apiVersion === "v2"
+              ? "v2 spine (/v2/ai/*) → click for v1"
+              : "v1 legacy → click for v2 spine"}
+          </TooltipContent>
+        </Tooltip>
+
         {/* Custom URL input */}
         {showCustomInput && (
           <Input

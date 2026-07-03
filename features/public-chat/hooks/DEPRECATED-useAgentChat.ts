@@ -22,6 +22,9 @@ import {
 } from "../types/content";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { useApiAuth } from "@/hooks/useApiAuth";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAiApiVersion } from "@/lib/redux/slices/apiConfigSlice";
+import { applyAiApiVersion } from "@/lib/api/ai-api-version";
 
 // ============================================================================
 // TYPES
@@ -60,6 +63,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const serverRequestIdRef = useRef<string | null>(null);
 
   const { getHeaders, waitForAuth, isAdmin } = useApiAuth();
+  const aiApiVersion = useAppSelector(selectAiApiVersion);
 
   useEffect(() => {
     isExecutingRef.current = state.isExecuting;
@@ -162,7 +166,10 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       let requestBody: AgentStartRequestBody | ConversationContinueRequestBody;
 
       if (state.dbConversationId) {
-        executeUrl = `${BACKEND_URL}${ENDPOINTS.ai.conversationContinue(state.dbConversationId)}`;
+        executeUrl = `${BACKEND_URL}${applyAiApiVersion(
+          ENDPOINTS.ai.conversationContinue(state.dbConversationId),
+          aiApiVersion,
+        )}`;
         requestBody = {
           user_input: userInput,
           store: true,
@@ -182,7 +189,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         const startEndpoint = blockMode
           ? ENDPOINTS.ai.agentBlocksStart(promptId)
           : ENDPOINTS.ai.agentStart(promptId);
-        executeUrl = `${BACKEND_URL}${startEndpoint}`;
+        // agentStart is a covered v2 surface; agents-blocks is NOT, so
+        // applyAiApiVersion leaves the block-mode path on v1 automatically.
+        executeUrl = `${BACKEND_URL}${applyAiApiVersion(startEndpoint, aiApiVersion)}`;
         requestBody = {
           user_input: userInput,
           store: true,

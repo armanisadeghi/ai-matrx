@@ -25,7 +25,7 @@
  *      for testing — per-conversation via
  *      `builderAdvancedSettings.manualEndpointOverride` (highest priority) or
  *      globally via the apiConfig version / path-override registry (e.g.
- *      `/ai/v2/chat`). A dev guard still throws if the URL ever drifts onto an
+ *      `/v2/ai/manual`). A dev guard still throws if the URL ever drifts onto an
  *      `/ai/agents/*` or `/ai/conversations/*` cache endpoint.
  *   6. Imports nothing from execute-instance.thunk.ts. Shares only transport
  *      plumbing (processStream, backend resolution, optimistic message,
@@ -620,7 +620,7 @@ export const executeManualInstance = createAsyncThunk<
       // Resolve the manual-execution PATH. Priority:
       //   1. Per-conversation Builder override (manualEndpointOverride) — the
       //      dedicated "test this run against a different route" control. Wins
-      //      outright so a creator can probe e.g. /ai/v2/chat for one chat
+      //      outright so a creator can probe e.g. /v2/ai/manual for one chat
       //      without disturbing the rest of the app.
       //   2. The global apiConfig override registry (version + path overrides)
       //      applied to ENDPOINTS.ai.manual.
@@ -676,7 +676,7 @@ export const executeManualInstance = createAsyncThunk<
       // conversation CACHE endpoint — the whole point of the manual path is to
       // send the live agent definition and bypass server-side caching. A
       // deliberate route override (manualEndpointOverride / global apiConfig
-      // overrides — e.g. /ai/v2/chat) is allowed; we only block the two
+      // overrides — e.g. /v2/ai/manual) is allowed; we only block the two
       // endpoint families that would silently re-introduce server-side
       // definition lookup. If a future refactor drops ai_model_id, fail loudly.
       if (process.env.NODE_ENV !== "production") {

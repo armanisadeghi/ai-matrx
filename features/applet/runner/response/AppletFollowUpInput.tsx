@@ -20,7 +20,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import {
+  selectAiApiVersion,
+  selectResolvedBaseUrl,
+} from "@/lib/redux/slices/apiConfigSlice";
+import { applyAiApiVersion } from "@/lib/api/ai-api-version";
 import type {
   ChunkPayload,
   ErrorPayload,
@@ -49,6 +53,7 @@ export default function AppletFollowUpInput({
   const resolvedBaseUrl = useAppSelector(
     selectResolvedBaseUrl as (state: unknown) => string | undefined,
   );
+  const aiApiVersion = useAppSelector(selectAiApiVersion);
 
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -92,7 +97,10 @@ export default function AppletFollowUpInput({
     });
     setIsStreaming(true);
 
-    const endpoint = `${getBackendUrl()}${ENDPOINTS.ai.conversationContinue(convId)}`;
+    const endpoint = `${getBackendUrl()}${applyAiApiVersion(
+      ENDPOINTS.ai.conversationContinue(convId),
+      aiApiVersion,
+    )}`;
     let assistantContent = "";
 
     try {
@@ -151,6 +159,7 @@ export default function AppletFollowUpInput({
     getHeaders,
     onNewTurn,
     onTurnUpdate,
+    aiApiVersion,
   ]);
 
   const handleKeyDown = useCallback(

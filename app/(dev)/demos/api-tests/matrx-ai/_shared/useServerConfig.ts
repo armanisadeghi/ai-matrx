@@ -5,8 +5,14 @@ import {
   SERVER_PRESETS,
   STORAGE_KEY_SERVER,
   STORAGE_KEY_TOKEN,
+  STORAGE_KEY_VERSION,
   DEFAULT_SERVER_URL,
 } from "./servers";
+import {
+  AI_API_VERSION_DEFAULT,
+  applyAiApiVersion,
+  type AiApiVersion,
+} from "@/lib/api/ai-api-version";
 
 export type HealthStatus = "idle" | "checking" | "ok" | "error";
 
@@ -21,6 +27,16 @@ export interface UseServerConfigReturn {
   checkHealth: () => Promise<void>;
   isPreset: boolean;
   authHeaders: Record<string, string>;
+  /** The AI runtime API version this demo talks to (v1/v2 spine). */
+  apiVersion: AiApiVersion;
+  setApiVersion: (version: AiApiVersion) => void;
+  /**
+   * Apply the selected AI version to an in-app path — covered AI surfaces get
+   * their `/v2` sibling, everything else is untouched. Uses the SAME core
+   * helper as the rest of the app, so the demos can never drift onto a wrong
+   * `/ai/v2/*` format.
+   */
+  withVersion: (path: string) => string;
 }
 
 /**
@@ -33,6 +49,9 @@ export function useServerConfig(): UseServerConfigReturn {
   const [authToken, setAuthTokenState] = useState<string>("");
   const [healthStatus, setHealthStatus] = useState<HealthStatus>("idle");
   const [healthDetail, setHealthDetail] = useState<string | null>(null);
+  const [apiVersion, setApiVersionState] = useState<AiApiVersion>(
+    AI_API_VERSION_DEFAULT,
+  );
 
   // Hydrate from localStorage after mount (avoids SSR mismatch)
   useEffect(() => {
@@ -41,6 +60,10 @@ export function useServerConfig(): UseServerConfigReturn {
       if (storedServer) setServerUrlState(storedServer);
       const storedToken = localStorage.getItem(STORAGE_KEY_TOKEN);
       if (storedToken) setAuthTokenState(storedToken);
+      const storedVersion = localStorage.getItem(STORAGE_KEY_VERSION);
+      if (storedVersion === "v1" || storedVersion === "v2") {
+        setApiVersionState(storedVersion);
+      }
     } catch {
       // localStorage unavailable (e.g. private browsing with strict settings)
     }
@@ -74,6 +97,20 @@ export function useServerConfig(): UseServerConfigReturn {
       /* ignore */
     }
   }, []);
+
+  const setApiVersion = useCallback((version: AiApiVersion) => {
+    setApiVersionState(version);
+    try {
+      localStorage.setItem(STORAGE_KEY_VERSION, version);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const withVersion = useCallback(
+    (path: string) => applyAiApiVersion(path, apiVersion),
+    [apiVersion],
+  );
 
   const checkHealth = useCallback(async () => {
     if (!serverUrl) return;
@@ -119,5 +156,8 @@ export function useServerConfig(): UseServerConfigReturn {
     checkHealth,
     isPreset,
     authHeaders,
+    apiVersion,
+    setApiVersion,
+    withVersion,
   };
 }

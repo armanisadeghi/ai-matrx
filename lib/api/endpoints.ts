@@ -435,32 +435,11 @@ export const ENDPOINTS = {
   },
 } as const;
 
-/**
- * "v2 spine" route map — the opt-in runtime-execution-scope siblings of the
- * three proven chat surfaces. Each `/v2` route is a thin sibling of its proven
- * route: identical request body, identical prep, the only difference being it
- * runs the agent loop inside a runtime execution scope (`run_ai_task_on_spine`)
- * so a `runtime.global_execution` row lands per request. Best-effort and
- * non-intrusive — a spine hiccup falls back to proven behavior.
- *
- * Keys are the CANONICAL path templates (exactly as the execute thunks / the
- * generated schema spell them) so they feed straight into the endpoint-override
- * registry (`apiConfigSlice.pathOverrides` → `resolveEndpointPath`). Flip all
- * three on at once with the "Run on v2 spine" toggle in the run-settings panel.
- *
- * Watch executions land:
- *   GET /admin/runtime/recent?roots_only=true
- *   GET /admin/runtime/conversations/{conversation_id}
- */
-export const SPINE_V2_PATH_OVERRIDES: Readonly<Record<string, string>> = {
-  // Chat / Builder manual path → /ai/v2/chat
-  [ENDPOINTS.ai.manual]: "/ai/v2/chat",
-  // Start a new agent run → /ai/v2/agents/{agent_id}
-  "/ai/agents/{agent_id}": "/ai/v2/agents/{agent_id}",
-  // Continue an existing conversation → /ai/v2/conversations/{conversation_id}
-  "/ai/conversations/{conversation_id}":
-    "/ai/v2/conversations/{conversation_id}",
-} as const;
+// NOTE: The AI runtime v1/v2 spine version now lives in
+// `lib/api/ai-api-version.ts` (the single `AI_API_VERSION_DEFAULT` flag +
+// covered-surface helpers). The old `SPINE_V2_PATH_OVERRIDES` map that lived
+// here used the WRONG `/ai/v2/*` nesting; the backend routes are `/v2/ai/*`.
+// It has been removed — do not reintroduce a per-path v2 map here.
 
 /**
  * Backend base URLs — one entry per ServerEnvironment in adminPreferencesSlice.

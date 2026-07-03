@@ -286,7 +286,7 @@ export default function ConversationDemoClient() {
 
     try {
       const res = await fetch(
-        `${config.serverUrl}/ai/conversations/${conversationId.trim()}`,
+        `${config.serverUrl}${config.withVersion(`/ai/conversations/${conversationId.trim()}`)}`,
         {
           method: "POST",
           headers: {
