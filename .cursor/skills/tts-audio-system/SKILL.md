@@ -64,8 +64,6 @@ hooks/tts/                  ← Legacy/specialized hooks
   useVoiceChat.ts           ← Voice assistant pipeline (VAD + STT + AI + TTS)
   useVoiceChatCdn.ts        ← CDN variant of voice chat
   useVoiceChatWithAutoSleep.ts ← Auto-sleep extension
-  useWakeWord.ts            ← Picovoice wake word detection
-  useWakeWordVoiceChat.ts   ← Wake word + voice chat combined
 
 features/audio/             ← Recording, transcription, voice selection
   hooks/                    ← Recording and transcription hooks

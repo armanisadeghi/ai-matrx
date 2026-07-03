@@ -29,7 +29,6 @@ import flashcardChatReducer from "./slices/flashcardChatSlice";
 import adminDebugReducer from "./preferences/adminDebugSlice";
 import creatorDebugReducer from "./preferences/creatorDebugSlice";
 import themeReducer from "@/styles/themes/themeSlice";
-import uiReducer from "./ui/uiSlice";
 
 import { componentDefinitionsSlice } from "./app-runner/slices/componentDefinitionsSlice";
 import { appBuilderSlice } from "./app-builder/slices/appBuilderSlice";
@@ -264,7 +263,6 @@ export const slimReducerMap = {
   ...moduleReducers,
   layout: layoutReducer,
   flashcardChat: flashcardChatReducer,
-  ui: uiReducer,
 
   // ==== OLD APPLET SYSTEM (DEPRECATED) ====
   componentDefinitions: componentDefinitionsSlice.reducer,

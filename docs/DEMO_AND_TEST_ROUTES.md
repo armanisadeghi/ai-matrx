@@ -165,7 +165,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demo/voice/voice-assistant-cdn` — `app/(authenticated)/demo/voice/voice-assistant-cdn/page.tsx`
 - `/demo/voice/voice-assistant-two` — `app/(authenticated)/demo/voice/voice-assistant-two/page.tsx`
 - `/demo/voice/voice-manager` — `app/(authenticated)/demo/voice/voice-manager/page.tsx`
-- `/demo/voice/wake-word-debug` — `app/(authenticated)/demo/voice/wake-word-debug/page.tsx`
 
 ### Authenticated — `/tests`
 
@@ -536,7 +535,6 @@ URL paths omit route-group segments `(name)` (e.g. `(authenticated)`, `(admin-au
 - `/demo/voice/voice-assistant-cdn`
 - `/demo/voice/voice-assistant-two`
 - `/demo/voice/voice-manager`
-- `/demo/voice/wake-word-debug`
 - `/demos`
 - `/demos/api-tests`
 - `/demos/api-tests/agent`

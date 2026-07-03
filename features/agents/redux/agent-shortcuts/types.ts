@@ -303,17 +303,17 @@ export interface AgentShortcutMenuItem {
 export interface UserShortcutItem {
   id: string;
   label: string;
-  description: string | null;
-  icon_name: string | null;
-  keyboard_shortcut: string | null;
+  description: string;
+  icon_name: string;
+  keyboard_shortcut: string;
   sort_order: number;
   category_id: string;
   category_label: string;
 
   // Agent reference
-  agent_id: string | null;
-  agent_name: string | null;
-  agent_version_id: string | null;
+  agent_id: string;
+  agent_name: string;
+  agent_version_id: string;
   use_latest: boolean;
 
   // Scope — primary grouping key for the management UI
@@ -321,15 +321,21 @@ export interface UserShortcutItem {
   scope_name: string; // "Personal", org name, workspace name, etc.
 
   // Raw hierarchy fields
-  user_id: string | null;
-  organization_id: string | null;
-  project_id: string | null;
-  task_id: string | null;
+  user_id: string;
+  organization_id: string;
+  project_id: string;
+  task_id: string;
 
   // Bindings
   enabled_features: ShortcutContext[];
+  /**
+   * Not part of the RPC's declared Returns — an extra field carried on the FE
+   * interface for the directory/management UI. Extra properties don't break the
+   * DB-shape guard below (the interface is still assignable to the RPC row).
+   */
   surface_name: string | null;
   scope_mappings: Record<string, string> | null;
+  /** Extra FE field, not in the RPC Returns — see `surface_name` note. */
   value_mappings: ValueMappingMap | null;
   context_mappings: Record<string, string> | null;
 
@@ -344,9 +350,9 @@ export interface UserShortcutItem {
   hide_reasoning: boolean;
   hide_tool_results: boolean;
   show_pre_execution_gate: boolean;
-  pre_execution_message: string | null;
+  pre_execution_message: string;
   bypass_gate_seconds: number;
-  default_user_input: string | null;
+  default_user_input: string;
   default_variables: Record<string, unknown> | null;
   context_overrides: Record<string, unknown> | null;
   llm_overrides: Record<string, unknown> | null;
@@ -356,6 +362,97 @@ export interface UserShortcutItem {
   created_at: string;
   updated_at: string;
 }
+// Compile-time guard — ties this interface to the generated RPC Returns.
+// Idiom copied from `_CheckAgentShortcutInitialRow` above.
+type _CheckUserShortcutItem =
+  UserShortcutItem extends Database["public"]["Functions"]["agx_get_user_shortcuts"]["Returns"][number]
+    ? true
+    : false;
+declare const _userShortcutItem: _CheckUserShortcutItem;
+true satisfies typeof _userShortcutItem;
+
+// ---------------------------------------------------------------------------
+// RPC — agx_list_non_global_shortcuts_for_admin()
+// ---------------------------------------------------------------------------
+
+/**
+ * Returned by `agx_list_non_global_shortcuts_for_admin()`.
+ * Admin-only: every non-global shortcut across users/orgs/projects/tasks, for
+ * the "Import to Global" picker. Row shape mirrors the generated RPC Returns
+ * (all identity/text columns are non-null), plus `owner_email` / `owner_display`
+ * for attribution. Standalone (does NOT extend the loose REST `ShortcutApiRow`)
+ * so the DB-shape guard below can enforce the real RPC contract.
+ */
+export interface AdminNonGlobalShortcutRow {
+  id: string;
+  category_id: string;
+  label: string;
+  description: string;
+  icon_name: string;
+  keyboard_shortcut: string;
+  sort_order: number;
+
+  // Agent reference
+  agent_id: string;
+  agent_version_id: string;
+  use_latest: boolean;
+
+  // Attribution (admin listing)
+  owner_email: string;
+  owner_display: string;
+  scope_type: "user" | "organization" | "project" | "task" | string;
+
+  // Raw hierarchy fields
+  user_id: string;
+  organization_id: string;
+  project_id: string;
+  task_id: string;
+
+  // Bindings
+  enabled_features: ShortcutContext[];
+  scope_mappings: Record<string, string> | null;
+  context_mappings: Record<string, string> | null;
+  /**
+   * `surface_name` and `value_mappings` are NOT in the RPC's declared Returns —
+   * extra fields carried on the FE interface (for the directory UI, and so this
+   * row stays assignable to the loose `ShortcutApiRow` consumed by
+   * `shortcutRowToFrontend`). Extra properties don't break the DB-shape guard
+   * below (the interface is still assignable to the RPC row).
+   */
+  surface_name: string | null;
+  value_mappings: ValueMappingMap | null;
+
+  // Config bundle
+  display_mode: ResultDisplayMode;
+  show_variable_panel: boolean;
+  variables_panel_style: string;
+  auto_run: boolean;
+  allow_chat: boolean;
+  show_definition_messages: boolean;
+  show_definition_message_content: boolean;
+  hide_reasoning: boolean;
+  hide_tool_results: boolean;
+  show_pre_execution_gate: boolean;
+  pre_execution_message: string;
+  bypass_gate_seconds: number;
+  default_user_input: string;
+  default_variables: Record<string, unknown> | null;
+  context_overrides: Record<string, unknown> | null;
+  llm_overrides: Record<string, unknown> | null;
+
+  is_active: boolean;
+
+  created_at: string;
+  updated_at: string;
+}
+// Compile-time guard — ties this interface to the generated RPC Returns.
+// Idiom copied from `_CheckAgentShortcutInitialRow` above.
+type _CheckAdminNonGlobalShortcutRow =
+  AdminNonGlobalShortcutRow extends Database["public"]["Functions"]["agx_list_non_global_shortcuts_for_admin"]["Returns"][number]
+    ? true
+    : false;
+declare const _adminNonGlobalShortcutRow: _CheckAdminNonGlobalShortcutRow;
+true satisfies typeof _adminNonGlobalShortcutRow;
 
 // ---------------------------------------------------------------------------
 // RPC — agx_create_shortcut(...)

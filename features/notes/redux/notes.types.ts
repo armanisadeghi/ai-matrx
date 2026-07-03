@@ -269,8 +269,20 @@ export function createBlankNoteRecord(note: Note): NoteRecord {
   };
 }
 
+/**
+ * Construct a fresh `NoteRecord` from a partial server note.
+ *
+ * `organization_id` is a NOT NULL column on `workbench.notes`, so it is part of
+ * the REQUIRED input contract here — the caller must prove it has a real org id
+ * before a record can be built. This is deliberately NOT `Partial<Note>`-loose
+ * on that one field: an empty-string / fabricated org id would write an invalid
+ * row into the store and silently mask an upstream bug (an incomplete
+ * `Partial<Note>` reaching this constructor). The type forces the caller to
+ * handle a missing org id loudly (see `upsertNoteFromServer` in slice.ts)
+ * instead of this function inventing a placeholder.
+ */
 export function createBlankNoteRecordFromPartial(
-  partial: Partial<Note> & { id: string },
+  partial: Partial<Note> & { id: string; organization_id: string },
   status: NoteFetchStatus,
 ): NoteRecord {
   return {
@@ -281,7 +293,7 @@ export function createBlankNoteRecordFromPartial(
     folder_id: partial.folder_id ?? null,
     tags: partial.tags ?? null,
     metadata: partial.metadata ?? null,
-    organization_id: partial.organization_id ?? "",
+    organization_id: partial.organization_id,
     project_id: partial.project_id ?? null,
     task_id: partial.task_id ?? null,
     deleted_at: partial.deleted_at ?? null,

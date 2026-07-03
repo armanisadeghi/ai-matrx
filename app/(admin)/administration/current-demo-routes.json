@@ -606,11 +606,6 @@
                 "_files": [
                     "page.tsx"
                 ]
-            },
-            "wake-word-debug": {
-                "_files": [
-                    "page.tsx"
-                ]
             }
         }
     },

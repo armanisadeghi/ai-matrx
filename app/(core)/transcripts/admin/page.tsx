@@ -346,12 +346,6 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(dev)/demos/general/voice/debate-assistant/page.dev.tsx",
     },
     {
-      url: "/demos/general/voice/wake-word-debug",
-      label: "Wake-word debug",
-      description: "Wake-word detection tuning surface.",
-      filePath: "app/(dev)/demos/general/voice/wake-word-debug/page.dev.tsx",
-    },
-    {
       url: "/demos/general/voice/server-token",
       label: "Server-token test",
       description: "xAI Realtime token issuance test.",
