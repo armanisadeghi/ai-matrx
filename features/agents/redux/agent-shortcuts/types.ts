@@ -383,7 +383,7 @@ true satisfies typeof _userShortcutItem;
  * for attribution. Standalone (does NOT extend the loose REST `ShortcutApiRow`)
  * so the DB-shape guard below can enforce the real RPC contract.
  */
-export interface AdminNonGlobalShortcutRow {
+export type AdminNonGlobalShortcutRow = {
   id: string;
   category_id: string;
   label: string;

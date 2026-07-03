@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { deleteProject } from "../service";
 import type { Project } from "../types";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 
 interface DangerZoneProps {
@@ -32,7 +32,7 @@ interface DangerZoneProps {
 
 export function DangerZone({ project }: DangerZoneProps) {
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -47,11 +47,7 @@ export function DangerZone({ project }: DangerZoneProps) {
     try {
       const result = await deleteProject(project.id);
       if (result.success) {
-        dispatch(
-          invalidateAndRefetchFullContext() as unknown as Parameters<
-            typeof dispatch
-          >[0],
-        );
+        void dispatchThunk(invalidateAndRefetchFullContext());
         toast.success("Project deleted");
         // Always land on the unfiltered /projects list. Routing to
         // /organizations/<slug>/projects redirects to /projects?org=<slug>

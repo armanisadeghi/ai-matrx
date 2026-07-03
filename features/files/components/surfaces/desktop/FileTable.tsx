@@ -450,7 +450,11 @@ export function FileTable({
                   ? row.file.visibility
                   : row.folder.visibility;
               const perms = permissionsByResourceId[id] ?? [];
-              const granteeIds = perms.map((p) => p.granteeId);
+              // Exclude public grants — they have no real grantee, so their
+              // row id must not surface as a fake avatar in the stack.
+              const granteeIds = perms
+                .filter((p) => p.granteeType !== "public")
+                .map((p) => p.granteeId);
               const memberCount = memberCountForResource(
                 id,
                 permissionsByResourceId,

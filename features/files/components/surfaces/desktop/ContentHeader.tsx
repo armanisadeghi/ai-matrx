@@ -106,7 +106,12 @@ export function ContentHeader({
   const title = folder?.folderName ?? SECTION_TITLES[section];
   const visibility: Visibility = folder?.visibility ?? "private";
   const granteeIds = useMemo(
-    () => (permissions ?? EMPTY_CLOUD_FILE_PERMISSIONS).map((p) => p.granteeId),
+    () =>
+      (permissions ?? EMPTY_CLOUD_FILE_PERMISSIONS)
+        // Public grants have no real grantee — excluding them keeps the
+        // avatar stack to actual people/orgs (a public row id isn't a member).
+        .filter((p) => p.granteeType !== "public")
+        .map((p) => p.granteeId),
     [permissions],
   );
   const memberCount = useMemo(() => new Set(granteeIds).size, [granteeIds]);

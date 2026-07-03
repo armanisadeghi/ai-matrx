@@ -28,7 +28,20 @@ import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
 export type Visibility = "public" | "private" | "shared";
 export type PermissionLevel = "read" | "write" | "admin";
 export type ResourceType = "file" | "folder";
-export type GranteeType = "user" | "group";
+/**
+ * Who a grant targets. Mirrors the canonical `iam.permissions` three-way
+ * mutual exclusion (CHECK `user_or_org_or_public`): exactly one of a user, an
+ * organization, or the public sentinel per row.
+ *   - `"user"`   — `granted_to_user_id` set; `granteeId` is that user id.
+ *   - `"group"`  — `granted_to_organization_id` set; `granteeId` is that org id.
+ *   - `"public"` — `is_public = true`; there is NO grantee id, so `granteeId`
+ *                  carries the permission row's own id (never `""`). A public
+ *                  grant is "anyone with access", not a member — member/avatar
+ *                  UIs must exclude it, and it is revoked by flipping the
+ *                  resource's visibility (see `features/sharing/FEATURE.md`),
+ *                  not via the by-grantee-id REST endpoint.
+ */
+export type GranteeType = "user" | "group" | "public";
 
 // ---------------------------------------------------------------------------
 // 1b. MediaRef — canonical reference shape for AI API content blocks
@@ -809,6 +822,12 @@ export interface RestoreVersionArg {
   versionNumber: number;
 }
 
+/**
+ * Grant/revoke via the by-grantee REST path. `granteeType` here is a `user` or
+ * `group` grant only — `"public"` is not a by-grantee grant (it is toggled on
+ * the resource's visibility), and the grant/revoke thunks throw if it is passed
+ * (see `requireByGranteeType` in `redux/thunks.ts`). Defaults to `"user"`.
+ */
 export interface GrantPermissionArg {
   resourceId: string;
   resourceType: ResourceType;

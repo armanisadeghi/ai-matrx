@@ -103,6 +103,7 @@ import type {
   CreateShareLinkArg,
   DeactivateShareLinkArg,
   DeleteFileArg,
+  GranteeType,
   GrantPermissionArg,
   MoveFileArg,
   RenameFileArg,
@@ -1375,6 +1376,25 @@ export const restoreVersion = createAsyncThunk<
 // Writes — permissions
 // ---------------------------------------------------------------------------
 
+/**
+ * The by-grantee REST grant/revoke endpoints (`GrantPermissionRequest`,
+ * `?grantee_type=`) accept only `user | group`. PUBLIC access is not a
+ * by-grantee grant — it is toggled on the resource's visibility. Reaching the
+ * grant/revoke thunks with `granteeType: "public"` is a programming error, so
+ * fail loudly (repo principle) rather than silently coercing it to a bogus
+ * "user"/"group" call against an empty/row-id grantee.
+ */
+function requireByGranteeType(
+  granteeType: GranteeType | undefined,
+): "user" | "group" {
+  if (granteeType === "public") {
+    throw new Error(
+      "Public access is toggled via the resource's visibility, not the by-grantee grant/revoke path.",
+    );
+  }
+  return granteeType ?? "user";
+}
+
 export const grantPermission = createAsyncThunk<
   void,
   GrantPermissionArg,
@@ -1394,7 +1414,7 @@ export const grantPermission = createAsyncThunk<
     const body = {
       grantee_id: arg.granteeId,
       level: arg.level,
-      grantee_type: arg.granteeType ?? "user",
+      grantee_type: requireByGranteeType(arg.granteeType),
       expires_at: arg.expiresAt ?? null,
     };
     const { data } =
@@ -1436,18 +1456,19 @@ export const revokePermission = createAsyncThunk<
     resourceType: arg.resourceType,
   });
   try {
+    const granteeType = requireByGranteeType(arg.granteeType);
     if (arg.resourceType === "folder") {
       await Permissions.revokeFolderPermission(
         arg.resourceId,
         arg.granteeId,
-        { granteeType: arg.granteeType ?? "user" },
+        { granteeType },
         { requestId },
       );
     } else {
       await Permissions.revokeFilePermission(
         arg.resourceId,
         arg.granteeId,
-        { granteeType: arg.granteeType ?? "user" },
+        { granteeType },
         { requestId },
       );
     }
@@ -1455,7 +1476,7 @@ export const revokePermission = createAsyncThunk<
       removePermissionForResource({
         resourceId: arg.resourceId,
         granteeId: arg.granteeId,
-        granteeType: arg.granteeType ?? "user",
+        granteeType,
       }),
     );
   } finally {

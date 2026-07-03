@@ -612,11 +612,6 @@ export function getStateViewerTabs(
       ),
     },
     {
-      id: "ui",
-      label: "UI",
-      content: <GenericSliceViewer sliceKey="ui" state={completeState.ui} />,
-    },
-    {
       id: "componentDefinitions",
       label: "Component Definitions",
       content: (

@@ -8,14 +8,14 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { docprocDb } from "@/utils/supabase/docprocDb";
 import type {
   PageExtractionJob,
   PageExtractionJobInsert,
   PageExtractionJobUpdate,
 } from "@/features/page-extraction/types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = (supabase as any).schema("docproc");
+const db = docprocDb(supabase);
 
 const TABLE = "page_extraction_jobs";
 

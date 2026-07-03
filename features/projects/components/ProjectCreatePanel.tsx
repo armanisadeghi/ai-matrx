@@ -28,7 +28,7 @@ import {
   PROJECT_CREATE_SOURCE_FEATURE,
 } from "@/features/projects/debug/projectCreateAiDebug";
 import { FileJson } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {
   CreateWithAiTabs,
@@ -66,7 +66,7 @@ export function ProjectCreatePanel({
   onAiComplete,
   ...coreProps
 }: ProjectCreatePanelProps) {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
 
   useEffect(() => {
     logProjectCreateAiStage("panel mounted", {
@@ -82,25 +82,17 @@ export function ProjectCreatePanel({
     // (sidebars, pickers, ProjectList, research) picks up the agent-created
     // project at once. Self-fetching surfaces wire `onAiComplete` for a local
     // refresh on top of this.
-    dispatch(
-      invalidateAndRefetchFullContext() as unknown as Parameters<
-        typeof dispatch
-      >[0],
-    );
+    void dispatchThunk(invalidateAndRefetchFullContext());
     onAiComplete?.();
-  }, [dispatch, onAiComplete]);
+  }, [dispatchThunk, onAiComplete]);
 
   const handleJsonCreated = useCallback(
     (info: { projectId: string; slug?: string }) => {
-      dispatch(
-        invalidateAndRefetchFullContext() as unknown as Parameters<
-          typeof dispatch
-        >[0],
-      );
+      void dispatchThunk(invalidateAndRefetchFullContext());
       onAiComplete?.();
       void info;
     },
-    [dispatch, onAiComplete],
+    [dispatchThunk, onAiComplete],
   );
 
   return (

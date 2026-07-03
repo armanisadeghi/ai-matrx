@@ -13,8 +13,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import type { Database, Json } from "@/types/database.types";
-import type { ConversationVisibility } from "@/features/cx-chat/types/cx-tables";
+import type { Database } from "@/types/database.types";
 import type {
   MessageRecord,
   ToolOnCall,
@@ -52,101 +51,23 @@ export interface CxConversationBundle {
   requests?: CxRequestRow[];
 }
 
-export interface CxConversationRow {
-  id: string;
-  /** Canonical owner — trigger-stamped `cx_conversation.created_by`. */
-  created_by: string | null;
-  title: string | null;
-  description: string | null;
-  keywords: string[] | null;
-  system_instruction: string | null;
-  status: string;
-  message_count: number;
-  config: Json;
-  metadata: Json;
-  variables: Json;
-  overrides: Json;
-  last_model_id: string | null;
-  initial_agent_id: string | null;
-  initial_agent_version_id: string | null;
-  parent_conversation_id: string | null;
-  forked_from_id: string | null;
-  forked_at_position: number | null;
-  organization_id: string | null;
-  project_id: string | null;
-  task_id: string | null;
-  /** Per-conversation sandbox override (power-user pin). NULL → user-active. */
-  sandbox_instance_id: string | null;
-  /** Canonical access-control dimension — `cx_conversation.visibility`. */
-  visibility: ConversationVisibility;
-  is_ephemeral: boolean;
-  source_app: string;
-  source_feature: string;
-  created_at: string;
-  updated_at: string;
-}
+/**
+ * Canonical row shapes — direct aliases to the generated `chat.*` Rows
+ * (`types/database.types.ts`, source of truth). These are read-only projections
+ * of the bundle/fallback payload; consumers only read fields off them, never
+ * construct them, so the generated superset + stricter nullability is safe.
+ * NOTE the generated types are stricter than the old hand-written mirrors:
+ *   - `conversation.organization_id` / `message.organization_id` are NON-null
+ *     `string` (retrofit backfilled + NOT NULL), not `string | null`.
+ *   - `conversation.visibility` is `platform.Enums["visibility"]`, not a
+ *     hand-rolled union.
+ */
+export type CxConversationRow =
+  Database["chat"]["Tables"]["conversation"]["Row"];
 
-export interface CxMessageRow {
-  id: string;
-  conversation_id: string;
-  agent_id: string | null;
-  role: string;
-  content: Json;
-  content_history: Json | null;
-  user_content: Json | null;
-  position: number;
-  source: string;
-  status: string;
-  is_visible_to_model: boolean;
-  is_visible_to_user: boolean;
-  metadata: Json;
-  created_at: string;
-  deleted_at: string | null;
-  // Per-turn structured columns (jsonb, nullable). The bundle RPC returns these
-  // via `to_jsonb`, so they arrive as already-parsed JSON values.
-  tools_on_call: Json | null;
-  model_context: Json | null;
-  error: Json | null;
-  voice: Json | null;
-}
+export type CxMessageRow = Database["chat"]["Tables"]["message"]["Row"];
 
-export interface CxToolCallRow {
-  id: string;
-  conversation_id: string;
-  user_request_id: string | null;
-  message_id: string | null;
-  user_id: string;
-  call_id: string;
-  tool_name: string;
-  tool_name_as_called: string | null;
-  tool_type: string;
-  iteration: number;
-  status: string;
-  success: boolean;
-  is_error: boolean | null;
-  error_type: string | null;
-  error_message: string | null;
-  arguments: Json;
-  output: string | null;
-  output_chars: number;
-  output_preview: Json | null;
-  output_type: string | null;
-  input_tokens: number | null;
-  output_tokens: number | null;
-  total_tokens: number | null;
-  cost_usd: number | null;
-  duration_ms: number;
-  started_at: string;
-  completed_at: string;
-  parent_call_id: string | null;
-  retry_count: number | null;
-  persist_key: string | null;
-  file_path: string | null;
-  execution_events: Json | null;
-  metadata: Json;
-  created_at: string;
-  deleted_at: string | null;
-}
+export type CxToolCallRow = Database["chat"]["Tables"]["tool_call"]["Row"];
 
 /** Mirrors `public.cx_user_request.Row` plus optional legacy join fields. */
 export type CxUserRequestRow =
@@ -161,29 +82,8 @@ export type CxUserRequestRow =
     conversation_id?: string | null;
   };
 
-export interface CxRequestRow {
-  id: string;
-  conversation_id: string;
-  user_request_id: string;
-  ai_model_id: string;
-  api_class: string | null;
-  iteration: number;
-  response_id: string | null;
-  finish_reason: string | null;
-  input_tokens: number | null;
-  cached_tokens: number | null;
-  output_tokens: number | null;
-  total_tokens: number | null;
-  cost: number | null;
-  total_duration_ms: number | null;
-  api_duration_ms: number | null;
-  tool_duration_ms: number | null;
-  tool_calls_count: number | null;
-  tool_calls_details: Json | null;
-  metadata: Json;
-  created_at: string;
-  deleted_at: string | null;
-}
+/** Canonical row shape — 1:1 with the generated `chat.request` Row. */
+export type CxRequestRow = Database["chat"]["Tables"]["request"]["Row"];
 
 // =============================================================================
 // Bundle fetch — RPC-first with fallback
@@ -303,7 +203,7 @@ export async function fetchConversationBundle(
 
   let userRequestsRes: { data: CxUserRequestRow[] | null } = { data: [] };
   if (!skipObservabilityFallback) {
-    const reqRows = (requestsRes?.data ?? []) as unknown as CxRequestRow[];
+    const reqRows: CxRequestRow[] = requestsRes?.data ?? [];
     const userRequestIds = Array.from(
       new Set(reqRows.map((r) => r.user_request_id).filter(Boolean)),
     );
@@ -329,7 +229,7 @@ export async function fetchConversationBundle(
     throw new Error(`Conversation ${conversationId} not found`);
   }
 
-  const rawMessages = (messagesRes.data ?? []) as unknown as CxMessageRow[];
+  const rawMessages: CxMessageRow[] = messagesRes.data ?? [];
   // Order by (position, created_at). A failed turn and its retry share a
   // position; created_at keeps the failed attempt just before its retry.
   // See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
@@ -349,7 +249,7 @@ export async function fetchConversationBundle(
       .in("message_id", messageIds)
       .is("deleted_at", null)
       .order("started_at", { ascending: true });
-    toolCalls = (toolsRes.data ?? []) as unknown as CxToolCallRow[];
+    toolCalls = toolsRes.data ?? [];
   }
 
   const oldestPosition = sortedAsc[0]?.position ?? null;
@@ -366,7 +266,7 @@ export async function fetchConversationBundle(
   }
 
   return {
-    conversation: conversationRes.data as unknown as CxConversationRow,
+    conversation: conversationRes.data,
     messages: sortedAsc,
     tool_calls: toolCalls,
     artifacts: [],
@@ -377,9 +277,8 @@ export async function fetchConversationBundle(
       oldest_position: oldestPosition,
       has_more: hasMore,
     },
-    userRequests: (userRequestsRes?.data ??
-      []) as unknown as CxUserRequestRow[],
-    requests: (requestsRes?.data ?? []) as unknown as CxRequestRow[],
+    userRequests: userRequestsRes?.data ?? [],
+    requests: requestsRes?.data ?? [],
   };
 }
 

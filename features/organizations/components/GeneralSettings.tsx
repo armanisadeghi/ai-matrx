@@ -14,7 +14,7 @@ import { InlineMediaRef, useFileAsset } from "@/features/files";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";
 import { folderForOrg } from "@/features/files";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { useOrgSettingsLayoutRefresh } from "./OrgSettingsLayoutContext";
 
@@ -42,7 +42,7 @@ export function GeneralSettings({
   userRole,
   onOrganizationUpdated,
 }: GeneralSettingsProps) {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const refreshLayoutOrganization = useOrgSettingsLayoutRefresh();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -112,11 +112,7 @@ export function GeneralSettings({
           onOrganizationUpdated?.(result.organization);
         }
         try {
-          await dispatch(
-            invalidateAndRefetchFullContext() as unknown as Parameters<
-              typeof dispatch
-            >[0],
-          );
+          await dispatchThunk(invalidateAndRefetchFullContext());
         } catch {
           // Hierarchy refresh is best-effort; org UI already updated from API row
         }

@@ -37,7 +37,7 @@ This feature is the **single source of resistance** for file flows: direct const
 
 ## Data model
 
-**Tables read:** `cld_files`, `cld_file_permissions`, `cld_share_links` (all via existing `features/files` selectors and REST client).
+**Tables read:** `files.files`, `iam.permissions` (canonical grant store, `resource_type='file'`), `files.share_links` (all via existing `features/files` selectors and REST client).
 
 **Tables written:** `cld_files` (via `Files.uploadFile`).
 
@@ -59,7 +59,7 @@ This feature is the **single source of resistance** for file flows: direct const
 1. Component calls `useFileSrc({ kind: "file_id", fileId })`.
 2. `normalize()` returns a partial `NormalizedFile` with `fileId` set.
 3. `resolve()` hydrates: `selectFileById(state, fileId)` → if missing, `Files.getFile(fileId)` → `apiFileRecordToCloudFile(...)`.
-4. `decideForOwnedFile` chooses `origin` and `capabilities` using owner / visibility / `cld_file_permissions`.
+4. `decideForOwnedFile` chooses `origin` and `capabilities` using owner / visibility / `iam.permissions` grants.
 5. If the file is public and has `publicUrl` (CDN), use it. Otherwise call `getOrMintSignedUrl(fileId)` — returns the cached URL if one is still valid, otherwise mints one and caches it. No background timers.
 6. Output adapter `toHtmlSrc` returns the chosen URL.
 7. `<img src>` renders. Once the bytes are in the browser's HTTP cache the URL string's expiry is irrelevant — the image stays on screen indefinitely. If a later action needs a fresh URL (download, edit, re-mount), the cache hands out the still-valid one or lazily re-mints in the same call. No re-render is forced unless the consumer explicitly remounts.
@@ -111,7 +111,7 @@ There is no background refresh. The policy is **lazy mint on demand**:
 `intelligence/access.ts:decideForOwnedFile` evaluates in this order:
 1. owner_id === current user → `owned` (full caps)
 2. visibility === "public" → `public` (read-only)
-3. `cld_file_permissions` row matches user (and not expired) → `shared` (level-derived caps)
+3. `iam.permissions` grant row matches user (and not expired) → `shared` (level-derived caps)
 4. None → `owned` with no caps; the resolver rejects on first request
 
 ### Org-scope routing
@@ -195,6 +195,7 @@ These are tracked in `features/files/migration/INVENTORY.md`.
 
 ## Change log
 
+- **2026-07-02 (grant converter — public grant modeled honestly + `expires_at` wired)** — `dbRowToCloudFilePermission` (`redux/converters.ts`) had collapsed a PUBLIC grant (`is_public=true`, both grantee FKs null) into `granteeType:"user"` + `granteeId:""` — a silent mislabel that fed a bogus empty "member" into avatar stacks / member counts and the by-grantee revoke path. Fix: **`GranteeType` gains `"public"`** (`types.ts`); a public grant now maps to `granteeType:"public"` and carries the row's own `id` as `granteeId` (never `""`). Member/avatar consumers (`row-data.memberCountForResource`, `ContentHeader`, `FileTable`) exclude `"public"` grants; `PermissionsDialog` renders public as "Anyone with access" (Globe) and offers no by-grantee revoke for it (public is toggled via the resource's visibility / Share dialog). The grant/revoke thunks reject `granteeType:"public"` loudly via `requireByGranteeType` (the REST `GrantPermissionRequest` / `?grantee_type=` accept only `user|group`). **First GAP below is now RESOLVED:** `iam.permissions.expires_at` (timestamptz, nullable) exists and is wired straight through to the domain's `expiresAt` (was hardcoded `null`). (The registry/`is_resource_owner` token GAP — 2nd GAP below — remains DB-owner work.) Note: the canonical grant store is `iam.permissions` (the older `public.permissions` references in this doc are the same table pre-schema-move).
 - **2026-06-25 (canonical DB cutover — cld_ → canonical, §1 of `docs/db_rebuild/03-app-agent-cutover-instructions.md`)** — File-permission grants moved off the canonical-DUPLICATE legacy cld_ file-permission table onto the canonical grant store **`public.permissions`** (`resource_type='file'`). `loadPermissions` thunk and the realtime subscription now read `public.permissions` (filtered `resource_type='file'` / `granted_to_user_id`); `dbRowToCloudFilePermission` maps the canonical row (`granted_to_user_id`/`granted_to_organization_id`, enum `viewer|editor|admin` → domain `read|write|admin`). `CloudFilePermissionRow` now points at `permissions`. Authoritative server-side check remains `iam.has_access('file', fileId, level)` / `public.has_permission(...)`. Grant **writes** still go through the Python REST surface (`features/files/api/permissions.ts`), unchanged. **Dead-scaffolding removed:** the never-wired user-group file-sharing code (`api/groups.ts`, `CloudUserGroup`/`CloudUserGroupMember` types, slice maps `groupsById`/`groupMembersByGroupId`, `upsertGroups`/`upsertGroupMembers`, group selectors, group converters) — the legacy `cld_user_groups`/`cld_user_group_members` tables had zero rows and zero live consumers. **GAP for DB owner (do not silently drop):** `public.permissions` has no `expires_at` column (the legacy cld_ table did, but 0 rows used it) — file-grant expiry is not representable on canonical; add `expires_at` if needed. **2nd GAP for DB owner:** `shareable_resource_registry` (which `public.permissions` RLS keys on via `is_resource_owner`) knows token `cld_files` but NOT `file`, while `platform.entity_types` registers `file` → `cld_files`; reconcile so owner-side grant management on `permissions` with `resource_type='file'` authorizes.
 - **2026-06-21 (codebase-wide self-heal sweep)** — Two parallel audits swept the whole repo for the same bug class after the regression fix below. Outcomes:
   - **New primitive `handler/hooks/useRemintableSrc.ts`** — the canonical way to make a *raw URL string* self-healing (markdown `![](signed-url)`, legacy `audioUrl` props). It recognizes our-own URLs (`recognizeOurFileUrl`), recovers the `file_id`, and on `onError` invalidates + re-mints (capped attempts); a transparent passthrough for non-owned URLs. Use it only when you have a URL string and not a `file_id`/`MediaRef` (those still go through `useFileSrc`/`<InlineMediaRef>`, which mint up front).
