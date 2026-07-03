@@ -62,99 +62,117 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Look up any existing artifact for this (user, message, type,
-        // external_system) tuple. `external_system` is nullable so we
-        // normalize NULL via .is() when not provided.
-        let existingQuery = supabase
+        // Atomic get-or-create on the natural key
+        //   (user_id, message_id, artifact_type, external_system)
+        // backed by the FULL `NULLS NOT DISTINCT` unique index
+        // `uq_cx_artifact_natural_key` (migration artifact_natural_key_unique.sql).
+        // ON CONFLICT DO NOTHING (`ignoreDuplicates`) NEVER emits a 23505/409:
+        // a concurrent create / double-mount overlay open returns an EMPTY
+        // result instead of a duplicate row (the old select-then-insert had no
+        // backing constraint, so its "idempotent" claim was fiction — it
+        // silently produced duplicate rows under concurrency: 63 excess of 170).
+        // `external_system` is nullable and NULLS NOT DISTINCT, so two NULLs
+        // collide correctly (the common case).
+        const insertRow = {
+          message_id: messageId,
+          conversation_id: conversationId,
+          user_id: user.id,
+          organization_id: organizationId ?? null,
+          project_id: projectId ?? null,
+          task_id: taskId ?? null,
+          artifact_type: artifactType,
+          status: "published" as const,
+          external_system: externalSystem ?? null,
+          external_id: externalId ?? null,
+          external_url: externalUrl ?? null,
+          title: title ?? null,
+          description: description ?? null,
+          thumbnail_url: thumbnailUrl ?? null,
+          metadata,
+        };
+
+        const { data: created, error: createError } = await supabase
           .schema("chat")
           .from("artifact")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("message_id", messageId)
-          .eq("artifact_type", artifactType)
-          .is("deleted_at", null)
-          .limit(1);
+          .upsert(insertRow, {
+            onConflict: "user_id,message_id,artifact_type,external_system",
+            ignoreDuplicates: true,
+          })
+          .select()
+          .maybeSingle();
 
-        if (externalSystem) {
-          existingQuery = existingQuery.eq("external_system", externalSystem);
-        } else {
-          existingQuery = existingQuery.is("external_system", null);
-        }
-
-        const { data: existing, error: lookupError } = await existingQuery;
-
-        if (lookupError) {
-          console.error("[artifacts API] create lookup error:", lookupError);
+        if (createError) {
+          console.error("[artifacts API] create error:", createError);
           return NextResponse.json(
-            { error: lookupError.message },
+            { error: createError.message },
             { status: 500 },
           );
         }
 
-        if (existing && existing.length > 0) {
-          // Apply a lightweight update with the caller-provided fields so
-          // the returned row reflects the latest publish (external_id can
-          // change when the underlying html_page row is re-created).
-          const updates: TablesUpdate<{ schema: "chat" }, "artifact"> = {};
-          if (externalId !== undefined) updates.external_id = externalId;
-          if (externalUrl !== undefined) updates.external_url = externalUrl;
-          if (title !== undefined) updates.title = title;
-          if (description !== undefined) updates.description = description;
-          if (thumbnailUrl !== undefined) updates.thumbnail_url = thumbnailUrl;
+        // A row came back → we created it.
+        if (created) {
+          return NextResponse.json({ artifact: created });
+        }
 
-          if (Object.keys(updates).length === 0) {
-            return NextResponse.json({ artifact: existing[0] });
-          }
+        // No row → the natural key already existed (DO NOTHING). Apply the
+        // latest-publish fields (external_id/url can change when the underlying
+        // html_page is re-created) and return the current row, matched BY the
+        // natural key (external_system nullable → .is() when absent).
+        const updates: TablesUpdate<{ schema: "chat" }, "artifact"> = {};
+        if (externalId !== undefined) updates.external_id = externalId;
+        if (externalUrl !== undefined) updates.external_url = externalUrl;
+        if (title !== undefined) updates.title = title;
+        if (description !== undefined) updates.description = description;
+        if (thumbnailUrl !== undefined) updates.thumbnail_url = thumbnailUrl;
 
-          const { data: updated, error: updateError } = await supabase
+        // Nothing to update → cheap re-read (the hot "re-open overlay" path).
+        if (Object.keys(updates).length === 0) {
+          let selQuery = supabase
             .schema("chat")
             .from("artifact")
-            .update(updates)
-            .eq("id", existing[0].id)
-            .eq("user_id", user.id)
             .select()
-            .single();
+            .eq("user_id", user.id)
+            .eq("message_id", messageId)
+            .eq("artifact_type", artifactType);
+          selQuery = externalSystem
+            ? selQuery.eq("external_system", externalSystem)
+            : selQuery.is("external_system", null);
 
-          if (updateError) {
-            console.error("[artifacts API] create->update error:", updateError);
+          const { data: current, error: selError } = await selQuery.single();
+          if (selError) {
+            console.error("[artifacts API] create->reselect error:", selError);
             return NextResponse.json(
-              { error: updateError.message },
+              { error: selError.message },
               { status: 500 },
             );
           }
-
-          return NextResponse.json({ artifact: updated });
+          return NextResponse.json({ artifact: current });
         }
 
-        const { data, error } = await supabase
+        let updateQuery = supabase
           .schema("chat")
           .from("artifact")
-          .insert({
-            message_id: messageId,
-            conversation_id: conversationId,
-            user_id: user.id,
-            organization_id: organizationId ?? null,
-            project_id: projectId ?? null,
-            task_id: taskId ?? null,
-            artifact_type: artifactType,
-            status: "published",
-            external_system: externalSystem ?? null,
-            external_id: externalId ?? null,
-            external_url: externalUrl ?? null,
-            title: title ?? null,
-            description: description ?? null,
-            thumbnail_url: thumbnailUrl ?? null,
-            metadata: metadata,
-          })
+          .update(updates)
+          .eq("user_id", user.id)
+          .eq("message_id", messageId)
+          .eq("artifact_type", artifactType);
+        updateQuery = externalSystem
+          ? updateQuery.eq("external_system", externalSystem)
+          : updateQuery.is("external_system", null);
+
+        const { data: updated, error: updateError } = await updateQuery
           .select()
           .single();
 
-        if (error) {
-          console.error("[artifacts API] create error:", error);
-          return NextResponse.json({ error: error.message }, { status: 500 });
+        if (updateError) {
+          console.error("[artifacts API] create->update error:", updateError);
+          return NextResponse.json(
+            { error: updateError.message },
+            { status: 500 },
+          );
         }
 
-        return NextResponse.json({ artifact: data });
+        return NextResponse.json({ artifact: updated });
       }
 
       // ── update ───────────────────────────────────────────────────────

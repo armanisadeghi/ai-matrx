@@ -664,52 +664,98 @@ export async function listStudioDocuments(
 }
 
 /**
- * Get the session's working document, creating it on first access. Relies on
- * the UNIQUE (session_id, kind) constraint so a concurrent create resolves to
- * a single row (we re-select on conflict).
+ * Get the session's working document, creating it on first access.
+ *
+ * ATOMIC + DE-DUPED get-or-create. Two things make N concurrent callers safe
+ * WITHOUT ever emitting a duplicate-key 409 (which would surface RED in the
+ * Error Inspector even when the throw is caught — the HTTP 409 is captured at
+ * the transport layer, before app code recovers):
+ *
+ *   1. A module-scoped in-flight map collapses same-`(session, kind)` calls in
+ *      one tab into a single promise. The two mounts of `useStudioAssistant`
+ *      (ScribeScreen + AssistantScreen) fire this in the same tick; they now
+ *      share one round-trip instead of racing two inserts.
+ *   2. The create uses `upsert(..., { onConflict, ignoreDuplicates: true })`
+ *      — ON CONFLICT DO NOTHING. A cross-tab / cross-client race loser gets an
+ *      empty result (HTTP 200, no 409), then re-reads the winner's row. DO
+ *      NOTHING (not DO UPDATE) means an existing user-renamed title/content is
+ *      never clobbered by the default-titled create.
+ *
+ * Mirrors the canonical `materializeWorkingDocument` in cx-working-document.service.
  */
-export async function getOrCreateWorkingDocument(
+const inFlightWorkingDoc = new Map<
+  string,
+  Promise<import("../types").StudioDocument>
+>();
+
+export function getOrCreateWorkingDocument(
   sessionId: string,
   kind: import("../types").StudioDocumentKind = "working_document",
   title = "Working Document",
 ): Promise<import("../types").StudioDocument> {
-  const existing = await db
+  const key = `${sessionId}::${kind}`;
+  const inflight = inFlightWorkingDoc.get(key);
+  if (inflight) return inflight;
+  const promise = getOrCreateWorkingDocumentImpl(sessionId, kind, title).finally(
+    () => inFlightWorkingDoc.delete(key),
+  );
+  inFlightWorkingDoc.set(key, promise);
+  return promise;
+}
+
+async function selectWorkingDocument(
+  sessionId: string,
+  kind: string,
+): Promise<StudioDocumentRow | null> {
+  const { data, error } = await db
     .schema("transcripts")
     .from("studio_documents")
     .select("*")
     .eq("session_id", sessionId)
     .eq("kind", kind)
     .maybeSingle();
-  if (existing.error) {
+  if (error) {
     throw new Error(
-      `[studio] getOrCreateWorkingDocument select failed: ${existing.error.message}`,
+      `[studio] getOrCreateWorkingDocument select failed: ${error.message}`,
     );
   }
-  if (existing.data) {
-    return rowToStudioDocument(existing.data as StudioDocumentRow);
-  }
+  return (data as StudioDocumentRow | null) ?? null;
+}
 
+async function getOrCreateWorkingDocumentImpl(
+  sessionId: string,
+  kind: string,
+  title: string,
+): Promise<import("../types").StudioDocument> {
+  // Fast path: the row already exists (the common case — a working doc is
+  // created once per session but accessed many times). One read, no write.
+  const existing = await selectWorkingDocument(sessionId, kind);
+  if (existing) return rowToStudioDocument(existing);
+
+  // Create atomically. ON CONFLICT DO NOTHING never raises 23505/409: on a
+  // concurrent create the loser gets `data: null` (not an error).
   const { data, error } = await db
     .schema("transcripts")
     .from("studio_documents")
-    .insert({ session_id: sessionId, kind, title })
+    .upsert(
+      { session_id: sessionId, kind, title },
+      { onConflict: "session_id,kind", ignoreDuplicates: true },
+    )
     .select("*")
-    .single();
+    .maybeSingle();
   if (error) {
-    // A concurrent insert won the race — re-read the now-existing row.
-    const retry = await db
-      .schema("transcripts")
-      .from("studio_documents")
-      .select("*")
-      .eq("session_id", sessionId)
-      .eq("kind", kind)
-      .maybeSingle();
-    if (retry.data) return rowToStudioDocument(retry.data as StudioDocumentRow);
     throw new Error(
-      `[studio] getOrCreateWorkingDocument insert failed: ${error.message}`,
+      `[studio] getOrCreateWorkingDocument create failed: ${error.message}`,
     );
   }
-  return rowToStudioDocument(data as StudioDocumentRow);
+  if (data) return rowToStudioDocument(data as StudioDocumentRow);
+
+  // Lost the race (DO NOTHING returned no row) — re-read the winner's row.
+  const winner = await selectWorkingDocument(sessionId, kind);
+  if (winner) return rowToStudioDocument(winner);
+  throw new Error(
+    "[studio] getOrCreateWorkingDocument: create returned no row and re-read found none",
+  );
 }
 
 /**
