@@ -129,7 +129,50 @@ export const selectProviderRetryHistory = (requestId: string) =>
   );
 
 /**
- * Derives accumulated text from render blocks (single source of truth).
+ * THE canonical set of render-block types that are NOT the model's answer.
+ *
+ * `thinking` / `reasoning` blocks carry the model's chain-of-thought as their
+ * `content` — never the answer. This is the single source of truth for that
+ * distinction: every "what did the model actually output" derivation (answer
+ * text, TTS/spoken text, and JSON extraction — see the streaming pipeline)
+ * filters on it, so the boundary can never drift between consumers.
+ *
+ * Before this const existed, TTS had its own `{"thinking"}` set that missed
+ * `"reasoning"`, and JSON extraction re-scanned the raw chunk stream with no
+ * type awareness at all — the exact class of bug (reasoning leaking into the
+ * answer / a JSON sample inside thinking shadowing the real output) this
+ * consolidation makes structurally impossible. Do NOT hand-roll a parallel
+ * exclusion set; import this one.
+ */
+export const NON_ANSWER_BLOCK_TYPES = new Set(["thinking", "reasoning"]);
+
+/**
+ * Pure derivation of the answer text from a request's render blocks — the ONE
+ * implementation behind {@link selectAnswerText}. Exported so non-selector
+ * call-sites (the streaming JSON-extraction pipeline in `process-stream.ts`)
+ * derive answer text through the exact same rule instead of re-scanning raw
+ * chunk text. `editedText` wins, mirroring the selectors.
+ */
+export function deriveAnswerText(
+  request: Pick<ActiveRequest, "renderBlockOrder" | "renderBlocks" | "editedText">,
+): string {
+  const { renderBlockOrder: order, renderBlocks: blocks, editedText } = request;
+  if (editedText !== null && editedText !== undefined) return editedText;
+  if (!order || !blocks || order.length === 0) return "";
+  return order
+    .map((id) => blocks[id])
+    .filter((b) => b && !NON_ANSWER_BLOCK_TYPES.has(b.type))
+    .map((b) => b?.content ?? "")
+    .filter(Boolean)
+    .join("\n");
+}
+
+/**
+ * The model's ANSWER text — the accumulated render-block content WITHOUT the
+ * chain-of-thought (`thinking` / `reasoning` blocks). This is the canonical
+ * "what the model actually output" string; JSON extraction, "readable text",
+ * copy, and any non-chat surface that displays "the response" derive from it.
+ *
  * Returns "" when no request exists — safe because "" is a string literal.
  * Memoized so consumers don't re-render unless render block content changes.
  *
@@ -139,6 +182,29 @@ export const selectProviderRetryHistory = (requestId: string) =>
  * keeps the renderer in sync with what we already persisted via
  * `cx_message_edit` without swapping the underlying data source mid-session
  * (see AgentAssistantMessage's "lifetime rule").
+ */
+export const selectAnswerText = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.editedText,
+    (renderBlockOrder, renderBlocks, editedText): string =>
+      deriveAnswerText({ renderBlockOrder, renderBlocks, editedText }),
+  );
+
+/**
+ * The FULL accumulated render-block text — every block's `content`, INCLUDING
+ * `thinking` / `reasoning`. This is the source for MARKDOWN DISPLAY consumers:
+ * `EnhancedChatMarkdown`'s fallback branch feeds this to `splitContentIntoBlocksV2`,
+ * which re-splits inline `<thinking>` / `<reasoning>` back into a `ThinkingTrace`
+ * for correct display. Do NOT use this for data capture or any surface that
+ * shows the text raw (unrendered) — use {@link selectAnswerText} there, or the
+ * reasoning tags leak to the user as literal text.
+ *
+ * Returns "" when no request exists. `editedText` supersedes (inline-edit flows).
  */
 export const selectAccumulatedText = (requestId: string) =>
   createSelector(
@@ -159,33 +225,11 @@ export const selectAccumulatedText = (requestId: string) =>
   );
 
 /**
- * Spoken text for TTS / read-aloud — the accumulated render-block text WITHOUT
- * the model's reasoning. Thinking blocks (`type: "thinking"`) carry the chain of
- * thought as `content`, so `selectAccumulatedText` (which joins every block)
- * would read it aloud — every thinking block, not just the first. Read-aloud
- * must speak the answer, never the reasoning. `editedText` still wins.
+ * Spoken text for TTS / read-aloud — read-aloud must speak the answer, never
+ * the reasoning. Same source and rule as {@link selectAnswerText} (now also
+ * drops `reasoning`, which the previous `{"thinking"}`-only set missed).
  */
-const NON_SPOKEN_BLOCK_TYPES = new Set(["thinking"]);
-
-export const selectSpokenText = (requestId: string) =>
-  createSelector(
-    (state: RootState) =>
-      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
-    (state: RootState) =>
-      state.activeRequests.byRequestId[requestId]?.renderBlocks,
-    (state: RootState) =>
-      state.activeRequests.byRequestId[requestId]?.editedText,
-    (order, blocks, editedText): string => {
-      if (editedText !== null && editedText !== undefined) return editedText;
-      if (!order || !blocks || order.length === 0) return "";
-      return order
-        .map((id) => blocks[id])
-        .filter((b) => b && !NON_SPOKEN_BLOCK_TYPES.has(b.type))
-        .map((b) => b?.content ?? "")
-        .filter(Boolean)
-        .join("\n");
-    },
-  );
+export const selectSpokenText = selectAnswerText;
 
 export const selectRequestConversationId =
   (requestId: string) =>

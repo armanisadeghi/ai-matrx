@@ -48,6 +48,7 @@ import {
   type ActiveTabId,
 } from "../hooks/usePdfExtractor";
 import { SyncedPdfTextView } from "./SyncedPdfTextView";
+import { PdfAiContent } from "./PdfAiContent";
 import { LineageTreeView } from "./LineageTreeView";
 import { ManipulationPanel } from "./ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";
@@ -991,9 +992,10 @@ function AiCleanView({
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-primary/30 bg-primary/5 p-3">
           {hasStreamingText ? (
-            <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
-              {tab.streamingText}
-            </pre>
+            // Render the live AI output through the canonical engine so the
+            // model's <thinking>/<reasoning> shows as a collapsed ThinkingTrace
+            // (not raw text) and markdown renders as it streams.
+            <PdfAiContent content={tab.streamingText!} isStreaming />
           ) : (
             <p className="italic text-xs text-muted-foreground">
               Waiting for the model…
@@ -1016,9 +1018,7 @@ function AiCleanView({
             Source: Python <code>/utilities/pdf/clean-content</code>
           </span>
         </div>
-        <pre className="text-[11px] font-mono text-foreground/80 whitespace-pre-wrap leading-relaxed">
-          {doc.cleanContent}
-        </pre>
+        <PdfAiContent content={doc.cleanContent} />
       </div>
     );
   }

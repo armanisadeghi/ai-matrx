@@ -272,6 +272,43 @@ const matrxLintPlugin = {
                 };
             },
         },
+        'no-parallel-stream-json-scan': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow importing the streaming JSON scanner (StreamingJsonTracker) outside the canonical extraction path. Feeding it the raw chunk stream re-scans undifferentiated text (thinking included) — the exact class of bug where a JSON sample inside <thinking> shadows the real answer. JSON extraction must derive from the ANSWER-only render-block text (see process-stream.ts runJsonExtraction + deriveAnswerText).',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        "Do not import StreamingJsonTracker here. It is the streaming raw-text JSON scanner and belongs ONLY to the canonical extraction path (features/agents/redux/execution-system/thunks/process-stream.ts), which feeds it the ANSWER-only text via deriveAnswerText — never raw chunks. For a one-shot parse of a string you already have, use extractFirstJson/extractAllJson from @/utils/json/extract-json. Spinning up a parallel scanner reintroduces the thinking-pollution bug this ban exists to kill.",
+                },
+            },
+            create(context) {
+                // The tracker's own home + siblings, the single canonical
+                // wiring site, and the admin markdown test harness.
+                const ALLOWED = [
+                    '/utils/json/',
+                    '/execution-system/thunks/process-stream.ts',
+                    '/components/admin/MarkdownTester.tsx',
+                ];
+                const filename = context.filename || context.getFilename?.() || '';
+                const isAllowed = ALLOWED.some((p) => filename.includes(p));
+                return {
+                    ImportDeclaration(node) {
+                        if (isAllowed) return;
+                        const src = node.source.value;
+                        if (
+                            typeof src === 'string' &&
+                            src.includes('utils/json/streaming-json-tracker')
+                        ) {
+                            context.report({ node, messageId: 'banned' });
+                        }
+                    },
+                };
+            },
+        },
         'no-banned-lucide-icons': {
             meta: {
                 type: 'suggestion',
@@ -591,6 +628,9 @@ export default [
             // Media durability — hardcoded storage URLs in raw media tags. Loud
             // but non-blocking; the DB-edge guard covers the dynamic-src case.
             'matrx/no-raw-storage-media': 'warn',
+            // Single-path JSON extraction — no parallel raw-stream scanners.
+            // Loud but non-blocking, matching the other doctrine bans here.
+            'matrx/no-parallel-stream-json-scan': 'warn',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',

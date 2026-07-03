@@ -59,6 +59,7 @@ import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSource } from "@/features/pdf/utils/source";
 import { parsePagesInput } from "@/features/pdf/utils/pages";
+import { PdfAiContent } from "../components/PdfAiContent";
 import { fileHandler } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -1330,15 +1331,16 @@ function TextPane({
                 </span>
               )}
             </div>
-            <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
-              {streamingText && streamingText.length > 0 ? (
-                streamingText
-              ) : (
-                <span className="italic text-muted-foreground">
-                  Waiting for the model…
-                </span>
-              )}
-            </pre>
+            {streamingText && streamingText.length > 0 ? (
+              // Live AI output → canonical engine: markdown renders and
+              // <thinking>/<reasoning> collapses to a ThinkingTrace instead of
+              // spilling as raw text.
+              <PdfAiContent content={streamingText} isStreaming />
+            ) : (
+              <span className="italic text-[11px] text-muted-foreground">
+                Waiting for the model…
+              </span>
+            )}
           </div>
         )}
 
@@ -1356,9 +1358,16 @@ function TextPane({
                 {aggregateText.length.toLocaleString()} chars
               </span>
             </div>
-            <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
-              <Highlighted text={aggregateText} query={findQuery} />
-            </pre>
+            {field === "cleaned" ? (
+              // AI-cleaned aggregate → canonical engine (markdown + ThinkingTrace).
+              // Search highlighting is intentionally dropped here; the raw pane
+              // keeps it for text search.
+              <PdfAiContent content={aggregateText} />
+            ) : (
+              <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+                <Highlighted text={aggregateText} query={findQuery} />
+              </pre>
+            )}
           </div>
         )}
 
@@ -1940,9 +1949,16 @@ function LegacyReaderFallback({ doc }: { doc: PdfDocument }) {
           </code>
           and unlock synced scrolling, find-in-doc, and bbox overlays.
         </div>
-        <pre className="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
-          {doc.cleanContent ?? doc.content ?? "(no extracted text)"}
-        </pre>
+        {doc.cleanContent ? (
+          // AI-cleaned text is AI output → canonical engine (markdown + ThinkingTrace).
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <PdfAiContent content={doc.cleanContent} />
+          </div>
+        ) : (
+          <pre className="flex-1 min-h-0 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+            {doc.content ?? "(no extracted text)"}
+          </pre>
+        )}
       </div>
     </div>
   );

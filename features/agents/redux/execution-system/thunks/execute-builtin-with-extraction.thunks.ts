@@ -15,7 +15,7 @@ import {
   selectJsonExtractionComplete,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
-  selectLatestAccumulatedText,
+  selectLatestAnswerText,
   selectLatestRequestId,
   selectStreamPhase,
   type StreamPhase,
@@ -73,7 +73,7 @@ async function waitForAgentCompletion(
     const phase = selectStreamPhase(conversationId)(state);
     if (phase === "complete" || phase === "error") {
       return {
-        fullResponse: selectLatestAccumulatedText(conversationId)(state),
+        fullResponse: selectLatestAnswerText(conversationId)(state),
         requestId: selectLatestRequestId(conversationId)(state),
         phase,
       };
@@ -108,7 +108,7 @@ async function waitForJsonExtraction(
       const snapshot = selectFirstExtractedObject(requestId)(state);
       return {
         data: snapshot?.value ?? null,
-        fullResponse: selectLatestAccumulatedText(conversationId)(state),
+        fullResponse: selectLatestAnswerText(conversationId)(state),
       };
     }
 
@@ -116,7 +116,7 @@ async function waitForJsonExtraction(
     if (phase === "error") {
       return {
         data: null,
-        fullResponse: selectLatestAccumulatedText(conversationId)(state),
+        fullResponse: selectLatestAnswerText(conversationId)(state),
       };
     }
   }
@@ -224,7 +224,7 @@ export const executeBuiltinWithCodeExtraction = createAsyncThunk<
       const message =
         error instanceof Error ? error.message : "Unknown error occurred";
       const fullResponse = conversationId
-        ? selectLatestAccumulatedText(conversationId)(getState())
+        ? selectLatestAnswerText(conversationId)(getState())
         : "";
       return {
         success: false,
@@ -305,7 +305,7 @@ export const executeBuiltinWithJsonExtraction = createAsyncThunk<
           ? error.message
           : "An unknown error occurred during AI JSON generation.";
       const fullResponse = conversationId
-        ? selectLatestAccumulatedText(conversationId)(getState())
+        ? selectLatestAnswerText(conversationId)(getState())
         : "";
       const requestId = conversationId
         ? selectLatestRequestId(conversationId)(getState())

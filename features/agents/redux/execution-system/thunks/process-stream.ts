@@ -109,6 +109,8 @@ import {
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 import { StreamingJsonTracker } from "@/utils/json/streaming-json-tracker";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
+import { deriveAnswerText } from "../active-requests/active-requests.selectors";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { ExtractedJsonSnapshot } from "@/features/agents/types/request.types";
 import {
   setConversationLabel,
@@ -355,10 +357,59 @@ export async function processStream({
   let textBuffer = "";
   let reasoningBuffer = "";
   let rafHandle: ReturnType<typeof setTimeout> | null = null;
-  let pendingJsonState: {
-    results: ExtractedJsonSnapshot[];
-    revision: number;
-  } | null = null;
+
+  /**
+   * Canonical JSON extraction — the SINGLE data-capture path.
+   *
+   * Derives the model's ANSWER text from the typed render blocks (via
+   * `deriveAnswerText`, the exact rule `selectAnswerText` uses) and feeds THAT
+   * to the tracker — never the raw chunk stream. So a JSON sample the model
+   * wrote inside its <thinking>/<reasoning> can never be extracted, and the
+   * "first object wins" scan only ever sees the real answer.
+   *
+   * Runs incrementally on each batch that committed new answer text (keeps the
+   * live extraction AgentGenerator relies on), and once authoritatively at
+   * finalize with fuzzy repair. `setFullText` re-extracts idempotently, so this
+   * is safe under the accumulator's mid-stream block retraction/reclassification.
+   */
+  let reasoningLeakReported = false;
+  const runJsonExtraction = (isFinal: boolean) => {
+    if (!jsonTracker) return;
+    const req = getState().activeRequests.byRequestId[requestId];
+    const answerText = req ? deriveAnswerText(req) : "";
+
+    // Loud recovery: answer text is reasoning-excluded by construction. If a
+    // <thinking>/<reasoning> marker survived into it, the accumulator failed to
+    // isolate reasoning — a real defect in the load-bearing answer/reasoning
+    // boundary, not something to silently strip. Report once per stream.
+    if (!reasoningLeakReported && hasReasoningLeak(answerText)) {
+      reasoningLeakReported = true;
+      captureError({
+        source: "reasoning-leak",
+        message:
+          "Reasoning tag (<thinking>/<reasoning>) leaked into ANSWER text — the " +
+          "stream block accumulator failed to isolate chain-of-thought. Answer " +
+          "text and JSON extraction may be polluted.",
+        requestId,
+        conversationId,
+        raw: { sample: answerText.slice(0, 500) },
+      });
+    }
+
+    jsonTracker.setFullText(answerText);
+    const jsonState = isFinal ? jsonTracker.finalize() : jsonTracker.getState();
+    if (isFinal || jsonState.revision !== lastJsonRevision) {
+      lastJsonRevision = jsonState.revision;
+      dispatch(
+        updateExtractedJson({
+          requestId,
+          results: jsonState.results.map(toSnapshot),
+          revision: jsonState.revision,
+          isComplete: isFinal,
+        }),
+      );
+    }
+  };
 
   const dispatchBatch = () => {
     if (rafHandle !== null) {
@@ -368,11 +419,13 @@ export async function processStream({
       rafHandle = null;
     }
 
+    let flushedAnswerText = false;
     if (textBuffer.length > 0) {
       const flushed = textBuffer;
       dispatch(appendChunk({ requestId, content: flushed }));
       blockAccumulator.ingest(flushed, dispatch);
       textBuffer = "";
+      flushedAnswerText = true;
     }
     // appendChunk now only increments chunkCount and sets firstChunkAt.
     // The actual text content is written exclusively via blockAccumulator → upsertRenderBlock.
@@ -380,16 +433,10 @@ export async function processStream({
       dispatch(appendReasoningChunk({ requestId, content: reasoningBuffer }));
       reasoningBuffer = "";
     }
-    if (pendingJsonState !== null) {
-      dispatch(
-        updateExtractedJson({
-          requestId,
-          results: pendingJsonState.results,
-          revision: pendingJsonState.revision,
-          isComplete: false,
-        }),
-      );
-      pendingJsonState = null;
+    // Re-extract only when new answer text landed in render blocks this batch —
+    // idle flushes (status events, reasoning-only batches) cost nothing.
+    if (jsonTracker && flushedAnswerText) {
+      runJsonExtraction(false);
     }
   };
 
@@ -446,16 +493,10 @@ export async function processStream({
 
         textBuffer += text;
 
-        if (jsonTracker) {
-          const jsonState = jsonTracker.append(text);
-          if (jsonState.revision !== lastJsonRevision) {
-            lastJsonRevision = jsonState.revision;
-            pendingJsonState = {
-              results: jsonState.results.map(toSnapshot),
-              revision: jsonState.revision,
-            };
-          }
-        }
+        // JSON extraction is NOT fed here. The raw chunk is undifferentiated —
+        // for providers that stream reasoning inline as <thinking>/<reasoning>,
+        // it contains chain-of-thought. Extraction runs downstream of the block
+        // accumulator, over ANSWER text only (see `runJsonExtraction`).
 
         scheduleBatchEvent();
         continue;
@@ -1807,17 +1848,11 @@ export async function processStream({
 
   dispatch(finalizeAccumulatedReasoning({ requestId }));
 
-  if (jsonTracker) {
-    const finalJsonState = jsonTracker.finalize();
-    dispatch(
-      updateExtractedJson({
-        requestId,
-        results: finalJsonState.results.map(toSnapshot),
-        revision: finalJsonState.revision,
-        isComplete: true,
-      }),
-    );
-  }
+  // Authoritative final extraction — from the completed render blocks' ANSWER
+  // text (blockAccumulator.finalize already ran above), with fuzzy repair. This
+  // guarantees the committed `extractedJson` equals the canonical answer content
+  // even if a streaming batch's partial parse differed.
+  runJsonExtraction(true);
 
   const finalState = getState();
   const finalRequest = finalState.activeRequests.byRequestId[requestId];
@@ -2265,4 +2300,14 @@ function toSnapshot(extracted: {
     repairApplied: extracted.repairApplied,
     warnings: extracted.warnings,
   };
+}
+
+// Matches an OPENING reasoning tag only (`<thinking>`, `<think>`, `<reasoning>`)
+// — a closing `</thinking>` never appears without its opener, and prose that
+// merely mentions the word must not trip the guard, so we require the tag shape.
+const REASONING_TAG_MARKER = /<(thinking|think|reasoning)(\s|>)/i;
+
+/** True when `answerText` still contains a reasoning tag (the boundary broke). */
+function hasReasoningLeak(answerText: string): boolean {
+  return REASONING_TAG_MARKER.test(answerText);
 }

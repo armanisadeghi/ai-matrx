@@ -37,6 +37,7 @@ import type {
 } from "@/types/python-generated/stream-events";
 import type { ShortcutContext } from "@/features/agents/redux/agent-shortcuts/types";
 import { selectHasMessages } from "../messages/messages.selectors";
+import { deriveAnswerText } from "../active-requests/active-requests.selectors";
 import {
   selectAutoClearConversation,
   selectShowAutoClearToggle,
@@ -129,8 +130,31 @@ export const selectShouldShowAutoClearToggle =
 // =============================================================================
 
 /**
- * The accumulated response text for the latest request on this instance.
- * Derives from render blocks (single source of truth).
+ * The model's ANSWER text for the latest request on this instance — the
+ * accumulated render-block content WITHOUT the chain-of-thought
+ * (`thinking` / `reasoning`). Derives from render blocks via
+ * {@link deriveAnswerText} (single source of truth for the answer/reasoning
+ * boundary). Memoized — stable reference until render block content changes.
+ */
+export const selectLatestAnswerText = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests?.byConversationId[conversationId],
+    (state: RootState) => state.activeRequests?.byRequestId,
+    (requestIds, byRequestId): string => {
+      if (!requestIds || requestIds.length === 0) return "";
+      const latest = byRequestId[requestIds[requestIds.length - 1]];
+      if (!latest) return "";
+      return deriveAnswerText(latest);
+    },
+  );
+
+/**
+ * The FULL accumulated render-block text for the latest request on this
+ * instance — every block's `content`, INCLUDING `thinking` / `reasoning`. For
+ * MARKDOWN DISPLAY consumers that re-split it into a `ThinkingTrace`. For data
+ * capture or any raw (unrendered) surface use {@link selectLatestAnswerText}
+ * so reasoning tags don't leak to the user.
  * Memoized — stable reference until render block content changes.
  */
 export const selectLatestAccumulatedText = (conversationId: string) =>

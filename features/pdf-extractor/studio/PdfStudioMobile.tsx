@@ -45,6 +45,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
+import { PdfAiContent } from "../components/PdfAiContent";
 import { usePdfStudioDocs } from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfCldFileViewer } from "./PdfStudioReader";
@@ -641,15 +642,14 @@ function MobileTextScroller({
               </span>
             )}
           </div>
-          <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
-            {streamingText && streamingText.length > 0 ? (
-              streamingText
-            ) : (
-              <span className="italic text-muted-foreground">
-                Waiting for the model…
-              </span>
-            )}
-          </pre>
+          {streamingText && streamingText.length > 0 ? (
+            // Live AI output → canonical engine (markdown + collapsed ThinkingTrace).
+            <PdfAiContent content={streamingText} isStreaming />
+          ) : (
+            <span className="italic text-[12px] text-muted-foreground">
+              Waiting for the model…
+            </span>
+          )}
         </div>
       </div>
     );
@@ -661,9 +661,13 @@ function MobileTextScroller({
         <div className="border border-amber-500/30 bg-amber-500/5 rounded-md p-3 mb-3 text-[11px] text-amber-700 dark:text-amber-400">
           No per-page rows yet. Open the inspector and run the pipeline.
         </div>
-        <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
-          {fallbackText || "(no extracted text)"}
-        </pre>
+        {field === "cleaned" && fallbackText ? (
+          <PdfAiContent content={fallbackText} />
+        ) : (
+          <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
+            {fallbackText || "(no extracted text)"}
+          </pre>
+        )}
       </div>
     );
   }
@@ -679,9 +683,13 @@ function MobileTextScroller({
             Document text (aggregate) ·{" "}
             {(fallbackText ?? "").length.toLocaleString()} chars
           </div>
-          <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
-            {fallbackText || "(no extracted text)"}
-          </pre>
+          {field === "cleaned" && fallbackText ? (
+            <PdfAiContent content={fallbackText} />
+          ) : (
+            <pre className="whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-foreground/85">
+              {fallbackText || "(no extracted text)"}
+            </pre>
+          )}
         </div>
       </div>
     );

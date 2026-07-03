@@ -69,6 +69,15 @@ export type CapturedErrorSource =
   /** An expiring/private media URL reached a render/store path (durability defect). */
   | "media-durability"
   /**
+   * The model's chain-of-thought (`<thinking>`/`<reasoning>`) leaked into the
+   * ANSWER text — i.e. it survived the render-block type-split and reached the
+   * canonical JSON-extraction / answer-text path. This firing means the stream
+   * block accumulator failed to isolate reasoning (an unclosed tag, a novel
+   * inline shape); the answer/reasoning boundary is the load-bearing invariant
+   * of the single-path streaming model, so this is a real defect to find, not
+   * something to silently strip. */
+  | "reasoning-leak"
+  /**
    * Stored data violated the generated wire/DB contract at a read ingress
    * (e.g. a JSONB column failed validation against the OpenAPI schema). The
    * offending value was excluded, not passed through — this firing means a
