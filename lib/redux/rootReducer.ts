@@ -13,8 +13,6 @@
 // migration that produced this split.
 
 import { combineReducers, type Reducer } from "@reduxjs/toolkit";
-import { featureSchemas } from "./dynamic/featureSchema";
-import { createFeatureSlice } from "./slices/featureSliceCreator";
 import { createModuleSlice } from "./slices/moduleSliceCreator";
 import { moduleSchemas, ModuleName } from "./dynamic/moduleSchema";
 import layoutReducer from "./slices/layoutSlice";
@@ -172,16 +170,6 @@ import userMarkdownSamplesReducer from "@/lib/redux/slices/userMarkdownSamples/s
 import richDocumentActionSurfacesReducer from "@/features/rich-document/redux/actionSurfacesSlice";
 import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
 
-const featureReducers = Object.keys(featureSchemas).reduce<
-  Record<string, Reducer>
->((acc, featureName) => {
-  const featureSchema =
-    featureSchemas[featureName as keyof typeof featureSchemas];
-  const featureSlice = createFeatureSlice(featureName, featureSchema);
-  acc[featureName] = featureSlice.reducer;
-  return acc;
-}, {});
-
 const moduleReducers = Object.keys(moduleSchemas).reduce<
   Record<string, Reducer>
 >((acc, moduleName) => {
@@ -259,7 +247,6 @@ export const slimReducerMap = {
 
   theme: themeReducer,
 
-  ...featureReducers,
   ...moduleReducers,
   layout: layoutReducer,
   flashcardChat: flashcardChatReducer,

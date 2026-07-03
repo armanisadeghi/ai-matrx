@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import type { TabDefinition } from "@/components/official/FullScreenOverlay";
 import type { RootState } from "@/lib/redux/store";
 import GenericSliceViewer from "./sliceViewers/GenericSliceViewer";
-import { featureSchemas } from "@/lib/redux/dynamic/featureSchema";
 import { moduleSchemas } from "@/lib/redux/dynamic/moduleSchema";
 import AgentDefinitionSliceViewer from "./sliceViewers/agent-definitions/AgentDefinitionSliceViewer";
 import AgentDefinitionSliceViewerShadcn from "./sliceViewers/agent-definitions/AgentDefinitionSliceViewerShadcn";
@@ -562,17 +561,6 @@ export function getStateViewerTabs(
       ),
     },
 
-    ...Object.keys(featureSchemas).map((key) => ({
-      id: `feature-${key}`,
-      label: `Feature: ${key}`,
-      content: (
-        <GenericSliceViewer
-          sliceKey={key}
-          state={completeState[key as keyof RootState]}
-        />
-      ),
-    })),
-
     ...Object.keys(moduleSchemas).map((key) => ({
       id: `module-${key}`,
       label: `Module: ${key}`,
@@ -742,7 +730,6 @@ export function getStateViewerTabs(
   // Build the complete set of registered keys: static + feature/module schema keys
   const allRegisteredKeys = new Set<string>([
     ...REGISTERED_SLICE_KEYS,
-    ...Object.keys(featureSchemas),
     ...Object.keys(moduleSchemas),
   ]);
 
