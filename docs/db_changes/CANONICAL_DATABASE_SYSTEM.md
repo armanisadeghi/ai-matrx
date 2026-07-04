@@ -93,7 +93,8 @@ Result column order: `id → label → data → organization_id → created_by �
 Applied by `iam.apply_rls(schema, table, token, variant)`; enforced by `iam.has_access(token, id, level)` where `level ∈ {viewer, editor, admin}`.
 
 - **Owner short-circuit:** `created_by = auth.uid()` returns true for any level.
-- **Policies** (canonical set): `svc_all` (service_role), `std_select`/`std_insert`/`std_update`/`std_delete` (authenticated, owner + `has_access`), `pub_read` (anon, `visibility='public'`) when a visibility column exists.
+- **Policies** (canonical set): `svc_all` (service_role), `std_select`/`std_insert`/`std_update`/`std_delete` (authenticated, owner + `has_access`), `pub_read` (anon, `visibility='public'` + `deleted_at IS NULL`) when a visibility column exists.
+- **Authenticated policies gate on AUTHORIZATION only — never `deleted_at`.** `deleted_at IS NULL` lives ONLY on the anon `pub_read` policy (the public web must never see deleted content). It must NOT appear in any authenticated `std_select`/`std_update` USING or WITH CHECK: Postgres re-checks the SELECT policy against the *post-UPDATE* row, so a `deleted_at`-gated `std_select` makes a direct soft-delete `UPDATE` fail `42501` ("new row violates row-level security policy") and makes restore a silent 0-row no-op. Soft-delete visibility is the app's job (`.is('deleted_at', null)` in queries), not RLS's. Enforced platform-wide by `iam_apply_rls_v2_soft_delete_select_fix.sql` (2026-07-04) — the generator emits it only on `pub_read`.
 - **Variants:** `entity` (standard), `component` (access defers to a composition parent in `platform.entity_relationships`), `ledger` (read-only select via org access), `system` (adds public-visibility read).
 - **`has_access` returns `false` when `auth.uid()` is NULL.** All the generic RPCs below enforce `has_access`, so calling them from a trusted server context requires a JWT/`app.user_id`, or use `service_role`.
 
@@ -125,12 +126,13 @@ React: `supabase.rpc('version_list', { p_token: 'fc_card', p_id })`, `supabase.r
 
 ## 6. Soft delete
 
-`deleted_at IS NULL` = live. The canonical `std_select` policy hides soft-deleted rows automatically.
+`deleted_at IS NULL` = live. **RLS does NOT hide soft-deleted rows from authenticated readers** — that would break direct soft-delete/restore `UPDATE`s (§4). The app filters them in its own queries (`.is('deleted_at', null)` — the FE does this at 100+ read sites); only anon `pub_read` hides them from the public web.
 
-- `public.entity_soft_delete(token, id)` → boolean. Requires **admin** (owner qualifies). Sets `deleted_at=now()`.
-- `public.entity_undelete(token, id)` → boolean. Requires **editor**. Clears `deleted_at`.
+Two equivalent paths — both work:
+- **Direct RLS-authorized write** (canonical FE path per CLAUDE.md, React → Supabase directly): `.update({ deleted_at: new Date().toISOString() })` / `.update({ deleted_at: null })` to restore. Now works because authenticated policies no longer gate `deleted_at` (§4).
+- **Generic SECURITY-DEFINER RPCs** (for consumers without direct table access; bypass RLS): `public.entity_soft_delete(token, id)` → boolean, requires **admin** (owner qualifies), sets `deleted_at=now()`; `public.entity_undelete(token, id)` → boolean, requires **editor**, clears `deleted_at`.
 
-Both are generic over any token with `deleted_at`, and capture a history row.
+Both RPCs are generic over any token with `deleted_at`; versioned tables record a `SOFT_DELETE` history row via the `_version_capture` trigger on the underlying UPDATE.
 
 ---
 
