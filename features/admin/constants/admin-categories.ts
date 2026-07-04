@@ -519,6 +519,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/markdown-tester",
       },
       {
+        title: "Kind Registry",
+        description:
+          "Browse/search every content-ir kind (system + flexible_data), inspect fields, facets, and the uses/used-by reference graph, and export provider-ready JSON Schemas with referenced kinds resolved into $defs.",
+        iconName: "Boxes",
+        link: "/administration/kind-registry",
+        isNew: true,
+      },
+      {
         title: "Feature Docs Hub",
         description:
           "Browse synced FEATURE.md and README docs from the repo (admin.feature_docs).",

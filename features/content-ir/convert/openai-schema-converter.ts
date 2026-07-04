@@ -205,7 +205,13 @@ function makeKindJsonSchemaProperty(
   return { ...base, enum: [kindSlug] };
 }
 
-function injectKindIntoObjectSchema(
+/**
+ * Inject the `__kind` discriminator into one object schema (const when
+ * strict, enum otherwise; `__kind` prepended to required; strict also pins
+ * additionalProperties:false). Shared with the REVERSE converter
+ * (kind-to-json-schema.ts) so both directions stamp identical discriminators.
+ */
+export function injectKindIntoObjectSchema(
   objectSchema: JsonSchemaNode,
   kindSlug: string,
   strict: boolean,
@@ -482,7 +488,14 @@ function convertProperty(
     }
 
     if (itemType === "object" && isRecord(itemNode.properties)) {
-      const itemKindSlug = synthesizeItemKindSlug(ctx.schemaName, fieldName);
+      // Items that already carry a `__kind` const/enum DECLARE their kind —
+      // honor it instead of synthesizing a slug. This is what lets the
+      // reverse converter (kind-to-json-schema.ts) round-trip: an exported
+      // schema's array items name their real kind (e.g. "math_solution"),
+      // not a derived one ("math_problem_solution").
+      const declaredItemKind = readBlockKindFromProperties(itemNode.properties);
+      const itemKindSlug =
+        declaredItemKind ?? synthesizeItemKindSlug(ctx.schemaName, fieldName);
       const itemRequired = new Set(
         Array.isArray(itemNode.required)
           ? itemNode.required.filter((k): k is string => typeof k === "string")
@@ -513,11 +526,16 @@ function convertProperty(
         itemKindSlug,
       });
 
-      ctx.blockSchemas.push({
-        slug: itemKindSlug,
-        label: formatBlockLabel(`${ctx.schemaName}_${fieldName}_item`),
-        fields: itemFields,
-      });
+      // Two arrays may declare the SAME item kind — one draft per slug.
+      if (!ctx.blockSchemas.some((draft) => draft.slug === itemKindSlug)) {
+        ctx.blockSchemas.push({
+          slug: itemKindSlug,
+          label: declaredItemKind
+            ? formatBlockLabel(itemKindSlug)
+            : formatBlockLabel(`${ctx.schemaName}_${fieldName}_item`),
+          fields: itemFields,
+        });
+      }
 
       if (!alreadyHasBlockKind) {
         ctx.problems.push({
