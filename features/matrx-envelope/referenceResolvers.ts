@@ -387,6 +387,14 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     titleFields: ["name"],
     bodyFields: ["description"],
   }),
+  app: createRecordResolver({
+    openItemType: "app",
+    schema: "app",
+    table: "definition",
+    select: "name, description",
+    titleFields: ["name"],
+    bodyFields: ["description"],
+  }),
 
   organization: {
     ...createRecordResolver({
@@ -496,6 +504,14 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
   transcript_session: createRecordResolver({
     openItemType: "session",
     table: "studio_sessions",
+    schema: "transcripts",
+    select: "title",
+    titleFields: ["title"],
+  }),
+  studio_session: createRecordResolver({
+    openItemType: "session",
+    table: "studio_sessions",
+    schema: "transcripts",
     select: "title",
     titleFields: ["title"],
   }),
@@ -562,6 +578,14 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     schema: "workbench",
     select: "workbook_name, description",
     titleFields: ["workbook_name"],
+    bodyFields: ["description"],
+  }),
+  udt_document: createRecordResolver({
+    openItemType: "document",
+    table: "udt_documents",
+    schema: "workbench",
+    select: "document_name, description",
+    titleFields: ["document_name"],
     bodyFields: ["description"],
   }),
   document: createRecordResolver({
@@ -644,13 +668,102 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.file_id,
     resolveValue: resolveFileReferenceValue,
   },
+
+  // ── Education (education schema) ───────────────────────────────────────────
+  fc_card: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "fc_card",
+    select: "front, back, topic",
+    titleFields: ["front"],
+    bodyFields: ["back"],
+  }),
+  fc_set: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "fc_set",
+    select: "name, description, topic",
+    titleFields: ["name"],
+    bodyFields: ["description"],
+  }),
+  fc_detail: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "fc_detail",
+    select: "kind, text",
+    titleFields: ["kind"],
+    bodyFields: ["text"],
+  }),
+  quiz_session: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "quiz_sessions",
+    select: "title, category",
+    titleFields: ["title"],
+    bodyFields: ["category"],
+  }),
+  study_session: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "study_session",
+    select: "mode, status",
+    titleFields: ["mode"],
+    bodyFields: ["status"],
+  }),
+  study_goal: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "study_goal",
+    select: "title, status",
+    titleFields: ["title"],
+    bodyFields: ["status"],
+  }),
+  study_attempt: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "study_attempt",
+    select: "method, result",
+    titleFields: ["method"],
+    bodyFields: ["result"],
+  }),
+  item_mastery: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "item_mastery",
+    select: "item_type, last_result",
+    titleFields: ["item_type"],
+    bodyFields: ["last_result"],
+  }),
+  flashcard_history: createRecordResolver({
+    openItemType: "file",
+    schema: "education",
+    table: "flashcard_history",
+    select: "review_count, correct_count",
+    titleFields: ["review_count"],
+    bodyFields: ["correct_count"],
+  }),
+  conversation_value: {
+    openItemType: "message",
+    openId: () => undefined,
+    resolveValue: async (_supabase, ref) => stringify(ref.label ?? ref.key),
+  },
 };
 
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip). */
 export function getReferenceResolver(
   type: string,
 ): ReferenceResolver | undefined {
-  return RESOLVERS[type];
+  const legacy: Record<string, string> = {
+    agent_app: "app",
+    data_table: "dataset",
+    document: "udt_document",
+    podcast_episode: "pc_episode",
+    podcast_show: "pc_show",
+    sandbox: "sandbox_instance",
+    transcript_session: "studio_session",
+    war_room_thread: "thread",
+  };
+  return RESOLVERS[legacy[type] ?? type];
 }
 
 /**

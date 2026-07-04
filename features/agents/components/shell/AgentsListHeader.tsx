@@ -72,7 +72,7 @@ export function AgentsListHeader() {
           ) : (
             <FileChartColumn className="h-3.5 w-3.5" />
           )}
-          Drift report
+          Drift
         </Link>
       </Button>
     </div>

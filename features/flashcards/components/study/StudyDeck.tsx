@@ -17,7 +17,6 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   RotateCcw,
@@ -47,8 +46,6 @@ export interface StudyDeckProgress {
 }
 
 export interface StudyDeckProps {
-  title: string;
-  onBack: () => void;
   loading: boolean;
   error: string | null;
   cards: CardWithDetails[];
@@ -78,16 +75,15 @@ export interface StudyDeckProps {
     icon: typeof BookOpen;
     onClick: () => void;
   };
-  /** Optional chrome slotted into the header row (e.g. dev window trigger). */
-  headerActions?: ReactNode;
-  /** Optional per-card slot (e.g. an autoplay spoken-front) rendered while active. */
-  renderCardExtra?: (card: CardWithDetails) => ReactNode;
+  /** When set, each card gets a compact voice-quiz mic icon (top-right on the card). */
+  voiceTestForCard?: (card: CardWithDetails) => {
+    cardId: string;
+    spokenFrontFileId?: string | null;
+  };
 }
 
 export function StudyDeck(props: StudyDeckProps) {
   const {
-    title,
-    onBack,
     loading,
     error,
     cards,
@@ -108,8 +104,7 @@ export function StudyDeck(props: StudyDeckProps) {
     completionSubtitle,
     onRestart,
     completionPrimary,
-    headerActions,
-    renderCardExtra,
+    voiceTestForCard,
   } = props;
 
   const isMobile = useIsMobile();
@@ -187,7 +182,7 @@ export function StudyDeck(props: StudyDeckProps) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60dvh] items-center justify-center">
+      <div className="flex h-full items-center justify-center bg-textured">
         <MatrxMiniLoader />
       </div>
     );
@@ -195,7 +190,7 @@ export function StudyDeck(props: StudyDeckProps) {
 
   if (error) {
     return (
-      <Shell onBack={onBack} title={title} headerActions={headerActions}>
+      <Shell>
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">{errorTitle}</p>
@@ -207,7 +202,7 @@ export function StudyDeck(props: StudyDeckProps) {
 
   if (cards.length === 0) {
     return (
-      <Shell onBack={onBack} title={title} headerActions={headerActions}>
+      <Shell>
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
           <BookOpen className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
@@ -223,7 +218,7 @@ export function StudyDeck(props: StudyDeckProps) {
         ? Math.round((progress.correct / progress.done) * 100)
         : 0;
     return (
-      <Shell onBack={onBack} title={title} headerActions={headerActions}>
+      <Shell>
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-10 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Trophy className="h-7 w-7" />
@@ -282,11 +277,13 @@ export function StudyDeck(props: StudyDeckProps) {
   }
 
   const current = cards[currentIndex];
-  const pct =
-    progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+  const positionPct =
+    cards.length > 0
+      ? Math.round(((currentIndex + 1) / cards.length) * 100)
+      : 0;
 
   return (
-    <Shell onBack={onBack} title={title} headerActions={headerActions}>
+    <Shell>
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
@@ -308,13 +305,12 @@ export function StudyDeck(props: StudyDeckProps) {
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all duration-500"
-            style={{ width: `${pct}%` }}
+            style={{ width: `${positionPct}%` }}
           />
         </div>
       </div>
 
       <div className="mx-auto max-w-2xl">
-        {renderCardExtra?.(current)}
         <FlashcardItem
           key={`fc-card-${current.id}`}
           front={current.front}
@@ -324,9 +320,10 @@ export function StudyDeck(props: StudyDeckProps) {
           flipped={isFlipped}
           onFlipToggle={flip}
           lastResult={resultsByCard[current.id] ?? null}
+          voiceTest={voiceTestForCard?.(current)}
         />
 
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-2 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <Button
               variant="ghost"
@@ -338,18 +335,7 @@ export function StudyDeck(props: StudyDeckProps) {
               <ChevronLeft className="mr-1 h-4 w-4" />
               Prev
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 px-3 text-xs"
-              onClick={flip}
-            >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-              {isFlipped ? "Show front" : "Flip"}
-              <span className="ml-1.5 rounded bg-muted px-1 text-[10px]">
-                Space
-              </span>
-            </Button>
+
             <Button
               variant="ghost"
               size="sm"
@@ -422,38 +408,11 @@ function Stat({
   );
 }
 
-/** Shared focused-session frame: a single scroll area + a back affordance. */
-function Shell({
-  onBack,
-  title,
-  headerActions,
-  children,
-}: {
-  onBack: () => void;
-  title: string;
-  headerActions?: ReactNode;
-  children: ReactNode;
-}) {
+/** Shared focused-session frame: single scroll area below the shell header. */
+function Shell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-full w-full overflow-y-auto bg-textured">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-4 sm:py-6 pb-safe">
-        <div className="mb-4 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
-            onClick={onBack}
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-            {title}
-          </span>
-          {headerActions ? (
-            <div className="shrink-0">{headerActions}</div>
-          ) : null}
-        </div>
+    <div className="h-full overflow-y-auto overscroll-contain bg-background">
+      <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6">
         {children}
       </div>
     </div>

@@ -255,7 +255,7 @@ export function CanvasFlashcardsView({
           <div
             className="h-full bg-green-500 transition-all duration-500"
             style={{
-              width: `${Math.round((progress.done / progress.total) * 100)}%`,
+              width: `${cards.length > 0 ? Math.round(((currentIndex + 1) / cards.length) * 100) : 0}%`,
             }}
           />
         </div>
@@ -272,7 +272,9 @@ export function CanvasFlashcardsView({
           layoutMode="list"
           flipped={isFlipped}
           onFlipToggle={flip}
-          onReview={grading ? undefined : (_cardIndex, result) => handleGrade(result)}
+          onReview={
+            grading ? undefined : (_cardIndex, result) => handleGrade(result)
+          }
           lastResult={resultsByCard[current.id] ?? null}
         />
       </div>

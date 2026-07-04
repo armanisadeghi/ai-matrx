@@ -60,6 +60,7 @@ import type { AgentDefinitionMessage } from "@/features/agents/types/agent-messa
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import MarkdownStream from "@/components/MarkdownStream";
 import { SystemAgentCopyForAiMenu } from "@/features/agents/route/SystemAgentCopyForAiMenu";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
@@ -477,9 +478,11 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                 </button>
               </div>
               {agent.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {agent.description}
-                </p>
+                <MarkdownStream
+                  content={agent.description}
+                  hideCopyButton
+                  className="text-sm text-muted-foreground leading-relaxed"
+                />
               )}
               {agent.isVersion && changeNote && (
                 <p className="text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/30 pl-2">

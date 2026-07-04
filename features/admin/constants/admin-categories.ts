@@ -14,6 +14,8 @@
  *    rendered <IconResolver> for the dashboard grid / nav tree / module header.
  *  - features/shell/components/sidebar/admin-menu/*  → lazy, admin-gated
  *    3-layer flyout (Administration → category → tool) in the sidebar footer.
+ *  - scripts/check-admin-catalog.ts  → release gate; warns when a filesystem
+ *    route under /administration is missing from this catalog.
  *
  * Icon names are lucide-react export names. When changing one, verify it exists
  * in lucide-react (an unknown name falls back to the Zap glyph).
@@ -346,6 +348,37 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/system-agents/lineage",
         isNew: true,
       },
+      {
+        title: "Agents: System — New Agent",
+        description:
+          "Create a new global-scope system agent (wizard entry point).",
+        iconName: "Plus",
+        link: "/administration/system-agents/agents/new",
+        isNew: true,
+      },
+      {
+        title: "Agents: System — New Agent (Manual)",
+        description:
+          "Create a system agent manually without the guided wizard.",
+        iconName: "Pencil",
+        link: "/administration/system-agents/agents/new/manual",
+        isNew: true,
+      },
+      {
+        title: "Agents: System — New App",
+        description: "Create a new global-scope system agent app.",
+        iconName: "Plus",
+        link: "/administration/system-agents/apps/new",
+        isNew: true,
+      },
+      {
+        title: "Agents: System — All Shortcuts",
+        description:
+          "Flat list of every global agent shortcut across categories.",
+        iconName: "List",
+        link: "/administration/system-agents/shortcuts/all",
+        isNew: true,
+      },
     ],
   },
   {
@@ -435,11 +468,26 @@ export const adminCategoriesData: AdminCategory[] = [
     iconColor: "text-sky-600",
     features: [
       {
+        title: "Podcasts Hub",
+        description:
+          "Landing page for podcast administration — shows, episodes, and assets.",
+        iconName: "Mic",
+        link: "/administration/podcasts",
+        isNew: true,
+      },
+      {
         title: "Podcast Manager",
         description:
           "Manage podcast shows and episodes — create, edit, upload assets, and publish audio content with custom metadata and video backgrounds.",
         iconName: "Mic",
         link: "/administration/podcasts/shows",
+        isNew: true,
+      },
+      {
+        title: "New Podcast Show",
+        description: "Create a new podcast show with metadata and branding.",
+        iconName: "Plus",
+        link: "/administration/podcasts/shows/new",
         isNew: true,
       },
     ],
@@ -471,11 +519,34 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/markdown-tester",
       },
       {
-        title: "Feature Docs",
+        title: "Feature Docs Hub",
+        description:
+          "Browse synced FEATURE.md and README docs from the repo (admin.feature_docs).",
+        iconName: "FileText",
+        link: "/administration/feature-docs",
+        isNew: true,
+      },
+      {
+        title: "Feature Docs — Codebase Sync",
         description:
           "Browse internal FEATURE.md and README docs synced from the repo into admin.feature_docs. Two-way sync via pnpm sync:feature-docs.",
         iconName: "FileText",
         link: "/administration/feature-docs/codebase",
+        isNew: true,
+      },
+      {
+        title: "Feature Docs — Docs Browser",
+        description: "Browse synced documentation entries by path.",
+        iconName: "BookOpen",
+        link: "/administration/feature-docs/docs",
+        isNew: true,
+      },
+      {
+        title: "Feature Docs — Dot Directories",
+        description:
+          "Index of dot-directories (.cursor, .claude, etc.) with synced docs.",
+        iconName: "Folder",
+        link: "/administration/feature-docs/dotdirs",
         isNew: true,
       },
     ],
@@ -508,6 +579,14 @@ export const adminCategoriesData: AdminCategory[] = [
     iconName: "TestTube",
     iconColor: "text-pink-600",
     features: [
+      {
+        title: "Action Catalog",
+        description:
+          "Live Matrx Action Catalog — noun × verb grid, build/test panel, and output-directive execute/confirm round-trip against the Python brain.",
+        iconName: "Zap",
+        link: "/administration/action-catalog",
+        isNew: true,
+      },
       {
         title: "Tool Definitions",
         description:
@@ -611,6 +690,19 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/official-components",
       },
       {
+        title: "Toggle Menu Demo",
+        description:
+          "Candidate demo for category-aware toggle menus under official-components.",
+        iconName: "ToggleLeft",
+        link: "/administration/official-components/to-be-added/toggle-menu-demo",
+      },
+      {
+        title: "Toggle Menu — With Categories",
+        description: "Toggle menu demo variant with grouped categories.",
+        iconName: "ToggleLeft",
+        link: "/administration/official-components/to-be-added/toggle-menu-demo/toggle-with-categories",
+      },
+      {
         title: "Experimental Routes",
         description:
           "Access all experimental, demo, and test routes organized by feature area for easy testing and development",
@@ -702,6 +794,58 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Canonicalization — Summary",
+        description:
+          "Certification summary and overall canonicalization gate status.",
+        iconName: "BarChart3",
+        link: "/administration/canonicalization/summary",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — Findings",
+        description: "Every FAIL/WARN finding from the canonicalization audit.",
+        iconName: "AlertTriangle",
+        link: "/administration/canonicalization/findings",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — Broken Functions",
+        description: "SQL functions that fail canonicalization checks.",
+        iconName: "Bug",
+        link: "/administration/canonicalization/broken-functions",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — Candidates",
+        description:
+          "Migration candidates: M2M tables, unregistered relations, stale shims.",
+        iconName: "List",
+        link: "/administration/canonicalization/candidates",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — Function Dependencies",
+        description: "Dependency graph for SQL functions under review.",
+        iconName: "GitBranch",
+        link: "/administration/canonicalization/function-deps",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — Table Impact",
+        description:
+          "Per-table preflight impact before certifying a migration.",
+        iconName: "Table",
+        link: "/administration/canonicalization/table-impact",
+        isNew: true,
+      },
+      {
+        title: "Canonicalization — Verify",
+        description: "Verify and certify individual tables or functions.",
+        iconName: "CheckCircle",
+        link: "/administration/canonicalization/verify",
+        isNew: true,
+      },
+      {
         title: "Schema Visualizer",
         description:
           "Visualize the full database schema with interactive diagrams",
@@ -714,6 +858,29 @@ export const adminCategoriesData: AdminCategory[] = [
           "Advanced schema visualization with enhanced features and filtering",
         iconName: "SlidersHorizontal",
         link: "/administration/schema-visualizer-enhanced",
+      },
+    ],
+  },
+  {
+    name: "Reports",
+    iconName: "BarChart2",
+    iconColor: "text-violet-600",
+    features: [
+      {
+        title: "Reports Hub",
+        description:
+          "Platform-wide reports across all users and organizations.",
+        iconName: "BarChart2",
+        link: "/administration/reports",
+        isNew: true,
+      },
+      {
+        title: "Agent Drift Report",
+        description:
+          "Red flags across all agents system-wide — master-detail drift report.",
+        iconName: "AlertTriangle",
+        link: "/administration/reports/agent-drift",
+        isNew: true,
       },
     ],
   },
@@ -749,6 +916,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Auto-generated filesystem index of every page under /administration — catches routes missing from this hub.",
         iconName: "List",
         link: "/administration/all-routes",
+        isNew: true,
+      },
+      {
+        title: "Activity Events",
+        description:
+          "Live window into platform.activity_log — run lifecycle, file/share audit, and webhook events.",
+        iconName: "Activity",
+        link: "/administration/events",
         isNew: true,
       },
       {

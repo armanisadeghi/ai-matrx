@@ -69,7 +69,7 @@ export function AgentEmptyMessageDisplay({
           <Webhook className="w-12 h-12 text-primary" />
         )}
       </div>
-      <div className="space-y-3 max-w-md mx-auto">
+      <div className="space-y-3 mx-auto">
         <p className="text-lg font-medium">{displayName ?? "Ready to run"}</p>
         {displayDescription && (
           <MarkdownStream content={displayDescription} hideCopyButton={true} />

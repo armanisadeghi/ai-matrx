@@ -32,8 +32,8 @@ export function StudyProgressBar({
   cardCount: number;
   progress: StudyProgress;
 }) {
-  const pct =
-    progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+  const positionPct =
+    cardCount > 0 ? Math.round(((currentIndex + 1) / cardCount) * 100) : 0;
 
   return (
     <div className="shrink-0 border-b border-border/50 px-2 py-1">
@@ -57,7 +57,7 @@ export function StudyProgressBar({
       <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-primary transition-all duration-500"
-          style={{ width: `${pct}%` }}
+          style={{ width: `${positionPct}%` }}
         />
       </div>
     </div>

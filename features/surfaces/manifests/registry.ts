@@ -27,6 +27,7 @@ import { transcriptsManifest } from "./transcripts.manifest";
 import { transcriptsCleanupManifest } from "./transcripts-cleanup.manifest";
 import { agentBuilderManifest } from "./agent-builder.manifest";
 import { chatManifest } from "./chat.manifest";
+import { assistantMessageManifest } from "./assistant-message.manifest";
 import { agentRunManifest } from "./agent-run.manifest";
 import { scraperManifest } from "./scraper.manifest";
 import { documentsManifest } from "./documents.manifest";
@@ -60,6 +61,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   transcriptsCleanupManifest,
   agentBuilderManifest,
   chatManifest,
+  assistantMessageManifest,
   agentRunManifest,
   scraperManifest,
   documentsManifest,

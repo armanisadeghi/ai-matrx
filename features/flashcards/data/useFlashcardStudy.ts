@@ -94,15 +94,6 @@ function clampIndex(index: number, length: number): number {
   return index;
 }
 
-/** Map a mastery row's last result back to the card-level review result, if any. */
-function resultFromMastery(mastery: ItemMasteryRow): ReviewResult | undefined {
-  const last = mastery.last_result;
-  if (last === "correct" || last === "partial" || last === "incorrect") {
-    return last;
-  }
-  return undefined;
-}
-
 export function useFlashcardStudy(
   options: UseFlashcardStudyOptions = {},
 ): UseFlashcardStudyResult {
@@ -165,7 +156,10 @@ export function useFlashcardStudy(
       setSet(loadedSet);
       setCards(loadedCards);
 
-      // Seed prior results from mastery (best-effort; loud but never fatal).
+      // Load prior mastery for sidebar/stats display — but do NOT seed
+      // resultsByCard. Every card with history has a last_result; counting
+      // those as "done" would freeze the progress bar and instantly complete
+      // the session (same invariant as useDueReview).
       if (loadedCards.length > 0) {
         const masteryRes = await studyService.getMasteryBulk(
           loadedCards.map((c) => ({
@@ -180,14 +174,11 @@ export function useFlashcardStudy(
               masteryRes.error,
             );
           }
-          const seeded: Record<string, ReviewResult | undefined> = {};
           const masterySeed: Record<string, ItemMasteryRow | undefined> = {};
           for (const m of masteryRes.data ?? []) {
-            const result = resultFromMastery(m);
-            if (result) seeded[m.item_id] = result;
             masterySeed[m.item_id] = m;
           }
-          setResultsByCard(seeded);
+          setResultsByCard({});
           setMasteryByCard(masterySeed);
         }
       } else {

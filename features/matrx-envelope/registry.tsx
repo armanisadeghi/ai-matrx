@@ -110,6 +110,7 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
     case "agent":
       return Webhook;
     case "agent_app":
+    case "app":
       return Webhook;
     case "organization":
       return Building2;
@@ -128,12 +129,14 @@ function chipIcon(type: string): ComponentType<{ className?: string }> {
     case "session_transcript":
       return Mic;
     case "transcript_session":
+    case "studio_session":
       return Mic;
     case "workbook":
       return TableProperties;
     case "workbook_sheet":
       return TableProperties;
     case "document":
+    case "udt_document":
       return FileText;
     case "document_page":
       return FileText;

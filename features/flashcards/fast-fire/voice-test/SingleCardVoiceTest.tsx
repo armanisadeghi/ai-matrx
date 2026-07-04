@@ -2,23 +2,12 @@
 
 // features/flashcards/fast-fire/voice-test/SingleCardVoiceTest.tsx
 //
-// "Test me on this card" — a self-contained, beautiful voice quiz for ONE card,
-// droppable on ANY flashcard surface (study deck, set detail, chat blocks, window
-// panels). Flow (owner design): Start → Preparing → the question is asked (spoken
-// if cached, else shown) → you get a few seconds to answer out loud → it grades →
-// "Go again?". The FIRST of many voice entry points (debate, role-play next), so
-// it reuses the shared capture core + the decoupled grading primitive rather than
-// forking anything.
-//
-// It takes only a card (+ optional cached spoken-front + answer seconds) and owns
-// its own state machine, mic lifecycle, and timer. Render it inside a dialog,
-// overlay, window panel, or inline — it doesn't care.
-//
-// React Compiler is on: no manual memo.
+// Voice test: setup → warm mic → ask (cached file OR Cartesia read-aloud) →
+// answer → grade. Question playback uses SpokenFrontPlayer when a durable
+// spoken_front exists; otherwise useCartesiaSpeaker (same as MessageOptionsMenu).
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Mic,
   Zap,
   Loader2,
   CheckCircle2,
@@ -31,7 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { useFileSrc } from "@/features/files";
+import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
+import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {
   startContinuousCapture,
   startCardClip,
@@ -39,17 +29,17 @@ import {
   stopContinuousCapture,
   hardStopCapture,
   subscribeLevel,
+  isContinuousCaptureActive,
+  playBuzzer,
 } from "../audio/continuousCapture";
+import { SpokenFrontPlayer } from "../components/SpokenFrontPlayer";
 import { gradeSpokenAnswer } from "../agents/gradeSpokenAnswer.thunk";
 import type { SpokenGrade } from "../agents/grading-core";
+import { VoiceTestAudioSetup } from "./VoiceTestAudioSetup";
+import { VoiceAnswerMicMeter } from "./VoiceAnswerMicMeter";
 
 type Phase =
-  | "intro"
-  | "preparing"
-  | "asking"
-  | "answering"
-  | "grading"
-  | "result";
+  "setup" | "preparing" | "asking" | "answering" | "grading" | "result";
 
 export interface SingleCardVoiceTestProps {
   card: { id: string; front: string; back: string };
@@ -62,12 +52,18 @@ export interface SingleCardVoiceTestProps {
   onClose: () => void;
 }
 
-const READY_BEAT_MS = 700; // brief "get ready" beat before the answer window
-const PREPARE_MIN_MS = 900; // minimum "Preparing…" dwell (feels intentional)
+const PREPARE_MIN_MS = 900;
+const SPOKEN_FRONT_MAX_WAIT_MS = 25_000;
 
 const RESULT_STYLE: Record<
   SpokenGrade["result"],
-  { label: string; icon: typeof CheckCircle2; ring: string; text: string; bg: string }
+  {
+    label: string;
+    icon: typeof CheckCircle2;
+    ring: string;
+    text: string;
+    bg: string;
+  }
 > = {
   correct: {
     label: "Correct",
@@ -94,28 +90,40 @@ const RESULT_STYLE: Record<
 
 export function SingleCardVoiceTest({
   card,
-  spokenFrontFileId,
+  spokenFrontFileId: initialSpokenFrontFileId,
   answerSeconds = 10,
   record = true,
   onClose,
 }: SingleCardVoiceTestProps) {
   const dispatch = useAppDispatch();
-  const [phase, setPhase] = useState<Phase>("intro");
+  const {
+    speak: cartesiaSpeak,
+    stop: cartesiaStop,
+    isLoading: cartesiaLoading,
+    isPlaying: cartesiaPlaying,
+  } = useCartesiaSpeaker({
+    processMarkdown: true,
+    purpose: "assistant",
+    dictionarySurfaceKey: READ_ALOUD_DICTIONARY_SURFACE,
+  });
+  const [phase, setPhase] = useState<Phase>("setup");
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [activeSpokenFrontFileId, setActiveSpokenFrontFileId] = useState<
+    string | null
+  >(initialSpokenFrontFileId ?? null);
   const [level, setLevel] = useState(0);
   const [grade, setGrade] = useState<SpokenGrade | null>(null);
   const [skipped, setSkipped] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
 
-  const spokenSrc = useFileSrc(
-    spokenFrontFileId ? { kind: "file_id", fileId: spokenFrontFileId } : null,
-  );
   const capturingRef = useRef(false);
-  // Idempotency guards (timeouts + audio onEnded/onError can each fire once; also
-  // guards against StrictMode double-invokes). Reset on each new "asking" entry.
-  const phaseRef = useRef<Phase>("intro");
+  const spokenFallbackRef = useRef<number | null>(null);
+  const phaseRef = useRef<Phase>("setup");
   const answerStartedRef = useRef(false);
   const finishStartedRef = useRef(false);
+
   useEffect(() => {
     phaseRef.current = phase;
     if (phase === "asking") {
@@ -124,7 +132,6 @@ export function SingleCardVoiceTest({
     }
   }, [phase]);
 
-  // ── Mic level pulse while answering (throttled; imperative would be overkill) ─
   useEffect(() => {
     if (phase !== "answering") return undefined;
     let raf = 0;
@@ -144,83 +151,154 @@ export function SingleCardVoiceTest({
     };
   }, [phase]);
 
-  // ── Teardown: release the mic if we leave mid-test ──────────────────────────
   useEffect(() => {
     return () => {
+      if (spokenFallbackRef.current) {
+        clearTimeout(spokenFallbackRef.current);
+        spokenFallbackRef.current = null;
+      }
+      void cartesiaStop();
       if (capturingRef.current) {
         hardStopCapture();
         capturingRef.current = false;
       }
     };
-  }, []);
+  }, [cartesiaStop]);
 
-  // ── Start (user gesture → warm the mic, then prepare) ───────────────────────
-  const start = async (): Promise<void> => {
-    setError(null);
-    setGrade(null);
-    setSkipped(false);
-    setPhase("preparing");
-    try {
-      await startContinuousCapture();
-      capturingRef.current = true;
-    } catch (err) {
-      console.error("[voice-test] mic start failed:", err);
-      setError("Couldn't access the microphone. Check your audio settings.");
-      setPhase("intro");
-      return;
-    }
-    // A short, deliberate "Preparing…" beat, then ask.
-    window.setTimeout(() => {
-      setPhase((p) => (p === "preparing" ? "asking" : p));
-    }, PREPARE_MIN_MS);
+  /** Start gesture — warms the mic inside the click (same as useFastFireLauncher). */
+  const handleSetupStart = (spokenFrontId: string | null): void => {
+    void (async () => {
+      setStartError(null);
+      setActiveSpokenFrontFileId(spokenFrontId);
+      setStarting(true);
+      setPhase("preparing");
+      try {
+        await startContinuousCapture();
+        if (!isContinuousCaptureActive()) {
+          throw new Error("Microphone capture did not start.");
+        }
+        capturingRef.current = true;
+      } catch (err) {
+        console.error("[voice-test] mic start failed:", err);
+        capturingRef.current = false;
+        setStartError(
+          err instanceof Error
+            ? err.message
+            : "Couldn't access the microphone. Check your audio settings above.",
+        );
+        setPhase("setup");
+        setStarting(false);
+        return;
+      }
+      setStarting(false);
+      window.setTimeout(() => {
+        setPhase((p) => (p === "preparing" ? "asking" : p));
+      }, PREPARE_MIN_MS);
+    })();
   };
 
-  // ── Asking: play the spoken question (if cached), then open the answer window.
-  //    Without cached audio, a brief "get ready" beat leads into answering. ─────
   const beginAnswer = (): void => {
     if (phaseRef.current !== "asking" || answerStartedRef.current) return;
     answerStartedRef.current = true;
+    if (spokenFallbackRef.current) {
+      clearTimeout(spokenFallbackRef.current);
+      spokenFallbackRef.current = null;
+    }
+    playBuzzer("start");
     startCardClip(card.id);
     setPhase("answering");
+  };
+
+  const onSpokenFrontEnded = (endedCardId: string): void => {
+    if (endedCardId !== card.id) return;
+    beginAnswer();
   };
 
   const finishAnswer = (): void => {
     if (phaseRef.current !== "answering" || finishStartedRef.current) return;
     finishStartedRef.current = true;
+    playBuzzer("stop");
     setPhase("grading");
     void (async () => {
-      const clip = await stopCardClip(card.id);
-      const res = await dispatch(
-        gradeSpokenAnswer({
-          front: card.front,
-          back: card.back,
-          secondsAllowed: answerSeconds,
-          clip,
-          surface: "card-voice-test",
-          ...(record ? { itemType: "fc_card", itemId: card.id, method: "voice_test" } : {}),
-        }),
-      );
-      if (res.status === "graded" && res.grade) {
-        setGrade(res.grade);
-      } else if (res.status === "skipped") {
-        setSkipped(true);
-      } else {
-        setError(res.error ?? "Grading didn't come back — try again.");
+      try {
+        const clip = await stopCardClip(card.id);
+        const res = await dispatch(
+          gradeSpokenAnswer({
+            front: card.front,
+            back: card.back,
+            secondsAllowed: answerSeconds,
+            clip,
+            surface: "card-voice-test",
+            ...(record
+              ? { itemType: "fc_card", itemId: card.id, method: "voice_test" }
+              : {}),
+          }),
+        );
+        if (res.status === "graded" && res.grade) {
+          setGrade(res.grade);
+        } else if (res.status === "skipped") {
+          setSkipped(true);
+          if (res.error) setError(res.error);
+        } else {
+          setError(res.error ?? "Grading didn't come back — try again.");
+        }
+      } catch (err) {
+        console.error("[voice-test] grading failed:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Something went wrong grading that answer.",
+        );
+      } finally {
+        setPhase("result");
       }
-      setPhase("result");
     })();
   };
 
-  // If there's spoken audio, the <audio onEnded> advances us; otherwise a brief
-  // "get ready" beat leads into the answer window.
+  // Pre-recorded spoken_front → SpokenFrontPlayer. Otherwise stream the question
+  // live via Cartesia (same hook as cx-chat MessageOptionsMenu read-aloud).
   useEffect(() => {
-    if (phase !== "asking") return undefined;
-    if (spokenFrontFileId && spokenSrc) return undefined;
-    const id = window.setTimeout(() => beginAnswer(), READY_BEAT_MS);
-    return () => window.clearTimeout(id);
-  }, [phase, spokenFrontFileId, spokenSrc]);
+    if (phase !== "asking" || activeSpokenFrontFileId) return undefined;
 
-  // Answer window: a fixed timer, then stop the clip + grade.
+    let cancelled = false;
+
+    spokenFallbackRef.current = window.setTimeout(() => {
+      if (!cancelled) beginAnswer();
+    }, SPOKEN_FRONT_MAX_WAIT_MS);
+
+    void (async () => {
+      await cartesiaSpeak(card.front);
+      if (!cancelled && phaseRef.current === "asking") {
+        beginAnswer();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (spokenFallbackRef.current) {
+        clearTimeout(spokenFallbackRef.current);
+        spokenFallbackRef.current = null;
+      }
+      void cartesiaStop();
+    };
+  }, [phase, activeSpokenFrontFileId, card.front, cartesiaSpeak, cartesiaStop]);
+
+  // Cached audio — max-wait safety net (autoplay block / load failure).
+  useEffect(() => {
+    if (phase !== "asking" || !activeSpokenFrontFileId) return undefined;
+
+    spokenFallbackRef.current = window.setTimeout(
+      () => beginAnswer(),
+      SPOKEN_FRONT_MAX_WAIT_MS,
+    );
+    return () => {
+      if (spokenFallbackRef.current) {
+        clearTimeout(spokenFallbackRef.current);
+        spokenFallbackRef.current = null;
+      }
+    };
+  }, [phase, activeSpokenFrontFileId, card.id]);
+
   useEffect(() => {
     if (phase !== "answering") return undefined;
     const id = window.setTimeout(() => finishAnswer(), answerSeconds * 1000);
@@ -228,14 +306,33 @@ export function SingleCardVoiceTest({
   }, [phase, answerSeconds]);
 
   const goAgain = (): void => {
-    setGrade(null);
-    setSkipped(false);
-    setError(null);
-    setShowTranscript(false);
-    setPhase("asking");
+    void (async () => {
+      setGrade(null);
+      setSkipped(false);
+      setError(null);
+      setShowTranscript(false);
+      answerStartedRef.current = false;
+      finishStartedRef.current = false;
+
+      if (!isContinuousCaptureActive()) {
+        try {
+          await startContinuousCapture();
+          capturingRef.current = isContinuousCaptureActive();
+        } catch (err) {
+          console.error("[voice-test] mic re-warm failed on go-again:", err);
+          setError("Mic session ended — tap Done and start again.");
+          setPhase("setup");
+          capturingRef.current = false;
+          return;
+        }
+      }
+
+      setPhase("asking");
+    })();
   };
 
   const done = (): void => {
+    void cartesiaStop();
     if (capturingRef.current) {
       stopContinuousCapture();
       capturingRef.current = false;
@@ -243,112 +340,110 @@ export function SingleCardVoiceTest({
     onClose();
   };
 
-  return (
-    <div className="relative flex min-h-[26rem] w-full flex-col overflow-hidden rounded-2xl border border-border bg-card">
-      {/* Close */}
-      <button
-        type="button"
-        onClick={done}
-        aria-label="Close"
-        className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      >
-        <X className="h-4 w-4" />
-      </button>
+  const showClose = phase !== "setup";
 
-      {/* Spoken question player — advances to the answer window on end/error. */}
-      {phase === "asking" && spokenFrontFileId && spokenSrc && (
-        <audio
-          key={card.id}
-          src={spokenSrc}
-          autoPlay
-          className="sr-only"
-          onEnded={beginAnswer}
-          onError={beginAnswer}
+  return (
+    <div className="relative flex max-h-[min(90dvh,40rem)] w-full flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      {showClose && (
+        <button
+          type="button"
+          onClick={done}
+          aria-label="Close"
+          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <track kind="captions" />
-        </audio>
+          <X className="h-4 w-4" />
+        </button>
       )}
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
-        {phase === "intro" && (
-          <>
-            <Badge>
-              <Zap className="h-3.5 w-3.5" />
-              Voice test
-            </Badge>
-            <p className="max-w-md text-lg font-medium text-foreground">
-              I&apos;ll ask you this card out loud. Answer by speaking — you&apos;ll
-              have {answerSeconds} seconds, then I&apos;ll grade you.
-            </p>
-            <Button size="lg" className="mt-1 gap-2" onClick={() => void start()}>
-              <Mic className="h-5 w-5" />
-              Start
-            </Button>
-            {error && <ErrorNote>{error}</ErrorNote>}
-          </>
-        )}
+      {phase === "asking" && activeSpokenFrontFileId && (
+        <SpokenFrontPlayer
+          fileId={activeSpokenFrontFileId}
+          cardId={card.id}
+          onEnded={onSpokenFrontEnded}
+        />
+      )}
 
-        {phase === "preparing" && (
-          <>
-            <Pulser>
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </Pulser>
-            <p className="text-base font-medium text-muted-foreground">Preparing…</p>
-          </>
-        )}
-
-        {phase === "asking" && (
-          <>
-            <Badge>
-              <Volume2 className="h-3.5 w-3.5" />
-              Here&apos;s your question
-            </Badge>
-            <p className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
-              {card.front}
-            </p>
-            <p className="text-xs text-muted-foreground">Get ready to answer…</p>
-          </>
-        )}
-
-        {phase === "answering" && (
-          <>
-            <CountdownRing seconds={answerSeconds} level={level} />
-            <p className="max-w-xl text-lg font-semibold leading-snug text-foreground">
-              {card.front}
-            </p>
-            <p className="text-sm font-medium text-primary">Speak your answer…</p>
-          </>
-        )}
-
-        {phase === "grading" && (
-          <>
-            <Pulser>
-              <Zap className="h-8 w-8 animate-pulse text-primary" />
-            </Pulser>
-            <p className="text-base font-medium text-muted-foreground">
-              Grading your answer…
-            </p>
-          </>
-        )}
-
-        {phase === "result" && (
-          <ResultView
-            grade={grade}
-            skipped={skipped}
-            error={error}
-            back={card.back}
-            showTranscript={showTranscript}
-            onToggleTranscript={() => setShowTranscript((v) => !v)}
-            onAgain={goAgain}
-            onDone={done}
+      {phase === "setup" ? (
+        <div className="overflow-y-auto">
+          <VoiceTestAudioSetup
+            card={{ id: card.id, front: card.front }}
+            initialSpokenFrontFileId={initialSpokenFrontFileId}
+            onStart={handleSetupStart}
+            starting={starting}
+            startError={startError}
+            answerSeconds={answerSeconds}
           />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-8 text-center">
+          {phase === "preparing" && (
+            <>
+              <Pulser>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </Pulser>
+              <p className="text-base font-medium text-muted-foreground">
+                Starting…
+              </p>
+            </>
+          )}
+
+          {phase === "asking" && (
+            <>
+              <Badge>
+                {cartesiaLoading && !activeSpokenFrontFileId ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Volume2 className="h-3.5 w-3.5" />
+                )}
+                Here&apos;s your question
+              </Badge>
+              <p className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
+                {card.front}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Listen, then speak your answer…
+              </p>
+            </>
+          )}
+
+          {phase === "answering" && (
+            <>
+              <VoiceAnswerMicMeter level={level} seconds={answerSeconds} />
+              <p className="max-w-xl text-lg font-semibold leading-snug text-foreground">
+                {card.front}
+              </p>
+            </>
+          )}
+
+          {phase === "grading" && (
+            <>
+              <Pulser>
+                <Zap className="h-8 w-8 animate-pulse text-primary" />
+              </Pulser>
+              <p className="text-base font-medium text-muted-foreground">
+                Grading your answer…
+              </p>
+            </>
+          )}
+
+          {phase === "result" && (
+            <ResultView
+              grade={grade}
+              skipped={skipped}
+              error={error}
+              back={card.back}
+              showTranscript={showTranscript}
+              onToggleTranscript={() => setShowTranscript((v) => !v)}
+              onAgain={goAgain}
+              onDone={done}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Result ────────────────────────────────────────────────────────────────────
 function ResultView({
   grade,
   skipped,
@@ -418,9 +513,10 @@ function ResultView({
             <AlertCircle className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="text-sm text-foreground">
-            {skipped
-              ? "I didn't catch an answer that time — give it another go."
-              : (error ?? "Something went wrong grading that answer.")}
+            {error ??
+              (skipped
+                ? "I didn't catch an answer that time — give it another go."
+                : "Something went wrong grading that answer.")}
           </p>
         </>
       )}
@@ -445,7 +541,6 @@ function ResultView({
   );
 }
 
-// ── Small presentational bits ───────────────────────────────────────────────
 function Badge({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
@@ -461,50 +556,6 @@ function Pulser({ children }: { children: React.ReactNode }) {
       <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
         {children}
       </div>
-    </div>
-  );
-}
-
-function ErrorNote({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="max-w-sm rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-      {children}
-    </p>
-  );
-}
-
-/** A circular countdown that depletes over `seconds` (CSS-animated) with a mic
- *  whose glow reacts to the live level. */
-function CountdownRing({ seconds, level }: { seconds: number; level: number }) {
-  const R = 46;
-  const C = 2 * Math.PI * R;
-  const glow = 0.4 + Math.min(1, level * 2.2) * 0.6;
-  return (
-    <div className="relative flex h-28 w-28 items-center justify-center">
-      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={R} fill="none" strokeWidth="6" className="stroke-muted" />
-        <circle
-          cx="50"
-          cy="50"
-          r={R}
-          fill="none"
-          strokeWidth="6"
-          strokeLinecap="round"
-          className="stroke-primary"
-          strokeDasharray={C}
-          style={{
-            strokeDashoffset: 0,
-            animation: `voiceTestCountdown ${seconds}s linear forwards`,
-          }}
-        />
-      </svg>
-      <div
-        className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-transform"
-        style={{ transform: `scale(${1 + Math.min(1, level * 2.2) * 0.12})` }}
-      >
-        <Mic className="h-7 w-7 text-primary" style={{ opacity: glow }} />
-      </div>
-      <style>{`@keyframes voiceTestCountdown { from { stroke-dashoffset: 0 } to { stroke-dashoffset: ${C} } }`}</style>
     </div>
   );
 }

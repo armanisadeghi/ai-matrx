@@ -103,17 +103,23 @@ async function waitForExtraction(
   return null;
 }
 
-/** Upload a response clip → durable file_id (or null on missing/failed). */
+/** Upload a response clip → durable file_id (or null on missing/failed). Never throws. */
 export async function uploadResponseClip(
   clip: Blob | null,
-  opts: { folderPath: string; metadata?: Record<string, unknown> },
+  opts: {
+    folderPath: string;
+    metadata?: Record<string, unknown>;
+    /** Optional stable id for the filename (matches gradeCard.thunk). */
+    cardId?: string;
+  },
 ): Promise<string | null> {
   if (!clip || clip.size === 0) return null;
   try {
     const mime = normalizeAudioContentType(clip.type || "audio/wav");
     const ext = audioExtensionForType(mime);
+    const namePrefix = opts.cardId ? `fastfire-${opts.cardId}` : "answer";
     const uploaded = await fileHandler.upload(
-      { kind: "blob", blob: clip, fileName: `answer.${ext}`, mime },
+      { kind: "blob", blob: clip, fileName: `${namePrefix}.${ext}`, mime },
       { folderPath: opts.folderPath, visibility: "private", metadata: opts.metadata ?? {} },
     );
     return uploaded.fileId ?? null;

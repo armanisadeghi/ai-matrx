@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatTitleCase } from "@/utils/text/text-case-converter";
-import { Search, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { RouteDisplayProps } from "./types";
 
 export default function DataTableDisplay({ data }: RouteDisplayProps) {
   const { routes, groups, basePath } = data;
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -17,19 +16,20 @@ export default function DataTableDisplay({ data }: RouteDisplayProps) {
     const segment = parts[parts.length - 1];
     const category = parts.length > 1 ? formatTitleCase(parts[0]) : "Root";
     const depth = parts.length;
-    return { route, label: formatTitleCase(segment), category, depth, path: `${basePath}/${route}` };
+    return {
+      route,
+      label: formatTitleCase(segment),
+      category,
+      depth,
+      path: `${basePath}/${route}`,
+    };
   });
 
-  const filtered = rows.filter(
-    (r) =>
-      r.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.route.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.category.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filtered = rows;
 
   useEffect(() => {
     setSelectedIndex(0);
-  }, [searchQuery]);
+  }, [routes.length]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -49,21 +49,6 @@ export default function DataTableDisplay({ data }: RouteDisplayProps) {
 
   return (
     <div className="flex flex-col border border-border rounded-lg overflow-hidden bg-card">
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/30">
-        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-        <input
-          autoFocus
-          type="text"
-          placeholder="Search routes, categories..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60 text-foreground"
-        />
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {filtered.length} result{filtered.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-
       <div className="grid grid-cols-[1.5fr_1fr_60px] gap-2 px-3 py-1.5 border-b border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
         <div>Route</div>
         <div>Category</div>
@@ -73,7 +58,7 @@ export default function DataTableDisplay({ data }: RouteDisplayProps) {
       <div ref={listRef} className="max-h-[calc(100dvh-16rem)] overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
-            No routes found matching &ldquo;{searchQuery}&rdquo;
+            No routes to display.
           </div>
         ) : (
           filtered.map((row, index) => {
@@ -99,7 +84,9 @@ export default function DataTableDisplay({ data }: RouteDisplayProps) {
                       {row.route}
                     </span>
                   </div>
-                  <div className="truncate text-muted-foreground">{row.category}</div>
+                  <div className="truncate text-muted-foreground">
+                    {row.category}
+                  </div>
                   <div className="text-right font-mono text-xs text-muted-foreground">
                     {row.depth}
                   </div>

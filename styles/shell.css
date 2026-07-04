@@ -2431,32 +2431,10 @@ details[open] > summary .shell-mobile-admin-caret {
 .scrollbar-h-none::-webkit-scrollbar { height: 0; }
 
 /* =============================================================================
-   Tap-pill press feedback (CSS-only, instant)
+   TapTargetButton geometry + press feedback moved to app/globals.css
    ----------------------------------------------------------------------------
-   Single source of truth for TapTargetButton press feedback. Applied to the
-   visible inner pill of every tap button variant (glass, transparent, solid,
-   group). If press feedback ever feels wrong (too subtle, too aggressive,
-   jittery on mobile) — start here.
-
-   Effects:
-     - 8% scale-down on :active (visible pill shrinks slightly when pressed)
-     - smooth bg + transform transitions
-     - touch-action: manipulation kills the 300ms mobile tap delay
-     - -webkit-tap-highlight-color: transparent suppresses the iOS gray flash
-       that would otherwise paint OVER our custom feedback
-
-   Background-color animation pairs with each variant's own :active rule
-   (.shell-glass:active or Tailwind `active:bg-*` utilities on transparent/
-   solid). This class only owns the timing curve and the scale.
-
-   The matrx-glass-* layered system (own tokens + own classes) that used to
-   live here was deleted in the Tier 3 glass consolidation — every consumer
-   was migrated to .shell-glass-* in earlier commits. matrx-tap-pill keeps
-   its name because it's a tap-feedback timing utility, not glass styling.
+   The .matrx-tap-* family (.matrx-tap-target / .matrx-tap-pill / .matrx-tap-icon
+   and their -sm variants) is now defined ONCE in app/globals.css so every tap
+   button resolves identically in every layout — this file no longer duplicates
+   it. To retune tap buttons, edit the block in app/globals.css.
    ============================================================================= */
-.matrx-tap-pill {
-  transition: background-color 150ms ease, transform 100ms ease;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-.matrx-tap-pill:active { transform: scale(0.92); }

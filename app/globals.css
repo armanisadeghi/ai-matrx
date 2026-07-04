@@ -1184,15 +1184,70 @@
   .matrx-glass-shadow    { @apply shadow-glass; }
   .matrx-glass-shadow-lg { @apply shadow-glass-lg; }
 
-  /* Tap pill — preserved unchanged. */
+  /* =========================================================================
+     TapTargetButton — SINGLE SOURCE OF TRUTH for tap-button geometry + feedback.
+     This is the ONLY place these are defined (previously also duplicated in
+     styles/shell.css, which caused the same button to resolve differently
+     inside vs outside the shell). Consumed exclusively by
+     components/icons/TapTargetButton.tsx. To resize or retune EVERY tap button
+     in the app, edit HERE — nowhere else.
+
+     Structure per button:
+       .matrx-tap-target — outer 44px invisible touch target = the interactive
+                           element (<button>/<a>/<label>). It owns the tap
+                           hygiene (touch-action + tap-highlight) so it applies
+                           to the WHOLE 44px target AND to the link variants —
+                           the iOS gray flash paints on the anchor, not the
+                           inner pill, so putting it on the pill never worked.
+       .matrx-tap-pill   — inner 32px visible pill. Geometry + press feedback.
+                           Each variant layers ONLY its decoration on top (glass
+                           border / solid fill / hover bg) — the size is identical
+                           across glass / transparent / solid, guaranteed here.
+       .matrx-tap-icon   — 16px icon.
+     The `-sm` classes (36 / 24px) are the slimmer geometry used inside groups.
+     ========================================================================= */
+  .matrx-tap-target {
+    display: flex;
+    height: 2.5rem; /* 40px outer tap target */
+    width: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    cursor: pointer;
+    outline: none;
+    touch-action: manipulation; /* kills the 300ms mobile tap delay */
+    -webkit-tap-highlight-color: transparent; /* kills the iOS gray tap flash */
+  }
+  .matrx-tap-target:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .matrx-tap-target-sm {
+    height: 2rem; /* 32px */
+    width: 2rem;
+  }
+
   .matrx-tap-pill {
+    display: flex;
+    height: 1.75rem; /* 28px visible pill */
+    width: 1.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
     transition:
       background-color 150ms ease,
       transform 100ms ease;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
   }
   .matrx-tap-pill:active { transform: scale(0.92); }
+  .matrx-tap-pill-sm {
+    height: 1.25rem; /* 20px */
+    width: 1.25rem;
+  }
+
+  .matrx-tap-icon {
+    height: 0.875rem; /* 14px */
+    width: 0.875rem;
+  }
 }
 
 @layer utilities {

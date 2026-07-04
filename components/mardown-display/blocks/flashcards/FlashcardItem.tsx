@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/styles/themes/utils";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
 import type { MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import { TriangleAlert } from "lucide-react";
 import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
+import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/VoiceTestButton";
 import { FlashcardGoDeeperTrigger } from "./FlashcardGoDeeperTrigger";
+import { WrenchTapButton } from "@/components/icons/tap-buttons";
 import {
   parseSubcardsFromDetails,
   resolveFlashcardSubcards,
@@ -47,6 +48,11 @@ interface FlashcardItemProps {
   /** Parent-controlled flip (study surfaces). */
   flipped?: boolean;
   onFlipToggle?: () => void;
+  /** When set, shows a compact voice-quiz mic icon in the top-right corner. */
+  voiceTest?: {
+    cardId: string;
+    spokenFrontFileId?: string | null;
+  };
 }
 
 const FlashcardItem: React.FC<FlashcardItemProps> = ({
@@ -62,6 +68,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
   showDevWindowTrigger = true,
   flipped,
   onFlipToggle,
+  voiceTest,
 }) => {
   const isPanel = presentation === "panel";
   const isControlledFlip = flipped !== undefined;
@@ -257,8 +264,7 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
 
   const backContent = back === null ? "_Loading…_" : back;
 
-  const handleOpenInWindow = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenInWindow = () => {
     openFlashcardItemWindow({
       front,
       back,
@@ -287,14 +293,35 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
       aria-label={`Flashcard ${index + 1}. Click to flip. ${isFlipped ? "Showing back" : "Showing front"}`}
     >
       {showDevWindowTrigger && isAdmin && (
-        <button
-          type="button"
-          className="absolute top-1.5 left-1.5 z-20 rounded-md bg-destructive/10 p-1 text-destructive ring-1 ring-destructive/50 hover:bg-destructive/20 animate-pulse"
-          onClick={handleOpenInWindow}
-          title="[DEV] Open flashcard in window panel"
+        <div
+          className="absolute top-0 left-0 z-20"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
-          <TriangleAlert className="h-3 w-3" />
-        </button>
+          <WrenchTapButton
+            variant="solid"
+            bgColor="bg-emerald-600"
+            iconColor="text-white"
+            hoverBgColor="hover:bg-emerald-500"
+            activeBgColor="active:bg-emerald-700"
+            ariaLabel="[DEV] Open flashcard in window panel"
+            tooltip="[DEV] Open flashcard in window panel"
+            onClick={handleOpenInWindow}
+          />
+        </div>
+      )}
+      {voiceTest && back !== null && (
+        <div
+          className="absolute top-0 right-0 z-20"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <VoiceTestButton
+            card={{ id: voiceTest.cardId, front, back }}
+            spokenFrontFileId={voiceTest.spokenFrontFileId}
+            iconOnly
+          />
+        </div>
       )}
       <div
         className="relative w-full h-full transition-transform duration-500"
@@ -327,7 +354,8 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
             {lastResult && (
               <div
                 className={cn(
-                  "absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full",
+                  "absolute w-2.5 h-2.5 rounded-full",
+                  voiceTest ? "bottom-1.5 left-1.5" : "top-1.5 right-1.5",
                   resultIndicator[lastResult].color,
                 )}
                 title={resultIndicator[lastResult].label}

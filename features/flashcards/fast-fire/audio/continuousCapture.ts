@@ -36,10 +36,7 @@
 // subscribeLevel, fullSessionClip (+ new subscribeDebug / getCaptureDebug for the
 // admin debug panel).
 
-import {
-  acquireMicStream,
-  releaseMicStream,
-} from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
 import {
   getSharedAudioContext,
   resumeSharedAudioContext,
@@ -266,13 +263,20 @@ function stopLevelMeter(): void {
   emitLevel(0);
 }
 
+/** True while the continuous PCM capture graph is wired and recording. */
+export function isContinuousCaptureActive(): boolean {
+  return store.capturePath !== null;
+}
+
 /**
  * Start the session capture: acquire the warm mic stream (single prompt), claim
  * the app-wide capture lock, register a visible recording session, and wire the
  * mic → AudioWorklet (PCM tap) + AnalyserNode (level meter). Idempotent.
  *
  * Must be called from a user gesture (Start) so iOS can resume the AudioContext
- * and grant the mic.
+ * and grant the mic. Throws if the mic graph cannot be started (callers must
+ * catch — a silent no-op used to leave voice-test UIs in a broken "capturing"
+ * state with no audio).
  */
 export async function startContinuousCapture(): Promise<void> {
   if (store.capturePath) return; // already capturing
@@ -288,13 +292,15 @@ export async function startContinuousCapture(): Promise<void> {
   if (!ctx) {
     console.error("[fastfire.capture] no AudioContext — capture unavailable");
     releaseCapture(CAPTURE_ID);
-    return;
+    throw new Error("Audio capture is unavailable in this browser.");
   }
 
   const stream = await acquireMicStream({ channelCount: 1 });
   store.stream = stream;
   store.sampleRate = ctx.sampleRate;
-  store.pcm = new Float32Array(Math.round(ctx.sampleRate * INITIAL_CAPACITY_SEC));
+  store.pcm = new Float32Array(
+    Math.round(ctx.sampleRate * INITIAL_CAPACITY_SEC),
+  );
   store.sampleCount = 0;
   bufferCapWarned = false;
   store.cards.clear();
@@ -319,7 +325,8 @@ export async function startContinuousCapture(): Promise<void> {
         numberOfOutputs: 1,
         channelCount: 1,
       });
-      node.port.onmessage = (e: MessageEvent<Float32Array>) => appendFrame(e.data);
+      node.port.onmessage = (e: MessageEvent<Float32Array>) =>
+        appendFrame(e.data);
       store.source.connect(node);
       node.connect(store.sinkGain);
       store.workletNode = node;
@@ -357,6 +364,11 @@ export async function startContinuousCapture(): Promise<void> {
 
   startLevelMeter(ctx);
   maybeEmitDebug(true);
+
+  if (!store.capturePath) {
+    hardStopCapture();
+    throw new Error("Could not start the microphone capture graph.");
+  }
 }
 
 /** Mark the start sample of `cardId`'s answer window. No recorder to start — the
@@ -406,8 +418,14 @@ function buildCardClip(cardId: string): Blob | null {
   if (!win || store.sampleCount === 0) return null;
   const rate = store.sampleRate;
   const end = win.endSample ?? store.sampleCount;
-  const clipStart = Math.max(0, Math.floor(win.startSample - PAD_BEFORE_SEC * rate));
-  const clipEnd = Math.min(store.sampleCount, Math.ceil(end + PAD_AFTER_SEC * rate));
+  const clipStart = Math.max(
+    0,
+    Math.floor(win.startSample - PAD_BEFORE_SEC * rate),
+  );
+  const clipEnd = Math.min(
+    store.sampleCount,
+    Math.ceil(end + PAD_AFTER_SEC * rate),
+  );
   if (clipEnd <= clipStart) return null;
 
   const clip = store.pcm.slice(clipStart, clipEnd);
@@ -415,10 +433,21 @@ function buildCardClip(cardId: string): Blob | null {
   // so the whole beep fits (the last card's post-pad can be clipped to the buffer
   // end, putting the stop offset AT clip.length where mixInto would drop it).
   const beepLen = Math.round(BEEP_DUR_SEC * rate);
-  const startAt = Math.max(0, Math.min(win.startSample - clipStart, clip.length - beepLen));
+  const startAt = Math.max(
+    0,
+    Math.min(win.startSample - clipStart, clip.length - beepLen),
+  );
   const stopAt = Math.max(0, Math.min(end - clipStart, clip.length - beepLen));
-  mixInto(clip, makeSineFloat32(BEEP_START_HZ, BEEP_DUR_SEC, rate, BEEP_AMP), startAt);
-  mixInto(clip, makeSineFloat32(BEEP_STOP_HZ, BEEP_DUR_SEC, rate, BEEP_AMP), stopAt);
+  mixInto(
+    clip,
+    makeSineFloat32(BEEP_START_HZ, BEEP_DUR_SEC, rate, BEEP_AMP),
+    startAt,
+  );
+  mixInto(
+    clip,
+    makeSineFloat32(BEEP_STOP_HZ, BEEP_DUR_SEC, rate, BEEP_AMP),
+    stopAt,
+  );
   return encodeWavFromFloat32(clip, rate, { targetRate: WAV_TARGET_RATE });
 }
 

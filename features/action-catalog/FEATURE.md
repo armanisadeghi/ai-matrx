@@ -47,6 +47,7 @@ The admin surface that shows the **Matrx Action Catalog** — every noun (a tabl
 
 ## Change Log
 
+- 2026-07-04 — Added to admin dashboard catalog (Tool Registry). Release gate `pnpm check:admin-catalog` prevents future omissions.
 - 2026-07-01 — Type-safety: replaced 7 hand-written API interfaces with OpenAPI aliases
   (`components["schemas"]` in `types.ts`); derived `ActionState` / `ActionVerb` from
   `NounActions`; removed `?? ""` form-default hatches in `ActionBuilderPanel`; confirm

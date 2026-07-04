@@ -34,6 +34,7 @@ if $ADVISORY; then
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
+        "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )
 else
     declare -a GATES=(
@@ -41,6 +42,7 @@ else
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts --strict"
+        "Admin dashboard catalog|pnpm exec tsx scripts/check-admin-catalog.ts"
     )
 fi
 

@@ -44,51 +44,73 @@ export interface GradeSpokenAnswerResult {
 
 export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
   return async (dispatch: AppDispatch): Promise<GradeSpokenAnswerResult> => {
-    const config = getFastFireAgentConfig();
-    const surface = args.surface ?? "voice-test";
+    try {
+      const config = getFastFireAgentConfig();
+      const surface = args.surface ?? "voice-test";
 
-    const responseAudioFileId = await uploadResponseClip(args.clip, {
-      folderPath: CloudFolders.SYSTEM_FASTFIRE_RESPONSES,
-      metadata: {
-        origin: surface,
-        item_type: args.itemType ?? null,
-        item_id: args.itemId ?? null,
-        session_id: args.sessionId ?? null,
-      },
-    });
+      // Same upload path as gradeCard.thunk — best-effort; a failed upload must
+      // never throw (FastFire skips grading and records result-less instead).
+      const responseAudioFileId = await uploadResponseClip(args.clip, {
+        folderPath: CloudFolders.SYSTEM_FASTFIRE_RESPONSES,
+        metadata: {
+          origin: surface,
+          item_type: args.itemType ?? null,
+          item_id: args.itemId ?? null,
+          session_id: args.sessionId ?? null,
+          ...(args.itemId ? { card_id: args.itemId } : {}),
+        },
+        ...(args.itemId ? { cardId: args.itemId } : {}),
+      });
 
-    // NO-AUDIO GUARD: never launch the grader without audio (it would hallucinate
-    // a "correct" answer from the back). Record a result-less attempt if we have
-    // an item to key it to.
-    if (!config.graderAgentId || !responseAudioFileId) {
-      await maybeRecord(args, responseAudioFileId, null, null);
-      return { status: "skipped", responseAudioFileId };
-    }
+      if (!config.graderAgentId || !responseAudioFileId) {
+        await maybeRecord(args, responseAudioFileId, null, null);
+        return {
+          status: "skipped",
+          responseAudioFileId,
+          ...(responseAudioFileId
+            ? {}
+            : {
+                error:
+                  args.clip && args.clip.size > 0
+                    ? "Could not upload your recording — check your connection and try again."
+                    : undefined,
+              }),
+        };
+      }
 
-    const grade = await dispatch(
-      runSpokenGrader({
-        agentId: config.graderAgentId,
-        front: args.front,
-        back: args.back,
-        secondsAllowed: args.secondsAllowed,
-        responseAudioFileId,
-        ...(args.rubric ? { rubric: args.rubric } : {}),
-        surfaceKey: `${surface}-grade`,
-        sourceFeature: "fastfire-grade",
-      }),
-    );
+      const grade = await dispatch(
+        runSpokenGrader({
+          agentId: config.graderAgentId,
+          front: args.front,
+          back: args.back,
+          secondsAllowed: args.secondsAllowed,
+          responseAudioFileId,
+          ...(args.rubric ? { rubric: args.rubric } : {}),
+          surfaceKey: `${surface}-grade`,
+          sourceFeature: "fastfire-grade",
+        }),
+      );
 
-    if (!grade) {
-      await maybeRecord(args, responseAudioFileId, null, config.graderAgentId);
+      if (!grade) {
+        await maybeRecord(args, responseAudioFileId, null, config.graderAgentId);
+        return {
+          status: "error",
+          responseAudioFileId,
+          error: "The grader didn't return a result.",
+        };
+      }
+
+      await maybeRecord(args, responseAudioFileId, grade, config.graderAgentId);
+      return { status: "graded", grade, responseAudioFileId };
+    } catch (err) {
+      console.error("[gradeSpokenAnswer] unexpected failure:", err);
       return {
         status: "error",
-        responseAudioFileId,
-        error: "The grader didn't return a result.",
+        responseAudioFileId: null,
+        error:
+          err instanceof Error ? err.message : "Something went wrong grading that answer.",
       };
     }
-
-    await maybeRecord(args, responseAudioFileId, grade, config.graderAgentId);
-    return { status: "graded", grade, responseAudioFileId };
   };
 }
 

@@ -12,9 +12,11 @@
 
 import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useDueReview } from "../../data/useDueReview";
 import { StudyDeck } from "./StudyDeck";
-import { renderVoiceTestExtra } from "./voiceTestExtra";
+import { StudyDeckHeader } from "./StudyDeckHeader";
+import { getVoiceTestForCard } from "./voiceTestExtra";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -23,33 +25,38 @@ export function ReviewDueSurface() {
   const study = useDueReview();
 
   return (
-    <StudyDeck
-      title="Review due"
-      onBack={() => router.back()}
-      loading={study.loading}
-      error={study.error}
-      cards={study.cards}
-      currentIndex={study.currentIndex}
-      isFlipped={study.isFlipped}
-      resultsByCard={study.resultsByCard}
-      grading={study.grading}
-      progress={study.progress}
-      flip={study.flip}
-      next={study.next}
-      prev={study.prev}
-      goTo={study.goTo}
-      grade={study.grade}
-      renderCardExtra={renderVoiceTestExtra}
-      errorTitle="Couldn't load your due cards"
-      emptyTitle="You're all caught up"
-      emptyBody="No cards are due for review right now. Study a set to build your queue — cards resurface on the spaced-repetition schedule."
-      completionTitle="Review complete"
-      completionSubtitle={`You reviewed all ${study.progress.total} due cards.`}
-      completionPrimary={{
-        label: "Back to flashcards",
-        icon: Layers,
-        onClick: () => router.push(EDU_BASE),
-      }}
-    />
+    <>
+      <PageHeader>
+        <StudyDeckHeader title="Review due" backHref={EDU_BASE} />
+      </PageHeader>
+      <div className="h-full overflow-hidden">
+        <StudyDeck
+          loading={study.loading}
+          error={study.error}
+          cards={study.cards}
+          currentIndex={study.currentIndex}
+          isFlipped={study.isFlipped}
+          resultsByCard={study.resultsByCard}
+          grading={study.grading}
+          progress={study.progress}
+          flip={study.flip}
+          next={study.next}
+          prev={study.prev}
+          goTo={study.goTo}
+          grade={study.grade}
+          voiceTestForCard={getVoiceTestForCard}
+          errorTitle="Couldn't load your due cards"
+          emptyTitle="You're all caught up"
+          emptyBody="No cards are due for review right now. Study a set to build your queue — cards resurface on the spaced-repetition schedule."
+          completionTitle="Review complete"
+          completionSubtitle={`You reviewed all ${study.progress.total} due cards.`}
+          completionPrimary={{
+            label: "Back to flashcards",
+            icon: Layers,
+            onClick: () => router.push(EDU_BASE),
+          }}
+        />
+      </div>
+    </>
   );
 }

@@ -19,6 +19,7 @@
 // fallback opens the window after a max-wait. The robust fix is to play the
 // decoded buffer through the Start-resumed AudioContext (like the buzzer).
 
+import { useEffect, useRef } from "react";
 import { useFileSrc } from "@/features/files";
 
 export function SpokenFrontPlayer({
@@ -32,9 +33,25 @@ export function SpokenFrontPlayer({
   onEnded?: (cardId: string) => void;
 }) {
   const src = useFileSrc(fileId ? { kind: "file_id", fileId } : null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // autoPlay alone is unreliable after async URL resolution (and on iOS). Explicit
+  // play() when src lands keeps voice-test + FastFire aligned with the Start gesture.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el || !src) return;
+    void el.play().catch((err) => {
+      console.warn(
+        "[SpokenFrontPlayer] play() failed — fallback timer will open the answer window:",
+        err,
+      );
+    });
+  }, [src, cardId]);
+
   if (!fileId || !src) return null;
   return (
     <audio
+      ref={audioRef}
       key={cardId}
       src={src}
       autoPlay

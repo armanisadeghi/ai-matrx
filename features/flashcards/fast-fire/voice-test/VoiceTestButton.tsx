@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MicTapButton } from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
 import { CardVoiceTestDialog } from "./CardVoiceTestDialog";
 
@@ -18,6 +19,8 @@ export interface VoiceTestButtonProps {
   spokenFrontFileId?: string | null;
   answerSeconds?: number;
   label?: string;
+  /** Compact mic icon — for embedding on flashcard corners. */
+  iconOnly?: boolean;
   variant?: "outline" | "secondary" | "ghost" | "default";
   size?: "sm" | "default" | "lg";
   className?: string;
@@ -28,22 +31,36 @@ export function VoiceTestButton({
   spokenFrontFileId,
   answerSeconds,
   label = "Test me",
+  iconOnly = false,
   variant = "outline",
   size = "sm",
   className,
 }: VoiceTestButtonProps) {
   const [open, setOpen] = useState(false);
+
+  const handleOpen = () => setOpen(true);
+
   return (
     <>
-      <Button
-        variant={variant}
-        size={size}
-        className={cn("gap-1.5", className)}
-        onClick={() => setOpen(true)}
-      >
-        <Mic className="h-4 w-4" />
-        {label}
-      </Button>
+      {iconOnly ? (
+        <MicTapButton ariaLabel={label} tooltip={label} onClick={handleOpen} />
+      ) : (
+        <Button
+          type="button"
+          variant={variant}
+          size={size}
+          className={cn("gap-1.5", className)}
+          title={label}
+          aria-label={label}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpen();
+          }}
+        >
+          <Mic className="h-4 w-4" />
+          {label}
+        </Button>
+      )}
       <CardVoiceTestDialog
         card={card}
         spokenFrontFileId={spokenFrontFileId}

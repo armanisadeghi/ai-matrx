@@ -38,10 +38,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
-import {
-  acquireMicStream,
-  releaseMicStream,
-} from "@/features/audio/micStream";
+import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
 import {
   getSharedAudioContext,
   resumeSharedAudioContext,
@@ -185,8 +182,9 @@ export function AudioDevicesPanel() {
           <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
             <span>
-              This browser can&apos;t switch the audio output device. Choose your
-              speaker or headphones in your macOS / iOS sound settings instead.
+              This browser can&apos;t switch the audio output device. Choose
+              your speaker or headphones in your macOS / iOS sound settings
+              instead.
             </span>
           </p>
         )}
@@ -336,7 +334,7 @@ function MicLevelMeter({ disabled }: { disabled: boolean }) {
         releaseMicStream();
         heldRef.current = false;
       }
-       
+
       console.error("[AudioDevicesPanel] mic test failed:", err);
       toast.error("Couldn't start the mic test", {
         description:
@@ -435,7 +433,6 @@ function TestSpeakerButton() {
         osc.onended = () => resolve();
       });
     } catch (err) {
-       
       console.error("[AudioDevicesPanel] speaker test failed:", err);
       toast.error("Couldn't play the test tone");
     } finally {

@@ -62,12 +62,14 @@ interface SpokenFrontCard {
  */
 function readAudioFileId(state: RootState, requestId: string): string | null {
   // Path A (canonical for streaming TTS): audio_stream_end → file_id.
-  const unknown = selectRenderBlocksByType(requestId, "unknown_data_event")(state);
+  const unknown = selectRenderBlocksByType(
+    requestId,
+    "unknown_data_event",
+  )(state);
   if (unknown) {
     for (let i = unknown.length - 1; i >= 0; i--) {
       const d = unknown[i]?.data as
-        | { _dataType?: string; file_id?: string | null }
-        | undefined;
+        { _dataType?: string; file_id?: string | null } | undefined;
       if (d?._dataType === "audio_stream_end" && d.file_id) return d.file_id;
     }
   }
@@ -76,13 +78,25 @@ function readAudioFileId(state: RootState, requestId: string): string | null {
   if (media) {
     for (let i = media.length - 1; i >= 0; i--) {
       const d = media[i]?.data as
-        | { fileId?: string | null; file_id?: string | null }
-        | undefined;
+        { fileId?: string | null; file_id?: string | null } | undefined;
       const id = d?.fileId ?? d?.file_id ?? null;
       if (id) return id;
     }
   }
   return null;
+}
+
+/** Read a card's cached spoken-front file_id from the DB (no generation). */
+export async function getCachedSpokenFrontFileId(
+  cardId: string,
+): Promise<string | null> {
+  const res = await fcService.getCardsByIds([cardId]);
+  const card = res.data?.[0];
+  if (!card) return null;
+  return (
+    card.details.find((d) => d.kind === "spoken_front" && !!d.audio_file_id)
+      ?.audio_file_id ?? null
+  );
 }
 
 /**
@@ -137,12 +151,20 @@ export function generateSpokenFront(
       }
 
       // Cache as the card's durable spoken_front detail.
-      const res = await fcService.addDetail(card.id, "spoken_front", vars.content, {
-        audio_file_id: fileId,
-        generated_by: "agent",
-      });
+      const res = await fcService.addDetail(
+        card.id,
+        "spoken_front",
+        vars.content,
+        {
+          audio_file_id: fileId,
+          generated_by: "agent",
+        },
+      );
       if (res.error) {
-        console.error(`[fastfire.tts] persist failed for ${card.id}:`, res.error);
+        console.error(
+          `[fastfire.tts] persist failed for ${card.id}:`,
+          res.error,
+        );
         // The audio still exists (fileId) even if the detail write failed — return
         // it so this session can play it; it just won't be cached for next time.
       }
@@ -166,9 +188,7 @@ export function ensureSpokenFrontsForSet(
   setId: string,
   onProgress?: (done: number, total: number) => void,
 ) {
-  return async (
-    dispatch: AppDispatch,
-  ): Promise<Record<string, string>> => {
+  return async (dispatch: AppDispatch): Promise<Record<string, string>> => {
     const result: Record<string, string> = {};
     const setRes = await fcService.getSetWithCards(setId);
     if (!setRes.data) return result;
@@ -206,7 +226,9 @@ export function ensureSpokenFrontsForSet(
       }
     }
     await Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, todo.length) }, () => worker()),
+      Array.from({ length: Math.min(CONCURRENCY, todo.length) }, () =>
+        worker(),
+      ),
     );
     return result;
   };

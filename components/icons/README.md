@@ -73,7 +73,7 @@ import { PlusTapButton, SearchTapButton } from "@/components/icons/tap-buttons";
 Pass-through props: `onClick`, `as`, `htmlFor`, `ariaLabel`, `disabled`, `className`, `strokeWidth`
 
 **Available:**
-`MenuTapButton` `PlusTapButton` `SearchTapButton` `SettingsTapButton` `MaximizeTapButton` `ArrowDownUpTapButton` `BellTapButton` `UploadTapButton` `UndoTapButton` `RedoTapButton` `CopyTapButton` `TrashTapButton` `ChevronLeftTapButton` `PanelLeftTapButton` `PanelRightTapButton` `SquarePenTapButton` `XTapButton` `FilterTapButton` `PlayTapButton` `PauseTapButton` `StopTapButton` `Volume2TapButton`
+`MenuTapButton` `PlusTapButton` `SearchTapButton` `SettingsTapButton` `MaximizeTapButton` `ArrowDownUpTapButton` `BellTapButton` `UploadTapButton` `UndoTapButton` `RedoTapButton` `CopyTapButton` `TrashTapButton` `ChevronLeftTapButton` `PanelLeftTapButton` `PanelRightTapButton` `SquarePenTapButton` `XTapButton` `FilterTapButton` `PlayTapButton` `PauseTapButton` `StopTapButton` `Volume2TapButton` `TriangleAlertTapButton`
 
 ### Links
 

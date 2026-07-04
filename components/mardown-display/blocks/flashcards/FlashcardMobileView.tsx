@@ -182,7 +182,7 @@ const countLines = (text: string): number =>
 // ─────────────────────────────────────────────
 // FitTextFace — renders markdown content and auto-sizes font to fill container
 // ─────────────────────────────────────────────
-const MAX_FONT_PX = 72;
+const MAX_FONT_PX = 64;
 const MIN_FONT_PX = 14;
 
 interface FitTextFaceProps {
@@ -200,40 +200,112 @@ const FitTextFace: React.FC<FitTextFaceProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
-  const [fontSize, setFontSize] = useState(MAX_FONT_PX);
+  // Start at the MIN size: if the container isn't laid out yet on first paint
+  // (0-height during the fullscreen transition / flex settle), the fallback is
+  // small readable text — never giant text overflowing the screen.
+  const [fontSize, setFontSize] = useState(MIN_FONT_PX);
 
   const styleConfig = useMemo(() => makeMobileCardStyle(centered), [centered]);
 
-  // After render, measure whether text overflows the container.
-  // Binary-search from MAX down to MIN to find the largest size that fits.
+  const lastBestRef = useRef(0);
+
+  // Measure whether the text overflows and binary-search from MAX down to MIN
+  // for the largest size that fits.
+  //
+  // ReactMarkdown is a `dynamic(ssr:false)` import, so on first mount the text
+  // node is EMPTY until its JS chunk loads a beat later — measuring then yields
+  // a false "everything fits" and locks in the MAX (72px) giant text. The fix:
+  // observe the TEXT element (not just the container) so we re-fit the instant
+  // the async markdown content actually paints. Container is observed too, for
+  // viewport/rotation changes.
   useLayoutEffect(() => {
     const container = containerRef.current;
     const text = textRef.current;
-    if (!container || !text) return;
 
-    const containerH = container.clientHeight;
-    if (containerH === 0) return;
+    if (!container || !text) return undefined;
 
-    let lo = MIN_FONT_PX;
-    let hi = MAX_FONT_PX;
-    let best = MIN_FONT_PX;
+    const fit = () => {
+      const containerH = container.clientHeight;
+      const containerW = container.clientWidth;
 
-    while (lo <= hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      text.style.fontSize = `${mid}px`;
-      // Force layout recalc
-      const textH = text.scrollHeight;
+      // Not laid out yet — wait for the ResizeObserver to fire with real dims.
+      if (containerH === 0 || containerW === 0) return;
 
-      if (textH <= containerH) {
-        best = mid;
-        lo = mid + 1;
-      } else {
-        hi = mid - 1;
+      // If the async markdown chunk hasn't painted yet the node is empty:
+      // measuring now falsely reports "fits" and locks in the MAX size. Detect
+      // it (near-zero natural height at the min probe size) and defer — the
+      // text ResizeObserver re-fires the moment the content actually paints.
+      text.style.fontSize = `${MIN_FONT_PX}px`;
+      if (text.scrollHeight < MIN_FONT_PX) return;
+
+      // The markdown wrapper uses `overflow-wrap: break-word`, which snaps a
+      // too-wide single word (e.g. "Ribosome") mid-word onto a new line instead
+      // of overflowing — hiding it from a height-only measurement. Temporarily
+      // disable word-breaking + reveal horizontal overflow so an over-wide word
+      // reports via scrollWidth, then require BOTH axes to fit. Restored after.
+      const descendants = text.querySelectorAll<HTMLElement>("*");
+      const prev = new Map<
+        HTMLElement,
+        { ow: string; wb: string; ox: string }
+      >();
+      descendants.forEach((el) => {
+        prev.set(el, {
+          ow: el.style.overflowWrap,
+          wb: el.style.wordBreak,
+          ox: el.style.overflowX,
+        });
+        el.style.overflowWrap = "normal";
+        el.style.wordBreak = "normal";
+        el.style.overflowX = "visible";
+      });
+
+      let lo = MIN_FONT_PX;
+      let hi = MAX_FONT_PX;
+      let best = MIN_FONT_PX;
+
+      while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        text.style.fontSize = `${mid}px`;
+        // Force layout recalc
+        const textH = text.scrollHeight;
+        const textW = text.scrollWidth;
+
+        // Fits only if it clears BOTH axes (+1px tolerance on width for
+        // sub-pixel rounding of the widest word).
+        if (textH <= containerH && textW <= containerW + 1) {
+          best = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
       }
-    }
 
-    text.style.fontSize = `${best}px`;
-    setFontSize(best);
+      // Restore the original break behavior so genuinely-too-long content still
+      // degrades gracefully (wraps) at the final size instead of overflowing.
+      descendants.forEach((el) => {
+        const p = prev.get(el);
+        if (!p) return;
+        el.style.overflowWrap = p.ow;
+        el.style.wordBreak = p.wb;
+        el.style.overflowX = p.ox;
+      });
+
+      text.style.fontSize = `${best}px`;
+      if (best !== lastBestRef.current) {
+        lastBestRef.current = best;
+        setFontSize(best);
+      }
+    };
+
+    fit();
+
+    // Observe BOTH: `text` catches the async markdown paint (the real bug),
+    // `container` catches viewport/rotation changes.
+    const ro = new ResizeObserver(fit);
+    ro.observe(container);
+    ro.observe(text);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content]);
 
   return (
