@@ -1032,7 +1032,12 @@ export function AgentSettingsCore({
 
   const { normalizedControls, error } = useModelControls(models, modelId ?? "");
 
-  const currentSettings: FeLlmParams = (settings ?? {}) as FeLlmParams;
+  // `settings` is null until the agent record hydrates (selectAgentSettings →
+  // `record?.settings ?? null`). Hooks below read this nullable value directly
+  // (they already tolerate null); the render body reads the guaranteed-non-null
+  // `currentSettings`, declared AFTER the hydration guard near the early returns
+  // so an edit made before hydration can never round-trip `{ ...{}, key: value }`
+  // back to Redux and silently drop every other real setting on save.
 
   const modelConstraints = useMemo(() => {
     if (!modelId) return null;
@@ -1055,29 +1060,37 @@ export function AgentSettingsCore({
     onUnappliedEditsChange?.(editorDirty);
   }, [editorDirty, onUnappliedEditsChange]);
 
-  // Track enabled settings (keys with non-null values)
+  // Track enabled settings (keys with non-null values). Reads `settings`
+  // directly (nullable pre-hydration) — these hooks must run unconditionally,
+  // before the hydration guard below.
   const [enabledSettings, setEnabledSettings] = useState<Set<string>>(() => {
     const enabled = new Set<string>();
-    Object.entries(currentSettings).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) enabled.add(key);
-    });
+    // Pre-hydration (`settings === null`) → no enabled keys yet.
+    if (settings) {
+      Object.entries(settings).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) enabled.add(key);
+      });
+    }
     return enabled;
   });
 
   useEffect(() => {
     const enabled = new Set<string>();
-    Object.entries(currentSettings).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) enabled.add(key);
-    });
+    if (settings) {
+      Object.entries(settings).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) enabled.add(key);
+      });
+    }
     setEnabledSettings(enabled);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
 
   const [jsonText, setJsonText] = useState("");
 
   // ── Validation engine ──────────────────────────────────────────────────────
+  // useConfigValidation accepts `FeLlmParams | null` and handles the null
+  // (pre-hydration) case, so pass the nullable selector value straight through.
   const { validation, highlightMap: jsonHighlights } = useConfigValidation({
-    settings: currentSettings,
+    settings,
     modelId,
     normalizedControls,
     constraints: modelConstraints,
@@ -1090,7 +1103,7 @@ export function AgentSettingsCore({
     return {
       model_id: modelId,
       model_name: model?.name ?? null,
-      raw_settings: currentSettings,
+      raw_settings: settings,
       constraints: modelConstraints,
       issues: allIssues.map((i) => ({
         rule: i.ruleId,
@@ -1102,7 +1115,7 @@ export function AgentSettingsCore({
         suggestion: i.suggestion,
       })),
     };
-  }, [allIssues, modelId, models, currentSettings, modelConstraints]);
+  }, [allIssues, modelId, models, settings, modelConstraints]);
 
   // ── Model change reconciliation ───────────────────────────────────────────
   const [pendingModelChange, setPendingModelChange] = useState<{
@@ -1343,6 +1356,27 @@ export function AgentSettingsCore({
     () => allIssues.filter((i) => i.category === "unrecognized_key"),
     [allIssues],
   );
+
+  // ── Hydration guard ───────────────────────────────────────────────────────
+  // Placed after ALL hooks (the last is the useMemo above) so an early return
+  // never skips a hook. selectAgentSettings returns null until the agent record
+  // hydrates; rendering the editor against null would let a field edit round-
+  // trip `{ ...{}, key: value }` back to Redux/Postgres and silently drop every
+  // OTHER real setting on save. Mirrors AgentSettingsForm's `if (!agent)` block
+  // (same centered muted-text container) and this component's own Loader2 idiom.
+  if (settings === null) {
+    return (
+      <div className="flex items-center justify-center gap-2 h-full text-muted-foreground text-sm">
+        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+        Loading agent settings…
+      </div>
+    );
+  }
+
+  // `settings` is now narrowed non-null. LLMParams is structurally assignable to
+  // the FeLlmParams superset (every extra key is optional) — no cast, and no
+  // `?? {}` fallback that could mask the pre-hydration null and drop settings.
+  const currentSettings: FeLlmParams = settings;
 
   const handleFixAll = () => {
     const next = applyAllFixableIssues(

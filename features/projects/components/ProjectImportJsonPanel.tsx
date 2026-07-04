@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
 import {
@@ -74,7 +74,7 @@ export function ProjectImportJsonPanel({
   onCreated,
   onClose,
 }: ProjectImportJsonPanelProps) {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const { orgs, isLoading: orgsLoading } = useNavTree();
 
   const [raw, setRaw] = useState("");
@@ -147,11 +147,7 @@ export function ProjectImportJsonPanel({
         selectedOrg?.id ?? null,
       );
       if (created.success) {
-        dispatch(
-          invalidateAndRefetchFullContext() as unknown as Parameters<
-            typeof dispatch
-          >[0],
-        );
+        void dispatchThunk(invalidateAndRefetchFullContext());
         toast.success("Project created from JSON", {
           description: `${created.taskCount ?? 0} task(s) and ${created.subtaskCount ?? 0} subtask(s) imported.`,
         });

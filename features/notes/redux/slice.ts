@@ -27,6 +27,7 @@ import {
 // action creators from this file). Lets `addCase` below type-check against
 // the real fulfilled-action shape instead of a hand-typed string literal.
 import type { fetchAllNoteScopes } from "./thunks";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 /**
  * `Array.prototype.pop` is always typed `T | undefined` — TS can't correlate
@@ -351,8 +352,27 @@ const notesSlice = createSlice({
       const existing = state.notes[note.id];
 
       if (!existing) {
+        // `workbench.notes.organization_id` is NOT NULL. A first-time record
+        // MUST carry a real org id — building one with a fabricated ""-value
+        // would write an invalid row into the store and hide the real bug: an
+        // incomplete server payload reaching this reducer. Scream and skip
+        // rather than persisting garbage. (Loud recovery: this firing means a
+        // `Partial<Note>` without `organization_id` got past its producer.)
+        if (!note.organization_id) {
+          captureError({
+            source: "supabase-postgrest",
+            operation: "upsert",
+            schema: "workbench",
+            relation: "notes",
+            message:
+              "upsertNoteFromServer: server note is missing organization_id (NOT NULL) — skipped creating the record to avoid storing an invalid org id",
+            details: `note id: ${note.id}, fetchStatus: ${fetchStatus}`,
+            raw: note,
+          });
+          return;
+        }
         state.notes[note.id] = createBlankNoteRecordFromPartial(
-          note,
+          { ...note, organization_id: note.organization_id },
           fetchStatus,
         );
         return;

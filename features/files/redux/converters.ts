@@ -20,6 +20,7 @@ import type {
   CloudShareLinkRow,
   CloudTreeRow,
   FileRecordApi,
+  GranteeType,
   MediaRef,
   PermissionLevel,
   ResourceType,
@@ -241,34 +242,58 @@ export function dbRowToCloudFileVersion(
 // ---------------------------------------------------------------------------
 
 /**
- * Map a canonical `public.permissions` row (resource_type='file') into the
- * file domain's grant shape.
+ * Map a canonical `iam.permissions` row (resource_type='file') into the file
+ * domain's grant shape.
  *
- * `public.permissions` distinguishes user vs. org grants by which FK column is
- * set (`granted_to_user_id` / `granted_to_organization_id`) rather than the
- * legacy `grantee_type`/`grantee_id` pair — collapse that back to the domain's
- * grantee shape here.
+ * `iam.permissions` distinguishes the grant target by which of three mutually-
+ * exclusive columns is set — enforced by the CHECK `user_or_org_or_public`:
+ *   - user grant:   `granted_to_user_id` set    → `granteeType: "user"`,   `granteeId` = user id
+ *   - org grant:    `granted_to_organization_id`→ `granteeType: "group"`,  `granteeId` = org id
+ *   - public grant: `is_public = true` (both FKs null) → `granteeType: "public"`
  *
- * NOTE — grant expiry: `public.permissions` has no `expires_at` column, so the
- * domain's `expiresAt` is always null on this path. The legacy cld_ file-grant
- * table had `expires_at` (unused in practice — 0 rows set it). If file grants
- * ever need to expire, the DB owner must add `expires_at` to
- * `public.permissions` (canonical). Logged as a cutover GAP.
+ * A PUBLIC grant has no grantee id. We must NOT collapse it to a
+ * `granteeType: "user"` grant with `granteeId: ""` — that silently mislabels
+ * "anyone with access" as an empty user grant (member counts, avatar stacks,
+ * and the user/group revoke path all then act on a bogus "" grantee). Instead
+ * it is modeled distinctly (`granteeType: "public"`) and carries the row's own
+ * `id` as `granteeId` so the value is real and unique (never `""`). Downstream
+ * member/avatar UIs exclude `"public"` grants; revoking one flips the
+ * resource's visibility rather than deleting a by-grantee grant.
+ *
+ * Grant expiry: `iam.permissions.expires_at` (timestamptz, nullable) is the
+ * canonical column — wire it straight through to the domain's `expiresAt`.
  */
 export function dbRowToCloudFilePermission(
   row: CloudFilePermissionRow,
 ): CloudFilePermission {
+  const isPublicGrant =
+    row.is_public === true &&
+    row.granted_to_user_id == null &&
+    row.granted_to_organization_id == null;
   const isOrgGrant = row.granted_to_organization_id != null;
+
+  const granteeType: GranteeType = isPublicGrant
+    ? "public"
+    : isOrgGrant
+      ? "group"
+      : "user";
+
+  // A public grant has no grantee FK; use the row id so `granteeId` is always
+  // a real, unique value (never `""`). User/org grants carry their FK id.
+  const granteeId = isPublicGrant
+    ? row.id
+    : (row.granted_to_user_id ?? row.granted_to_organization_id ?? row.id);
+
   return {
     id: row.id,
     resourceId: row.resource_id,
     resourceType: toResourceType(row.resource_type),
-    granteeId: row.granted_to_user_id ?? row.granted_to_organization_id ?? "",
-    granteeType: isOrgGrant ? "group" : "user",
+    granteeId,
+    granteeType,
     permissionLevel: canonicalLevelToFileLevel(row.permission_level),
     grantedBy: row.created_by,
     grantedAt: row.created_at ?? new Date().toISOString(),
-    expiresAt: null,
+    expiresAt: row.expires_at,
   };
 }
 

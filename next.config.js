@@ -392,7 +392,6 @@ const nextConfig = {
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         CARTESIA_API_KEY: process.env.CARTESIA_API_KEY,
         NEWS_API_KEY: process.env.NEWS_API_KEY,
-        PICOVOICE_ACCESS_KEY: process.env.PICOVOICE_ACCESS_KEY,
         GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
         SLACK_CLIENT_ID: process.env.SLACK_CLIENT_ID,
         SLACK_CLIENT_SECRET: process.env.SLACK_CLIENT_SECRET,

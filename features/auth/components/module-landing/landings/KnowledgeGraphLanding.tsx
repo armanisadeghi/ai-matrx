@@ -140,7 +140,7 @@ export default function KnowledgeGraphLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop guessing what your org knows"
       finalCtaDescription="A live map of every entity and relationship, drillable to source. Free to start, no credit card."
-      relatedModules={["/knowledge", "/scopes", "/agent-context"]}
+      relatedModules={["/knowledge", "/scopes"]}
     />
   );
 }

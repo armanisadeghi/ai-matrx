@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { ComponentToBrokerMapping } from "../types";
 import type { FieldDefinition } from "@/types/customAppTypes";
 
 const EMPTY_RECORD: Record<string, never> = {};
@@ -21,16 +19,6 @@ export const selectApplets = (state: RootState) =>
   state.componentDefinitions.applets ?? EMPTY_RECORD;
 export const selectComponentToBrokerMap = (state: RootState) =>
   state.componentDefinitions.componentToBrokerMap ?? EMPTY_RECORD;
-
-// Broker Selectors
-export const selectBrokerValues = (state: RootState) =>
-  state.brokerValues.values ?? EMPTY_RECORD;
-export const selectBrokerHistoryMap = (state: RootState) =>
-  state.brokerValues.history ?? EMPTY_RECORD;
-export const selectNeededBrokers = (state: RootState) =>
-  state.brokerValues.neededBrokers ?? EMPTY_RECORD;
-export const selectBrokerDefinitions = (state: RootState) =>
-  state.brokerValues.brokerDefinitions ?? EMPTY_RECORD;
 
 // ================================ App Selectors ================================
 // App Config Selectors
@@ -149,74 +137,7 @@ export const selectAllApplets = createSelector(
   },
 );
 
-// ================================ Broker Selectors ================================
-// Individual Broker Selectors
-export const selectBrokerValue = createSelector(
-  [selectBrokerValues, (_: RootState, id?: string | null) => id ?? ""],
-  (values, id) => (id ? (values[id] ?? null) : null),
-);
-
-export const selectBrokerHistory = createSelector(
-  [selectBrokerHistoryMap, (_: RootState, id?: string | null) => id ?? ""],
-  (history, id) => {
-    if (!id) return EMPTY_STRING_ARRAY;
-    return history[id] ?? EMPTY_STRING_ARRAY;
-  },
-);
-
-export const selectBrokerDefinition = createSelector(
-  [
-    selectBrokerDefinitions,
-    (_: RootState, appId?: string | null, brokerId?: string | null) => ({
-      appId: appId ?? "",
-      brokerId: brokerId ?? "",
-    }),
-  ],
-  (definitions, { appId, brokerId }) => {
-    if (!appId || !brokerId) return EMPTY_RECORD;
-    return definitions[appId]?.[brokerId] ?? EMPTY_RECORD;
-  },
-);
-
-// Broker Collection Selectors
-export const selectAllBrokerValues = createSelector(
-  [selectBrokerValues],
-  (values) => values,
-);
-
-export const selectAllBrokerDefinitions = createSelector(
-  [
-    selectBrokerDefinitions,
-    (_: RootState, appId?: string | null) => appId ?? "",
-  ],
-  (definitions, appId) => {
-    if (!appId) return EMPTY_RECORD;
-    return definitions[appId] ?? EMPTY_RECORD;
-  },
-);
-
 // ================================ Broker Mapping Selectors ================================
-export const selectBrokerForComponentInstance = createSelector(
-  [
-    selectComponentToBrokerMap,
-    selectBrokerValues,
-    (_: RootState, appId?: string | null, instanceId?: string | null) => ({
-      appId: appId ?? "",
-      instanceId: instanceId ?? "",
-    }),
-  ],
-  (mappings, values, { appId, instanceId }) => {
-    if (!appId || !instanceId) return null;
-
-    const mapping = mappings[appId]?.find(
-      (map: ComponentToBrokerMapping) => map?.instanceId === instanceId,
-    );
-
-    if (!mapping?.brokerId) return null;
-    return values[mapping.brokerId] ?? null;
-  },
-);
-
 export const selectAllBrokerMappings = createSelector(
   [
     selectComponentToBrokerMap,
@@ -225,50 +146,5 @@ export const selectAllBrokerMappings = createSelector(
   (mappings, appId) => {
     if (!appId) return EMPTY_STRING_ARRAY;
     return mappings[appId] ?? EMPTY_STRING_ARRAY;
-  },
-);
-
-const EMPTY_BROKER_STATUS: Record<string, boolean> = {};
-
-// ================================ Broker Status Selectors ================================
-export const selectBrokerValueStatus = createSelector(
-  [
-    selectBrokerValues,
-    selectNeededBrokers,
-    (_: RootState, appId?: string | null) => appId,
-  ],
-  (values, neededBrokers, appId) => {
-    if (!neededBrokers) return EMPTY_BROKER_STATUS;
-
-    const status: Record<string, boolean> = {};
-
-    const brokers = appId
-      ? (neededBrokers[appId] ?? EMPTY_STRING_ARRAY)
-      : Object.values(neededBrokers).flat();
-
-    brokers.forEach((brokerId) => {
-      if (brokerId) {
-        status[brokerId] = !!values[brokerId];
-      }
-    });
-
-    return status;
-  },
-);
-
-export const selectMissingNeededBrokers = createSelector(
-  [
-    selectBrokerValues,
-    selectNeededBrokers,
-    (_: RootState, appId?: string | null) => appId,
-  ],
-  (values, neededBrokers, appId) => {
-    if (!neededBrokers) return EMPTY_STRING_ARRAY;
-
-    const brokers = appId
-      ? (neededBrokers[appId] ?? EMPTY_STRING_ARRAY)
-      : Object.values(neededBrokers).flat();
-
-    return brokers.filter((brokerId) => brokerId && !values[brokerId]);
   },
 );

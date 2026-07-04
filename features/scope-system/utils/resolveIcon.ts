@@ -5,8 +5,8 @@ import type { LucideIcon } from "lucide-react";
 
 /**
  * Resolve a lowercase icon name (as stored in ctx_scope_types.icon) to a
- * Lucide component. Falls back to Folder on miss. Match the convention used
- * by HierarchyTreePage's resolveIcon.
+ * Lucide component. Falls back to Folder on miss. Names are stored kebab/
+ * snake/space-cased and mapped to the PascalCase Lucide export.
  */
 export function resolveIcon(name: string | null | undefined): LucideIcon {
   if (!name) return Icons.Folder;

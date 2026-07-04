@@ -128,7 +128,7 @@ export default function VoiceTab() {
       <SettingsSection title="Advanced">
         <SettingsLink
           label="Voice playground"
-          description="Preview voices, tune cadence, and test wake-word detection."
+          description="Preview voices and tune cadence."
           href="/demos/general/voice/voice-manager"
           actionLabel="Open"
           icon={ExternalLink}

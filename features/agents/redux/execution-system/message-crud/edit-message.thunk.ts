@@ -22,7 +22,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import { updateMessageRecord } from "../messages/messages.slice";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
@@ -97,10 +97,12 @@ export const editMessage = createAsyncThunk<
     );
 
     // ── 2. Fire the DB RPC ──────────────────────────────────────────────
-    const { data, error } = await supabase.rpc("cx_message_edit", {
-      p_message_id: messageId,
-      p_new_content: newContent,
-    });
+    const { data, error } = await supabase
+      .rpc("cx_message_edit", {
+        p_message_id: messageId,
+        p_new_content: newContent,
+      })
+      .returns<Database["chat"]["Tables"]["message"]["Row"]>();
 
     if (error) {
       // Rollback the optimistic patch.
@@ -158,36 +160,27 @@ export const editMessage = createAsyncThunk<
     );
 
     // ── 3. Patch with authoritative row from the RPC return ─────────────
-    // The RPC returns the full cx_message row after the edit (including the
-    // updated `content_history` with the prior content archived).
-    // MATRX-EXCEPTION: the generated Returns type for cx_message_edit resolves
-    // to `Database["graveyard"]["Tables"]["message"]["Row"]` — a stale/wrong
-    // reference from the schema reorg (that table has no content_history,
-    // agent_id, is_visible_to_model, etc.). The actual RPC returns the current
-    // chat.message row; a DbRpcRow guard can't be used here since it would
-    // check against the wrong generated shape. See ESCALATION brief.
+    // The RPC returns the full chat.message row after the edit (including the
+    // updated `content_history` with the prior content archived). The generated
+    // Returns for cx_message_edit mis-resolves to `graveyard.message`: the
+    // Supabase type generator can't disambiguate the bare `message` composite
+    // return between the live chat.message and the retired graveyard.message and
+    // picks the wrong one. The RPC genuinely returns chat.message, so the
+    // `.returns<chat.message Row>()` on the call above pins the correct type and
+    // `data` is the real row here — no cast needed.
     if (data) {
-      const row = data as unknown as {
-        content: Json;
-        content_history: Json | null;
-        status: string;
-        agent_id: string | null;
-        metadata: Json;
-        is_visible_to_model: boolean;
-        is_visible_to_user: boolean;
-      };
       dispatch(
         updateMessageRecord({
           conversationId,
           messageId,
           patch: {
-            content: row.content,
-            contentHistory: row.content_history,
-            status: row.status,
-            agentId: row.agent_id,
-            metadata: row.metadata,
-            isVisibleToModel: row.is_visible_to_model,
-            isVisibleToUser: row.is_visible_to_user,
+            content: data.content,
+            contentHistory: data.content_history,
+            status: data.status,
+            agentId: data.agent_id,
+            metadata: data.metadata,
+            isVisibleToModel: data.is_visible_to_model,
+            isVisibleToUser: data.is_visible_to_user,
             _clientStatus: "complete",
           },
         }),

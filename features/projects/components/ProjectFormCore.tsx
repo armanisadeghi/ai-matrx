@@ -52,7 +52,7 @@ import {
 } from "../types";
 import { useProjectSlugAvailability } from "../hooks";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { createProjectsScope } from "@/features/surfaces/manifests/projects.manifest";
 import type { Project } from "../types";
@@ -261,7 +261,7 @@ export function ProjectFormCore({
     "[Track New Project] 17, ProjectFormCore.tsx — form render (visible UI)",
   );
   const router = useRouter();
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const { orgs, isLoading: orgsLoading } = useNavTree();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -344,11 +344,7 @@ export function ProjectFormCore({
       if (result.success && result.project) {
         // Refresh the global hierarchy so /projects, /organizations/[slug]/projects,
         // and the agent-context cascade pick up the new project at once.
-        dispatch(
-          invalidateAndRefetchFullContext() as unknown as Parameters<
-            typeof dispatch
-          >[0],
-        );
+        void dispatchThunk(invalidateAndRefetchFullContext());
         toast.success("Project created!", {
           description: "You can manage permissions in project settings.",
           action: !skipRedirect

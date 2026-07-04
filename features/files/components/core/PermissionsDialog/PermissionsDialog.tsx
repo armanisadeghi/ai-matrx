@@ -10,7 +10,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Trash2, UserPlus } from "lucide-react";
+import { Globe, Loader2, Trash2, UserPlus } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   Dialog,
@@ -232,37 +232,58 @@ export function PermissionsDialogBody({
           </p>
         ) : (
           <ul className="space-y-2">
-            {permissions.map((perm) => (
-              <li
-                key={perm.id}
-                className="flex items-center gap-2 rounded-md border p-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-mono truncate">
-                    {perm.granteeId}
-                  </div>
-                  <div className="mt-0.5 text-[10px] text-muted-foreground space-x-2">
-                    <span className="uppercase">{perm.granteeType}</span>
-                    <span>· {perm.permissionLevel}</span>
-                    {perm.expiresAt ? (
-                      <span>
-                        · Expires {formatAbsoluteDate(perm.expiresAt)}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void handleRevoke(perm.granteeId, perm.granteeType)
-                  }
-                  aria-label="Revoke"
-                  className="flex h-7 w-7 items-center justify-center rounded text-destructive hover:bg-destructive/10"
+            {permissions.map((perm) => {
+              const isPublic = perm.granteeType === "public";
+              return (
+                <li
+                  key={perm.id}
+                  className="flex items-center gap-2 rounded-md border p-2"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </li>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    {isPublic ? (
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                        Anyone with access
+                      </div>
+                    ) : (
+                      <div className="text-xs font-mono truncate">
+                        {perm.granteeId}
+                      </div>
+                    )}
+                    <div className="mt-0.5 text-[10px] text-muted-foreground space-x-2">
+                      <span className="uppercase">
+                        {isPublic ? "public" : perm.granteeType}
+                      </span>
+                      <span>· {perm.permissionLevel}</span>
+                      {perm.expiresAt ? (
+                        <span>
+                          · Expires {formatAbsoluteDate(perm.expiresAt)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  {isPublic ? (
+                    // Public access is toggled on the resource's visibility
+                    // (Share dialog), not revoked by grantee id here. Surface
+                    // it read-only rather than offering a broken revoke.
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      Toggle in Share
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void handleRevoke(perm.granteeId, perm.granteeType)
+                      }
+                      aria-label="Revoke"
+                      className="flex h-7 w-7 items-center justify-center rounded text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

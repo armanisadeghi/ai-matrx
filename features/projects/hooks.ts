@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useDispatchThunk } from "@/lib/redux/hooks";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import type { NavOrganization } from "@/features/agent-context/redux/hierarchySlice";
@@ -87,7 +87,7 @@ function projectsFromOrg(org: NavOrganization): ProjectWithRole[] {
 }
 
 export function useOrgProjects(organizationId: string | undefined) {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const { orgs, isLoading, isError, error } = useNavTree();
 
   const projects = useMemo<ProjectWithRole[]>(() => {
@@ -98,13 +98,10 @@ export function useOrgProjects(organizationId: string | undefined) {
   }, [orgs, organizationId]);
 
   const refresh = useCallback(() => {
-    // Cast: the thunk returns a Promise but we surface a void-shaped refresh.
-    dispatch(
-      invalidateAndRefetchFullContext() as unknown as Parameters<
-        typeof dispatch
-      >[0],
-    );
-  }, [dispatch]);
+    // Fire-and-forget: the thunk returns a Promise but we surface a
+    // void-shaped refresh.
+    void dispatchThunk(invalidateAndRefetchFullContext());
+  }, [dispatchThunk]);
 
   return {
     projects,
@@ -115,7 +112,7 @@ export function useOrgProjects(organizationId: string | undefined) {
 }
 
 export function useUserProjects() {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const { orgs, isLoading, isError, error } = useNavTree();
 
   const projects = useMemo<ProjectWithRole[]>(() => {
@@ -125,12 +122,8 @@ export function useUserProjects() {
   }, [orgs]);
 
   const refresh = useCallback(() => {
-    dispatch(
-      invalidateAndRefetchFullContext() as unknown as Parameters<
-        typeof dispatch
-      >[0],
-    );
-  }, [dispatch]);
+    void dispatchThunk(invalidateAndRefetchFullContext());
+  }, [dispatchThunk]);
 
   return {
     projects,
@@ -141,7 +134,7 @@ export function useUserProjects() {
 }
 
 export function usePersonalProjects() {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const { orgs, isLoading, isError, error } = useNavTree();
 
   const projects = useMemo<ProjectWithRole[]>(() => {
@@ -154,12 +147,8 @@ export function usePersonalProjects() {
   }, [orgs]);
 
   const refresh = useCallback(() => {
-    dispatch(
-      invalidateAndRefetchFullContext() as unknown as Parameters<
-        typeof dispatch
-      >[0],
-    );
-  }, [dispatch]);
+    void dispatchThunk(invalidateAndRefetchFullContext());
+  }, [dispatchThunk]);
 
   return {
     projects,

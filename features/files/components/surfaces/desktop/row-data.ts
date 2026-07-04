@@ -380,7 +380,13 @@ export function memberCountForResource(
 ): number {
   const perms = permissionsByResourceId[resourceId];
   if (!perms || perms.length === 0) return 0;
-  const unique = new Set(perms.map((p) => p.granteeId));
+  // A public grant is "anyone with access", not a member — exclude it so it
+  // doesn't inflate the count (and so its row id never lands in the set).
+  const unique = new Set(
+    perms
+      .filter((p) => p.granteeType !== "public")
+      .map((p) => p.granteeId),
+  );
   return unique.size;
 }
 

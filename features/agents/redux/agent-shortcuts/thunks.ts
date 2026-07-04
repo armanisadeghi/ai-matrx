@@ -28,6 +28,7 @@ import type {
   AgentShortcut,
   AgentShortcutMenuResult,
   UserShortcutItem,
+  AdminNonGlobalShortcutRow,
   CreateShortcutForAgentParams,
   ShortcutFieldSnapshot,
 } from "./types";
@@ -732,11 +733,11 @@ export const promoteShortcutToGlobal = createAsyncThunk<
   },
 );
 
-export interface AdminNonGlobalShortcutRow extends ShortcutApiRow {
-  owner_email: string | null;
-  owner_display: string | null;
-  scope_type: "user" | "organization" | "project" | "task" | string;
-}
+// AdminNonGlobalShortcutRow is defined in ./types (alongside the other RPC row
+// types) and re-exported here so existing importers keep resolving it from the
+// thunks module. It mirrors the generated `agx_list_non_global_shortcuts_for_admin`
+// Returns exactly, guarded by a DB-shape check in ./types.
+export type { AdminNonGlobalShortcutRow };
 
 /**
  * Admin-only. Returns every non-global shortcut across users/orgs/projects/

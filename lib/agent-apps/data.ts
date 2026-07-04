@@ -6,11 +6,139 @@
 
 import "server-only";
 import { notFound } from "next/navigation";
+import * as z from "zod";
 import { createClient } from "@/utils/supabase/server";
-import type { AgentApp } from "@/features/agent-apps/types";
+import type { Database } from "@/types/database.types";
+import type {
+  AgentApp,
+  AgentAppRecord,
+  AgentAppShellKind,
+  AppStatus,
+  ComponentLanguage,
+} from "@/features/agent-apps/types";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// ---------------------------------------------------------------------------
+// Runtime validation of the `app.definition` row.
+//
+// The generated Row (`Database["app"]["Tables"]["definition"]["Row"]`) types
+// several domain columns as plain `string` because Postgres stores them as
+// text. `AgentAppRecord` (features/agent-apps/types.ts) narrows exactly three
+// of them to literal unions — `component_language` (ComponentLanguage),
+// `shell_kind` (AgentAppShellKind), and `status` (AppStatus). That narrowing
+// is a LIE unless something checks it at read time: a stray DB value would
+// flow in typed-but-wrong. We validate those three fields with Zod here and
+// throw loudly on any out-of-domain value rather than casting or silently
+// defaulting. (`app_kind` is left as `string` in AgentAppRecord — it has no
+// closed domain to validate against — so it is not enumerated here.)
+//
+// Every other column is trusted as generated: Supabase's types are the source
+// of truth for the shapes Postgres actually returns, and the Json-typed
+// columns keep their `Json` interiors un-narrowed per the type-safety doctrine.
+
+type AppDefinitionRow = Database["app"]["Tables"]["definition"]["Row"];
+
+/**
+ * `Assert<T>` compiles only when `T` is exactly `true`; feeding it `false`
+ * violates the `extends true` constraint and is a hard compile error. This is
+ * the mechanism that turns the drift checks below into build breaks.
+ */
+type Assert<T extends true> = T;
+/** True iff every member of `TUnion` appears in the tuple `TTuple`. */
+type TupleCoversUnion<
+  TUnion extends string,
+  TTuple extends readonly string[],
+> = [TUnion] extends [TTuple[number]] ? true : false;
+
+const COMPONENT_LANGUAGES = [
+  "tsx",
+  "jsx",
+  "typescript",
+  "javascript",
+  "html",
+  "react",
+] as const satisfies readonly ComponentLanguage[];
+
+const SHELL_KINDS = [
+  "chat",
+  "form_to_result",
+  "widget",
+  "compact_modal",
+  "full_modal",
+  "sidebar_overlay",
+  "floating_bubble",
+  "inline_overlay",
+  "panel_overlay",
+  "toast_overlay",
+  "card_stack",
+  "fully_custom",
+] as const satisfies readonly AgentAppShellKind[];
+
+const APP_STATUSES = [
+  "draft",
+  "published",
+  "archived",
+  "suspended",
+] as const satisfies readonly AppStatus[];
+
+// Bidirectional closure check: the `satisfies` above proves every tuple member
+// is a valid union member (no extras); these `Assert`s prove every union member
+// is in the tuple (no omissions). Together they force EXACT equality — add or
+// remove a value on either the TS union or the tuple without matching the other
+// and this file fails to compile, so the Zod enums can never silently disagree
+// with `AgentAppRecord`. (Unused type aliases don't trip noUnusedLocals — that
+// rule targets values — so these stay purely as compile-time guards.)
+type _AssertComponentLanguages = Assert<
+  TupleCoversUnion<ComponentLanguage, typeof COMPONENT_LANGUAGES>
+>;
+type _AssertShellKinds = Assert<
+  TupleCoversUnion<AgentAppShellKind, typeof SHELL_KINDS>
+>;
+type _AssertAppStatuses = Assert<
+  TupleCoversUnion<AppStatus, typeof APP_STATUSES>
+>;
+
+/**
+ * Validates the three narrowed domain columns of an `app.definition` row and
+ * normalizes `tags` (DB `string[] | null` → `string[]`). Everything else is
+ * carried through from the already-typed row. `.parse()` throws a
+ * `ZodError` naming the offending field + value on any out-of-domain value —
+ * a loud failure, never a silent default.
+ */
+const narrowedColumnsSchema = z.object({
+  component_language: z.enum(COMPONENT_LANGUAGES),
+  shell_kind: z.enum(SHELL_KINDS),
+  status: z.enum(APP_STATUSES),
+  tags: z
+    .array(z.string())
+    .nullable()
+    .transform((t) => t ?? []),
+});
+
+/**
+ * Parse a raw `app.definition` row into a fully-typed `AgentAppRecord` with no
+ * `as unknown as` and no `any`. Throws loudly (with the app id in context) if
+ * a domain column holds a value outside its literal union.
+ */
+function parseAgentAppRow(row: AppDefinitionRow): AgentAppRecord {
+  const parsed = narrowedColumnsSchema.safeParse(row);
+  if (!parsed.success) {
+    const detail = parsed.error.issues
+      .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+      .join("; ");
+    throw new Error(
+      `[getAgentApp] app.definition row ${row.id} failed domain validation ` +
+        `(component_language/shell_kind/status). This is a data-integrity ` +
+        `defect — the DB holds a value outside the app's known domain: ${detail}`,
+    );
+  }
+  // The generated Row supplies every non-narrowed field with its correct type;
+  // `parsed.data` supplies the three validated literal-union fields + non-null
+  // tags. Merging yields an AgentAppRecord with zero assertions.
+  return { ...row, ...parsed.data };
+}
 
 export interface AgentAppVersionRow {
   id: string;
@@ -39,13 +167,11 @@ export async function getAgentApp(idOrSlug: string): Promise<AgentApp> {
   if (result.error || !result.data) {
     notFound();
   }
-  // `definition`'s generated Row (all columns, Json fields as `unknown`) is a
-  // structural superset of `AgentAppRecord` (features/agent-apps/types.ts),
-  // which additionally narrows several string columns to literal unions
-  // (status/component_language/shell_kind/...). That narrowing can't be
-  // proven at the DB layer — the feature's own read path is responsible for
-  // validating those literals; this helper only resolves the row.
-  return result.data as unknown as AgentApp;
+  // `definition`'s generated Row types several domain columns as plain
+  // `string`; `AgentAppRecord` narrows them to literal unions. `parseAgentAppRow`
+  // validates those literals at read time (throwing loudly on a bad DB value)
+  // so we hand back a genuinely-typed record with no `as unknown as`.
+  return parseAgentAppRow(result.data);
 }
 
 /** Fetch all version snapshots for an app, newest first. RLS scopes by app. */

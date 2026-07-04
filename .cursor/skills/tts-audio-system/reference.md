@@ -171,4 +171,3 @@ These are intentionally separate because they serve different providers with dif
 | `GROQ_API_KEY` | `/api/audio/text-to-speech`, `/api/audio/transcribe*` | Server only |
 | `NEXT_PUBLIC_SUPABASE_URL` | Auth resolution, URL validation | Both |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Auth resolution | Both |
-| `NEXT_PUBLIC_PICOVOICE_ACCESS_KEY` | Wake word detection | Client |
