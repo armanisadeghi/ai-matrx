@@ -17,7 +17,6 @@
  * so a reload reuses the stream's envelope BY REFERENCE instead of parsing.
  */
 
-import { CONTENT_IR_STREAM_ENABLED } from "../config";
 import {
   IR_ENVELOPE_KEY,
   type CanonicalBlockIR,
@@ -56,7 +55,6 @@ function seedOne(envelope: CanonicalBlockIR): void {
  * envelopes are ignored — they can never be reused.
  */
 export function seedEnvelope(envelope: CanonicalBlockIR): void {
-  if (!CONTENT_IR_STREAM_ENABLED) return;
   if (seenSeedSources.has(envelope)) return;
   seenSeedSources.add(envelope);
   seedOne(envelope);
@@ -76,7 +74,6 @@ export function seedEnvelope(envelope: CanonicalBlockIR): void {
 export function seedPersistedEnvelopeCache(
   metadata: Record<string, unknown> | null | undefined,
 ): number {
-  if (!CONTENT_IR_STREAM_ENABLED) return 0;
   const candidate = metadata?.[IR_ENVELOPE_KEY];
   if (candidate === undefined || candidate === null) return 0;
   if (typeof candidate !== "object") return 0;
@@ -114,8 +111,6 @@ function looksLikeCompleteJsonObject(trimmed: string): boolean {
 export function memoizedRegionEnvelope(
   source: string,
 ): CanonicalBlockIR | null {
-  if (!CONTENT_IR_STREAM_ENABLED) return null;
-
   const trimmed = source.trim();
   if (!looksLikeCompleteJsonObject(trimmed)) return null;
 

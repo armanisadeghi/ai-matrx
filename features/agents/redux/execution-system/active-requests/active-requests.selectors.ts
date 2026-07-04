@@ -417,7 +417,7 @@ export const selectRenderBlockCount =
  * This is the canonical READ path for live structured output: the
  * StreamBlockAccumulator's shadow session already parses every JSON region
  * during the stream and re-attaches a fresh `CanonicalBlockIR` on every
- * flush (`CONTENT_IR_STREAM_ENABLED`), so consumers subscribe HERE instead
+ * flush (always on — no env flag), so consumers subscribe HERE instead
  * of running a second parallel parse of the answer text. The returned
  * envelope is the exact object the accumulator attached — reference-stable
  * per flush. Returns null when no matching envelope exists yet (also the

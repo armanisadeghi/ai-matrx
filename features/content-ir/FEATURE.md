@@ -1,6 +1,6 @@
 # content-ir — the canonical structured-content system
 
-**Status:** Phases 0–5 (flashcards leg + persistence spine) live behind `NEXT_PUBLIC_CONTENT_IR_STREAM` (dev on / prod off). One library parses every JSON region — live agent streams, DB reloads, any source — into one IR that all layers pass through without reprocessing.
+**Status:** Phases 0–5 live, ALWAYS ON — no env flag (repo rule: features are never guarded behind environment variables). One library parses every JSON region — live agent streams, DB reloads, any source — into one IR that all layers pass through without reprocessing.
 
 **Read this BEFORE touching:** stream/DB block parsing (`stream-block-accumulator.ts`, `content-splitter-v2.ts`), anything reading or writing `__kind`, kind schemas in `flexible_data`, or `metadata.__ir` on render blocks.
 

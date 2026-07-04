@@ -47,7 +47,7 @@ First non-chat `materializeBlocks` caller (+ `reconcileSourceBlocks` on the note
 ### 4. aidream (Python twin)
 Emit `CanonicalBlockIR` on render_block metadata per PYTHON_ENVELOPE_CONTRACT.md (fingerprint mirror is spelled out); optionally stamp part-level envelope caches when persisting turns; regenerate ORM models for the new canvas/chat.artifact columns; its stale `iam.apply_rls` copy predates the owner-fallback (live DB function is newer).
 ### 5. Rollout + retirement
-Prod flag decision (`NEXT_PUBLIC_CONTENT_IR_STREAM` on after parity telemetry soaks clean) → Phase 6 XML → Phase 7 deletions (JSON_BLOCK_PATTERNS to a region-open hint; mirrored state machines; then the transcript-studio module contracts).
+Phase 6 XML → Phase 7 deletions (JSON_BLOCK_PATTERNS to a region-open hint; mirrored state machines; then the transcript-studio module contracts).
 ### 6. User-registered renderers (the endgame)
 Design exists (component facet + cold tier + `KindBlockProps`); needs: user component authoring/storage, sandboxed loading, per-user warm cache (favorites), and promotion of the demo's `GenericBlockRenderer` into the official fallback for kinds without components.
 

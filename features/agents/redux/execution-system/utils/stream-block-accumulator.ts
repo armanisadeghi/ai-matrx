@@ -32,7 +32,6 @@ import {
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { CONTENT_IR_STREAM_ENABLED } from "@/features/content-ir/config";
 import {
   disposeParseSession,
   openParseSession,
@@ -305,7 +304,7 @@ export class StreamBlockAccumulator {
   private pendingMediaData: { src: string; alt: string } | null = null;
   private ingestCount = 0;
   private emitCount = 0;
-  // ── content-ir shadow delegation (Phase 2, CONTENT_IR_STREAM_ENABLED) ─────
+  // ── content-ir delegation (ALWAYS ON — no env flag, per repo rule) ────────
   /** Live kind-parser session for the OPEN JSON region (fence or bare). */
   private irSession: ParseSession | null = null;
   /** Lines fed to the session for this region (drives the "\n" separators). */
@@ -875,7 +874,6 @@ export class StreamBlockAccumulator {
   // two paths agree on real traffic before Phase 4 flips anything visible.
 
   private irOpenRegion(): void {
-    if (!CONTENT_IR_STREAM_ENABLED) return;
     const identity = `${this.requestId}:${this.currentBlockId}`;
     try {
       // Warm the user-kind tier once per app session (memoized, non-blocking).

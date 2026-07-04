@@ -81,7 +81,7 @@ export function CreateFromTopic() {
   // PRIMARY envelope source: the StreamBlockAccumulator's shadow session
   // already parses the streaming JSON region and re-attaches a live
   // CanonicalBlockIR on every flush (`metadata.__ir` on the render block,
-  // CONTENT_IR_STREAM_ENABLED — dev on). Reading it straight from Redux means
+  // always on). Reading it straight from Redux means
   // ONE parser drives the whole app; no second parallel parse.
   const reduxEnvelope = useAppSelector((state) =>
     activeRequestId
@@ -98,8 +98,7 @@ export function CreateFromTopic() {
     requestStatus === "timeout" ||
     requestStatus === "cancelled";
 
-  // FALLBACK parse session: covers prod (CONTENT_IR_STREAM_ENABLED off — no
-  // Redux envelope) and any payload the accumulator couldn't kind-resolve
+  // FALLBACK parse session: covers any payload the accumulator couldn't kind-resolve
   // (e.g. no root __kind — expectedRootKind types the tree here regardless).
   const { envelope: sessionEnvelope } = useLiveJsonRegion(
     activeRequestId ? `flashcards-live:${activeRequestId}` : null,
