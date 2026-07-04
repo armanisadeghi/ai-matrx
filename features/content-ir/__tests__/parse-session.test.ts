@@ -237,16 +237,18 @@ describe("pending-schema through the session (registry hook)", () => {
     });
 
     session.write(JSON.stringify({ __kind: "timeline", title: "Rome" }));
-    session.end();
     session.flushNotify();
 
     expect(requested).toEqual(["timeline"]);
     expect(session.getNode("")).toBeNull(); // held, not raw
 
+    // Registry answers while the region is still live — upgrade in place.
     deliver?.("timeline", {
       kind: "timeline",
       fields: { title: { type: "string", required: true } },
     });
+    session.end();
+    session.flushNotify();
 
     const root = session.getNode("");
     expect(root?.kind).toBe("timeline");

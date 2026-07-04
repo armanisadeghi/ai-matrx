@@ -203,7 +203,7 @@ describe("pending-schema upgrade-in-place", () => {
     };
   }
 
-  it("holds an unknown kind, fires the cold fetch, and upgrades after arrival", () => {
+  it("holds an unknown kind, fires the cold fetch, and upgrades in place mid-region", () => {
     const requested: string[] = [];
     const events: KindStreamEvent[] = [];
     const parser = createKindStreamParser({
@@ -214,7 +214,6 @@ describe("pending-schema upgrade-in-place", () => {
     parser.push(
       JSON.stringify({ __kind: "timeline", title: "Rome", periods: ["a"] }),
     );
-    parser.end();
 
     expect(requested).toEqual(["timeline"]);
     expect(
@@ -226,7 +225,7 @@ describe("pending-schema upgrade-in-place", () => {
     expect(events.some((e) => e.type === "raw_object")).toBe(false);
     expect(events.some((e) => e.type === "object_complete")).toBe(false);
 
-    // The registry answers (even after end()) — the node completes in place.
+    // The registry answers while the region is still live — upgrade in place.
     parser.notifySchemaArrived("timeline", {
       kind: "timeline",
       fields: {
@@ -234,6 +233,7 @@ describe("pending-schema upgrade-in-place", () => {
         periods: { type: "string[]", required: true },
       },
     });
+    parser.end();
 
     const completed = events.find((e) => e.type === "object_complete");
     expect(completed).toBeDefined();
@@ -256,13 +256,41 @@ describe("pending-schema upgrade-in-place", () => {
     });
 
     parser.push(JSON.stringify({ __kind: "ghost", x: 1 }));
-    parser.end();
     parser.notifySchemaArrived("ghost", null);
+    parser.end();
 
     const raw = events.find((e) => e.type === "raw_object");
     expect(raw).toBeDefined();
     if (raw?.type !== "raw_object") throw new Error("unreachable");
     expect(raw.reason).toContain("ghost");
+    // The data survived verbatim on the raw node — zero loss.
+    if (raw.type === "raw_object") {
+      expect((raw.value as Record<string, unknown>).x).toBe(1);
+    }
+  });
+
+  it("region end resolves still-pending kinds to raw (deterministic envelopes)", () => {
+    const events: KindStreamEvent[] = [];
+    const parser = createKindStreamParser({
+      schemas: resolverWith({}, []),
+      onEvent: (e) => events.push(e),
+    });
+
+    parser.push(JSON.stringify({ __kind: "slowpoke", n: 7 }));
+    parser.end(); // fetch never answered
+
+    const raw = events.find((e) => e.type === "raw_object");
+    expect(raw).toBeDefined();
+    if (raw?.type !== "raw_object") throw new Error("unreachable");
+    expect(raw.reason).toBe('No block schema registered for "slowpoke".');
+    expect((raw.value as Record<string, unknown>).n).toBe(7);
+
+    // A late delivery after end() is a no-op — the region already settled.
+    parser.notifySchemaArrived("slowpoke", {
+      kind: "slowpoke",
+      fields: { n: { type: "number", required: true } },
+    });
+    expect(events.some((e) => e.type === "object_complete")).toBe(false);
   });
 
   it("without a request-capable resolver, unknown kinds go raw at close (static behavior)", () => {

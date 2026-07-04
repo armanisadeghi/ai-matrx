@@ -36,6 +36,7 @@ import {
   recognizeOurFileUrl,
   mightBeOurFileUrl,
 } from "@/lib/media/our-file-sources";
+import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1770,14 +1771,22 @@ export const splitContentIntoBlocksV2 = (
             type: jsonType as SplitterBlockType,
             content: extraction.content,
             language: "json",
-            metadata: streamingState.metadata,
+            // content-ir: complete JSON regions carry the canonical envelope
+            // (memoized one-shot parse — identical to the streaming path's).
+            metadata: withIrEnvelope(
+              extraction.content,
+              streamingState.metadata,
+            ),
           });
         } else {
-          // Regular JSON code block
+          // Regular JSON code block. Unknown-root JSON is where __kind-carried
+          // (user-registered) kinds live — the envelope is what lets them
+          // render as their real component in Phase 4.
           blocks.push({
             type: "code",
             content: extraction.content,
             language: codeCheck.language,
+            metadata: withIrEnvelope(extraction.content, undefined),
           });
         }
       } else {
@@ -2035,13 +2044,14 @@ export const splitContentIntoBlocksV2 = (
               type: jsonType as SplitterBlockType,
               content: jsonContent,
               language: "json",
-              metadata: streamingState.metadata,
+              metadata: withIrEnvelope(jsonContent, streamingState.metadata),
             });
           } else {
             blocks.push({
               type: "code",
               content: jsonContent,
               language: "json",
+              metadata: withIrEnvelope(jsonContent, undefined),
             });
           }
           i = j;

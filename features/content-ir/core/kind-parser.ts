@@ -245,11 +245,39 @@ export class KindStreamParser {
       return;
     }
 
+    // The region is over: pending-schema nodes whose cold fetch hasn't
+    // answered fall back to raw NOW. This keeps the end-of-region envelope
+    // deterministic and byte-identical to the static (no-request) path;
+    // upgrade-in-place remains a live-region feature. The data is preserved
+    // verbatim on the raw node — zero loss.
+    this.resolvePendingSchemasAsRaw();
+
     if (!this.rootDone) {
       this.fail(
         "Stream ended before the root JSON object was complete.",
         this.tokenizer.position,
       );
+    }
+  }
+
+  private resolvePendingSchemasAsRaw(): void {
+    const at = this.tokenizer.position;
+    for (const [kind, paths] of [...this.pendingSchemaPaths]) {
+      this.pendingSchemaPaths.delete(kind);
+      for (const [pathKey, path] of paths) {
+        this.closedPendingPaths.delete(pathKey);
+        if (this.rawObjectPaths.has(pathKey)) continue;
+        const value =
+          this.getLiveObjectValue(path) ??
+          this.getFinalizedObjectValue(path) ??
+          {};
+        this.emitRawObject(
+          path,
+          safeCopy(value),
+          `No block schema registered for "${kind}".`,
+          at,
+        );
+      }
     }
   }
 
