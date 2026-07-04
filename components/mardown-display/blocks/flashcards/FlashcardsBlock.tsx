@@ -4,6 +4,10 @@ import { BookOpen, X, Zap } from "lucide-react";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
 import FlashcardMobileView from "./FlashcardMobileView";
 import {
+  toFlashcardMobileCards,
+  useAutoFlashcardMobileView,
+} from "./flashcard-mobile-bridge";
+import {
   FlashcardsSetBody,
   FlashcardsSetControls,
   useFlashcardsSet,
@@ -44,8 +48,6 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
   blockIndex,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [mobileStartIndex, setMobileStartIndex] = useState(0);
   const [showMobilePrompt, setShowMobilePrompt] = useState(false);
   const isMobile = useIsMobile();
   const searchParams = useSearchParams();
@@ -62,6 +64,16 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
     messageId,
     conversationId,
     blockIndex,
+  });
+
+  const {
+    isMobileView,
+    enterMobileView,
+    exitMobileView,
+    mobileStartIndex,
+    dismissed: mobileDismissed,
+  } = useAutoFlashcardMobileView(set.flashcards.length, {
+    enabled: !isFullscreen,
   });
 
   const handleOpenInWindow = (e?: React.MouseEvent) => {
@@ -90,7 +102,12 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
   };
 
   useEffect(() => {
-    if (!isMobile || promptedRef.current || set.flashcards.length === 0)
+    if (
+      !isMobile ||
+      promptedRef.current ||
+      mobileDismissed ||
+      set.flashcards.length === 0
+    )
       return undefined;
     if (stabilityTimer.current) clearTimeout(stabilityTimer.current);
     stabilityTimer.current = setTimeout(() => {
@@ -103,7 +120,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
     return () => {
       if (stabilityTimer.current) clearTimeout(stabilityTimer.current);
     };
-  }, [isMobile, set.flashcards.length, set.isComplete]);
+  }, [isMobile, mobileDismissed, set.flashcards.length, set.isComplete]);
 
   useEffect(() => {
     if (
@@ -111,11 +128,10 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
       set.flashcards.length > 0 &&
       !isMobileView
     ) {
-      setMobileStartIndex(0);
-      setIsMobileView(true);
+      enterMobileView(0);
       promptedRef.current = true;
     }
-  }, [searchParams, set.flashcards.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, set.flashcards.length, isMobileView, enterMobileView]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -135,22 +151,18 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
     };
   }, [isFullscreen]);
 
-  const enterMobileView = () => {
-    setMobileStartIndex(0);
-    setIsMobileView(true);
+  const enterFlashMode = (index = 0) => {
+    enterMobileView(index);
   };
 
-  const mobileFlashcards = set.flashcards.map((c) => ({
-    front: c.front ?? "",
-    back: c.back ?? null,
-  }));
+  const mobileFlashcards = toFlashcardMobileCards(set.flashcards);
 
   if (isMobileView && set.flashcards.length > 0) {
     return (
       <FlashcardMobileView
         cards={mobileFlashcards}
         initialIndex={mobileStartIndex}
-        onClose={() => setIsMobileView(false)}
+        onClose={exitMobileView}
       />
     );
   }
@@ -178,7 +190,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
                   onLayoutChange={set.setLayoutMode}
                   onMobileView={() => {
                     setIsFullscreen(false);
-                    enterMobileView();
+                    enterFlashMode();
                   }}
                   onPrint={set.triggerPrint}
                   onOpenCanvas={() => {
@@ -222,7 +234,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
                   onLayoutChange={set.setLayoutMode}
                   onMobileView={() => {
                     setIsFullscreen(false);
-                    enterMobileView();
+                    enterFlashMode();
                   }}
                   onPrint={set.triggerPrint}
                   onOpenCanvas={() => {
@@ -250,7 +262,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
             onEnter={() => {
               setShowMobilePrompt(false);
               setIsFullscreen(false);
-              enterMobileView();
+              enterFlashMode();
             }}
           />
         )}
@@ -277,7 +289,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
           <FlashcardsSetControls
             layoutMode={set.layoutMode}
             onLayoutChange={set.setLayoutMode}
-            onMobileView={enterMobileView}
+            onMobileView={enterFlashMode}
             onPrint={set.triggerPrint}
             onOpenCanvas={set.handleOpenInCanvas}
             openingCanvas={set.openingCanvas}
@@ -308,7 +320,7 @@ const FlashcardsBlock: React.FC<FlashcardsBlockProps> = ({
             <FlashcardsSetControls
               layoutMode={set.layoutMode}
               onLayoutChange={set.setLayoutMode}
-              onMobileView={enterMobileView}
+              onMobileView={enterFlashMode}
               onPrint={set.triggerPrint}
               onOpenCanvas={set.handleOpenInCanvas}
               onFullscreen={() => setIsFullscreen(true)}

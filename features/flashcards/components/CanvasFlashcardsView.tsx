@@ -1,7 +1,13 @@
 "use client";
 
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useMemo, useState } from "react";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
+import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
+import {
+  studyResultsByIndex,
+  toFlashcardMobileCardsFromStudy,
+} from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useFlashcardStudy } from "../data/useFlashcardStudy";
 import type { ReviewResult } from "../types";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
@@ -86,14 +92,29 @@ export function CanvasFlashcardsView({
     loading: studyLoading,
     error,
     currentIndex,
+    isFlipped,
     resultsByCard,
     next,
     prev,
     goTo,
+    flip,
     grade,
     grading,
     progress,
   } = useFlashcardStudy({ setId: linkedSetId });
+
+  const isMobile = useIsMobile();
+  const [mobileDismissed, setMobileDismissed] = useState(false);
+
+  const mobileResultsByIndex = useMemo(
+    () => studyResultsByIndex(cards, resultsByCard),
+    [cards, resultsByCard],
+  );
+
+  const handleGrade = (result: ReviewResult): void => {
+    if (grading) return;
+    void grade(result);
+  };
 
   const debugStrip = (
     <InlineArtifactDebugStrip
@@ -179,9 +200,26 @@ export function CanvasFlashcardsView({
   }
 
   const current = cards[currentIndex];
-  const handleReview = (_cardIndex: number, result: ReviewResult): void => {
-    void grade(result);
-  };
+
+  if (isMobile && !mobileDismissed) {
+    return (
+      <div className={cn("flex flex-col", className)}>
+        {debugStrip}
+        <FlashcardMobileView
+          mode="study"
+          cards={toFlashcardMobileCardsFromStudy(cards)}
+          controlledIndex={currentIndex}
+          onIndexChange={goTo}
+          controlledFlipped={isFlipped}
+          onFlipToggle={flip}
+          onGrade={handleGrade}
+          resultsByIndex={mobileResultsByIndex}
+          grading={grading}
+          onClose={() => setMobileDismissed(true)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col", className)}>
@@ -232,7 +270,9 @@ export function CanvasFlashcardsView({
           back={current.back}
           index={currentIndex}
           layoutMode="list"
-          onReview={grading ? undefined : handleReview}
+          flipped={isFlipped}
+          onFlipToggle={flip}
+          onReview={grading ? undefined : handleGrade}
           lastResult={resultsByCard[current.id] ?? null}
         />
       </div>

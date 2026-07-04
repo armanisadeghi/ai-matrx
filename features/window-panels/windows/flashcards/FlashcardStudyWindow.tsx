@@ -7,11 +7,12 @@
  * Footer = nav + grade. Sidebar (collapsed by default) = card list + mastery stats.
  */
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { AlertCircle, BookOpen } from "lucide-react";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
+import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy";
 import {
   FlashcardStudySidebar,
@@ -21,6 +22,11 @@ import {
   useStudyKeyboard,
 } from "@/features/flashcards/components/study/study-deck-parts";
 import type { ReviewResult } from "@/features/flashcards/types";
+import {
+  studyResultsByIndex,
+  toFlashcardMobileCardsFromStudy,
+} from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface FlashcardStudyWindowProps {
   isOpen: boolean;
@@ -36,19 +42,31 @@ export function FlashcardStudyWindow({
   title,
 }: FlashcardStudyWindowProps) {
   const study = useFlashcardStudy({ setId, withSession: true });
+  const isMobile = useIsMobile();
+  const [mobileDismissed, setMobileDismissed] = useState(false);
   const [completed, restartCompletion] = useStudyCompletion(
     study.cards.length,
     study.progress,
   );
+
+  useEffect(() => {
+    if (isOpen) setMobileDismissed(false);
+  }, [isOpen, setId]);
 
   const handleGrade = (result: ReviewResult) => {
     if (study.grading) return;
     void study.grade(result);
   };
 
+  const mobileResultsByIndex = useMemo(
+    () => studyResultsByIndex(study.cards, study.resultsByCard),
+    [study.cards, study.resultsByCard],
+  );
+
   useStudyKeyboard({
     enabled:
       isOpen &&
+      !isMobile &&
       !study.loading &&
       !study.error &&
       study.cards.length > 0 &&
@@ -61,6 +79,56 @@ export function FlashcardStudyWindow({
   });
 
   if (!isOpen) return null;
+
+  const showMobileStudy =
+    isMobile &&
+    !mobileDismissed &&
+    !study.loading &&
+    !study.error &&
+    study.cards.length > 0 &&
+    !completed;
+
+  if (showMobileStudy) {
+    return (
+      <FlashcardMobileView
+        mode="study"
+        cards={toFlashcardMobileCardsFromStudy(study.cards)}
+        controlledIndex={study.currentIndex}
+        onIndexChange={study.goTo}
+        controlledFlipped={study.isFlipped}
+        onFlipToggle={study.flip}
+        onGrade={handleGrade}
+        resultsByIndex={mobileResultsByIndex}
+        grading={study.grading}
+        onClose={() => {
+          setMobileDismissed(true);
+          onClose();
+        }}
+      />
+    );
+  }
+
+  if (completed && isMobile && !mobileDismissed) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+        <StudyCompletionSummary
+          progress={study.progress}
+          onRestart={() => {
+            restartCompletion();
+            study.goTo(0);
+            setMobileDismissed(false);
+          }}
+        />
+        <button
+          type="button"
+          className="mx-auto mb-safe mb-4 text-sm text-white/70"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+    );
+  }
 
   const { width, height } = computeViewportSize();
   const displayTitle =

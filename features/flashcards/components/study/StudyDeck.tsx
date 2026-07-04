@@ -30,6 +30,12 @@ import { Button } from "@/components/ui/button";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
+import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
+import {
+  studyResultsByIndex,
+  toFlashcardMobileCardsFromStudy,
+} from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
@@ -106,6 +112,9 @@ export function StudyDeck(props: StudyDeckProps) {
     renderCardExtra,
   } = props;
 
+  const isMobile = useIsMobile();
+  const [mobileDismissed, setMobileDismissed] = useState(false);
+
   // Completion once every card has a result this load (state so the user can
   // re-enter from the summary).
   const [completed, setCompleted] = useState(false);
@@ -116,7 +125,8 @@ export function StudyDeck(props: StudyDeckProps) {
   }, [cards.length, progress.done, progress.total]);
 
   useEffect(() => {
-    if (loading || error || cards.length === 0 || completed) return undefined;
+    if (loading || error || cards.length === 0 || completed || isMobile)
+      return undefined;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (
@@ -161,11 +171,18 @@ export function StudyDeck(props: StudyDeckProps) {
     next,
     prev,
     grade,
+    isMobile,
   ]);
 
   const restart = () => {
     setCompleted(false);
+    setMobileDismissed(false);
     onRestart?.();
+  };
+
+  const handleGrade = (result: ReviewResult): void => {
+    if (grading) return;
+    void grade(result);
   };
 
   if (loading) {
@@ -247,14 +264,26 @@ export function StudyDeck(props: StudyDeckProps) {
     );
   }
 
+  if (isMobile && !mobileDismissed) {
+    return (
+      <FlashcardMobileView
+        mode="study"
+        cards={toFlashcardMobileCardsFromStudy(cards)}
+        controlledIndex={currentIndex}
+        onIndexChange={goTo}
+        controlledFlipped={isFlipped}
+        onFlipToggle={flip}
+        onGrade={handleGrade}
+        resultsByIndex={studyResultsByIndex(cards, resultsByCard)}
+        grading={grading}
+        onClose={() => setMobileDismissed(true)}
+      />
+    );
+  }
+
   const current = cards[currentIndex];
   const pct =
     progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
-
-  const handleGrade = (result: ReviewResult): void => {
-    if (grading) return;
-    void grade(result);
-  };
 
   return (
     <Shell onBack={onBack} title={title} headerActions={headerActions}>

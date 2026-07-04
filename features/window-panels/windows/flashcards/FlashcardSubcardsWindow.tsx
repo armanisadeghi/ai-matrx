@@ -4,13 +4,19 @@
  * FlashcardSubcardsWindow — a parent's nested subcards as a flip-card set.
  */
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { FlashcardsSubcardsSet } from "@/components/mardown-display/blocks/flashcards/FlashcardsSubcardsSet";
 import { LayoutToggle } from "@/components/mardown-display/blocks/flashcards/flashcards-set-parts";
 import type { FlashcardSubcard } from "@/components/mardown-display/blocks/flashcards/flashcard-subcards";
 import type { LayoutMode } from "@/components/mardown-display/blocks/flashcards/flashcards-set-parts";
 import { subcardsWindowTitle } from "@/components/mardown-display/blocks/flashcards/flashcard-subcards";
+import {
+  toFlashcardMobileCards,
+  useFlashcardMobileViewState,
+} from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface FlashcardSubcardsWindowProps {
   isOpen: boolean;
@@ -27,10 +33,29 @@ export function FlashcardSubcardsWindow({
   title,
   parentFront,
 }: FlashcardSubcardsWindowProps) {
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
+  const [layoutMode, setLayoutMode] = React.useState<LayoutMode>("grid");
   const cards = subcards ?? [];
+  const isMobile = useIsMobile();
+  const { isMobileView, enterMobileView, exitMobileView, mobileStartIndex } =
+    useFlashcardMobileViewState(0);
+
+  useEffect(() => {
+    if (isOpen && isMobile && cards.length > 0) {
+      enterMobileView(0);
+    }
+  }, [isOpen, isMobile, cards.length, enterMobileView]);
 
   if (!isOpen) return null;
+
+  if (isMobileView && cards.length > 0) {
+    return (
+      <FlashcardMobileView
+        cards={toFlashcardMobileCards(cards)}
+        initialIndex={mobileStartIndex}
+        onClose={exitMobileView}
+      />
+    );
+  }
 
   const { width, height } = computeViewportSize();
   const displayTitle =
@@ -53,6 +78,7 @@ export function FlashcardSubcardsWindow({
           <LayoutToggle
             layoutMode={layoutMode}
             onLayoutChange={setLayoutMode}
+            onMobileView={() => enterMobileView(0)}
             size="xs"
           />
         ) : undefined

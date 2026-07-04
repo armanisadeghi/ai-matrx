@@ -149,7 +149,8 @@ export function useFlashcardsSet({
 interface LayoutToggleProps {
   layoutMode: LayoutMode;
   onLayoutChange: (mode: LayoutMode) => void;
-  onMobileView: () => void;
+  /** Enter mobile swipe mode. Omit on surfaces with no swipe view (the button hides). */
+  onMobileView?: () => void;
   size?: "sm" | "xs";
 }
 
@@ -187,18 +188,20 @@ export function LayoutToggle({
       >
         <LayoutList className={iconClass} />
       </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={btnClass}
-        onClick={(e) => {
-          e.stopPropagation();
-          onMobileView();
-        }}
-        title="Mobile swipe mode"
-      >
-        <Smartphone className={iconClass} />
-      </Button>
+      {onMobileView && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={btnClass}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMobileView();
+          }}
+          title="Mobile swipe mode"
+        >
+          <Smartphone className={iconClass} />
+        </Button>
+      )}
     </div>
   );
 }

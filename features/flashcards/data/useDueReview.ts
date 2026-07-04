@@ -21,7 +21,10 @@ import { useEffect, useRef, useState } from "react";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { CardWithDetails } from "./types";
-import type { StudySessionRow } from "@/features/education/study/types";
+import type {
+  ItemMasteryRow,
+  StudySessionRow,
+} from "@/features/education/study/types";
 import type { ReviewResult } from "../types";
 import type {
   FlashcardStudyProgress,
@@ -64,6 +67,9 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
   >({});
   const [grading, setGrading] = useState(false);
   const [session, setSession] = useState<StudySessionRow | null>(null);
+  const [masteryByCard, setMasteryByCard] = useState<
+    Record<string, ItemMasteryRow | undefined>
+  >({});
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +79,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
       setError(null);
       setCurrentIndex(0);
       setIsFlipped(false);
+      setMasteryByCard({});
 
       // 1. The FSRS due queue (mastery rows, soonest-due first).
       const dueRes = await studyService.listDue(FC_CARD_ITEM_TYPE, limit);
@@ -191,9 +198,11 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
         console.error("[useDueReview] recordAttempt:", res.error);
         return null;
       }
+      const { mastery } = res.data;
       setResultsByCard((prev) => ({ ...prev, [card.id]: result }));
+      setMasteryByCard((prev) => ({ ...prev, [card.id]: mastery }));
       goTo(currentIndex + 1);
-      return res.data.mastery;
+      return mastery;
     } finally {
       setGrading(false);
     }
@@ -222,5 +231,6 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     grade,
     grading,
     progress,
+    masteryByCard,
   };
 }

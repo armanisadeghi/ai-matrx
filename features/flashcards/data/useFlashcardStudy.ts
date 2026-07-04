@@ -260,13 +260,14 @@ export function useFlashcardStudy(
         return null;
       }
       // Reflect the graded result and advance.
+      const { mastery } = res.data;
       setResultsByCard((prev) => ({ ...prev, [card.id]: result }));
       setMasteryByCard((prev) => ({
         ...prev,
-        [card.id]: res.data.mastery,
+        [card.id]: mastery,
       }));
       goTo(currentIndex + 1);
-      return res.data.mastery;
+      return mastery;
     } finally {
       setGrading(false);
     }

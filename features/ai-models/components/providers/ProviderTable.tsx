@@ -14,8 +14,110 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, ExternalLink, Building2, Lock } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  Building2,
+  Lock,
+  BookOpen,
+  Package,
+  Globe,
+  ImageOff,
+} from "lucide-react";
 import type { AiProvider } from "../../types";
+
+// ─── Compact link icons (docs / models / website / logo) ──────────────────
+// The full URLs aren't worth table width — the thing an admin actually needs
+// at a glance is "does this provider have a docs/models/website link, and can
+// I jump to it" — so these render as small icon buttons, muted when unset.
+
+function LinkIcon({
+  href,
+  label,
+  icon: Icon,
+}: {
+  href: string | null | undefined;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  if (!href) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="h-6 w-6 flex items-center justify-center text-muted-foreground/30">
+            <Icon className="h-3.5 w-3.5" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          No {label} link set
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </a>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs max-w-[280px] break-all">
+        {label}: {href}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function ProviderLinks({ item }: { item: AiProvider }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="flex items-center gap-0.5">
+        {item.logo_url ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.logo_url}
+                alt=""
+                className="h-5 w-5 rounded object-contain bg-muted shrink-0"
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              Logo
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="h-5 w-5 flex items-center justify-center text-muted-foreground/30 shrink-0">
+                <ImageOff className="h-3 w-3" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              No logo set
+            </TooltipContent>
+          </Tooltip>
+        )}
+        <LinkIcon href={item.documentation_link} label="Documentation" icon={BookOpen} />
+        <LinkIcon href={item.models_link} label="Models list" icon={Package} />
+        <LinkIcon href={item.website_url} label="Website" icon={Globe} />
+      </div>
+    </TooltipProvider>
+  );
+}
 
 // ─── Row actions ────────────────────────────────────────────────────────────
 
@@ -142,8 +244,8 @@ export default function ProviderTable({
               <th className="w-[140px] min-w-[110px] px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground">
                 Slug
               </th>
-              <th className="w-[220px] min-w-[160px] px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground">
-                Website
+              <th className="w-[140px] min-w-[130px] px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground">
+                Links
               </th>
               <th className="w-[90px] min-w-[80px] px-2 py-1.5 text-left text-xs font-semibold text-muted-foreground">
                 System
@@ -213,21 +315,7 @@ export default function ProviderTable({
                     </span>
                   </td>
                   <td className="py-1 px-2 align-middle">
-                    {item.website_url ? (
-                      <a
-                        href={item.website_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-[200px]"
-                        title={item.website_url}
-                      >
-                        <ExternalLink className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{item.website_url}</span>
-                      </a>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
+                    <ProviderLinks item={item} />
                   </td>
                   <td className="py-1 px-2 align-middle">
                     {item.is_system ? (

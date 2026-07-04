@@ -6,7 +6,7 @@
  * Body: card grid only (no ChatCollapsibleWrapper). Footer: all set controls.
  */
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
@@ -19,6 +19,11 @@ import { flashcardsPrinter } from "@/components/mardown-display/blocks/flashcard
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Printer } from "lucide-react";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
+import {
+  toFlashcardMobileCards,
+  useFlashcardMobileViewState,
+} from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface FlashcardsBlockWindowProps {
   isOpen: boolean;
@@ -46,8 +51,9 @@ export function FlashcardsBlockWindow({
   conversationId,
   blockIndex,
 }: FlashcardsBlockWindowProps) {
-  const [isMobileView, setIsMobileView] = useState(false);
-  const [mobileStartIndex, setMobileStartIndex] = useState(0);
+  const isMobile = useIsMobile();
+  const { isMobileView, enterMobileView, exitMobileView, mobileStartIndex } =
+    useFlashcardMobileViewState(0);
 
   const set = useFlashcardsSet({
     content: content ?? undefined,
@@ -58,6 +64,12 @@ export function FlashcardsBlockWindow({
     conversationId,
     blockIndex,
   });
+
+  useEffect(() => {
+    if (isOpen && isMobile && set.flashcards.length > 0) {
+      enterMobileView(0);
+    }
+  }, [isOpen, isMobile, set.flashcards.length, enterMobileView]);
 
   if (!isOpen) return null;
 
@@ -70,12 +82,9 @@ export function FlashcardsBlockWindow({
   if (isMobileView && set.flashcards.length > 0) {
     return (
       <FlashcardMobileView
-        cards={set.flashcards.map((c) => ({
-          front: c.front ?? "",
-          back: c.back ?? null,
-        }))}
+        cards={toFlashcardMobileCards(set.flashcards)}
         initialIndex={mobileStartIndex}
-        onClose={() => setIsMobileView(false)}
+        onClose={exitMobileView}
       />
     );
   }
@@ -98,10 +107,7 @@ export function FlashcardsBlockWindow({
             <LayoutToggle
               layoutMode={set.layoutMode}
               onLayoutChange={set.setLayoutMode}
-              onMobileView={() => {
-                setMobileStartIndex(0);
-                setIsMobileView(true);
-              }}
+              onMobileView={() => enterMobileView(0)}
               size="xs"
             />
           ) : undefined

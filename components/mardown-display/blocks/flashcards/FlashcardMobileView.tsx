@@ -22,7 +22,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import type { MarkdownComponentOverrides, MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import type {
+  MarkdownComponentOverrides,
+  MarkdownStyleConfig,
+} from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
+import type { ReviewResult } from "@/features/flashcards/types";
+import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
+
+export type { FlashcardMobileCard };
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -32,15 +40,20 @@ const THUMB_H = 118;
 const THUMB_GAP = 10;
 const THUMB_STEP = THUMB_W + THUMB_GAP;
 
-interface Card {
-  front: string;
-  back: string | null;
-}
-
 interface FlashcardMobileViewProps {
-  cards: Card[];
+  cards: FlashcardMobileCard[];
   initialIndex?: number;
   onClose: () => void;
+  /** browse = shuffle + browse drawer; study = grading + no shuffle */
+  mode?: "browse" | "study";
+  /** External index control (study surfaces) */
+  controlledIndex?: number;
+  onIndexChange?: (index: number) => void;
+  controlledFlipped?: boolean;
+  onFlipToggle?: () => void;
+  onGrade?: (result: ReviewResult) => void;
+  resultsByIndex?: Record<number, ReviewResult | undefined>;
+  grading?: boolean;
 }
 
 // ─────────────────────────────────────────────
@@ -86,7 +99,7 @@ const TapZoneHints: React.FC<{
 // CardSlide
 // ─────────────────────────────────────────────
 interface CardSlideProps {
-  card: Card;
+  card: FlashcardMobileCard;
   isFlipped: boolean;
   style?: React.CSSProperties;
   showHints?: boolean;
@@ -97,7 +110,11 @@ interface CardSlideProps {
 }
 
 // p override that forces text-center — used for front & single-line back faces.
-const centeredParagraph = ({ node, children, ...props }: React.ComponentProps<"p"> & { node?: unknown }) => (
+const centeredParagraph = ({
+  node,
+  children,
+  ...props
+}: React.ComponentProps<"p"> & { node?: unknown }) => (
   <p className="text-center" {...props}>
     {children}
   </p>
@@ -105,9 +122,7 @@ const centeredParagraph = ({ node, children, ...props }: React.ComponentProps<"p
 
 // Shared style config factory for mobile flashcard faces.
 // Font size is applied via inline style (not Tailwind class) so dynamic sizing works.
-const makeMobileCardStyle = (
-  centered: boolean,
-): MarkdownStyleConfig => ({
+const makeMobileCardStyle = (centered: boolean): MarkdownStyleConfig => ({
   typography: {
     fontSizeLtr: "",
     fontSizeRtl: "",
@@ -321,7 +336,9 @@ const CardSlide: React.FC<CardSlideProps> = ({
               content={backContent}
               centered={backCentered}
               isStreamActive={card.back === null}
-              componentOverrides={backCentered ? { p: centeredParagraph } : undefined}
+              componentOverrides={
+                backCentered ? { p: centeredParagraph } : undefined
+              }
             />
           </div>
           {showHints && (
@@ -342,12 +359,13 @@ const CardSlide: React.FC<CardSlideProps> = ({
 // FilmstripScrubber
 // ─────────────────────────────────────────────
 const FilmstripScrubber: React.FC<{
-  cards: Card[];
+  cards: FlashcardMobileCard[];
   activeIndex: number;
   isOpen: boolean;
   onSelect: (i: number) => void;
   onClose: () => void;
-}> = ({ cards, activeIndex, isOpen, onSelect, onClose }) => {
+  resultsByIndex?: Record<number, ReviewResult | undefined>;
+}> = ({ cards, activeIndex, isOpen, onSelect, onClose, resultsByIndex }) => {
   const total = cards.length;
   const viewportRef = useRef<HTMLDivElement>(null);
   // offsetX = how many px the strip has scrolled (card 0 is at center when offsetX=0)
@@ -453,7 +471,18 @@ const FilmstripScrubber: React.FC<{
             const dist = Math.abs(i - centeredIndex);
             const scale = dist === 0 ? 1 : dist === 1 ? 0.82 : 0.66;
             const opacity = dist === 0 ? 1 : dist === 1 ? 0.7 : 0.4;
+            const result = resultsByIndex?.[i];
             const isCentered = i === centeredIndex;
+            const resultRing =
+              result === "correct"
+                ? "border-green-500"
+                : result === "partial"
+                  ? "border-amber-500"
+                  : result === "incorrect"
+                    ? "border-red-500"
+                    : isCentered
+                      ? "border-blue-500"
+                      : "border-zinc-500";
             return (
               <div
                 key={i}
@@ -468,9 +497,8 @@ const FilmstripScrubber: React.FC<{
                 }}
                 className={cn(
                   "rounded-xl overflow-hidden flex flex-col items-center justify-center cursor-pointer border",
-                  isCentered
-                    ? "bg-blue-700 border-blue-500"
-                    : "bg-zinc-700 border-zinc-500",
+                  isCentered ? "bg-blue-700" : "bg-zinc-700",
+                  resultRing,
                 )}
                 onClick={() => {
                   if (isCentered) onSelect(i);
@@ -546,9 +574,44 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   cards,
   initialIndex = 0,
   onClose,
+  mode = "browse",
+  controlledIndex,
+  onIndexChange,
+  controlledFlipped,
+  onFlipToggle,
+  onGrade,
+  resultsByIndex,
+  grading = false,
 }) => {
-  const [index, setIndex] = useState(initialIndex);
-  const [isFlipped, setIsFlipped] = useState(false);
+  const isControlledIndex = controlledIndex !== undefined;
+  const isControlledFlip = controlledFlipped !== undefined;
+  const isStudy = mode === "study";
+
+  const [internalIndex, setInternalIndex] = useState(initialIndex);
+  const [internalFlipped, setInternalFlipped] = useState(false);
+  const index = isControlledIndex ? controlledIndex : internalIndex;
+  const isFlipped = isControlledFlip ? controlledFlipped : internalFlipped;
+
+  const setIndex = useCallback(
+    (next: number) => {
+      if (isControlledIndex) onIndexChange?.(next);
+      else setInternalIndex(next);
+    },
+    [isControlledIndex, onIndexChange],
+  );
+
+  const toggleFlip = useCallback(() => {
+    if (isControlledFlip) onFlipToggle?.();
+    else setInternalFlipped((f) => !f);
+  }, [isControlledFlip, onFlipToggle]);
+
+  const resetFlip = useCallback(() => {
+    if (isControlledFlip) {
+      if (isFlipped) onFlipToggle?.();
+    } else {
+      setInternalFlipped(false);
+    }
+  }, [isControlledFlip, isFlipped, onFlipToggle]);
   const [transition, setTransition] = useState<{
     outgoingIndex: number;
     dir: "left" | "right";
@@ -569,7 +632,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
       if (isAnimating) return;
       setTextVisible(false);
       setTransition({ outgoingIndex: index, dir });
-      setIsFlipped(false);
+      resetFlip();
       if (animTimeout.current) clearTimeout(animTimeout.current);
       if (textTimeout.current) clearTimeout(textTimeout.current);
       animTimeout.current = setTimeout(() => {
@@ -578,7 +641,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
         textTimeout.current = setTimeout(() => setTextVisible(true), 40);
       }, ANIM_MS);
     },
-    [isAnimating, index],
+    [isAnimating, index, resetFlip, setIndex],
   );
 
   const goNext = useCallback(() => {
@@ -597,10 +660,20 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   }, [index, total, goTo]);
 
   const shuffle = useCallback(() => {
+    if (isStudy) return;
     const next = Math.floor(Math.random() * total);
     if (next !== index) goTo(next, next > index ? "left" : "right");
     setMenuOpen(false);
-  }, [index, total, goTo]);
+  }, [index, total, goTo, isStudy]);
+
+  const handleGrade = useCallback(
+    (result: ReviewResult) => {
+      if (!onGrade || grading) return;
+      onGrade(result);
+      setMenuOpen(false);
+    },
+    [onGrade, grading],
+  );
 
   const handleScrubSelect = useCallback(
     (i: number) => {
@@ -682,12 +755,12 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
       } else if (!menuOpen && !scrubOpen) {
         if (e.key === "ArrowRight") goNext();
         else if (e.key === "ArrowLeft") goPrev();
-        else if (e.key === " " || e.key === "Enter") setIsFlipped((f) => !f);
+        else if (e.key === " " || e.key === "Enter") toggleFlip();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev, onClose, menuOpen, scrubOpen]);
+  }, [goNext, goPrev, onClose, menuOpen, scrubOpen, toggleFlip]);
 
   useEffect(() => {
     return () => {
@@ -801,7 +874,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
           const relX = (clientX - left) / width;
           if (relX < 0.2) goPrev();
           else if (relX > 0.8) goNext();
-          else setIsFlipped((f) => !f);
+          else toggleFlip();
         }}
       >
         {transition && (
@@ -840,6 +913,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
           isOpen={scrubOpen}
           onSelect={handleScrubSelect}
           onClose={() => setScrubOpen(false)}
+          resultsByIndex={resultsByIndex}
         />
         {/* Scrim below the scrubber — tap to close */}
         <div
@@ -894,7 +968,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
               icon={<RotateCcw className="h-5 w-5" />}
               label="Flip Back"
               onClick={() => {
-                setIsFlipped(false);
+                resetFlip();
                 setMenuOpen(false);
               }}
               disabled={!isFlipped}
@@ -914,11 +988,22 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
               }}
               disabled={index === 0}
             />
-            <ActionButton
-              icon={<Shuffle className="h-5 w-5" />}
-              label="Random"
-              onClick={shuffle}
-            />
+            {!isStudy ? (
+              <ActionButton
+                icon={<Shuffle className="h-5 w-5" />}
+                label="Random"
+                onClick={shuffle}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-1 bg-zinc-900 px-1 py-2">
+                <FlashcardGradeButtonRow
+                  onGrade={handleGrade}
+                  disabled={grading || !onGrade}
+                  size="compact"
+                  className="w-full max-w-[11rem]"
+                />
+              </div>
+            )}
             <ActionButton
               icon={<ChevronRight className="h-5 w-5" />}
               label="Next"
@@ -929,6 +1014,17 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
               disabled={index === total - 1}
             />
           </div>
+
+          {isStudy && onGrade ? (
+            <div className="border-t border-white/5 px-3 py-2">
+              <FlashcardGradeButtonRow
+                onGrade={handleGrade}
+                disabled={grading}
+                size="compact"
+                className="w-full"
+              />
+            </div>
+          ) : null}
 
           {/* Jump to card shortcut */}
           <button
