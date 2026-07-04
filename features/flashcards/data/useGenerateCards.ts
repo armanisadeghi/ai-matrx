@@ -53,6 +53,12 @@ export interface GenerateCardsResult {
   ) => Promise<GeneratedCardSet>;
   isGenerating: boolean;
   error: string | null;
+  /**
+   * The live request id for the in-flight generation (null before launch).
+   * Consumers feed it to content-ir's useLiveJsonRegion to render the cards
+   * AS THEY STREAM instead of a spinner.
+   */
+  activeRequestId: string | null;
 }
 
 // The agent is gemini-3.5-flash producing a full card set — generous ceiling.
@@ -135,6 +141,7 @@ export function useGenerateCards(): GenerateCardsResult {
   const store = useAppStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
 
   /**
    * Poll the active-requests slice until JSON extraction finalizes, then read
@@ -208,6 +215,8 @@ export function useGenerateCards(): GenerateCardsResult {
         throw new Error("Agent launch did not return a request id");
       }
 
+      setActiveRequestId(requestId);
+
       return await waitForExtraction(requestId);
     } catch (e) {
       const message =
@@ -219,5 +228,5 @@ export function useGenerateCards(): GenerateCardsResult {
     }
   }
 
-  return { generate, isGenerating, error };
+  return { generate, isGenerating, error, activeRequestId };
 }
