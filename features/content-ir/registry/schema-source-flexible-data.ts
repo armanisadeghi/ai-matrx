@@ -8,12 +8,22 @@
  */
 
 import type { Database, Json } from "@/types/database.types";
-import { supabase } from "@/utils/supabase/client";
 import {
   KIND_KEY,
   type FieldSchema,
   type KindSchema,
 } from "../core/kind-schema.types";
+
+/**
+ * The browser client is loaded lazily INSIDE the async functions: its module
+ * initializer throws without NEXT_PUBLIC_SUPABASE_* env, which would poison
+ * every import chain that merely touches the registry (jest, node scripts,
+ * the accumulator). Schema reads are always async, so laziness costs nothing.
+ */
+async function getSupabase() {
+  const { supabase } = await import("@/utils/supabase/client");
+  return supabase;
+}
 
 /** Block Schemas category (`block-schemas` / "Block Schemas"). */
 export const BLOCK_SCHEMAS_CATEGORY_ID = "671a423f-d350-4457-83e5-389eac70f287";
@@ -116,7 +126,7 @@ function assertFlexibleDataRecord(value: unknown): FlexibleDataRecord {
 export async function listFlexibleData(
   categoryId: string,
 ): Promise<FlexibleDataRecord[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (await getSupabase())
     .from("flexible_data")
     .select(LIST_COLUMNS)
     .eq("category_id", categoryId)
@@ -137,7 +147,7 @@ export async function listFlexibleData(
 }
 
 export async function getFlexibleData(id: string): Promise<FlexibleDataRecord> {
-  const { data, error } = await supabase
+  const { data, error } = await (await getSupabase())
     .from("flexible_data")
     .select(LIST_COLUMNS)
     .eq("id", id)
@@ -169,7 +179,7 @@ export async function createFlexibleData(
     visibility: input.visibility ?? "private",
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await (await getSupabase())
     .from("flexible_data")
     .insert(payload)
     .select(LIST_COLUMNS)
@@ -195,7 +205,7 @@ export async function updateFlexibleData(
   if (input.data !== undefined) payload.data = toJsonObject(input.data);
   if (input.visibility !== undefined) payload.visibility = input.visibility;
 
-  const { data, error } = await supabase
+  const { data, error } = await (await getSupabase())
     .from("flexible_data")
     .update(payload)
     .eq("id", id)
@@ -213,7 +223,7 @@ export async function updateFlexibleData(
 }
 
 export async function deleteFlexibleData(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (await getSupabase())
     .from("flexible_data")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
@@ -422,7 +432,7 @@ export async function listBlockSchemas(
 export async function getBlockSchemaBySlug(
   slug: string,
 ): Promise<KindSchema | null> {
-  const { data, error } = await supabase
+  const { data, error } = await (await getSupabase())
     .from("flexible_data")
     .select(LIST_COLUMNS)
     .eq("category_id", BLOCK_SCHEMAS_CATEGORY_ID)

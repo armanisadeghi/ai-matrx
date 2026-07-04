@@ -74,10 +74,17 @@ export interface CanonicalBlockIR {
   /** Stable hash of the region source text — the idempotence / cache key. */
   fingerprint: string;
   root: IrStructuredNode;
-  /** pathKey → node metadata for per-path readers (child kinds under root). */
+  /**
+   * pathKey → node metadata for per-path readers (child kinds under root).
+   * Carries each child node's residue — child snapshot values inside
+   * `root.value` hold schema fields only, so WITHOUT this the envelope would
+   * silently drop nested unknown keys (zero-data-loss violation).
+   */
   nodeIndex?: Record<
     string,
-    Pick<IrStructuredNode, "kind" | "kindState" | "status">
+    Pick<IrStructuredNode, "kind" | "kindState" | "status"> & {
+      residue?: IrResidue | null;
+    }
   >;
 }
 

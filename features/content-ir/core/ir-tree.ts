@@ -16,7 +16,6 @@
  * identical output for stream and static input.
  */
 
-import { fingerprintText } from "./fingerprint";
 import { JSON_DISCRIMINATOR } from "./discriminator";
 import {
   IR_VERSION,
@@ -276,8 +275,12 @@ export class IrTree {
     this.propagateToAncestors(path, value);
   }
 
-  /** Assemble the canonical envelope. ONE code path for stream + one-shot. */
-  buildEnvelope(source: string): CanonicalBlockIR {
+  /**
+   * Assemble the canonical envelope. ONE code path for stream + one-shot.
+   * Callers supply the fingerprint (one-shot hashes the source; live sessions
+   * keep an incremental hasher so no per-flush re-hash happens).
+   */
+  buildEnvelope(fingerprint: string): CanonicalBlockIR {
     const rootNode = this.nodes.get("");
     const rootRawReason = this.rawPaths.get("") ?? null;
 
@@ -299,15 +302,21 @@ export class IrTree {
       };
     }
 
-    const isRaw = rootRawReason !== null || (!rootNode && !this.errorReason);
+    const isRaw = rootRawReason !== null;
 
     const root: IrStructuredNode = {
       role: "structured",
       kind: isRaw ? "" : (rootNode?.kind ?? this.completedKind),
-      kindState: isRaw ? "raw" : rootNode ? rootNode.kindState : "raw",
+      kindState: isRaw
+        ? "raw"
+        : rootNode
+          ? rootNode.kindState
+          : this.regionStatus === "streaming"
+            ? "pending_kind"
+            : "raw",
       discriminator: JSON_DISCRIMINATOR,
       path: [],
-      status: this.regionStatus === "streaming" ? "error" : this.regionStatus,
+      status: this.regionStatus,
       value: rootNode?.value ?? this.rootRawValue ?? {},
       residue,
     };
@@ -315,11 +324,11 @@ export class IrTree {
     const nodeIndex: NonNullable<CanonicalBlockIR["nodeIndex"]> = {};
     for (const node of this.nodes.values()) {
       if (node.pathKey === "") continue;
-      if (!node.complete) continue;
       nodeIndex[node.pathKey] = {
         kind: node.kind,
         kindState: node.kindState,
-        status: "complete",
+        status: node.complete ? "complete" : "streaming",
+        ...(node.residue ? { residue: node.residue } : {}),
       };
     }
     for (const [pathKey] of this.rawPaths) {
@@ -330,7 +339,7 @@ export class IrTree {
     return {
       v: IR_VERSION,
       engine: "fe-kind-parser",
-      fingerprint: fingerprintText(source),
+      fingerprint,
       root,
       ...(Object.keys(nodeIndex).length > 0 ? { nodeIndex } : {}),
     };

@@ -9,20 +9,51 @@
  *
  * FNV-1a 32-bit, applied twice with different seeds and concatenated, so a
  * single 32-bit collision doesn't alias two regions.
+ *
+ * `createFingerprinter` is the incremental form for live streams: feeding
+ * chunks one at a time yields EXACTLY the same fingerprint as
+ * `fingerprintText` over the concatenation — sessions never re-hash the
+ * whole source per flush.
  */
 
-function fnv1a(input: string, seed: number): number {
-  let hash = seed >>> 0;
+const SEED_A = 0x811c9dc5;
+const SEED_B = 0x01000193;
+
+function fnv1aStep(hash: number, input: string): number {
+  let h = hash >>> 0;
   for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    // hash *= 16777619 (FNV prime), in 32-bit space without BigInt.
-    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+    h ^= input.charCodeAt(i);
+    // h *= 16777619 (FNV prime), in 32-bit space without BigInt.
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
   }
-  return hash >>> 0;
+  return h >>> 0;
+}
+
+export interface Fingerprinter {
+  push(chunk: string): void;
+  /** Fingerprint of everything pushed so far. */
+  current(): string;
+}
+
+export function createFingerprinter(): Fingerprinter {
+  let a = SEED_A;
+  let b = SEED_B;
+  let length = 0;
+
+  return {
+    push(chunk: string): void {
+      a = fnv1aStep(a, chunk);
+      b = fnv1aStep(b, chunk);
+      length += chunk.length;
+    },
+    current(): string {
+      return `${length.toString(36)}-${a.toString(36)}${b.toString(36)}`;
+    },
+  };
 }
 
 export function fingerprintText(source: string): string {
-  const a = fnv1a(source, 0x811c9dc5);
-  const b = fnv1a(source, 0x01000193);
-  return `${source.length.toString(36)}-${a.toString(36)}${b.toString(36)}`;
+  const hasher = createFingerprinter();
+  hasher.push(source);
+  return hasher.current();
 }

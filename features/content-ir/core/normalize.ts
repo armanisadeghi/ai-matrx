@@ -76,5 +76,5 @@ export function normalizeJsonRegion(
   parser.push(source);
   parser.end();
 
-  return tree.buildEnvelope(source);
+  return tree.buildEnvelope(fingerprintText(source));
 }

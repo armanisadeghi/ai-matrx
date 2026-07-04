@@ -12,6 +12,7 @@
  */
 
 import { IrTree, type IrTreeNode } from "../core/ir-tree";
+import { createFingerprinter, type Fingerprinter } from "../core/fingerprint";
 import type { CanonicalBlockIR } from "../core/ir-types";
 import type { KindSchema } from "../core/kind-schema.types";
 import {
@@ -48,7 +49,7 @@ export class ParseSession {
   private readonly anyListeners = new Set<Listener>();
   private readonly unsubscribeSchemaArrivals: (() => void) | null;
 
-  private source = "";
+  private readonly fingerprinter: Fingerprinter = createFingerprinter();
   private ended = false;
 
   constructor(options: ParseSessionOptions) {
@@ -73,7 +74,7 @@ export class ParseSession {
 
   /** The single writer's input. Does NOT notify — host flushes on its cadence. */
   write(chunk: string): void {
-    this.source += chunk;
+    this.fingerprinter.push(chunk);
     this.parser.push(chunk);
   }
 
@@ -89,11 +90,6 @@ export class ParseSession {
 
   get status(): "streaming" | "complete" | "error" {
     return this.tree.status;
-  }
-
-  /** Full region source so far (fingerprint / envelope truth). */
-  get regionSource(): string {
-    return this.source;
   }
 
   getNode(pathKey: string): IrTreeNode | null {
@@ -143,7 +139,7 @@ export class ParseSession {
   }
 
   buildEnvelope(): CanonicalBlockIR {
-    return this.tree.buildEnvelope(this.source);
+    return this.tree.buildEnvelope(this.fingerprinter.current());
   }
 
   dispose(): void {
