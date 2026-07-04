@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Play, Loader2, RotateCcw, Check, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,15 @@ import type { KindSchema } from "./kind-schemas";
 import type { KindStreamEvent } from "./kind-stream-parser";
 import { runKindJsonStreamTest } from "./dev-test-harness";
 import {
+  buildFakeKindRegistry,
+  buildSuppressedPathPrefixes,
+  collectLiveBlockMounts,
+  DemoRegisteredBlockPanel,
+  flashcardServerDataFromEvents,
+  flashcardSetCardKinds,
+  isParserEventSuppressed,
+} from "./demo-block-components";
+import {
   buildValidationReport,
   eventPathKey,
   pathLabel,
@@ -34,6 +44,19 @@ import {
   type BlockSample,
   type BlockSchemaEntry,
 } from "./flexible-data-service";
+
+const FlashcardsBlock = dynamic(
+  () =>
+    import("@/components/mardown-display/blocks/flashcards/FlashcardsBlock"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-24 items-center justify-center rounded-lg border border-border bg-muted/30">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 
 const DEFAULT_STREAM_SETTINGS = {
   delayMs: 20,
@@ -211,301 +234,396 @@ function ValidationSummaryBanner({ report }: { report: ValidationReport }) {
   );
 }
 
-function KindEventTimeline({ events }: { events: KindStreamEvent[] }) {
+function KindEventRow({
+  event,
+  events,
+  index,
+}: {
+  event: KindStreamEvent;
+  events: KindStreamEvent[];
+  index: number;
+}) {
+  const path = "path" in event ? (event.path ?? []) : [];
+  const depth = kindDepth(path);
+  const palette = depthStyle(depth);
+  const indent = depth * 12;
+  const meta = `@ ${pathLabel(path)} · ${event.at}`;
+
+  const rowCls = (extra?: string) =>
+    cn(
+      "flex min-h-6 items-center gap-2 rounded border border-border/60 border-l-4 py-0.5 pl-2 pr-2",
+      palette.border,
+      palette.bg,
+      extra,
+    );
+
+  const badgeCls = cn(
+    "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase leading-none",
+    palette.badge,
+  );
+
+  switch (event.type) {
+    case "kind_identified":
+      return (
+        <div className={rowCls()} style={{ marginLeft: indent }}>
+          <span className={badgeCls}>
+            {path.length === 0 ? "root" : "kind"}
+          </span>
+          <span className={cn("shrink-0 font-semibold", palette.enter)}>
+            identified
+          </span>
+          <span className="min-w-0 truncate font-semibold text-foreground">
+            {event.kind}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {meta}
+          </span>
+        </div>
+      );
+
+    case "array_start":
+      return (
+        <div
+          className="flex min-h-5 items-center gap-2 py-px text-[11px] text-muted-foreground"
+          style={{ paddingLeft: indent }}
+        >
+          <span className="shrink-0">──</span>
+          <span className="truncate">
+            {event.field}[] opened · {pathLabel(event.path)}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px]">{event.at}</span>
+        </div>
+      );
+
+    case "object_start": {
+      const itemIndex = path[path.length - 1];
+      const isListItem = typeof itemIndex === "number";
+      return (
+        <div className={rowCls()} style={{ marginLeft: indent }}>
+          <span className={badgeCls}>
+            {isListItem ? `#${(itemIndex as number) + 1}` : "open"}
+          </span>
+          <span className={cn("shrink-0 font-semibold", palette.enter)}>
+            opening
+          </span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {pathLabel(event.path)}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+    }
+
+    case "pending_kind": {
+      const stillWaiting = isKindWaitActiveAt(events, index);
+      return (
+        <div
+          className={rowCls(stillWaiting ? "" : "opacity-70")}
+          style={{ marginLeft: indent }}
+        >
+          {stillWaiting ? (
+            <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
+          ) : (
+            <Check className="size-3 shrink-0 text-primary" />
+          )}
+          <span className={badgeCls}>{stillWaiting ? "wait" : "waited"}</span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {stillWaiting
+              ? `awaiting ${pathLabel(event.path)}.__kind`
+              : `wait ended · ${pathLabel(event.path)}`}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+    }
+
+    case "kind_wait_end":
+      return (
+        <div className={rowCls()} style={{ marginLeft: indent }}>
+          {event.outcome === "identified" ? (
+            <Check className="size-3 shrink-0 text-primary" />
+          ) : (
+            <CircleAlert className="size-3 shrink-0 text-warning" />
+          )}
+          <span className={badgeCls}>
+            {event.outcome === "identified" ? "resolved" : "fallback"}
+          </span>
+          <span className="min-w-0 truncate text-foreground">
+            {event.outcome === "identified"
+              ? `__kind → ${event.kind}`
+              : (event.reason ?? "kept as raw JSON")}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {meta}
+          </span>
+        </div>
+      );
+
+    case "optional_field_missing":
+      return (
+        <div
+          className="flex min-h-5 items-center gap-2 rounded border border-info/40 bg-info/5 px-2 py-px text-[11px]"
+          style={{ marginLeft: indent }}
+        >
+          <span className="shrink-0 rounded bg-info/15 px-1 py-px text-[9px] font-semibold uppercase text-info">
+            optional
+          </span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {pathLabel(event.path)} — {event.field} not provided
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+
+    case "extra_field":
+      return (
+        <div
+          className="flex min-h-5 items-center gap-2 rounded border border-border/80 bg-muted/20 px-2 py-px text-[11px]"
+          style={{ marginLeft: indent }}
+        >
+          <span className="shrink-0 rounded bg-muted px-1 py-px text-[9px] font-semibold uppercase text-muted-foreground">
+            extra
+          </span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {pathLabel(event.path)} — {event.field} (not in schema)
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+
+    case "raw_object":
+      return (
+        <div
+          className="flex min-h-6 flex-col gap-0.5 rounded border border-warning/60 bg-warning/10 px-2 py-1"
+          style={{ marginLeft: indent }}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <CircleAlert className="size-3 shrink-0 text-warning" />
+            <span className="shrink-0 rounded bg-warning/15 px-1 py-px text-[10px] font-semibold uppercase text-warning">
+              unvalidated
+            </span>
+            <span className="min-w-0 truncate text-[11px] font-medium text-foreground">
+              {pathLabel(event.path)}
+            </span>
+            <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+              {event.at}
+            </span>
+          </div>
+          <span className="text-[10px] text-warning">{event.reason}</span>
+        </div>
+      );
+
+    case "block_snapshot":
+      return (
+        <div
+          className={rowCls(event.complete ? "border-success/30" : "")}
+          style={{ marginLeft: indent }}
+        >
+          <span
+            className={cn(
+              badgeCls,
+              event.complete && "bg-success/15 text-success",
+            )}
+          >
+            {event.complete ? "snapshot" : "partial"}
+          </span>
+          <span className="min-w-0 truncate font-semibold text-foreground">
+            {event.kind}
+          </span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {Object.keys(event.value).filter((k) => k !== "__kind").length}{" "}
+            fields
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {meta}
+          </span>
+        </div>
+      );
+
+    case "object_complete":
+      return (
+        <div
+          className={rowCls("border-success/40")}
+          style={{ marginLeft: indent }}
+        >
+          <Check className="size-3 shrink-0 text-success" />
+          <span className="shrink-0 rounded bg-success/15 px-1 py-px text-[10px] font-semibold uppercase text-success">
+            validated
+          </span>
+          <span className="min-w-0 truncate font-semibold text-foreground">
+            {event.kind}
+          </span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {pathLabel(event.path)}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+
+    case "field": {
+      const preview = fieldPreview(event.key, event.value);
+      if (!preview) return null;
+      return (
+        <div
+          className="flex min-h-5 items-center gap-2 truncate py-px text-[11px] text-foreground/80"
+          style={{ paddingLeft: indent + 8 }}
+        >
+          <span className="shrink-0 rounded bg-success/10 px-1 py-px text-[9px] font-semibold uppercase text-success">
+            schema
+          </span>
+          <span className="min-w-0 truncate">{preview}</span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+    }
+
+    case "complete": {
+      const hasFallbacks = events.some((e) => e.type === "raw_object");
+      return (
+        <div
+          className={cn(
+            "flex min-h-6 items-center gap-2 rounded border px-2 py-0.5",
+            hasFallbacks
+              ? "border-warning/40 bg-warning/10"
+              : "border-primary/40 bg-primary/10",
+          )}
+        >
+          <span
+            className={cn(
+              "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase",
+              hasFallbacks
+                ? "bg-warning/15 text-warning"
+                : "bg-primary/15 text-primary",
+            )}
+          >
+            complete
+          </span>
+          <span className="min-w-0 truncate font-semibold text-foreground">
+            {event.kind}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+    }
+
+    case "error":
+      return (
+        <div className="flex min-h-6 items-center gap-2 rounded border border-destructive/50 bg-destructive/10 px-2 py-0.5">
+          <span className="shrink-0 rounded bg-destructive/15 px-1 py-px text-[10px] font-semibold uppercase text-destructive">
+            error
+          </span>
+          <span className="min-w-0 truncate text-destructive">
+            {event.reason}
+          </span>
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {event.at}
+          </span>
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}
+
+function ParserStreamView({
+  events,
+  isRunning,
+  schemas,
+}: {
+  events: KindStreamEvent[];
+  isRunning: boolean;
+  schemas: Record<string, KindSchema>;
+}) {
+  const registry = useMemo(() => buildFakeKindRegistry(schemas), [schemas]);
+  const cardKinds = useMemo(() => flashcardSetCardKinds(schemas), [schemas]);
+
+  const liveMounts = useMemo(
+    () => collectLiveBlockMounts(events, registry, cardKinds),
+    [events, registry, cardKinds],
+  );
+
+  const suppressedPrefixes = useMemo(
+    () => buildSuppressedPathPrefixes(events, registry, cardKinds),
+    [events, registry, cardKinds],
+  );
+
+  const unownedEvents = useMemo(
+    () =>
+      events
+        .map((event, index) => ({ event, index }))
+        .filter(
+          ({ event }) => !isParserEventSuppressed(event, suppressedPrefixes),
+        ),
+    [events, suppressedPrefixes],
+  );
+
   return (
-    <div className="space-y-0.5 font-mono text-xs">
-      {events.map((event, index) => {
-        const path = "path" in event ? (event.path ?? []) : [];
-        const depth = kindDepth(path);
-        const palette = depthStyle(depth);
-        const indent = depth * 12;
-        const meta = `@ ${pathLabel(path)} · ${event.at}`;
-
-        const rowCls = (extra?: string) =>
-          cn(
-            "flex min-h-6 items-center gap-2 rounded border border-border/60 border-l-4 py-0.5 pl-2 pr-2",
-            palette.border,
-            palette.bg,
-            extra,
-          );
-
-        const badgeCls = cn(
-          "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase leading-none",
-          palette.badge,
-        );
-
-        switch (event.type) {
-          case "kind_identified":
-            return (
-              <div
-                key={index}
-                className={rowCls()}
-                style={{ marginLeft: indent }}
-              >
-                <span className={badgeCls}>
-                  {path.length === 0 ? "root" : "kind"}
-                </span>
-                <span className={cn("shrink-0 font-semibold", palette.enter)}>
-                  identified
-                </span>
-                <span className="min-w-0 truncate font-semibold text-foreground">
-                  {event.kind}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {meta}
-                </span>
-              </div>
-            );
-
-          case "array_start":
-            return (
-              <div
-                key={index}
-                className="flex min-h-5 items-center gap-2 py-px text-[11px] text-muted-foreground"
-                style={{ paddingLeft: indent }}
-              >
-                <span className="shrink-0">──</span>
-                <span className="truncate">
-                  {event.field}[] opened · {pathLabel(event.path)}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px]">{event.at}</span>
-              </div>
-            );
-
-          case "object_start": {
-            const itemIndex = path[path.length - 1];
-            const isListItem = typeof itemIndex === "number";
-            return (
-              <div
-                key={index}
-                className={rowCls()}
-                style={{ marginLeft: indent }}
-              >
-                <span className={badgeCls}>
-                  {isListItem ? `#${(itemIndex as number) + 1}` : "open"}
-                </span>
-                <span className={cn("shrink-0 font-semibold", palette.enter)}>
-                  opening
-                </span>
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {pathLabel(event.path)}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-          }
-
-          case "pending_kind": {
-            const stillWaiting = isKindWaitActiveAt(events, index);
-            return (
-              <div
-                key={index}
-                className={rowCls(stillWaiting ? "" : "opacity-70")}
-                style={{ marginLeft: indent }}
-              >
-                {stillWaiting ? (
-                  <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
-                ) : (
-                  <Check className="size-3 shrink-0 text-primary" />
-                )}
-                <span className={badgeCls}>
-                  {stillWaiting ? "wait" : "waited"}
-                </span>
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {stillWaiting
-                    ? `awaiting ${pathLabel(event.path)}.__kind`
-                    : `wait ended · ${pathLabel(event.path)}`}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-          }
-
-          case "kind_wait_end":
-            return (
-              <div
-                key={index}
-                className={rowCls()}
-                style={{ marginLeft: indent }}
-              >
-                {event.outcome === "identified" ? (
-                  <Check className="size-3 shrink-0 text-primary" />
-                ) : (
-                  <CircleAlert className="size-3 shrink-0 text-warning" />
-                )}
-                <span className={badgeCls}>
-                  {event.outcome === "identified" ? "resolved" : "fallback"}
-                </span>
-                <span className="min-w-0 truncate text-foreground">
-                  {event.outcome === "identified"
-                    ? `__kind → ${event.kind}`
-                    : (event.reason ?? "kept as raw JSON")}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {meta}
-                </span>
-              </div>
-            );
-
-          case "optional_field_missing":
-            return (
-              <div
-                key={index}
-                className="flex min-h-5 items-center gap-2 rounded border border-info/40 bg-info/5 px-2 py-px text-[11px]"
-                style={{ marginLeft: indent }}
-              >
-                <span className="shrink-0 rounded bg-info/15 px-1 py-px text-[9px] font-semibold uppercase text-info">
-                  optional
-                </span>
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {pathLabel(event.path)} — {event.field} not provided
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-
-          case "extra_field":
-            return (
-              <div
-                key={index}
-                className="flex min-h-5 items-center gap-2 rounded border border-border/80 bg-muted/20 px-2 py-px text-[11px]"
-                style={{ marginLeft: indent }}
-              >
-                <span className="shrink-0 rounded bg-muted px-1 py-px text-[9px] font-semibold uppercase text-muted-foreground">
-                  extra
-                </span>
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {pathLabel(event.path)} — {event.field} (not in schema)
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-
-          case "raw_object":
-            return (
-              <div
-                key={index}
-                className="flex min-h-6 flex-col gap-0.5 rounded border border-warning/60 bg-warning/10 px-2 py-1"
-                style={{ marginLeft: indent }}
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <CircleAlert className="size-3 shrink-0 text-warning" />
-                  <span className="shrink-0 rounded bg-warning/15 px-1 py-px text-[10px] font-semibold uppercase text-warning">
-                    unvalidated
-                  </span>
-                  <span className="min-w-0 truncate text-[11px] font-medium text-foreground">
-                    {pathLabel(event.path)}
-                  </span>
-                  <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                    {event.at}
-                  </span>
-                </div>
-                <span className="text-[10px] text-warning">{event.reason}</span>
-              </div>
-            );
-
-          case "object_complete":
-            return (
-              <div
-                key={index}
-                className={rowCls("border-success/40")}
-                style={{ marginLeft: indent }}
-              >
-                <Check className="size-3 shrink-0 text-success" />
-                <span className="shrink-0 rounded bg-success/15 px-1 py-px text-[10px] font-semibold uppercase text-success">
-                  validated
-                </span>
-                <span className="min-w-0 truncate font-semibold text-foreground">
-                  {event.kind}
-                </span>
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {pathLabel(event.path)}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-
-          case "field": {
-            const preview = fieldPreview(event.key, event.value);
-            if (!preview) return null;
-            return (
-              <div
-                key={index}
-                className="flex min-h-5 items-center gap-2 truncate py-px text-[11px] text-foreground/80"
-                style={{ paddingLeft: indent + 8 }}
-              >
-                <span className="shrink-0 rounded bg-success/10 px-1 py-px text-[9px] font-semibold uppercase text-success">
-                  schema
-                </span>
-                <span className="min-w-0 truncate">{preview}</span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-          }
-
-          case "complete": {
-            const hasFallbacks = events.some((e) => e.type === "raw_object");
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "flex min-h-6 items-center gap-2 rounded border px-2 py-0.5",
-                  hasFallbacks
-                    ? "border-warning/40 bg-warning/10"
-                    : "border-primary/40 bg-primary/10",
-                )}
-              >
-                <span
-                  className={cn(
-                    "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase",
-                    hasFallbacks
-                      ? "bg-warning/15 text-warning"
-                      : "bg-primary/15 text-primary",
-                  )}
+    <div className="space-y-4">
+      {liveMounts.length > 0 && (
+        <div className="space-y-4 font-sans">
+          {liveMounts.map((mount) => (
+            <DemoRegisteredBlockPanel
+              key={mount.pathKey}
+              kind={mount.kind}
+              path={mount.path}
+              events={events}
+              isRunning={isRunning}
+              schemas={schemas}
+              registry={registry}
+              cardKinds={cardKinds}
+              flashcardsBlock={
+                <Suspense
+                  fallback={
+                    <div className="flex h-24 items-center justify-center rounded-lg border border-border bg-muted/30">
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                    </div>
+                  }
                 >
-                  complete
-                </span>
-                <span className="min-w-0 truncate font-semibold text-foreground">
-                  {event.kind}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-          }
+                  <FlashcardsBlock
+                    serverData={flashcardServerDataFromEvents(
+                      events,
+                      mount.path,
+                      isRunning,
+                      cardKinds,
+                    )}
+                  />
+                </Suspense>
+              }
+            />
+          ))}
+        </div>
+      )}
 
-          case "error":
-            return (
-              <div
-                key={index}
-                className="flex min-h-6 items-center gap-2 rounded border border-destructive/50 bg-destructive/10 px-2 py-0.5"
-              >
-                <span className="shrink-0 rounded bg-destructive/15 px-1 py-px text-[10px] font-semibold uppercase text-destructive">
-                  error
-                </span>
-                <span className="min-w-0 truncate text-destructive">
-                  {event.reason}
-                </span>
-                <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-                  {event.at}
-                </span>
-              </div>
-            );
-        }
-      })}
+      {unownedEvents.length > 0 && (
+        <div className="space-y-0.5 border-t border-border pt-3 font-mono text-xs">
+          <p className="mb-2 text-[10px] font-sans text-muted-foreground">
+            Parser trace (unrecognized kinds or no registered component)
+          </p>
+          {unownedEvents.map(({ event, index }) => (
+            <KindEventRow
+              key={index}
+              event={event}
+              events={events}
+              index={index}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -634,6 +752,16 @@ export default function JsonBlockDetectorPage() {
     [schemas],
   );
 
+  const fakeKindRegistry = useMemo(
+    () => buildFakeKindRegistry(schemas),
+    [schemas],
+  );
+
+  const flashcardCardKinds = useMemo(
+    () => flashcardSetCardKinds(schemas),
+    [schemas],
+  );
+
   const sampleData = useMemo(() => parseInputJson(inputText), [inputText]);
 
   const selectedBlockSchema = useMemo(() => {
@@ -721,6 +849,13 @@ export default function JsonBlockDetectorPage() {
                     : schemasError
                       ? schemasError
                       : `${blockSchemaSlugs.length} block schemas — parsing via __kind`}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  FAKE preview registry:{" "}
+                  {Object.entries(fakeKindRegistry)
+                    .map(([kind, component]) => `${kind} → ${component}`)
+                    .join(", ")}
+                  {" · "}cards: {flashcardCardKinds.join(", ")}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -852,7 +987,11 @@ export default function JsonBlockDetectorPage() {
                   Schema-validated parser events appear here as chunks arrive.
                 </p>
               ) : (
-                <KindEventTimeline events={events} />
+                <ParserStreamView
+                  events={events}
+                  isRunning={isRunning}
+                  schemas={schemas ?? {}}
+                />
               )}
             </div>
 

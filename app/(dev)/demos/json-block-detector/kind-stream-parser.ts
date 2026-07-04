@@ -10,6 +10,7 @@ import {
   FieldSchema,
   KIND_KEY,
   KindSchema,
+  buildCompliantKindSnapshot,
   isScalarArrayType,
   readObjectKind,
   scalarArrayItemType,
@@ -67,6 +68,14 @@ export type KindStreamEvent =
       kind: string;
       path: JsonPath;
       field: string;
+      at: number;
+    }
+  | {
+      type: "block_snapshot";
+      kind: string;
+      path: JsonPath;
+      value: Record<string, unknown>;
+      complete: boolean;
       at: number;
     }
   | { type: "array_start"; path: JsonPath; field: string; at: number }
@@ -451,7 +460,8 @@ export class KindStreamParser {
         this.rootKind = value;
       }
 
-      this.flushDeferredFields(objectPath, value);
+      this.flushDeferredFields(objectPath, value, at);
+      this.emitBlockSnapshotForObject(objectPath, at);
       return;
     }
 
@@ -551,6 +561,7 @@ export class KindStreamParser {
     }
 
     this.emitSchemaNotices(path, kind, outcome, at);
+    this.emitBlockSnapshotForObject(path, at, true);
     this.objectKinds.set(pathKey, kind);
     this.emit({
       type: "object_complete",
@@ -695,9 +706,15 @@ export class KindStreamParser {
       value,
       at,
     });
+
+    this.emitBlockSnapshotForObject(parentPath, at);
   }
 
-  private flushDeferredFields(objectPath: JsonPath, kind: string): void {
+  private flushDeferredFields(
+    objectPath: JsonPath,
+    kind: string,
+    at: number,
+  ): void {
     const pathKey = this.pathKey(objectPath);
     const deferred = this.deferredFields.get(pathKey);
     if (!deferred) return;
@@ -717,6 +734,46 @@ export class KindStreamParser {
     }
 
     this.deferredFields.delete(pathKey);
+    this.emitBlockSnapshotForObject(objectPath, at);
+  }
+
+  private getLiveObjectValue(path: JsonPath): Record<string, unknown> | null {
+    const pathKey = this.pathKey(path);
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      const frame = this.stack[i];
+      if (frame.kind === "object" && this.pathKey(frame.path) === pathKey) {
+        return frame.value;
+      }
+    }
+    return null;
+  }
+
+  private emitBlockSnapshotForObject(
+    objectPath: JsonPath,
+    at: number,
+    complete = false,
+  ): void {
+    const pathKey = this.pathKey(objectPath);
+    if (this.rawObjectPaths.has(pathKey)) return;
+
+    const kind = this.getDirectObjectKind(objectPath);
+    if (!kind) return;
+
+    const schema = this.lookupSchema(kind);
+    if (!schema) return;
+
+    const partial = this.getLiveObjectValue(objectPath);
+    if (!partial) return;
+
+    const value = buildCompliantKindSnapshot(schema, partial);
+    this.emit({
+      type: "block_snapshot",
+      kind,
+      path: objectPath,
+      value,
+      complete,
+      at,
+    });
   }
 
   private validateFieldPlacement(
