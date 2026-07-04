@@ -41,7 +41,10 @@ import { AudioDevicesPanel } from "@/features/audio/components/devices/AudioDevi
 import { updateConfig } from "../redux/fastFireSlice";
 import { selectFastFireConfig } from "../redux/fastFire.selectors";
 import { useFastFireLauncher } from "../hooks/useFastFireLauncher";
-import { ensureSpokenFrontsForSet } from "../spoken-front/generateSpokenFront.thunk";
+import {
+  ensureSpokenFrontsForSet,
+  getSpokenFrontReadiness,
+} from "../spoken-front/generateSpokenFront.thunk";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -76,6 +79,27 @@ export function FastFireSetup() {
       setPrepping(false);
     }
   };
+
+  // Reflect the PERSISTED spoken-front state when a set is (re)selected — the
+  // audio is cached durably in fc_detail, so returning to a prepared set must
+  // show "Audio ready", never look un-prepared (which would scare the user into
+  // an expensive re-run). Re-generation only ever touches cards still missing it.
+  useEffect(() => {
+    // Only meaningful when a set is chosen + voice is on (the prepare section is
+    // hidden otherwise, so stale flags never show). All setState is post-await.
+    const setId = config.setId;
+    if (!setId || !config.spokenFronts) return undefined;
+    let cancelled = false;
+    void (async () => {
+      const { ready, total } = await getSpokenFrontReadiness(setId);
+      if (cancelled) return;
+      setPrepProgress({ done: ready, total });
+      setPrepDone(total > 0 && ready >= total);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [config.setId, config.spokenFronts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -265,15 +289,18 @@ export function FastFireSetup() {
             <div className="mt-3 border-t border-border pt-3">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  Prepare the audio before you start so there&apos;s no delay
-                  mid-drill. Already-prepared cards are skipped.
+                  {prepDone
+                    ? "Question audio is cached and durable — it plays instantly, and nothing is re-generated when you return."
+                    : prepProgress && prepProgress.done > 0
+                      ? `${prepProgress.done} of ${prepProgress.total} cards already have cached audio — Prepare only generates the ${prepProgress.total - prepProgress.done} still missing.`
+                      : "Prepare the audio once (it's cached durably) so there's no delay mid-drill."}
                 </p>
                 <Button
                   variant="outline"
                   size="sm"
                   className="shrink-0 gap-1.5"
                   onClick={() => void prepareAudio()}
-                  disabled={prepping}
+                  disabled={prepping || prepDone}
                 >
                   {prepping ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -286,7 +313,9 @@ export function FastFireSetup() {
                     ? "Preparing…"
                     : prepDone
                       ? "Audio ready"
-                      : "Prepare audio"}
+                      : prepProgress && prepProgress.done > 0
+                        ? `Prepare ${prepProgress.total - prepProgress.done} more`
+                        : "Prepare audio"}
                 </Button>
               </div>
               {prepProgress && prepProgress.total > 0 && (

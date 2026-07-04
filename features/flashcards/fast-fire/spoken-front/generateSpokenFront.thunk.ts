@@ -25,6 +25,24 @@ import { pickSpokenFrontVariables } from "./variations";
 /** Permanent id of the "Generate custom speech" agent (Google Gemini TTS). */
 export const SPOKEN_FRONT_TTS_AGENT_ID = "04f69dff-a258-4791-a44e-b7b87f346b9d";
 
+/**
+ * Read-only: how many of a set's cards already have a CACHED spoken front (a
+ * durable fc_detail(kind='spoken_front') with audio_file_id) vs the total. Lets
+ * the UI show "Audio ready (N/M)" on return WITHOUT re-generating — the audio is
+ * persisted and durable, never lost, never re-generated for a card that has it.
+ */
+export async function getSpokenFrontReadiness(
+  setId: string,
+): Promise<{ ready: number; total: number }> {
+  const res = await fcService.getSetWithCards(setId);
+  if (!res.data) return { ready: 0, total: 0 };
+  const cards = res.data.cards;
+  const ready = cards.filter((c) =>
+    c.details.some((d) => d.kind === "spoken_front" && !!d.audio_file_id),
+  ).length;
+  return { ready, total: cards.length };
+}
+
 /** Max concurrent TTS generations (owner: ~5 at a time). */
 const CONCURRENCY = 5;
 
