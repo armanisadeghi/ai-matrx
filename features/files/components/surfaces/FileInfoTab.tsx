@@ -38,7 +38,7 @@ import {
 } from "@/features/files/redux/selectors";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { formatFileSize } from "@/features/files/utils/format";
-import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
 import {
@@ -70,8 +70,13 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
   const docState = useFileDocument(fileId);
 
   const details = useMemo(
-    () => getFileTypeDetails(file?.fileName ?? ""),
-    [file?.fileName],
+    () =>
+      getFilePreviewProfile(
+        file?.fileName ?? "",
+        file?.mimeType ?? null,
+        file?.fileSize ?? null,
+      ).details,
+    [file?.fileName, file?.mimeType, file?.fileSize],
   );
 
   const metadataPretty = useMemo(() => {

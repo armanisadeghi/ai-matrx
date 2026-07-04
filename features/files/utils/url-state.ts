@@ -250,8 +250,7 @@ export interface ParsedUrlState {
 }
 
 type SearchParamsLike =
-  | URLSearchParams
-  | Record<string, string | string[] | undefined>;
+  URLSearchParams | Record<string, string | string[] | undefined>;
 
 function getParam(params: SearchParamsLike, key: string): string | null {
   if (params instanceof URLSearchParams) return params.get(key);
@@ -435,6 +434,64 @@ export function encodeFolderPathSegments(folderPath: string | null): string {
 
 /** Prefix for the canonical folder-browsing route. */
 export const FILES_ALL_PREFIX = "/files/all";
+
+/** Minimal router surface for cross-section folder jumps. */
+export interface FilesFolderRouter {
+  push: (href: string) => void;
+}
+
+/**
+ * Build the canonical `/files/all/<path>?…` URL for a logical folder path.
+ * Preserves the current query string by default so `?file=` / filter params
+ * survive folder navigation.
+ */
+export function buildFilesAllFolderUrl(
+  folderPath: string | null,
+  search?: string,
+): string {
+  const segments = encodeFolderPathSegments(folderPath);
+  const pathname =
+    segments.length > 0 ? `${FILES_ALL_PREFIX}/${segments}` : FILES_ALL_PREFIX;
+  const qs =
+    search ?? (typeof window !== "undefined" ? window.location.search : "");
+  if (!qs || qs === "?") return pathname;
+  return `${pathname}${qs.startsWith("?") ? qs : `?${qs}`}`;
+}
+
+/** True when the current (or supplied) pathname is the `/files/all` workspace. */
+export function isOnFilesAllRoute(pathname?: string): boolean {
+  const path =
+    pathname ?? (typeof window !== "undefined" ? window.location.pathname : "");
+  return path === FILES_ALL_PREFIX || path.startsWith(`${FILES_ALL_PREFIX}/`);
+}
+
+/**
+ * Mirror a folder activation in the URL without remounting the shell.
+ *
+ * When already on `/files/all`, uses `history.pushState` / `replaceState` so
+ * Next.js does not soft-navigate (no RSC refetch, no loading skeleton, no
+ * PageShell remount). When coming from another section (`/files/recents`, …),
+ * falls back to `router.push` because the route tree differs.
+ */
+export function navigateFilesFolderPath(
+  folderPath: string | null,
+  router: FilesFolderRouter,
+  options?: { replace?: boolean },
+): void {
+  if (typeof window === "undefined") return;
+
+  const url = buildFilesAllFolderUrl(folderPath);
+  if (isOnFilesAllRoute()) {
+    if (options?.replace) {
+      window.history.replaceState(window.history.state, "", url);
+    } else {
+      window.history.pushState(window.history.state, "", url);
+    }
+    return;
+  }
+
+  router.push(url);
+}
 
 /**
  * Parse the logical folder path from a `/files/all/…` pathname.

@@ -25,7 +25,11 @@
 
 "use client";
 
-import type { Middleware, ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
+import type {
+  Middleware,
+  ThunkDispatch,
+  UnknownAction,
+} from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { CloudFilesState } from "@/features/files/types";
 
@@ -51,7 +55,7 @@ import {
 } from "./converters";
 import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { reconcileTree } from "./thunks";
-import { isSystemPath } from "@/features/files/utils/folder-conventions";
+import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import {
   attachChildToFolder,
@@ -124,8 +128,7 @@ function extractRequestId(
   payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
 ): string | null {
   const row = (payload.new ?? payload.old) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (!row) return null;
   const meta = row.metadata as Record<string, unknown> | undefined;
   if (meta && typeof meta.request_id === "string") {
@@ -255,7 +258,10 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
           // reconciled recently or a mutation is in flight, so a flapping
           // connection can't storm the RPC or revert optimistic edits.
           const now = Date.now();
-          if (now - lastReconcileAt >= RECONCILE_COOLDOWN_MS && ledgerSize() === 0) {
+          if (
+            now - lastReconcileAt >= RECONCILE_COOLDOWN_MS &&
+            ledgerSize() === 0
+          ) {
             lastReconcileAt = now;
             void dispatch(reconcileTree({ userId }));
           }
@@ -326,7 +332,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // realtime payloads still arrive for new variant writes — we filter
     // at the boundary so they never appear in the user tree.
     // See `isSystemPath` + from_python/UPDATES.md §9 (2026-05-16 entry).
-    if (isSystemPath(newRow.file_path)) return;
+    if (isHiddenFromUserTree(newRow.file_path)) return;
     const file = dbRowToCloudFile(newRow);
     const oldParent =
       (payload.old as { parent_folder_id?: string | null } | undefined)
@@ -395,7 +401,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     if (!newRow?.id) return;
     // Same system-path guard as the file handler — the backfill also
     // creates per-source-file folders under `system-files/variants/<id>/`.
-    if (isSystemPath(newRow.folder_path)) return;
+    if (isHiddenFromUserTree(newRow.folder_path)) return;
     const folder = dbRowToCloudFolder(newRow);
     const oldParent =
       (payload.old as { parent_id?: string | null } | undefined)?.parent_id ??

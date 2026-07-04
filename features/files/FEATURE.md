@@ -411,21 +411,21 @@ parsing helper in [utils/server-search-params.ts](utils/server-search-params.ts)
 Defaults are **never** serialised — a fresh `/files` view stays at a clean
 URL. Round-trip flow:
 
-1. **Server route** awaits `searchParams`, calls `readFilesUiFromParams()`
-   to produce `{ initialUiPatch, initialFileId }`, and passes both into
-   `<PageShell/>`. SSR'd Redux state matches the URL on first paint — no
-   flicker of unfiltered rows.
-2. **`useOneShotUiHydration`** (in PageShell) dispatches `setUiBatch(patch)`
-   on mount in a single transaction.
+1. **Server layout** (`app/(core)/files/all/[[...path]]/layout.tsx`) resolves
+   folder path segments and renders persistent `<PageShell/>`. The page slot
+   parses `searchParams` into `<FilesQueryHydrator/>` (query-only — layouts
+   cannot read search params).
+2. **`useOneShotUiHydration`** (in PageShell) + **`FilesQueryHydrator`**
+   dispatch `setUiBatch` / `setActiveFileId` once on mount.
 3. **`<FilesUrlSync/>`** subscribes to every relevant Redux selector and
-   `router.replace`s the URL on subsequent changes (skip-on-mount via
-   `skippedFirstRef` so it doesn't immediately re-emit the hydrated values).
-   Non-owned params (`?utm_source=…`) are preserved verbatim.
-4. **Folder navigation** uses `router.push` (back/forward retraces folder
-   history) — explicit in `PageShell.handleSelectFolder`, `NavSidebar`,
-   and `ContentHeader` breadcrumbs. Real folders only; virtual folders
-   (Notes adapter, etc.) skip URL push because their `folder_path` isn't
-   resolvable by the catch-all route.
+   writes query params back via `history.replaceState` on `/files/all`
+   (or `router.replace` on other sections). Skip-on-mount via
+   `skippedFirstRef`. Non-owned params preserved verbatim.
+4. **Folder navigation** uses `navigateFilesFolderPath()` — `history.pushState`
+   while already on `/files/all` (no RSC roundtrip, shell stays mounted;
+   back/forward handled via `popstate` in `FilesRouteSelectionSync`), or
+   `router.push` when crossing from another section (Recents → All). Real
+   folders only; virtual folders skip URL push.
 
 ---
 
@@ -470,6 +470,9 @@ See [migration/MASTER-PLAN.md](migration/MASTER-PLAN.md) for the phase-ordered p
 
 ## Change log
 
+- **2026-07-03** — **Folder navigation no longer remounts the shell.** Root cause: `router.push('/files/all/…')` on every folder click triggered a Next.js soft navigation (RSC refetch + `loading.tsx` skeleton + full `PageShell` remount — sidebar, header, and all). Fix: `PageShell` moved to `app/(core)/files/all/[[...path]]/layout.tsx` (Notes pattern — shell persists, page slot is query hydration only); new `navigateFilesFolderPath()` uses `history.pushState` on `/files/all` with `popstate` sync in `FilesRouteSelectionSync`; `FilesUrlSync` uses `replaceState` for query params on the same route.
+- **2026-07-03** — **FastFire side products fully hidden + `audio/webm;codecs=opus` typing fix.** Root causes: (1) Recents-only exclusion left rows visible in `/files/all` and Redux; (2) `resolveMime` forwarded parameterized MIME verbatim so `audio/webm;codecs=opus` missed the `audio/webm` registry entry and `.webm` extension won ("WebM video"). Fixes: `isHiddenFromUserTree` ( `isSystemPath` ∪ FastFire paths) at tree load, folder contents, realtime, and all row views; Redux purge of hidden rows on tree reload; `resolveMime` strips `;codecs=…` parameters; new uploads land under `system-files/fastfire/{sessions,responses}`. Migration `relocate_fastfire_files_to_system_namespace.sql` backfilled 64 existing rows to `system-files/fastfire/…` and normalized parameterized audio MIME.
+- **2026-07-03** — **Bug fix: empty `/files/all` after DB canonicalization.** `get_user_file_tree` now emits `created_by` (replacing `owner_id`) per the 2026 file-system restructure. [`parseCloudTreeRow`](redux/converters.ts) still required `owner_id`, so every RPC row was dropped and the tree loaded empty for all users (~9.9k live rows unaffected). Parser now reads `created_by` as a fallback.
 - **2026-06-26** — **Guest→user migration replaced; outbound webhooks shipped.** The never-functional `/files/migrate-guest-to-user` transfer path is **deleted** (`Files.migrateGuestToUser`, the thunk, `MigrateGuestToUser*` types, the `migrate-guest` `RequestKind`) — the dead `cld_guest_migrations` table + RPC were already swept from the DB. A guest is already a real anonymous `auth.users` row (Python mints it from the fingerprint), so re-owning their work is an **in-place promotion**, not a per-table transfer: `lib/services/guest-promotion.ts` `promoteGuestToUser()` (service-role) runs inside `signUpAction` — same UUID, every guest-owned file/conversation kept. Note: historical change-log entries below that describe the old migrate-guest thunk are superseded. Separately, **outbound webhooks** now ship — see [webhooks/FEATURE.md](webhooks/FEATURE.md) (DB-native delivery on `platform.activity_log`; `/files/webhooks`).
 - **2026-06-26** — **Canonical-path doctrine corrected: Python is not a DB gateway.** TL;DR + separation-of-concerns table rewritten — pure UI↔DB ops (search, trash, usage, rename/move/soft-delete/restore markers, permission/share-link CRUD) go **direct via supabase-js** (auth-checked RPCs / `filesDb()` reads), NOT through Python `/files/*`; REST is reserved for byte-bearing ops (upload/download/sign) + processing + anon share-resolve. Audited the `cld_`→unprefixed RPC rename: backend (not FE) was the real caller; surfaced the IDOR security gate (mutation RPCs lack `auth.uid()` checks) blocking direct mutation calls until hardened. Full map: [CLOUD_FILES_RPC_DISPOSITIONS.md](CLOUD_FILES_RPC_DISPOSITIONS.md).
 - **2026-06-23** — **Set context in file action menus.** New [`FileContextSection.tsx`](components/FileContextSection.tsx) (`FileContextDialog`, `FileContextPicker`, `FileContextSection`) wraps the canonical `ContextAssignmentField` for `entityType: "file"`. The … menu (`FileContextMenu`) and right-click menu (`FileRightClickMenu`) now expose **Set context** (org, scope types/scopes, projects, tasks). PDF Extractor sidebar rows reuse the same dialog via `buildPdfDocMenu` for cloud-file-backed docs.

@@ -25,12 +25,6 @@ const TEXTAREA_METRICS: Array<keyof PlainTextMetrics> = [
   "paragraphCount",
 ];
 
-const INPUT_METRICS: Array<keyof PlainTextMetrics> = [
-  "charCount",
-  "whitespaceCharCount",
-  "wordCount",
-];
-
 export interface ProTextFieldStatsMenuItemsProps {
   showStatsBar: boolean;
   onToggleStatsBar: () => void;
@@ -71,7 +65,6 @@ export function ProTextFieldStatsMenuItems({
 
 export interface ProTextFieldStatsPanelProps {
   text: string;
-  variant?: "textarea" | "input";
   onBack?: () => void;
   onClose?: () => void;
 }
@@ -79,11 +72,9 @@ export interface ProTextFieldStatsPanelProps {
 /** Popover body — full stat breakdown with optional back/close chrome. */
 export function ProTextFieldStatsPanel({
   text,
-  variant = "textarea",
   onBack,
   onClose,
 }: ProTextFieldStatsPanelProps) {
-  const metrics = variant === "input" ? INPUT_METRICS : TEXTAREA_METRICS;
   const stats = computePlainTextMetrics(text);
 
   return (
@@ -106,7 +97,7 @@ export function ProTextFieldStatsPanel({
       </div>
 
       <dl className="grid gap-2 px-3 py-2.5">
-        {metrics.map((key) => (
+        {TEXTAREA_METRICS.map((key) => (
           <div
             key={key}
             className="flex items-baseline justify-between gap-3 text-xs"
@@ -136,21 +127,19 @@ export function ProTextFieldStatsPanel({
 
 export interface ProTextFieldStatsBarProps {
   text: string;
-  variant?: "textarea" | "input";
   className?: string;
 }
 
 /** Compact pinned footer bar — non-disruptive live stats while editing. */
 export function ProTextFieldStatsBar({
   text,
-  variant = "textarea",
   className,
 }: ProTextFieldStatsBarProps) {
   return (
     <PlainTextMetricsBar
       text={text}
       compact
-      metrics={variant === "input" ? INPUT_METRICS : TEXTAREA_METRICS}
+      metrics={TEXTAREA_METRICS}
       className={cn("rounded-b-md border-x border-b border-input", className)}
     />
   );

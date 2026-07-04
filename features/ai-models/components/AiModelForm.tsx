@@ -226,34 +226,31 @@ export default function AiModelForm({
                 </FormField>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-                <FormField label="Provider" description="Provider name string (e.g. Anthropic)">
-                    <Input
-                        value={data.provider}
-                        onChange={set('provider')}
-                        placeholder="e.g. Anthropic"
-                        className="h-8 text-sm"
-                    />
-                </FormField>
-                <FormField label="Provider Record" description="FK to ai_provider table">
-                    <Select
-                        value={data.model_provider || undefined}
-                        onValueChange={(v) => onChange({ ...data, model_provider: v === '__none__' ? '' : v })}
-                    >
-                        <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Select provider..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="__none__">— none —</SelectItem>
-                            {providers.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                    {p.name ?? p.id}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </FormField>
-            </div>
+            <FormField label="Provider" description="ai.provider record — the free-text provider column is derived automatically, never edited directly">
+                <Select
+                    value={data.model_provider || undefined}
+                    onValueChange={(v) => {
+                        if (v === '__none__') {
+                            onChange({ ...data, model_provider: '', provider: '' });
+                            return;
+                        }
+                        const picked = providers.find((p) => p.id === v);
+                        onChange({ ...data, model_provider: v, provider: picked?.name ?? data.provider });
+                    }}
+                >
+                    <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select provider..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="__none__">— none —</SelectItem>
+                        {providers.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                                {p.name ?? p.id}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </FormField>
 
             <div className="grid grid-cols-2 gap-3">
                 <FormField label="Context Window" description="Total tokens (input + output)">

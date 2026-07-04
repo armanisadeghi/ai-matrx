@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
+import { navigateFilesFolderPath } from "@/features/files/utils/url-state";
 import {
   selectAllFoldersMap,
   selectKindFilter,
@@ -123,14 +123,13 @@ export function ContentHeader({
     // route can resolve, so they only update Redux. Real folders
     // (including null = root) push the canonical /files/all/<path> URL.
     if (folderId === null) {
-      router.push("/files/all");
+      navigateFilesFolderPath(null, router);
       return;
     }
     const folder = foldersById[folderId];
     if (folder?.source.kind === "real") {
       void dispatch(loadFolderContents({ folderId }));
-      const segments = encodeFolderPathSegments(folder.folderPath);
-      router.push(segments ? `/files/all/${segments}` : "/files/all");
+      navigateFilesFolderPath(folder.folderPath, router);
     }
   };
 

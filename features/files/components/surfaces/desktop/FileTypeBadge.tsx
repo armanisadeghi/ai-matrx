@@ -14,10 +14,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 
 export interface FileTypeBadgeProps {
   fileName: string;
+  mimeType?: string | null;
   /** Render the folder variant. */
   isFolder?: boolean;
   className?: string;
@@ -33,6 +34,7 @@ function extOf(filename: string): string {
 
 export function FileTypeBadge({
   fileName,
+  mimeType = null,
   isFolder = false,
   className,
   showExtensionChip = true,
@@ -53,7 +55,7 @@ export function FileTypeBadge({
     );
   }
 
-  const details = getFileTypeDetails(fileName);
+  const details = getFilePreviewProfile(fileName, mimeType, null).details;
   const ext = extOf(fileName);
 
   return (

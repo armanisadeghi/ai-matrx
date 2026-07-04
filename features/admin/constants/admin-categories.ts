@@ -255,6 +255,34 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "RefreshCw",
         link: "/administration/ai-models/provider-sync",
       },
+      {
+        title: "Providers",
+        description:
+          "Manage the ai.provider catalog — name, slug, website, docs links, and logo for every model provider.",
+        iconName: "Building2",
+        link: "/administration/ai-models/providers",
+      },
+      {
+        title: "Services",
+        description:
+          "Manage callable AI routes (ai.service) — wire format, base URL, auth, controls, and request defaults per service.",
+        iconName: "Plug",
+        link: "/administration/ai-models/services",
+      },
+      {
+        title: "Offerings",
+        description:
+          "Manage per-service model offerings (ai.offering) — pricing/capability/control overrides, plus a coverage report of which models have no offering yet.",
+        iconName: "Layers",
+        link: "/administration/ai-models/offerings",
+      },
+      {
+        title: "Settings",
+        description:
+          "Manage the canonical AI settings vocabulary (ai.setting) — temperature, reasoning_effort, and other controls.",
+        iconName: "SlidersHorizontal",
+        link: "/administration/ai-models/settings",
+      },
     ],
   },
   {

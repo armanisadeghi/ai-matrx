@@ -1048,7 +1048,6 @@ export const ProTextarea = React.forwardRef<
                   ) : menuMode === "stats" ? (
                     <ProTextFieldStatsPanel
                       text={valueAsString}
-                      variant="textarea"
                       onBack={() => setMenuMode("menu")}
                       onClose={() => setMenuOpen(false)}
                     />
@@ -1219,7 +1218,7 @@ export const ProTextarea = React.forwardRef<
           </AlertDialog>
 
           {showPinnedTextStatsBar && (
-            <ProTextFieldStatsBar text={valueAsString} variant="textarea" />
+            <ProTextFieldStatsBar text={valueAsString} />
           )}
         </div>
       </div>

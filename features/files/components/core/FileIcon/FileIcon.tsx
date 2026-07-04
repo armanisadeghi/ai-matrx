@@ -9,13 +9,15 @@
 
 import { cn } from "@/lib/utils";
 import {
-  getFileTypeDetails,
+  getFilePreviewProfile,
   getFolderTypeDetails,
 } from "@/features/files/utils/icon-map";
 
 export interface FileIconProps {
   /** Either the filename (for files) or omitted for folders. */
   fileName?: string;
+  /** Server MIME — when set, resolves audio/webm vs video/webm correctly. */
+  mimeType?: string | null;
   /** If true, renders a folder icon. `open` picks FolderOpen vs Folder. */
   isFolder?: boolean;
   open?: boolean;
@@ -27,6 +29,7 @@ export interface FileIconProps {
 
 export function FileIcon({
   fileName,
+  mimeType = null,
   isFolder,
   open,
   colorClass,
@@ -35,7 +38,7 @@ export function FileIcon({
 }: FileIconProps) {
   const details = isFolder
     ? getFolderTypeDetails(open)
-    : getFileTypeDetails(fileName ?? "");
+    : getFilePreviewProfile(fileName ?? "", mimeType, null).details;
   const Icon = details.icon;
   const style: React.CSSProperties = {
     width: `${size}px`,

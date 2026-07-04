@@ -134,11 +134,7 @@ export type PreviewKind =
  *                      lookup (or icon) is the only source.
  */
 export type ThumbnailStrategy =
-  | "image"
-  | "video-poster"
-  | "pdf-firstpage"
-  | "backend-thumb"
-  | "icon";
+  "image" | "video-poster" | "pdf-firstpage" | "backend-thumb" | "icon";
 
 /**
  * One row in the registry. Most fields are static; the `extensions`,
@@ -506,6 +502,23 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     category: "AUDIO",
     subCategory: "OPUS",
     displayName: "Opus audio",
+    previewKind: "audio",
+    thumbnailStrategy: "icon",
+    color: "text-pink-500",
+    icon: Music,
+    previewSizeCapOverride: null,
+  },
+  // MIME-only — `.webm` extension stays mapped to VIDEO below because the
+  // container can hold either track type. Rows whose server MIME is
+  // `audio/webm` (MediaRecorder speech captures, FastFire, transcripts)
+  // resolve via BY_MIME in `getFilePreviewProfile`. See
+  // docs/files/transcript-recordings-system-relocation.md.
+  {
+    extensions: [],
+    mime: "audio/webm",
+    category: "AUDIO",
+    subCategory: "WEBM",
+    displayName: "WebM audio",
     previewKind: "audio",
     thumbnailStrategy: "icon",
     color: "text-pink-500",
@@ -1845,6 +1858,11 @@ export function getFolderTypeDetails(open = false): FileTypeDetails {
   return open ? { ...FOLDER_DETAILS, icon: FolderOpen } : FOLDER_DETAILS;
 }
 
+/** Strip MIME parameters (`;codecs=opus`, etc.) for registry lookup. */
+function canonicalMimeBase(raw: string): string {
+  return raw.split(";")[0]?.trim().toLowerCase() ?? raw;
+}
+
 /** Canonical MIME for an extension (or `application/octet-stream`). */
 export function mimeFromFilename(filename: string): string {
   const entry = resolveEntry(filename);
@@ -1854,12 +1872,18 @@ export function mimeFromFilename(filename: string): string {
 /**
  * Resolve a final MIME, preferring the server-supplied value when it's
  * meaningful, otherwise falling back to the extension table.
+ *
+ * Parameters are stripped so `audio/webm;codecs=opus` resolves like
+ * `audio/webm` — required for BY_MIME lookup and audio/video disambiguation
+ * on `.webm` containers (MediaRecorder speech captures).
  */
 export function resolveMime(
   explicit: string | null | undefined,
   filename: string,
 ): string {
-  if (explicit && explicit !== "application/octet-stream") return explicit;
+  if (explicit && explicit !== "application/octet-stream") {
+    return canonicalMimeBase(explicit);
+  }
   return mimeFromFilename(filename);
 }
 
@@ -1895,6 +1919,20 @@ export function getFilePreviewProfile(
   const mime = resolveMime(mimeType, fileName);
   const fromExt = getFileTypeDetails(fileName);
 
+  // When the server MIME disagrees with the extension guess, prefer the MIME
+  // registry entry for display props. Canonical case: `audio/webm` rows stored
+  // as `.webm` — extension lookup returns VIDEO ("WebM video") even though the
+  // bytes are speech-only (transcript recordings, FastFire, scribe captures).
+  const mimeEntry = BY_MIME.get(mime);
+  let baseDetails = fromExt;
+  if (
+    mimeEntry &&
+    (mimeEntry.category !== fromExt.category ||
+      mimeEntry.previewKind !== fromExt.previewKind)
+  ) {
+    baseDetails = entryToDetails(mimeEntry);
+  }
+
   // MIME-prefix override — handles "we got `image/avif` but the extension
   // table doesn't have .avif yet" and similar future-proofing.
   //
@@ -1902,8 +1940,8 @@ export function getFilePreviewProfile(
   // its previewKind is already "svg" from the extension lookup and the
   // override would clobber that, hiding the dedicated SvgPreview + Edit
   // routing. Same idea would apply to any future text-shaped image MIME.
-  let kind: PreviewKind = fromExt.previewKind;
-  let thumb: ThumbnailStrategy = fromExt.thumbnailStrategy;
+  let kind: PreviewKind = baseDetails.previewKind;
+  let thumb: ThumbnailStrategy = baseDetails.thumbnailStrategy;
   if (mime === "image/svg+xml") {
     kind = "svg";
     thumb = "image";
@@ -1915,6 +1953,11 @@ export function getFilePreviewProfile(
     thumb = thumb === "icon" ? "video-poster" : thumb;
   } else if (mime.startsWith("audio/")) {
     kind = "audio";
+    thumb = "icon";
+    if (baseDetails.category === "VIDEO") {
+      const audioEntry = BY_MIME.get(mime);
+      if (audioEntry) baseDetails = entryToDetails(audioEntry);
+    }
   } else if (mime === "application/pdf") {
     kind = "pdf";
   } else if (kind === "generic" && isTextMime(mime)) {
@@ -1924,7 +1967,7 @@ export function getFilePreviewProfile(
   const canPreviewKind = kind !== "generic";
 
   const cap =
-    fromExt.previewSizeCapOverride ??
+    baseDetails.previewSizeCapOverride ??
     // Streamable kinds are always allowed regardless of size. SVG joins the
     // group: even though it's text underneath, it streams as an image via
     // a signed URL — never read into memory by the renderer. HTML joins
@@ -1944,7 +1987,7 @@ export function getFilePreviewProfile(
   const sizeOk = fileSize == null || fileSize <= cap;
 
   return {
-    details: { ...fromExt, previewKind: kind, thumbnailStrategy: thumb },
+    details: { ...baseDetails, previewKind: kind, thumbnailStrategy: thumb },
     previewKind: kind,
     canPreview: canPreviewKind && sizeOk,
     sizeOk,

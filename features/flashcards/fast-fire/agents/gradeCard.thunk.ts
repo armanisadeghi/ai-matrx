@@ -22,6 +22,7 @@
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputMessageParts } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -32,7 +33,10 @@ import {
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { studyService } from "@/features/education/study/service/studyService";
-import { audioExtensionForType, normalizeAudioContentType } from "@/features/audio/utils/audio-mime";
+import {
+  audioExtensionForType,
+  normalizeAudioContentType,
+} from "@/features/audio/utils/audio-mime";
 import { getFastFireAgentConfig } from "../config";
 import {
   gradePending,
@@ -72,7 +76,9 @@ function coerceGrade(raw: unknown): {
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
   const resultRaw = str(r.result);
   const result: GradeResult =
-    resultRaw === "correct" || resultRaw === "partial" || resultRaw === "incorrect"
+    resultRaw === "correct" ||
+    resultRaw === "partial" ||
+    resultRaw === "incorrect"
       ? resultRaw
       : num(r.score, 0) >= 0.8
         ? "correct"
@@ -144,8 +150,21 @@ export function gradeCard(args: GradeCardArgs) {
         const mime = normalizeAudioContentType(clip.type || "audio/wav");
         const ext = audioExtensionForType(mime);
         const uploaded = await fileHandler.upload(
-          { kind: "blob", blob: clip, fileName: `fastfire-${cardId}.${ext}`, mime },
-          { folderPath: "FastFire/responses", visibility: "private" },
+          {
+            kind: "blob",
+            blob: clip,
+            fileName: `fastfire-${cardId}.${ext}`,
+            mime,
+          },
+          {
+            folderPath: CloudFolders.SYSTEM_FASTFIRE_RESPONSES,
+            visibility: "private",
+            metadata: {
+              origin: "fastfire",
+              session_id: sessionId ?? null,
+              card_id: cardId,
+            },
+          },
         );
         responseAudioFileId = uploaded.fileId ?? null;
       } catch (err) {
@@ -248,7 +267,11 @@ export function gradeCard(args: GradeCardArgs) {
         responseAudioFileId,
         result: grade.result,
         scoreValue: grade.score,
-        score: { rubric: grade.rubric, missing: grade.missing, feedback: grade.feedback },
+        score: {
+          rubric: grade.rubric,
+          missing: grade.missing,
+          feedback: grade.feedback,
+        },
         transcript: grade.transcript || null,
         gradedBy: config.graderAgentId,
       });

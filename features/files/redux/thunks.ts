@@ -56,7 +56,7 @@ import {
 } from "./request-ledger";
 import { toast } from "sonner";
 import { buildTreeState } from "./tree-utils";
-import { isSystemPath } from "@/features/files/utils/folder-conventions";
+import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import {
   addFilePendingRequest,
@@ -137,7 +137,7 @@ export const loadUserFileTree = createAsyncThunk<
   void,
   { userId: string },
   ThunkApi
->("cloudFiles/loadUserFileTree", async ({ userId }, { dispatch }) => {
+>("cloudFiles/loadUserFileTree", async ({ userId }, { dispatch, getState }) => {
   dispatch(setTreeStatus({ status: "loading" }));
 
   // RPC contract (migration 014, 2026-05-17): identity-locked to
@@ -205,6 +205,7 @@ export const loadUserFileTree = createAsyncThunk<
   const folders: PartialCloudFolderWithId[] = [];
   for (const row of rows) {
     if (row.kind === "file") {
+      if (isHiddenFromUserTree(row.file_path)) continue;
       files.push({
         id: row.id,
         ownerId: row.owner_id,
@@ -223,6 +224,7 @@ export const loadUserFileTree = createAsyncThunk<
         deletedAt: row.deleted_at,
       });
     } else {
+      if (isHiddenFromUserTree(row.folder_path)) continue;
       folders.push({
         id: row.id,
         ownerId: row.owner_id,
@@ -240,7 +242,25 @@ export const loadUserFileTree = createAsyncThunk<
   dispatch(upsertFiles(files));
   dispatch(upsertFolders(folders));
 
-  // Build tree spine directly from the just-parsed rows. Simpler than reading
+  // Drop side-product rows that were hydrated before the hide predicate
+  // existed (FastFire captures, system paths that slipped via realtime).
+  const prior = getState().cloudFiles;
+  for (const [id, rec] of Object.entries(prior.filesById)) {
+    if (rec && isHiddenFromUserTree(rec.filePath)) {
+      dispatch(removeFile({ id }));
+    }
+  }
+  for (const [id, rec] of Object.entries(prior.foldersById)) {
+    if (
+      rec &&
+      rec.source.kind === "real" &&
+      isHiddenFromUserTree(rec.folderPath)
+    ) {
+      dispatch(removeFolder({ id }));
+    }
+  }
+
+  // Build tree spine directly from the just-parsed rows.
   // the normalized slice back out, and avoids any race with batched dispatch.
   const fileIds = files.map((f) => f.id).filter(Boolean);
   const folderIds = folders.map((f) => f.id).filter(Boolean);
@@ -365,12 +385,12 @@ export const loadFolderContents = createAsyncThunk<
   // Drop backend-owned variant rows. Unlike `get_user_file_tree`
   // which excludes them server-side (migration 012), this codepath
   // queries `cld_files` / `cld_folders` directly so we filter on the
-  // wire. See `isSystemPath` in `utils/folder-conventions.ts`.
+  // wire. See `isHiddenFromUserTree` in `utils/folder-conventions.ts`.
   const visibleFiles = (filesRes.data ?? []).filter(
-    (r) => !isSystemPath(r.file_path),
+    (r) => !isHiddenFromUserTree(r.file_path),
   );
   const visibleFolders = (foldersRes.data ?? []).filter(
-    (r) => !isSystemPath(r.folder_path),
+    (r) => !isHiddenFromUserTree(r.folder_path),
   );
 
   dispatch(upsertFiles(visibleFiles.map(dbRowToCloudFile)));
@@ -436,7 +456,8 @@ export const loadPermissions = createAsyncThunk<
   // NOT the legacy cld_ file-permission duplicate. RLS returns the rows the
   // caller is allowed to see (own grants / grants to them / org / public).
   const { data, error } = await supabase
-    .schema("iam").from("permissions")
+    .schema("iam")
+    .from("permissions")
     .select("*")
     .eq("resource_type", "file")
     .eq("resource_id", resourceId);
@@ -1864,4 +1885,3 @@ export const bulkMoveFolders = createAsyncThunk<
     releaseRequest(requestId);
   }
 });
-

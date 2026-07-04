@@ -19,8 +19,10 @@
  *       the user changes anything. It uses `replace` (not `push`) so
  *       a back-button press doesn't get polluted by every filter
  *       toggle. Folder NAVIGATION (which rewrites the pathname) lives
- *       in `PageShell.handleSelectFolder` and uses `router.push` so
- *       back/forward navigates folder history naturally.
+ *       in `PageShell.handleSelectFolder` and uses `navigateFilesFolderPath`
+ *       (`history.pushState` on `/files/all`, `router.push` when crossing
+ *       sections) so back/forward retraces folder history without remounting
+ *       the shell.
  *
  *   - The component is intentionally render-less — drop it once into
  *     `PageShell` and forget about it.
@@ -43,6 +45,7 @@ import {
   selectVisibleColumns,
 } from "@/features/files/redux/selectors";
 import {
+  isOnFilesAllRoute,
   paramsEqual,
   serializeUiToParams,
 } from "@/features/files/utils/url-state";
@@ -147,9 +150,15 @@ export function FilesUrlSync({
     for (const [key, value] of nextOwned.entries()) merged.set(key, value);
 
     const qs = merged.toString();
-    const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+    const browserPath =
+      typeof window !== "undefined" ? window.location.pathname : pathname;
+    const nextUrl = qs ? `${browserPath}?${qs}` : browserPath;
 
-    router.replace(nextUrl, { scroll: false });
+    if (isOnFilesAllRoute(browserPath)) {
+      window.history.replaceState(window.history.state, "", nextUrl);
+    } else {
+      router.replace(nextUrl, { scroll: false });
+    }
 
     // The Redux store is stable across renders; useAppStore() is only
     // here for the "did mount" sentinel and intentionally unread.

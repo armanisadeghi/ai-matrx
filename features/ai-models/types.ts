@@ -16,6 +16,20 @@ export type AiEndpointRow = Database["ai"]["Tables"]["endpoint"]["Row"];
 export type AiEndpointInsert = Database["ai"]["Tables"]["endpoint"]["Insert"];
 export type AiEndpointUpdate = Database["ai"]["Tables"]["endpoint"]["Update"];
 
+export type AiServiceRow = Database["ai"]["Tables"]["service"]["Row"];
+export type AiServiceInsert = Database["ai"]["Tables"]["service"]["Insert"];
+export type AiServiceUpdate = Database["ai"]["Tables"]["service"]["Update"];
+
+export type AiOfferingRow = Database["ai"]["Tables"]["offering"]["Row"];
+export type AiOfferingInsert = Database["ai"]["Tables"]["offering"]["Insert"];
+export type AiOfferingUpdate = Database["ai"]["Tables"]["offering"]["Update"];
+
+export type AiSettingRow = Database["ai"]["Tables"]["setting"]["Row"];
+export type AiSettingInsert = Database["ai"]["Tables"]["setting"]["Insert"];
+export type AiSettingUpdate = Database["ai"]["Tables"]["setting"]["Update"];
+
+export type AiModelOfferingViewRow = Database["ai"]["Views"]["model_offering"]["Row"];
+
 // =============================================================================
 // Json-field shape definitions — what we actually store in JSONB columns
 // =============================================================================
@@ -159,6 +173,40 @@ export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {
   provider_models_cache: ProviderModelsCache | null;
 };
 
+export type AiService = Omit<
+  AiServiceRow,
+  "auth_ref" | "controls" | "request_defaults" | "metadata"
+> & {
+  auth_ref: Record<string, unknown>;
+  controls: ControlsSchema;
+  request_defaults: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+};
+
+export type AiOffering = Omit<
+  AiOfferingRow,
+  "pricing" | "capabilities_override" | "controls_override" | "metadata"
+> & {
+  pricing: PricingTier[];
+  capabilities_override: Record<string, unknown>;
+  controls_override: ControlsSchema;
+  metadata: Record<string, unknown>;
+};
+
+export type AiSetting = Omit<
+  AiSettingRow,
+  "canonical_values" | "default_value" | "ui" | "metadata"
+> & {
+  canonical_values: unknown[] | null;
+  default_value: unknown;
+  ui: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+};
+
+/** Row shape of the read-only `ai.model_offering` reporting view (offering ×
+ *  service × model_definition joined, points-based pricing computed). */
+export type AiModelOfferingView = AiModelOfferingViewRow;
+
 // =============================================================================
 // UI / form types
 // =============================================================================
@@ -180,6 +228,37 @@ export type AiModelFormData = {
   // model to substitute when the caller is at that tier.
   mid_fallback_id: string;
   guest_fallback_id: string;
+};
+
+export type AiOfferingFormData = {
+  model_id: string;
+  service_id: string;
+  provider_model_id: string;
+  priority: string;
+  is_available: boolean;
+  pricing: PricingTier[];
+  usage_basis: string;
+  capabilities_override: Record<string, unknown>;
+  controls_override: Record<string, unknown>;
+  notes: string;
+  visibility: string;
+};
+
+/** Form-editable shape of an `ai.setting` row (canonical settings vocabulary).
+ *  `canonical_min`/`canonical_max` are text inputs (empty string = NULL).
+ *  `canonical_values` / `default_value` / `ui` are edited via
+ *  EnhancedEditableJsonViewer — see SettingForm.tsx for the wrap/unwrap
+ *  needed because that viewer only accepts a plain object at its root. */
+export type AiSettingFormData = {
+  key: string;
+  value_type: string;
+  canonical_min: string;
+  canonical_max: string;
+  canonical_values: unknown[];
+  default_value: unknown;
+  ui: Record<string, unknown>;
+  description: string;
+  visibility: AiSetting["visibility"];
 };
 
 // =============================================================================

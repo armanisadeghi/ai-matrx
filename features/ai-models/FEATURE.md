@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-07-02`
+**Last updated:** `2026-07-03`
 
 ---
 
@@ -17,10 +17,16 @@ The catalog and configuration surface for every LLM available to the product —
 **Imports:** There is no root `index.ts` barrel — import from `components/…`, `service.ts`, `types.ts`, `hooks/…`, `redux/…`, `audit/…`, and `server/…` as needed.
 
 **Routes**
-- `app/(authenticated)/(admin-auth)/administration/ai-models/page.tsx` — admin model registry (table + detail panel + tab presets)
-- `app/(authenticated)/(admin-auth)/administration/ai-models/audit/page.tsx` — `ModelAuditDashboard` (data-quality rules across models)
-- `app/(authenticated)/(admin-auth)/administration/ai-models/deprecated-audit/page.tsx` — deprecated-reference cleanup
-- `app/(authenticated)/(admin-auth)/administration/ai-models/provider-sync/page.tsx` — pull live model lists from provider APIs
+- `app/(admin)/administration/ai-models/page.tsx` — admin model registry (table + detail panel + tab presets)
+- `app/(admin)/administration/ai-models/audit/page.tsx` — `ModelAuditDashboard` (data-quality rules across models)
+- `app/(admin)/administration/ai-models/deprecated-audit/page.tsx` — deprecated-reference cleanup
+- `app/(admin)/administration/ai-models/provider-sync/page.tsx` — pull live model lists from provider APIs
+- `app/(admin)/administration/ai-models/providers/page.tsx` — `ProvidersContainer`, full CRUD on `ai.provider` (name, slug, links, logo, visibility)
+- `app/(admin)/administration/ai-models/services/page.tsx` — `ServicesContainer`, full CRUD on `ai.service` (wire format, base URL, auth, controls, request defaults)
+- `app/(admin)/administration/ai-models/offerings/page.tsx` — `OfferingsContainer`, full CRUD on `ai.offering` (Manage tab) + a Coverage tab reporting `ai.model_offering` and the models with zero offerings
+- `app/(admin)/administration/ai-models/settings/page.tsx` — `SettingsContainer`, full CRUD on `ai.setting` (the canonical settings vocabulary)
+
+All four routes are registered in `features/admin/constants/admin-categories.ts` under the "AI Models" category alongside Registry/Audit/Deprecated/Provider Sync.
 
 **API endpoints**
 - `GET /api/ai-models` — cached (12h s-maxage, 24h SWR) list of active models for client/SSR readers
@@ -38,7 +44,7 @@ The catalog and configuration surface for every LLM available to the product —
 - `useTabUrlState()` — URL-persisted tab/filter presets for the admin table
 
 **Services**
-- `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `agent.definition`/`agent.template`), and deprecation-migration helpers (`replaceModelIn*`). `public.prompts`/`prompt_builtins` are graveyarded — `fetchUsage`/`replaceModelInPrompts` treat that leg as a no-op (0 rows, intentional)
+- `features/ai-models/service.ts` — `aiModelService`: client-side CRUD (`fetchAll`, `create`, `update`, `remove`, `bulkPatchField`, `patchField`), provider-cache ops, usage lookup (`fetchUsage` across `agent.definition`/`agent.template`), and deprecation-migration helpers (`replaceModelIn*`). `public.prompts`/`prompt_builtins` are graveyarded — `fetchUsage`/`replaceModelInPrompts` treat that leg as a no-op (0 rows, intentional). Also: `fetchAllProviders`/`createProvider`/`updateProvider`/`deleteProvider`, `fetchServices`/`createService`/`updateService`/`deleteService`, `fetchOfferings`/`createOffering`/`updateOffering`/`deleteOffering`/`fetchModelOfferingView`, `fetchSettings`/`createSetting`/`updateSetting`/`deleteSetting` — full CRUD for the reshape's other four tables/view.
 - `features/ai-models/server/ai-models-server.ts` — `fetchAIModels()` (React-cached server reader for SSR shells)
 
 **Redux slice**
@@ -55,11 +61,13 @@ The catalog and configuration surface for every LLM available to the product —
 - `ai.voices` — TTS voice catalog (provider-agnostic), canonicalized alongside the reshape; consumed by `features/podcasts/generator/voiceCatalog.ts`, not this feature.
 - Referenced by (read side): `agent.definition.model_id` / `agent.template.model_id` (+ `model_tiers.primary_model_id`). The old `public.prompts`/`prompt_builtins`/`agx_agent`/`agx_agent_templates` were migrated into `agent.definition`/`agent.template` and are now `graveyard.*` — no live reads against them.
 
-**New in the reshape, not yet consumed by this feature (open gap, see Current work below):**
-- `ai.service` — a callable route (translator/wire-format token consumed by matrx-ai; internal name, base URL, auth ref).
-- `ai.offering` — `model_id × service_id` = the actual callable unit; per-service pricing/availability/capability overrides over `model_definition`.
-- `ai.setting` — canonical settings vocabulary (temperature, reasoning_effort, …) that controls/UI should eventually render from instead of ad hoc per-model `controls` JSONB.
-- `ai.model_offering` (view) — joins `offering` + `service` + `model_definition` into a user-facing row with points-based pricing (`points_per_million_input/output/cached_input`). Nothing in the app queries this view yet.
+**Added in the reshape, now with full CRUD (2026-07-03):**
+- `ai.service` — a callable route (translator/wire-format token consumed by matrx-ai; internal name, base URL, auth ref, controls, request defaults). Managed at `/administration/ai-models/services` (`ServicesContainer`/`ServiceTable`/`ServiceForm`).
+- `ai.offering` — `model_id × service_id` = the actual callable unit; per-service pricing/availability/capability overrides over `model_definition`. Managed at `/administration/ai-models/offerings` (`OfferingsContainer`, Manage tab; reuses `ModelPricingEditor` for the pricing tiers and `AdminAuditTable` for the dense grid).
+- `ai.setting` — canonical settings vocabulary (temperature, reasoning_effort, …). Managed at `/administration/ai-models/settings` (`SettingsContainer`/`SettingTable`/`SettingForm`). **Still not wired as the render source for the model Constraints/Controls UI** — that architectural switch (controls rendering from `ai.setting` instead of ad hoc per-model `controls` JSONB) remains a separate, unstarted initiative; this CRUD only gives admins visibility/management of the vocabulary rows.
+- `ai.model_offering` (view) — joins `offering` + `service` + `model_definition` into a user-facing row with points-based pricing (`points_per_million_input/output/cached_input`). Surfaced read-only in the Offerings page's Coverage tab, alongside a computed gap list of models with zero offerings.
+- `ai.model_definition.model_provider` (FK → `ai.provider.id`) is now the **sole** way to set a model's provider — `AiModelForm.tsx`'s free-text Provider input was removed; the plain-text `provider` column is derived from the selected provider's name on save, never hand-typed. A backfill migration (`migrations/ai_catalog_provider_backfill.sql`) fixed 33 previously-null and ~10 previously-mis-assigned `model_provider` rows and added the providers that existed only as free text (Black Forest, ByteDance, ElevenLabs, Ideogram, Kuaishou, Luma, MiniMax, Recraft, Runway, Together, WAN).
+- All four new CRUD screens home newly-created rows in the global system org via `resolveSystemOrgId()` (`lib/organizations/systemOrg.ts`) — **do not** rely on the `_stamp_org_default` trigger for these tables; it defaults to the *creating user's personal org*, not the system org, which would mis-home new catalog rows relative to the existing system-owned seed data.
 
 **Key types** (`features/ai-models/types.ts`)
 - `AiModel` — `AiModelRow` with JSONB columns narrowed to `ControlsSchema | null`, `ModelConstraint[] | null`, `PricingTier[] | null`, `string[] | null` (endpoints), capabilities record.
@@ -156,14 +164,16 @@ Both default to `NULL`, which means "no swap; keep the agent's declared model". 
 
 ## Current work / migration state
 
-Configuration surface is stable on the new `ai.model_definition`/`ai.provider`/`ai.endpoint` shape (2026-07-02 rename, fully repointed). No breaking changes planned to `ModelConstraint` shape.
+Configuration surface is stable on the new `ai.model_definition`/`ai.provider`/`ai.endpoint` shape (2026-07-02 rename, fully repointed), and now also fully covers `ai.service`/`ai.offering`/`ai.setting` CRUD (2026-07-03). No breaking changes planned to `ModelConstraint` shape.
 
-**Open gap:** the reshape also added `ai.service` / `ai.offering` / `ai.setting` (+ the `ai.model_offering` view) — a proper per-service pricing/availability/capability-override layer and a canonical settings vocabulary. **Nothing in this feature (or anywhere in the app) reads or writes these yet** — `aiModelService`, the admin table, and the registry slice all still operate purely on `ai.model_definition`. Building the offering/service admin UI and switching controls rendering onto `ai.setting` is unstarted follow-up work, not a bug.
+**Remaining gap (unstarted, not a bug):** switching the Builder/Constraints controls-rendering UI to read from `ai.setting`'s canonical vocabulary instead of ad hoc per-model `controls` JSONB. `ai.setting` now has full admin CRUD, but nothing in the Builder or model form consumes it as a render source yet.
 
 ---
 
 ## Change log
 
+- `2026-07-03` — **Platform-level RLS fix, not scoped to this feature but discovered here:** `iam.apply_rls`'s generated `std_insert` policy (used by every `'system'`-variant canonical table, including `ai.model_definition` itself) only allowed `organization_id IS NULL OR iam.has_org_access(organization_id)` — and `iam.system_orgs` has zero members by design, so NO admin could ever INSERT a new row explicitly homed in the system org; every existing system-catalog row (across this table and others) was seeded via service-role migration, never through the app. `iam.has_access` already had the correct bypass for UPDATE/DELETE/SELECT (system-org row + `is_super_admin()` ⇒ allowed) — `migrations/apply_rls_super_admin_system_insert.sql` adds the identical bypass to the INSERT check and re-applies RLS to `ai.provider/service/offering/setting/model_definition`. Purely additive; re-verified `iam.canonical_certify_ok` stays `true` on all five. Without this, every "Create" button below (including the pre-existing "+ new model" one) would 42501 the moment it tried to home a new row in the system org.
+- `2026-07-03` — Admin UI audit found the reshape's relational layer was half-wired: `AiModelForm.tsx` still had a free-text Provider input living alongside the `model_provider` FK select (both independently editable, nothing kept them in sync — the root cause of visible drift), and `ai.service`/`ai.offering`/`ai.setting` had zero admin surface despite holding 23/188/106 real rows. Fixed: (1) `migrations/ai_catalog_provider_backfill.sql` added the 11 providers that existed only as free text and re-derived every `model_provider` FK from the free-text column, fixing 33 null and ~10 mis-assigned rows; (2) removed the free-text Provider input from `AiModelForm.tsx` — `provider` is now derived from the selected `model_provider`'s name on save, never hand-typed; (3) built full CRUD for all three previously-unmanaged tables: `/administration/ai-models/providers`, `/services`, `/offerings` (+ a Coverage tab reporting the `ai.model_offering` view and models with zero offerings), `/settings` — all registered in `features/admin/constants/admin-categories.ts`. New rows on all four screens are homed via `resolveSystemOrgId()`, not the `_stamp_org_default` trigger (see Data model note above for why).
 - `2026-07-02` — AI-catalog reshape doc sync + drift cleanup. `ai.model` → `ai.model_definition` rename (plus new `ai.service`/`ai.offering`/`ai.setting` tables + `ai.model_offering` view) was already fully repointed in code across prior commits, sitting unpushed on local `main` — production was still on stale deployed code, throwing `PGRST205: ai.model not found`, not a code bug. Separately found and fixed a real drift: the checked-in `migrations/get_ssr_shell_data_rpc.sql` / `get_ssr_agent_shell_data_rpc.sql` still said `ai.model` while the live DB functions had already been patched to `ai.model_definition` out of band — synced both files to the live bodies, re-applied (no-op) via Supabase MCP, updated `_schema_migrations` ledger checksums. Deleted two dead code paths modeling the old flat shape: `lib/api/ai-models.ts` (unused duplicate fetch path) and `features/recipes/view-setup/` (dead sub-feature, hand-rolled `AISettings` type mirroring graveyarded `ai_settings`).
 - `2026-06-30` — Provider sync: Copy for AI at row / provider (status-filtered dropdown) / page levels via `ProviderSyncCopyForAi`; in-code excluded-model registry (`constants/excluded-provider-models.ts`) marks legacy provider IDs as "Excluded" instead of "Not in DB".
 - `2026-06-30` — Provider sync dashboard: sortable column headers per provider table; default sort is release date descending via `compareTimestamps` (newest models first).

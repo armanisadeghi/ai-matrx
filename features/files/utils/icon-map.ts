@@ -12,11 +12,8 @@
 
 export {
   getFileTypeDetails,
+  getFilePreviewProfile,
   getFolderTypeDetails,
 } from "./file-types";
 
-export type {
-  FileCategory,
-  FileTypeDetails,
-  PreviewKind,
-} from "./file-types";
+export type { FileCategory, FileTypeDetails, PreviewKind } from "./file-types";

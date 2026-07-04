@@ -263,8 +263,7 @@ export function dbRowToCloudFilePermission(
     id: row.id,
     resourceId: row.resource_id,
     resourceType: toResourceType(row.resource_type),
-    granteeId:
-      row.granted_to_user_id ?? row.granted_to_organization_id ?? "",
+    granteeId: row.granted_to_user_id ?? row.granted_to_organization_id ?? "",
     granteeType: isOrgGrant ? "group" : "user",
     permissionLevel: canonicalLevelToFileLevel(row.permission_level),
     grantedBy: row.created_by,
@@ -328,12 +327,13 @@ export function parseCloudTreeRow(raw: unknown): CloudTreeRow | null {
   const id = str(row, "id");
   if (!id) return null;
 
-  // `owner_id` drives ownership/RLS decisions downstream (`decideForOwnedFile`
-  // compares it against the current user). A missing owner_id is a malformed
-  // row, not "no owner" — defaulting to "" would silently misclassify
-  // ownership rather than just dropping the bad row (matches this parser's
-  // documented "skip malformed rows" contract).
-  const ownerId = str(row, "owner_id");
+  // Owner identity drives RLS/permission decisions downstream
+  // (`decideForOwnedFile` compares against the current user). The 2026
+  // file-system canonicalization renamed the DB column `owner_id` →
+  // `created_by`; `get_user_file_tree` now emits `created_by`. Read both
+  // during the transition. A missing owner is a malformed row — defaulting
+  // to "" would silently misclassify ownership rather than drop the row.
+  const ownerId = str(row, "owner_id") ?? str(row, "created_by");
   if (!ownerId) return null;
 
   const explicitKind = str(row, "kind");

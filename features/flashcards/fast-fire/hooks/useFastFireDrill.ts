@@ -55,6 +55,7 @@ import {
   hardStopCapture,
 } from "../audio/continuousCapture";
 import { fileHandler } from "@/features/files";
+import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import {
   audioExtensionForType,
   normalizeAudioContentType,
@@ -69,7 +70,9 @@ const ADVANCE_BEAT_MS = 450;
 
 export interface UseFastFireDrillResult {
   /** Live timer-bar progress 0..1 for the CURRENT card (rAF-driven, no re-render). */
-  subscribeProgress: (cb: (remainingMs: number, progress: number) => void) => () => void;
+  subscribeProgress: (
+    cb: (remainingMs: number, progress: number) => void,
+  ) => () => void;
   /** Countdown number (3,2,1) while in the countdown phase, else null. */
   countdown: number | null;
   /** Manually end the current card early (skip). */
@@ -98,7 +101,9 @@ export function useFastFireDrill(): UseFastFireDrillResult {
 
   // Progress fan-out: the rAF loop pushes per-frame progress to subscribers
   // (the timer bar) WITHOUT any React state write — zero re-render per frame.
-  const progressListenersRef = useRef<Set<(r: number, p: number) => void>>(new Set());
+  const progressListenersRef = useRef<Set<(r: number, p: number) => void>>(
+    new Set(),
+  );
 
   // The card currently being recorded (its per-card recorder is live).
   const windowRef = useRef<CardWindow | null>(null);
@@ -110,7 +115,9 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   // class, independent of the timer's own single-fire guard.
   const closedCardsRef = useRef<Set<string>>(new Set());
 
-  const subscribeProgress: UseFastFireDrillResult["subscribeProgress"] = (cb) => {
+  const subscribeProgress: UseFastFireDrillResult["subscribeProgress"] = (
+    cb,
+  ) => {
     progressListenersRef.current.add(cb);
     return () => {
       progressListenersRef.current.delete(cb);
@@ -245,15 +252,18 @@ export function useFastFireDrill(): UseFastFireDrillResult {
               fileName: `fastfire-session-${sessionId ?? "anon"}.${ext}`,
               mime,
             },
-            { folderPath: "FastFire/sessions", visibility: "private" },
+            {
+              folderPath: CloudFolders.SYSTEM_FASTFIRE_SESSIONS,
+              visibility: "private",
+              metadata: { origin: "fastfire", session_id: sessionId ?? null },
+            },
           );
           const fileId = uploaded.fileId;
           if (fileId && !cancelled) {
             dispatch(setSessionAudio({ fileId }));
             if (sessionId) {
-              const { studyService } = await import(
-                "@/features/education/study/service/studyService"
-              );
+              const { studyService } =
+                await import("@/features/education/study/service/studyService");
               await studyService.updateSession(sessionId, {
                 session_audio_file_id: fileId,
                 status: "completed",
@@ -266,9 +276,8 @@ export function useFastFireDrill(): UseFastFireDrillResult {
         }
       } else if (sessionId) {
         // No audio but still close the session out cleanly.
-        const { studyService } = await import(
-          "@/features/education/study/service/studyService"
-        );
+        const { studyService } =
+          await import("@/features/education/study/service/studyService");
         await studyService.updateSession(sessionId, {
           status: "completed",
           ended_at: new Date().toISOString(),

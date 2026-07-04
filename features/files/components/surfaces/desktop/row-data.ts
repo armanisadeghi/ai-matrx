@@ -28,10 +28,13 @@ import {
   fileToSortable,
   folderToSortable,
 } from "@/features/files/redux/tree-utils";
-import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { toEpochMs } from "@/utils/datetime";
-import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
+import {
+  isExcludedFromRecents,
+  isHiddenFromUserTree,
+} from "@/features/files/utils/folder-conventions";
 import type { CloudFilesSection } from "./section";
 import type { FilterChipKey } from "./FilterChips";
 
@@ -178,6 +181,8 @@ export function buildRows({
     if (file.deletedAt && section !== "trash") return false;
     if (!file.deletedAt && section === "trash") return false;
 
+    if (isHiddenFromUserTree(file.filePath)) return false;
+
     // Recents shows what the user worked on — never system/AI-generated output
     // (scraper captures, variants, Image Studio generations, temp staging).
     if (filter === "recents" && isExcludedFromRecents(file.filePath))
@@ -207,7 +212,11 @@ export function buildRows({
       if (columnFilters.type.length > 0) {
         // Resolve once per row — the registry lookup is O(1) but skip when
         // the filter is unset to keep the hot path tight on long lists.
-        const details = getFileTypeDetails(file.fileName);
+        const details = getFilePreviewProfile(
+          file.fileName,
+          file.mimeType,
+          file.fileSize,
+        ).details;
         if (!passesTypeFilter(details.category, columnFilters.type))
           return false;
       }
@@ -243,6 +252,7 @@ export function buildRows({
   const filterFolders = (folder: CloudFolderRecord): boolean => {
     if (folder.deletedAt && section !== "trash") return false;
     if (!folder.deletedAt && section === "trash") return false;
+    if (isHiddenFromUserTree(folder.folderPath)) return false;
     if (filter === "recents" && isExcludedFromRecents(folder.folderPath))
       return false;
     if (section === "photos") return false; // photos view never shows folders

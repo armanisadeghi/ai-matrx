@@ -87,7 +87,7 @@ import {
 import { makeRootSyntheticId } from "@/features/files/virtual-sources/path";
 import { listVirtualSources } from "@/features/files/virtual-sources/registry";
 import type { ChipFilter, UiState } from "@/features/files/types";
-import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
+import { navigateFilesFolderPath } from "@/features/files/utils/url-state";
 import {
   moveFile as moveFileThunk,
   updateFolder as updateFolderThunk,
@@ -358,8 +358,7 @@ function PageShellDesktop({
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const active = event.active.data.current as
-        | { type?: string; id?: string }
-        | undefined;
+        { type?: string; id?: string } | undefined;
       if (!active?.id) {
         setDragLabel(null);
         return;
@@ -382,11 +381,9 @@ function PageShellDesktop({
     (event: DragEndEvent) => {
       setDragLabel(null);
       const active = event.active.data.current as
-        | { type?: string; id?: string }
-        | undefined;
+        { type?: string; id?: string } | undefined;
       const over = event.over?.data.current as
-        | { type?: string; id?: string }
-        | undefined;
+        { type?: string; id?: string } | undefined;
       const activeId = active?.id;
       const overId = over?.id;
       if (!activeId || !overId) return;
@@ -480,11 +477,7 @@ function PageShellDesktop({
         FOLDER_PATH_SECTIONS.includes(section)
       ) {
         void dispatch(loadFolderContents({ folderId }));
-        const segments = encodeFolderPathSegments(folder.folderPath);
-        const target = segments ? `/files/all/${segments}` : "/files/all";
-        // `router.push` so the back button retraces folder history; the
-        // sync layer's `router.replace` updates only the query string.
-        router.push(target);
+        navigateFilesFolderPath(folder.folderPath, router);
       }
     },
     [dispatch, foldersById, router, section],

@@ -6,7 +6,19 @@ import type {
   AiModel,
   AiModelInsert,
   AiModelUpdate,
+  AiModelOfferingView,
+  AiOffering,
+  AiOfferingInsert,
+  AiOfferingUpdate,
   AiProvider,
+  AiProviderInsert,
+  AiProviderUpdate,
+  AiService,
+  AiServiceInsert,
+  AiServiceUpdate,
+  AiSetting,
+  AiSettingInsert,
+  AiSettingUpdate,
   ModelUsageResult,
   ProviderModelsCache,
 } from "./types";
@@ -79,6 +91,202 @@ export const aiModelService = {
       .single();
     if (error) throw error;
     return data as AiProvider;
+  },
+
+  // ── Provider CRUD (identity fields — separate from the cache-only helpers above) ──
+
+  /** Full-column provider fetch for the Provider CRUD screen (all fields,
+   *  including slug/website_url/logo_url/visibility/is_system/organization_id).
+   *  `fetchProviders()` above stays narrow-select for its existing read-only
+   *  consumers (model form dropdown, provider reference modal). */
+  async fetchAllProviders(): Promise<AiProvider[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("provider")
+      .select("*")
+      .is("deleted_at", null)
+      .order("name", { ascending: true });
+    if (error) throw error;
+    return data as unknown as AiProvider[];
+  },
+
+  async createProvider(payload: AiProviderInsert): Promise<AiProvider> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("provider")
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiProvider;
+  },
+
+  async updateProvider(id: string, payload: AiProviderUpdate): Promise<AiProvider> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("provider")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiProvider;
+  },
+
+  async deleteProvider(id: string): Promise<void> {
+    const { error } = await supabase
+      .schema("ai")
+      .from("provider")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  // ── Service CRUD (ai.service — the callable-route catalog) ──
+
+  async fetchServices(): Promise<AiService[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("service")
+      .select("*")
+      .is("deleted_at", null)
+      .order("display_name", { ascending: true });
+    if (error) throw error;
+    return data as unknown as AiService[];
+  },
+
+  async createService(payload: AiServiceInsert): Promise<AiService> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("service")
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiService;
+  },
+
+  async updateService(id: string, payload: AiServiceUpdate): Promise<AiService> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("service")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiService;
+  },
+
+  async deleteService(id: string): Promise<void> {
+    const { error } = await supabase
+      .schema("ai")
+      .from("service")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  // ── Offering CRUD (ai.offering — model × service, per-service pricing/overrides) ──
+
+  async fetchOfferings(): Promise<AiOffering[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("offering")
+      .select("*")
+      .is("deleted_at", null)
+      .order("priority", { ascending: true });
+    if (error) throw error;
+    return data as unknown as AiOffering[];
+  },
+
+  async createOffering(payload: AiOfferingInsert): Promise<AiOffering> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("offering")
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiOffering;
+  },
+
+  async updateOffering(id: string, payload: AiOfferingUpdate): Promise<AiOffering> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("offering")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiOffering;
+  },
+
+  async deleteOffering(id: string): Promise<void> {
+    const { error } = await supabase
+      .schema("ai")
+      .from("offering")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  /** Read-only reporting view — offering × service × model_definition joined,
+   *  with points-based pricing computed. Nothing writes to this; edit the
+   *  underlying offering row instead. */
+  async fetchModelOfferingView(): Promise<AiModelOfferingView[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("model_offering")
+      .select("*");
+    if (error) throw error;
+    return data as unknown as AiModelOfferingView[];
+  },
+
+  // ── Setting CRUD (ai.setting — canonical settings vocabulary) ──
+
+  async fetchSettings(): Promise<AiSetting[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("setting")
+      .select("*")
+      .is("deleted_at", null)
+      .order("key", { ascending: true });
+    if (error) throw error;
+    return data as unknown as AiSetting[];
+  },
+
+  async createSetting(payload: AiSettingInsert): Promise<AiSetting> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("setting")
+      .insert(payload)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiSetting;
+  },
+
+  async updateSetting(id: string, payload: AiSettingUpdate): Promise<AiSetting> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("setting")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as unknown as AiSetting;
+  },
+
+  async deleteSetting(id: string): Promise<void> {
+    const { error } = await supabase
+      .schema("ai")
+      .from("setting")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw error;
   },
 
   async create(payload: AiModelInsert): Promise<AiModel> {

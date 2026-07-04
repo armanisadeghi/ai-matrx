@@ -219,6 +219,23 @@ export const CloudFolders = {
    * Recents (see `isSystemManagedContentPath`).
    */
   TOOL_IMAGES: "tool-images",
+
+  /**
+   * FastFire voice-drill recordings — full-session + per-card response clips.
+   * Live under the hidden `system-files/fastfire/...` root (same class as
+   * transcript recordings). Managed via Education / FastFire UI only.
+   */
+  SYSTEM_FASTFIRE: "system-files/fastfire",
+  SYSTEM_FASTFIRE_SESSIONS: "system-files/fastfire/sessions",
+  SYSTEM_FASTFIRE_RESPONSES: "system-files/fastfire/responses",
+
+  /**
+   * LEGACY user-namespace FastFire paths (pre-2026-07 relocation). Kept as a
+   * defensive tree + Recents guard until every row is backfilled under
+   * `system-files/fastfire/`.
+   */
+  FASTFIRE_SESSIONS: "FastFire/sessions",
+  FASTFIRE_RESPONSES: "FastFire/responses",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -329,6 +346,31 @@ export function isSystemPath(path: string | null | undefined): boolean {
 }
 
 /**
+ * True when `path` is a FastFire side-product row — either the canonical
+ * hidden root (`system-files/fastfire/...`) or a legacy user-namespace
+ * straggler (`FastFire/...`) awaiting backfill.
+ */
+export function isFastFirePath(path: string | null | undefined): boolean {
+  if (!path) return false;
+  return (
+    path === CloudFolders.SYSTEM_FASTFIRE ||
+    path.startsWith(`${CloudFolders.SYSTEM_FASTFIRE}/`) ||
+    path === "FastFire" ||
+    path.startsWith("FastFire/")
+  );
+}
+
+/**
+ * True when a path must never surface in the user's file tree, folder
+ * browser, or Recents. Covers backend infra (`isSystemPath`) plus app-
+ * capture side products (`isFastFirePath`). Education / Transcripts UIs
+ * reach these rows by `file_id`, never by browsing.
+ */
+export function isHiddenFromUserTree(path: string | null | undefined): boolean {
+  return isSystemPath(path) || isFastFirePath(path);
+}
+
+/**
  * True when a path holds **system-managed user content** — files that
  * legitimately belong to the user and stay browsable in the Files tree,
  * but are machine-named, background-produced, and high-volume, so they
@@ -346,6 +388,9 @@ export function isSystemPath(path: string | null | undefined): boolean {
  *    carry the correct `origin: "transcripts"` metadata, so we keep this
  *    legacy path as a defensive Recents guard. (Loud-recovery note: a file
  *    actually present here means a backend relocation miss.)
+ *  - `FastFire/sessions/...` + `FastFire/responses/...` — FastFire
+ *    voice-drill session + per-card response recordings (same class as
+ *    transcript recordings: machine-produced, managed via Education UI).
  */
 export function isSystemManagedContentPath(
   path: string | null | undefined,
@@ -354,6 +399,8 @@ export function isSystemManagedContentPath(
   const roots = [
     CloudFolders.TOOL_IMAGES, // "tool-images"
     CloudFolders.TRANSCRIPT_RECORDINGS_LEGACY, // "Transcripts/Recordings" (defensive)
+    CloudFolders.FASTFIRE_SESSIONS, // "FastFire/sessions"
+    CloudFolders.FASTFIRE_RESPONSES, // "FastFire/responses"
   ];
   return roots.some((root) => path === root || path.startsWith(`${root}/`));
 }

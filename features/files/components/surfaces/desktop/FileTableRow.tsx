@@ -236,7 +236,11 @@ function FileCell({
       return (
         <td className="px-2 py-2">
           <div className="flex items-center gap-2 min-w-0">
-            <FileIcon fileName={file.fileName} size={20} />
+            <FileIcon
+              fileName={file.fileName}
+              mimeType={file.mimeType}
+              size={20}
+            />
             <div className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-1">
                 <button
@@ -272,7 +276,7 @@ function FileCell({
     case "type":
       return (
         <td className="px-4 py-2 whitespace-nowrap">
-          <FileTypeBadge fileName={file.fileName} />
+          <FileTypeBadge fileName={file.fileName} mimeType={file.mimeType} />
         </td>
       );
     case "extension":
