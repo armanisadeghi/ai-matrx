@@ -34,17 +34,31 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
   const def = kindRegistry.getDefinition(kind);
   if (!def?.legacyBlockType) return block;
 
-  // Explicit server-provided data always wins over envelope derivation.
-  const serverData = block.serverData ?? def.toLegacyServerData?.(envelope);
-
+  // A block ALREADY emitted as the legacy type carrying its own serverData is
+  // authoritative — the server typed it AND provided the component's data.
   if (block.type === def.legacyBlockType && block.serverData) {
     return block;
+  }
+
+  // ROUTING a raw region (e.g. "code" → "flashcards"): the envelope is the
+  // single source of truth. The block's own serverData here is NOT kind data —
+  // it's the raw region's annotation (the accumulator emits
+  // `data: { language: "json" }` for untyped code blocks, which the live-chat
+  // hop maps onto serverData — see render-block-to-content-block.ts).
+  // Preferring that junk handed the legacy component `{ language: "json" }`
+  // instead of cards/questions/slides — the 2026-07-04 "No flashcards
+  // available yet" bug — so it is REPLACED (bridge output) or CLEARED
+  // (bridgeless kinds parse `content` themselves), never forwarded.
+  const serverData = def.toLegacyServerData?.(envelope);
+
+  if (block.type === def.legacyBlockType && serverData === undefined) {
+    return block; // nothing to change — keep reference stability
   }
 
   return {
     ...block,
     type: def.legacyBlockType,
-    ...(serverData ? { serverData } : {}),
+    serverData,
   };
 }
 

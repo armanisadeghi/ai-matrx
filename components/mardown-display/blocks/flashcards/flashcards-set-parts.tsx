@@ -9,29 +9,22 @@ import {
   Maximize2,
   Printer,
   Smartphone,
-  TriangleAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { WrenchTapButton } from "@/components/icons/tap-buttons";
 import { cn } from "@/styles/themes/utils";
 import FlashcardItem from "./FlashcardItem";
-import { parseFlashcards } from "./flashcard-parser";
-import { EXPERIMENTAL_normalizePreParsedFlashcards } from "./EXPERIMENTAL-parse-addon";
+import {
+  deriveFlashcardsSet,
+  type NormalizedFlashcard,
+} from "./flashcards-set-derive";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { flashcardsPrinter } from "./flashcards-printer";
 import { usePrintOptions } from "@/lib/block-print/PrintOptionsDialog";
 
-import type { FlashcardSubcard } from "./flashcard-subcards";
-
 export type LayoutMode = "grid" | "list";
-
-export type NormalizedFlashcard = {
-  front?: string | null;
-  back?: string | null;
-  additionalDetails?: Record<string, unknown>;
-  subcards?: FlashcardSubcard[];
-};
 
 export function cardsToMarkdown(
   cards: Array<{ front?: string | null; back?: string | null }>,
@@ -68,25 +61,15 @@ export function useFlashcardsSet({
     lastResult,
   } = useOpenArtifactInCanvas();
 
-  const { flashcards, isComplete } = useMemo(() => {
-    if (serverData) {
-      return {
-        flashcards: EXPERIMENTAL_normalizePreParsedFlashcards(
-          serverData.cards ?? [],
-          blockAdditionalDetails,
-        ),
-        isComplete: serverData.isComplete ?? false,
-      };
-    }
-    const parsed = parseFlashcards(content ?? "");
-    return {
-      flashcards: parsed.flashcards.map((card) => ({
-        front: card.front,
-        back: card.back,
-      })),
-      isComplete: parsed.isComplete,
-    };
-  }, [content, serverData, blockAdditionalDetails]);
+  const { flashcards, isComplete } = useMemo(
+    () =>
+      deriveFlashcardsSet({
+        content,
+        serverData,
+        additionalDetails: blockAdditionalDetails,
+      }),
+    [content, serverData, blockAdditionalDetails],
+  );
 
   const completeCount = flashcards.length;
 
@@ -362,18 +345,21 @@ export function FlashcardsSetControls({
         <Printer className={iconClass} />
       </Button>
       {showDevWindow && isAdmin && onOpenInWindow && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            btnClass,
-            "text-destructive hover:bg-destructive/15 hover:text-destructive ring-1 ring-destructive/50 animate-pulse",
-          )}
-          onClick={onOpenInWindow}
-          title="[DEV] Open flashcards block in window panel"
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
         >
-          <TriangleAlert className={iconClass} />
-        </Button>
+          <WrenchTapButton
+            variant="solid"
+            bgColor="bg-emerald-600"
+            iconColor="text-white"
+            hoverBgColor="hover:bg-emerald-500"
+            activeBgColor="active:bg-emerald-700"
+            ariaLabel="[DEV] Open flashcards block in window panel"
+            tooltip="[DEV] Open flashcards block in window panel"
+            onClick={onOpenInWindow}
+          />
+        </div>
       )}
       <Button
         variant="ghost"

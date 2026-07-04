@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import type { ReviewResult } from "@/features/flashcards/types";
-import type { NormalizedFlashcard } from "./flashcards-set-parts";
+import type { NormalizedFlashcard } from "./flashcards-set-derive";
 import type { FlashcardSubcard } from "./flashcard-subcards";
 
 export interface FlashcardMobileCard {

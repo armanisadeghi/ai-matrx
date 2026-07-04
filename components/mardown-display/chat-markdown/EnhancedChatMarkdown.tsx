@@ -16,6 +16,7 @@ import { cn } from "@/styles/themes/utils";
 import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
 import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
+import { renderBlockToContentBlock } from "./render-block-to-content-block";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
@@ -93,21 +94,6 @@ const _selectEmptySegments = () => _EMPTY_SEGMENTS;
 const _selectEmptySlots = () => _EMPTY_SLOTS;
 const _selectEmptyRenderBlocks = () =>
   undefined as RenderBlockPayload[] | undefined;
-
-function renderBlockToContentBlock(rb: RenderBlockPayload): RenderBlock {
-  return {
-    type: rb.type,
-    content: rb.content ?? "",
-    serverData: (rb.data as Record<string, unknown>) ?? undefined,
-    metadata: rb.metadata,
-    language: (rb.data as Record<string, unknown>)?.language as
-      | string
-      | undefined,
-    src: (rb.data as Record<string, unknown>)?.src as string | undefined,
-    alt: (rb.data as Record<string, unknown>)?.alt as string | undefined,
-    isStreamingBlock: rb.status === "streaming",
-  };
-}
 
 // A run of this many or more consecutive tool calls (no text / thinking
 // between them) folds into a single expandable "N tool calls" line — the

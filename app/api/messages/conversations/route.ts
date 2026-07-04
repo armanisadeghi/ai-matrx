@@ -205,12 +205,14 @@ export async function POST(request: NextRequest) {
         { p_user1_id: userId, p_user2_id: otherUserId },
       );
 
+      // `p_organization_id` is omitted — the RPC's SQL DEFAULT (NULL) applies;
+      // the generated arg type is `p_organization_id?: string` (optional, not
+      // nullable), so passing an explicit `null` is a type error.
       const { data: convId, error: convError } = await supabase.rpc(
         "dm_get_or_create_direct_conversation",
         {
           p_user1_id: userId,
           p_user2_id: otherUserId,
-          p_organization_id: null,
         },
       );
       if (convError || !convId) {
