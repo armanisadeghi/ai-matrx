@@ -8,8 +8,8 @@
  * - warm:  one flexible_data list fetch per app session (ensureWarm), fired
  *          by the first host that expects streamed content. DB rows are the
  *          schema source of truth: they OVERRIDE compiled schemas while the
- *          compiled facets (legacyBlockType, toLegacyServerData, artifact,
- *          persistence) are preserved.
+ *          compiled facets (legacyBlockType, toLegacyServerData, toMarkdown,
+ *          artifact, persistence) are preserved.
  * - cold:  unknown kind sighted mid-stream → single-row fetch by slug →
  *          `onSchemaArrived` waiters (ParseSessions) upgrade in place.
  *
@@ -83,8 +83,9 @@ class KindRegistry {
             const existing = this.defs.get(kind);
             // DB rows override the SCHEMA (flexible_data is the source of
             // truth once warm); compiled facets — legacyBlockType,
-            // toLegacyServerData, artifact, persistence — survive via the
-            // spread. The compiled schema is only the pre-warm bootstrap.
+            // toLegacyServerData, toMarkdown, artifact, persistence —
+            // survive via the spread. The compiled schema is only the
+            // pre-warm bootstrap.
             this.defs.set(kind, {
               ...existing,
               kind,

@@ -18,6 +18,11 @@
  */
 
 import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
+import {
+  additionalDetailsSection,
+  collectExtras,
+  joinBlocks,
+} from "./kind-markdown-utils";
 
 export const schemaProposalServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   "schema_proposal",
@@ -29,3 +34,40 @@ export const schemaProposalServerDataFromEnvelope = makeCompleteEnvelopeBridge(
   },
   { strip: "root" },
 );
+
+// ---------------------------------------------------------------------------
+// toMarkdown facet — schema_proposal → name + fenced JSON Schema body.
+//
+// A JSON Schema IS code — the fenced json body under a "Schema" heading is
+// the deliberate, honest rendering here (not a lazy fallback). The schema is
+// emitted VERBATIM: a nested `__kind` property inside it is legitimate user
+// data (render-block-aware output schemas declare the discriminator
+// themselves), exactly like the bridge's root-only strip.
+// ---------------------------------------------------------------------------
+
+const MD_PROPOSAL_KNOWN_KEYS = ["name", "schema", "strict"];
+
+export function schemaProposalMarkdownFromValue(
+  value: Record<string, unknown>,
+): string {
+  const name =
+    typeof value.name === "string" && value.name !== ""
+      ? value.name
+      : "Schema proposal";
+
+  let body: string;
+  try {
+    body = JSON.stringify(value.schema ?? {}, null, 2);
+  } catch {
+    body = String(value.schema);
+  }
+
+  return joinBlocks([
+    `# ${name}`,
+    typeof value.strict === "boolean"
+      ? `**Strict:** ${value.strict ? "yes" : "no"}`
+      : null,
+    `## Schema\n\n\`\`\`json\n${body}\n\`\`\``,
+    additionalDetailsSection(collectExtras(value, MD_PROPOSAL_KNOWN_KEYS)),
+  ]);
+}

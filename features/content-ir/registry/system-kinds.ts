@@ -20,14 +20,39 @@
  */
 
 import type { KindDefinition } from "./kind-registry.types";
-import { flashcardsServerDataFromEnvelope } from "../kinds/flashcard-set";
-import { quizServerDataFromEnvelope } from "../kinds/quiz-set";
-import { presentationServerDataFromEnvelope } from "../kinds/presentation-deck";
-import { decisionTreeServerDataFromEnvelope } from "../kinds/decision-tree";
-import { comparisonServerDataFromEnvelope } from "../kinds/comparison-set";
-import { diagramServerDataFromEnvelope } from "../kinds/diagram-spec";
-import { mathProblemServerDataFromEnvelope } from "../kinds/math-problem";
-import { schemaProposalServerDataFromEnvelope } from "../kinds/schema-proposal";
+import {
+  flashcardsServerDataFromEnvelope,
+  flashcardsMarkdownFromValue,
+} from "../kinds/flashcard-set";
+import {
+  quizServerDataFromEnvelope,
+  quizMarkdownFromValue,
+} from "../kinds/quiz-set";
+import {
+  presentationServerDataFromEnvelope,
+  presentationMarkdownFromValue,
+} from "../kinds/presentation-deck";
+import {
+  decisionTreeServerDataFromEnvelope,
+  decisionTreeMarkdownFromValue,
+} from "../kinds/decision-tree";
+import {
+  comparisonServerDataFromEnvelope,
+  comparisonMarkdownFromValue,
+} from "../kinds/comparison-set";
+import {
+  diagramServerDataFromEnvelope,
+  diagramMarkdownFromValue,
+} from "../kinds/diagram-spec";
+import {
+  mathProblemServerDataFromEnvelope,
+  mathProblemMarkdownFromValue,
+} from "../kinds/math-problem";
+import {
+  schemaProposalServerDataFromEnvelope,
+  schemaProposalMarkdownFromValue,
+} from "../kinds/schema-proposal";
+import { itemPresentationMarkdownFromValue } from "../kinds/item-presentation";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   {
@@ -36,6 +61,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "flashcards",
     toLegacyServerData: flashcardsServerDataFromEnvelope,
+    toMarkdown: flashcardsMarkdownFromValue,
     artifact: { canvasType: "flashcards" },
     persistence: { persistStructured: true },
     schema: {
@@ -131,6 +157,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "quiz",
     toLegacyServerData: quizServerDataFromEnvelope,
+    toMarkdown: quizMarkdownFromValue,
     artifact: { canvasType: "quiz" },
     persistence: { persistStructured: true },
     schema: {
@@ -170,6 +197,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "presentation",
     toLegacyServerData: presentationServerDataFromEnvelope,
+    toMarkdown: presentationMarkdownFromValue,
     artifact: { canvasType: "presentation" },
     persistence: { persistStructured: true },
     schema: {
@@ -225,6 +253,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "decision_tree",
     toLegacyServerData: decisionTreeServerDataFromEnvelope,
+    toMarkdown: decisionTreeMarkdownFromValue,
     artifact: { canvasType: "decision-tree" },
     persistence: { persistStructured: true },
     schema: {
@@ -264,6 +293,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "comparison_table",
     toLegacyServerData: comparisonServerDataFromEnvelope,
+    toMarkdown: comparisonMarkdownFromValue,
     artifact: { canvasType: "comparison" },
     persistence: { persistStructured: true },
     schema: {
@@ -308,6 +338,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "diagram",
     toLegacyServerData: diagramServerDataFromEnvelope,
+    toMarkdown: diagramMarkdownFromValue,
     artifact: { canvasType: "diagram" },
     persistence: { persistStructured: true },
     schema: {
@@ -401,6 +432,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "math_problem",
     toLegacyServerData: mathProblemServerDataFromEnvelope,
+    toMarkdown: mathProblemMarkdownFromValue,
     artifact: { canvasType: "math_problem" },
     persistence: { persistStructured: true },
     schema: {
@@ -478,6 +510,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     schemaSource: "system",
     tier: "eager",
     legacyBlockType: "item_presentation",
+    toMarkdown: itemPresentationMarkdownFromValue,
     schema: {
       kind: "item_presentation",
       fields: {
@@ -497,6 +530,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     tier: "eager",
     legacyBlockType: "schema_proposal",
     toLegacyServerData: schemaProposalServerDataFromEnvelope,
+    toMarkdown: schemaProposalMarkdownFromValue,
     schema: {
       kind: "schema_proposal",
       fields: {

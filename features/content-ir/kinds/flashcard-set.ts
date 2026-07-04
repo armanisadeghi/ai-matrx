@@ -16,6 +16,14 @@
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import type { CanonicalBlockIR, IrResidue } from "../core/ir-types";
 import { KIND_KEY } from "../core/kind-schema.types";
+import {
+  additionalDetailsSection,
+  collectExtras,
+  extrasList,
+  formatInlineValue,
+  isRecordValue,
+  joinBlocks,
+} from "./kind-markdown-utils";
 
 type FlashcardsCard = FlashcardsBlockData["cards"][number] &
   Record<string, unknown>;
@@ -94,4 +102,105 @@ export function flashcardsServerDataFromEnvelope(
   }
 
   return serverData;
+}
+
+// ---------------------------------------------------------------------------
+// toMarkdown facet — flashcard_set → human-readable Q&A markdown.
+//
+// Mirrors the established "Front: / Back:" copy convention
+// (components/mardown-display/blocks/flashcards/flashcards-set-parts.tsx
+// `cardsToMarkdown`) upgraded to real markdown structure: one heading per
+// card, bold Front/Back labels, card metadata as a small bullet list,
+// tiered subcards as a nested list. Unknown keys (card-level inline; set-
+// level under "Additional details") never silently vanish.
+// ---------------------------------------------------------------------------
+
+const CARD_KNOWN_KEYS = [
+  "front",
+  "back",
+  "card_kind",
+  "difficulty",
+  "topic",
+  "tags",
+  "audio_explanation",
+  "detailed_explanation",
+  "subcards",
+];
+
+const SET_KNOWN_KEYS = ["title", "set_title", "cards"];
+
+function subcardLine(subcard: Record<string, unknown>): string {
+  const front = typeof subcard.front === "string" ? subcard.front : "";
+  const back = typeof subcard.back === "string" ? subcard.back : "";
+  const parts = [`- **Front:** ${front} — **Back:** ${back}`];
+  const meta = extrasList(collectExtras(subcard, ["front", "back"]));
+  // Nested bullets stay inside the parent list item (no blank lines).
+  if (meta) parts.push(meta.replace(/^- /gm, "  - "));
+  return parts.join("\n");
+}
+
+function cardMarkdown(card: Record<string, unknown>, index: number): string {
+  const blocks: Array<string | null> = [`## Card ${index + 1}`];
+
+  blocks.push(
+    `**Front:** ${typeof card.front === "string" ? card.front : ""}`,
+  );
+  if (typeof card.back === "string" && card.back !== "") {
+    blocks.push(`**Back:** ${card.back}`);
+  }
+
+  const meta: string[] = [];
+  if (typeof card.topic === "string" && card.topic !== "") {
+    meta.push(`- **Topic:** ${card.topic}`);
+  }
+  if (typeof card.difficulty === "string" && card.difficulty !== "") {
+    meta.push(`- **Difficulty:** ${card.difficulty}`);
+  }
+  if (Array.isArray(card.tags) && card.tags.length > 0) {
+    meta.push(`- **Tags:** ${formatInlineValue(card.tags)}`);
+  }
+  // Card-level unknown keys ride the same list — nothing vanishes.
+  const cardExtras = extrasList(collectExtras(card, CARD_KNOWN_KEYS));
+  if (cardExtras) meta.push(cardExtras);
+  if (meta.length > 0) blocks.push(meta.join("\n"));
+
+  if (
+    typeof card.detailed_explanation === "string" &&
+    card.detailed_explanation !== ""
+  ) {
+    blocks.push(`**Detailed explanation:** ${card.detailed_explanation}`);
+  }
+  if (
+    typeof card.audio_explanation === "string" &&
+    card.audio_explanation !== ""
+  ) {
+    blocks.push(`**Audio explanation:** ${card.audio_explanation}`);
+  }
+
+  if (Array.isArray(card.subcards) && card.subcards.length > 0) {
+    const lines = card.subcards.filter(isRecordValue).map(subcardLine);
+    if (lines.length > 0) {
+      blocks.push(`**Subcards:**\n\n${lines.join("\n")}`);
+    }
+  }
+
+  return joinBlocks(blocks);
+}
+
+export function flashcardsMarkdownFromValue(
+  value: Record<string, unknown>,
+): string {
+  const rawTitle = value.title ?? value.set_title;
+  const title =
+    typeof rawTitle === "string" && rawTitle !== "" ? rawTitle : "Flashcards";
+
+  const cards = Array.isArray(value.cards)
+    ? value.cards.filter(isRecordValue)
+    : [];
+
+  return joinBlocks([
+    `# ${title}`,
+    ...cards.map(cardMarkdown),
+    additionalDetailsSection(collectExtras(value, SET_KNOWN_KEYS)),
+  ]);
 }

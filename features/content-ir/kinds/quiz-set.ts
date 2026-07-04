@@ -27,6 +27,14 @@
  */
 
 import { makeCompleteEnvelopeBridge, isRecord } from "./legacy-bridge-utils";
+import {
+  additionalDetailsSection,
+  collectExtras,
+  extrasList,
+  formatInlineValue,
+  isRecordValue,
+  joinBlocks,
+} from "./kind-markdown-utils";
 
 const MAPPED_QUESTION_KEYS = new Set(["question", "options", "explanation"]);
 const MAPPED_SET_KEYS = new Set(["title", "questions"]);
@@ -133,3 +141,70 @@ export const quizServerDataFromEnvelope = makeCompleteEnvelopeBridge(
     return serverData;
   },
 );
+
+// ---------------------------------------------------------------------------
+// toMarkdown facet — quiz_set → human-readable Q&A markdown.
+//
+// One heading per question, numbered options, the correct answer spelled out
+// (never just an index), explanation as a labeled paragraph. Unknown keys
+// (question-level inline; set-level under "Additional details") never
+// silently vanish.
+// ---------------------------------------------------------------------------
+
+const MD_QUESTION_KNOWN_KEYS = [
+  "type",
+  "question",
+  "options",
+  "correct_answer",
+  "explanation",
+];
+
+const MD_SET_KNOWN_KEYS = ["title", "description", "questions"];
+
+function questionMarkdown(
+  question: Record<string, unknown>,
+  index: number,
+): string {
+  const blocks: Array<string | null> = [`## Question ${index + 1}`];
+
+  if (typeof question.question === "string" && question.question !== "") {
+    blocks.push(question.question);
+  }
+
+  const options = Array.isArray(question.options)
+    ? question.options.filter(
+        (option): option is string => typeof option === "string",
+      )
+    : [];
+  if (options.length > 0) {
+    blocks.push(options.map((option, i) => `${i + 1}. ${option}`).join("\n"));
+  }
+
+  if (question.correct_answer !== undefined && question.correct_answer !== null) {
+    blocks.push(`**Answer:** ${formatInlineValue(question.correct_answer)}`);
+  }
+  if (typeof question.explanation === "string" && question.explanation !== "") {
+    blocks.push(`**Explanation:** ${question.explanation}`);
+  }
+
+  const extras = extrasList(collectExtras(question, MD_QUESTION_KNOWN_KEYS));
+  if (extras) blocks.push(extras);
+
+  return joinBlocks(blocks);
+}
+
+export function quizMarkdownFromValue(value: Record<string, unknown>): string {
+  const title = typeof value.title === "string" && value.title !== ""
+    ? value.title
+    : "Quiz";
+  const questions = Array.isArray(value.questions)
+    ? value.questions.filter(isRecordValue)
+    : [];
+
+  return joinBlocks([
+    `# ${title}`,
+    typeof value.description === "string" ? value.description : null,
+    ...questions.map(questionMarkdown),
+    additionalDetailsSection(collectExtras(value, MD_SET_KNOWN_KEYS)),
+  ]);
+}

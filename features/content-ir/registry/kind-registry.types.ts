@@ -54,6 +54,20 @@ export interface KindDefinition {
   ) => Record<string, unknown> | undefined;
   /** Facade → artifact-type-registry canvasType. */
   artifact?: { canvasType: string };
+  /**
+   * Markdown export facet — the FORWARD leg of artifact ⇄ markdown. Receives
+   * the ZERO-LOSS reconstructed value object (the CALLER reconstructs — for
+   * persisted structured artifacts `content.data` already IS that object;
+   * this facet only renders it; `__kind` discriminators may still be
+   * present and must be ignored). MUST produce human-readable markdown
+   * (headings / lists / bold), never a JSON dump — a fenced json body under
+   * a heading is acceptable only for inherently-code payloads (e.g. a
+   * schema_proposal's JSON Schema). Unknown extra keys the renderer doesn't
+   * understand MUST be appended under a small "Additional details"
+   * (key: value) section so nothing silently vanishes. Kinds without this
+   * facet fall back to `genericKindMarkdown` (kinds/kind-markdown-utils.ts).
+   */
+  toMarkdown?: (value: Record<string, unknown>) => string;
   persistence?: { persistStructured: boolean };
   /** Future XML tags / kind aliases resolving to this kind. */
   discriminatorAliases?: string[];

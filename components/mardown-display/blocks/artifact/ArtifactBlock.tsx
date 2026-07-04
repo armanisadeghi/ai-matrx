@@ -1,7 +1,9 @@
 "use client";
 
 import React, { Suspense, lazy, useMemo } from "react";
-import { Maximize2 } from "lucide-react";
+import { Copy, Maximize2 } from "lucide-react";
+import { toast } from "sonner";
+import { artifactContentToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { ArtifactVersionHistory } from "@/features/canvas/components/ArtifactVersionHistory";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
@@ -109,6 +111,25 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
         return content;
     }
   }, [content, artifactType]);
+
+  /**
+   * "Copy as Markdown" — the forward leg of artifact ⇄ markdown (see
+   * features/canvas/docs/TWO_WAY_BINDING.md). Structured (kind) payloads
+   * render through the kind registry's toMarkdown facet; string payloads
+   * copy as-is (they ARE markdown / wire text). Works identically for
+   * inline artifacts and materialized refs — both hand this component the
+   * raw payload string.
+   */
+  const handleCopyMarkdown = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        artifactContentToMarkdown(content, artifactType),
+      );
+      toast.success("Copied as Markdown");
+    } catch {
+      toast.error("Couldn't copy to clipboard");
+    }
+  };
 
   const handleOpenCanvas = () => {
     const rawPayload =
@@ -237,6 +258,16 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
               canvasItemId={artifactId}
               triggerClassName="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100 data-[state=open]:opacity-100"
             />
+          )}
+          {isComplete && content.trim() !== "" && (
+            <button
+              onClick={handleCopyMarkdown}
+              className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/artifact:opacity-100"
+              title="Copy as Markdown"
+              aria-label="Copy as Markdown"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
           )}
           {isCanvasAvailable && (
             <button
