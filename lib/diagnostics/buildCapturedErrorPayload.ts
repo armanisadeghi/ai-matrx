@@ -49,6 +49,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "org-resolution": "Org resolution fallback",
   "user-toast": "User-facing error toast",
   "redux-rejected": "Rejected action (thunk)",
+  "content-ir": "Content IR parse/parity failure",
 };
 
 export function sourceLabel(source: CapturedErrorSource): string {

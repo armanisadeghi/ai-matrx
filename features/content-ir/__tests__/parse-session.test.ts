@@ -218,8 +218,10 @@ describe("session-manager one-writer enforcement", () => {
 
 describe("pending-schema through the session (registry hook)", () => {
   it("upgrades nodes in place when the schema arrives late", () => {
-    let deliver: ((kind: string, schema: KindSchema | null) => void) | null =
-      null;
+    // Collected in an array (not a nullable let) so TS control-flow analysis
+    // doesn't narrow the callback to null across the constructor boundary.
+    const deliverers: Array<(kind: string, schema: KindSchema | null) => void> =
+      [];
     const requested: string[] = [];
 
     const session = new ParseSession({
@@ -229,9 +231,9 @@ describe("pending-schema through the session (registry hook)", () => {
         request: (kind: string) => requested.push(kind),
       },
       onSchemaArrived: (cb) => {
-        deliver = cb;
+        deliverers.push(cb);
         return () => {
-          deliver = null;
+          deliverers.length = 0;
         };
       },
     });
@@ -241,9 +243,10 @@ describe("pending-schema through the session (registry hook)", () => {
 
     expect(requested).toEqual(["timeline"]);
     expect(session.getNode("")).toBeNull(); // held, not raw
+    expect(deliverers).toHaveLength(1);
 
     // Registry answers while the region is still live — upgrade in place.
-    deliver?.("timeline", {
+    deliverers[0]("timeline", {
       kind: "timeline",
       fields: { title: { type: "string", required: true } },
     });

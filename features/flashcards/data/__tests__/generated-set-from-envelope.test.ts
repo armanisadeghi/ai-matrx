@@ -8,7 +8,10 @@
 
 import { normalizeJsonRegion } from "@/features/content-ir/core/normalize";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import {
+  KIND_KEY,
+  type KindSchema,
+} from "@/features/content-ir/core/kind-schema.types";
 import { generatedSetFromEnvelope } from "../generated-set-from-envelope";
 
 function envelopeFor(source: string, schemas?: Record<string, KindSchema>) {
@@ -63,7 +66,7 @@ describe("generatedSetFromEnvelope", () => {
     expect(set?.cards[2].front).toBe("Q3?");
     // Nothing internal leaks onto the persisted inputs.
     for (const card of set?.cards ?? []) {
-      expect(Object.keys(card)).not.toContain("__kind");
+      expect(Object.keys(card)).not.toContain(KIND_KEY);
     }
   });
 
