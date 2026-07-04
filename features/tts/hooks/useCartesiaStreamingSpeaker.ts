@@ -39,6 +39,7 @@ import { useEffect, useId, useRef, useCallback, useState } from "react";
 import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { toast } from "sonner";
 import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
 import {
@@ -82,9 +83,12 @@ export interface UseCartesiaStreamingSpeakerOptions {
   /** Override the subsequent-chunk size (default 400 chars). */
   nextChunkMax?: number;
   /**
-   * Opt this surface into Custom Dictionary pronunciation. Aliases are resolved
-   * once per stream; single-word terms substitute reliably, multi-word terms in
-   * the live (incremental) path may occasionally straddle a flush boundary.
+   * Custom Dictionary surface whose resolved pronunciations rewrite the spoken
+   * text. Defaults to the shared read-aloud surface (personal + global
+   * dictionary) so ALL streaming read-aloud applies pronunciations; pass a
+   * specific surface key to scope it. Aliases are resolved once per stream;
+   * single-word terms substitute reliably, multi-word terms in the live
+   * (incremental) path may occasionally straddle a flush boundary.
    */
   dictionarySurfaceKey?: string;
 }
@@ -104,7 +108,7 @@ export function useCartesiaStreamingSpeaker({
   initialLoading = false,
   firstChunkMax,
   nextChunkMax,
-  dictionarySurfaceKey,
+  dictionarySurfaceKey = READ_ALOUD_DICTIONARY_SURFACE,
 }: UseCartesiaStreamingSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>(
     initialLoading ? "fetching-token" : "idle",

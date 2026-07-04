@@ -14,6 +14,7 @@ import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectVoicePreferences } from '@/lib/redux/preferences/userPreferenceSelectors';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
+import { READ_ALOUD_DICTIONARY_SURFACE } from '@/features/dictionary/constants';
 import {
   buildGenerationConfig,
   CARTESIA_API_VERSION,
@@ -39,9 +40,11 @@ export interface UseCartesiaSpeakerOptions {
   /** Which default voice applies when the user hasn't set one. */
   purpose?: VoicePurpose;
   /**
-   * Opt this surface into Custom Dictionary pronunciation. When set, the
-   * spoken text is rewritten with the surface's resolved pronunciation
-   * substitutions before synthesis. See features/dictionary/ttsBridge.ts.
+   * Custom Dictionary surface whose resolved pronunciations rewrite the spoken
+   * text before synthesis. Defaults to the shared read-aloud surface (the
+   * user's personal + global dictionary), so ALL read-aloud playback applies
+   * pronunciations automatically. Pass a specific surface key to scope it (e.g.
+   * the Scribe). See features/dictionary/ttsBridge.ts.
    */
   dictionarySurfaceKey?: string;
 }
@@ -49,7 +52,7 @@ export interface UseCartesiaSpeakerOptions {
 export function useCartesiaSpeaker({
   processMarkdown = true,
   purpose = 'assistant',
-  dictionarySurfaceKey,
+  dictionarySurfaceKey = READ_ALOUD_DICTIONARY_SURFACE,
 }: UseCartesiaSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>('idle');
   // Last spoken text — labels this utterance's row in the Audio panel.
