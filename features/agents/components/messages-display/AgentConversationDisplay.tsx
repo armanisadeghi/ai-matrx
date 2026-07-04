@@ -390,7 +390,7 @@ export function AgentConversationDisplay({
   // assistant turn that follows, or between two adjacent user turns).
   // Inside a group, AssistantTurnGroup renders sub-messages flush — no
   // additional spacing between iterations.
-  const spacingClass = compact ? "space-y-2 pb-2" : "space-y-6 pb-24";
+  const spacingClass = compact ? "space-y-2 pb-12" : "space-y-6 pb-48";
 
   return (
     <NonEditableContextMenu

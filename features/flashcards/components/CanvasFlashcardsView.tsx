@@ -272,7 +272,7 @@ export function CanvasFlashcardsView({
           layoutMode="list"
           flipped={isFlipped}
           onFlipToggle={flip}
-          onReview={grading ? undefined : handleGrade}
+          onReview={grading ? undefined : (_cardIndex, result) => handleGrade(result)}
           lastResult={resultsByCard[current.id] ?? null}
         />
       </div>

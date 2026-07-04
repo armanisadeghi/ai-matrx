@@ -30,8 +30,6 @@ import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/
 import type { ReviewResult } from "@/features/flashcards/types";
 import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 
-export type { FlashcardMobileCard };
-
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
 // Filmstrip thumbnail dimensions

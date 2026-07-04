@@ -2,6 +2,8 @@
 
 **Status:** `active` · **Route:** `/demos` · **Source:** `app/(dev)/demos/`
 
+See: app/(dev)/demos/demo-status.md (Arman's Vision for this route)
+
 ## How menus stay in sync
 
 Filesystem scan at request time — no manual link lists.
