@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import { useDueReview } from "../../data/useDueReview";
 import { StudyDeck } from "./StudyDeck";
+import { renderVoiceTestExtra } from "./voiceTestExtra";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -38,6 +39,7 @@ export function ReviewDueSurface() {
       prev={study.prev}
       goTo={study.goTo}
       grade={study.grade}
+      renderCardExtra={renderVoiceTestExtra}
       errorTitle="Couldn't load your due cards"
       emptyTitle="You're all caught up"
       emptyBody="No cards are due for review right now. Study a set to build your queue — cards resurface on the spaced-repetition schedule."

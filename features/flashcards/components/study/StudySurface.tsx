@@ -16,6 +16,7 @@ import { Layers } from "lucide-react";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeck } from "./StudyDeck";
 import { FlashcardStudyWindowDevTrigger } from "./FlashcardStudyWindowDevTrigger";
+import { renderVoiceTestExtra } from "./voiceTestExtra";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -48,6 +49,7 @@ export function StudySurface({ setId }: { setId: string }) {
       prev={study.prev}
       goTo={study.goTo}
       grade={study.grade}
+      renderCardExtra={renderVoiceTestExtra}
       errorTitle="Couldn't load this set"
       emptyBody="This set has no cards yet. Generate some in chat to study it."
       onRestart={() => study.goTo(0)}
