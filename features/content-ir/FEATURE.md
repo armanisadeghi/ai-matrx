@@ -24,7 +24,7 @@
 - **Node-scoped errors never kill a stream.** Duplicate keys, schema violations, disallowed itemKinds → that node goes `raw_object`, the parent keeps parsing. Only grammar errors are region-fatal → the region degrades to a code block.
 - **Zero data loss:** unknown keys NEVER merge into snapshot values — they ride `residue.extra` (root residue + per-node residue in `nodeIndex`). Wire round-trip = `reconstructRegionValue`.
 - **Stream ≡ static:** the accumulator's streamed envelope and the splitter's one-shot envelope are byte-identical (fingerprint included) — enforced by `__tests__/stream-splitter-parity.test.ts`. Pending-schema nodes resolve to raw at region end so envelopes are deterministic; upgrade-in-place is a live-region feature.
-- **The envelope rides `metadata.__ir`** on render blocks and splitter blocks. `data` stays reserved for the routed component's serverData.
+- **The envelope rides `metadata.__ir`** on render blocks and splitter blocks. `data` stays reserved for the routed component's serverData. Live-stream consumers read it from Redux via `selectKindEnvelope(requestId, kind?)` (`active-requests.selectors.ts`) — never a second parallel parse of answer text (a `useLiveJsonRegion` session is the fallback for prod flag-off only). GOTCHA: a `displayMode:"direct"` launch's thunk resolves only AFTER the stream ends — derive the live requestId from `selectConversationRequestIds`, never from `.unwrap()` (the starvation bug behind the 2026-07-03 flashcards fix).
 - **`core/` is a pure kernel** — no React/Redux/Supabase (lint-fenced). The Python twin mirrors `core/` only.
 - **Parity telemetry is loud:** accumulator region close deep-compares envelope vs `JSON.parse(content)`; mismatch → `captureError` source `content-ir` (Error Inspector).
 
@@ -42,5 +42,6 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-07-03 — `selectKindEnvelope` added (active-requests.selectors): canonical Redux read of the accumulator's live `metadata.__ir` envelope; flashcards CreateFromTopic flipped to it (session parse demoted to prod-flag-off fallback). Fixed the direct-launch live-preview starvation — requestId now Redux-derived at connection time (`useGenerateCards`), never from the launch thunk's resolution (which awaits the whole stream in direct mode).
 - 2026-07-03 — Registry precedence flipped: flexible_data rows now override compiled schemas on warm (compiled = bootstrap fallback, facets preserved); flashcard family aligned to the DB Block Schemas (`title` canonical, `set_title` transition alias, multi-kind cards + enhanced/tiered/basic_card compiled defs); flashcards typed save path added (`generatedSetFromEnvelope` — one parse drives display AND persistence).
 - 2026-07-03 — Phases 0–4 built: library extracted from the json-block-detector demo; parser upgraded (speculation, pending-schema, pop-up-one-level recovery); COW tree + sessions + registry; accumulator + splitter delegation with parity suite; flashcards kind routing (bare/fenced JSON flashcard_set renders live as real flashcards); lint doctrine landed.
