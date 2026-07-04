@@ -193,27 +193,54 @@ export async function POST(request: NextRequest) {
 
     const { type, participant_ids, group_name } = validation.data;
 
-    // For direct chats, check if conversation already exists
+    // For direct chats, resolve atomically via the ONE canonical get-or-create
+    // RPC (advisory-locked — no duplicate conversation under concurrency). The
+    // cheap find pre-check only sets the `existing` flag / status for the
+    // response; it is now race-harmless because the RPC create is atomic.
     if (type === "direct" && participant_ids.length === 1) {
       const otherUserId = participant_ids[0];
 
-      // Use helper function to find existing conversation
-      const { data: existingConvId } = await supabase.rpc(
+      const { data: preExistingId } = await supabase.rpc(
         "find_dm_direct_conversation",
+        { p_user1_id: userId, p_user2_id: otherUserId },
+      );
+
+      const { data: convId, error: convError } = await supabase.rpc(
+        "dm_get_or_create_direct_conversation",
         {
           p_user1_id: userId,
           p_user2_id: otherUserId,
+          p_organization_id: null,
         },
       );
-
-      if (existingConvId) {
-        return NextResponse.json({
-          success: true,
-          data: { ConversationID: existingConvId },
-          existing: true,
-          msg: "Existing conversation found",
-        });
+      if (convError || !convId) {
+        console.error(
+          "[DM Conversations API] get-or-create failed:",
+          convError,
+        );
+        return NextResponse.json(
+          { success: false, msg: convError?.message ?? "Could not resolve conversation" },
+          { status: 500 },
+        );
       }
+
+      // `existing` iff the pre-check found the SAME live conversation the RPC
+      // returned. find_dm has no deleted_at filter but the RPC skips soft-deleted
+      // and creates fresh — so comparing ids (not just Boolean(preExistingId))
+      // avoids falsely reporting a freshly-created conversation as "existing".
+      const existed = Boolean(preExistingId) && preExistingId === convId;
+
+      return NextResponse.json(
+        {
+          success: true,
+          data: { ConversationID: convId },
+          existing: existed,
+          msg: existed
+            ? "Existing conversation found"
+            : "Conversation created successfully",
+        },
+        { status: existed ? 200 : 201 },
+      );
     }
 
     // Verify all participants exist in auth.users

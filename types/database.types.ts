@@ -24502,6 +24502,14 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string; p_task_id: string }
         Returns: Json
       }
+      dm_get_or_create_direct_conversation: {
+        Args: {
+          p_organization_id?: string
+          p_user1_id: string
+          p_user2_id: string
+        }
+        Returns: string
+      }
       duplicate_row: {
         Args: {
           p_excluded_columns?: string[]

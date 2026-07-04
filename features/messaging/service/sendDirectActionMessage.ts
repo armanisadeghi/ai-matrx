@@ -14,51 +14,31 @@ import { createClient } from "@/utils/supabase/client";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import type { MessageActionData } from "@/features/messaging/types";
 
-/** Find an existing direct conversation between two users, or create one. */
+/**
+ * Find an existing direct conversation between two users, or create one.
+ * Delegates to the ONE canonical, ATOMIC get-or-create RPC
+ * (`public.dm_get_or_create_direct_conversation`) — an advisory lock on the pair
+ * serializes concurrent callers, so two "message this user" clicks can't mint
+ * duplicate conversations (the old select(RPC)-then-insert raced and did).
+ */
 export async function findOrCreateDirectConversation(
   currentUserId: string,
   recipientId: string,
 ): Promise<string> {
   const supabase = createClient();
 
-  const { data: existing, error: findError } = await supabase.rpc(
-    "find_dm_direct_conversation",
-    { p_user1_id: currentUserId, p_user2_id: recipientId },
-  );
-  if (findError) throw findError;
-  if (existing) return existing as string;
-
   const organizationId = await ensureOrgId(undefined);
-  const { data: conv, error: createError } = await supabase
-    .schema("communication").from("dm_conversations")
-    .insert({
-      type: "direct",
-      created_by: currentUserId,
-      organization_id: organizationId,
-    })
-    .select("id")
-    .single();
-  if (createError) throw createError;
-
-  const { error: partError } = await supabase
-    .schema("communication").from("dm_conversation_participants")
-    .insert([
-      {
-        conversation_id: conv.id,
-        user_id: currentUserId,
-        role: "owner",
-        organization_id: organizationId,
-      },
-      {
-        conversation_id: conv.id,
-        user_id: recipientId,
-        role: "member",
-        organization_id: organizationId,
-      },
-    ]);
-  if (partError) throw partError;
-
-  return conv.id as string;
+  const { data, error } = await supabase.rpc(
+    "dm_get_or_create_direct_conversation",
+    {
+      p_user1_id: currentUserId,
+      p_user2_id: recipientId,
+      p_organization_id: organizationId,
+    },
+  );
+  if (error) throw error;
+  if (!data) throw new Error("Failed to resolve direct conversation");
+  return data as string;
 }
 
 export interface SendDirectActionMessageArgs {

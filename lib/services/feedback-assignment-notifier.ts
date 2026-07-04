@@ -78,66 +78,35 @@ async function findOrCreateDirectConversation(
 ): Promise<{ conversationId: string; organizationId: string }> {
   const supabase = createAdminClient();
 
-  const { data: existing, error: findError } = await supabase.rpc(
-    "find_dm_direct_conversation",
+  // ONE canonical, ATOMIC get-or-create (advisory-locked). Service-role client
+  // has no auth.uid(), so the RPC's caller guard is bypassed and userA is honored
+  // as the creator. Passing NULL org lets the RPC derive userA's personal org
+  // via ensure_personal_organization — identical to the old create path — so
+  // batched system notifications to the same pair can't mint duplicate threads.
+  const { data: conversationId, error: rpcError } = await supabase.rpc(
+    "dm_get_or_create_direct_conversation",
     { p_user1_id: userA, p_user2_id: userB },
   );
-  if (findError) throw findError;
-  if (existing) {
-    const { data: existingConv, error: convError } = await supabase
-      .schema("communication").from("dm_conversations")
-      .select("organization_id")
-      .eq("id", existing)
-      .single();
-    if (convError || !existingConv) {
-      throw convError ?? new Error("DM conversation not found");
-    }
-    return {
-      conversationId: existing,
-      organizationId: existingConv.organization_id,
-    };
+  if (rpcError) throw rpcError;
+  if (!conversationId) {
+    throw new Error("Failed to resolve direct conversation");
   }
 
-  const { data: organizationId, error: orgError } = await supabase.rpc(
-    "ensure_personal_organization",
-    { p_user_id: userA },
-  );
-  if (orgError || !organizationId) {
-    throw (
-      orgError ?? new Error("No personal organization for conversation creator")
-    );
-  }
-
-  const { data: newConv, error: createError } = await supabase
+  // The caller stamps org-scoped child rows (the message), so return the
+  // conversation's org (works whether it was found or just created).
+  const { data: conv, error: convError } = await supabase
     .schema("communication").from("dm_conversations")
-    .insert({
-      type: "direct",
-      created_by: userA,
-      organization_id: organizationId,
-    })
-    .select("id")
+    .select("organization_id")
+    .eq("id", conversationId as string)
     .single();
-  if (createError) throw createError;
+  if (convError || !conv) {
+    throw convError ?? new Error("DM conversation not found");
+  }
 
-  const { error: partErr } = await supabase
-    .schema("communication").from("dm_conversation_participants")
-    .insert([
-      {
-        conversation_id: newConv.id,
-        user_id: userA,
-        role: "owner",
-        organization_id: organizationId,
-      },
-      {
-        conversation_id: newConv.id,
-        user_id: userB,
-        role: "member",
-        organization_id: organizationId,
-      },
-    ]);
-  if (partErr) throw partErr;
-
-  return { conversationId: newConv.id, organizationId };
+  return {
+    conversationId: conversationId as string,
+    organizationId: conv.organization_id,
+  };
 }
 
 /**

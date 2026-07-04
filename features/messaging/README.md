@@ -103,7 +103,8 @@ A message can carry a generic **`action_data`** envelope `{ kind, version, paylo
 - `get_dm_unread_count(user_id, conversation_id)` - Get unread count
 - `get_dm_user_info(user_id)` - Get user info from auth.users
 - `get_dm_conversations_with_details(user_id)` - List conversations with metadata
-- `find_dm_direct_conversation(user1_id, user2_id)` - Find existing direct chat
+- `find_dm_direct_conversation(user1_id, user2_id)` - Find existing direct chat (read-only)
+- `dm_get_or_create_direct_conversation(user1_id, user2_id, org_id?)` - **Canonical atomic** find-or-create for a 1:1 DM. Advisory-locks the unordered pair so concurrent callers (two tabs / double-click / batched system notifications) can't mint duplicate conversations — the old client-side `find_dm` → insert-conversation → insert-participants raced and silently did. All 4 DM find-or-create callsites route through this (browser + service-role). SECURITY DEFINER; guards that an `authenticated` caller can only pass themselves as user1. `2026-07-04`.
 
 ### Real-time Architecture
 

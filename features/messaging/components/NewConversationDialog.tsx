@@ -86,54 +86,24 @@ export function NewConversationDialog({
     async (participantId: string): Promise<string> => {
       if (!currentUserId) throw new Error("User not authenticated");
 
-      // First check if conversation already exists
-      const { data: existingConv } = await supabase.rpc(
-        "find_dm_direct_conversation",
+      // ONE canonical, ATOMIC get-or-create RPC — an advisory lock on the pair
+      // serializes concurrent callers so double-click / two tabs / a concurrent
+      // "Message" button elsewhere can't mint duplicate conversations (the old
+      // find(RPC)-then-insert here raced, AND took no lock, so it could even
+      // interleave with a locked RPC call from another surface). Realtime in
+      // MessagingInitializer handles the Redux update.
+      const organizationId = await ensureOrgId(undefined);
+      const { data, error: rpcError } = await supabase.rpc(
+        "dm_get_or_create_direct_conversation",
         {
           p_user1_id: currentUserId,
           p_user2_id: participantId,
+          p_organization_id: organizationId,
         },
       );
-
-      if (existingConv) {
-        return existingConv;
-      }
-
-      // Create new conversation
-      const organizationId = await ensureOrgId(undefined);
-      const { data: newConv, error: createError } = await supabase
-        .schema("communication").from("dm_conversations")
-        .insert({
-          type: "direct",
-          created_by: currentUserId,
-          organization_id: organizationId,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      // Add both participants - this triggers realtime subscription in MessagingInitializer
-      const { error: participantError } = await supabase
-        .schema("communication").from("dm_conversation_participants")
-        .insert([
-          {
-            conversation_id: newConv.id,
-            user_id: currentUserId,
-            role: "owner",
-            organization_id: organizationId,
-          },
-          {
-            conversation_id: newConv.id,
-            user_id: participantId,
-            role: "member",
-            organization_id: organizationId,
-          },
-        ]);
-
-      if (participantError) throw participantError;
-
-      return newConv.id;
+      if (rpcError) throw rpcError;
+      if (!data) throw new Error("Failed to resolve direct conversation");
+      return data as string;
     },
     [currentUserId, supabase],
   );

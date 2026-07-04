@@ -754,63 +754,31 @@ export function useConversations(
     };
   }, [userId, supabase, loadConversations]);
 
-  // Create or find existing conversation
+  // Create or find existing conversation — via the ONE canonical, ATOMIC
+  // get-or-create RPC. An advisory lock on the pair serializes concurrent
+  // callers, so two tabs / a double-click can't mint duplicate DM conversations
+  // (the old select(RPC)-then-insert raced and silently did).
   const createConversation = useCallback(
     async (participantId: string): Promise<string> => {
       if (!userId) throw new Error("User not authenticated");
 
-      // First check if conversation already exists
-      const { data: existingConv } = await supabase.rpc(
-        "find_dm_direct_conversation",
+      const organizationId = await ensureOrgId(undefined);
+      const { data, error: rpcError } = await supabase.rpc(
+        "dm_get_or_create_direct_conversation",
         {
           p_user1_id: userId,
           p_user2_id: participantId,
+          p_organization_id: organizationId,
         },
       );
+      if (rpcError) throw rpcError;
+      if (!data) throw new Error("Failed to resolve direct conversation");
 
-      if (existingConv) {
-        return existingConv;
-      }
-
-      const organizationId = await ensureOrgId(undefined);
-
-      // Create new conversation
-      const { data: newConv, error: createError } = await supabase
-        .schema("communication").from("dm_conversations")
-        .insert({
-          type: "direct",
-          created_by: userId,
-          organization_id: organizationId,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      // Add both participants (same org as the conversation)
-      const { error: participantError } = await supabase
-        .schema("communication").from("dm_conversation_participants")
-        .insert([
-          {
-            conversation_id: newConv.id,
-            user_id: userId,
-            role: "owner",
-            organization_id: organizationId,
-          },
-          {
-            conversation_id: newConv.id,
-            user_id: participantId,
-            role: "member",
-            organization_id: organizationId,
-          },
-        ]);
-
-      if (participantError) throw participantError;
-
-      // Refresh conversations list
+      // Refresh conversations list (a create won't arrive via realtime for the
+      // initiator until the first message, so pull it in now).
       await loadConversations();
 
-      return newConv.id;
+      return data as string;
     },
     [userId, loadConversations],
   ); // supabase is a stable ref
