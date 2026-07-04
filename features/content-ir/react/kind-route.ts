@@ -13,6 +13,8 @@
  * while streaming (the accumulator refreshes the envelope every flush).
  */
 
+import { envelopeFromCompleteValue } from "../core/normalize";
+import { readObjectKind } from "../core/kind-schema.types";
 import { kindRegistry } from "../registry/kind-registry";
 import { readEnvelope } from "../redux/render-block-envelope";
 
@@ -44,4 +46,32 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
     type: def.legacyBlockType,
     ...(serverData ? { serverData } : {}),
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Rehydration route for STRUCTURED persisted artifacts (Track 2B).
+ *
+ * A materialized kind artifact stores its zero-loss value object (carrying
+ * `__kind`) as `canvas_items.content.data`. Given that stored value, derive
+ * the registered kind's legacy `serverData` WITHOUT re-parsing any text: the
+ * value wraps into a complete envelope and runs through the same
+ * `toLegacyServerData` bridge the live stream uses. Returns null for
+ * non-objects, unregistered kinds, or kinds without a legacy bridge — callers
+ * fall back to the string-payload path (which legacy rows keep forever).
+ */
+export function kindServerDataFromStoredValue(
+  value: unknown,
+): Record<string, unknown> | null {
+  if (!isRecord(value)) return null;
+  const kind = readObjectKind(value);
+  if (!kind) return null;
+
+  const def = kindRegistry.getDefinition(kind);
+  if (!def?.toLegacyServerData) return null;
+
+  return def.toLegacyServerData(envelopeFromCompleteValue(value, kind)) ?? null;
 }

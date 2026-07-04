@@ -42,10 +42,18 @@ export interface ArtifactTypeDef {
   persistenceStrategy?: ArtifactPersistenceStrategy;
   /** Adapter key into the persistence-adapter registry (Wave C/D). */
   adapter?: string;
+  /**
+   * content-ir kind slugs that materialize AS this type (facade → the kind
+   * registry's `artifact: { canvasType }` facet, from the other direction).
+   * A detected JSON region whose resolved `__kind` is listed here persists
+   * STRUCTURED: `canvas_items.content.data` holds the zero-loss value object
+   * instead of a string — see `planMaterialization` + `resolveArtifactDefByKind`.
+   */
+  kinds?: string[];
 }
 
 export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
-  { canvasType: "flashcards", aliases: ["flashcards"], standaloneAliases: ["flashcards"], materializable: true, persistenceStrategy: "custom", adapter: "flashcards" },
+  { canvasType: "flashcards", aliases: ["flashcards"], standaloneAliases: ["flashcards"], materializable: true, persistenceStrategy: "custom", adapter: "flashcards", kinds: ["flashcard_set"] },
   { canvasType: "quiz", aliases: ["quiz"], standaloneAliases: ["quiz"], materializable: true, persistenceStrategy: "custom", adapter: "quiz" },
   { canvasType: "presentation", aliases: ["presentation"], standaloneAliases: ["presentation"], materializable: true },
   { canvasType: "timeline", aliases: ["timeline"], standaloneAliases: ["timeline"], materializable: true },
@@ -101,10 +109,12 @@ export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
 const BY_CANVAS_TYPE = new Map<string, ArtifactTypeDef>();
 const BY_ALIAS = new Map<string, ArtifactTypeDef>(); // artifact-mode (any alias)
 const BY_STANDALONE_ALIAS = new Map<string, ArtifactTypeDef>(); // standalone only
+const BY_KIND = new Map<string, ArtifactTypeDef>(); // content-ir kind slugs
 for (const def of ARTIFACT_TYPE_DEFS) {
   BY_CANVAS_TYPE.set(def.canvasType, def);
   for (const alias of def.aliases) BY_ALIAS.set(alias, def);
   for (const alias of def.standaloneAliases) BY_STANDALONE_ALIAS.set(alias, def);
+  for (const kind of def.kinds ?? []) BY_KIND.set(kind, def);
 }
 
 /** Look up a def by its canonical canvas type. */
@@ -127,6 +137,16 @@ export function resolveArtifactDef(
     return BY_ALIAS.get(artifactType) ?? BY_CANVAS_TYPE.get("html") ?? null;
   }
   return BY_STANDALONE_ALIAS.get(blockType) ?? null;
+}
+
+/**
+ * Resolve the def a content-ir KIND materializes as, or null when the kind is
+ * unregistered here. The kind-slug counterpart to `resolveArtifactDef` —
+ * this is how a detected JSON region carrying `__kind` (e.g. `flashcard_set`)
+ * finds its artifact type without any fence/tag/root-key heuristic.
+ */
+export function resolveArtifactDefByKind(kind: string): ArtifactTypeDef | null {
+  return BY_KIND.get(kind) ?? null;
 }
 
 /** Canonical canvas type a block materializes as, or null. */

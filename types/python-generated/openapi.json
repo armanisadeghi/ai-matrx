@@ -10915,6 +10915,49 @@
         }
       }
     },
+    "/admin/runtime/executions/{execution_id}/events": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "Execution Events",
+        "description": "The append-only event log for one execution — lifecycle transitions plus consumer\n`NOTE`s (e.g. the `prep_timing` snapshot attached on /v2). This is the read path for\n`ExecutionEngine.record_note`.",
+        "operationId": "execution_events_admin_runtime_executions__execution_id__events_get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionEventsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-service/agents": {
       "get": {
         "tags": [
@@ -25242,14 +25285,58 @@
           "Agents"
         ],
         "summary": "List Agents For User",
-        "description": "Return all agents available to the authenticated user.",
+        "description": "Return the agents available to the authenticated user (owned + public).",
         "operationId": "list_agents_for_user_agents_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional search over name / description / tags / category.",
+              "title": "Q"
+            },
+            "description": "Optional search over name / description / tags / category."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AgentListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -39072,6 +39159,75 @@
         ],
         "title": "AgentDetail",
         "description": "Everything a caller needs to invoke an agent correctly."
+      },
+      "AgentListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "agent"
+          },
+          "variables": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Variables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "AgentListItem"
+      },
+      "AgentListResponse": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentListItem"
+            },
+            "type": "array",
+            "title": "Agents"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agents",
+          "count"
+        ],
+        "title": "AgentListResponse"
       },
       "AgentPinUpgradeApplied": {
         "properties": {
@@ -54752,6 +54908,96 @@
         ],
         "title": "ExecutionError",
         "description": "Structured error captured on a non-success terminal transition. Mirrors the\nrepo's `describe_db_exception` shape — never a bare string in a status column."
+      },
+      "ExecutionEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ExecutionEventKind"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "execution_id",
+          "kind"
+        ],
+        "title": "ExecutionEvent",
+        "description": "One append-only lifecycle-log row."
+      },
+      "ExecutionEventKind": {
+        "type": "string",
+        "enum": [
+          "created",
+          "started",
+          "paused",
+          "resumed",
+          "waiting_input",
+          "completed",
+          "failed",
+          "cancelled",
+          "checkpoint_saved",
+          "note"
+        ],
+        "title": "ExecutionEventKind",
+        "description": "Append-only lifecycle-log entries (one per transition + checkpoints)."
+      },
+      "ExecutionEventsResponse": {
+        "properties": {
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutionEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "execution_id",
+          "event_count",
+          "events"
+        ],
+        "title": "ExecutionEventsResponse"
       },
       "ExecutionStatus": {
         "type": "string",

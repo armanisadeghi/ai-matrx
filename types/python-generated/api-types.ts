@@ -4283,6 +4283,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/runtime/executions/{execution_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Execution Events
+         * @description The append-only event log for one execution — lifecycle transitions plus consumer
+         *     `NOTE`s (e.g. the `prep_timing` snapshot attached on /v2). This is the read path for
+         *     `ExecutionEngine.record_note`.
+         */
+        get: operations["execution_events_admin_runtime_executions__execution_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-service/agents": {
         parameters: {
             query?: never;
@@ -9383,7 +9405,7 @@ export interface paths {
         };
         /**
          * List Agents For User
-         * @description Return all agents available to the authenticated user.
+         * @description Return the agents available to the authenticated user (owned + public).
          */
         get: operations["list_agents_for_user_agents_get"];
         put?: never;
@@ -13916,6 +13938,44 @@ export interface components {
             skill_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /** AgentListItem */
+        AgentListItem: {
+            /** Id */
+            id: string;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Category
+             * @default
+             */
+            category: string;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Type
+             * @default agent
+             */
+            type: string;
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** AgentListResponse */
+        AgentListResponse: {
+            /** Agents */
+            agents: components["schemas"]["AgentListItem"][];
+            /** Count */
+            count: number;
         };
         /** AgentPinUpgradeApplied */
         AgentPinUpgradeApplied: {
@@ -19532,6 +19592,38 @@ export interface components {
             status_code?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * ExecutionEvent
+         * @description One append-only lifecycle-log row.
+         */
+        ExecutionEvent: {
+            /** Id */
+            id: string;
+            /** Execution Id */
+            execution_id: string;
+            kind: components["schemas"]["ExecutionEventKind"];
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /**
+         * ExecutionEventKind
+         * @description Append-only lifecycle-log entries (one per transition + checkpoints).
+         * @enum {string}
+         */
+        ExecutionEventKind: "created" | "started" | "paused" | "resumed" | "waiting_input" | "completed" | "failed" | "cancelled" | "checkpoint_saved" | "note";
+        /** ExecutionEventsResponse */
+        ExecutionEventsResponse: {
+            /** Execution Id */
+            execution_id: string;
+            /** Event Count */
+            event_count: number;
+            /** Events */
+            events: components["schemas"]["ExecutionEvent"][];
         };
         /**
          * ExecutionStatus
@@ -38880,6 +38972,37 @@ export interface operations {
             };
         };
     };
+    execution_events_admin_runtime_executions__execution_id__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecutionEventsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_agents_agent_service_agents_get: {
         parameters: {
             query?: {
@@ -48164,7 +48287,11 @@ export interface operations {
     };
     list_agents_for_user_agents_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Optional search over name / description / tags / category. */
+                q?: string | null;
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -48177,7 +48304,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AgentListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
