@@ -1,20 +1,75 @@
+/**
+ * KindStreamParser — the streaming, schema-validating, __kind-discriminated
+ * JSON parser at the heart of content-ir.
+ *
+ * Frame-stack pushdown parser over JsonStreamTokenizer tokens. Every value is
+ * path-addressed; every object resolves a kind against the schema registry;
+ * schema-shaped `block_snapshot` events fire on field arrival so renderers
+ * get live partials; unknown/invalid structures degrade to `raw_object`
+ * instead of failing the stream.
+ *
+ * The pushdown discipline (commit → descend → never re-ask → backtrack):
+ * - SPECULATIVE DESCENT: when a parent field schema predicts a child's kind
+ *   ({type:"object", kind} or {type:"array", itemKinds:[K]} with one member),
+ *   the child commits to that kind THE INSTANT `{` opens and renders a
+ *   placeholder snapshot. `__kind` arrival confirms (no-op), re-tags (allowed
+ *   sibling kind), or backtracks to raw (contradiction). An object under a
+ *   predicting parent doesn't even need `__kind` — prediction alone types it.
+ * - PENDING SCHEMA: an identified kind whose schema isn't loaded holds the
+ *   node open (`pending_schema` event, fields keep accumulating), fires the
+ *   resolver's cold fetch, and upgrades in place via `notifySchemaArrived` —
+ *   even after the node (or the whole region) has closed.
+ * - POP-UP-ONE-LEVEL: node-scoped problems (duplicate key, schema violation,
+ *   disallowed itemKind) mark THAT node raw and keep parsing the parent.
+ *   Only grammar/tokenizer errors are region-fatal — and the host degrades
+ *   the region to a plain code block, never the stream.
+ */
+
+import { JsonStreamTokenizer, type JsonToken } from "./json-tokenizer";
+import type { IrPath, IrResidue } from "./ir-types";
 import {
-  Frame,
-  JsonPath,
-  JsonStreamTokenizer,
-  JsonToken,
-  ObjectFrame,
-} from "./reusable-logic";
-import {
-  ArrayItemScalarType,
-  FieldSchema,
   KIND_KEY,
-  KindSchema,
-  buildCompliantKindSnapshot,
   isScalarArrayType,
   readObjectKind,
   scalarArrayItemType,
-} from "./kind-schemas";
+  type ArrayItemScalarType,
+  type FieldSchema,
+  type KindSchema,
+} from "./kind-schema.types";
+import { buildCompliantKindSnapshot } from "./kind-snapshot";
+
+/** Kept as the historical name for the parser's event paths. */
+export type JsonPath = IrPath;
+
+/**
+ * Schema source abstraction. A plain Record works for static sets; the
+ * registry supplies a resolver whose `request` fires a cold fetch and later
+ * calls `parser.notifySchemaArrived`.
+ */
+export interface SchemaResolver {
+  get(kind: string): KindSchema | undefined;
+  /** Fire-and-forget cold fetch. Absent = static source, unknown kinds go raw. */
+  request?(kind: string): void;
+}
+
+type ObjectFrame = {
+  kind: "object";
+  path: JsonPath;
+  value: Record<string, unknown>;
+  expecting: "keyOrEnd" | "key" | "colon" | "value" | "commaOrEnd";
+  currentKey?: string;
+  keyCount: number;
+};
+
+type ArrayFrame = {
+  kind: "array";
+  path: JsonPath;
+  value: unknown[];
+  expecting: "valueOrEnd" | "value" | "commaOrEnd";
+  nextIndex: number;
+};
+
+type Frame = ObjectFrame | ArrayFrame;
 
 type SchemaValidationOutcome = {
   error: string | null;
@@ -23,7 +78,14 @@ type SchemaValidationOutcome = {
 };
 
 export type KindStreamEvent =
-  | { type: "kind_identified"; kind: string; path: JsonPath; at: number }
+  | {
+      type: "kind_identified";
+      kind: string;
+      path: JsonPath;
+      /** True when committed from the parent schema before __kind arrived. */
+      speculative?: boolean;
+      at: number;
+    }
   | { type: "pending_kind"; path: JsonPath; at: number }
   | {
       type: "kind_wait_end";
@@ -31,6 +93,12 @@ export type KindStreamEvent =
       outcome: "identified" | "raw_fallback";
       kind?: string;
       reason?: string;
+      at: number;
+    }
+  | {
+      type: "pending_schema";
+      kind: string;
+      path: JsonPath;
       at: number;
     }
   | {
@@ -75,6 +143,7 @@ export type KindStreamEvent =
       kind: string;
       path: JsonPath;
       value: Record<string, unknown>;
+      residue: IrResidue | null;
       complete: boolean;
       at: number;
     }
@@ -84,11 +153,31 @@ export type KindStreamEvent =
 
 export type KindStreamParserOptions = {
   onEvent: (event: KindStreamEvent) => void;
-  schemas: Record<string, KindSchema>;
+  schemas: Record<string, KindSchema> | SchemaResolver;
+  /**
+   * Known-context root prediction (e.g. "this agent's output schema is
+   * flashcard_set"). The root commits speculatively at `{` open — the Option-1
+   * provenance path for agents whose schemas don't carry __kind yet.
+   */
+  expectedRootKind?: string;
 };
 
+function isSchemaResolver(
+  source: Record<string, KindSchema> | SchemaResolver,
+): source is SchemaResolver {
+  return typeof (source as SchemaResolver).get === "function";
+}
+
+function safeCopy<T>(value: T): T {
+  try {
+    return structuredClone(value);
+  } catch {
+    return value;
+  }
+}
+
 export class KindStreamParser {
-  private readonly schemas: Record<string, KindSchema>;
+  private readonly resolver: SchemaResolver;
   private readonly stack: Frame[] = [];
   private readonly objectKinds = new Map<string, string>();
   private readonly inlineSchemas = new Map<
@@ -102,6 +191,14 @@ export class KindStreamParser {
     Array<{ key: string; value: unknown; at: number }>
   >();
   private readonly awaitingKindPaths = new Set<string>();
+  /** Paths whose kind came from parent-schema prediction, unconfirmed so far. */
+  private readonly speculativeKinds = new Set<string>();
+  /** kind → paths (by key) waiting for the resolver's cold fetch. */
+  private readonly pendingSchemaPaths = new Map<string, Map<string, JsonPath>>();
+  /** Pending-schema paths whose object already closed. */
+  private readonly closedPendingPaths = new Set<string>();
+  /** Schemas delivered via notifySchemaArrived (overlay over the resolver). */
+  private readonly arrivedSchemas = new Map<string, KindSchema>();
 
   private tokenizer: JsonStreamTokenizer;
   private root: unknown;
@@ -110,7 +207,12 @@ export class KindStreamParser {
   private failed = false;
 
   constructor(private readonly options: KindStreamParserOptions) {
-    this.schemas = options.schemas;
+    this.resolver = isSchemaResolver(options.schemas)
+      ? options.schemas
+      : {
+          get: (kind: string) =>
+            (options.schemas as Record<string, KindSchema>)[kind],
+        };
 
     this.tokenizer = new JsonStreamTokenizer((token) =>
       this.handleToken(token),
@@ -143,11 +245,93 @@ export class KindStreamParser {
       return;
     }
 
+    // The region is over: pending-schema nodes whose cold fetch hasn't
+    // answered fall back to raw NOW. This keeps the end-of-region envelope
+    // deterministic and byte-identical to the static (no-request) path;
+    // upgrade-in-place remains a live-region feature. The data is preserved
+    // verbatim on the raw node — zero loss.
+    this.resolvePendingSchemasAsRaw();
+
     if (!this.rootDone) {
       this.fail(
         "Stream ended before the root JSON object was complete.",
         this.tokenizer.position,
       );
+    }
+  }
+
+  private resolvePendingSchemasAsRaw(): void {
+    const at = this.tokenizer.position;
+    for (const [kind, paths] of [...this.pendingSchemaPaths]) {
+      this.pendingSchemaPaths.delete(kind);
+      for (const [pathKey, path] of paths) {
+        this.closedPendingPaths.delete(pathKey);
+        if (this.rawObjectPaths.has(pathKey)) continue;
+        const value =
+          this.getLiveObjectValue(path) ??
+          this.getFinalizedObjectValue(path) ??
+          {};
+        this.emitRawObject(
+          path,
+          safeCopy(value),
+          `No block schema registered for "${kind}".`,
+          at,
+        );
+      }
+    }
+  }
+
+  /** True once the root value has closed — the region is fully consumed. */
+  get isComplete(): boolean {
+    return this.rootDone;
+  }
+
+  get hasFailed(): boolean {
+    return this.failed;
+  }
+
+  /**
+   * Upgrade-in-place: the registry's cold fetch answered. Pending nodes for
+   * this kind validate and complete (closed nodes retroactively); a null
+   * schema (fetch miss) drops them to raw. Safe to call after end().
+   */
+  notifySchemaArrived(kind: string, schema: KindSchema | null): void {
+    const waiting = this.pendingSchemaPaths.get(kind);
+    if (!waiting) return;
+    this.pendingSchemaPaths.delete(kind);
+
+    if (schema) {
+      this.arrivedSchemas.set(kind, schema);
+    }
+
+    const at = this.tokenizer.position;
+
+    for (const [pathKey, path] of waiting) {
+      if (this.rawObjectPaths.has(pathKey)) continue;
+
+      const value =
+        this.getLiveObjectValue(path) ?? this.getFinalizedObjectValue(path);
+
+      if (!schema) {
+        this.emitRawObject(
+          path,
+          safeCopy(value ?? {}),
+          `No block schema registered for "${kind}".`,
+          at,
+        );
+        this.closedPendingPaths.delete(pathKey);
+        continue;
+      }
+
+      if (this.closedPendingPaths.has(pathKey)) {
+        this.closedPendingPaths.delete(pathKey);
+        if (value) {
+          this.finalizeTypedObject(path, value, at);
+        }
+      } else {
+        // Still streaming — emit the schema-shaped snapshot it was owed.
+        this.emitBlockSnapshotForObject(path, at);
+      }
     }
   }
 
@@ -220,13 +404,7 @@ export class KindStreamParser {
       this.emit({ type: "object_start", path, at });
       this.registerObjectContext(path);
       const pathKey = this.pathKey(path);
-      if (
-        !this.inlineSchemas.has(pathKey) &&
-        !this.recordSchemas.has(pathKey)
-      ) {
-        this.awaitingKindPaths.add(pathKey);
-        this.emit({ type: "pending_kind", path, at });
-      }
+
       this.stack.push({
         kind: "object",
         path,
@@ -234,6 +412,32 @@ export class KindStreamParser {
         expecting: "keyOrEnd",
         keyCount: 0,
       });
+
+      if (this.inlineSchemas.has(pathKey) || this.recordSchemas.has(pathKey)) {
+        return;
+      }
+
+      // SPECULATIVE DESCENT: commit the predicted kind the instant `{` opens.
+      const speculated = this.resolveSpeculativeKind(path);
+      if (speculated) {
+        this.objectKinds.set(pathKey, speculated);
+        this.speculativeKinds.add(pathKey);
+        if (path.length === 0) {
+          this.rootKind = speculated;
+        }
+        this.emit({
+          type: "kind_identified",
+          kind: speculated,
+          path,
+          speculative: true,
+          at,
+        });
+        this.emitBlockSnapshotForObject(path, at);
+        return;
+      }
+
+      this.awaitingKindPaths.add(pathKey);
+      this.emit({ type: "pending_kind", path, at });
       return;
     }
 
@@ -249,6 +453,50 @@ export class KindStreamParser {
       expecting: "valueOrEnd",
       nextIndex: 0,
     });
+  }
+
+  /**
+   * Prediction from the parent schema: object field → declared kind; array
+   * item → sole itemKind; root → expectedRootKind. Only when the schema is
+   * actually resolvable (a prediction we can't validate against is not a
+   * commitment worth making).
+   */
+  private resolveSpeculativeKind(path: JsonPath): string | null {
+    if (path.length === 0) {
+      const expected = this.options.expectedRootKind;
+      return expected && this.lookupSchema(expected) ? expected : null;
+    }
+
+    const last = path[path.length - 1];
+
+    if (typeof last === "string") {
+      const fieldSchema = this.resolveParentFieldSchema(path);
+      if (
+        fieldSchema?.type === "object" &&
+        this.lookupSchema(fieldSchema.kind)
+      ) {
+        return fieldSchema.kind;
+      }
+      return null;
+    }
+
+    // Array item: owner object → field schema → single-member itemKinds.
+    const fieldName = this.parentFieldName(path);
+    if (!fieldName) return null;
+
+    const ownerPath = path.slice(0, -2);
+    const ownerKind = this.getObjectKindForPath(ownerPath);
+    if (!ownerKind) return null;
+
+    const fieldSchema = this.lookupSchema(ownerKind)?.fields[fieldName];
+    if (
+      fieldSchema?.type === "array" &&
+      fieldSchema.itemKinds.length === 1 &&
+      this.lookupSchema(fieldSchema.itemKinds[0])
+    ) {
+      return fieldSchema.itemKinds[0];
+    }
+    return null;
   }
 
   private beginScalar(value: unknown, at: number): void {
@@ -295,16 +543,15 @@ export class KindStreamParser {
       fieldKey = parent.currentKey;
       path = [...parent.path, fieldKey];
 
+      // Node-scoped validation failure → mark the PARENT raw, keep parsing.
       const placementError = this.validateFieldPlacement(
         parent,
         fieldKey,
         valueKind,
         value,
-        at,
       );
       if (placementError) {
-        this.fail(placementError, at);
-        return null;
+        this.markNodeRaw(parent.path, parent.value, placementError, at);
       }
 
       parent.value[fieldKey] = value;
@@ -322,18 +569,6 @@ export class KindStreamParser {
       const index = parent.nextIndex;
       path = [...parent.path, index];
       fieldKey = this.parentFieldName(path);
-
-      const placementError = this.validateArrayItemPlacement(
-        parent,
-        fieldKey,
-        valueKind,
-        value,
-        at,
-      );
-      if (placementError) {
-        this.fail(placementError, at);
-        return null;
-      }
 
       parent.value.push(value);
       parent.nextIndex += 1;
@@ -354,24 +589,13 @@ export class KindStreamParser {
     }
 
     if (Object.prototype.hasOwnProperty.call(frame.value, key)) {
-      this.fail(`Duplicate key "${key}" is not allowed.`, at);
-      return;
-    }
-
-    const inlineFields = this.inlineSchemas.get(this.pathKey(frame.path));
-    if (inlineFields) {
-      frame.currentKey = key;
-      frame.keyCount += 1;
-      frame.expecting = "colon";
-      return;
-    }
-
-    const recordValueType = this.recordSchemas.get(this.pathKey(frame.path));
-    if (recordValueType) {
-      frame.currentKey = key;
-      frame.keyCount += 1;
-      frame.expecting = "colon";
-      return;
+      // Node-scoped: this object goes raw (last-wins semantics), parent lives.
+      this.markNodeRaw(
+        frame.path,
+        frame.value,
+        `Duplicate key "${key}".`,
+        at,
+      );
     }
 
     frame.currentKey = key;
@@ -443,25 +667,7 @@ export class KindStreamParser {
         return;
       }
 
-      const objectPath = path.slice(0, -1);
-      const objectPathKey = this.pathKey(objectPath);
-      this.objectKinds.set(objectPathKey, value);
-
-      this.emit({
-        type: "kind_identified",
-        kind: value,
-        path: objectPath,
-        at,
-      });
-
-      this.clearKindWait(objectPath, "identified", at, value);
-
-      if (objectPath.length === 0) {
-        this.rootKind = value;
-      }
-
-      this.flushDeferredFields(objectPath, value, at);
-      this.emitBlockSnapshotForObject(objectPath, at);
+      this.onKindDiscriminatorArrived(path.slice(0, -1), value, at);
       return;
     }
 
@@ -519,7 +725,161 @@ export class KindStreamParser {
     }
   }
 
+  /** __kind arrived for an object — confirm speculation, identify, or backtrack. */
+  private onKindDiscriminatorArrived(
+    objectPath: JsonPath,
+    kind: string,
+    at: number,
+  ): void {
+    const objectPathKey = this.pathKey(objectPath);
+
+    if (this.rawObjectPaths.has(objectPathKey)) return;
+
+    const prior = this.objectKinds.get(objectPathKey);
+    const wasSpeculative = this.speculativeKinds.has(objectPathKey);
+
+    if (prior !== undefined && wasSpeculative) {
+      this.speculativeKinds.delete(objectPathKey);
+
+      if (prior === kind) {
+        // Confirmation — the commitment was right; nothing to redo.
+        this.emitBlockSnapshotForObject(objectPath, at);
+        return;
+      }
+
+      // Contradiction. Allowed sibling kind (multi-member itemKinds) → re-tag.
+      if (
+        this.lookupSchema(kind) &&
+        this.validateArrayItemKind(objectPath, kind) === null &&
+        this.speculativeRetagAllowed(objectPath, kind)
+      ) {
+        this.objectKinds.set(objectPathKey, kind);
+        if (objectPath.length === 0) {
+          this.rootKind = kind;
+        }
+        this.emit({ type: "kind_identified", kind, path: objectPath, at });
+        this.emitBlockSnapshotForObject(objectPath, at);
+        return;
+      }
+
+      // Backtrack: the prediction was wrong and the truth doesn't fit here.
+      const live = this.getLiveObjectValue(objectPath);
+      this.objectKinds.delete(objectPathKey);
+      if (objectPath.length === 0) {
+        this.rootKind = "";
+      }
+      this.emitRawObject(
+        objectPath,
+        safeCopy(live ?? {}),
+        `Speculated kind "${prior}" contradicted by ${KIND_KEY} "${kind}".`,
+        at,
+      );
+      return;
+    }
+
+    this.objectKinds.set(objectPathKey, kind);
+
+    this.emit({
+      type: "kind_identified",
+      kind,
+      path: objectPath,
+      at,
+    });
+
+    this.clearKindWait(objectPath, "identified", at, kind);
+
+    if (objectPath.length === 0) {
+      this.rootKind = kind;
+    }
+
+    // PENDING SCHEMA: kind known, schema cold — hold and fetch.
+    if (!this.lookupSchema(kind) && this.resolver.request) {
+      this.addPendingSchemaPath(kind, objectPath);
+      this.emit({ type: "pending_schema", kind, path: objectPath, at });
+      this.resolver.request(kind);
+      return;
+    }
+
+    this.flushDeferredFields(objectPath, kind, at);
+    this.emitBlockSnapshotForObject(objectPath, at);
+  }
+
+  /** A contradicted speculation may re-tag only where the new kind is legal. */
+  private speculativeRetagAllowed(path: JsonPath, kind: string): boolean {
+    if (path.length === 0) {
+      // Root prediction came from external context; any registered kind is a
+      // legal correction.
+      return true;
+    }
+
+    const last = path[path.length - 1];
+    if (typeof last === "number") {
+      const fieldName = this.parentFieldName(path);
+      const ownerKind = this.getObjectKindForPath(path.slice(0, -2));
+      if (!fieldName || !ownerKind) return false;
+      const fieldSchema = this.lookupSchema(ownerKind)?.fields[fieldName];
+      return (
+        fieldSchema?.type === "array" && fieldSchema.itemKinds.includes(kind)
+      );
+    }
+
+    // Declared object fields pin exactly one kind — a different one is a
+    // contradiction, not a re-tag.
+    return false;
+  }
+
+  private addPendingSchemaPath(kind: string, path: JsonPath): void {
+    const pathKey = this.pathKey(path);
+    const existing = this.pendingSchemaPaths.get(kind) ?? new Map();
+    existing.set(pathKey, path);
+    this.pendingSchemaPaths.set(kind, existing);
+  }
+
   private completeTypedObject(
+    path: JsonPath,
+    objectValue: Record<string, unknown>,
+    at: number,
+  ): void {
+    const pathKey = this.pathKey(path);
+
+    // Already backtracked to raw mid-stream — nothing further to claim.
+    if (this.rawObjectPaths.has(pathKey)) return;
+
+    const declaredKind = readObjectKind(objectValue);
+    const committedKind = this.objectKinds.get(pathKey);
+
+    // Closed while its schema fetch is still in flight — defer finalization.
+    if (
+      committedKind &&
+      this.pendingSchemaPaths.get(committedKind)?.has(pathKey)
+    ) {
+      this.closedPendingPaths.add(pathKey);
+      return;
+    }
+
+    // Speculation that never saw __kind: prediction alone types the object.
+    if (!declaredKind && committedKind && this.speculativeKinds.has(pathKey)) {
+      this.speculativeKinds.delete(pathKey);
+      this.finalizeSpeculatedObject(path, objectValue, committedKind, at);
+      return;
+    }
+
+    if (!declaredKind) {
+      this.emitRawObject(
+        path,
+        objectValue,
+        `Object is missing "${KIND_KEY}".`,
+        at,
+      );
+      return;
+    }
+
+    this.speculativeKinds.delete(pathKey);
+    this.finalizeTypedObject(path, objectValue, at);
+  }
+
+  /** Validate + complete an object whose value carries __kind. */
+  private finalizeTypedObject(
     path: JsonPath,
     objectValue: Record<string, unknown>,
     at: number,
@@ -560,9 +920,47 @@ export class KindStreamParser {
       return;
     }
 
+    this.objectKinds.set(pathKey, kind);
     this.emitSchemaNotices(path, kind, outcome, at);
     this.emitBlockSnapshotForObject(path, at, true);
-    this.objectKinds.set(pathKey, kind);
+    this.emit({
+      type: "object_complete",
+      kind,
+      path,
+      value: objectValue,
+      at,
+    });
+  }
+
+  /** Validate + complete an object typed purely by parent prediction. */
+  private finalizeSpeculatedObject(
+    path: JsonPath,
+    objectValue: Record<string, unknown>,
+    kind: string,
+    at: number,
+  ): void {
+    const schema = this.lookupSchema(kind);
+    if (!schema) {
+      this.emitRawObject(
+        path,
+        objectValue,
+        `No block schema registered for "${kind}".`,
+        at,
+      );
+      return;
+    }
+
+    const outcome = this.validateObjectAgainstSchema(
+      { ...objectValue, [KIND_KEY]: kind },
+      schema,
+    );
+    if (outcome.error) {
+      this.emitRawObject(path, objectValue, outcome.error, at);
+      return;
+    }
+
+    this.emitSchemaNotices(path, kind, outcome, at);
+    this.emitBlockSnapshotForObject(path, at, true);
     this.emit({
       type: "object_complete",
       kind,
@@ -595,6 +993,7 @@ export class KindStreamParser {
 
   private completeRoot(rootObject: Record<string, unknown>, at: number): void {
     const pathKey = this.pathKey([]);
+
     if (this.rawObjectPaths.has(pathKey)) {
       this.emit({
         type: "complete",
@@ -605,38 +1004,42 @@ export class KindStreamParser {
       return;
     }
 
-    const kind = readObjectKind(rootObject);
-    const schema = kind ? this.lookupSchema(kind) : undefined;
-
-    if (!kind) {
-      this.emitRawObject(
-        [],
-        rootObject,
-        `Root object is missing "${KIND_KEY}".`,
+    // Root closed while its schema fetch is in flight — completeTypedObject
+    // already recorded the deferral; report the committed kind.
+    const committedKind = this.objectKinds.get(pathKey);
+    if (
+      committedKind &&
+      this.pendingSchemaPaths.get(committedKind)?.has(pathKey)
+    ) {
+      this.emit({
+        type: "complete",
+        kind: committedKind,
+        value: rootObject,
         at,
-      );
-    } else if (!schema) {
-      this.emitRawObject(
-        [],
-        rootObject,
-        `No block schema registered for "${kind}".`,
-        at,
-      );
-    } else {
-      const outcome = this.validateObjectAgainstSchema(rootObject, schema);
-      if (outcome.error) {
-        this.emitRawObject([], rootObject, outcome.error, at);
-      } else {
-        this.emitSchemaNotices([], kind, outcome, at);
-      }
+      });
+      return;
     }
 
     this.emit({
       type: "complete",
-      kind: kind ?? "",
+      kind: this.objectKinds.get(pathKey) ?? readObjectKind(rootObject) ?? "",
       value: rootObject,
       at,
     });
+  }
+
+  /** Mark a node raw (node-scoped failure) without killing the stream. */
+  private markNodeRaw(
+    path: JsonPath,
+    liveValue: unknown,
+    reason: string,
+    at: number,
+  ): void {
+    const pathKey = this.pathKey(path);
+    if (this.rawObjectPaths.has(pathKey)) return;
+
+    this.speculativeKinds.delete(pathKey);
+    this.emitRawObject(path, safeCopy(liveValue), reason, at);
   }
 
   private emitRawObject(
@@ -762,18 +1165,53 @@ export class KindStreamParser {
     const schema = this.lookupSchema(kind);
     if (!schema) return;
 
-    const partial = this.getLiveObjectValue(objectPath);
+    const partial = complete
+      ? this.getFinalizedObjectValue(objectPath)
+      : this.getLiveObjectValue(objectPath);
     if (!partial) return;
 
-    const value = buildCompliantKindSnapshot(schema, partial);
+    const { value, residue } = buildCompliantKindSnapshot(schema, partial);
     this.emit({
       type: "block_snapshot",
       kind,
       path: objectPath,
       value,
+      residue,
       complete,
       at,
     });
+  }
+
+  /**
+   * On `complete` snapshots (and post-close schema upgrades) the frame has
+   * already been popped — the finalized value lives in the root tree.
+   */
+  private getFinalizedObjectValue(
+    path: JsonPath,
+  ): Record<string, unknown> | null {
+    const live = this.getLiveObjectValue(path);
+    if (live) return live;
+
+    if (path.length === 0) {
+      return typeof this.root === "object" &&
+        this.root !== null &&
+        !Array.isArray(this.root)
+        ? (this.root as Record<string, unknown>)
+        : null;
+    }
+
+    let cursor: unknown = this.root;
+    for (const segment of path) {
+      if (cursor === null || typeof cursor !== "object") return null;
+      cursor = (cursor as Record<string | number, unknown>)[
+        segment as string | number
+      ];
+    }
+    return typeof cursor === "object" &&
+      cursor !== null &&
+      !Array.isArray(cursor)
+      ? (cursor as Record<string, unknown>)
+      : null;
   }
 
   private validateFieldPlacement(
@@ -781,7 +1219,6 @@ export class KindStreamParser {
     fieldKey: string,
     valueKind: "object" | "array" | "scalar",
     value: unknown,
-    _at: number,
   ): string | null {
     const parentPathKey = this.pathKey(parent.path);
     const inlineFields = this.inlineSchemas.get(parentPathKey);
@@ -806,16 +1243,6 @@ export class KindStreamParser {
       return this.validateRecordScalar(recordValueType, value, fieldKey);
     }
 
-    return null;
-  }
-
-  private validateArrayItemPlacement(
-    parent: Frame,
-    fieldKey: string | undefined,
-    valueKind: "object" | "array" | "scalar",
-    value: unknown,
-    _at: number,
-  ): string | null {
     return null;
   }
 
@@ -922,36 +1349,15 @@ export class KindStreamParser {
       if (!Array.isArray(value)) {
         return `Field "${fieldName}" on kind "${objectKind}" must be an array.`;
       }
-
-      for (let i = 0; i < value.length; i++) {
-        const item = value[i];
-        if (typeof item !== "object" || item === null || Array.isArray(item)) {
-          continue;
-        }
-        const itemKind = readObjectKind(item as Record<string, unknown>);
-        if (!itemKind) {
-          continue;
-        }
-        if (!fieldSchema.itemKinds.includes(itemKind)) {
-          continue;
-        }
-        const itemSchema = this.lookupSchema(itemKind);
-        if (!itemSchema) {
-          continue;
-        }
-        const itemOutcome = this.validateObjectAgainstSchema(
-          item as Record<string, unknown>,
-          itemSchema,
-        );
-        if (itemOutcome.error) {
-          continue;
-        }
-      }
       return null;
     }
 
     if (fieldSchema.type === "object") {
-      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+      ) {
         return `Field "${fieldName}" on kind "${objectKind}" must be an object.`;
       }
       const nestedKind = readObjectKind(value as Record<string, unknown>);
@@ -969,7 +1375,11 @@ export class KindStreamParser {
     }
 
     if (fieldSchema.type === "inline_object") {
-      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+      ) {
         return `Field "${fieldName}" on kind "${objectKind}" must be an inline object.`;
       }
       return this.validateObjectAgainstFields(
@@ -979,7 +1389,11 @@ export class KindStreamParser {
     }
 
     if (fieldSchema.type === "record") {
-      if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+      ) {
         return `Field "${fieldName}" on kind "${objectKind}" must be a record object.`;
       }
       return this.validateRecordObject(
@@ -1012,7 +1426,10 @@ export class KindStreamParser {
         ? null
         : `Field "${fieldName}" must be an array.`;
     }
-    if (fieldSchema.type === "object" || fieldSchema.type === "inline_object") {
+    if (
+      fieldSchema.type === "object" ||
+      fieldSchema.type === "inline_object"
+    ) {
       return valueKind === "object"
         ? null
         : `Field "${fieldName}" must be an object.`;
@@ -1063,7 +1480,11 @@ export class KindStreamParser {
       ) {
         return `Field "${fieldName}" must be ${fieldSchema.scalars.join(" | ")}.`;
       }
-      if (!fieldSchema.scalars.includes(valueType)) {
+      if (
+        !fieldSchema.scalars.includes(
+          valueType as "string" | "number" | "boolean",
+        )
+      ) {
         return `Field "${fieldName}" must be ${fieldSchema.scalars.join(" | ")}.`;
       }
       return null;
@@ -1228,7 +1649,7 @@ export class KindStreamParser {
   }
 
   private lookupSchema(kind: string): KindSchema | undefined {
-    return this.schemas[kind];
+    return this.resolver.get(kind) ?? this.arrivedSchemas.get(kind);
   }
 
   private fail(reason: string, at: number): void {
@@ -1245,6 +1666,7 @@ export class KindStreamParser {
     return this.stack[this.stack.length - 1];
   }
 }
+
 export function createKindStreamParser(
   options: KindStreamParserOptions,
 ): KindStreamParser {

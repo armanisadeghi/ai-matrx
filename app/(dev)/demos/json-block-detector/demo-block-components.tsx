@@ -1,9 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { Suspense, type ComponentType } from "react";
+import { Loader2 } from "lucide-react";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
-import { KIND_KEY, type FieldSchema, type KindSchema } from "./kind-schemas";
-import type { KindStreamEvent } from "./kind-stream-parser";
+import {
+  KIND_KEY,
+  type FieldSchema,
+  type KindSchema,
+} from "@/features/content-ir/core/kind-schema.types";
+import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
+import type { IrResidue } from "@/features/content-ir/core/ir-types";
+import type { IrTreeNode } from "@/features/content-ir/core/ir-tree";
+import { useIrNode } from "@/features/content-ir/react/useIrNode";
+import { getParseSession } from "@/features/content-ir/session/session-manager";
 import { GenericBlockRenderer } from "./generic-block-renderer";
 import { eventPathKey } from "./validation-report";
 
@@ -13,6 +22,7 @@ export type LiveBlockSnapshot = {
   kind: string;
   path: JsonPath;
   value: Record<string, unknown>;
+  residue: IrResidue | null;
   complete: boolean;
 };
 
@@ -137,65 +147,44 @@ export function isParserEventSuppressed(
   return suppressedPrefixes.some((prefix) => pathIsUnderOrEqual(path, prefix));
 }
 
-/** One live component per registered block path (incl. flashcard_set inferred from cards). */
-export function collectLiveBlockMounts(
-  events: KindStreamEvent[],
+/**
+ * One live component per registered block path (incl. flashcard_set inferred
+ * from cards). Node-driven: O(nodes), never replays the event log.
+ */
+export function collectLiveBlockMountsFromNodes(
+  nodes: IrTreeNode[],
   registry: Record<string, string>,
   cardKinds: string[],
 ): LiveBlockMount[] {
   const mounts = new Map<string, LiveBlockMount>();
   const order: string[] = [];
 
-  const addMount = (path: JsonPath, kind: string) => {
-    const pathKey = eventPathKey(path);
+  const addMount = (pathKey: string, path: JsonPath, kind: string) => {
     if (mounts.has(pathKey)) return;
     mounts.set(pathKey, { pathKey, path, kind });
     order.push(pathKey);
   };
 
-  for (const event of events) {
-    if (event.type !== "kind_identified") continue;
-    if (!(event.kind in registry)) continue;
+  for (const node of nodes) {
+    if (!(node.kind in registry)) continue;
 
     if (
-      shouldMountRegisteredBlock(event.kind, event.path, registry, cardKinds)
+      shouldMountRegisteredBlock(node.kind, node.path, registry, cardKinds)
     ) {
-      addMount(event.path, event.kind);
+      addMount(node.pathKey, node.path, node.kind);
       continue;
     }
 
     if (
-      cardKinds.includes(event.kind) &&
-      isFlashcardSetChildCardPath(event.path)
+      cardKinds.includes(node.kind) &&
+      isFlashcardSetChildCardPath(node.path)
     ) {
-      addMount(event.path.slice(0, -2), "flashcard_set");
+      const setPath = node.path.slice(0, -2);
+      addMount(eventPathKey(setPath), setPath, "flashcard_set");
     }
   }
 
   return order.map((key) => mounts.get(key)!);
-}
-
-export function buildLiveBlockSnapshots(
-  events: KindStreamEvent[],
-): Map<string, LiveBlockSnapshot> {
-  const snapshots = new Map<string, LiveBlockSnapshot>();
-
-  for (const event of events) {
-    if (event.type === "block_snapshot") {
-      const pathKey = eventPathKey(event.path);
-      snapshots.set(pathKey, {
-        kind: event.kind,
-        path: event.path,
-        value: event.value,
-        complete: event.complete,
-      });
-    }
-    if (event.type === "raw_object") {
-      snapshots.delete(eventPathKey(event.path));
-    }
-  }
-
-  return snapshots;
 }
 
 function pathPrefixMatch(full: JsonPath, prefix: JsonPath): boolean {
@@ -219,7 +208,7 @@ export function cardIndexUnderSet(
 
 const KNOWN_FLASHCARD_SET_KEYS = new Set([
   "cards",
-  "__kind",
+  KIND_KEY,
   "additionalDetails",
 ]);
 
@@ -232,16 +221,9 @@ function isNonEmptyRecord(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function pathsEqual(left: JsonPath, right: JsonPath): boolean {
-  if (left.length !== right.length) return false;
-  for (let i = 0; i < left.length; i++) {
-    if (left[i] !== right[i]) return false;
-  }
-  return true;
-}
-
 function snapshotToFlashcardItem(
   snapshot: Record<string, unknown>,
+  residue: IrResidue | null,
   complete: boolean,
 ): FlashcardsBlockData["cards"][number] & Record<string, unknown> {
   if (typeof snapshot.front !== "string") {
@@ -277,37 +259,40 @@ function snapshotToFlashcardItem(
   }
 
   for (const [key, value] of Object.entries(snapshot)) {
-    if (key === "front" || key === "back" || key === "__kind") continue;
+    if (key === "front" || key === "back" || key === KIND_KEY) continue;
     if (key === "additionalDetails") continue;
+    card[key] = value;
+  }
+
+  // Zero data loss: unknown keys ride the residue channel, not the snapshot.
+  for (const [key, value] of Object.entries(residue?.extra ?? {})) {
+    if (key === "front" || key === "back" || key === "additionalDetails") {
+      continue;
+    }
     card[key] = value;
   }
 
   return card;
 }
 
-/** Set-level extras from latest `flashcard_set` block_snapshot (schema-known + unknown keys). */
-export function flashcardSetAdditionalDetailsFromEvents(
-  events: KindStreamEvent[],
-  setPath: JsonPath,
+/** Set-level extras from the set node (schema-unknown keys ride residue). */
+export function flashcardSetAdditionalDetailsFromNode(
+  node: IrTreeNode | null,
 ): Record<string, unknown> | undefined {
-  let latest: Record<string, unknown> | null = null;
-
-  for (const event of events) {
-    if (event.type !== "block_snapshot") continue;
-    if (event.kind !== "flashcard_set") continue;
-    if (!pathsEqual(event.path, setPath)) continue;
-    latest = event.value;
-  }
-
-  if (!latest) return undefined;
+  if (!node) return undefined;
 
   const merged: Record<string, unknown> = {};
-  const existing = latest.additionalDetails;
+  const existing = node.value.additionalDetails;
   if (isNonEmptyRecord(existing)) {
     Object.assign(merged, existing);
   }
 
-  for (const [key, value] of Object.entries(latest)) {
+  for (const [key, value] of Object.entries(node.value)) {
+    if (KNOWN_FLASHCARD_SET_KEYS.has(key)) continue;
+    merged[key] = value;
+  }
+
+  for (const [key, value] of Object.entries(node.residue?.extra ?? {})) {
     if (KNOWN_FLASHCARD_SET_KEYS.has(key)) continue;
     merged[key] = value;
   }
@@ -315,50 +300,32 @@ export function flashcardSetAdditionalDetailsFromEvents(
   return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
-/** Live card list from `block_snapshot` events — not `object_complete`. */
-export function flashcardServerDataFromEvents(
-  events: KindStreamEvent[],
+/** Live card list from tree nodes — O(nodes), raw cards already pruned. */
+export function flashcardServerDataFromNodes(
+  nodes: IrTreeNode[],
   setPath: JsonPath,
   isRunning: boolean,
   cardKinds: string[],
+  regionStatus: "streaming" | "complete" | "error",
 ): FlashcardsBlockData {
-  const byIndex = new Map<
-    number,
-    { value: Record<string, unknown>; complete: boolean }
-  >();
-  const revoked = new Set<number>();
+  const indexed: Array<{ index: number; node: IrTreeNode }> = [];
 
-  for (const event of events) {
-    if (event.type === "raw_object") {
-      const cardIndex = cardIndexUnderSet(event.path, setPath);
-      if (cardIndex !== null) {
-        revoked.add(cardIndex);
-        byIndex.delete(cardIndex);
-      }
-      continue;
-    }
-
-    if (event.type !== "block_snapshot") continue;
-    if (!cardKinds.includes(event.kind)) continue;
-
-    const cardIndex = cardIndexUnderSet(event.path, setPath);
-    if (cardIndex === null || revoked.has(cardIndex)) continue;
-
-    byIndex.set(cardIndex, {
-      value: event.value,
-      complete: event.complete,
-    });
+  for (const node of nodes) {
+    if (!cardKinds.includes(node.kind)) continue;
+    const cardIndex = cardIndexUnderSet(node.path, setPath);
+    if (cardIndex === null) continue;
+    indexed.push({ index: cardIndex, node });
   }
 
-  const cards = [...byIndex.entries()]
-    .sort(([left], [right]) => left - right)
-    .map(([, slot]) => snapshotToFlashcardItem(slot.value, slot.complete));
-
-  const streamComplete = events.some((event) => event.type === "complete");
+  const cards = indexed
+    .sort((left, right) => left.index - right.index)
+    .map(({ node }) =>
+      snapshotToFlashcardItem(node.value, node.residue, node.complete),
+    );
 
   return {
     cards,
-    isComplete: streamComplete && !isRunning,
+    isComplete: regionStatus === "complete" && !isRunning,
   };
 }
 
@@ -461,31 +428,63 @@ export function assertSnapshotForSchema(
   }
 }
 
+export type DemoFlashcardsBlockComponent = ComponentType<{
+  serverData?: FlashcardsBlockData;
+  additionalDetails?: Record<string, unknown>;
+}>;
+
+/**
+ * Session-driven block panel. Subscribes to ITS node only — the COW spine
+ * means any child update (a card's field arriving) bumps this node's
+ * identity, so one subscription covers the whole block. No event replay.
+ */
 export function DemoRegisteredBlockPanel({
   kind,
   path,
-  events,
+  identity,
   isRunning,
   schemas,
   registry,
   cardKinds,
-  flashcardsBlock,
+  FlashcardsBlock,
 }: {
   kind: string;
   path: JsonPath;
-  events: KindStreamEvent[];
+  identity: string | null;
   isRunning: boolean;
   schemas: Record<string, KindSchema>;
   registry: Record<string, string>;
   cardKinds: string[];
-  flashcardsBlock: ReactNode;
+  FlashcardsBlock: DemoFlashcardsBlockComponent;
 }) {
-  const snapshots = buildLiveBlockSnapshots(events);
-  const snapshot = snapshots.get(eventPathKey(path));
+  const pathKey = eventPathKey(path);
+  const node = useIrNode(identity, pathKey);
   const componentId = registry[kind];
 
   if (componentId === "flashcards") {
-    return <>{flashcardsBlock}</>;
+    const session = identity ? getParseSession(identity) : null;
+    const serverData = flashcardServerDataFromNodes(
+      session?.listNodes() ?? [],
+      path,
+      isRunning,
+      cardKinds,
+      session?.status ?? "streaming",
+    );
+
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-24 items-center justify-center rounded-lg border border-border bg-muted/30">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <FlashcardsBlock
+          serverData={serverData}
+          additionalDetails={flashcardSetAdditionalDetailsFromNode(node)}
+        />
+      </Suspense>
+    );
   }
 
   const schema = schemas[kind];
@@ -493,7 +492,7 @@ export function DemoRegisteredBlockPanel({
     throw new Error(`No schema loaded for registered kind "${kind}".`);
   }
 
-  if (!snapshot) {
+  if (!node) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/20 px-2 py-3 text-[11px] text-muted-foreground">
         Awaiting first block_snapshot for {kind}…
@@ -504,7 +503,13 @@ export function DemoRegisteredBlockPanel({
   return (
     <GenericBlockRenderer
       schema={schema}
-      snapshot={snapshot}
+      snapshot={{
+        kind: node.kind,
+        path: node.path,
+        value: node.value,
+        residue: node.residue,
+        complete: node.complete,
+      }}
       allSchemas={schemas}
     />
   );

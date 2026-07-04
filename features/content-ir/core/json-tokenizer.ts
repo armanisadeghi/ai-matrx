@@ -1,4 +1,11 @@
-export type JsonPath = Array<string | number>;
+/**
+ * Character-level incremental JSON tokenizer. Survives chunk boundaries
+ * mid-token (strings, escapes, unicode sequences, primitives). Pure — no
+ * React, no Redux, no IO.
+ *
+ * Moved from app/(dev)/demos/json-block-detector/reusable-logic.ts (the demo
+ * is now a consumer of this library).
+ */
 
 export type Punct = "{" | "}" | "[" | "]" | ":" | ",";
 
@@ -8,25 +15,6 @@ export type JsonToken =
   | { type: "number"; value: number; at: number }
   | { type: "boolean"; value: boolean; at: number }
   | { type: "null"; value: null; at: number };
-
-export type ObjectFrame = {
-  kind: "object";
-  path: JsonPath;
-  value: Record<string, unknown>;
-  expecting: "keyOrEnd" | "key" | "colon" | "value" | "commaOrEnd";
-  currentKey?: string;
-  keyCount: number;
-};
-
-export type ArrayFrame = {
-  kind: "array";
-  path: JsonPath;
-  value: unknown[];
-  expecting: "valueOrEnd" | "value" | "commaOrEnd";
-  nextIndex: number;
-};
-
-export type Frame = ObjectFrame | ArrayFrame;
 
 export class JsonStreamTokenizer {
   private mode: "normal" | "string" | "escape" | "unicode" | "primitive" =

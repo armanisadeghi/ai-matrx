@@ -1,4 +1,4 @@
-import type { KindStreamEvent } from "./kind-stream-parser";
+import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
 
 export type ValidationStatus = "idle" | "valid" | "partial" | "failed";
 

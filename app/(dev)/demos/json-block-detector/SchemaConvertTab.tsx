@@ -19,8 +19,8 @@ import {
   createFlexibleData,
   FlexibleDataError,
   type BlockSchemaEntry,
-} from "./flexible-data-service";
-import type { KindSchema } from "./kind-schemas";
+} from "@/features/content-ir/registry/schema-source-flexible-data";
+import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
 import {
   fieldsToDbPayload,
   runSchemaConversion,
@@ -30,7 +30,7 @@ import {
   type FieldComparison,
   type SavePlanEntry,
   type SchemaConversionResult,
-} from "./schema-converter";
+} from "@/features/content-ir/convert/openai-schema-converter";
 
 type PanelId = "input" | "blockSchemas" | "agentSchema";
 

@@ -17,6 +17,14 @@ import type { Config } from "jest";
 const config: Config = {
     preset: "ts-jest",
     testEnvironment: "jsdom",
+    // TypeScript 5.9 (TS5011) demands an explicit compiler rootDir when the
+    // inferred common source directory collapses to a single test folder.
+    // The repo tsconfig only sets rootDir inside its ts-node section, which
+    // ts-jest never reads — without this override EVERY suite fails to
+    // compile before a single test runs.
+    transform: {
+        "^.+\\.tsx?$": ["ts-jest", { tsconfig: { rootDir: "." } }],
+    },
     setupFiles: ["<rootDir>/jest.setup.ts"],
     moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/$1",

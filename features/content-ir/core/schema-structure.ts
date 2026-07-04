@@ -1,5 +1,13 @@
+/**
+ * Schema-shape helpers — structural depth and layout hints derived from a
+ * KindSchema. Drives the generic renderer's flat / grid / nested layout and
+ * human labels for slugs.
+ *
+ * Moved from app/(dev)/demos/json-block-detector/schema-structure.ts.
+ */
+
 import { formatText } from "@/utils/text/text-case-converter";
-import type { FieldSchema, KindSchema } from "./kind-schemas";
+import type { FieldSchema, KindSchema } from "./kind-schema.types";
 
 /** Human label from a slug or field key (snake_case → Title Case + acronym fixes). */
 export function formatBlockLabel(key: string): string {

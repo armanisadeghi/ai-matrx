@@ -32,6 +32,19 @@ import {
   normalizeCodeLanguage,
   SPECIAL_CODE_LANGUAGES,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { CONTENT_IR_STREAM_ENABLED } from "@/features/content-ir/config";
+import {
+  disposeParseSession,
+  openParseSession,
+} from "@/features/content-ir/session/session-manager";
+import type { ParseSession } from "@/features/content-ir/session/parse-session";
+import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
+import {
+  IR_ENVELOPE_KEY,
+  type CanonicalBlockIR,
+} from "@/features/content-ir/core/ir-types";
+import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 // ============================================================================
 // Types
@@ -292,6 +305,17 @@ export class StreamBlockAccumulator {
   private pendingMediaData: { src: string; alt: string } | null = null;
   private ingestCount = 0;
   private emitCount = 0;
+  // ── content-ir shadow delegation (Phase 2, CONTENT_IR_STREAM_ENABLED) ─────
+  /** Live kind-parser session for the OPEN JSON region (fence or bare). */
+  private irSession: ParseSession | null = null;
+  /** Lines fed to the session for this region (drives the "\n" separators). */
+  private irRegionLineCount = 0;
+  /** How many chars of the current pendingLineFragment were already fed. */
+  private irFedFragmentLen = 0;
+  /** Final envelope of the region being closed — consumed by the complete emit. */
+  private irEnvelope: CanonicalBlockIR | null = null;
+  /** Every session identity opened during this stream (disposed at finalize). */
+  private irIdentities: string[] = [];
   private upsertAction: (payload: {
     requestId: string;
     block: RenderBlockPayload;
@@ -330,6 +354,21 @@ export class StreamBlockAccumulator {
       this.processLine(rawLine, dispatch);
     }
 
+    // Bare-JSON regions get the trailing fragment's NEW chars immediately —
+    // minified single-line JSON (structured outputs) parses live instead of
+    // waiting for a newline that may never come. Fence regions stay
+    // line-fed (a fragment could be a partial closing fence).
+    if (
+      this.irSession &&
+      this.subState.kind === "bare_json" &&
+      this.pendingLineFragment.length > this.irFedFragmentLen
+    ) {
+      this.irWriteLinePart(
+        this.pendingLineFragment.slice(this.irFedFragmentLen),
+        false,
+      );
+    }
+
     this.emitCurrentBlock(dispatch, "streaming");
   }
 
@@ -350,7 +389,14 @@ export class StreamBlockAccumulator {
         this.currentBlockType = jsonType;
       }
     }
+    // Stream died mid-region → close it (envelope carries status "error"
+    // with a truncation notice, never a stream failure), then emit.
+    if (this.irSession) {
+      this.irCloseRegion();
+    }
     this.emitCurrentBlock(dispatch, "complete");
+    this.irEnvelope = null;
+    this.irDisposeAll();
     // console.log(
     //   `%c[BlockAccumulator] FINALIZED for ${this.requestId.slice(0, 8)} — ${this.ingestCount} ingests, ${this.emitCount} dispatches, ${this.currentBlockIndex + 1} blocks total`,
     //   "color: #4ade80; font-weight: bold",
@@ -453,6 +499,11 @@ export class StreamBlockAccumulator {
           fenceTicks: fence.ticks,
           earlyTypeResolved: false,
         };
+        // JSON fences also feed the kind parser (fence lines are chrome, not
+        // content — the region starts on the next line).
+        if (normalizedLang === "json") {
+          this.irOpenRegion();
+        }
         return;
       }
     }
@@ -631,6 +682,8 @@ export class StreamBlockAccumulator {
         closeBraces: closeCount,
         earlyTypeResolved: false,
       };
+      this.irOpenRegion();
+      this.irFeedLine(rawLine);
       this.appendToCurrentBlock(rawLine);
       // Single-line JSON — close immediately after type detection
       if (openCount === closeCount && openCount > 0) {
@@ -702,6 +755,7 @@ export class StreamBlockAccumulator {
               this.currentBlockType = jsonType;
             }
           }
+          this.irFeedLine(rawLine);
           this.appendToCurrentBlock(rawLine);
         }
         return;
@@ -759,6 +813,7 @@ export class StreamBlockAccumulator {
           }
         }
 
+        this.irFeedLine(rawLine);
         this.appendToCurrentBlock(rawLine);
         this.subState.openBraces += lineOpens;
         this.subState.closeBraces += lineCloses;
@@ -811,6 +866,118 @@ export class StreamBlockAccumulator {
     }
   }
 
+  // ── content-ir region delegation (Phase 2) ─────────────────────────
+  //
+  // Boundary rule: the accumulator (host) finds the JSON region and remains
+  // the region-end oracle (fence close / brace balance); the kind parser owns
+  // everything INSIDE the region. Blocks gain a dark `metadata.__ir` envelope
+  // while rendering stays content-driven — the parity check below proves the
+  // two paths agree on real traffic before Phase 4 flips anything visible.
+
+  private irOpenRegion(): void {
+    if (!CONTENT_IR_STREAM_ENABLED) return;
+    const identity = `${this.requestId}:${this.currentBlockId}`;
+    try {
+      // Warm the user-kind tier once per app session (memoized, non-blocking).
+      void kindRegistry.ensureWarm();
+      this.irSession = openParseSession({
+        identity,
+        schemas: kindRegistry.resolver(),
+        onSchemaArrived: (deliver) => kindRegistry.onSchemaArrived(deliver),
+      });
+      this.irIdentities.push(identity);
+      this.irRegionLineCount = 0;
+      this.irFedFragmentLen = 0;
+      this.irEnvelope = null;
+    } catch (error) {
+      // Shadow layer must never break streaming — loud, then dark.
+      captureError({
+        source: "content-ir",
+        message: `failed to open parse region ${identity}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        raw: error,
+      });
+      this.irSession = null;
+    }
+  }
+
+  /**
+   * Feed region text. `part` is either the unfed remainder of a completing
+   * line (isLineComplete) or a pendingLineFragment delta (streaming chars of
+   * a line that hasn't finished — how minified single-line JSON gets live
+   * parsing instead of waiting for a newline).
+   */
+  private irWriteLinePart(part: string, isLineComplete: boolean): void {
+    if (!this.irSession) return;
+
+    if (this.irRegionLineCount > 0 && this.irFedFragmentLen === 0) {
+      this.irSession.write("\n");
+    }
+    if (part) {
+      this.irSession.write(part);
+    }
+
+    if (isLineComplete) {
+      this.irRegionLineCount++;
+      this.irFedFragmentLen = 0;
+    } else {
+      this.irFedFragmentLen += part.length;
+    }
+  }
+
+  /** Complete a region line, accounting for any fragment chars already fed. */
+  private irFeedLine(line: string): void {
+    if (!this.irSession) return;
+    this.irWriteLinePart(line.slice(this.irFedFragmentLen), true);
+  }
+
+  /** End the open region: final envelope + shadow parity telemetry. */
+  private irCloseRegion(): void {
+    const session = this.irSession;
+    if (!session) return;
+    this.irSession = null;
+
+    session.end();
+    session.flushNotify();
+    this.irEnvelope = session.buildEnvelope();
+    this.irParityCheck(this.irEnvelope);
+  }
+
+  private irParityCheck(envelope: CanonicalBlockIR): void {
+    if (envelope.root.status !== "complete") return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(this.currentBlockContent);
+    } catch {
+      captureError({
+        source: "content-ir",
+        message: `stream parity: JSON.parse failed where the kind parser completed (kind "${envelope.root.kind || "raw"}")`,
+        relation: envelope.root.kind || "raw",
+        raw: { content: this.currentBlockContent.slice(0, 500) },
+      });
+      return;
+    }
+
+    if (!envelopeMatchesParsedSource(envelope, parsed)) {
+      captureError({
+        source: "content-ir",
+        message: `stream parity mismatch for kind "${envelope.root.kind || "raw"}" — envelope != JSON.parse(content)`,
+        relation: envelope.root.kind || "raw",
+        raw: { fingerprint: envelope.fingerprint },
+      });
+    }
+  }
+
+  /** Dispose all sessions this stream opened (finalize-time cleanup). */
+  private irDisposeAll(): void {
+    for (const identity of this.irIdentities) {
+      disposeParseSession(identity);
+    }
+    this.irIdentities = [];
+  }
+
   // ── Block lifecycle helpers ─────────────────────────────────────────
 
   private appendToCurrentBlock(line: string): void {
@@ -826,6 +993,12 @@ export class StreamBlockAccumulator {
   }
 
   private closeCurrentBlock(dispatch: DispatchFn): void {
+    // Uniform region-end hook: whatever closes the block (fence close, brace
+    // balance, tool break) also ends the kind-parser region so the complete
+    // emit below carries the final envelope.
+    if (this.irSession) {
+      this.irCloseRegion();
+    }
     if (!this.currentBlockContent.trim()) {
       // No committed content. But the block may already exist in Redux as a
       // speculative streaming projection of `pendingLineFragment` — e.g. a
@@ -841,9 +1014,11 @@ export class StreamBlockAccumulator {
         this.retractCurrentBlock(dispatch);
         this.currentBlockEmitted = false;
       }
+      this.irEnvelope = null;
       return;
     }
     this.emitCurrentBlock(dispatch, "complete");
+    this.irEnvelope = null;
     this.currentBlockContent = "";
     this.currentBlockLineCount = 0;
   }
@@ -940,6 +1115,23 @@ export class StreamBlockAccumulator {
    * inline-edit flows) can both gate on completion and round-trip the source.
    */
   private buildBlockMetadata(
+    status: "streaming" | "complete",
+    emittedContent: string,
+  ): Record<string, unknown> | undefined {
+    const base = this.buildXmlBlockMetadata(status, emittedContent);
+
+    // content-ir: attach the (dark) envelope — the live one while the region
+    // streams, the final one on the complete emit. Rendering does not read
+    // this until the Phase 4 flip; parity telemetry proves it first.
+    const envelope =
+      this.irEnvelope ?? (this.irSession ? this.irSession.buildEnvelope() : null);
+    if (envelope) {
+      return { ...(base ?? {}), [IR_ENVELOPE_KEY]: envelope };
+    }
+    return base;
+  }
+
+  private buildXmlBlockMetadata(
     status: "streaming" | "complete",
     emittedContent: string,
   ): Record<string, unknown> | undefined {

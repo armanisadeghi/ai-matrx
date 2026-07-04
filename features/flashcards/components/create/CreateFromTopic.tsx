@@ -15,6 +15,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { toast } from "sonner";
 import { Layers, Sparkles, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ const FIELD_INPUT_CLASS = "text-base";
 
 export function CreateFromTopic() {
   const router = useRouter();
-  const { generate, isGenerating } = useGenerateCards();
+  const { generate, isGenerating, activeRequestId } = useGenerateCards();
   const [isNavigating, startNavigation] = useTransition();
 
   const [topic, setTopic] = useState("");
@@ -142,17 +143,23 @@ export function CreateFromTopic() {
         {/* Form */}
         <div className="mt-6 rounded-xl border border-border bg-card p-4 sm:p-6">
           {isGenerating ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-              <LoadingSpinner size="lg" />
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  Generating {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))}{" "}
-                  cards about &ldquo;{trimmedTopic}&rdquo;
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  This usually takes a few seconds. Hang tight.
-                </p>
+            <div className="flex flex-col gap-4 py-4">
+              <div className="flex items-center justify-center gap-3 text-center">
+                <LoadingSpinner size="sm" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Generating{" "}
+                    {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))}{" "}
+                    cards about &ldquo;{trimmedTopic}&rdquo;
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Cards appear below as they stream in.
+                  </p>
+                </div>
               </div>
+              {/* Live card-by-card preview — the content-ir session renders
+                  each card the moment its front arrives. */}
+              <LiveGenerationPreview requestId={activeRequestId} />
             </div>
           ) : (
             <form

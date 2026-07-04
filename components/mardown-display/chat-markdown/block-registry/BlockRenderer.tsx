@@ -22,6 +22,7 @@ import { parseYouTubeUrl } from "@/lib/media/youtube";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
+import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -200,7 +201,7 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
  */
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
   requestId,
-  block,
+  block: rawBlock,
   index,
   isStreamActive,
   onContentChange,
@@ -211,6 +212,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   replaceBlockContent,
   handleOpenEditor,
 }) => {
+  // content-ir kind routing: a block whose metadata.__ir envelope resolved a
+  // registered kind renders as that kind's component (envelope-derived
+  // serverData) — e.g. bare/fenced JSON flashcard_set, which the legacy
+  // detectors can only call "code". Everything else passes through untouched.
+  const block = applyIrKindRoute(rawBlock);
   const { strictServerData } = useBlockRenderingConfig();
 
   // Per-conversation display flags. When a surface has `hideReasoning` or
