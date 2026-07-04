@@ -208,7 +208,7 @@ export function cardIndexUnderSet(
 
 const KNOWN_FLASHCARD_SET_KEYS = new Set([
   "cards",
-  "__kind",
+  KIND_KEY,
   "additionalDetails",
 ]);
 

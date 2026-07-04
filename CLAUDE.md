@@ -241,6 +241,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Agent context + Brokers | `features/agent-context/FEATURE.md` (narrowed: broker resolution + slot fill; scope CRUD lives in `features/scopes/`) |
 | Tool call visualization | `features/tool-call-visualization/FEATURE.md` |
 | Streaming system | `features/agents/docs/STREAMING_SYSTEM.md` |
+| **Content-IR** — canonical structured-content parsing (`__kind` kinds, streaming JSON→IR envelopes, kind registry, render routing). **Read BEFORE touching stream/DB block parsing, `__kind`, or `metadata.__ir`** | `features/content-ir/FEATURE.md` |
 | Artifacts + Canvas | `features/artifacts/FEATURE.md` |
 | Chat + Conversation | **Live `/chat` route:** `features/agents/components/chat/FEATURE.md` (the real route, on `features/agents/`). Unified shell (future) + legacy surfaces: `features/conversation/FEATURE.md` |
 | Notes | `features/notes/FEATURE.md` |

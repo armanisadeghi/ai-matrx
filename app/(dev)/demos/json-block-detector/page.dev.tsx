@@ -17,7 +17,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { cn } from "@/lib/utils";
-import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import {
+  KIND_KEY,
+  type KindSchema,
+} from "@/features/content-ir/core/kind-schema.types";
 import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
 import {
   disposeParseSession,
@@ -130,7 +133,7 @@ function depthStyle(depth: number) {
 }
 
 function fieldPreview(key: string, value: unknown): string | null {
-  if (key === "__kind") return null;
+  if (key === KIND_KEY) return null;
   if (value === null) return `${key}: null`;
   if (typeof value === "string") {
     const trimmed = value.length > 72 ? `${value.slice(0, 72)}…` : value;
@@ -432,7 +435,7 @@ function KindEventRow({
             {event.kind}
           </span>
           <span className="min-w-0 truncate text-muted-foreground">
-            {Object.keys(event.value).filter((k) => k !== "__kind").length}{" "}
+            {Object.keys(event.value).filter((k) => k !== KIND_KEY).length}{" "}
             fields
           </span>
           <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">

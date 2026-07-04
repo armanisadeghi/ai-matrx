@@ -309,6 +309,55 @@ const matrxLintPlugin = {
                 };
             },
         },
+        'no-parallel-kind-parser': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow instantiating the content-ir kind parser / JSON tokenizer outside the canonical hosts. The parser must be reached through a ParseSession (one writer per stream identity) or normalizeJsonRegion (idempotent one-shot) — a parallel instance re-parses content another layer already parsed, which is exactly the duplicated-detector bug class content-ir exists to kill.',
+                },
+                schema: [],
+                messages: {
+                    banned:
+                        'Do not import the kind parser / JSON tokenizer directly. Open a ContentRegion via @/features/content-ir/session/session-manager (streaming) or call normalizeJsonRegion from @/features/content-ir/core/normalize (one-shot, idempotent). The only hosts allowed to touch the parser are content-ir itself, stream-block-accumulator, content-splitter-v2, and normalize-content-blocks. See features/content-ir/FEATURE.md.',
+                },
+            },
+            create(context) {
+                const ALLOWED = [
+                    '/features/content-ir/',
+                    '/execution-system/utils/stream-block-accumulator.ts',
+                    '/execution-system/utils/normalize-content-blocks.ts',
+                    '/processors/utils/content-splitter-v2.ts',
+                    '/components/admin/markdown-tester/',
+                ];
+                const filename = context.filename || context.getFilename?.() || '';
+                const isAllowed = ALLOWED.some((p) => filename.includes(p));
+                return {
+                    ImportDeclaration(node) {
+                        if (isAllowed) return;
+                        // Type-only imports (KindStreamEvent etc.) are contract
+                        // consumption, not a parallel parser — allowed.
+                        if (node.importKind === 'type') return;
+                        if (
+                            node.specifiers.length > 0 &&
+                            node.specifiers.every(
+                                (s) => s.importKind === 'type',
+                            )
+                        ) {
+                            return;
+                        }
+                        const src = node.source.value;
+                        if (
+                            typeof src === 'string' &&
+                            (src.includes('content-ir/core/kind-parser') ||
+                                src.includes('content-ir/core/json-tokenizer'))
+                        ) {
+                            context.report({ node, messageId: 'banned' });
+                        }
+                    },
+                };
+            },
+        },
         'no-banned-lucide-icons': {
             meta: {
                 type: 'suggestion',
@@ -452,6 +501,30 @@ const appContextWriteSyntaxRestrictions = [
 //   - `` `${baseUrl}/ai/conversations/${id}/tool_results` `` (raw fetch)
 //   - `"/tool_results"` string concatenation
 // See features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
+// content-ir chokepoints — the __kind discriminator and the kind-schema
+// storage category ids belong to features/content-ir alone. A hand-rolled
+// "__kind" literal outside the library is a parallel discriminator reader
+// (use KIND_KEY / the library APIs); the category-id literals outside
+// registry/schema-source-flexible-data.ts are a parallel schema store.
+// features/content-ir/** re-declares the rule WITHOUT these (see override).
+const contentIrChokepointSyntaxRestrictions = [
+    {
+        selector: "Literal[value='__kind']",
+        message:
+            'The "__kind" discriminator literal is banned outside features/content-ir. Import KIND_KEY from @/features/content-ir/core/kind-schema.types — or better, consume the parsed envelope (metadata.__ir via readEnvelope) instead of re-reading the discriminator by hand. See features/content-ir/FEATURE.md.',
+    },
+    {
+        selector: "Literal[value='671a423f-d350-4457-83e5-389eac70f287']",
+        message:
+            'The Block Schemas category id belongs ONLY to features/content-ir/registry/schema-source-flexible-data.ts (import BLOCK_SCHEMAS_CATEGORY_ID from there). Reading kind schemas anywhere else creates a parallel schema store.',
+    },
+    {
+        selector: "Literal[value='6f46917c-be9a-4763-b4dd-107546a3d282']",
+        message:
+            'The Sample Block Data category id belongs ONLY to features/content-ir/registry/schema-source-flexible-data.ts (import SAMPLE_BLOCK_DATA_CATEGORY_ID from there).',
+    },
+];
+
 const toolResultsChokepointSyntaxRestrictions = [
     {
         selector: "Literal[value=/\\/tool_results$/]",
@@ -631,6 +704,8 @@ export default [
             // Single-path JSON extraction — no parallel raw-stream scanners.
             // Loud but non-blocking, matching the other doctrine bans here.
             'matrx/no-parallel-stream-json-scan': 'warn',
+            // Single canonical structured-content parser — no parallel instances.
+            'matrx/no-parallel-kind-parser': 'warn',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',
@@ -638,7 +713,17 @@ export default [
             'no-restricted-imports': [
                 'error',
                 {
-                    patterns: windowPanelsImportRestriction.patterns,
+                    patterns: [
+                        ...windowPanelsImportRestriction.patterns,
+                        // The json-block-detector demo is a CONSUMER of
+                        // @/features/content-ir, never a source — importing
+                        // from the demo resurrects the pre-extraction world.
+                        {
+                            group: ['**/json-block-detector/*'],
+                            message:
+                                'The json-block-detector demo is a consumer of @/features/content-ir, not a source. Import the library, not the demo.',
+                        },
+                    ],
                     paths: [
                         ...deletedFileHooksRestriction.paths,
                         ...parallelSliceRestriction.paths,
@@ -706,6 +791,8 @@ export default [
                 ...appContextWriteSyntaxRestrictions,
                 // features/agents tool-results chokepoint — only submit-tool-results.ts may POST /tool_results.
                 ...toolResultsChokepointSyntaxRestrictions,
+                // content-ir chokepoints — __kind literal + kind-schema category ids.
+                ...contentIrChokepointSyntaxRestrictions,
                 // Canonical context menu must be loaded via next/dynamic({ ssr: false }),
                 // never a static value import (it balloons the route chunk).
                 ...canonicalMenuStaticImportBan,
@@ -1085,6 +1172,59 @@ export default [
                     'ts-nocheck': true,
                     'ts-check': false,
                     minimumDescriptionLength: 4,
+                },
+            ],
+        },
+    },
+    // ─── content-ir doctrine (features/content-ir/FEATURE.md) ──────────────
+    //
+    // 1) The library itself is exempt from the __kind / category-id literal
+    //    bans (it DEFINES them) — flat config replaces the rule wholesale, so
+    //    the global list is re-included minus contentIrChokepointSyntaxRestrictions.
+    // 2) core/ is a PURE parsing kernel: no React, no Redux, no Supabase, no
+    //    app state. Everything impure lives in registry/session/react/redux
+    //    layers. This fence is what keeps the parser testable everywhere and
+    //    portable (the Python twin mirrors core/ only).
+    {
+        files: ['features/content-ir/**/*.{ts,tsx}'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
+                ...canonicalMenuStaticImportBan,
+                ...contextMenuV3StaticImportBan,
+                ...heavyImplStaticImportBan,
+                ...reactFlowStaticImportBan,
+            ],
+        },
+    },
+    {
+        files: ['features/content-ir/core/**/*.ts'],
+        rules: {
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: [
+                                'react',
+                                'react-dom',
+                                'react-dom/*',
+                                '@reduxjs/toolkit',
+                                '@reduxjs/toolkit/*',
+                                'react-redux',
+                                '@/lib/redux/*',
+                                '@/utils/supabase/*',
+                                '@supabase/*',
+                            ],
+                            message:
+                                'features/content-ir/core is a PURE parsing kernel — no React, Redux, or Supabase. IO belongs in registry/, React bindings in react/, store glue in redux/. See features/content-ir/FEATURE.md.',
+                        },
+                    ],
                 },
             ],
         },
