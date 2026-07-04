@@ -418,6 +418,30 @@ export async function listBlockSchemas(
   return buildBlockSchemaRegistry(rows);
 }
 
+/** Cold-tier single-row fetch: one kind schema by slug, null when absent. */
+export async function getBlockSchemaBySlug(
+  slug: string,
+): Promise<KindSchema | null> {
+  const { data, error } = await supabase
+    .from("flexible_data")
+    .select(LIST_COLUMNS)
+    .eq("category_id", BLOCK_SCHEMAS_CATEGORY_ID)
+    .eq("slug", slug)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    throw new FlexibleDataError(
+      `Failed to fetch block schema "${slug}": ${error.message}`,
+    );
+  }
+
+  if (!data) return null;
+
+  const entry = parseBlockSchemaRow(assertFlexibleDataRecord(data));
+  return { kind: entry.slug, fields: entry.fields };
+}
+
 export function getBlockSchemaSlugs(
   schemas: Record<string, KindSchema>,
 ): string[] {

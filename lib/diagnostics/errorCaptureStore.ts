@@ -94,7 +94,15 @@ export type CapturedErrorSource =
   /** A user-facing `toast.error(...)` — already handled + shown to the user. */
   | "user-toast"
   /** An RTK rejected thunk (action type ending in /rejected) — a real failure. */
-  | "redux-rejected";
+  | "redux-rejected"
+  /**
+   * The content-ir system (features/content-ir): kind-registry schema loads
+   * failing, stream-vs-static parity mismatches (shadow telemetry), or
+   * envelope assembly defects. A firing means the canonical structured-
+   * content path degraded — streaming keeps working via fallbacks, but the
+   * cause must be found.
+   */
+  | "content-ir";
 
 /** A Supabase DML verb, or "rpc" for a function call. */
 export type CapturedOperation =

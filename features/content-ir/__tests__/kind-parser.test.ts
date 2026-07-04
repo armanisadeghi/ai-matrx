@@ -136,11 +136,14 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
     parser.push(input);
     parser.end();
 
+    // Speculation committed "flashcard" at `{` open; the intruder __kind is
+    // not in itemKinds, so the node backtracks to raw — parent unharmed.
     const raw = events.find((e) => e.type === "raw_object");
     expect(raw).toBeDefined();
     if (raw?.type !== "raw_object") throw new Error("unreachable");
     expect(irPathKey(raw.path)).toBe("cards.0");
-    expect(raw.reason).toContain("not allowed");
+    expect(raw.reason).toContain("contradicted");
+    expect(events.some((e) => e.type === "error")).toBe(false);
   });
 
   it("chunking never changes the event sequence (10 seeds)", () => {

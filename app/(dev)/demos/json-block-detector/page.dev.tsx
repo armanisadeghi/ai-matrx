@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Play, Loader2, RotateCcw, Check, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +19,18 @@ import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { cn } from "@/lib/utils";
 import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
 import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
-import { runKindJsonStreamTest } from "./dev-test-harness";
+import {
+  disposeParseSession,
+  getParseSession,
+  openParseSession,
+} from "@/features/content-ir/session/session-manager";
+import { useIrNodePaths } from "@/features/content-ir/react/useIrNode";
+import { mockJsonStream } from "./dev-test-harness";
 import {
   buildFakeKindRegistry,
   buildSuppressedPathPrefixes,
-  collectLiveBlockMounts,
+  collectLiveBlockMountsFromNodes,
   DemoRegisteredBlockPanel,
-  flashcardServerDataFromEvents,
-  flashcardSetAdditionalDetailsFromEvents,
   flashcardSetCardKinds,
   isParserEventSuppressed,
 } from "./demo-block-components";
@@ -530,10 +534,12 @@ function KindEventRow({
 }
 
 function ParserStreamView({
+  identity,
   events,
   isRunning,
   schemas,
 }: {
+  identity: string | null;
   events: KindStreamEvent[];
   isRunning: boolean;
   schemas: Record<string, KindSchema>;
@@ -541,9 +547,14 @@ function ParserStreamView({
   const registry = useMemo(() => buildFakeKindRegistry(schemas), [schemas]);
   const cardKinds = useMemo(() => flashcardSetCardKinds(schemas), [schemas]);
 
-  const liveMounts = useMemo(
-    () => collectLiveBlockMounts(events, registry, cardKinds),
-    [events, registry, cardKinds],
+  // Structural subscription: re-render when nodes appear/change; the mounts
+  // themselves are O(nodes) off the live tree — no event replay.
+  useIrNodePaths(identity);
+  const session = identity ? getParseSession(identity) : null;
+  const liveMounts = collectLiveBlockMountsFromNodes(
+    session?.listNodes() ?? [],
+    registry,
+    cardKinds,
   );
 
   const suppressedPrefixes = useMemo(
@@ -570,33 +581,12 @@ function ParserStreamView({
               key={mount.pathKey}
               kind={mount.kind}
               path={mount.path}
-              events={events}
+              identity={identity}
               isRunning={isRunning}
               schemas={schemas}
               registry={registry}
               cardKinds={cardKinds}
-              flashcardsBlock={
-                <Suspense
-                  fallback={
-                    <div className="flex h-24 items-center justify-center rounded-lg border border-border bg-muted/30">
-                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                    </div>
-                  }
-                >
-                  <FlashcardsBlock
-                    serverData={flashcardServerDataFromEvents(
-                      events,
-                      mount.path,
-                      isRunning,
-                      cardKinds,
-                    )}
-                    additionalDetails={flashcardSetAdditionalDetailsFromEvents(
-                      events,
-                      mount.path,
-                    )}
-                  />
-                </Suspense>
-              }
+              FlashcardsBlock={FlashcardsBlock}
             />
           ))}
         </div>
@@ -655,12 +645,14 @@ export default function JsonBlockDetectorPage() {
   const [streamSettings, setStreamSettings] = useState(DEFAULT_STREAM_SETTINGS);
   const [events, setEvents] = useState<KindStreamEvent[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const [sessionIdentity, setSessionIdentity] = useState<string | null>(null);
   const [schemas, setSchemas] = useState<Record<string, KindSchema> | null>(
     null,
   );
   const [schemasLoading, setSchemasLoading] = useState(true);
   const [schemasError, setSchemasError] = useState<string | null>(null);
   const cancelRef = useRef(false);
+  const runCounterRef = useRef(0);
 
   const reloadBlockSchemas = async () => {
     const registry = await listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID);
@@ -749,6 +741,8 @@ export default function JsonBlockDetectorPage() {
 
   const reset = () => {
     cancelRef.current = true;
+    if (sessionIdentity) disposeParseSession(sessionIdentity);
+    setSessionIdentity(null);
     setEvents([]);
     setIsRunning(false);
   };
@@ -767,20 +761,56 @@ export default function JsonBlockDetectorPage() {
     setEvents([]);
     setIsRunning(true);
 
+    if (sessionIdentity) disposeParseSession(sessionIdentity);
+    const identity = `json-block-demo:${++runCounterRef.current}`;
+
+    // rAF-coalesced flush: parser events buffer here; React sees at most one
+    // state commit per frame — the demo IS the perf pattern, not an exception.
+    const eventBuffer: KindStreamEvent[] = [];
+    let rafHandle: number | null = null;
+
+    const session = openParseSession({
+      identity,
+      schemas,
+      onEvent(event) {
+        eventBuffer.push(event);
+      },
+    });
+    setSessionIdentity(identity);
+
+    const flush = () => {
+      rafHandle = null;
+      session.flushNotify();
+      if (eventBuffer.length > 0) {
+        const batch = eventBuffer.splice(0);
+        setEvents((prev) => [...prev, ...batch]);
+      }
+    };
+    const scheduleFlush = () => {
+      if (rafHandle === null) {
+        rafHandle = requestAnimationFrame(flush);
+      }
+    };
+
     try {
-      await runKindJsonStreamTest(inputText, {
-        parser: { schemas },
-        stream: {
-          delayMs: streamSettings.delayMs,
-          minChunkSize: streamSettings.minChunkSize,
-          maxChunkSize: streamSettings.maxChunkSize,
-        },
+      for await (const chunk of mockJsonStream(inputText, {
+        delayMs: streamSettings.delayMs,
+        minChunkSize: streamSettings.minChunkSize,
+        maxChunkSize: streamSettings.maxChunkSize,
         isCancelled: () => cancelRef.current,
-        onEvent(event) {
-          setEvents((prev) => [...prev, event]);
-        },
-      });
+      })) {
+        if (cancelRef.current) break;
+        session.write(chunk);
+        scheduleFlush();
+        if (session.status === "error") break;
+      }
+
+      if (!cancelRef.current && session.status !== "error") {
+        session.end();
+      }
     } finally {
+      if (rafHandle !== null) cancelAnimationFrame(rafHandle);
+      flush();
       setIsRunning(false);
     }
   };
@@ -877,6 +907,7 @@ export default function JsonBlockDetectorPage() {
           <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-3">
             {events.length > 0 && (
               <ParserStreamView
+                identity={sessionIdentity}
                 events={events}
                 isRunning={isRunning}
                 schemas={schemas ?? {}}

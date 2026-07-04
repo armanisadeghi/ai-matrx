@@ -8,23 +8,17 @@
  *
  * `normalizeJsonRegion` is the one-shot mode: the same KindStreamParser that
  * powers live streams, run over a complete region string (DB reloads,
- * reconcile passes). One library, two speeds — stream and static output are
- * structurally identical.
+ * reconcile passes), assembled through the same IrTree the live session uses
+ * — stream and static output are structurally identical by construction.
  */
 
 import { fingerprintText } from "./fingerprint";
-import { JSON_DISCRIMINATOR } from "./discriminator";
-import {
-  IR_VERSION,
-  irPathKey,
-  type CanonicalBlockIR,
-  type IrResidue,
-  type IrStructuredNode,
-} from "./ir-types";
+import { IR_VERSION, type CanonicalBlockIR, type IrStructuredNode } from "./ir-types";
 import type { KindSchema } from "./kind-schema.types";
+import { IrTree } from "./ir-tree";
 import {
   createKindStreamParser,
-  type KindStreamEvent,
+  type SchemaResolver,
 } from "./kind-parser";
 
 export function isCanonicalBlockIR(value: unknown): value is CanonicalBlockIR {
@@ -53,7 +47,9 @@ export function reuseEnvelopeIfCurrent(
 }
 
 export interface NormalizeJsonRegionOptions {
-  schemas: Record<string, KindSchema>;
+  schemas: Record<string, KindSchema> | SchemaResolver;
+  /** Known-context root prediction (agent output schema, fence hint). */
+  expectedRootKind?: string;
   /**
    * Pass a previously persisted envelope (message metadata, artifact row);
    * when its fingerprint matches, it is returned as-is and nothing parses.
@@ -69,129 +65,16 @@ export function normalizeJsonRegion(
   const reused = reuseEnvelopeIfCurrent(source, options.existing);
   if (reused) return reused;
 
-  const events: KindStreamEvent[] = [];
+  const tree = new IrTree();
   const parser = createKindStreamParser({
     schemas: options.schemas,
+    expectedRootKind: options.expectedRootKind,
     onEvent(event) {
-      events.push(event);
+      tree.applyEvent(event);
     },
   });
   parser.push(source);
   parser.end();
 
-  return buildEnvelopeFromEvents(source, events);
-}
-
-/**
- * Assemble a CanonicalBlockIR from a finished parse's event log. Also used by
- * the streaming session at stream end so live and one-shot envelopes are
- * built by the same code.
- */
-export function buildEnvelopeFromEvents(
-  source: string,
-  events: KindStreamEvent[],
-): CanonicalBlockIR {
-  let rootValue: Record<string, unknown> = {};
-  let rootResidue: IrResidue | null = null;
-  let rootKind = "";
-  let rootRaw = false;
-  let rootRawReason: string | null = null;
-  let sawComplete = false;
-  let errorReason: string | null = null;
-
-  const nodeIndex: NonNullable<CanonicalBlockIR["nodeIndex"]> = {};
-
-  for (const event of events) {
-    switch (event.type) {
-      case "block_snapshot": {
-        if (event.path.length === 0) {
-          rootValue = event.value;
-          rootResidue = event.residue;
-          rootKind = event.kind;
-        } else if (event.complete) {
-          nodeIndex[irPathKey(event.path)] = {
-            kind: event.kind,
-            kindState: "resolved",
-            status: "complete",
-          };
-        }
-        break;
-      }
-      case "raw_object": {
-        if (event.path.length === 0) {
-          rootRaw = true;
-          rootRawReason = event.reason;
-          if (
-            typeof event.value === "object" &&
-            event.value !== null &&
-            !Array.isArray(event.value)
-          ) {
-            rootValue = event.value as Record<string, unknown>;
-          }
-        } else {
-          nodeIndex[irPathKey(event.path)] = {
-            kind: "",
-            kindState: "raw",
-            status: "complete",
-          };
-        }
-        break;
-      }
-      case "complete": {
-        sawComplete = true;
-        if (!rootRaw && event.kind) rootKind = event.kind;
-        if (
-          rootRaw &&
-          typeof event.value === "object" &&
-          event.value !== null &&
-          !Array.isArray(event.value)
-        ) {
-          rootValue = event.value as Record<string, unknown>;
-        }
-        break;
-      }
-      case "error": {
-        errorReason = event.reason;
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  const notices: NonNullable<IrResidue["notices"]> = [];
-  if (errorReason) {
-    notices.push({ code: "parse_error", message: errorReason });
-  }
-  if (rootRaw && rootRawReason) {
-    notices.push({ code: "raw_fallback", message: rootRawReason });
-  }
-
-  let residue = rootResidue;
-  if (notices.length > 0) {
-    residue = {
-      extra: rootResidue?.extra ?? null,
-      optionalMissing: rootResidue?.optionalMissing ?? null,
-      notices: [...(rootResidue?.notices ?? []), ...notices],
-    };
-  }
-
-  const root: IrStructuredNode = {
-    role: "structured",
-    kind: rootRaw ? "" : rootKind,
-    kindState: rootRaw ? "raw" : rootKind ? "resolved" : "raw",
-    discriminator: JSON_DISCRIMINATOR,
-    path: [],
-    status: errorReason ? "error" : sawComplete ? "complete" : "error",
-    value: rootValue,
-    residue,
-  };
-
-  return {
-    v: IR_VERSION,
-    engine: "fe-kind-parser",
-    fingerprint: fingerprintText(source),
-    root,
-    ...(Object.keys(nodeIndex).length > 0 ? { nodeIndex } : {}),
-  };
+  return tree.buildEnvelope(source);
 }
