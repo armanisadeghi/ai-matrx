@@ -60,6 +60,8 @@ import type {
   CompletedOperationEntry,
 } from "@/features/agents/types/request.types";
 import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/observability/observability.slice";
+import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 
 /** Stable fallbacks — never inline `?? []` in selector outputs. */
 export const EMPTY_REQUEST_IDS: string[] = [];
@@ -406,6 +408,41 @@ export const selectRenderBlockCount =
   (requestId: string) =>
   (state: RootState): number =>
     state.activeRequests.byRequestId[requestId]?.renderBlockOrder.length ?? 0;
+
+/**
+ * The LAST render block's content-ir envelope (`metadata.__ir`) whose root
+ * kind matches `kind` — or, when `kind` is omitted, the last envelope with
+ * ANY resolved (non-empty) root kind.
+ *
+ * This is the canonical READ path for live structured output: the
+ * StreamBlockAccumulator's shadow session already parses every JSON region
+ * during the stream and re-attaches a fresh `CanonicalBlockIR` on every
+ * flush (`CONTENT_IR_STREAM_ENABLED`), so consumers subscribe HERE instead
+ * of running a second parallel parse of the answer text. The returned
+ * envelope is the exact object the accumulator attached — reference-stable
+ * per flush. Returns null when no matching envelope exists yet (also the
+ * prod flag-off case — callers keep a session-based fallback for that).
+ */
+export const selectKindEnvelope = (requestId: string, kind?: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (order, blocks): CanonicalBlockIR | null => {
+      if (!order || !blocks) return null;
+      for (let i = order.length - 1; i >= 0; i--) {
+        const block = blocks[order[i]];
+        if (!block) continue;
+        const envelope = readEnvelope(block.metadata);
+        if (!envelope) continue;
+        if (kind !== undefined ? envelope.root.kind === kind : envelope.root.kind) {
+          return envelope;
+        }
+      }
+      return null;
+    },
+  );
 
 // =============================================================================
 // Tool Lifecycle Selectors

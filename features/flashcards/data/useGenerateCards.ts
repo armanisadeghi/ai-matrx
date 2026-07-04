@@ -23,9 +23,14 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useState } from "react";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import {
+  selectConversationRequestIds,
   selectFirstExtractedObject,
   selectJsonExtractionComplete,
   selectRequestError,
@@ -63,9 +68,20 @@ export interface GenerateCardsResult {
   isGenerating: boolean;
   error: string | null;
   /**
-   * The live request id for the in-flight generation (null before launch).
-   * Consumers feed it to content-ir's useLiveJsonRegion to render the cards
-   * AS THEY STREAM instead of a spinner.
+   * The live request id for the in-flight generation (null before the stream
+   * connects). Consumers subscribe to it (selectKindEnvelope /
+   * useLiveJsonRegion) to render the cards AS THEY STREAM instead of a
+   * spinner.
+   *
+   * TIMING INVARIANT — this must be derived from Redux, never from the
+   * launch thunk's resolution: for `displayMode: "direct"` + `autoRun`,
+   * `launchAgentExecution` awaits the ENTIRE stream (executeInstance →
+   * runAiStream → pollForCompletion) before resolving, so a requestId read
+   * from `.unwrap()` only exists AFTER the generation is over — the exact
+   * bug that starved the live preview. The conversationId arrives via the
+   * pre-stream `onConversationCreated` hook; `createRequest` (dispatched by
+   * executeInstance at connection time) then surfaces the requestId here
+   * while the stream is still running.
    */
   activeRequestId: string | null;
 }
@@ -150,7 +166,23 @@ export function useGenerateCards(): GenerateCardsResult {
   const store = useAppStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  // The in-flight generation's conversation id — set by onConversationCreated
+  // BEFORE the stream starts (the launch thunk itself only resolves after the
+  // direct-mode stream fully completes; see the activeRequestId doc above).
+  const [activeConversationId, setActiveConversationId] = useState<
+    string | null
+  >(null);
+
+  // Live derivation: executeInstance dispatches createRequest at connection
+  // time, which pushes the requestId onto byConversationId — this selector
+  // fires the moment that happens, mid-stream. Last id wins (a re-generate on
+  // the same conversation tracks its newest turn). Primitive return — safe
+  // without createSelector.
+  const activeRequestId = useAppSelector((state) => {
+    if (!activeConversationId) return null;
+    const ids = selectConversationRequestIds(activeConversationId)(state);
+    return ids.length > 0 ? ids[ids.length - 1] : null;
+  });
 
   /**
    * Poll the active-requests slice until JSON extraction finalizes, then read
@@ -193,6 +225,7 @@ export function useGenerateCards(): GenerateCardsResult {
   ): Promise<GeneratedCardSet> {
     setIsGenerating(true);
     setError(null);
+    setActiveConversationId(null); // a fresh run must not feed off the last one
     try {
       const { requestId } = await dispatch(
         launchAgentExecution({
@@ -204,6 +237,12 @@ export function useGenerateCards(): GenerateCardsResult {
           // direct-agentId launch path does NOT inherit extraction from the
           // agent definition the way a shortcut row would).
           jsonExtraction: { enabled: true },
+          // Fires BEFORE the stream runs — this is what lets consumers watch
+          // the request (and its content-ir envelopes) LIVE. The awaited
+          // unwrap below only resolves after the direct-mode stream fully
+          // completes, so it can never drive streaming UI.
+          onConversationCreated: (conversationId) =>
+            setActiveConversationId(conversationId),
           runtime: {
             variables: {
               topic: vars.topic,
@@ -223,8 +262,6 @@ export function useGenerateCards(): GenerateCardsResult {
       if (!requestId) {
         throw new Error("Agent launch did not return a request id");
       }
-
-      setActiveRequestId(requestId);
 
       return await waitForExtraction(requestId);
     } catch (e) {

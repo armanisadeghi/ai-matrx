@@ -8,9 +8,13 @@
 // user is navigated into the new set, ready to study.
 //
 // The agent round-trip lives in useGenerateCards (reused by future from-source /
-// quiz flows). The live stream feeds ONE content-ir parse session (hoisted
-// useLiveJsonRegion) whose envelope drives BOTH the card-by-card preview and,
-// on completion, the persisted set (generatedSetFromEnvelope) — parse once →
+// quiz flows); its activeRequestId is Redux-derived and live from the moment
+// the stream connects (the direct-mode launch thunk only resolves AFTER the
+// stream ends — never read the request id from it). The live envelope comes
+// from Redux (selectKindEnvelope — the accumulator's own `metadata.__ir`,
+// PRIMARY) with a hoisted useLiveJsonRegion session as fallback (prod
+// flag-off); whichever yields drives BOTH the card-by-card preview and, on
+// completion, the persisted set (generatedSetFromEnvelope) — parse once →
 // display AND persist. Persistence is fcService.createSetWithCards.
 // Navigation uses useTransition. Errors surface loudly via sonner toast.
 //
@@ -36,6 +40,7 @@ import { LoadingSpinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAnswerText,
+  selectKindEnvelope,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useLiveJsonRegion } from "@/features/content-ir/react/useLiveJsonRegion";
@@ -73,11 +78,17 @@ export function CreateFromTopic() {
     activeRequestId ? selectRequestStatus(activeRequestId)(state) : null,
   );
 
-  // ONE parse session for the whole generation: the agent's answer text feeds
-  // content-ir with expectedRootKind "flashcard_set" (the parser types the
-  // whole tree from the prediction — no __kind needed in the payload). The
-  // envelope drives the live preview below AND the persisted set on
-  // completion.
+  // PRIMARY envelope source: the StreamBlockAccumulator's shadow session
+  // already parses the streaming JSON region and re-attaches a live
+  // CanonicalBlockIR on every flush (`metadata.__ir` on the render block,
+  // CONTENT_IR_STREAM_ENABLED — dev on). Reading it straight from Redux means
+  // ONE parser drives the whole app; no second parallel parse.
+  const reduxEnvelope = useAppSelector((state) =>
+    activeRequestId
+      ? selectKindEnvelope(activeRequestId, "flashcard_set")(state)
+      : null,
+  );
+
   // NOTE: the previous inline check compared against "completed", which is
   // not a RequestStatus member — the region never ended on success. Every
   // terminal status ends the region so the envelope can reach "complete".
@@ -87,7 +98,10 @@ export function CreateFromTopic() {
     requestStatus === "timeout" ||
     requestStatus === "cancelled";
 
-  const { envelope } = useLiveJsonRegion(
+  // FALLBACK parse session: covers prod (CONTENT_IR_STREAM_ENABLED off — no
+  // Redux envelope) and any payload the accumulator couldn't kind-resolve
+  // (e.g. no root __kind — expectedRootKind types the tree here regardless).
+  const { envelope: sessionEnvelope } = useLiveJsonRegion(
     activeRequestId ? `flashcards-live:${activeRequestId}` : null,
     answerText,
     {
@@ -95,6 +109,10 @@ export function CreateFromTopic() {
       done: requestIsDone,
     },
   );
+
+  // Whichever source yields the envelope drives BOTH the live preview and the
+  // persisted set (generatedSetFromEnvelope) — Redux first, session fallback.
+  const envelope = reduxEnvelope ?? sessionEnvelope;
 
   // The async submit handler reads the envelope as it stands AFTER the
   // awaited generation resolves — a ref carries the latest value across the

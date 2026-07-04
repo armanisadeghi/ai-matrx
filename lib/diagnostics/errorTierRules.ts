@@ -170,6 +170,17 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       source: "redux-rejected",
     },
   },
+  {
+    id: "stream-unrecognized-config",
+    tier: "yellow",
+    reason:
+      "Server ignored unknown config keys the client sent (e.g. dry_run on a path that does not accept it) — informational, recoverable, never actionable in the inspector.",
+    addedAt: "2026-07-04",
+    match: {
+      source: "agent-stream-warning",
+      code: "unrecognized_config",
+    },
+  },
 ];
 
 // ── Matching engine ──────────────────────────────────────────────────────
