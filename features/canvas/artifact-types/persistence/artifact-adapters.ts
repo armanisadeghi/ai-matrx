@@ -18,14 +18,32 @@ export interface ArtifactLink {
   externalId?: string;
 }
 
+/** Any-surface origin of a materialization (mirrors canvas_items.source_*). */
+export interface ArtifactSourceRef {
+  /** "cx_message" | "note" | "transcript" | "ctx_task" | … */
+  system: string;
+  /** Id of the originating record in that system (always a real UUID). */
+  id: string;
+}
+
 /** Context handed to a custom adapter's onMaterialize. */
 export interface MaterializedArtifactInfo {
   artifactId: string; // canvas_items.id
   canvasType: string;
   title: string;
   rawContent: string;
-  sourceMessageId: string;
-  conversationId: string;
+  /**
+   * Structured (kind-IR) value when the planned artifact carried one — the
+   * zero-loss object persisted as content.data. Adapters prefer it over
+   * re-parsing rawContent.
+   */
+  structured?: Record<string, unknown> | null;
+  /** Where this artifact was materialized FROM. Dedupe keys derive from this. */
+  source: ArtifactSourceRef;
+  /** Chat convenience — set only when source.system === "cx_message". */
+  sourceMessageId?: string;
+  /** Chat conversation, when known. Null/absent for non-chat sources. */
+  conversationId?: string | null;
 }
 
 export interface ArtifactPersistenceAdapter<

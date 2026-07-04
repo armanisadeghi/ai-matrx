@@ -2540,7 +2540,9 @@ export type Database = {
           project_id: string | null
           session_id: string | null
           share_token: string | null
+          source_id: string | null
           source_message_id: string | null
+          source_system: string | null
           source_type: string
           tags: string[] | null
           task_id: string | null
@@ -2574,7 +2576,9 @@ export type Database = {
           project_id?: string | null
           session_id?: string | null
           share_token?: string | null
+          source_id?: string | null
           source_message_id?: string | null
+          source_system?: string | null
           source_type?: string
           tags?: string[] | null
           task_id?: string | null
@@ -2608,7 +2612,9 @@ export type Database = {
           project_id?: string | null
           session_id?: string | null
           share_token?: string | null
+          source_id?: string | null
           source_message_id?: string | null
+          source_system?: string | null
           source_type?: string
           tags?: string[] | null
           task_id?: string | null
@@ -3310,7 +3316,7 @@ export type Database = {
         Row: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
           canvas_item_id: string | null
-          conversation_id: string
+          conversation_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -3319,10 +3325,12 @@ export type Database = {
           external_system: string | null
           external_url: string | null
           id: string
-          message_id: string
+          message_id: string | null
           metadata: Json
           organization_id: string
           project_id: string | null
+          source_id: string | null
+          source_system: string | null
           status: Database["public"]["Enums"]["artifact_status"]
           task_id: string | null
           thumbnail_url: string | null
@@ -3335,7 +3343,7 @@ export type Database = {
         Insert: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
           canvas_item_id?: string | null
-          conversation_id: string
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -3344,10 +3352,12 @@ export type Database = {
           external_system?: string | null
           external_url?: string | null
           id?: string
-          message_id: string
+          message_id?: string | null
           metadata?: Json
           organization_id: string
           project_id?: string | null
+          source_id?: string | null
+          source_system?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
           task_id?: string | null
           thumbnail_url?: string | null
@@ -3360,7 +3370,7 @@ export type Database = {
         Update: {
           artifact_type?: Database["public"]["Enums"]["artifact_type"]
           canvas_item_id?: string | null
-          conversation_id?: string
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -3369,10 +3379,12 @@ export type Database = {
           external_system?: string | null
           external_url?: string | null
           id?: string
-          message_id?: string
+          message_id?: string | null
           metadata?: Json
           organization_id?: string
           project_id?: string | null
+          source_id?: string | null
+          source_system?: string | null
           status?: Database["public"]["Enums"]["artifact_status"]
           task_id?: string | null
           thumbnail_url?: string | null
@@ -24200,6 +24212,26 @@ export type Database = {
           p_content: Json
           p_conversation_id?: string
           p_message_id: string
+          p_source_type?: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Database["canvas"]["Tables"]["canvas_items"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "canvas_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cx_canvas_upsert_source: {
+        Args: {
+          p_artifact_index: number
+          p_content: Json
+          p_conversation_id?: string
+          p_source_id: string
+          p_source_system: string
           p_source_type?: string
           p_title: string
           p_type: string

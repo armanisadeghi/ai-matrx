@@ -65,9 +65,9 @@ function structuredFlashcardSet(
 
 /**
  * Map a structured flashcard_set value to NewCardInputs. Dedicated columns
- * (front/back/card_kind/difficulty/topic) map directly; `tags` (and any other
- * columnless keys the caller wants preserved) go into fc_card.metadata jsonb —
- * fc_card has NO tags column, so metadata is where they survive.
+ * (front/back/card_kind/difficulty/topic) map directly; `tags` goes into
+ * fc_card.metadata jsonb — fc_card has NO tags column, so metadata is where
+ * they survive (zero data loss).
  */
 function cardsFromStructured(set: Record<string, unknown>): NewCardInput[] {
   const rawCards = Array.isArray(set.cards) ? set.cards : [];

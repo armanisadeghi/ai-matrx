@@ -16,7 +16,13 @@
  * a new artifact, so a fully-materialized message yields `hasChanges: false` and
  * the orchestrator skips the rewrite entirely. Indices are assigned by stable
  * left-to-right position over ALL materializable artifacts (materialized + new),
- * matching the `(source_message_id, artifact_index)` natural key.
+ * matching the `(source_system, source_id, artifact_index)` natural key.
+ *
+ * STRUCTURED (kind-IR) blocks (Track 2B): a JSON region whose resolved
+ * `__kind` maps to a registered `ArtifactTypeDef.kinds` entry plans with a
+ * `structured` value object (persisted as `content.data`, zero reprocessing
+ * on reload) — detected via the block's `metadata.__ir` envelope when present,
+ * else by parsing the JSON root. String-payload planning is unchanged.
  */
 
 import type {
@@ -30,8 +36,17 @@ import {
   detectDiagramType,
   extractMermaidTitle,
 } from "@/components/mermaid/diagram-type";
-import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
+import {
+  resolveCanvasType,
+  resolveArtifactDefByKind,
+  type ArtifactTypeDef,
+} from "@/features/canvas/artifact-types/artifact-type-registry";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import {
+  readEnvelope,
+  reconstructRegionValue,
+} from "@/features/content-ir/redux/render-block-envelope";
+import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
 import { wrapArtifactText } from "./artifactWire";
 
 export interface PlannedArtifact {
@@ -42,6 +57,14 @@ export interface PlannedArtifact {
   title: string;
   /** Raw payload string the type's renderer consumes (markdown or JSON). */
   content: string;
+  /**
+   * Structured (kind-IR) value for kind-detected JSON blocks — persisted AS
+   * `canvas_items.content.data` (an object carrying `__kind`, zero
+   * reprocessing on reload) instead of the string. `content` still carries
+   * the compact canonical JSON for the message wire form. Absent for
+   * string-payload types.
+   */
+  structured?: Record<string, unknown>;
   /** Type-specific metadata persisted into canvas_items.content.metadata. */
   metadata?: Record<string, unknown>;
 }
@@ -92,6 +115,76 @@ function titleFor(
   return `${label} ${index}`;
 }
 
+function firstNonEmptyString(...values: unknown[]): string | null {
+  for (const v of values) {
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+interface StructuredDetection {
+  def: ArtifactTypeDef;
+  kind: string;
+  /** Zero-loss value object (carries `__kind` — self-describing). */
+  structured: Record<string, unknown>;
+}
+
+/**
+ * Detect a STRUCTURED (kind-IR) artifact in a splitter block (Track 2B).
+ *
+ * Two routes, both PURE:
+ *  1. Envelope: the splitter attached `metadata.__ir` and the kind parser
+ *     RESOLVED a registered kind → reconstruct the zero-loss value (residue
+ *     extras merged back in).
+ *  2. Parsed root: no envelope (flag off / legacy payload), but the block is
+ *     a JSON object whose root carries `__kind` matching a registered kind.
+ *
+ * Returns null for anything else — string-payload planning is unchanged.
+ */
+function detectStructuredArtifact(sb: {
+  type: string;
+  content?: string;
+  language?: string;
+  metadata?: Record<string, unknown>;
+}): StructuredDetection | null {
+  const envelope = readEnvelope(sb.metadata);
+  if (
+    envelope &&
+    envelope.root.kind &&
+    envelope.root.kindState === "resolved" &&
+    envelope.root.status === "complete"
+  ) {
+    const def = resolveArtifactDefByKind(envelope.root.kind);
+    if (def?.materializable) {
+      return {
+        def,
+        kind: envelope.root.kind,
+        structured: reconstructRegionValue(envelope),
+      };
+    }
+  }
+
+  // Parse fallback — only for JSON blocks (fenced ```json or bare-object
+  // regions; the splitter stamps language "json" on both).
+  if (sb.type !== "code" || sb.language !== "json") return null;
+  const raw = (sb.content ?? "").trim();
+  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return null;
+  }
+  const kind = readObjectKind(parsed as Record<string, unknown>);
+  if (!kind) return null;
+  const def = resolveArtifactDefByKind(kind);
+  if (!def?.materializable) return null;
+  return { def, kind, structured: parsed as Record<string, unknown> };
+}
+
 export function planMaterialization(
   content: CxContentBlock[],
 ): MaterializationPlan {
@@ -137,26 +230,19 @@ export function planMaterialization(
           : undefined;
       const canvasType = resolveCanvasType(sb.type, artifactType);
 
-      if (!canvasType) {
-        // Not an artifact — re-serialize to markdown and keep inline.
-        appendText(
-          reconstructBlockMarkdown({
-            type: sb.type,
-            content: sb.content ?? "",
-            data: sb.language ? { language: sb.language } : null,
-          }),
-        );
-        continue;
-      }
-
       // Already materialized (R3): a `<artifact>` carrying a real canvas UUID.
       // Pass it through verbatim and DON'T re-materialize. Still counts toward
-      // position so later new artifacts get a non-colliding index.
+      // position so later new artifacts get a non-colliding index. Checked
+      // FIRST so a materialized structured body is never re-detected.
       const existingId =
         typeof sb.metadata?.artifactId === "string"
           ? (sb.metadata.artifactId as string)
           : undefined;
-      if (sb.type === "artifact" && isMaterializedArtifactId(existingId)) {
+      if (
+        sb.type === "artifact" &&
+        canvasType &&
+        isMaterializedArtifactId(existingId)
+      ) {
         position += 1;
         const rawXml =
           typeof sb.metadata?.rawXml === "string"
@@ -177,6 +263,53 @@ export function planMaterialization(
                   : undefined,
               body: sb.content ?? "",
             }),
+        );
+        continue;
+      }
+
+      // Structured (kind-IR) detection — catches JSON regions the fence/tag
+      // heuristics can't type (the splitter calls them "code") plus
+      // `<artifact>`-tagged bodies carrying a kind. When the tag's type and
+      // the kind's type disagree, the tag wins (falls to the string path).
+      const structuredHit = detectStructuredArtifact(sb);
+      if (
+        structuredHit &&
+        (!canvasType || canvasType === structuredHit.def.canvasType)
+      ) {
+        flushTextRun();
+        position += 1;
+        const title =
+          firstNonEmptyString(
+            structuredHit.structured.title,
+            structuredHit.structured.set_title,
+            structuredHit.structured.name,
+            sb.metadata?.artifactTitle,
+          ) ?? titleFor(structuredHit.def.canvasType, sb.metadata, position);
+        artifacts.push({
+          artifactIndex: position,
+          canvasType: structuredHit.def.canvasType,
+          title,
+          // Wire form: the `<artifact>` tag body is compact canonical JSON —
+          // model-readable and durable; the UI routes by UUID.
+          content: JSON.stringify(structuredHit.structured),
+          structured: structuredHit.structured,
+          metadata: { kind: structuredHit.kind },
+        });
+        rewritten.push({
+          __artifactPending: true,
+          artifactIndex: position,
+        } as ArtifactPendingMarker);
+        continue;
+      }
+
+      if (!canvasType) {
+        // Not an artifact — re-serialize to markdown and keep inline.
+        appendText(
+          reconstructBlockMarkdown({
+            type: sb.type,
+            content: sb.content ?? "",
+            data: sb.language ? { language: sb.language } : null,
+          }),
         );
         continue;
       }

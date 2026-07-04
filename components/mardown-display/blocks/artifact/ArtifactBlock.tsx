@@ -40,6 +40,13 @@ interface ArtifactBlockProps {
     title?: string;
     content?: string;
   } | null;
+  /**
+   * serverData derived from a STRUCTURED (kind-IR) stored payload (Track 2B —
+   * `kindServerDataFromStoredValue`). Used as the renderer's serverData when
+   * the stream-shaped `serverData` prop is absent; the type-specific renderer
+   * (e.g. FlashcardsArtifact) narrows it.
+   */
+  structuredServerData?: Record<string, unknown> | null;
   isStreamActive?: boolean;
   messageId?: string;
   taskId?: string;
@@ -60,6 +67,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
   content,
   metadata,
   serverData,
+  structuredServerData,
   isStreamActive,
   messageId,
   taskId,
@@ -180,7 +188,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
           canvasType={canvasType}
           mode="artifact"
           raw={content}
-          serverData={serverData}
+          serverData={serverData ?? structuredServerData ?? undefined}
           metadata={metadata as Record<string, unknown> | undefined}
           artifactId={artifactId}
           messageId={messageId}

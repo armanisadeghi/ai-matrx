@@ -3,6 +3,7 @@
 import React, { Suspense, lazy } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
+import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";
 
@@ -84,6 +85,16 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
               ? stored
               : JSON.stringify(stored ?? "");
 
+    // STRUCTURED (kind-IR) payload (Track 2B): content.data is the zero-loss
+    // value OBJECT (self-describing via __kind). Derive the kind's serverData
+    // directly — no text re-parse — and let the type renderer take its
+    // serverData path (flashcards → FlashcardsBlock). Legacy string payloads
+    // return null here and keep the raw-string path forever.
+    const structuredServerData =
+        stored && typeof stored === "object" && "data" in stored
+            ? kindServerDataFromStoredValue(stored.data)
+            : null;
+
     // Mermaid gets its first-class block (full toolbar: options, export,
     // source, edit-in-canvas) instead of the generic artifact chrome.
     if (row.type === "mermaid") {
@@ -114,6 +125,7 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
     return (
         <ArtifactBlock
             content={raw}
+            structuredServerData={structuredServerData}
             metadata={{
                 isComplete: true,
                 artifactId: row.id,

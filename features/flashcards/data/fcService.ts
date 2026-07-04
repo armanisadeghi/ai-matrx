@@ -158,6 +158,8 @@ export const fcService = {
         topic: c.topic ?? null,
         lesson: c.lesson ?? null,
         personal_notes: c.personal_notes ?? null,
+        // Columnless extras (e.g. tags) ride the jsonb metadata — never dropped.
+        metadata: c.metadata ?? {},
       }));
       const { data, error } = await EDU().from("fc_card").insert(rows).select("*");
       if (error) return fail("addCards", error);
