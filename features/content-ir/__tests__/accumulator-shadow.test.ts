@@ -48,7 +48,7 @@ function lastCompleteBlockWithEnvelope(upserts: Upsert[]): {
 const FLASHCARD_JSON = JSON.stringify(
   {
     __kind: "flashcard_set",
-    set_title: "Stream Test",
+    title: "Stream Test",
     cards: [
       { __kind: "flashcard", front: "A?", back: "a", bonus_field: "kept" },
       { __kind: "flashcard", front: "B?", back: "b" },
@@ -131,7 +131,7 @@ describe("accumulator shadow delegation (bare JSON)", () => {
     const { accumulator, upserts, dispatch } = makeAccumulator("req-minified");
     const minified = JSON.stringify({
       __kind: "flashcard_set",
-      set_title: "Live",
+      title: "Live",
       cards: [
         { __kind: "flashcard", front: "Q1?", back: "a1" },
         { __kind: "flashcard", front: "Q2?", back: "a2" },
@@ -171,7 +171,7 @@ describe("accumulator shadow delegation (bare JSON)", () => {
 
   it("a truncated region ends with a status:error envelope, never breaking the block", () => {
     const { accumulator, upserts, dispatch } = makeAccumulator("req-truncated");
-    accumulator.ingest('{\n"__kind": "flashcard_set",\n"set_title": "Cut', dispatch);
+    accumulator.ingest('{\n"__kind": "flashcard_set",\n"title": "Cut', dispatch);
     accumulator.finalize(dispatch);
 
     const withEnvelope = upserts

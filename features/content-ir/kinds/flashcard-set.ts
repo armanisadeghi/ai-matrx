@@ -85,5 +85,13 @@ export function flashcardsServerDataFromEnvelope(
     cards,
     isComplete: setComplete,
   };
+
+  // Set title: `title` is canonical; `set_title` is the OLD agent payload
+  // key, tolerated as a transition alias.
+  const rawTitle = envelope.root.value.title ?? envelope.root.value.set_title;
+  if (typeof rawTitle === "string" && rawTitle !== "") {
+    serverData.title = rawTitle;
+  }
+
   return serverData;
 }

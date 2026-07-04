@@ -2,9 +2,14 @@
  * The canonical kind registry — ONE key (the kind slug), many facets.
  *
  * Loading tiers:
- * - eager: compiled-in system kinds (system-kinds.ts), available at import.
+ * - eager: compiled-in system kinds (system-kinds.ts) — the pre-warm
+ *          BOOTSTRAP FALLBACK, available at import so speculation and
+ *          validation work from the first streamed byte.
  * - warm:  one flexible_data list fetch per app session (ensureWarm), fired
- *          by the first host that expects streamed content.
+ *          by the first host that expects streamed content. DB rows are the
+ *          schema source of truth: they OVERRIDE compiled schemas while the
+ *          compiled facets (legacyBlockType, toLegacyServerData, artifact,
+ *          persistence) are preserved.
  * - cold:  unknown kind sighted mid-stream → single-row fetch by slug →
  *          `onSchemaArrived` waiters (ParseSessions) upgrade in place.
  *
@@ -76,7 +81,10 @@ class KindRegistry {
         .then(({ schemas }) => {
           for (const [kind, schema] of Object.entries(schemas)) {
             const existing = this.defs.get(kind);
-            if (existing?.schemaSource === "system") continue; // compiled wins
+            // DB rows override the SCHEMA (flexible_data is the source of
+            // truth once warm); compiled facets — legacyBlockType,
+            // toLegacyServerData, artifact, persistence — survive via the
+            // spread. The compiled schema is only the pre-warm bootstrap.
             this.defs.set(kind, {
               ...existing,
               kind,

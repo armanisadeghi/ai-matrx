@@ -10,7 +10,10 @@ import {
 } from "../core/kind-parser";
 import { irPathKey } from "../core/ir-types";
 import type { KindSchema } from "../core/kind-schema.types";
-import { FLASHCARD_SCHEMAS } from "./fixtures/flashcards-fixture";
+import {
+  FLASHCARD_SCHEMAS,
+  SPECULATION_SCHEMAS,
+} from "./fixtures/flashcards-fixture";
 
 function collect(
   input: string,
@@ -31,14 +34,17 @@ function collect(
 }
 
 describe("speculative descent", () => {
+  // Array-item speculation requires a SINGLE-member itemKinds — the
+  // production flashcard_set is multi-kind now, so these tests pin the
+  // single-member SPECULATION_SCHEMAS variant.
   it("commits a card's kind the instant `{` opens under a declared array", () => {
     const input = JSON.stringify({
       __kind: "flashcard_set",
-      set_title: "T",
+      title: "T",
       cards: [{ __kind: "flashcard", front: "Q", back: "A" }],
     });
 
-    const events = collect(input);
+    const events = collect(input, { schemas: SPECULATION_SCHEMAS });
     const speculated = events.find(
       (e) =>
         e.type === "kind_identified" &&
@@ -75,11 +81,11 @@ describe("speculative descent", () => {
   it("types an object by prediction alone when __kind never arrives", () => {
     const input = JSON.stringify({
       __kind: "flashcard_set",
-      set_title: "T",
+      title: "T",
       cards: [{ front: "Q", back: "A" }], // no __kind on the card
     });
 
-    const events = collect(input);
+    const events = collect(input, { schemas: SPECULATION_SCHEMAS });
     const completed = events.find(
       (e) => e.type === "object_complete" && irPathKey(e.path) === "cards.0",
     );
@@ -164,11 +170,14 @@ describe("speculative descent", () => {
 
   it("expectedRootKind types a root object that carries no __kind (Option-1 provenance)", () => {
     const input = JSON.stringify({
-      set_title: "Injected by context",
+      title: "Injected by context",
       cards: [{ front: "Q", back: "A" }],
     });
 
-    const events = collect(input, { expectedRootKind: "flashcard_set" });
+    const events = collect(input, {
+      schemas: SPECULATION_SCHEMAS,
+      expectedRootKind: "flashcard_set",
+    });
 
     const rootIdentified = events.find(
       (e) =>
@@ -303,7 +312,7 @@ describe("pending-schema upgrade-in-place", () => {
 describe("pop-up-one-level error recovery", () => {
   it("a duplicate key marks THAT node raw and the stream survives", () => {
     const input =
-      '{"__kind":"flashcard_set","set_title":"T","cards":[{"__kind":"flashcard","front":"Q","front":"Q2","back":"A"}]}';
+      '{"__kind":"flashcard_set","title":"T","cards":[{"__kind":"flashcard","front":"Q","front":"Q2","back":"A"}]}';
 
     const events = collect(input);
 

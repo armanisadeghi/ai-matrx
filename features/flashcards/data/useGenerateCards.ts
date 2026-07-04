@@ -9,11 +9,16 @@
 // extraction on, poll the active-requests slice until extraction finalizes,
 // then read the first extracted object.
 //
-// Returns the RAW agent JSON ({ set_title, cards[] } for FC_AGENTS.generateCards)
-// coerced into a normalized shape so callers never touch `any`. Persisting the
-// result (fc_set + fc_card rows) is the CALLER's job — this hook only owns the
+// Returns the RAW agent JSON ({ title, cards[] } for FC_AGENTS.generateCards;
+// the OLD set_title key is tolerated as a transition alias) coerced into a
+// normalized shape so callers never touch `any`. Persisting the result
+// (fc_set + fc_card rows) is the CALLER's job — this hook only owns the
 // agent round-trip, so the same primitive serves from-topic, from-source, and
 // future quiz flows.
+//
+// NOTE: the content-ir envelope (generatedSetFromEnvelope) is now the PRIMARY
+// persistence source in CreateFromTopic; this hook's extraction result is the
+// transition fallback and the resolution trigger / timeout mechanism.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
@@ -29,7 +34,11 @@ import {
 import type { RootState } from "@/lib/redux/store";
 import type { NewCardInput } from "./types";
 
-/** The agent's documented response shape: `{ set_title, cards[] }`. */
+/**
+ * The normalized generation result. The agent's canonical response shape is
+ * `{ title, cards[] }`; the field keeps its historical `set_title` name
+ * internally (persistence consumers read it as the set's name).
+ */
 export interface GeneratedCardSet {
   set_title: string;
   cards: NewCardInput[];
@@ -96,10 +105,10 @@ function coerceCard(raw: unknown): NewCardInput | null {
 
 /**
  * Coerce the extracted object into a GeneratedCardSet. Accepts the canonical
- * `{ set_title, cards[] }` and is tolerant of a couple of plausible drift
- * shapes (a bare array of cards, or a `title`/`flashcards` key) so a prompt
- * tweak doesn't break the flow silently. Throws (caught by the caller) only
- * when no cards can be recovered at all.
+ * `{ title, cards[] }` and is tolerant of the transition/drift shapes (the
+ * OLD `set_title` key, a bare array of cards, or a `flashcards` key) so a
+ * prompt tweak doesn't break the flow silently. Throws (caught by the
+ * caller) only when no cards can be recovered at all.
  */
 function coerceGeneratedSet(value: unknown): GeneratedCardSet {
   // Bare array → treat as the cards list with no title.
@@ -117,8 +126,8 @@ function coerceGeneratedSet(value: unknown): GeneratedCardSet {
   const obj = value as Record<string, unknown>;
 
   const set_title =
-    (typeof obj.set_title === "string" && obj.set_title.trim()) ||
     (typeof obj.title === "string" && obj.title.trim()) ||
+    (typeof obj.set_title === "string" && obj.set_title.trim()) ||
     "";
 
   const rawCards = Array.isArray(obj.cards)

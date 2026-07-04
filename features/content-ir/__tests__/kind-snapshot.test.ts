@@ -19,7 +19,7 @@ describe("buildCompliantKindSnapshot residue channel", () => {
     });
     expect(residue).toEqual({
       extra: null,
-      optionalMissing: ["topic"],
+      optionalMissing: ["card_kind", "difficulty", "topic", "tags"],
       notices: null,
     });
   });
@@ -28,7 +28,10 @@ describe("buildCompliantKindSnapshot residue channel", () => {
     const { value, residue } = buildCompliantKindSnapshot(flashcard, {
       front: "Q?",
       back: "A",
+      card_kind: "basic",
+      difficulty: "easy",
       topic: "misc",
+      tags: ["bio"],
       audio_url: "https://example.com/a.mp3",
       sources: ["book"],
     });
@@ -37,7 +40,10 @@ describe("buildCompliantKindSnapshot residue channel", () => {
       __kind: "flashcard",
       front: "Q?",
       back: "A",
+      card_kind: "basic",
+      difficulty: "easy",
       topic: "misc",
+      tags: ["bio"],
     });
     expect(residue?.extra).toEqual({
       audio_url: "https://example.com/a.mp3",
@@ -50,7 +56,10 @@ describe("buildCompliantKindSnapshot residue channel", () => {
     const { residue } = buildCompliantKindSnapshot(flashcard, {
       front: "Q?",
       back: "A",
+      card_kind: "basic",
+      difficulty: "easy",
       topic: "misc",
+      tags: ["bio"],
     });
     expect(residue).toBeNull();
   });

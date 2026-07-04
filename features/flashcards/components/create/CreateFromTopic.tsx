@@ -8,12 +8,15 @@
 // user is navigated into the new set, ready to study.
 //
 // The agent round-trip lives in useGenerateCards (reused by future from-source /
-// quiz flows). Persistence is fcService.createSetWithCards. Navigation uses
-// useTransition. Errors surface loudly via sonner toast.
+// quiz flows). The live stream feeds ONE content-ir parse session (hoisted
+// useLiveJsonRegion) whose envelope drives BOTH the card-by-card preview and,
+// on completion, the persisted set (generatedSetFromEnvelope) — parse once →
+// display AND persist. Persistence is fcService.createSetWithCards.
+// Navigation uses useTransition. Errors surface loudly via sonner toast.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
 import { toast } from "sonner";
@@ -30,8 +33,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/spinner";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAnswerText,
+  selectRequestStatus,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { useLiveJsonRegion } from "@/features/content-ir/react/useLiveJsonRegion";
+import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import { FC_AGENTS } from "../../data/agents";
 import { fcService } from "../../data/fcService";
+import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
 
 const EDU_BASE = "/education/flashcards";
@@ -55,6 +66,44 @@ export function CreateFromTopic() {
   const { generate, isGenerating, activeRequestId } = useGenerateCards();
   const [isNavigating, startNavigation] = useTransition();
 
+  const answerText = useAppSelector((state) =>
+    activeRequestId ? selectAnswerText(activeRequestId)(state) : "",
+  );
+  const requestStatus = useAppSelector((state) =>
+    activeRequestId ? selectRequestStatus(activeRequestId)(state) : null,
+  );
+
+  // ONE parse session for the whole generation: the agent's answer text feeds
+  // content-ir with expectedRootKind "flashcard_set" (the parser types the
+  // whole tree from the prediction — no __kind needed in the payload). The
+  // envelope drives the live preview below AND the persisted set on
+  // completion.
+  // NOTE: the previous inline check compared against "completed", which is
+  // not a RequestStatus member — the region never ended on success. Every
+  // terminal status ends the region so the envelope can reach "complete".
+  const requestIsDone =
+    requestStatus === "complete" ||
+    requestStatus === "error" ||
+    requestStatus === "timeout" ||
+    requestStatus === "cancelled";
+
+  const { envelope } = useLiveJsonRegion(
+    activeRequestId ? `flashcards-live:${activeRequestId}` : null,
+    answerText,
+    {
+      expectedRootKind: "flashcard_set",
+      done: requestIsDone,
+    },
+  );
+
+  // The async submit handler reads the envelope as it stands AFTER the
+  // awaited generation resolves — a ref carries the latest value across the
+  // await.
+  const envelopeRef = useRef<CanonicalBlockIR | null>(null);
+  useEffect(() => {
+    envelopeRef.current = envelope;
+  }, [envelope]);
+
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
@@ -77,13 +126,25 @@ export function CreateFromTopic() {
     const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
 
     try {
-      const result = await generate(FC_AGENTS.generateCards, {
+      const extracted = await generate(FC_AGENTS.generateCards, {
         topic: trimmedTopic,
         count: safeCount,
         difficulty,
         grade_level: gradeLevel.trim() || undefined,
         user_request: userRequest.trim() || undefined,
       });
+
+      // Typed save path: the same content-ir envelope that drove the live
+      // preview is the persistence source — one parser output for display
+      // AND persistence. The `generate()` extraction result stays as a
+      // transition fallback until the envelope path is verified live; the
+      // extraction polling remains the resolution trigger / timeout
+      // mechanism either way.
+      const fromEnvelope = envelopeRef.current
+        ? generatedSetFromEnvelope(envelopeRef.current)
+        : null;
+      const result =
+        fromEnvelope && fromEnvelope.cards.length > 0 ? fromEnvelope : extracted;
 
       const setRes = await fcService.createSetWithCards(
         {
@@ -157,9 +218,9 @@ export function CreateFromTopic() {
                   </p>
                 </div>
               </div>
-              {/* Live card-by-card preview — the content-ir session renders
-                  each card the moment its front arrives. */}
-              <LiveGenerationPreview requestId={activeRequestId} />
+              {/* Live card-by-card preview — the hoisted content-ir session
+                  renders each card the moment its front arrives. */}
+              <LiveGenerationPreview envelope={envelope} />
             </div>
           ) : (
             <form

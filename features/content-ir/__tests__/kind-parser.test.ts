@@ -7,6 +7,7 @@ import { chunkText } from "./seeded-random";
 import {
   FLASHCARD_SCHEMAS,
   FLASHCARD_SET_JSON,
+  FLASHCARD_SET_MULTI_KIND_JSON,
   FLASHCARD_SET_WITH_EXTRAS_JSON,
   MISSING_KIND_JSON,
   UNKNOWN_KIND_JSON,
@@ -124,7 +125,7 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
     };
     const input = JSON.stringify({
       __kind: "flashcard_set",
-      set_title: "T",
+      title: "T",
       cards: [{ __kind: "intruder" }],
     });
 
@@ -136,13 +137,55 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
     parser.push(input);
     parser.end();
 
-    // Speculation committed "flashcard" at `{` open; the intruder __kind is
-    // not in itemKinds, so the node backtracks to raw — parent unharmed.
+    // Multi-member itemKinds means no speculation at `{` open; the intruder
+    // __kind identifies the node, then the itemKinds whitelist rejects it at
+    // close — the node goes raw, parent unharmed.
     const raw = events.find((e) => e.type === "raw_object");
     expect(raw).toBeDefined();
     if (raw?.type !== "raw_object") throw new Error("unreachable");
     expect(irPathKey(raw.path)).toBe("cards.0");
-    expect(raw.reason).toContain("contradicted");
+    expect(raw.reason).toContain("not allowed");
+    expect(events.some((e) => e.type === "error")).toBe(false);
+  });
+
+  it("multi-kind cards resolve via pending_kind → __kind; single-member subcards still speculate", () => {
+    const events = parseAll(FLASHCARD_SET_MULTI_KIND_JSON);
+
+    // Multi-member itemKinds → no speculation at card open.
+    expect(
+      events.some(
+        (e) => e.type === "pending_kind" && irPathKey(e.path) === "cards.0",
+      ),
+    ).toBe(true);
+
+    const cardKinds = events
+      .filter(
+        (e) => e.type === "kind_identified" && irPathKey(e.path).startsWith("cards."),
+      )
+      .map((e) =>
+        e.type === "kind_identified"
+          ? { kind: e.kind, path: irPathKey(e.path), speculative: e.speculative }
+          : null,
+      );
+    expect(cardKinds).toEqual([
+      { kind: "flashcard", path: "cards.0", speculative: undefined },
+      { kind: "enhanced_flashcard", path: "cards.1", speculative: undefined },
+      // tiered_flashcard's subcards declare a SINGLE itemKind — speculation
+      // still commits basic_card the instant its `{` opens.
+      { kind: "tiered_flashcard", path: "cards.2", speculative: undefined },
+      { kind: "basic_card", path: "cards.2.subcards.0", speculative: true },
+    ]);
+
+    // Every card completes typed; nothing degrades to raw.
+    expect(events.some((e) => e.type === "raw_object")).toBe(false);
+    for (const path of ["cards.0", "cards.1", "cards.2", "cards.2.subcards.0"]) {
+      expect(
+        events.some(
+          (e) => e.type === "object_complete" && irPathKey(e.path) === path,
+        ),
+      ).toBe(true);
+    }
+    expect(events.some((e) => e.type === "complete")).toBe(true);
     expect(events.some((e) => e.type === "error")).toBe(false);
   });
 
@@ -161,7 +204,7 @@ describe("KindStreamParser goldens (flashcard fixture)", () => {
       schemas: FLASHCARD_SCHEMAS,
       onEvent: (e) => events.push(e),
     });
-    parser.push('{"__kind":"flashcard_set","set_title":"T","cards":[{"__kind":"flashcard","front":"Q');
+    parser.push('{"__kind":"flashcard_set","title":"T","cards":[{"__kind":"flashcard","front":"Q');
     parser.end();
 
     expect(events.some((e) => e.type === "error")).toBe(true);

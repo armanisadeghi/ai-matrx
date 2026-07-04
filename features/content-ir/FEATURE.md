@@ -13,7 +13,7 @@
 | IR | `core/ir-types.ts` | `CanonicalBlockIR` envelope: v1, engine provenance, fingerprint, schema-shaped `root`, per-node residue in `nodeIndex` |
 | Tree | `core/ir-tree.ts` | COW structural sharing — a child update rebuilds only its ancestor spine; ONE envelope assembler for stream + one-shot |
 | Normalizer | `core/normalize.ts` | **the idempotence law**: input already carrying a current envelope returns BY REFERENCE — zero reprocessing, zero rerenders |
-| Registry | `registry/kind-registry.ts` | ONE key (kind slug), facets: schema / component / `legacyBlockType` bridge / artifact pointer. Tiers: eager (system-kinds) / warm (one flexible_data list) / cold (by-slug fetch → `notifySchemaArrived` upgrades nodes in place) |
+| Registry | `registry/kind-registry.ts` | ONE key (kind slug), facets: schema / component / `legacyBlockType` bridge / artifact pointer. Tiers: eager (system-kinds = pre-warm bootstrap fallback ONLY) / warm (one flexible_data list — DB rows OVERRIDE compiled schemas once warm, compiled facets preserved) / cold (by-slug fetch → `notifySchemaArrived` upgrades nodes in place) |
 | Session | `session/` | parser + tree OUTSIDE React; **one writer per identity** (`{requestId}:{blockId}`, second `openParseSession` THROWS); N readers via `useIrNode` per-path subscriptions; host-cadence `flushNotify` — never per token |
 | Render flip | `react/kind-route.ts` | block with a resolved registered kind in `metadata.__ir` → its component via `legacyBlockType` + `toLegacyServerData`; everything else passes through BY REFERENCE |
 
@@ -42,4 +42,5 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-07-03 — Registry precedence flipped: flexible_data rows now override compiled schemas on warm (compiled = bootstrap fallback, facets preserved); flashcard family aligned to the DB Block Schemas (`title` canonical, `set_title` transition alias, multi-kind cards + enhanced/tiered/basic_card compiled defs); flashcards typed save path added (`generatedSetFromEnvelope` — one parse drives display AND persistence).
 - 2026-07-03 — Phases 0–4 built: library extracted from the json-block-detector demo; parser upgraded (speculation, pending-schema, pop-up-one-level recovery); COW tree + sessions + registry; accumulator + splitter delegation with parity suite; flashcards kind routing (bare/fenced JSON flashcard_set renders live as real flashcards); lint doctrine landed.

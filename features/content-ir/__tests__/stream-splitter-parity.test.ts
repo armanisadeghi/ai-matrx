@@ -53,7 +53,7 @@ function splitterEnvelopes(source: string): CanonicalBlockIR[] {
 const FLASHCARDS = JSON.stringify(
   {
     __kind: "flashcard_set",
-    set_title: "Parity",
+    title: "Parity",
     audio_intro: "https://example.com/intro.mp3",
     cards: [
       { __kind: "flashcard", front: "Q1", back: "A1", image_ref: "img-9" },

@@ -12,9 +12,9 @@
 // keys must be) — a few differ from the first-draft spec, so wire to THESE.
 
 export const FC_AGENTS = {
-  /** topic, count, difficulty, grade_level, user_request → { set_title, cards[] } */
+  /** topic, count, difficulty, grade_level, user_request → { title, cards[] } (OLD set_title tolerated) */
   generateCards: "1fd0cb1f-5b95-49f0-a7f8-79308dc50f58",
-  /** source_content, document_id, count, difficulty → { set_title, cards[] (with source) } */
+  /** source_content, document_id, count, difficulty → { title, cards[] (with source) } (OLD set_title tolerated) */
   generateFromSource: "f728ac6b-8504-4b8c-83fc-5f9df947d6a9",
   /** front, back, topic, difficulty, kinds, existing_details → { details[] } */
   enrichCard: "9f8eab67-96e4-4a08-9563-7a982f920527",

@@ -13,7 +13,7 @@ import { flashcardsServerDataFromEnvelope } from "../kinds/flashcard-set";
 
 const FLASHCARDS = JSON.stringify({
   __kind: "flashcard_set",
-  set_title: "Route",
+  title: "Route",
   cards: [
     { __kind: "flashcard", front: "Q1", back: "A1", hint: "extra kept" },
     { __kind: "flashcard", front: "Q2", back: "A2" },
@@ -38,9 +38,11 @@ describe("applyIrKindRoute", () => {
     const routed = applyIrKindRoute(block);
     expect(routed.type).toBe("flashcards");
 
-    const serverData = (routed as { serverData?: FlashcardsBlockData })
-      .serverData;
+    const serverData = (
+      routed as { serverData?: FlashcardsBlockData & { title?: string } }
+    ).serverData;
     expect(serverData?.isComplete).toBe(true);
+    expect(serverData?.title).toBe("Route"); // set title passes through
     expect(serverData?.cards).toHaveLength(2);
     expect(serverData?.cards[0]).toMatchObject({
       front: "Q1",

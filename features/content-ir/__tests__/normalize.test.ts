@@ -36,13 +36,19 @@ describe("normalizeJsonRegion", () => {
     expect(envelope.root.kind).toBe("flashcard_set");
     expect(envelope.root.kindState).toBe("resolved");
     expect(envelope.root.status).toBe("complete");
-    expect(envelope.root.value.set_title).toBe("Cell Biology");
+    expect(envelope.root.value.title).toBe("Cell Biology");
     expect(Array.isArray(envelope.root.value.cards)).toBe(true);
-    // Child card metadata is indexed by path.
+    // Child card metadata is indexed by path (declared-but-absent optional
+    // fields ride the residue channel).
     expect(envelope.nodeIndex?.["cards.0"]).toEqual({
       kind: "flashcard",
       kindState: "resolved",
       status: "complete",
+      residue: {
+        extra: null,
+        optionalMissing: ["card_kind", "difficulty", "tags"],
+        notices: null,
+      },
     });
   });
 
@@ -117,7 +123,7 @@ describe("THE IDEMPOTENCE LAW", () => {
     });
 
     expect(reparsed).not.toBe(original);
-    expect(reparsed.root.value.set_title).toBe("Molecular Biology");
+    expect(reparsed.root.value.title).toBe("Molecular Biology");
     expect(reparsed.fingerprint).not.toBe(original.fingerprint);
   });
 });

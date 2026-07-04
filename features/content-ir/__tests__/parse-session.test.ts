@@ -14,7 +14,7 @@ import {
 
 const THREE_CARD_JSON = JSON.stringify({
   __kind: "flashcard_set",
-  set_title: "Physics",
+  title: "Physics",
   cards: [
     { __kind: "flashcard", front: "F=?", back: "ma" },
     { __kind: "flashcard", front: "E=?", back: "mc^2" },
@@ -42,7 +42,7 @@ describe("ParseSession + IrTree", () => {
     const root = session.getNode("");
     expect(root?.kind).toBe("flashcard_set");
     expect(root?.complete).toBe(true);
-    expect(root?.value.set_title).toBe("Physics");
+    expect(root?.value.title).toBe("Physics");
 
     const card1 = session.getNode("cards.1");
     expect(card1?.kind).toBe("flashcard");
@@ -57,7 +57,7 @@ describe("ParseSession + IrTree", () => {
 
     // Stream the set with two complete cards, then pause mid-third-card.
     const prefix =
-      '{"__kind":"flashcard_set","set_title":"P","cards":[' +
+      '{"__kind":"flashcard_set","title":"P","cards":[' +
       '{"__kind":"flashcard","front":"A?","back":"a"},' +
       '{"__kind":"flashcard","front":"B?","back":"b"},' +
       '{"__kind":"flashcard","front":"C?"';
@@ -116,7 +116,7 @@ describe("ParseSession + IrTree", () => {
     track("cards.1");
 
     session.write(
-      '{"__kind":"flashcard_set","set_title":"P","cards":[{"__kind":"flashcard","front":"A?","back":"a"},',
+      '{"__kind":"flashcard_set","title":"P","cards":[{"__kind":"flashcard","front":"A?","back":"a"},',
     );
     session.flushNotify();
 
@@ -152,7 +152,7 @@ describe("ParseSession + IrTree", () => {
       schemas: FLASHCARD_SCHEMAS,
     });
     session.write(
-      '{"__kind":"flashcard_set","set_title":"P","cards":[{"__kind":"flashcard","front":"A?","back":"a"}',
+      '{"__kind":"flashcard_set","title":"P","cards":[{"__kind":"flashcard","front":"A?","back":"a"}',
     );
     session.flushNotify();
 

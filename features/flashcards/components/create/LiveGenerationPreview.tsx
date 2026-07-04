@@ -1,25 +1,20 @@
 "use client";
 
 /**
- * Live card-by-card preview while the generateCards agent streams.
+ * Live card-by-card preview while the generateCards agent streams —
+ * PRESENTATIONAL. The canonical envelope comes from the parent's hoisted
+ * useLiveJsonRegion (CreateFromTopic), so ONE parse session drives both this
+ * display and the persisted set (generatedSetFromEnvelope).
  *
- * The agent's answer text feeds content-ir's useLiveJsonRegion with
- * expectedRootKind "flashcard_set" — the parser types the whole tree from
- * the parent prediction (no __kind needed in the payload), and every card
- * mounts the moment its `front` arrives, back showing the per-card loader
- * until it streams in. This kills the "spinner until everything is done"
- * experience without touching the extraction path that persists the set.
+ * Every card mounts the moment its `front` arrives, back showing the
+ * per-card loader until it streams in — no "spinner until everything is
+ * done" experience.
  */
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectAnswerText,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useLiveJsonRegion } from "@/features/content-ir/react/useLiveJsonRegion";
 import { flashcardsServerDataFromEnvelope } from "@/features/content-ir/kinds/flashcard-set";
+import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 
 const FlashcardsBlock = dynamic(
@@ -36,26 +31,10 @@ const FlashcardsBlock = dynamic(
 );
 
 export function LiveGenerationPreview({
-  requestId,
+  envelope,
 }: {
-  requestId: string | null;
+  envelope: CanonicalBlockIR | null;
 }) {
-  const answerText = useAppSelector((state) =>
-    requestId ? selectAnswerText(requestId)(state) : "",
-  );
-  const status = useAppSelector((state) =>
-    requestId ? selectRequestStatus(requestId)(state) : null,
-  );
-
-  const { envelope } = useLiveJsonRegion(
-    requestId ? `flashcards-live:${requestId}` : null,
-    answerText,
-    {
-      expectedRootKind: "flashcard_set",
-      done: status === "completed" || status === "error",
-    },
-  );
-
   const serverData = envelope
     ? (flashcardsServerDataFromEnvelope(envelope) as
         | FlashcardsBlockData
