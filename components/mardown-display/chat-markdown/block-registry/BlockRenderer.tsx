@@ -958,10 +958,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     case "schema_proposal":
       // A ```json output-schema proposal ({ name, schema, strict? }). Offers
       // "Apply to an agent" → writes agx_agent.output_schema. Fail-safe parse.
+      // serverData (the `schema_proposal` kind bridge's clean, __kind-stripped
+      // object) is preferred over the content parse when present.
       return (
         <BlockComponents.SchemaProposalBlock
           key={index}
           content={block.content}
+          serverData={block.serverData}
         />
       );
 

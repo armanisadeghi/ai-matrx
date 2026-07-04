@@ -54,20 +54,20 @@ export interface ArtifactTypeDef {
 
 export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
   { canvasType: "flashcards", aliases: ["flashcards"], standaloneAliases: ["flashcards"], materializable: true, persistenceStrategy: "custom", adapter: "flashcards", kinds: ["flashcard_set"] },
-  { canvasType: "quiz", aliases: ["quiz"], standaloneAliases: ["quiz"], materializable: true, persistenceStrategy: "custom", adapter: "quiz" },
-  { canvasType: "presentation", aliases: ["presentation"], standaloneAliases: ["presentation"], materializable: true },
+  { canvasType: "quiz", aliases: ["quiz"], standaloneAliases: ["quiz"], materializable: true, persistenceStrategy: "custom", adapter: "quiz", kinds: ["quiz_set"] },
+  { canvasType: "presentation", aliases: ["presentation"], standaloneAliases: ["presentation"], materializable: true, kinds: ["presentation_deck"] },
   { canvasType: "timeline", aliases: ["timeline"], standaloneAliases: ["timeline"], materializable: true },
   { canvasType: "research", aliases: ["research"], standaloneAliases: ["research"], materializable: true },
   { canvasType: "resources", aliases: ["resources"], standaloneAliases: ["resources"], materializable: true },
   { canvasType: "progress", aliases: ["progress", "progress_tracker"], standaloneAliases: ["progress_tracker"], materializable: true },
   { canvasType: "troubleshooting", aliases: ["troubleshooting"], standaloneAliases: ["troubleshooting"], materializable: true },
-  { canvasType: "decision-tree", aliases: ["decision-tree", "decision_tree"], standaloneAliases: ["decision_tree"], materializable: true },
+  { canvasType: "decision-tree", aliases: ["decision-tree", "decision_tree"], standaloneAliases: ["decision_tree"], materializable: true, kinds: ["decision_tree"] },
   // NB: `comparison_table` is standalone-only — the old ARTIFACT_TYPE map never
   // listed it (only `comparison`), so artifact-mode keeps that exact behavior.
-  { canvasType: "comparison", aliases: ["comparison"], standaloneAliases: ["comparison_table"], materializable: true },
-  { canvasType: "diagram", aliases: ["diagram"], standaloneAliases: ["diagram"], materializable: true },
+  { canvasType: "comparison", aliases: ["comparison"], standaloneAliases: ["comparison_table"], materializable: true, kinds: ["comparison_set"] },
+  { canvasType: "diagram", aliases: ["diagram"], standaloneAliases: ["diagram"], materializable: true, kinds: ["diagram_spec"] },
   { canvasType: "recipe", aliases: ["recipe", "cooking_recipe"], standaloneAliases: ["cooking_recipe"], materializable: true },
-  { canvasType: "math_problem", aliases: ["math_problem"], standaloneAliases: ["math_problem"], materializable: true },
+  { canvasType: "math_problem", aliases: ["math_problem"], standaloneAliases: ["math_problem"], materializable: true, kinds: ["math_problem"] },
   { canvasType: "mermaid", aliases: ["mermaid"], standaloneAliases: ["mermaid"], materializable: true },
   // Self-contained visuals — durable, referenceable (like a diagram). A bare
   // ```svg / ```chart fence materializes; SvgBlock/ChartBlock parse the payload.

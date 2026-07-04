@@ -27,6 +27,15 @@ const JsonBlock = lazy(() =>
 
 interface SchemaProposalBlockProps {
   content: string;
+  /**
+   * Pre-derived proposal (content-ir kind bridge / server). Preferred over
+   * parsing `content` — the `schema_proposal` kind's bridge hands over the
+   * envelope-derived object with the injected `__kind` discriminator already
+   * stripped, which a raw `content` parse would leak into the applied
+   * `agx_agent.output_schema`. Same serverData-over-content precedent as
+   * `useFlashcardsSet`.
+   */
+  serverData?: Record<string, unknown>;
 }
 
 interface ParseResult {
@@ -34,21 +43,26 @@ interface ParseResult {
   pretty: string;
 }
 
+/** Shape guard: `{ name: string, schema: object }` (strict? optional). */
+function isProposalShape(value: unknown): value is OutputSchema {
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      typeof (value as { name?: unknown }).name === "string" &&
+      (value as { schema?: unknown }).schema !== null &&
+      typeof (value as { schema?: unknown }).schema === "object" &&
+      !Array.isArray((value as { schema?: unknown }).schema),
+  );
+}
+
 /** Parse fail-safe → a typed OutputSchema when the shape holds, else null. */
 function parseProposal(content: string): ParseResult {
   try {
     const parsed: unknown = JSON.parse(content);
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      !Array.isArray(parsed) &&
-      typeof (parsed as { name?: unknown }).name === "string" &&
-      (parsed as { schema?: unknown }).schema !== null &&
-      typeof (parsed as { schema?: unknown }).schema === "object" &&
-      !Array.isArray((parsed as { schema?: unknown }).schema)
-    ) {
+    if (isProposalShape(parsed)) {
       return {
-        schema: parsed as OutputSchema,
+        schema: parsed,
         pretty: JSON.stringify(parsed, null, 2),
       };
     }
@@ -60,8 +74,17 @@ function parseProposal(content: string): ParseResult {
 
 const SchemaProposalBlock: React.FC<SchemaProposalBlockProps> = ({
   content,
+  serverData,
 }) => {
-  const { schema, pretty } = useMemo(() => parseProposal(content), [content]);
+  const { schema, pretty } = useMemo(() => {
+    if (isProposalShape(serverData)) {
+      return {
+        schema: serverData,
+        pretty: JSON.stringify(serverData, null, 2),
+      };
+    }
+    return parseProposal(content);
+  }, [content, serverData]);
   const [expanded, setExpanded] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
