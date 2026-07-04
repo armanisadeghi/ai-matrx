@@ -22,14 +22,27 @@ const config: Config = {
     // The repo tsconfig only sets rootDir inside its ts-node section, which
     // ts-jest never reads — without this override EVERY suite fails to
     // compile before a single test runs.
+    // `[tj]sx?` + allowJs: plain .js modules (the un-ignored ESM-only `uuid`
+    // package below) must ALSO be transpiled to CJS — the previous
+    // tsx?-only mapping left .js files with no transformer at all, so
+    // "transform uuid" could never actually work.
     transform: {
-        "^.+\\.tsx?$": ["ts-jest", { tsconfig: { rootDir: "." } }],
+        "^.+\\.[tj]sx?$": [
+            "ts-jest",
+            { tsconfig: { rootDir: ".", allowJs: true } },
+        ],
     },
     setupFiles: ["<rootDir>/jest.setup.ts"],
     moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/$1",
     },
-    transformIgnorePatterns: ["/node_modules/(?!uuid).+\\.js$"],
+    // Transform ESM-only `uuid` instead of ignoring it. The lookahead must
+    // also skip pnpm's virtual-store prefix: real paths look like
+    // `node_modules/.pnpm/uuid@13.0.0/node_modules/uuid/dist-node/index.js`,
+    // so a bare `(?!uuid)` matches at the FIRST `/node_modules/` (followed by
+    // `.pnpm`) and the file stays untransformed — the "Unexpected token
+    // 'export'" failure for any suite that transitively imports uuid.
+    transformIgnorePatterns: ["/node_modules/(?!\\.pnpm/|uuid).+\\.js$"],
     testPathIgnorePatterns: ["/node_modules/", "/.next/", "/.claude/"],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our

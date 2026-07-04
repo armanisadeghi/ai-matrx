@@ -171,6 +171,7 @@ import { setInstanceStatus } from "../conversations/conversations.slice";
 import { patchAgentConversationMetadata } from "@/features/agents/redux/conversation-list/conversation-list.slice";
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
+import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
@@ -1081,12 +1082,31 @@ export async function processStream({
         );
       } else if (isRenderBlockEvent(event)) {
         renderBlockEvents++;
+        // content-ir Phase 5: server render_blocks may arrive with a
+        // pre-built CanonicalBlockIR on metadata.__ir (engine
+        // "py-block-detector" — see features/content-ir/docs/
+        // PYTHON_ENVELOPE_CONTRACT.md). A VALID envelope flows into Redux
+        // UNTOUCHED (same metadata reference — the idempotence law; the
+        // guard also seeds it so any later re-split reuses instead of
+        // parsing). A malformed __ir is stripped LOUDLY (captureError) so it
+        // can never poison kind routing or the persistence cache. Note these
+        // events never feed the StreamBlockAccumulator (only chunk text
+        // does), so no FE shadow parse region ever opens for them.
+        const sanitizedMetadata = sanitizeInboundEnvelopeMetadata(
+          event.data.metadata,
+          { blockId: event.data.blockId },
+        );
+        const eventBlock =
+          sanitizedMetadata === event.data.metadata
+            ? event.data
+            : { ...event.data, metadata: sanitizedMetadata };
+
         // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
         // canonical UnifiedImageBlock adapter so the rest of the system sees
         // the same shape as data-event image_output blocks. The adapter takes
         // the loose `RenderBlockPayload` directly and validates internally —
         // no force-cast to `ImageRenderBlock` needed.
-        let block = event.data;
+        let block = eventBlock;
         if (block.type === "image") {
           const unified = fromRenderBlock(block);
           block = {
@@ -1127,7 +1147,10 @@ export async function processStream({
               kind: "render_block",
               seq: 0,
               timestamp: now,
-              data: event.data,
+              // The sanitized block (same reference as event.data unless a
+              // malformed __ir was stripped) — the timeline must never carry
+              // an envelope the pipeline rejected.
+              data: eventBlock,
             },
           }),
         );

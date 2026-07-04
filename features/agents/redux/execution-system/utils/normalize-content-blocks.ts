@@ -9,6 +9,7 @@ import type {
   YouTubeMediaPart,
 } from "@/types/python-generated/stream-events";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
+import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 
 /**
  * Normalizes `cx_message.content[]` items into the canonical `RenderBlockPayload`
@@ -69,6 +70,12 @@ function normalizeSingle(raw: MessagePart, index: number): RenderBlockPayload {
 
   switch (raw.type) {
     case "text":
+      // content-ir Phase 5: a persisted part may carry an IrEnvelopeCache on
+      // metadata.__ir (stamped by assembleMessageParts). Seed it so the
+      // splitter pass downstream reuses the stream's envelopes by reference
+      // instead of re-parsing the JSON regions. Idempotent + O(1) on repeat
+      // calls with the same metadata object.
+      seedPersistedEnvelopeCache(raw.metadata);
       return {
         blockId: raw.id ?? newId("db_text"),
         blockIndex: index,

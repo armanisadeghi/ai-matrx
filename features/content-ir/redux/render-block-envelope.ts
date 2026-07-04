@@ -13,6 +13,8 @@ import {
 } from "../core/ir-types";
 import { KIND_KEY } from "../core/kind-schema.types";
 import { isCanonicalBlockIR } from "../core/normalize";
+import { seedEnvelope } from "../registry/region-envelope-memo";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 /** Read a CanonicalBlockIR envelope off a block's metadata (or anything). */
 export function readEnvelope(
@@ -20,6 +22,53 @@ export function readEnvelope(
 ): CanonicalBlockIR | null {
   const candidate = metadata?.[IR_ENVELOPE_KEY];
   return isCanonicalBlockIR(candidate) ? candidate : null;
+}
+
+/**
+ * Ingest guard for SERVER-BUILT envelopes (Phase 5, engine
+ * "py-block-detector") riding `metadata.__ir` on a `render_block` event.
+ * Contract: features/content-ir/docs/PYTHON_ENVELOPE_CONTRACT.md.
+ *
+ * - No `__ir` key → the SAME metadata reference back (zero-touch pass).
+ * - Valid CanonicalBlockIR → the SAME metadata reference back (reuse-by-
+ *   reference — the idempotence law; the envelope flows into Redux untouched)
+ *   AND the envelope is seeded into the region-envelope memo so any later
+ *   re-split of the same region source reuses it instead of parsing.
+ * - Malformed/foreign `__ir` → a COPY with `__ir` stripped, plus a loud
+ *   captureError naming the engine + blockId. A bad envelope must never
+ *   poison kind routing or the persistence cache; dropping it degrades that
+ *   block to the ordinary content-driven path, nothing more.
+ */
+export function sanitizeInboundEnvelopeMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+  context: { blockId: string },
+): Record<string, unknown> | undefined {
+  if (!metadata || !(IR_ENVELOPE_KEY in metadata)) {
+    return metadata ?? undefined;
+  }
+
+  const candidate = metadata[IR_ENVELOPE_KEY];
+  if (isCanonicalBlockIR(candidate)) {
+    seedEnvelope(candidate);
+    return metadata;
+  }
+
+  const engine =
+    typeof candidate === "object" &&
+    candidate !== null &&
+    typeof (candidate as { engine?: unknown }).engine === "string"
+      ? (candidate as { engine: string }).engine
+      : "unknown";
+  captureError({
+    source: "content-ir",
+    message: `render_block "${context.blockId}" carried a malformed metadata.__ir envelope (engine "${engine}") — dropped before Redux so it can't poison the pipeline`,
+    relation: engine,
+    raw: candidate,
+  });
+
+  const { [IR_ENVELOPE_KEY]: _dropped, ...rest } = metadata;
+  void _dropped;
+  return rest;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

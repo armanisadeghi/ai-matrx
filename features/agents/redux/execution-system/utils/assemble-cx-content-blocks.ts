@@ -19,6 +19,14 @@
  *   timeline "text_start/end"      → CxTextContent (from renderBlocks in that range)
  *   renderBlocks with type "media" / audio_output / image_output / video_output
  *                                  → CxMediaContent (if not covered by timeline)
+ *
+ * content-ir Phase 5 — reload without re-parse: every source render block
+ * whose `metadata.__ir` carries a COMPLETE CanonicalBlockIR (FE-parsed or
+ * server-built "py-block-detector" — engine-agnostic on purpose) gets that
+ * envelope stamped onto the emitted text part as an `IrEnvelopeCache`
+ * (`metadata.__ir = { v: 1, blocks: { [fingerprint]: envelope } }`). On
+ * reload, the read boundaries seed the cache into the region-envelope memo
+ * and the splitter reuses the envelope by reference instead of parsing.
  */
 
 import type { ActiveRequest } from "@/features/agents/types/request.types";
@@ -39,6 +47,9 @@ import type {
 import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import { SPECIAL_CODE_LANGUAGES } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
+import { envelopeCacheFromEnvelopes } from "@/features/content-ir/core/envelope-cache";
+import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -71,6 +82,20 @@ function renderBlockTypeToMediaKind(
   if (type === "audio_output") return "audio";
   if (type === "video_output") return "video";
   return "document";
+}
+
+/**
+ * The reusable envelope a source render block contributes to the emitted
+ * part's reload cache: a COMPLETE `metadata.__ir` CanonicalBlockIR —
+ * engine-agnostic (FE kind parser and server "py-block-detector" envelopes
+ * are treated identically). Streaming/error envelopes return null; they can
+ * never be reused on reload.
+ */
+function completeEnvelopeOf(block: {
+  metadata?: Record<string, unknown> | null;
+}): CanonicalBlockIR | null {
+  const envelope = readEnvelope(block.metadata ?? undefined);
+  return envelope && envelope.root.status === "complete" ? envelope : null;
 }
 
 /**
@@ -218,12 +243,22 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
 
   let pendingText = "";
   const pendingMedia: CxMediaContent[] = [];
+  // Complete content-ir envelopes carried by this text run's source render
+  // blocks. Stamped on the flushed part as its IrEnvelopeCache so a reload
+  // reuses them instead of re-parsing (content-ir Phase 5).
+  let pendingEnvelopes: CanonicalBlockIR[] = [];
 
   const flushPendingText = () => {
     if (pendingText.length > 0) {
-      blocks.push({ type: "text", text: pendingText } as CxTextContent);
+      const cache = envelopeCacheFromEnvelopes(pendingEnvelopes);
+      blocks.push({
+        type: "text",
+        text: pendingText,
+        ...(cache ? { metadata: { [IR_ENVELOPE_KEY]: cache } } : {}),
+      } as CxTextContent);
       pendingText = "";
     }
+    pendingEnvelopes = [];
     if (pendingMedia.length > 0) {
       for (const m of pendingMedia) blocks.push(m);
       pendingMedia.length = 0;
@@ -270,6 +305,11 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
             const mediaBlock = renderBlockToMediaBlock(block);
             if (mediaBlock) pendingMedia.push(mediaBlock);
           }
+          // The run's raw text embeds this block's region source verbatim, so
+          // its complete envelope is reusable on reload — collect it for the
+          // part cache stamped at flush time.
+          const envelope = completeEnvelopeOf(block);
+          if (envelope) pendingEnvelopes.push(envelope);
         }
         continue;
       }
@@ -297,6 +337,11 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
           if (reconstructed.length > 0) {
             if (pendingText.length > 0) pendingText += "\n\n";
             pendingText += reconstructed;
+            // Reconstructed markdown carries the block's region source, so
+            // its complete envelope (FE- or server-built) is reusable on
+            // reload — collect it for the flush-time part cache.
+            const envelope = completeEnvelopeOf(block);
+            if (envelope) pendingEnvelopes.push(envelope);
           }
         }
       }
@@ -384,7 +429,15 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
         data: block.data ?? null,
       });
       if (reconstructed.length > 0) {
-        blocks.push({ type: "text", text: reconstructed } as CxTextContent);
+        // Server render_block-only streams land here — stamp the block's
+        // complete envelope (any engine) as this part's reload cache.
+        const envelope = completeEnvelopeOf(block);
+        const cache = envelope ? envelopeCacheFromEnvelopes([envelope]) : null;
+        blocks.push({
+          type: "text",
+          text: reconstructed,
+          ...(cache ? { metadata: { [IR_ENVELOPE_KEY]: cache } } : {}),
+        } as CxTextContent);
       }
     }
   }

@@ -30,6 +30,7 @@ import {
   type YouTubeMediaPart,
 } from "@/types/python-generated/stream-events";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
+import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 
 const EMPTY_RECORDS: MessageRecord[] = [];
@@ -260,11 +261,24 @@ export const selectConversationKeywords =
 export function extractFlatText(record: MessageRecord | undefined): string {
   if (!record) return "";
   const blocks = Array.isArray(record.content)
-    ? (record.content as Array<{ type?: string; text?: string }>)
+    ? (record.content as Array<{
+        type?: string;
+        text?: string;
+        metadata?: Record<string, unknown>;
+      }>)
     : [];
   let out = "";
   for (const b of blocks) {
     if (typeof b?.text === "string" && b.text.length > 0) {
+      // content-ir Phase 5: this flat text is what EnhancedChatMarkdown
+      // re-splits on DB reload. Seed the part's persisted envelope cache
+      // (metadata.__ir, stamped at stream commit) FIRST so that split
+      // reuses the stream's envelopes instead of re-parsing the JSON
+      // regions. Idempotent + O(1) per stable metadata reference — safe on
+      // the per-render path.
+      if (b.type === "text" && b.metadata) {
+        seedPersistedEnvelopeCache(b.metadata);
+      }
       if (out.length > 0) out += "\n";
       out += b.text;
     }
