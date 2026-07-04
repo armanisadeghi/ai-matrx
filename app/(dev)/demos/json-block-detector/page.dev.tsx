@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { cn } from "@/lib/utils";
 import type { KindSchema } from "./kind-schemas";
 import type { KindStreamEvent } from "./kind-stream-parser";
@@ -25,6 +26,7 @@ import {
   collectLiveBlockMounts,
   DemoRegisteredBlockPanel,
   flashcardServerDataFromEvents,
+  flashcardSetAdditionalDetailsFromEvents,
   flashcardSetCardKinds,
   isParserEventSuppressed,
 } from "./demo-block-components";
@@ -37,13 +39,13 @@ import {
 import {
   BLOCK_SCHEMAS_CATEGORY_ID,
   FlexibleDataError,
-  getBlockSchemaSlugs,
   listBlockSamples,
   listBlockSchemas,
   SAMPLE_BLOCK_DATA_CATEGORY_ID,
   type BlockSample,
   type BlockSchemaEntry,
 } from "./flexible-data-service";
+import { SchemaConvertTab } from "./SchemaConvertTab";
 
 const FlashcardsBlock = dynamic(
   () =>
@@ -59,7 +61,7 @@ const FlashcardsBlock = dynamic(
 );
 
 const DEFAULT_STREAM_SETTINGS = {
-  delayMs: 20,
+  delayMs: 6,
   minChunkSize: 1,
   maxChunkSize: 12,
 };
@@ -67,19 +69,6 @@ const DEFAULT_STREAM_SETTINGS = {
 /** Nesting depth = how many array items deep (root = 0, cards[0] = 1, …). */
 function kindDepth(path: Array<string | number>): number {
   return path.filter((segment) => typeof segment === "number").length;
-}
-
-function countActiveKindWaits(events: KindStreamEvent[]): number {
-  const active = new Set<string>();
-  for (const event of events) {
-    if (event.type === "pending_kind") {
-      active.add(eventPathKey(event.path));
-    }
-    if (event.type === "kind_wait_end") {
-      active.delete(eventPathKey(event.path));
-    }
-  }
-  return active.size;
 }
 
 function isKindWaitActiveAt(
@@ -601,6 +590,10 @@ function ParserStreamView({
                       isRunning,
                       cardKinds,
                     )}
+                    additionalDetails={flashcardSetAdditionalDetailsFromEvents(
+                      events,
+                      mount.path,
+                    )}
                   />
                 </Suspense>
               }
@@ -611,9 +604,6 @@ function ParserStreamView({
 
       {unownedEvents.length > 0 && (
         <div className="space-y-0.5 border-t border-border pt-3 font-mono text-xs">
-          <p className="mb-2 text-[10px] font-sans text-muted-foreground">
-            Parser trace (unrecognized kinds or no registered component)
-          </p>
           {unownedEvents.map(({ event, index }) => (
             <KindEventRow
               key={index}
@@ -626,14 +616,6 @@ function ParserStreamView({
       )}
     </div>
   );
-}
-
-function parseInputJson(text: string): unknown {
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return { __parseError: true, raw: text };
-  }
 }
 
 function SettingField({
@@ -679,6 +661,12 @@ export default function JsonBlockDetectorPage() {
   const [schemasLoading, setSchemasLoading] = useState(true);
   const [schemasError, setSchemasError] = useState<string | null>(null);
   const cancelRef = useRef(false);
+
+  const reloadBlockSchemas = async () => {
+    const registry = await listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID);
+    setSchemas(registry.schemas);
+    setBlockSchemaEntries(registry.entries);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -747,23 +735,6 @@ export default function JsonBlockDetectorPage() {
     };
   }, []);
 
-  const blockSchemaSlugs = useMemo(
-    () => (schemas ? getBlockSchemaSlugs(schemas) : []),
-    [schemas],
-  );
-
-  const fakeKindRegistry = useMemo(
-    () => buildFakeKindRegistry(schemas),
-    [schemas],
-  );
-
-  const flashcardCardKinds = useMemo(
-    () => flashcardSetCardKinds(schemas),
-    [schemas],
-  );
-
-  const sampleData = useMemo(() => parseInputJson(inputText), [inputText]);
-
   const selectedBlockSchema = useMemo(() => {
     const entry = blockSchemaEntries.find(
       (item) => item.id === selectedSchemaId,
@@ -828,71 +799,45 @@ export default function JsonBlockDetectorPage() {
     };
   }, [events, validationReport]);
 
-  const hasError = validationReport.hasStreamError;
-  const isComplete = validationReport.status !== "idle" && !isRunning;
-  const rawObjectCount = validationReport.rawFallbacks.length;
-  const activeKindWaits = useMemo(() => countActiveKindWaits(events), [events]);
-
   return (
     <div className="flex h-full min-h-0 flex-col p-4">
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(220px,26%)] gap-4">
-        <div className="flex min-h-0 flex-col gap-3">
-          <div className="shrink-0 rounded-lg border border-border bg-card p-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <span className="text-sm font-semibold text-foreground">
-                  Settings
-                </span>
-                <p className="text-xs text-muted-foreground">
-                  {schemasLoading
-                    ? "Loading Block Schemas from flexible_data…"
-                    : schemasError
-                      ? schemasError
-                      : `${blockSchemaSlugs.length} block schemas — parsing via __kind`}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  FAKE preview registry:{" "}
-                  {Object.entries(fakeKindRegistry)
-                    .map(([kind, component]) => `${kind} → ${component}`)
-                    .join(", ")}
-                  {" · "}cards: {flashcardCardKinds.join(", ")}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={runStream}
-                  disabled={
-                    isRunning ||
-                    !inputText.trim() ||
-                    schemasLoading ||
-                    samplesLoading ||
-                    !schemas ||
-                    !!schemasError ||
-                    samples.length === 0 ||
-                    !!samplesError
-                  }
-                >
-                  {isRunning ? (
-                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                  ) : (
-                    <Play className="mr-1.5 size-3.5" />
-                  )}
-                  Run stream
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={reset}
-                  disabled={!isRunning && events.length === 0}
-                >
-                  <RotateCcw className="mr-1.5 size-3.5" />
-                  Reset
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-3">
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(320px,42%)] gap-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              size="sm"
+              onClick={runStream}
+              disabled={
+                isRunning ||
+                !inputText.trim() ||
+                schemasLoading ||
+                samplesLoading ||
+                !schemas ||
+                !!schemasError ||
+                samples.length === 0 ||
+                !!samplesError
+              }
+            >
+              {isRunning ? (
+                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+              ) : (
+                <Play className="mr-1.5 size-3.5" />
+              )}
+              Run
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={reset}
+              disabled={!isRunning && events.length === 0}
+            >
+              <RotateCcw className="mr-1.5 size-3.5" />
+              Reset
+            </Button>
+            {isRunning && (
+              <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+            )}
+            <div className="ml-auto flex items-center gap-3">
               <SettingField
                 label="delayMs"
                 type="number"
@@ -905,7 +850,7 @@ export default function JsonBlockDetectorPage() {
                 }
               />
               <SettingField
-                label="minChunkSize"
+                label="minChunk"
                 type="number"
                 value={streamSettings.minChunkSize}
                 onChange={(v) =>
@@ -916,7 +861,7 @@ export default function JsonBlockDetectorPage() {
                 }
               />
               <SettingField
-                label="maxChunkSize"
+                label="maxChunk"
                 type="number"
                 value={streamSettings.maxChunkSize}
                 onChange={(v) =>
@@ -929,96 +874,34 @@ export default function JsonBlockDetectorPage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
-            {validationReport.status !== "idle" && (
-              <ValidationSummaryBanner report={validationReport} />
-            )}
-
-            <div className="flex shrink-0 items-center gap-2 text-sm">
-              <span className="font-semibold text-foreground">Results</span>
-              <span className="text-muted-foreground">
-                {events.length === 0
-                  ? "— run stream to test"
-                  : `${events.length} event${events.length === 1 ? "" : "s"}`}
-              </span>
-              {isRunning && (
-                <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-              )}
-              {activeKindWaits > 0 && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Loader2 className="size-3 animate-spin" />
-                  waiting on __kind
-                  {activeKindWaits > 1 ? ` (${activeKindWaits})` : ""}
-                </span>
-              )}
-              {hasError && (
-                <span className="text-destructive text-xs font-medium">
-                  stream failed
-                </span>
-              )}
-              {isComplete &&
-                !hasError &&
-                validationReport.status === "valid" && (
-                  <span className="text-success text-xs font-medium">
-                    all validated
-                  </span>
-                )}
-              {isComplete &&
-                !hasError &&
-                validationReport.status === "partial" && (
-                  <span className="text-warning text-xs font-medium">
-                    {rawObjectCount} unvalidated
-                  </span>
-                )}
-            </div>
-
-            <p className="shrink-0 text-[11px] text-muted-foreground">
-              Required missing →{" "}
-              <span className="font-medium text-warning">unvalidated</span> (raw
-              JSON). Optional missing →{" "}
-              <span className="font-medium text-info">optional</span> notice.
-              Extra keys → <span className="font-medium">extra</span> notice
-              (still validates). Field rows are schema-known keys only.
-            </p>
-
-            <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-3">
-              {events.length === 0 ? (
-                <p className="font-mono text-xs italic text-muted-foreground">
-                  Schema-validated parser events appear here as chunks arrive.
-                </p>
-              ) : (
-                <ParserStreamView
-                  events={events}
-                  isRunning={isRunning}
-                  schemas={schemas ?? {}}
-                />
-              )}
-            </div>
-
-            {inspectorData && (
-              <div className="flex min-h-0 max-h-[40%] shrink-0 flex-col overflow-hidden">
-                <JsonInspector
-                  data={inspectorData}
-                  label="Validation report"
-                  editorReadOnly
-                  className="min-h-0 flex-1"
-                />
-              </div>
+          <div className="min-h-0 flex-1 overflow-auto rounded-lg border border-border bg-muted/30 p-3">
+            {events.length > 0 && (
+              <ParserStreamView
+                events={events}
+                isRunning={isRunning}
+                schemas={schemas ?? {}}
+              />
             )}
           </div>
         </div>
 
-        <aside className="flex min-h-0 flex-col gap-2 border-l border-border pl-4">
+        <aside className="flex min-h-0 flex-col border-l border-border pl-4">
           <Tabs
             defaultValue="samples"
             className="flex min-h-0 flex-1 flex-col gap-2"
           >
-            <TabsList className="grid h-8 w-full shrink-0 grid-cols-2">
-              <TabsTrigger value="samples" className="text-xs">
-                Sample Block Data
+            <TabsList className="grid h-auto w-full shrink-0 grid-cols-4 gap-0.5">
+              <TabsTrigger value="samples" className="px-1 text-[10px]">
+                Samples
               </TabsTrigger>
-              <TabsTrigger value="schemas" className="text-xs">
-                Block Schemas
+              <TabsTrigger value="schemas" className="px-1 text-[10px]">
+                Schemas
+              </TabsTrigger>
+              <TabsTrigger value="validation" className="px-1 text-[10px]">
+                Validate
+              </TabsTrigger>
+              <TabsTrigger value="convert" className="px-1 text-[10px]">
+                Convert
               </TabsTrigger>
             </TabsList>
 
@@ -1026,53 +909,51 @@ export default function JsonBlockDetectorPage() {
               value="samples"
               className="mt-0 flex min-h-0 flex-1 flex-col gap-2 data-[state=inactive]:hidden"
             >
-              <div className="flex shrink-0 flex-col gap-1">
-                <Select
-                  value={selectedSampleId}
-                  onValueChange={handleSampleChange}
-                  disabled={
-                    samplesLoading || samples.length === 0 || !!samplesError
-                  }
-                >
-                  <SelectTrigger className="h-8 w-full text-xs">
-                    <SelectValue
-                      placeholder={
-                        samplesLoading
-                          ? "Loading samples…"
-                          : samplesError
-                            ? "Failed to load"
-                            : "No samples"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {samples.map((sample) => (
-                      <SelectItem key={sample.id} value={sample.id}>
-                        {sample.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {samplesError && (
-                  <p className="text-xs text-destructive">{samplesError}</p>
-                )}
-                {!samplesLoading && !samplesError && samples.length > 0 && (
-                  <p className="text-[10px] text-muted-foreground">
-                    {samples.length} rows in Sample Block Data
-                  </p>
-                )}
-              </div>
+              <Select
+                value={selectedSampleId}
+                onValueChange={handleSampleChange}
+                disabled={
+                  samplesLoading || samples.length === 0 || !!samplesError
+                }
+              >
+                <SelectTrigger className="h-8 w-full text-xs">
+                  <SelectValue
+                    placeholder={
+                      samplesLoading
+                        ? "Loading…"
+                        : samplesError
+                          ? "Failed to load"
+                          : "No samples"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {samples.map((sample) => (
+                    <SelectItem key={sample.id} value={sample.id}>
+                      {sample.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {samplesError && (
+                <p className="text-xs text-destructive">{samplesError}</p>
+              )}
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                <JsonInspector
-                  data={sampleData}
-                  label="Input"
-                  defaultView="json"
-                  onUpdate={(next) => {
-                    setInputText(JSON.stringify(next, null, 2));
+                <ProJsonTextarea
+                  value={inputText}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
                     setEvents([]);
                   }}
-                  className="min-h-0 flex-1"
+                  rootType="any"
+                  showFormatButton
+                  autoGrow
+                  minHeight={160}
+                  maxHeight={480}
+                  wrapperClassName="flex min-h-0 flex-1"
+                  className="text-xs"
+                  placeholder="Paste or edit sample JSON…"
                 />
               </div>
             </TabsContent>
@@ -1081,46 +962,37 @@ export default function JsonBlockDetectorPage() {
               value="schemas"
               className="mt-0 flex min-h-0 flex-1 flex-col gap-2 data-[state=inactive]:hidden"
             >
-              <div className="flex shrink-0 flex-col gap-1">
-                <Select
-                  value={selectedSchemaId}
-                  onValueChange={setSelectedSchemaId}
-                  disabled={
-                    schemasLoading ||
-                    blockSchemaEntries.length === 0 ||
-                    !!schemasError
-                  }
-                >
-                  <SelectTrigger className="h-8 w-full text-xs">
-                    <SelectValue
-                      placeholder={
-                        schemasLoading
-                          ? "Loading block schemas…"
-                          : schemasError
-                            ? "Failed to load"
-                            : "No block schemas"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {blockSchemaEntries.map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id}>
-                        {entry.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {schemasError && (
-                  <p className="text-xs text-destructive">{schemasError}</p>
-                )}
-                {!schemasLoading &&
-                  !schemasError &&
-                  blockSchemaEntries.length > 0 && (
-                    <p className="text-[10px] text-muted-foreground">
-                      {blockSchemaEntries.length} rows in Block Schemas
-                    </p>
-                  )}
-              </div>
+              <Select
+                value={selectedSchemaId}
+                onValueChange={setSelectedSchemaId}
+                disabled={
+                  schemasLoading ||
+                  blockSchemaEntries.length === 0 ||
+                  !!schemasError
+                }
+              >
+                <SelectTrigger className="h-8 w-full text-xs">
+                  <SelectValue
+                    placeholder={
+                      schemasLoading
+                        ? "Loading…"
+                        : schemasError
+                          ? "Failed to load"
+                          : "No schemas"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {blockSchemaEntries.map((entry) => (
+                    <SelectItem key={entry.id} value={entry.id}>
+                      {entry.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {schemasError && (
+                <p className="text-xs text-destructive">{schemasError}</p>
+              )}
 
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <JsonInspector
@@ -1131,6 +1003,36 @@ export default function JsonBlockDetectorPage() {
                   className="min-h-0 flex-1"
                 />
               </div>
+            </TabsContent>
+
+            <TabsContent
+              value="validation"
+              className="mt-0 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden data-[state=inactive]:hidden"
+            >
+              {validationReport.status !== "idle" && (
+                <ValidationSummaryBanner report={validationReport} />
+              )}
+              {inspectorData && (
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <JsonInspector
+                    data={inspectorData}
+                    label="Validation report"
+                    editorReadOnly
+                    className="min-h-0 flex-1"
+                  />
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent
+              value="convert"
+              className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden data-[state=inactive]:hidden"
+            >
+              <SchemaConvertTab
+                existingSchemas={schemas ?? {}}
+                blockSchemaEntries={blockSchemaEntries}
+                onSaved={() => void reloadBlockSchemas()}
+              />
             </TabsContent>
           </Tabs>
         </aside>

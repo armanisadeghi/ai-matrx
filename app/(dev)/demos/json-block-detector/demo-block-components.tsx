@@ -1,11 +1,11 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { KIND_KEY, type FieldSchema, type KindSchema } from "./kind-schemas";
 import type { KindStreamEvent } from "./kind-stream-parser";
-import { eventPathKey, pathLabel } from "./validation-report";
+import { GenericBlockRenderer } from "./generic-block-renderer";
+import { eventPathKey } from "./validation-report";
 
 type JsonPath = Array<string | number>;
 
@@ -52,17 +52,28 @@ export function flashcardSetCardKinds(
   return ["flashcard"];
 }
 
+/** Kinds with a dedicated React component (not the generic renderer). */
+export const CUSTOM_BLOCK_COMPONENTS: Record<string, string> = {
+  flashcard_set: "flashcards",
+};
+
+export function isKnownBlockKind(
+  kind: string,
+  schemas: Record<string, KindSchema> | null,
+): boolean {
+  if (kind in CUSTOM_BLOCK_COMPONENTS) return true;
+  return schemas != null && kind in schemas;
+}
+
 export function buildFakeKindRegistry(
   schemas: Record<string, KindSchema> | null,
 ): Record<string, string> {
-  const registry: Record<string, string> = {
-    flashcard_set: "flashcards",
-  };
+  const registry: Record<string, string> = { ...CUSTOM_BLOCK_COMPONENTS };
   if (!schemas) return registry;
 
   for (const kind of Object.keys(schemas)) {
-    if (kind === "flashcard_set") continue;
-    registry[kind] = kind;
+    if (kind in registry) continue;
+    registry[kind] = "__generic__";
   }
   return registry;
 }
@@ -206,10 +217,33 @@ export function cardIndexUnderSet(
   return typeof index === "number" ? index : null;
 }
 
+const KNOWN_FLASHCARD_SET_KEYS = new Set([
+  "cards",
+  "__kind",
+  "additionalDetails",
+]);
+
+function isNonEmptyRecord(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).length > 0
+  );
+}
+
+function pathsEqual(left: JsonPath, right: JsonPath): boolean {
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i++) {
+    if (left[i] !== right[i]) return false;
+  }
+  return true;
+}
+
 function snapshotToFlashcardItem(
   snapshot: Record<string, unknown>,
   complete: boolean,
-): FlashcardsBlockData["cards"][number] {
+): FlashcardsBlockData["cards"][number] & Record<string, unknown> {
   if (typeof snapshot.front !== "string") {
     throw new Error(
       `Flashcard snapshot missing required string field "front".`,
@@ -232,7 +266,53 @@ function snapshotToFlashcardItem(
         : rawBack
       : (rawBack ?? null);
 
-  return { front: snapshot.front, back };
+  const card: FlashcardsBlockData["cards"][number] & Record<string, unknown> = {
+    front: snapshot.front,
+    back,
+  };
+
+  const existingAdditionalDetails = snapshot.additionalDetails;
+  if (isNonEmptyRecord(existingAdditionalDetails)) {
+    card.additionalDetails = existingAdditionalDetails;
+  }
+
+  for (const [key, value] of Object.entries(snapshot)) {
+    if (key === "front" || key === "back" || key === "__kind") continue;
+    if (key === "additionalDetails") continue;
+    card[key] = value;
+  }
+
+  return card;
+}
+
+/** Set-level extras from latest `flashcard_set` block_snapshot (schema-known + unknown keys). */
+export function flashcardSetAdditionalDetailsFromEvents(
+  events: KindStreamEvent[],
+  setPath: JsonPath,
+): Record<string, unknown> | undefined {
+  let latest: Record<string, unknown> | null = null;
+
+  for (const event of events) {
+    if (event.type !== "block_snapshot") continue;
+    if (event.kind !== "flashcard_set") continue;
+    if (!pathsEqual(event.path, setPath)) continue;
+    latest = event.value;
+  }
+
+  if (!latest) return undefined;
+
+  const merged: Record<string, unknown> = {};
+  const existing = latest.additionalDetails;
+  if (isNonEmptyRecord(existing)) {
+    Object.assign(merged, existing);
+  }
+
+  for (const [key, value] of Object.entries(latest)) {
+    if (KNOWN_FLASHCARD_SET_KEYS.has(key)) continue;
+    merged[key] = value;
+  }
+
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 /** Live card list from `block_snapshot` events — not `object_complete`. */
@@ -381,76 +461,6 @@ export function assertSnapshotForSchema(
   }
 }
 
-function fieldPreviewValue(value: unknown): string {
-  if (value === null) return "null";
-  if (typeof value === "string") {
-    return value.length > 80 ? `${value.slice(0, 80)}…` : value || '""';
-  }
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.length} items]`;
-  }
-  if (typeof value === "object") {
-    return `{${Object.keys(value).length} keys}`;
-  }
-  return String(value);
-}
-
-export function DemoTypedBlockStub({
-  schema,
-  snapshot,
-}: {
-  schema: KindSchema;
-  snapshot: LiveBlockSnapshot;
-}) {
-  assertSnapshotForSchema(schema, snapshot.value);
-
-  const entries = Object.entries(schema.fields).filter(
-    ([name]) => name in snapshot.value,
-  );
-
-  return (
-    <div className="rounded-lg border border-secondary/40 bg-secondary/5 p-2">
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px]">
-        <span className="rounded bg-secondary/15 px-1.5 py-0.5 font-semibold uppercase text-secondary">
-          registered block
-        </span>
-        <span className="font-mono font-semibold text-foreground">
-          {snapshot.kind}
-        </span>
-        <span className="text-muted-foreground">
-          {pathLabel(snapshot.path)}
-        </span>
-        <span
-          className={cn(
-            "rounded px-1.5 py-0.5 font-semibold uppercase",
-            snapshot.complete
-              ? "bg-success/15 text-success"
-              : "bg-warning/15 text-warning",
-          )}
-        >
-          {snapshot.complete ? "complete" : "streaming"}
-        </span>
-      </div>
-      <dl className="space-y-1 font-mono text-[11px]">
-        {entries.map(([name, fieldSchema]) => (
-          <div key={name} className="flex gap-2 truncate">
-            <dt className="shrink-0 font-semibold text-muted-foreground">
-              {name}
-              {fieldSchema.required ? "*" : ""}:
-            </dt>
-            <dd className="min-w-0 truncate text-foreground">
-              {fieldPreviewValue(snapshot.value[name])}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
-
 export function DemoRegisteredBlockPanel({
   kind,
   path,
@@ -491,5 +501,11 @@ export function DemoRegisteredBlockPanel({
     );
   }
 
-  return <DemoTypedBlockStub schema={schema} snapshot={snapshot} />;
+  return (
+    <GenericBlockRenderer
+      schema={schema}
+      snapshot={snapshot}
+      allSchemas={schemas}
+    />
+  );
 }

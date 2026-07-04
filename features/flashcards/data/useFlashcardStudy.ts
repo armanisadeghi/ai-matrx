@@ -21,10 +21,7 @@
 import { useEffect, useState } from "react";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
-import type {
-  FcSetRow,
-  CardWithDetails,
-} from "./types";
+import type { FcSetRow, CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
   StudySessionRow,
@@ -75,6 +72,8 @@ export interface UseFlashcardStudyResult {
   grading: boolean;
   /** Cards graded / total / correct (this load). */
   progress: FlashcardStudyProgress;
+  /** Per-card mastery rows (seeded on load, updated on grade). */
+  masteryByCard: Record<string, ItemMasteryRow | undefined>;
 }
 
 export interface UseFlashcardStudyOptions {
@@ -96,9 +95,7 @@ function clampIndex(index: number, length: number): number {
 }
 
 /** Map a mastery row's last result back to the card-level review result, if any. */
-function resultFromMastery(
-  mastery: ItemMasteryRow,
-): ReviewResult | undefined {
+function resultFromMastery(mastery: ItemMasteryRow): ReviewResult | undefined {
   const last = mastery.last_result;
   if (last === "correct" || last === "partial" || last === "incorrect") {
     return last;
@@ -122,6 +119,9 @@ export function useFlashcardStudy(
   >({});
   const [grading, setGrading] = useState(false);
   const [session, setSession] = useState<StudySessionRow | null>(null);
+  const [masteryByCard, setMasteryByCard] = useState<
+    Record<string, ItemMasteryRow | undefined>
+  >({});
 
   // Load the set, its cards, and the current user's existing mastery per card.
   // All state writes happen inside the async body so none fire synchronously in
@@ -135,6 +135,7 @@ export function useFlashcardStudy(
         setSet(null);
         setCards([]);
         setResultsByCard({});
+        setMasteryByCard({});
         setSession(null);
         setLoading(false);
         setError(null);
@@ -154,6 +155,7 @@ export function useFlashcardStudy(
         setSet(null);
         setCards([]);
         setResultsByCard({});
+        setMasteryByCard({});
         setError(setRes.error ?? "Failed to load flashcard set");
         setLoading(false);
         return;
@@ -179,14 +181,18 @@ export function useFlashcardStudy(
             );
           }
           const seeded: Record<string, ReviewResult | undefined> = {};
+          const masterySeed: Record<string, ItemMasteryRow | undefined> = {};
           for (const m of masteryRes.data ?? []) {
             const result = resultFromMastery(m);
             if (result) seeded[m.item_id] = result;
+            masterySeed[m.item_id] = m;
           }
           setResultsByCard(seeded);
+          setMasteryByCard(masterySeed);
         }
       } else {
         setResultsByCard({});
+        setMasteryByCard({});
       }
 
       // Optionally open a session this study tags its attempts with.
@@ -255,6 +261,10 @@ export function useFlashcardStudy(
       }
       // Reflect the graded result and advance.
       setResultsByCard((prev) => ({ ...prev, [card.id]: result }));
+      setMasteryByCard((prev) => ({
+        ...prev,
+        [card.id]: res.data.mastery,
+      }));
       goTo(currentIndex + 1);
       return res.data.mastery;
     } finally {
@@ -290,5 +300,6 @@ export function useFlashcardStudy(
     grade,
     grading,
     progress,
+    masteryByCard,
   };
 }

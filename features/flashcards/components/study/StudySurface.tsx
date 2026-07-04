@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeck } from "./StudyDeck";
+import { FlashcardStudyWindowDevTrigger } from "./FlashcardStudyWindowDevTrigger";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -26,6 +27,14 @@ export function StudySurface({ setId }: { setId: string }) {
     <StudyDeck
       title={study.set?.name ?? "Study"}
       onBack={() => router.back()}
+      headerActions={
+        <FlashcardStudyWindowDevTrigger
+          setId={setId}
+          title={study.set?.name ?? "Study"}
+          variant="labeled"
+          disabled={study.loading || study.cards.length === 0}
+        />
+      }
       loading={study.loading}
       error={study.error}
       cards={study.cards}

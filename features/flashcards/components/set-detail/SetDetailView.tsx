@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
+import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -79,7 +80,9 @@ function CardPeek({ card, index }: { card: CardWithDetails; index: number }) {
         {card.front}
       </p>
       <div className="mt-2 border-t border-border pt-2">
-        <p className="line-clamp-3 text-xs text-muted-foreground">{card.back}</p>
+        <p className="line-clamp-3 text-xs text-muted-foreground">
+          {card.back}
+        </p>
       </div>
     </div>
   );
@@ -186,7 +189,8 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <BookOpen className="h-3.5 w-3.5" />
-                      {data.cards.length} {data.cards.length === 1 ? "card" : "cards"}
+                      {data.cards.length}{" "}
+                      {data.cards.length === 1 ? "card" : "cards"}
                     </span>
                     {data.set.topic ? (
                       <>
@@ -197,7 +201,9 @@ export function SetDetailView({ setId }: { setId: string }) {
                     {data.set.difficulty ? (
                       <>
                         <span className="text-border">|</span>
-                        <span className="capitalize">{data.set.difficulty}</span>
+                        <span className="capitalize">
+                          {data.set.difficulty}
+                        </span>
                       </>
                     ) : null}
                   </div>
@@ -213,13 +219,20 @@ export function SetDetailView({ setId }: { setId: string }) {
                   (ROUTING.md); Enhance is the agentic-expansion placeholder. */}
               <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  onClick={() => navigate("study", `${EDU_BASE}/${setId}/study`)}
+                  onClick={() =>
+                    navigate("study", `${EDU_BASE}/${setId}/study`)
+                  }
                   disabled={isPending || data.cards.length === 0}
                   className={cn(pendingAction === "study" && "opacity-70")}
                 >
                   <Play className="mr-1.5 h-4 w-4" />
                   Study
                 </Button>
+                <FlashcardStudyWindowDevTrigger
+                  setId={setId}
+                  title={data.set.name}
+                  disabled={data.cards.length === 0}
+                />
                 <Button
                   variant="secondary"
                   onClick={() =>
@@ -242,7 +255,9 @@ export function SetDetailView({ setId }: { setId: string }) {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => navigate("sessions", `${EDU_BASE}/${setId}/sessions`)}
+                  onClick={() =>
+                    navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
+                  }
                   disabled={isPending}
                   className={cn(pendingAction === "sessions" && "opacity-70")}
                 >

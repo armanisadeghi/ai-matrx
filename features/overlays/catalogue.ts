@@ -335,6 +335,26 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  flashcardItemWindow: {
+    label: "Flashcard Item Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  flashcardsBlockWindow: {
+    label: "Flashcards Block Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  flashcardStudyWindow: {
+    label: "Flashcard Study Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  flashcardSubcardsWindow: {
+    label: "Flashcard Subcards Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   sourceInspectorWindow: {
     label: "Source Inspector",
     instanceMode: "singleton",

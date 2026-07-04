@@ -1,6 +1,8 @@
 export interface PlainTextMetrics {
   /** Total Unicode code units in the string (same as `.length`). */
   charCount: number;
+  /** Spaces, tabs, newlines, and other `\s` characters. */
+  whitespaceCharCount: number;
   /** Characters excluding whitespace. */
   nonWhitespaceCharCount: number;
   /** Whitespace-delimited tokens; 0 when empty or whitespace-only. */
@@ -22,9 +24,11 @@ export function computePlainTextMetrics(text: string): PlainTextMetrics {
     ? text.split(/\n\s*\n/).filter((block) => block.trim().length > 0).length
     : 0;
   const nonWhitespaceCharCount = text.replace(/\s/g, "").length;
+  const whitespaceCharCount = charCount - nonWhitespaceCharCount;
 
   return {
     charCount,
+    whitespaceCharCount,
     nonWhitespaceCharCount,
     wordCount,
     lineCount,

@@ -23,7 +23,6 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertCircle,
-  XCircle,
   BookOpen,
   Trophy,
 } from "lucide-react";
@@ -33,6 +32,7 @@ import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
+import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 
 export interface StudyDeckProgress {
   done: number;
@@ -67,64 +67,15 @@ export interface StudyDeckProps {
   /** "Study again" — omit to hide the restart button. */
   onRestart?: () => void;
   /** The primary completion action (e.g. Back to set / Back to flashcards). */
-  completionPrimary?: { label: string; icon: typeof BookOpen; onClick: () => void };
+  completionPrimary?: {
+    label: string;
+    icon: typeof BookOpen;
+    onClick: () => void;
+  };
+  /** Optional chrome slotted into the header row (e.g. dev window trigger). */
+  headerActions?: ReactNode;
   /** Optional per-card slot (e.g. an autoplay spoken-front) rendered while active. */
   renderCardExtra?: (card: CardWithDetails) => ReactNode;
-}
-
-/** A grade button (Again / Partial / Got it), keyboard-hinted. */
-function GradeButton({
-  result,
-  hotkey,
-  onGrade,
-  disabled,
-}: {
-  result: ReviewResult;
-  hotkey: string;
-  onGrade: (r: ReviewResult) => void;
-  disabled: boolean;
-}) {
-  const cfg: Record<
-    ReviewResult,
-    { label: string; icon: typeof XCircle; classes: string }
-  > = {
-    incorrect: {
-      label: "Again",
-      icon: XCircle,
-      classes:
-        "border-red-300 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60",
-    },
-    partial: {
-      label: "Partial",
-      icon: AlertCircle,
-      classes:
-        "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60",
-    },
-    correct: {
-      label: "Got it",
-      icon: CheckCircle2,
-      classes:
-        "border-green-300 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300 dark:hover:bg-green-950/60",
-    },
-  };
-  const { label, icon: Icon, classes } = cfg[result];
-  return (
-    <button
-      type="button"
-      onClick={() => onGrade(result)}
-      disabled={disabled}
-      className={cn(
-        "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50",
-        classes,
-      )}
-    >
-      <Icon className="h-4 w-4" />
-      {label}
-      <span className="ml-1 rounded bg-black/5 px-1 text-[10px] tabular-nums dark:bg-white/10">
-        {hotkey}
-      </span>
-    </button>
-  );
 }
 
 export function StudyDeck(props: StudyDeckProps) {
@@ -151,6 +102,7 @@ export function StudyDeck(props: StudyDeckProps) {
     completionSubtitle,
     onRestart,
     completionPrimary,
+    headerActions,
     renderCardExtra,
   } = props;
 
@@ -184,7 +136,10 @@ export function StudyDeck(props: StudyDeckProps) {
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         prev();
-      } else if (!grading && (e.key === "1" || e.key === "2" || e.key === "3")) {
+      } else if (
+        !grading &&
+        (e.key === "1" || e.key === "2" || e.key === "3")
+      ) {
         e.preventDefault();
         const map: Record<string, ReviewResult> = {
           "1": "incorrect",
@@ -196,7 +151,17 @@ export function StudyDeck(props: StudyDeckProps) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [loading, error, cards.length, completed, grading, flip, next, prev, grade]);
+  }, [
+    loading,
+    error,
+    cards.length,
+    completed,
+    grading,
+    flip,
+    next,
+    prev,
+    grade,
+  ]);
 
   const restart = () => {
     setCompleted(false);
@@ -213,7 +178,7 @@ export function StudyDeck(props: StudyDeckProps) {
 
   if (error) {
     return (
-      <Shell onBack={onBack} title={title}>
+      <Shell onBack={onBack} title={title} headerActions={headerActions}>
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-6 py-16 text-center">
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">{errorTitle}</p>
@@ -225,7 +190,7 @@ export function StudyDeck(props: StudyDeckProps) {
 
   if (cards.length === 0) {
     return (
-      <Shell onBack={onBack} title={title}>
+      <Shell onBack={onBack} title={title} headerActions={headerActions}>
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
           <BookOpen className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
@@ -237,22 +202,30 @@ export function StudyDeck(props: StudyDeckProps) {
 
   if (completed) {
     const accuracy =
-      progress.done > 0 ? Math.round((progress.correct / progress.done) * 100) : 0;
+      progress.done > 0
+        ? Math.round((progress.correct / progress.done) * 100)
+        : 0;
     return (
-      <Shell onBack={onBack} title={title}>
+      <Shell onBack={onBack} title={title} headerActions={headerActions}>
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-10 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Trophy className="h-7 w-7" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">{completionTitle}</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              {completionTitle}
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {completionSubtitle ?? `You studied all ${progress.total} cards.`}
             </p>
           </div>
           <div className="grid w-full grid-cols-3 gap-2 text-center">
             <Stat label="Studied" value={`${progress.done}`} />
-            <Stat label="Correct" value={`${progress.correct}`} accent="green" />
+            <Stat
+              label="Correct"
+              value={`${progress.correct}`}
+              accent="green"
+            />
             <Stat label="Accuracy" value={`${accuracy}%`} />
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row">
@@ -284,7 +257,7 @@ export function StudyDeck(props: StudyDeckProps) {
   };
 
   return (
-    <Shell onBack={onBack} title={title}>
+    <Shell onBack={onBack} title={title} headerActions={headerActions}>
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1">
@@ -319,6 +292,8 @@ export function StudyDeck(props: StudyDeckProps) {
           back={current.back}
           index={currentIndex}
           layoutMode="list"
+          flipped={isFlipped}
+          onFlipToggle={flip}
           lastResult={resultsByCard[current.id] ?? null}
         />
 
@@ -334,10 +309,17 @@ export function StudyDeck(props: StudyDeckProps) {
               <ChevronLeft className="mr-1 h-4 w-4" />
               Prev
             </Button>
-            <Button variant="outline" size="sm" className="h-9 px-3 text-xs" onClick={flip}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 text-xs"
+              onClick={flip}
+            >
               <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               {isFlipped ? "Show front" : "Flip"}
-              <span className="ml-1.5 rounded bg-muted px-1 text-[10px]">Space</span>
+              <span className="ml-1.5 rounded bg-muted px-1 text-[10px]">
+                Space
+              </span>
             </Button>
             <Button
               variant="ghost"
@@ -351,11 +333,11 @@ export function StudyDeck(props: StudyDeckProps) {
             </Button>
           </div>
 
-          <div className="flex items-stretch gap-2">
-            <GradeButton result="incorrect" hotkey="1" onGrade={handleGrade} disabled={grading} />
-            <GradeButton result="partial" hotkey="2" onGrade={handleGrade} disabled={grading} />
-            <GradeButton result="correct" hotkey="3" onGrade={handleGrade} disabled={grading} />
-          </div>
+          <FlashcardGradeButtonRow
+            onGrade={handleGrade}
+            disabled={grading}
+            className="w-full"
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
@@ -397,7 +379,9 @@ function Stat({
       <div
         className={cn(
           "text-lg font-semibold tabular-nums",
-          accent === "green" ? "text-green-600 dark:text-green-400" : "text-foreground",
+          accent === "green"
+            ? "text-green-600 dark:text-green-400"
+            : "text-foreground",
         )}
       >
         {value}
@@ -413,10 +397,12 @@ function Stat({
 function Shell({
   onBack,
   title,
+  headerActions,
   children,
 }: {
   onBack: () => void;
   title: string;
+  headerActions?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -426,13 +412,18 @@ function Shell({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-2 text-xs text-muted-foreground"
+            className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
             onClick={onBack}
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
-          <span className="truncate text-sm font-medium text-foreground">{title}</span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+            {title}
+          </span>
+          {headerActions ? (
+            <div className="shrink-0">{headerActions}</div>
+          ) : null}
         </div>
         {children}
       </div>

@@ -10,6 +10,7 @@ import {
 
 const METRIC_LABELS: Record<keyof PlainTextMetrics, string> = {
   charCount: "Characters",
+  whitespaceCharCount: "Whitespace characters",
   wordCount: "Words",
   lineCount: "Lines",
   paragraphCount: "Paragraphs",
@@ -18,12 +19,17 @@ const METRIC_LABELS: Record<keyof PlainTextMetrics, string> = {
 
 const TEXTAREA_METRICS: Array<keyof PlainTextMetrics> = [
   "charCount",
+  "whitespaceCharCount",
   "wordCount",
   "lineCount",
   "paragraphCount",
 ];
 
-const INPUT_METRICS: Array<keyof PlainTextMetrics> = ["charCount", "wordCount"];
+const INPUT_METRICS: Array<keyof PlainTextMetrics> = [
+  "charCount",
+  "whitespaceCharCount",
+  "wordCount",
+];
 
 export interface ProTextFieldStatsMenuItemsProps {
   showStatsBar: boolean;

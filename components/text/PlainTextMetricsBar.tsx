@@ -17,6 +17,7 @@ export interface PlainTextMetricsBarProps {
 
 const METRIC_LABELS: Record<keyof PlainTextMetrics, string> = {
   charCount: "chars",
+  whitespaceCharCount: "whitespace",
   wordCount: "words",
   lineCount: "lines",
   paragraphCount: "paragraphs",
@@ -25,6 +26,7 @@ const METRIC_LABELS: Record<keyof PlainTextMetrics, string> = {
 
 const DEFAULT_METRICS: Array<keyof PlainTextMetrics> = [
   "charCount",
+  "whitespaceCharCount",
   "wordCount",
   "lineCount",
   "paragraphCount",

@@ -299,6 +299,34 @@ const TableViewerWindow = lazyOverlay(
     })),
   { ssr: false },
 );
+const FlashcardsBlockWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/flashcards/FlashcardsBlockWindow").then(
+      (m) => ({ default: m.FlashcardsBlockWindow }),
+    ),
+  { ssr: false },
+);
+const FlashcardItemWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/flashcards/FlashcardItemWindow").then(
+      (m) => ({ default: m.FlashcardItemWindow }),
+    ),
+  { ssr: false },
+);
+const FlashcardStudyWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/flashcards/FlashcardStudyWindow").then(
+      (m) => ({ default: m.FlashcardStudyWindow }),
+    ),
+  { ssr: false },
+);
+const FlashcardSubcardsWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/flashcards/FlashcardSubcardsWindow").then(
+      (m) => ({ default: m.FlashcardSubcardsWindow }),
+    ),
+  { ssr: false },
+);
 const ChatDebugWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/ChatDebugWindow"),
   { ssr: false },
@@ -907,6 +935,18 @@ export default function OverlayController() {
     filePreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "filePreviewWindow"),
     ),
+    flashcardItemWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "flashcardItemWindow"),
+    ),
+    flashcardsBlockWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "flashcardsBlockWindow"),
+    ),
+    flashcardStudyWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "flashcardStudyWindow"),
+    ),
+    flashcardSubcardsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "flashcardSubcardsWindow"),
+    ),
     sourceInspectorWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "sourceInspectorWindow"),
     ),
@@ -1156,6 +1196,18 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     filePreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "filePreviewWindow"),
+    ) as Record<string, unknown> | null,
+    flashcardItemWindow: useAppSelector((s) =>
+      selectOverlayData(s, "flashcardItemWindow"),
+    ) as Record<string, unknown> | null,
+    flashcardsBlockWindow: useAppSelector((s) =>
+      selectOverlayData(s, "flashcardsBlockWindow"),
+    ) as Record<string, unknown> | null,
+    flashcardStudyWindow: useAppSelector((s) =>
+      selectOverlayData(s, "flashcardStudyWindow"),
+    ) as Record<string, unknown> | null,
+    flashcardSubcardsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "flashcardSubcardsWindow"),
     ) as Record<string, unknown> | null,
     sourceInspectorWindow: useAppSelector((s) =>
       selectOverlayData(s, "sourceInspectorWindow"),
@@ -1422,9 +1474,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.adminIndicator;
         const data = dataById.adminIndicator as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AdminIndicator
@@ -1440,9 +1490,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.adminStateAnalyzer;
         const data = dataById.adminStateAnalyzer as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <StateViewerOverlay
@@ -1458,9 +1506,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.adminStateAnalyzerWindow;
         const data = dataById.adminStateAnalyzerWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <StateViewerWindow
@@ -1476,9 +1522,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentAdminFindUsagesWindow;
         const data = dataById.agentAdminFindUsagesWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentAdminFindUsagesWindow
@@ -1498,9 +1542,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentAdminShortcutWindow;
         const data = dataById.agentAdminShortcutWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentShortcutQuickCreateWindow
@@ -1521,9 +1563,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentAdvancedEditorWindow;
         const data = dataById.agentAdvancedEditorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentContentWindow
@@ -1556,9 +1596,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentAssistantMarkdownDebugWindow;
         const data = dataById.agentAssistantMarkdownDebugWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentAssistantMarkdownDebugWindow
@@ -1674,9 +1712,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentConnectionsWindow;
         const data = dataById.agentConnectionsWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentConnectionsWindow
@@ -1703,9 +1739,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentConvertSystemWindow;
         const data = dataById.agentConvertSystemWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentConvertSystemWindow
@@ -1722,9 +1756,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.systemInstructionWindow;
         const data = dataById.systemInstructionWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const conversationId =
           typeof data?.conversationId === "string" ? data.conversationId : "";
@@ -1744,9 +1776,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentCreateAppWindow;
         const data = dataById.agentCreateAppWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentCreateAppWindow
@@ -1763,9 +1793,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentDataStorageWindow;
         const data = dataById.agentDataStorageWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentDataStorageWindow
@@ -1782,9 +1810,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentDebugWindow;
         const data = dataById.agentDebugWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentDebugWindow
@@ -1810,9 +1836,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentFindUsagesWindow;
         const data = dataById.agentFindUsagesWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentFindUsagesWindow
@@ -1929,9 +1953,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentImportWindow;
         const data = dataById.agentImportWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentImportWindow
@@ -1970,9 +1992,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentInterfaceVariationsWindow;
         const data = dataById.agentInterfaceVariationsWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentInterfaceVariationsWindow
@@ -1991,9 +2011,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentOptimizerWindow;
         const data = dataById.agentOptimizerWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentOptimizerWindow
@@ -2033,9 +2051,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentRunHistoryWindow;
         const data = dataById.agentRunHistoryWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentRunHistoryWindow
@@ -2057,9 +2073,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentRunWindow;
         const data = dataById.agentRunWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentRunWindow
@@ -2090,9 +2104,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.agentSettingsWindow;
         const data = dataById.agentSettingsWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AgentSettingsWindow
@@ -2160,9 +2172,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.aiVoiceWindow;
         const data = dataById.aiVoiceWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AiVoiceWindow
@@ -2175,9 +2185,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.announcements;
         const data = dataById.announcements as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AnnouncementsViewer
@@ -2193,9 +2201,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.authGate;
         const data = dataById.authGate as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <AuthGateDialog
@@ -2220,9 +2226,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.brokerState;
         const data = dataById.brokerState as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <FullscreenBrokerState
@@ -2246,9 +2250,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.browserFrameWindow;
         const data = dataById.browserFrameWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <BrowserFrameWindow
@@ -2273,9 +2275,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.browserWorkbenchWindow;
         const data = dataById.browserWorkbenchWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <BrowserWorkbenchWindow
@@ -2298,9 +2298,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.canvasViewerWindow;
         const data = dataById.canvasViewerWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <CanvasViewerWindow
@@ -2322,9 +2320,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.tableViewerWindow;
         const data = dataById.tableViewerWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <TableViewerWindow
@@ -2340,13 +2336,153 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* flashcardsBlockWindow */}
+      {(() => {
+        const isOpen = isOpenById.flashcardsBlockWindow;
+        const data = dataById.flashcardsBlockWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const serverData =
+          data?.serverData &&
+          typeof data.serverData === "object" &&
+          data.serverData !== null &&
+          "cards" in data.serverData &&
+          Array.isArray((data.serverData as { cards: unknown }).cards)
+            ? (data.serverData as import("@/types/python-generated/stream-events").FlashcardsBlockData)
+            : undefined;
+        return (
+          <FlashcardsBlockWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "flashcardsBlockWindow" }))
+            }
+            title={typeof data?.title === "string" ? data.title : undefined}
+            content={
+              typeof data?.content === "string" ? data.content : undefined
+            }
+            serverData={serverData}
+            additionalDetails={
+              data?.additionalDetails &&
+              typeof data.additionalDetails === "object" &&
+              data.additionalDetails !== null
+                ? (data.additionalDetails as Record<string, unknown>)
+                : undefined
+            }
+            taskId={typeof data?.taskId === "string" ? data.taskId : undefined}
+            artifactId={
+              typeof data?.artifactId === "string" ? data.artifactId : undefined
+            }
+            messageId={
+              typeof data?.messageId === "string" ? data.messageId : undefined
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : undefined
+            }
+            blockIndex={
+              typeof data?.blockIndex === "number" ? data.blockIndex : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* flashcardItemWindow */}
+      {(() => {
+        const isOpen = isOpenById.flashcardItemWindow;
+        const data = dataById.flashcardItemWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <FlashcardItemWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "flashcardItemWindow" }))
+            }
+            title={typeof data?.title === "string" ? data.title : undefined}
+            front={typeof data?.front === "string" ? data.front : undefined}
+            back={
+              typeof data?.back === "string"
+                ? data.back
+                : data?.back === null
+                  ? null
+                  : undefined
+            }
+            index={typeof data?.index === "number" ? data.index : undefined}
+            layoutMode={
+              data?.layoutMode === "grid" || data?.layoutMode === "list"
+                ? data.layoutMode
+                : undefined
+            }
+            additionalDetails={
+              data?.additionalDetails &&
+              typeof data.additionalDetails === "object" &&
+              data.additionalDetails !== null
+                ? (data.additionalDetails as Record<string, unknown>)
+                : undefined
+            }
+            lastResult={
+              data?.lastResult === "correct" ||
+              data?.lastResult === "partial" ||
+              data?.lastResult === "incorrect"
+                ? data.lastResult
+                : data?.lastResult === null
+                  ? null
+                  : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* flashcardStudyWindow */}
+      {(() => {
+        const isOpen = isOpenById.flashcardStudyWindow;
+        const data = dataById.flashcardStudyWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <FlashcardStudyWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "flashcardStudyWindow" }))
+            }
+            setId={typeof data?.setId === "string" ? data.setId : undefined}
+            title={typeof data?.title === "string" ? data.title : undefined}
+          />
+        );
+      })()}
+
+      {/* flashcardSubcardsWindow */}
+      {(() => {
+        const isOpen = isOpenById.flashcardSubcardsWindow;
+        const data = dataById.flashcardSubcardsWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const subcards = Array.isArray(data?.subcards)
+          ? (data.subcards as import("@/components/mardown-display/blocks/flashcards/flashcard-subcards").FlashcardSubcard[])
+          : [];
+        return (
+          <FlashcardSubcardsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "flashcardSubcardsWindow" }))
+            }
+            subcards={subcards}
+            title={typeof data?.title === "string" ? data.title : undefined}
+            parentFront={
+              typeof data?.parentFront === "string"
+                ? data.parentFront
+                : undefined
+            }
+          />
+        );
+      })()}
+
       {/* chatDebugWindow */}
       {(() => {
         const isOpen = isOpenById.chatDebugWindow;
         const data = dataById.chatDebugWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ChatDebugWindow
@@ -2366,9 +2502,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.cloudFilesWindow;
         const data = dataById.cloudFilesWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <CloudFilesWindow
@@ -2385,9 +2519,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.creatorHub;
         const data = dataById.creatorHub as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <CreatorHubWindow
@@ -2656,9 +2788,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.contextSwitcherWindow;
         const data = dataById.contextSwitcherWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ContextSwitcherWindow
@@ -2674,9 +2804,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.cropStudioWindow;
         const data = dataById.cropStudioWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <CropStudioWindow
@@ -2779,9 +2907,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.emailDialogWindow;
         const data = dataById.emailDialogWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <EmailDialogWindow
@@ -2808,9 +2934,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.errorInspectorWindow;
         const data = dataById.errorInspectorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ErrorInspectorWindow
@@ -2826,9 +2950,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.executionInspectorWindow;
         const data = dataById.executionInspectorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ExecutionInspectorWindow
@@ -2844,9 +2966,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.feedbackDialog;
         const data = dataById.feedbackDialog as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <FeedbackWindow
@@ -2859,9 +2979,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.filePreviewWindow;
         const data = dataById.filePreviewWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <FilePreviewWindow
@@ -2878,9 +2996,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.sourceInspectorWindow;
         const data = dataById.sourceInspectorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const pageNumbers = Array.isArray(data?.pageNumbers)
           ? (data.pageNumbers as unknown[]).filter(
@@ -2923,9 +3039,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.itemDetailWindow;
         const data = dataById.itemDetailWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ItemDetailWindow
@@ -2949,9 +3063,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.noteInfoWindow;
         const data = dataById.noteInfoWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <NoteInfoWindow
@@ -3039,9 +3151,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.galleryWindow;
         const data = dataById.galleryWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <GalleryWindow
@@ -3058,9 +3168,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.hierarchyCreationWindow;
         const data = dataById.hierarchyCreationWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <HierarchyCreationWindow
@@ -3077,19 +3185,21 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.scopeEditWindow;
         const raw = dataById.scopeEditWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         // Narrow the two required fields; everything else stays optional.
         const data: ScopeEditWindowData | undefined =
-          raw && typeof raw.scopeTypeId === "string" && typeof raw.organizationId === "string"
+          raw &&
+          typeof raw.scopeTypeId === "string" &&
+          typeof raw.organizationId === "string"
             ? {
                 scopeTypeId: raw.scopeTypeId,
                 organizationId: raw.organizationId,
                 scopeId: typeof raw.scopeId === "string" ? raw.scopeId : null,
                 parentScopeId:
-                  typeof raw.parentScopeId === "string" ? raw.parentScopeId : undefined,
+                  typeof raw.parentScopeId === "string"
+                    ? raw.parentScopeId
+                    : undefined,
               }
             : undefined;
         return (
@@ -3158,9 +3268,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.imagePeekHost;
         const data = dataById.imagePeekHost as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ImageArrivalPeekHost
@@ -3255,9 +3363,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.instanceUIStateWindow;
         const data = dataById.instanceUIStateWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <InstanceUIStateWindow
@@ -3279,9 +3385,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.jsonTruncator;
         const data = dataById.jsonTruncator as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <JsonTruncatorDialog
@@ -3300,9 +3404,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.listManagerWindow;
         const data = dataById.listManagerWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ListManagerWindow
@@ -3316,9 +3418,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.markdownEditor;
         const data = dataById.markdownEditor as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <FullscreenMarkdownEditor
@@ -3359,9 +3459,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.markdownEditorWindow;
         const data = dataById.markdownEditorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <MarkdownEditorWindow
@@ -3392,9 +3490,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.messageAnalysisWindow;
         const data = dataById.messageAnalysisWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <MessageAnalysisWindow
@@ -3421,9 +3517,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.messagesWindow;
         const data = dataById.messagesWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <MessagesWindow
@@ -3553,9 +3647,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.newsWindow;
         const data = dataById.newsWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <NewsWindow
@@ -3603,9 +3695,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.observationalMemoryWindow;
         const data = dataById.observationalMemoryWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ObservationalMemoryWindow
@@ -3668,9 +3758,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.pdfExtractorWindow;
         const data = dataById.pdfExtractorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <PdfExtractorWindow
@@ -3686,9 +3774,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.picklistManagerV1Window;
         const data = dataById.picklistManagerV1Window as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <PicklistManagerV1Window
@@ -3704,9 +3790,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.picklistManagerV2Window;
         const data = dataById.picklistManagerV2Window as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <PicklistManagerV2Window
@@ -3722,9 +3806,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.projectsWindow;
         const data = dataById.projectsWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ProjectsWindow
@@ -3740,9 +3822,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickChat;
         const data = dataById.quickChat as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SidePanelSurface
@@ -3765,9 +3845,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickChatHistory;
         const data = dataById.quickChatHistory as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ChatHistoryWindow
@@ -3791,9 +3869,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickChatWindow;
         const data = dataById.quickChatWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SidePanelSurface
@@ -3817,9 +3893,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickData;
         const data = dataById.quickData as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SidePanelSurface
@@ -3847,9 +3921,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickDataWindow;
         const data = dataById.quickDataWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <QuickDataWindow
@@ -3871,9 +3943,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickNoteSaveWindow;
         const data = dataById.quickNoteSaveWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <QuickNoteSaveWindow
@@ -3916,9 +3986,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickNotes;
         const data = dataById.quickNotes as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SidePanelSurface
@@ -3941,9 +4009,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.workingDocumentPanel;
         const data = dataById.workingDocumentPanel as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const conversationId =
           typeof data?.conversationId === "string" ? data.conversationId : null;
@@ -3978,9 +4044,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.noteKnowledgePanel;
         const data = dataById.noteKnowledgePanel as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const noteId = typeof data?.noteId === "string" ? data.noteId : null;
         if (!noteId) return null;
@@ -4007,9 +4071,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickScribe;
         const data = dataById.quickScribe as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SidePanelSurface
@@ -4054,9 +4116,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickTasksWindow;
         const data = dataById.quickTasksWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <QuickTasksWindow
@@ -4072,9 +4132,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.quickUtilities;
         const data = dataById.quickUtilities as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <UtilitiesOverlay
@@ -4218,9 +4276,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.scraperWindow;
         const data = dataById.scraperWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ScraperWindow
@@ -4272,9 +4328,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.contextAssignment;
         const data = dataById.contextAssignment as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const rawSubject =
           data?.subject && typeof data.subject === "object"
@@ -4304,9 +4358,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.findReplace;
         const data = dataById.findReplace as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <FindReplaceOverlay
@@ -4325,9 +4377,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.surfaceContextInspector;
         const data = dataById.surfaceContextInspector as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <SurfaceContextInspectorOverlay
@@ -4353,9 +4403,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.shareModalWindow;
         const data = dataById.shareModalWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <ShareModalWindow
@@ -4522,9 +4570,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.streamDebug;
         const data = dataById.streamDebug as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <StreamDebugFloating
@@ -4554,9 +4600,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.streamDebugHistoryWindow;
         const data = dataById.streamDebugHistoryWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <StreamDebugHistoryWindow
@@ -4601,9 +4645,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.taskQuickCreateWindow;
         const data = dataById.taskQuickCreateWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <TaskQuickCreateWindow
@@ -4660,9 +4702,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.transcriptStudioWindow;
         const data = dataById.transcriptStudioWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <TranscriptStudioWindow
@@ -4680,9 +4720,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.undoHistory;
         const data = dataById.undoHistory as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <UndoHistoryOverlay
@@ -4734,9 +4772,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.whatsappMedia;
         const data = dataById.whatsappMedia as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <WhatsAppMediaWindow
@@ -4755,9 +4791,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.dictionarySelectorWindow;
         const data = dataById.dictionarySelectorWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const surfaceKey = (data?.surfaceKey as string) ?? "_default";
         return (
@@ -4775,9 +4809,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.whatsappSettings;
         const data = dataById.whatsappSettings as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <WhatsAppSettingsWindow
@@ -4806,9 +4838,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.whatsappShellWindow;
         const data = dataById.whatsappShellWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <WhatsAppShellWindow

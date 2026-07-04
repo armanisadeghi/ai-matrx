@@ -634,6 +634,65 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Flashcards Block ──────────────────────────────────────────────────────
+  {
+    slug: "flashcards-block-window",
+    overlayId: "flashcardsBlockWindow",
+    kind: "window",
+    label: "Flashcards",
+    defaultData: {
+      content: null,
+      serverData: null,
+      title: null,
+      additionalDetails: null,
+      taskId: null,
+      artifactId: null,
+      messageId: null,
+      conversationId: null,
+      blockIndex: null,
+    },
+    mobilePresentation: "fullscreen",
+  },
+
+  // ── Flashcard Item ────────────────────────────────────────────────────────
+  {
+    slug: "flashcard-item-window",
+    overlayId: "flashcardItemWindow",
+    kind: "window",
+    label: "Flashcard",
+    defaultData: {
+      front: "",
+      back: null,
+      index: 0,
+      layoutMode: "grid",
+      title: null,
+      additionalDetails: null,
+      lastResult: null,
+    },
+    mobilePresentation: "fullscreen",
+  },
+
+  // ── Flashcard Study ─────────────────────────────────────────────────────────
+  {
+    slug: "flashcard-study-window",
+    overlayId: "flashcardStudyWindow",
+    kind: "window",
+    label: "Flashcard Study",
+    defaultData: { setId: null, title: null },
+    mobilePresentation: "fullscreen",
+    mobileSidebarAs: "drawer",
+  },
+
+  // ── Flashcard Subcards ──────────────────────────────────────────────────────
+  {
+    slug: "flashcard-subcards-window",
+    overlayId: "flashcardSubcardsWindow",
+    kind: "window",
+    label: "Go Deeper",
+    defaultData: { subcards: [], title: null, parentFront: null },
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Feedback ──────────────────────────────────────────────────────────────
   {
     slug: "feedback-window",
