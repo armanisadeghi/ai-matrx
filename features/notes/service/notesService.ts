@@ -460,35 +460,42 @@ export async function createFolder(name: string): Promise<string> {
   // A row came back → we created it.
   if (inserted?.id) return inserted.id;
 
-  // No row → a folder with this (user, name) already exists (DO NOTHING). It may
-  // be soft-deleted (delete-then-recreate) — revive it, since notes reference
-  // folders by NAME string, so recreating "Recipes" should resurrect the one row.
+  // No row → a LIVE folder with this (user, name) already exists (DO NOTHING).
+  // Folder rows are hard-deleted (see deleteFolderNotes), so there is never a
+  // soft-deleted row to revive — the conflicting row is always live and RLS-
+  // visible. Return it.
   const { data: existing, error: selError } = await supabase
     .schema("workbench").from("note_folders")
-    .select("id, deleted_at")
+    .select("id")
     .eq("created_by", userId)
     .eq("name", name)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (selError) {
     console.error("Error resolving existing folder:", selError);
     throw selError;
   }
-  if (!existing?.id) {
-    throw new Error("Folder upsert returned no row and none was found");
-  }
-  if (existing.deleted_at) {
-    const { error: reviveError } = await supabase
-      .schema("workbench").from("note_folders")
-      .update({ deleted_at: null, position: 0 })
-      .eq("id", existing.id);
-    if (reviveError) {
-      console.error("Error reviving folder:", reviveError);
-      throw reviveError;
-    }
-  }
+  if (existing?.id) return existing.id;
 
-  return existing.id;
+  // Vanishingly rare: the conflicting row was hard-deleted between the upsert
+  // and this re-read (concurrent create + delete of the same name). Create fresh.
+  const { data: recreated, error: recreateError } = await supabase
+    .schema("workbench").from("note_folders")
+    .insert({
+      created_by: userId,
+      name,
+      path: name,
+      position: 0,
+      organization_id: await ensureOrgId(undefined),
+    })
+    .select("id")
+    .single();
+  if (recreateError || !recreated) {
+    console.error("Error creating folder:", recreateError);
+    throw recreateError ?? new Error("Folder insert returned no row");
+  }
+  return recreated.id;
 }
 
 /**
@@ -553,13 +560,20 @@ export async function deleteFolderNotes(folderName: string): Promise<number> {
     throw error;
   }
 
-  // Soft-delete the folder record
+  // HARD-delete the folder record (not soft-delete). The folder row is a
+  // name-keyed picker-registry entry — notes reference their folder by the
+  // `folder_name` STRING, not by id, and `ensureFolderMaterialized` recreates
+  // it on demand. Soft-deleting it would leave a `deleted_at`-set row occupying
+  // the (created_by, name) slot of the FULL unique index
+  // `note_folders_created_by_name_unique` — invisible to the `authenticated`
+  // client under RLS (`deleted_at IS NULL`), so a same-name recreate could
+  // neither insert (conflict) nor see/revive it. Hard delete keeps the natural
+  // key free for reuse. (The notes themselves stay soft-deleted / recoverable.)
   await supabase
     .schema("workbench").from("note_folders")
-    .update({ deleted_at: deletedAt })
+    .delete()
     .eq("created_by", userId)
-    .eq("name", folderName)
-    .is("deleted_at", null);
+    .eq("name", folderName);
 
   return count;
 }

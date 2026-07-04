@@ -22,6 +22,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
+import { createFolder } from "../service/notesService";
 import type { Note, CreateNoteInput } from "../types";
 import type { NoteRecord, NoteScopeAssignment } from "./notes.types";
 import {
@@ -288,44 +289,22 @@ export const saveNote = createAsyncThunk<void, string>(
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a folder_name to a folder_id by looking up (or creating) a note_folders record.
- * Returns the folder_id UUID, or null if resolution fails.
+ * Resolve a folder_name to a folder_id by looking up (or creating) a note_folders
+ * record. Returns the folder_id UUID, or null if resolution fails.
+ *
+ * Delegates to the ONE canonical folder get-or-create — `notesService.createFolder`
+ * — which is atomic (ON CONFLICT DO NOTHING against the (created_by, name) unique
+ * index, never a 23505/409). The folder is always the current user's
+ * (createFolder uses requireUserId(); RLS forbids creating one for anyone else),
+ * so no user id is threaded here.
  */
-async function resolveFolderId(
-  userId: string,
-  folderName: string,
-): Promise<string | null> {
-  // Try to find existing folder for this user
-  const { data: existing } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .select("id")
-    .eq("created_by", userId)
-    .eq("name", folderName)
-    .is("deleted_at", null)
-    .limit(1)
-    .single();
-
-  if (existing?.id) return existing.id;
-
-  // Create the folder record
-  const { data: created, error } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .insert({
-      created_by: userId,
-      name: folderName,
-      path: folderName,
-      position: 0,
-      // note_folders is a root entity (no parent → no org-inherit trigger), so
-      // organization_id is NOT NULL with nothing to fill it. Resolve it here.
-      organization_id: await ensureOrgId(undefined),
-    })
-    .select("id")
-    .single();
-
-  if (error || !created) return null;
-  return created.id;
+async function resolveFolderId(folderName: string): Promise<string | null> {
+  try {
+    return await createFolder(folderName);
+  } catch (err) {
+    console.error("Error resolving folder id:", err);
+    return null;
+  }
 }
 
 /**
@@ -342,7 +321,7 @@ export const createNewNote = createAsyncThunk<
 
   // Resolve folder_id from note_folders table
   const folderId =
-    input.folder_id ?? (await resolveFolderId(userId, folderName));
+    input.folder_id ?? (await resolveFolderId(folderName));
 
   const { data, error } = await supabase
     .schema("workbench")
@@ -527,7 +506,7 @@ export const moveNoteToFolder = createAsyncThunk<
     const userId = getUserId(getState);
 
     // Resolve folder_id for the target folder
-    const folderId = await resolveFolderId(userId, folder);
+    const folderId = await resolveFolderId(folder);
 
     dispatch(
       setNoteField({

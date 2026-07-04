@@ -13,9 +13,13 @@
 --
 -- Fix: collapse the duplicate group to its newest row, then add a FULL unique
 -- index (created_by, name). Full (not partial on deleted_at) so ON CONFLICT can
--- infer it via supabase-js upsert — safe because 0 rows are soft-deleted, and
--- delete+recreate-by-name now REVIVES the row in the service (matches the
--- name-keyed model) rather than minting a second one.
+-- infer it via supabase-js upsert. The index spans soft-deleted rows, which the
+-- `authenticated` client can't see under RLS (deleted_at IS NULL) — so to keep
+-- the natural key reusable after a delete, deleteFolderNotes HARD-deletes the
+-- folder record (a name-keyed picker-registry row; notes reference folders by
+-- the folder_name string, and ensureFolderMaterialized recreates on demand).
+-- The notes themselves stay soft-deleted / recoverable. createFolder then upserts
+-- (ON CONFLICT DO NOTHING) against only live rows.
 --
 -- Re-runnable: DELETE no-ops once deduped; index is IF NOT EXISTS.
 
