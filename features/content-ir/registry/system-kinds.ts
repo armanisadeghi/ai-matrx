@@ -8,6 +8,7 @@
  */
 
 import type { KindDefinition } from "./kind-registry.types";
+import { flashcardsServerDataFromEnvelope } from "../kinds/flashcard-set";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   {
@@ -15,6 +16,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     schemaSource: "system",
     tier: "eager",
     legacyBlockType: "flashcards",
+    toLegacyServerData: flashcardsServerDataFromEnvelope,
     artifact: { canvasType: "flashcards" },
     persistence: { persistStructured: true },
     schema: {

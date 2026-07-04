@@ -8,7 +8,7 @@
 
 import type { ComponentType } from "react";
 import type { KindSchema } from "../core/kind-schema.types";
-import type { IrPath, IrResidue } from "../core/ir-types";
+import type { CanonicalBlockIR, IrPath, IrResidue } from "../core/ir-types";
 
 /**
  * The uniform props contract for kind-driven block components. This is what
@@ -44,6 +44,14 @@ export interface KindDefinition {
   };
   /** Facade → BlockComponentRegistry type string (e.g. "flashcards"). */
   legacyBlockType?: string;
+  /**
+   * Legacy-bridge facet: derive the existing component's `serverData` from a
+   * canonical envelope. This is what lets a kind light up the REAL component
+   * (FlashcardsBlock, …) with zero component changes during migration.
+   */
+  toLegacyServerData?: (
+    envelope: CanonicalBlockIR,
+  ) => Record<string, unknown> | undefined;
   /** Facade → artifact-type-registry canvasType. */
   artifact?: { canvasType: string };
   persistence?: { persistStructured: boolean };
