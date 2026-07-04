@@ -1,20 +1,52 @@
+/**
+ * KindStreamParser — the streaming, schema-validating, __kind-discriminated
+ * JSON parser at the heart of content-ir.
+ *
+ * Frame-stack pushdown parser over JsonStreamTokenizer tokens. Every value is
+ * path-addressed; every object resolves a kind against the schema registry;
+ * schema-shaped `block_snapshot` events fire on field arrival so renderers
+ * get live partials; unknown/invalid structures degrade to `raw_object`
+ * instead of failing the stream.
+ *
+ * Moved from app/(dev)/demos/json-block-detector/kind-stream-parser.ts (the
+ * demo is now a consumer). Phase 0 change: `block_snapshot` carries the
+ * residue channel (unknown keys are no longer merged into snapshot values).
+ */
+
+import { JsonStreamTokenizer, type JsonToken } from "./json-tokenizer";
+import type { IrPath, IrResidue } from "./ir-types";
 import {
-  Frame,
-  JsonPath,
-  JsonStreamTokenizer,
-  JsonToken,
-  ObjectFrame,
-} from "./reusable-logic";
-import {
-  ArrayItemScalarType,
-  FieldSchema,
   KIND_KEY,
-  KindSchema,
-  buildCompliantKindSnapshot,
   isScalarArrayType,
   readObjectKind,
   scalarArrayItemType,
-} from "./kind-schemas";
+  type ArrayItemScalarType,
+  type FieldSchema,
+  type KindSchema,
+} from "./kind-schema.types";
+import { buildCompliantKindSnapshot } from "./kind-snapshot";
+
+/** Kept as the historical name for the parser's event paths. */
+export type JsonPath = IrPath;
+
+type ObjectFrame = {
+  kind: "object";
+  path: JsonPath;
+  value: Record<string, unknown>;
+  expecting: "keyOrEnd" | "key" | "colon" | "value" | "commaOrEnd";
+  currentKey?: string;
+  keyCount: number;
+};
+
+type ArrayFrame = {
+  kind: "array";
+  path: JsonPath;
+  value: unknown[];
+  expecting: "valueOrEnd" | "value" | "commaOrEnd";
+  nextIndex: number;
+};
+
+type Frame = ObjectFrame | ArrayFrame;
 
 type SchemaValidationOutcome = {
   error: string | null;
@@ -75,6 +107,7 @@ export type KindStreamEvent =
       kind: string;
       path: JsonPath;
       value: Record<string, unknown>;
+      residue: IrResidue | null;
       complete: boolean;
       at: number;
     }
@@ -355,22 +388,6 @@ export class KindStreamParser {
 
     if (Object.prototype.hasOwnProperty.call(frame.value, key)) {
       this.fail(`Duplicate key "${key}" is not allowed.`, at);
-      return;
-    }
-
-    const inlineFields = this.inlineSchemas.get(this.pathKey(frame.path));
-    if (inlineFields) {
-      frame.currentKey = key;
-      frame.keyCount += 1;
-      frame.expecting = "colon";
-      return;
-    }
-
-    const recordValueType = this.recordSchemas.get(this.pathKey(frame.path));
-    if (recordValueType) {
-      frame.currentKey = key;
-      frame.keyCount += 1;
-      frame.expecting = "colon";
       return;
     }
 
@@ -762,18 +779,51 @@ export class KindStreamParser {
     const schema = this.lookupSchema(kind);
     if (!schema) return;
 
-    const partial = this.getLiveObjectValue(objectPath);
+    const partial = complete
+      ? this.getFinalizedObjectValue(objectPath)
+      : this.getLiveObjectValue(objectPath);
     if (!partial) return;
 
-    const value = buildCompliantKindSnapshot(schema, partial);
+    const { value, residue } = buildCompliantKindSnapshot(schema, partial);
     this.emit({
       type: "block_snapshot",
       kind,
       path: objectPath,
       value,
+      residue,
       complete,
       at,
     });
+  }
+
+  /**
+   * On `complete` snapshots the frame has already been popped — the finalized
+   * value lives on the parent frame (or is the root itself).
+   */
+  private getFinalizedObjectValue(
+    path: JsonPath,
+  ): Record<string, unknown> | null {
+    const live = this.getLiveObjectValue(path);
+    if (live) return live;
+
+    if (path.length === 0) {
+      return typeof this.root === "object" &&
+        this.root !== null &&
+        !Array.isArray(this.root)
+        ? (this.root as Record<string, unknown>)
+        : null;
+    }
+
+    let cursor: unknown = this.root;
+    for (const segment of path) {
+      if (cursor === null || typeof cursor !== "object") return null;
+      cursor = (cursor as Record<string | number, unknown>)[
+        segment as string | number
+      ];
+    }
+    return typeof cursor === "object" && cursor !== null && !Array.isArray(cursor)
+      ? (cursor as Record<string, unknown>)
+      : null;
   }
 
   private validateFieldPlacement(
@@ -922,31 +972,6 @@ export class KindStreamParser {
       if (!Array.isArray(value)) {
         return `Field "${fieldName}" on kind "${objectKind}" must be an array.`;
       }
-
-      for (let i = 0; i < value.length; i++) {
-        const item = value[i];
-        if (typeof item !== "object" || item === null || Array.isArray(item)) {
-          continue;
-        }
-        const itemKind = readObjectKind(item as Record<string, unknown>);
-        if (!itemKind) {
-          continue;
-        }
-        if (!fieldSchema.itemKinds.includes(itemKind)) {
-          continue;
-        }
-        const itemSchema = this.lookupSchema(itemKind);
-        if (!itemSchema) {
-          continue;
-        }
-        const itemOutcome = this.validateObjectAgainstSchema(
-          item as Record<string, unknown>,
-          itemSchema,
-        );
-        if (itemOutcome.error) {
-          continue;
-        }
-      }
       return null;
     }
 
@@ -1063,7 +1088,11 @@ export class KindStreamParser {
       ) {
         return `Field "${fieldName}" must be ${fieldSchema.scalars.join(" | ")}.`;
       }
-      if (!fieldSchema.scalars.includes(valueType)) {
+      if (
+        !fieldSchema.scalars.includes(
+          valueType as "string" | "number" | "boolean",
+        )
+      ) {
         return `Field "${fieldName}" must be ${fieldSchema.scalars.join(" | ")}.`;
       }
       return null;
@@ -1245,6 +1274,7 @@ export class KindStreamParser {
     return this.stack[this.stack.length - 1];
   }
 }
+
 export function createKindStreamParser(
   options: KindStreamParserOptions,
 ): KindStreamParser {

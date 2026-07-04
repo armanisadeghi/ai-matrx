@@ -2,8 +2,13 @@
 
 import type { ReactNode } from "react";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
-import { KIND_KEY, type FieldSchema, type KindSchema } from "./kind-schemas";
-import type { KindStreamEvent } from "./kind-stream-parser";
+import {
+  KIND_KEY,
+  type FieldSchema,
+  type KindSchema,
+} from "@/features/content-ir/core/kind-schema.types";
+import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
+import type { IrResidue } from "@/features/content-ir/core/ir-types";
 import { GenericBlockRenderer } from "./generic-block-renderer";
 import { eventPathKey } from "./validation-report";
 
@@ -13,6 +18,7 @@ export type LiveBlockSnapshot = {
   kind: string;
   path: JsonPath;
   value: Record<string, unknown>;
+  residue: IrResidue | null;
   complete: boolean;
 };
 
@@ -187,6 +193,7 @@ export function buildLiveBlockSnapshots(
         kind: event.kind,
         path: event.path,
         value: event.value,
+        residue: event.residue,
         complete: event.complete,
       });
     }
@@ -242,6 +249,7 @@ function pathsEqual(left: JsonPath, right: JsonPath): boolean {
 
 function snapshotToFlashcardItem(
   snapshot: Record<string, unknown>,
+  residue: IrResidue | null,
   complete: boolean,
 ): FlashcardsBlockData["cards"][number] & Record<string, unknown> {
   if (typeof snapshot.front !== "string") {
@@ -277,8 +285,16 @@ function snapshotToFlashcardItem(
   }
 
   for (const [key, value] of Object.entries(snapshot)) {
-    if (key === "front" || key === "back" || key === "__kind") continue;
+    if (key === "front" || key === "back" || key === KIND_KEY) continue;
     if (key === "additionalDetails") continue;
+    card[key] = value;
+  }
+
+  // Zero data loss: unknown keys ride the residue channel, not the snapshot.
+  for (const [key, value] of Object.entries(residue?.extra ?? {})) {
+    if (key === "front" || key === "back" || key === "additionalDetails") {
+      continue;
+    }
     card[key] = value;
   }
 
@@ -291,12 +307,14 @@ export function flashcardSetAdditionalDetailsFromEvents(
   setPath: JsonPath,
 ): Record<string, unknown> | undefined {
   let latest: Record<string, unknown> | null = null;
+  let latestResidue: IrResidue | null = null;
 
   for (const event of events) {
     if (event.type !== "block_snapshot") continue;
     if (event.kind !== "flashcard_set") continue;
     if (!pathsEqual(event.path, setPath)) continue;
     latest = event.value;
+    latestResidue = event.residue;
   }
 
   if (!latest) return undefined;
@@ -308,6 +326,11 @@ export function flashcardSetAdditionalDetailsFromEvents(
   }
 
   for (const [key, value] of Object.entries(latest)) {
+    if (KNOWN_FLASHCARD_SET_KEYS.has(key)) continue;
+    merged[key] = value;
+  }
+
+  for (const [key, value] of Object.entries(latestResidue?.extra ?? {})) {
     if (KNOWN_FLASHCARD_SET_KEYS.has(key)) continue;
     merged[key] = value;
   }
@@ -324,7 +347,11 @@ export function flashcardServerDataFromEvents(
 ): FlashcardsBlockData {
   const byIndex = new Map<
     number,
-    { value: Record<string, unknown>; complete: boolean }
+    {
+      value: Record<string, unknown>;
+      residue: IrResidue | null;
+      complete: boolean;
+    }
   >();
   const revoked = new Set<number>();
 
@@ -346,13 +373,16 @@ export function flashcardServerDataFromEvents(
 
     byIndex.set(cardIndex, {
       value: event.value,
+      residue: event.residue,
       complete: event.complete,
     });
   }
 
   const cards = [...byIndex.entries()]
     .sort(([left], [right]) => left - right)
-    .map(([, slot]) => snapshotToFlashcardItem(slot.value, slot.complete));
+    .map(([, slot]) =>
+      snapshotToFlashcardItem(slot.value, slot.residue, slot.complete),
+    );
 
   const streamComplete = events.some((event) => event.type === "complete");
 

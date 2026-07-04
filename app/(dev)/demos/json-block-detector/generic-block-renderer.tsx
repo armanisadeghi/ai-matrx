@@ -8,10 +8,16 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import type { FieldSchema, KindSchema } from "./kind-schemas";
-import { KIND_KEY } from "./kind-schemas";
+import type {
+  FieldSchema,
+  KindSchema,
+} from "@/features/content-ir/core/kind-schema.types";
+import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
+import {
+  formatBlockLabel,
+  schemaLayoutMode,
+} from "@/features/content-ir/core/schema-structure";
 import type { LiveBlockSnapshot } from "./demo-block-components";
-import { formatBlockLabel, schemaLayoutMode } from "./schema-structure";
 import { pathLabel } from "./validation-report";
 
 /**
@@ -451,11 +457,9 @@ function FlatKindRenderer({ schema, snapshot }: GenericBlockRenderProps) {
             fieldSchema={fieldSchema}
           />
         ))}
-        {Object.entries(snapshot.value)
-          .filter(([name]) => name !== KIND_KEY && !(name in schema.fields))
-          .map(([name, value]) => (
-            <FieldRow key={name} name={name} value={value} />
-          ))}
+        {Object.entries(snapshot.residue?.extra ?? {}).map(([name, value]) => (
+          <FieldRow key={name} name={name} value={value} />
+        ))}
       </dl>
     </BlockChrome>
   );

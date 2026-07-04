@@ -7,7 +7,7 @@ import {
   createKindStreamParser,
   type KindStreamParserOptions,
   type KindStreamEvent,
-} from "./kind-stream-parser";
+} from "@/features/content-ir/core/kind-parser";
 
 export type MockJsonStreamOptions = {
   minChunkSize?: number;

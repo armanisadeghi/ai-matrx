@@ -1,5 +1,21 @@
-import { KIND_KEY, type FieldSchema, type KindSchema } from "./kind-schemas";
-import { formatBlockLabel } from "./schema-structure";
+/**
+ * OpenAI/provider JSON Schema → KindSchema converter + __kind injection.
+ *
+ * The strategic keystone: `buildAgentSchemaWithRenderBlockSupport` turns "a
+ * user/agent defined an output schema" into "the platform has a render
+ * contract for it" by injecting the `__kind` discriminator into the agent's
+ * output schema (root + array items), so the model emits self-identifying
+ * objects from then on.
+ *
+ * Moved from app/(dev)/demos/json-block-detector/schema-converter.ts.
+ */
+
+import {
+  KIND_KEY,
+  type FieldSchema,
+  type KindSchema,
+} from "../core/kind-schema.types";
+import { formatBlockLabel } from "../core/schema-structure";
 
 export type JsonSchemaNode = Record<string, unknown>;
 

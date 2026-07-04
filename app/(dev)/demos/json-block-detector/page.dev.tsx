@@ -17,8 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import { ProJsonTextarea } from "@/components/official/ProJsonTextarea";
 import { cn } from "@/lib/utils";
-import type { KindSchema } from "./kind-schemas";
-import type { KindStreamEvent } from "./kind-stream-parser";
+import type { KindSchema } from "@/features/content-ir/core/kind-schema.types";
+import type { KindStreamEvent } from "@/features/content-ir/core/kind-parser";
 import { runKindJsonStreamTest } from "./dev-test-harness";
 import {
   buildFakeKindRegistry,
@@ -44,7 +44,7 @@ import {
   SAMPLE_BLOCK_DATA_CATEGORY_ID,
   type BlockSample,
   type BlockSchemaEntry,
-} from "./flexible-data-service";
+} from "@/features/content-ir/registry/schema-source-flexible-data";
 import { SchemaConvertTab } from "./SchemaConvertTab";
 
 const FlashcardsBlock = dynamic(

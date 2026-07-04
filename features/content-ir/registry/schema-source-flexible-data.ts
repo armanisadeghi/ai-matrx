@@ -1,6 +1,19 @@
+/**
+ * flexible_data-backed schema source — the ONLY place the Block Schemas /
+ * Sample Block Data category ids and flexible_data reads for kind schemas may
+ * live (lint-enforced chokepoint). The registry consumes this; nothing else
+ * touches the table for schema purposes.
+ *
+ * Moved from app/(dev)/demos/json-block-detector/flexible-data-service.ts.
+ */
+
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
-import { KIND_KEY, type FieldSchema, type KindSchema } from "./kind-schemas";
+import {
+  KIND_KEY,
+  type FieldSchema,
+  type KindSchema,
+} from "../core/kind-schema.types";
 
 /** Block Schemas category (`block-schemas` / "Block Schemas"). */
 export const BLOCK_SCHEMAS_CATEGORY_ID = "671a423f-d350-4457-83e5-389eac70f287";
