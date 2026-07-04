@@ -39,6 +39,8 @@
 
 ## Roadmap (strangler-fig — see plan `~/.claude/plans/your-task-is-to-rippling-wind.md`)
 
+**Full handoff / remaining-work ledger + vision scorecard:** [`docs/UNIFICATION_STATUS.md`](./docs/UNIFICATION_STATUS.md).
+
 Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator shadow · 3 splitter parity · 4 flashcards render flip · **Track 2 A/B artifacts generalization** (any-surface `(source_system, source_id)` identity + structured kind persistence — see `features/artifacts/FEATURE.md` Materialization) · **the 8 `JSON_BLOCK_PATTERNS` successor kinds registered** (quiz_set, presentation_deck, decision_tree, comparison_set, diagram_spec, math_problem, item_presentation, schema_proposal — `kinds/*.ts` bridges + flexible_data rows; legacy root-key detection stays for OLD payloads only) · **5 persistence spine** (part-level `IrEnvelopeCache` + inbound `engine:"py-block-detector"` envelopes — `docs/PYTHON_ENVELOPE_CONTRACT.md`). Next: XML fold-in via `discriminator.ts` (Phase 6) → delete the mirrored brace/fence state machines, parser becomes end oracle (Phase 7). Agent `__kind` injection (C2) tracked in the same plan.
 
 ## Change Log
