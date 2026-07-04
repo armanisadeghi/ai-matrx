@@ -67,6 +67,9 @@ import { studyService } from "@/features/education/study/service/studyService";
 const COUNTDOWN_SECONDS = 3;
 /** The brief beat between cards (buzzer + slice), then the next card arms. */
 const ADVANCE_BEAT_MS = 450;
+/** VOICE MODE safety net: if the spoken question never signals it finished (e.g.
+ *  iOS autoplay blocked), open the answer window anyway so a card can't hang. */
+const SPOKEN_FRONT_MAX_WAIT_MS = 25000;
 
 export interface UseFastFireDrillResult {
   /** Live timer-bar progress 0..1 for the CURRENT card (rAF-driven, no re-render). */
@@ -79,6 +82,9 @@ export interface UseFastFireDrillResult {
   skipCard: () => void;
   /** Abort the whole drill (back / leave). */
   abort: () => void;
+  /** VOICE MODE: the spoken-front player calls this when the question finishes
+   *  playing (or errors), which is what starts the answer timer for that card. */
+  onSpokenFrontEnded: (cardId: string) => void;
 }
 
 interface CardWindow {
@@ -124,6 +130,38 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     };
   };
 
+  // How long the learner has to ANSWER. In voice mode the answer timer starts
+  // only after the spoken question finishes, and gets `voiceAnswerSeconds`
+  // (deliberately shorter — no time is spent reading). Otherwise the full
+  // `secondsPerCard`.
+  const answerSeconds = config.spokenFronts
+    ? config.voiceAnswerSeconds
+    : config.secondsPerCard;
+
+  // VOICE MODE: the card whose spoken question is still playing (answer window not
+  // yet open), plus the safety-fallback timer handle.
+  const awaitingAudioRef = useRef<string | null>(null);
+  const audioFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Open the answer window for a card: buzzer + start its clip + arm the deadline.
+  // The ONE place the answer clock starts (immediately in normal mode; after the
+  // spoken question in voice mode).
+  const beginAnswerWindow = (cardId: string): void => {
+    if (audioFallbackRef.current) {
+      clearTimeout(audioFallbackRef.current);
+      audioFallbackRef.current = null;
+    }
+    awaitingAudioRef.current = null;
+    playBuzzer("start");
+    startCardClip(cardId);
+    setDeadlineTs(Date.now() + answerSeconds * 1000);
+  };
+
+  const onSpokenFrontEnded = (cardId: string): void => {
+    if (awaitingAudioRef.current !== cardId) return;
+    beginAnswerWindow(cardId);
+  };
+
   // ── Countdown ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "countdown") {
@@ -156,13 +194,33 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     if (phase !== "card_recording" || !currentCard) {
       return undefined;
     }
-    playBuzzer("start");
     windowRef.current = { cardId: currentCard.id };
-    startCardClip(currentCard.id);
-    setDeadlineTs(Date.now() + config.secondsPerCard * 1000);
+
+    const cardId = currentCard.id;
+    const voice = config.spokenFronts && !!currentCard.spokenFrontFileId;
+    if (voice) {
+      // Wait for the spoken question to finish before starting the answer clock,
+      // so the timer never runs down while the question is being read. The
+      // SpokenFrontPlayer autoplays it and calls `onSpokenFrontEnded`; a safety
+      // fallback opens the window anyway if the audio never signals.
+      awaitingAudioRef.current = cardId;
+      audioFallbackRef.current = setTimeout(() => {
+        if (awaitingAudioRef.current === cardId) beginAnswerWindow(cardId);
+      }, SPOKEN_FRONT_MAX_WAIT_MS);
+      return () => {
+        if (audioFallbackRef.current) {
+          clearTimeout(audioFallbackRef.current);
+          audioFallbackRef.current = null;
+        }
+        awaitingAudioRef.current = null;
+      };
+    }
+
+    // Normal mode: the answer window opens immediately.
+    beginAnswerWindow(cardId);
     return undefined;
     // currentCard.id is the real key (the card changing); phase guards entry.
-  }, [phase, currentCard?.id, config.secondsPerCard]);
+  }, [phase, currentCard?.id, config.spokenFronts]);
 
   // ── Deadline expiry → close the card: buzzer, stop recorder, grade, advance ──
   // This is the ONE place a card ends. It stops the per-card recorder and
@@ -191,7 +249,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       cardId: card.id,
       front: card.front,
       back: card.back,
-      secondsAllowed: config.secondsPerCard,
+      secondsAllowed: answerSeconds,
       sessionId,
     };
     void stopCardClip(card.id).then((clip) => {
@@ -205,7 +263,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
 
   useDeadlineTimer({
     deadlineTs: phase === "card_recording" ? deadlineTs : null,
-    durationMs: config.secondsPerCard * 1000,
+    durationMs: answerSeconds * 1000,
     onExpire: handleExpire,
     onTick: (remainingMs, progress) => {
       for (const l of progressListenersRef.current) {
@@ -344,5 +402,5 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   // Keep `cards` referenced so an empty-set drill still finalizes cleanly.
   void cards.length;
 
-  return { subscribeProgress, countdown, skipCard, abort };
+  return { subscribeProgress, countdown, skipCard, abort, onSpokenFrontEnded };
 }

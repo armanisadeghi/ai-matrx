@@ -42,12 +42,15 @@ interface FastFireLiveCardProps {
   ) => () => void;
   onSkip: () => void;
   onAbort: () => void;
+  /** VOICE MODE: called when the spoken question finishes → starts the timer. */
+  onSpokenFrontEnded: (cardId: string) => void;
 }
 
 export function FastFireLiveCard({
   subscribeProgress,
   onSkip,
   onAbort,
+  onSpokenFrontEnded,
 }: FastFireLiveCardProps) {
   const dispatch = useAppDispatch();
   const phase = useAppSelector(selectFastFirePhase);
@@ -119,7 +122,11 @@ export function FastFireLiveCard({
         {/* Optional: speak the question aloud the instant the card appears
             (pre-generated + cached; plays only during the live recording phase). */}
         {config.spokenFronts && !betweenCards && card.spokenFrontFileId && (
-          <SpokenFrontPlayer fileId={card.spokenFrontFileId} cardId={card.id} />
+          <SpokenFrontPlayer
+            fileId={card.spokenFrontFileId}
+            cardId={card.id}
+            onEnded={onSpokenFrontEnded}
+          />
         )}
 
         {/* The card — FRONT ONLY (you speak the back) */}

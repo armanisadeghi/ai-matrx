@@ -335,6 +335,34 @@ export function FastFireSetup() {
               )}
             </div>
           )}
+
+          {config.spokenFronts && (
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="mb-2 flex items-center justify-between text-sm font-medium text-foreground">
+                <span className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Answer time (after the question is read)
+                </span>
+                <span className="tabular-nums text-orange-600 dark:text-orange-400">
+                  {config.voiceAnswerSeconds}s
+                </span>
+              </div>
+              <Slider
+                min={3}
+                max={Math.max(3, config.secondsPerCard)}
+                step={1}
+                value={[config.voiceAnswerSeconds]}
+                onValueChange={(v) =>
+                  dispatch(updateConfig({ voiceAnswerSeconds: v[0] ?? 8 }))
+                }
+              />
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                The timer starts only after the spoken question finishes — so you
+                never lose time to the reading. Kept shorter than the {config.secondsPerCard}s
+                above since you don&apos;t spend part of it reading.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Device check (Zoom/Meet style) — confirm + test mic/speaker before the

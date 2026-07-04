@@ -8,24 +8,41 @@
 // Keyed on the card id so it remounts + autoplays per card — no delay, since the
 // audio was generated ahead of time (never on the turn).
 //
+// In VOICE MODE the drill does NOT start the answer timer until this audio
+// finishes: `onEnded(cardId)` fires the moment playback completes (or errors), and
+// the drill opens the answer window then — so the clock never runs down while the
+// question is still being read. `onEnded` also fires on error so a bad clip can't
+// hang the drill (the drill additionally has a max-wait fallback).
+//
 // NOTE (iOS follow-up): <audio autoPlay> relies on the page's media engagement
-// from the Start tap. If iOS Safari blocks it, switch to playing the decoded
-// buffer through the shared AudioContext (resumed in the Start gesture, like the
-// buzzer) using a CORS-safe fetchable URL. Desktop autoplays fine today.
+// from the Start tap. If iOS Safari blocks it, `ended` won't fire; the drill's
+// fallback opens the window after a max-wait. The robust fix is to play the
+// decoded buffer through the Start-resumed AudioContext (like the buzzer).
 
 import { useFileSrc } from "@/features/files";
 
 export function SpokenFrontPlayer({
   fileId,
   cardId,
+  onEnded,
 }: {
   fileId: string | null | undefined;
   cardId: string;
+  /** Fired when the question finishes playing (or errors) — starts the timer. */
+  onEnded?: (cardId: string) => void;
 }) {
   const src = useFileSrc(fileId ? { kind: "file_id", fileId } : null);
   if (!fileId || !src) return null;
   return (
-    <audio key={cardId} src={src} autoPlay preload="auto" className="sr-only">
+    <audio
+      key={cardId}
+      src={src}
+      autoPlay
+      preload="auto"
+      className="sr-only"
+      onEnded={() => onEnded?.(cardId)}
+      onError={() => onEnded?.(cardId)}
+    >
       <track kind="captions" />
     </audio>
   );

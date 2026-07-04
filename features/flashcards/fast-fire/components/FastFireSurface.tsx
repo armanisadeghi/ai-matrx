@@ -35,7 +35,8 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
 
   // The drill orchestrator — mounted for the whole surface so capture + timers
   // persist across phase transitions. It self-guards on phase internally.
-  const { subscribeProgress, countdown, skipCard, abort } = useFastFireDrill();
+  const { subscribeProgress, countdown, skipCard, abort, onSpokenFrontEnded } =
+    useFastFireDrill();
 
   // Enter setup on first mount (carrying a route-provided setId). Reset on leave.
   useEffect(() => {
@@ -76,6 +77,7 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
           subscribeProgress={subscribeProgress}
           onSkip={skipCard}
           onAbort={abort}
+          onSpokenFrontEnded={onSpokenFrontEnded}
         />
       );
     case "finalizing":

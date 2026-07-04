@@ -105,6 +105,13 @@ export interface FastFireConfig {
   liveScore: boolean;
   /** Speak each card's question aloud (pre-generated + cached TTS). Default off. */
   spokenFronts: boolean;
+  /**
+   * VOICE MODE ONLY: seconds to answer AFTER the question finishes playing. The
+   * answer timer does not start until the audio stops (you never lose time to the
+   * reading), and this is deliberately SHORTER than `secondsPerCard` — in voice
+   * mode you don't spend part of the window reading, so you need less time.
+   */
+  voiceAnswerSeconds: number;
 }
 
 /** Which subset of cards the review-playback scoreboard is showing. */
@@ -150,6 +157,7 @@ const DEFAULT_CONFIG: FastFireConfig = {
   cardLimit: 0,
   liveScore: true,
   spokenFronts: false,
+  voiceAnswerSeconds: 8,
 };
 
 const initialState: FastFireState = {
