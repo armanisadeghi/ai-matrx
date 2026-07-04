@@ -45,8 +45,11 @@ import {
   type WarRoomSession,
   type WarRoomThread,
 } from "@/features/war-room/types";
+import { entityToSource } from "@/features/war-room/service/associations";
 import {
   buildWarRoomContextEntry,
+  type WarRoomResourceCount,
+  type WarRoomResourceModel,
   type WarRoomRoomModel,
 } from "@/features/war-room/service/warRoomContextXml";
 
@@ -67,6 +70,14 @@ export interface ThreadAssignmentIndex {
   hasAudioByThread: Set<string>;
   /** File + document attachment count per tile. */
   fileCountByThread: Map<string, number>;
+  /** Per-token counts of EVERY attached type (open vocabulary, canonical tokens). */
+  resourceCountsByThread: Map<string, WarRoomResourceCount[]>;
+  /** Pinned resources per tile — always-inline rows at every tier. */
+  pinnedByThread: Map<string, WarRoomResourceModel[]>;
+}
+
+function isPlainMeta(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 export function indexThreadAssignments(
@@ -77,6 +88,8 @@ export function indexThreadAssignments(
   const activeAudioByThread = new Map<string, string>();
   const hasAudioByThread = new Set<string>();
   const fileCountByThread = new Map<string, number>();
+  const countsRaw = new Map<string, Map<string, number>>();
+  const pinnedByThread = new Map<string, WarRoomResourceModel[]>();
 
   // Prefer the is_active member of each single-active type; rows arrive ordered
   // by position so the first seen is the positional fallback.
@@ -91,6 +104,25 @@ export function indexThreadAssignments(
 
   for (const row of rows) {
     if (row.container_type !== "thread") continue;
+
+    // Open-vocabulary signals: EVERY content row counts toward the roster's
+    // `res=` attribute; pinned rows surface inline (titles from the edge
+    // label — async builders have no Redux slices to consult).
+    const token = entityToSource(row.entity_type);
+    const perThread = countsRaw.get(row.container_id) ?? new Map<string, number>();
+    perThread.set(token, (perThread.get(token) ?? 0) + 1);
+    countsRaw.set(row.container_id, perThread);
+    if (isPlainMeta(row.metadata) && row.metadata.pinned === true) {
+      const list = pinnedByThread.get(row.container_id) ?? [];
+      list.push({
+        token,
+        id: row.entity_id,
+        title: row.label?.trim() || `Untitled ${token}`,
+        pinned: true,
+      });
+      pinnedByThread.set(row.container_id, list);
+    }
+
     switch (row.entity_type) {
       case "task":
         pickActive(taskByThread, row);
@@ -103,7 +135,7 @@ export function indexThreadAssignments(
         pickActive(activeAudioByThread, row);
         break;
       case "user_file":
-      case "document":
+      case "udt_document":
         fileCountByThread.set(
           row.container_id,
           (fileCountByThread.get(row.container_id) ?? 0) + 1,
@@ -112,12 +144,22 @@ export function indexThreadAssignments(
     }
   }
 
+  const resourceCountsByThread = new Map<string, WarRoomResourceCount[]>();
+  for (const [threadId, perThread] of countsRaw) {
+    resourceCountsByThread.set(
+      threadId,
+      [...perThread.entries()].map(([token, count]) => ({ token, count })),
+    );
+  }
+
   return {
     taskByThread,
     noteByThread,
     activeAudioByThread,
     hasAudioByThread,
     fileCountByThread,
+    resourceCountsByThread,
+    pinnedByThread,
   };
 }
 
@@ -145,6 +187,10 @@ export interface MasterThreadEntry {
   hasAudio: boolean;
   /** How many files/documents are attached to the thread. */
   fileCount: number;
+  /** Per-token counts of everything attached (open vocabulary). */
+  resourceCounts?: WarRoomResourceCount[];
+  /** Pinned resources — surfaced inline in the roster (budgeted). */
+  pinnedResources?: WarRoomResourceModel[];
 }
 
 /** One room in the roster: identity + its threads. */
@@ -279,6 +325,8 @@ export async function buildMasterAgentContext(
     activeAudioByThread,
     hasAudioByThread,
     fileCountByThread,
+    resourceCountsByThread,
+    pinnedByThread,
   } = indexThreadAssignments(assignments);
 
   // ── Resolve the thread agent conversation ids in one query ─────────────
@@ -393,6 +441,8 @@ export async function buildMasterAgentContext(
         conversationId,
         hasAudio: hasAudioByThread.has(thread.id),
         fileCount: fileCountByThread.get(thread.id) ?? 0,
+        resourceCounts: resourceCountsByThread.get(thread.id),
+        pinnedResources: pinnedByThread.get(thread.id),
       };
       const status = conversationId
         ? resolveStatus?.(conversationId)
@@ -429,6 +479,8 @@ export async function buildMasterAgentContext(
         noteSnippet: e.noteSnippet,
         hasAudio: e.hasAudio,
         fileCount: e.fileCount,
+        resourceCounts: e.resourceCounts,
+        pinnedResources: e.pinnedResources,
       })),
     };
   });

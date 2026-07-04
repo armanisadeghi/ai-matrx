@@ -33,6 +33,7 @@ import {
   toggleThreadPin,
 } from "@/features/war-room/redux/thunks";
 import type { ThreadTab } from "@/features/war-room/types";
+import { normalizeThreadTab } from "./useThreadTabs";
 
 export interface ThreadActions {
   title: string;
@@ -66,7 +67,7 @@ export function useThreadActions(
 
   if (!tile) return null;
 
-  const activeTab = (tile.active_tab as ThreadTab) ?? "task";
+  const activeTab = normalizeThreadTab(tile.active_tab);
   const title = tile.title?.trim() || "Untitled thread";
 
   const canExpand =

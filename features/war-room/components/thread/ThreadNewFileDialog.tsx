@@ -33,10 +33,7 @@ import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallC
 import { getFileExtension } from "@/features/code-editor/config/languages";
 import { requestUpload, folderForWarRoomThread } from "@/features/files";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import {
-  attachFileToThread,
-  attachCanvasResourceToThread,
-} from "@/features/war-room/redux/thunks";
+import { attachEntityToThread } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 
 /**
@@ -76,13 +73,10 @@ export function ThreadNewFileDialog({
   threadId,
   open,
   onOpenChange,
-  /** Where the created file is linked — Files tab (default) or Canvas launcher. */
-  attachTarget = "files",
 }: {
   threadId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  attachTarget?: "files" | "canvas";
 }) {
   const dispatch = useAppDispatch();
   const [name, setName] = useState("");
@@ -134,12 +128,11 @@ export function ThreadNewFileDialog({
         );
         return;
       }
-      const attached =
-        attachTarget === "canvas"
-          ? await dispatch(
-              attachCanvasResourceToThread(threadId, "user_file", fileId),
-            )
-          : await dispatch(attachFileToThread(threadId, fileId, fileName));
+      const attached = await dispatch(
+        attachEntityToThread(threadId, "user_file", fileId, {
+          label: fileName,
+        }),
+      );
       if (attached) {
         toast.success(`Created ${fileName}`);
         reset();

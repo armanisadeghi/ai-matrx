@@ -49,7 +49,15 @@ export interface AssociationPickerSheetProps {
 
 export function AssociationPickerSheet(props: AssociationPickerSheetProps) {
   const isMobile = useIsMobile();
-  const body = <PickerBody {...props} />;
+  const body = (
+    <TokenCandidateList
+      token={props.token}
+      enabled={props.open}
+      attachedIds={props.attachedIds}
+      onAttach={props.onAttach}
+      onDetach={props.onDetach}
+    />
+  );
   const info = getEntityInfo(props.token);
   const title = `Add ${info.labelPlural}`;
   const subtitle = props.containerLabel
@@ -92,18 +100,32 @@ export function AssociationPickerSheet(props: AssociationPickerSheetProps) {
   );
 }
 
-function PickerBody({
-  open,
+export interface TokenCandidateListProps {
+  token: EntityTypeToken;
+  /** Load candidates only while true (mirror of the sheet's `open`). */
+  enabled: boolean;
+  attachedIds: Set<string>;
+  onAttach: (resourceId: string, title: string) => Promise<{ ok: boolean }>;
+  onDetach: (resourceId: string) => Promise<{ ok: boolean }>;
+}
+
+/**
+ * The searchable candidate list for ONE token — the reusable body of the
+ * picker sheet, also mounted inline by per-token "add" affordances
+ * (AssociationList sections).
+ */
+export function TokenCandidateList({
+  enabled,
   token,
   attachedIds,
   onAttach,
   onDetach,
-}: AssociationPickerSheetProps) {
+}: TokenCandidateListProps) {
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const { candidates, loading, error, reload } = useAssociationCandidates({
     token,
-    enabled: open,
+    enabled,
     search: search.trim() || undefined,
   });
 

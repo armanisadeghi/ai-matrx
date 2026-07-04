@@ -13,13 +13,16 @@ import { useEffect } from "react";
 import { ThreadTaskTab } from "./ThreadTaskTab";
 import { ThreadNotesTab } from "./ThreadNotesTab";
 import { ThreadAudioTab } from "./ThreadAudioTab";
-import { ThreadAttachmentsTab } from "./ThreadAttachmentsTab";
+import { ThreadResourcesTab } from "./ThreadResourcesTab";
 import { ThreadAgentTab } from "./ThreadAgentTab";
 import { combinedSectionKind } from "@/features/war-room/components/room/threadKind";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectThreadAnchorType } from "@/features/war-room/redux/selectors";
+import { useThreadResourcesAdapter } from "@/features/war-room/hooks/useThreadResourcesAdapter";
+import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
-import type { ThreadTab } from "@/features/war-room/types";
+import { entityTabToken, type ThreadTab } from "@/features/war-room/types";
 
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
@@ -50,6 +53,19 @@ export function ThreadTabContent({
     );
   }, [tab, threadLayout, threadId, sessionId]);
 
+  // Derived `entity:` tabs — one per attached entity type the core tabs don't
+  // cover; renders the canonical resources list scoped to that token.
+  const entityToken = entityTabToken(tab);
+  if (entityToken) {
+    return (
+      <EntityTokenTab
+        threadId={threadId}
+        token={entityToken}
+        compact={compact}
+      />
+    );
+  }
+
   switch (tab) {
     case "task":
       return <ThreadTaskTab threadId={threadId} compact={compact} />;
@@ -58,7 +74,7 @@ export function ThreadTabContent({
     case "audio":
       return <ThreadAudioTab threadId={threadId} compact={compact} />;
     case "files":
-      return <ThreadAttachmentsTab threadId={threadId} />;
+      return <ThreadResourcesTab threadId={threadId} />;
     case "agent":
       // Deliberately NOT part of the combined "All" view — the agent panel
       // (conversation + voice + co-edited working document) is too rich for a
@@ -67,6 +83,31 @@ export function ThreadTabContent({
     case "combined":
       return <CombinedAllView threadId={threadId} sessionId={sessionId} />;
   }
+  // Unknown persisted value (free-text column) — fall back loudly to Task.
+  return <ThreadTaskTab threadId={threadId} compact={compact} />;
+}
+
+function EntityTokenTab({
+  threadId,
+  token,
+  compact,
+}: {
+  threadId: string;
+  token: string;
+  compact?: boolean;
+}) {
+  const adapter = useThreadResourcesAdapter(threadId);
+  const info = tryGetEntityInfo(token);
+  if (!info) return <ThreadResourcesTab threadId={threadId} compact={compact} />;
+  return (
+    <div className="h-full min-h-0 overflow-y-auto scrollbar-thin px-1.5 py-2">
+      <AssociationList
+        adapter={adapter}
+        variant={compact ? "compact" : "full"}
+        tokens={[info.token]}
+      />
+    </div>
+  );
 }
 
 function CombinedAllView({
@@ -90,7 +131,7 @@ function CombinedAllView({
         <ThreadAudioTab threadId={threadId} compact />
       </CombinedSection>
       <CombinedSection kind="files" anchorType={anchorType} last>
-        <ThreadAttachmentsTab threadId={threadId} compact />
+        <ThreadResourcesTab threadId={threadId} compact />
       </CombinedSection>
     </div>
   );

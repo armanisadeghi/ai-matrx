@@ -24,6 +24,7 @@ import {
   selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import type { ThreadTab } from "@/features/war-room/types";
+import { normalizeThreadTab } from "./useThreadTabs";
 
 export interface ThreadMetrics {
   /** Resolved active tab. */
@@ -71,7 +72,7 @@ export function useThreadMetrics(threadId: string): ThreadMetrics {
   const subtasksDone = subtasks.filter((st) => st.status === "completed").length;
 
   return {
-    activeTab: ((tile?.active_tab as ThreadTab) ?? "task") as ThreadTab,
+    activeTab: normalizeThreadTab(tile?.active_tab),
     hasTask: !!taskId,
     taskTitle: task?.title ?? null,
     taskCompleted: task?.status === "completed",

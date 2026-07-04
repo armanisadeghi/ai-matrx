@@ -310,33 +310,6 @@ export const selectThreadTaskId =
     return activeEntityId(bucket(state, "thread", threadId), "task");
   };
 
-function isCanvasResourceRow(row: WarRoomAssignment): boolean {
-  const md = row.metadata;
-  if (typeof md !== "object" || md === null || Array.isArray(md)) return false;
-  return (md as Record<string, unknown>).canvas === true;
-}
-
-const canvasResourcesCache = new Map<
-  string,
-  (state: RootState) => WarRoomAssignment[]
->();
-/** Canvas-tab shortcuts — edges tagged with metadata `{ canvas: true }`. */
-export function selectCanvasResourcesForThread(threadId: string | null) {
-  if (!threadId) return () => EMPTY_ASSIGNMENTS;
-  let sel = canvasResourcesCache.get(threadId);
-  if (!sel) {
-    sel = createSelector(
-      selectAssignmentsForContainer("thread", threadId),
-      (rows): WarRoomAssignment[] => {
-        const resources = rows.filter(isCanvasResourceRow);
-        return resources.length > 0 ? resources : EMPTY_ASSIGNMENTS;
-      },
-    );
-    canvasResourcesCache.set(threadId, sel);
-  }
-  return sel;
-}
-
 export const selectThreadProjectId =
   (threadId: string | null) =>
   (state: RootState): string | null => {
@@ -413,12 +386,63 @@ export function selectAttachmentsForThread(threadId: string | null) {
       selectAssignmentsForContainer("thread", threadId),
       (rows): WarRoomAssignment[] => {
         const atts = rows.filter(
-          (r) => r.entity_type === "user_file" || r.entity_type === "document",
+          (r) =>
+            r.entity_type === "user_file" || r.entity_type === "udt_document",
         );
         return atts.length > 0 ? atts : EMPTY_ASSIGNMENTS;
       },
     );
     attachmentsCache.set(threadId, sel);
+  }
+  return sel;
+}
+
+// ── Generic content assignments (open vocabulary) ───────────────────────
+// EVERY content row attached to a container, any registered entity type —
+// the read primitive behind the Resources surfaces, dynamic tabs, and the
+// agent resource roster. Per-type selectors above stay for the core tabs.
+
+/** All content rows for a thread (already content-filtered at hydration). */
+export function selectContentAssignmentsForThread(threadId: string | null) {
+  return selectAssignmentsForContainer("thread", threadId);
+}
+
+/** All content rows for a room container. */
+export function selectContentAssignmentsForRoom(roomId: string | null) {
+  return selectAssignmentsForContainer("room", roomId);
+}
+
+export interface AssignmentTokenCount {
+  /** War-room vocabulary token (`user_file`, `udt_document`, `data_store`, …). */
+  token: string;
+  count: number;
+}
+
+const tokenSummaryCache = new Map<
+  string,
+  (state: RootState) => AssignmentTokenCount[]
+>();
+const EMPTY_TOKEN_SUMMARY: AssignmentTokenCount[] = [];
+/** Per-token counts of everything attached to a thread (registry order-agnostic). */
+export function selectAssignmentTokenSummary(threadId: string | null) {
+  if (!threadId) return () => EMPTY_TOKEN_SUMMARY;
+  let sel = tokenSummaryCache.get(threadId);
+  if (!sel) {
+    sel = createSelector(
+      selectAssignmentsForContainer("thread", threadId),
+      (rows): AssignmentTokenCount[] => {
+        if (rows.length === 0) return EMPTY_TOKEN_SUMMARY;
+        const counts = new Map<string, number>();
+        for (const r of rows) {
+          counts.set(r.entity_type, (counts.get(r.entity_type) ?? 0) + 1);
+        }
+        return [...counts.entries()].map(([token, count]) => ({
+          token,
+          count,
+        }));
+      },
+    );
+    tokenSummaryCache.set(threadId, sel);
   }
   return sel;
 }

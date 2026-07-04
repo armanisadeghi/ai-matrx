@@ -23,14 +23,46 @@
  */
 
 import type { AssistantContextEntry } from "@/features/transcript-studio/service/assistantContextBuilder";
+import { accessLegendEntries } from "@/features/scopes/registry/entityContentAdapters";
 
 export const WAR_ROOM_CONTEXT_KEY = "war_room";
 /** Generous ceiling — far below the backend HARD_INLINE_CAP (50 000) — so the
  *  overview renders inline even for a busy room/master roster. */
 const INLINE_CEIL = 24_000;
 
+/** Budget: max inline resource rows on the current thread (pinned first). */
+const MAX_CURRENT_THREAD_RESOURCES = 60;
+/** Budget: max inline PINNED rows per thread at room scope. */
+const MAX_ROOM_PINNED_PER_THREAD = 3;
+/** Budget: master shows pinned rows only when a room has at most this many. */
+const MAX_MASTER_PINNED_PER_ROOM = 2;
+/** Titles inside resource rows are clipped to keep the roster terse. */
+const RESOURCE_TITLE_MAX = 60;
+
 export type WarRoomBasis = "project" | "task" | "standalone";
 export type WarRoomScope = "thread" | "room" | "all";
+
+/**
+ * One attached resource of ANY registered entity type, as agents see it in the
+ * `<resources>` roster: the token + id (the tool handle), a human title, the
+ * pinned flag (always-inline at every tier), and optional per-token attributes
+ * (files carry mime/extraction/rag). Registry-open — new tokens flow through
+ * with zero changes here.
+ */
+export interface WarRoomResourceModel {
+  token: string;
+  id: string;
+  title: string;
+  pinned?: boolean;
+  /** Extra per-token attributes rendered onto the row (already terse). */
+  attrs?: Record<string, string | number | undefined>;
+}
+
+/** Per-token attachment counts — the compact roster signal (`res=` attr). */
+export interface WarRoomResourceCount {
+  token: string;
+  count: number;
+}
 
 /**
  * One file/document attached to a thread, as the agent sees it in the inline
@@ -74,6 +106,16 @@ export interface WarRoomThreadModel {
    * Tier-2/3 builders leave it undefined and rely on `fileCount`.
    */
   files?: WarRoomFileModel[];
+  /**
+   * EVERY attached resource (any registered entity type) for the thread an
+   * agent works IN — the full `<resources>` roster. Tier-1 current thread
+   * only; siblings/rosters carry `resourceCounts` (+ pinned rows).
+   */
+  resources?: WarRoomResourceModel[];
+  /** Per-token counts — the `res="token:count …"` roster attribute. */
+  resourceCounts?: WarRoomResourceCount[];
+  /** Pinned resources — inline at EVERY tier (budgeted per scope). */
+  pinnedResources?: WarRoomResourceModel[];
 }
 
 export interface WarRoomRoomModel {
@@ -116,6 +158,24 @@ function attr(name: string, value: string | number | null | undefined): string {
   return ` ${name}="${esc(String(value))}"`;
 }
 
+/** `res="task:1 note:2 data_store:1"` — the compact per-token counts attr. */
+function resAttr(counts: WarRoomResourceCount[] | undefined): string {
+  if (!counts || counts.length === 0) return "";
+  const s = counts.map((c) => `${c.token}:${c.count}`).join(" ");
+  return attr("res", s);
+}
+
+/** Aggregate counts across a room's threads (master roster signal). */
+function roomResourceCounts(room: WarRoomRoomModel): WarRoomResourceCount[] {
+  const totals = new Map<string, number>();
+  for (const t of room.threads) {
+    for (const c of t.resourceCounts ?? []) {
+      totals.set(c.token, (totals.get(c.token) ?? 0) + c.count);
+    }
+  }
+  return [...totals.entries()].map(([token, count]) => ({ token, count }));
+}
+
 function roomOpenTag(room: WarRoomRoomModel, selfClosing: boolean): string {
   const tag =
     "<room" +
@@ -124,8 +184,30 @@ function roomOpenTag(room: WarRoomRoomModel, selfClosing: boolean): string {
     attr("basis", room.basis) +
     attr("project", room.projectName) +
     attr("project_id", room.projectId) +
-    attr("threads", room.threads.length);
+    attr("threads", room.threads.length) +
+    resAttr(roomResourceCounts(room));
   return selfClosing ? `${tag}/>` : `${tag}>`;
+}
+
+function clipTitle(title: string): string {
+  return title.length > RESOURCE_TITLE_MAX
+    ? `${title.slice(0, RESOURCE_TITLE_MAX - 1)}…`
+    : title;
+}
+
+/** One `<res>` row — token + id (the tool handle) + title (+ file attrs). */
+function resourceRow(r: WarRoomResourceModel, indent: string): string {
+  let row =
+    indent +
+    "<res" +
+    attr("type", r.token) +
+    attr("id", r.id) +
+    attr("title", clipTitle(r.title)) +
+    attr("pin", r.pinned ? "1" : undefined);
+  for (const [k, v] of Object.entries(r.attrs ?? {})) {
+    row += attr(k, v);
+  }
+  return row + "/>";
 }
 
 /**
@@ -134,8 +216,8 @@ function roomOpenTag(room: WarRoomRoomModel, selfClosing: boolean): string {
  * but NOT heavy bodies (no note snippet); those are fetched on demand. Keeps the
  * roster from ballooning as a room grows to dozens of threads (task 15e53057).
  */
-function threadRow(t: WarRoomThreadModel): string {
-  return (
+function threadRow(t: WarRoomThreadModel, maxPinned: number): string {
+  const open =
     "    <thread" +
     attr("id", t.id) +
     attr("title", t.title) +
@@ -144,9 +226,13 @@ function threadRow(t: WarRoomThreadModel): string {
     attr("task", t.taskTitle) +
     attr("task_status", t.taskStatus) +
     attr("audio", t.hasAudio ? "yes" : undefined) +
-    attr("files", t.fileCount > 0 ? t.fileCount : undefined) +
-    "/>"
-  );
+    resAttr(t.resourceCounts);
+  const pinned = (t.pinnedResources ?? []).slice(0, maxPinned);
+  if (pinned.length === 0) return `${open}/>`;
+  const lines = [`${open}>`];
+  for (const r of pinned) lines.push(resourceRow(r, "      "));
+  lines.push("    </thread>");
+  return lines.join("\n");
 }
 
 /**
@@ -161,7 +247,9 @@ function siblingRow(t: WarRoomThreadModel): string {
     "    <thread" +
     attr("id", t.id) +
     attr("title", t.title) +
+    attr("conversation", t.conversationId) +
     attr("task_status", t.taskStatus ?? t.status) +
+    resAttr(t.resourceCounts) +
     "/>"
   );
 }
@@ -193,13 +281,28 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
       '    <audio transcript_when_recording="session_cleaned" all_recordings="data: studio_session"/>',
     );
   }
-  // Per-file manifest: each attachment with its id + extraction/RAG signals, so
-  // the agent knows exactly what it can READ (data_action read_file_extraction)
-  // and SEARCH (rag_search). Falls back to the bare count when the manifest isn't built.
-  if (t.files && t.files.length > 0) {
-    lines.push("    <files" + attr("count", t.files.length) + ">");
-    for (const f of t.files) lines.push(fileRow(f));
-    lines.push("    </files>");
+  // EVERY attached resource, any registered entity type — pinned first,
+  // budgeted, with a `<more>` escape hatch naming the tool that lists the rest.
+  // File rows carry their extraction/RAG signals as attrs (built upstream).
+  if (t.resources && t.resources.length > 0) {
+    const ordered = [...t.resources].sort(
+      (a, b) => Number(b.pinned ?? false) - Number(a.pinned ?? false),
+    );
+    const shown = ordered.slice(0, MAX_CURRENT_THREAD_RESOURCES);
+    lines.push("    <resources" + attr("count", t.resources.length) + ">");
+    for (const r of shown) lines.push(resourceRow(r, "      "));
+    if (ordered.length > shown.length) {
+      lines.push(
+        "      <more" +
+          attr("count", ordered.length - shown.length) +
+          attr(
+            "get",
+            `war_room_read_resource(entity_type='thread', entity_id='${t.id}')`,
+          ) +
+          "/>",
+      );
+    }
+    lines.push("    </resources>");
   } else if (t.fileCount > 0) {
     lines.push("    <files" + attr("count", t.fileCount) + "/>");
   }
@@ -207,39 +310,39 @@ function currentThreadBlock(t: WarRoomThreadModel): string {
   return lines.join("\n");
 }
 
+/** Every token present anywhere in the model — drives the `<access>` legend. */
+function collectTokens(model: WarRoomContextModel): Set<string> {
+  const tokens = new Set<string>();
+  const takeThread = (t: WarRoomThreadModel) => {
+    for (const r of t.resources ?? []) tokens.add(r.token);
+    for (const r of t.pinnedResources ?? []) tokens.add(r.token);
+    for (const c of t.resourceCounts ?? []) tokens.add(c.token);
+  };
+  for (const t of model.room?.threads ?? []) takeThread(t);
+  for (const room of model.rooms ?? []) {
+    for (const t of room.threads) takeThread(t);
+  }
+  return tokens;
+}
+
 /**
- * One file row in a thread's `<files>` manifest. `extraction`/`rag` are emitted
- * only when known (a yes/no), so an unknown flag is simply absent rather than a
- * misleading "no". `read` names the exact tool for a readable file.
+ * The ONE `<access>` legend: how the agent reaches each attached type's
+ * content. Rendered once (never per row — the roster stays terse) from the
+ * canonical adapter registry, only for tokens actually present.
  */
-function fileRow(f: WarRoomFileModel): string {
-  return (
-    "      <file" +
-    attr("id", f.id) +
-    attr("name", f.name) +
-    attr("mime", f.mime) +
-    attr("kind", f.kind) +
-    attr(
-      "extraction",
-      f.hasExtraction === undefined ? undefined : f.hasExtraction ? "yes" : "no",
-    ) +
-    attr(
-      "rag",
-      f.ragIndexed === undefined
-        ? undefined
-        : f.ragIndexed
-          ? "indexed"
-          : "no",
-    ) +
-    attr(
-      "read",
-      f.kind === "document"
-        ? "document tool"
-        : f.hasExtraction === false
-          ? undefined
-          : "data_action read_file_extraction",
-    ) +
-    "/>"
+function accessLegend(model: WarRoomContextModel): string | null {
+  const entries = accessLegendEntries(collectTokens(model));
+  if (entries.length === 0) return null;
+  let line = "  <access";
+  for (const e of entries) line += attr(e.token, e.hint);
+  return line + "/>";
+}
+
+/** Total pinned rows across a room (master budget gate). */
+function roomPinnedCount(room: WarRoomRoomModel): number {
+  return room.threads.reduce(
+    (n, t) => n + (t.pinnedResources?.length ?? 0),
+    0,
   );
 }
 
@@ -256,8 +359,13 @@ export function renderWarRoomXml(model: WarRoomContextModel): string {
         lines.push(`    ${roomOpenTag(room, true)}`);
         continue;
       }
+      // Master roster: counts always; pinned rows only for quiet rooms.
+      const maxPinned =
+        roomPinnedCount(room) <= MAX_MASTER_PINNED_PER_ROOM
+          ? MAX_MASTER_PINNED_PER_ROOM
+          : 0;
       lines.push(`    ${roomOpenTag(room, false)}`);
-      for (const t of room.threads) lines.push(`  ${threadRow(t)}`);
+      for (const t of room.threads) lines.push(`  ${threadRow(t, maxPinned)}`);
       lines.push("    </room>");
     }
     lines.push("  </rooms>");
@@ -274,11 +382,15 @@ export function renderWarRoomXml(model: WarRoomContextModel): string {
       lines.push("  </other_threads>");
     } else {
       lines.push(`  <threads count="${room.threads.length}">`);
-      for (const t of room.threads) lines.push(threadRow(t));
+      for (const t of room.threads) {
+        lines.push(threadRow(t, MAX_ROOM_PINNED_PER_THREAD));
+      }
       lines.push("  </threads>");
     }
   }
 
+  const legend = accessLegend(model);
+  if (legend) lines.push(legend);
   lines.push(`  <how_to>${esc(model.howTo)}</how_to>`);
   lines.push("</war_room>");
   return lines.join("\n");

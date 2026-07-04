@@ -33,6 +33,14 @@ export interface WarRoomState {
 
   assignmentsByContainer: Record<string, WarRoomAssignment[]>;
 
+  /**
+   * The thread agent's conversation id per thread
+   * (`studio_sessions.assistant_conversation_id` of the ACTIVE audio session),
+   * hydrated in `loadWarRoomSession` so the SYNC Tier-1 context builder can
+   * stamp sibling rows with `conversation=` (cross-agent reads).
+   */
+  agentConversationByThread: Record<string, string | null>;
+
   autoApproveByThread: Record<string, Record<string, boolean>>;
 }
 
@@ -48,6 +56,7 @@ export const initialWarRoomState: WarRoomState = {
   threadsStatusByRoom: {},
   threadUserStateById: {},
   assignmentsByContainer: {},
+  agentConversationByThread: {},
   autoApproveByThread: {},
 };
 

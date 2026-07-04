@@ -5,10 +5,21 @@
 // public `war_room_threads` / `thread_contents` SQL functions query
 // `platform.associations` directly and fail for authenticated clients
 // (no table grant). Same edge semantics; RLS-respecting via assoc_for_*.
+//
+// Content vs structure is decided by the ONE canonical classifier
+// (`isContentSourceEdge`) — the vocabulary is open: any registered entity
+// token attached to a thread is content and hydrates into the assignment
+// buckets. The old local whitelist wrongly excluded `project`/`task` edges,
+// so canvas-pinned tasks/projects vanished on reload.
+//
+// Own-thread edges carry their REAL edge fields (label + metadata) so
+// `is_active` / `position` / `canvas` / `pinned` and attach-time titles
+// survive hydration instead of being re-synthesized.
 
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { mapThreadContentsToAssignments } from "../utils/threadContentsToAssignments";
 import {
@@ -16,21 +27,6 @@ import {
   type ThreadContentModule,
   type WarRoomAssignment,
 } from "../types";
-
-/** Structural edge tokens — never tab modules (matches DB `thread_contents`). */
-const STRUCTURAL_SOURCE_TYPES = new Set([
-  "project",
-  "task",
-  "war_room",
-  "thread",
-  "scope",
-  "scope_type",
-  "organization",
-]);
-
-function isTabModuleSourceType(sourceType: string): boolean {
-  return !STRUCTURAL_SOURCE_TYPES.has(sourceType);
-}
 
 function formatReadError(
   label: string,
@@ -76,13 +72,15 @@ export async function fetchThreadContents(
   const modules: ThreadContentModule[] = [];
 
   for (const edge of threadEdgesRes.data.edges) {
-    if (!isTabModuleSourceType(edge.sourceType)) continue;
+    if (!isContentSourceEdge(edge.sourceType, edge.metadata)) continue;
     modules.push({
       module_type: edge.sourceType,
       module_id: edge.sourceId,
       origin: "thread",
       anchor_type: "",
       anchor_id: "",
+      label: edge.label,
+      metadata: edge.metadata,
     });
   }
 
@@ -96,13 +94,18 @@ export async function fetchThreadContents(
       throw formatReadError("fetchThreadContents.anchor", anchorRes.error);
     }
     for (const edge of anchorRes.data.edges) {
-      if (!isTabModuleSourceType(edge.sourceType)) continue;
+      if (!isContentSourceEdge(edge.sourceType, edge.metadata)) continue;
       modules.push({
         module_type: edge.sourceType,
         module_id: edge.sourceId,
         origin: "anchor",
         anchor_type: anchorType,
         anchor_id: anchorId,
+        label: edge.label,
+        // Anchor-inherited rows keep the edge label but NOT the edge metadata:
+        // is_active/position on those edges describe the ANCHOR's container,
+        // not this thread's. The mapper synthesizes thread-local state.
+        metadata: null,
       });
     }
   }

@@ -22,7 +22,13 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import type { ThreadAnchorType, ThreadTab } from "@/features/war-room/types";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import {
+  entityTabToken,
+  type ThreadAnchorType,
+  type ThreadCoreTab,
+  type ThreadTab,
+} from "@/features/war-room/types";
 
 export interface ThreadKind {
   id: ThreadTab;
@@ -38,7 +44,7 @@ export interface ThreadKind {
   sectionBorder: string;
 }
 
-export const THREAD_KINDS: Record<ThreadTab, ThreadKind> = {
+export const THREAD_KINDS: Record<ThreadCoreTab, ThreadKind> = {
   task: {
     id: "task",
     label: "Task",
@@ -68,7 +74,11 @@ export const THREAD_KINDS: Record<ThreadTab, ThreadKind> = {
   },
   files: {
     id: "files",
-    label: "Files",
+    // The old files+documents tab is now the full RESOURCES surface (any
+    // attached entity type + universal attach). The persisted id stays
+    // `files` — `active_tab` is free text and renaming stored values buys
+    // nothing; only the identity changed.
+    label: "Resources",
     Icon: Paperclip,
     text: "text-info",
     bg: "bg-info/10",
@@ -97,7 +107,7 @@ export const THREAD_KINDS: Record<ThreadTab, ThreadKind> = {
   },
 };
 
-export const THREAD_KIND_ORDER: ThreadTab[] = [
+export const THREAD_KIND_ORDER: ThreadCoreTab[] = [
   "task",
   "notes",
   "audio",
@@ -109,7 +119,25 @@ export const THREAD_KIND_ORDER: ThreadTab[] = [
 export function threadKindOf(
   tab: ThreadTab | string | null | undefined,
 ): ThreadKind {
-  return THREAD_KINDS[(tab as ThreadTab) ?? "task"] ?? THREAD_KINDS.task;
+  // Derived entity tabs: identity comes from the entity registry (icon +
+  // plural label), with one shared accent family so the dynamic tabs read as
+  // one class of view.
+  const token = entityTabToken(tab);
+  if (token) {
+    const info = tryGetEntityInfo(token);
+    if (info) {
+      return {
+        id: `entity:${token}`,
+        label: info.labelPlural,
+        Icon: info.Icon as ThreadKind["Icon"],
+        text: "text-info",
+        bg: "bg-info/10",
+        rail: "bg-info",
+        sectionBorder: "border-l-info",
+      };
+    }
+  }
+  return THREAD_KINDS[(tab as ThreadCoreTab) ?? "task"] ?? THREAD_KINDS.task;
 }
 
 /** Canvas-anchored threads — freeform resource hub (the thread IS the identity). */

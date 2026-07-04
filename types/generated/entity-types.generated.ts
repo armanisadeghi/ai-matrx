@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 222 active entity tokens. A token here is FK-valid for
+// 224 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -108,6 +108,7 @@ export type EntityTypeToken =
   | "cx_user_request"
   | "cx_user_todo"
   | "dashboard_saved_view"
+  | "data_store"
   | "dataset"
   | "derive_run"
   | "dict_setting"
@@ -124,6 +125,7 @@ export type EntityTypeToken =
   | "flashcard_history"
   | "flashcard_review"
   | "flashcard_set"
+  | "flexible_data"
   | "folder"
   | "global_execution"
   | "global_execution_checkpoint"
@@ -390,6 +392,7 @@ export type ScopeableEntityToken =
   | "custom_app_config"
   | "custom_applet_config"
   | "dashboard_saved_view"
+  | "data_store"
   | "dataset"
   | "derive_run"
   | "dict_setting"
@@ -405,6 +408,7 @@ export type ScopeableEntityToken =
   | "flashcard_history"
   | "flashcard_review"
   | "flashcard_set"
+  | "flexible_data"
   | "folder"
   | "global_execution"
   | "global_execution_checkpoint"
@@ -633,6 +637,7 @@ export const ENTITY_TYPE_METADATA = {
   "cx_user_request": { token: "cx_user_request", schema: "chat", table: "user_request", label: "User Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "cx_user_todo": { token: "cx_user_todo", schema: "chat", table: "user_todo", label: "User Todo", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: false, category: "Conversations" },
   "dashboard_saved_view": { token: "dashboard_saved_view", schema: "public", table: "dashboard_saved_views", label: "Dashboard Saved View", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "data_store": { token: "data_store", schema: "rag", table: "data_stores", label: "Data Store", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "dataset": { token: "dataset", schema: "workbench", table: "udt_datasets", label: "Dataset", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "derive_run": { token: "derive_run", schema: "docproc", table: "derive_runs", label: "Derive Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "dict_setting": { token: "dict_setting", schema: "public", table: "dict_settings", label: "Dict Setting", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -649,6 +654,7 @@ export const ENTITY_TYPE_METADATA = {
   "flashcard_history": { token: "flashcard_history", schema: "education", table: "flashcard_history", label: "Flashcard History", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flashcard_review": { token: "flashcard_review", schema: "users", table: "user_flashcard_reviews", label: "Flashcard Review", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flashcard_set": { token: "flashcard_set", schema: "users", table: "user_flashcard_sets", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "flexible_data": { token: "flexible_data", schema: "public", table: "flexible_data", label: "Flexible Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "folder": { token: "folder", schema: "files", table: "folders", label: "Folder", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources" },
   "global_execution": { token: "global_execution", schema: "runtime", table: "global_execution", label: "Runtime Execution", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "global_execution_checkpoint": { token: "global_execution_checkpoint", schema: "runtime", table: "global_execution_checkpoint", label: "Runtime Checkpoint", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
@@ -859,6 +865,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "cx_user_request",
   "cx_user_todo",
   "dashboard_saved_view",
+  "data_store",
   "dataset",
   "derive_run",
   "dict_setting",
@@ -875,6 +882,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "flashcard_history",
   "flashcard_review",
   "flashcard_set",
+  "flexible_data",
   "folder",
   "global_execution",
   "global_execution_checkpoint",

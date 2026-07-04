@@ -26,7 +26,7 @@ import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   addNoteToThread,
-  attachExistingTaskToThread,
+  attachEntityToThread,
   createThread,
 } from "@/features/war-room/redux/thunks";
 import { update as updateNote } from "@/features/notes/service/notesApi";
@@ -152,7 +152,7 @@ export function QuickAddThread({
       if (!thread?.id) return;
 
       if (flavor === "task" && taskId) {
-        await dispatch(attachExistingTaskToThread(thread.id, taskId));
+        await dispatch(attachEntityToThread(thread.id, "task", taskId));
       }
 
       await finishCreate(mode, thread.id, trimmedDescription);

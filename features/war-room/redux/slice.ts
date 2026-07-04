@@ -198,11 +198,7 @@ const warRoomSlice = createSlice({
       const list = state.assignmentsByContainer[key] ?? [];
       if (
         assignment.is_active &&
-        SINGLE_ACTIVE_ENTITY_TYPES.has(
-          assignment.entity_type as Parameters<
-            typeof SINGLE_ACTIVE_ENTITY_TYPES.has
-          >[0],
-        )
+        SINGLE_ACTIVE_ENTITY_TYPES.has(assignment.entity_type)
       ) {
         demoteSiblings(list, assignment.entity_type, assignment.id);
       }
@@ -237,6 +233,15 @@ const warRoomSlice = createSlice({
         if (a.entity_type === entityType) {
           a.is_active = a.entity_id === entityId;
         }
+      }
+    },
+
+    agentConversationsLoaded(
+      state,
+      action: PayloadAction<Record<string, string | null>>,
+    ) {
+      for (const [threadId, convoId] of Object.entries(action.payload)) {
+        state.agentConversationByThread[threadId] = convoId;
       }
     },
 
@@ -308,6 +313,7 @@ export const {
   assignmentUpserted,
   assignmentRemoved,
   assignmentActiveSet,
+  agentConversationsLoaded,
   setThreadAutoApprove,
   clearThreadAutoApprove,
   clearRoomThreads,

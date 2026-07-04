@@ -39,6 +39,7 @@
 export const WAR_ROOM_MASTER_TOOL_NAMES = [
   "war_room_read_thread",
   "war_room_read_file",
+  "war_room_read_resource",
   "war_room_message_thread",
   "war_room_create_room",
   "war_room_rename_room",

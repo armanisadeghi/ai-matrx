@@ -3,12 +3,15 @@
 // features/war-room/components/thread/ThreadTabSelect.tsx
 //
 // The COMPACT tile view switcher for Grid mode: a single dropdown that collapses
-// the six-segment ThreadTabBar into one button (current view's icon + a chevron,
+// the segmented ThreadTabBar into one button (current view's icon + a chevron,
 // plus the label when the cell is wide enough). It reclaims the ~150px the
 // segmented control ate from the tile header so the thread TITLE always wins the
 // space fight, even at 12 tiles. The Stage tile keeps the full segmented bar
 // (ThreadTabBar) where vertical room is plentiful — this is the dense alternative,
 // nothing is lost: every tab is one click away in the menu.
+//
+// The tab set is DERIVED per thread (useThreadTabs) — core tabs + `entity:`
+// tabs for attached types the core tabs don't cover.
 
 import { ChevronDown } from "lucide-react";
 import {
@@ -19,20 +22,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { ThreadAnchorType, ThreadTab } from "@/features/war-room/types";
-import {
-  THREAD_KIND_ORDER,
-  dynamicTabKind,
-} from "@/features/war-room/components/room/threadKind";
+import { useThreadTabs } from "@/features/war-room/hooks/useThreadTabs";
+import { dynamicTabKind } from "@/features/war-room/components/room/threadKind";
 
 export function ThreadTabSelect({
+  threadId,
   active,
   onChange,
   anchorType = "canvas",
 }: {
+  threadId: string;
   active: ThreadTab;
   onChange: (tab: ThreadTab) => void;
   anchorType?: ThreadAnchorType;
 }) {
+  const tabs = useThreadTabs(threadId);
   const current = dynamicTabKind(active, anchorType);
   return (
     <DropdownMenu>
@@ -56,7 +60,7 @@ export function ThreadTabSelect({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">
-        {THREAD_KIND_ORDER.map((id) => {
+        {tabs.map((id) => {
           const k = dynamicTabKind(id, anchorType);
           const isActive = id === active;
           return (
