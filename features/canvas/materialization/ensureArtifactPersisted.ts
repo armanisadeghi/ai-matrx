@@ -5,13 +5,20 @@
  * of) the full stream-end materialize pass. Returns a real `canvas_items` UUID
  * so Redux/canvas never operates on a raw-content snapshot alone.
  *
- * Idempotent: safe to call repeatedly; upserts on (source_message_id, artifact_index).
+ * Any-surface (Track 2A): callers pass either the chat `messageId` (historic
+ * shape, unchanged) or an explicit `source` ref — the requirement is a REAL
+ * persisted source id (UUID), not specifically a message.
+ *
+ * Idempotent: safe to call repeatedly; upserts on
+ * (source_system, source_id, artifact_index).
  */
 
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { getAdapter } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
+import type { ArtifactSourceRef } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { isRealSourceId } from "./materializeBlocks";
 import type { CanvasArtifactRow } from "@/features/canvas/services/canvasArtifactService";
 
 export interface EnsureArtifactInput {
@@ -19,10 +26,12 @@ export interface EnsureArtifactInput {
   title: string;
   /** Raw payload the type's renderer consumes (markdown or JSON string). */
   content: string;
-  /** Real message.id — required to create a new row when none exists. */
+  /** Real message.id — the chat source (kept for the historic call sites). */
   messageId?: string | null;
   conversationId?: string | null;
-  /** Stable 1-based index within the message (= canvas_items.artifact_index). */
+  /** Any-surface origin; overrides messageId when provided. */
+  source?: ArtifactSourceRef | null;
+  /** Stable 1-based index within the source (= canvas_items.artifact_index). */
   artifactIndex?: number;
   /** When already materialized, pass the UUID to skip upsert. */
   artifactId?: string | null;
@@ -42,8 +51,11 @@ export interface EnsureArtifactResult {
   row: CanvasArtifactRow | null;
 }
 
-function isClientTempId(id: string): boolean {
-  return id.startsWith("client-") || id.startsWith("temp-");
+/** Resolve the effective source ref: explicit source wins, else chat messageId. */
+function resolveSource(input: EnsureArtifactInput): ArtifactSourceRef | null {
+  if (input.source?.id) return input.source;
+  if (input.messageId) return { system: "cx_message", id: input.messageId };
+  return null;
 }
 
 function extractRowPayload(row: CanvasArtifactRow): string {
@@ -80,13 +92,9 @@ async function linkDomainRecord(
     return row;
   }
 
-  if (!input.messageId) {
-    steps.push("skipped domain link — no messageId");
-    return row;
-  }
-
-  if (!input.conversationId) {
-    steps.push("skipped domain link — no conversationId");
+  const source = resolveSource(input);
+  if (!source || !isRealSourceId(source.id)) {
+    steps.push("skipped domain link — no real source id");
     return row;
   }
 
@@ -97,8 +105,9 @@ async function linkDomainRecord(
       canvasType: input.canvasType,
       title: input.title,
       rawContent: input.content || extractRowPayload(row),
-      sourceMessageId: input.messageId,
-      conversationId: input.conversationId,
+      source,
+      sourceMessageId: source.system === "cx_message" ? source.id : undefined,
+      conversationId: input.conversationId ?? null,
     });
     if (link && (link.externalSystem || link.externalId)) {
       await canvasArtifactService.setExternalLink(row.id, link);
@@ -124,6 +133,7 @@ export async function ensureArtifactPersisted(
   const steps: string[] = [];
   const errors: string[] = [];
   const artifactIndex = input.artifactIndex ?? 1;
+  const source = resolveSource(input);
 
   // ── 1. Already have a materialized UUID ──────────────────────────────────
   if (isMaterializedArtifactId(input.artifactId)) {
@@ -147,10 +157,10 @@ export async function ensureArtifactPersisted(
     errors.push(`artifactId ${input.artifactId} not found in DB — will upsert`);
   }
 
-  // ── 2. Lookup by message + index / type ───────────────────────────────────
-  if (input.messageId && !isClientTempId(input.messageId)) {
-    steps.push(`lookup by messageId=${input.messageId}`);
-    const existing = await canvasArtifactService.getByMessage(input.messageId);
+  // ── 2. Lookup by source + index / type ────────────────────────────────────
+  if (source && isRealSourceId(source.id)) {
+    steps.push(`lookup by source=${source.system}:${source.id}`);
+    const existing = await canvasArtifactService.getBySource(source);
     const sameType = existing.filter((r) => r.type === input.canvasType);
     if (sameType.length === 1) {
       steps.push(`found existing ${input.canvasType} row: ${sameType[0]!.id}`);
@@ -185,12 +195,12 @@ export async function ensureArtifactPersisted(
     }
     if (sameType.length > 1) {
       steps.push(
-        `message has ${sameType.length} ${input.canvasType} rows — upserting index ${artifactIndex}`,
+        `source has ${sameType.length} ${input.canvasType} rows — upserting index ${artifactIndex}`,
       );
     }
-  } else if (input.messageId) {
+  } else if (source) {
     errors.push(
-      `messageId "${input.messageId}" is a client temp id — cannot upsert yet`,
+      `source id "${source.id}" is not a persisted id — cannot upsert yet`,
     );
     return {
       ok: false,
@@ -206,9 +216,9 @@ export async function ensureArtifactPersisted(
   }
 
   // ── 3. Upsert new row ─────────────────────────────────────────────────────
-  if (!input.messageId || isClientTempId(input.messageId)) {
+  if (!source || !isRealSourceId(source.id)) {
     errors.push(
-      "cannot create artifact — need a real message.id (wait for message commit or stream end)",
+      "cannot create artifact — need a real persisted source id (wait for the record commit or stream end)",
     );
     return {
       ok: false,
@@ -224,10 +234,10 @@ export async function ensureArtifactPersisted(
   }
 
   steps.push(
-    `cx_canvas_upsert(type=${input.canvasType}, index=${artifactIndex})…`,
+    `upsertForSource(${source.system}:${source.id}, type=${input.canvasType}, index=${artifactIndex})…`,
   );
-  const saved = await canvasArtifactService.upsert({
-    messageId: input.messageId,
+  const saved = await canvasArtifactService.upsertForSource({
+    source,
     artifactIndex,
     type: input.canvasType,
     title: input.title,
@@ -238,7 +248,7 @@ export async function ensureArtifactPersisted(
   });
 
   if (!saved) {
-    errors.push("cx_canvas_upsert returned null");
+    errors.push("canvas upsert returned null");
     return {
       ok: false,
       artifactId: null,
@@ -257,21 +267,17 @@ export async function ensureArtifactPersisted(
   );
   const linked = await linkDomainRecord(saved, input, steps, errors);
 
-  if (input.conversationId) {
-    try {
-      await canvasArtifactService.upsertDiscoveryIndex({
-        canvasId: linked.id,
-        canvasType: input.canvasType,
-        title: input.title ?? null,
-        messageId: input.messageId,
-        conversationId: input.conversationId,
-      });
-      steps.push("cx_artifact discovery index upserted");
-    } catch (err) {
-      errors.push(`discovery index failed: ${String(err)}`);
-    }
-  } else {
-    steps.push("skipped discovery index — no conversationId");
+  try {
+    await canvasArtifactService.upsertDiscoveryIndex({
+      canvasId: linked.id,
+      canvasType: input.canvasType,
+      title: input.title ?? null,
+      source,
+      conversationId: input.conversationId ?? null,
+    });
+    steps.push("cx_artifact discovery index upserted");
+  } catch (err) {
+    errors.push(`discovery index failed: ${String(err)}`);
   }
 
   return {

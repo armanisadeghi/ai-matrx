@@ -62,10 +62,14 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Atomic get-or-create on the natural key
-        //   (user_id, message_id, artifact_type, external_system)
+        // Atomic get-or-create on the ANY-SURFACE natural key
+        //   (user_id, source_system, source_id, artifact_type, external_system)
         // backed by the FULL `NULLS NOT DISTINCT` unique index
-        // `uq_cx_artifact_natural_key` (migration artifact_natural_key_unique.sql).
+        // `uq_cx_artifact_source_natural_key` (migration
+        // artifacts_any_surface_source_identity.sql — replaced the message-based
+        // key, which under NULLS NOT DISTINCT would have collapsed all non-chat
+        // rows of one type per user into a single slot). This route is chat-only,
+        // so source is always ('cx_message', messageId) — 1:1 with the old key.
         // ON CONFLICT DO NOTHING (`ignoreDuplicates`) NEVER emits a 23505/409:
         // a concurrent create / double-mount overlay open returns an EMPTY
         // result instead of a duplicate row (the old select-then-insert had no
@@ -80,6 +84,8 @@ export async function POST(request: NextRequest) {
         const insertRow = {
           message_id: messageId,
           conversation_id: conversationId,
+          source_system: "cx_message",
+          source_id: messageId,
           user_id: user.id,
           organization_id: organizationId ?? null,
           project_id: projectId ?? null,
@@ -99,7 +105,7 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .upsert(insertRow, {
-            onConflict: "user_id,message_id,artifact_type,external_system",
+            onConflict: "user_id,source_system,source_id,artifact_type,external_system",
             ignoreDuplicates: true,
           })
           .select()
@@ -140,7 +146,8 @@ export async function POST(request: NextRequest) {
           .from("artifact")
           .update(updates)
           .eq("user_id", user.id)
-          .eq("message_id", messageId)
+          .eq("source_system", "cx_message")
+          .eq("source_id", messageId)
           .eq("artifact_type", artifactType);
         updateQuery = normalizedExternalSystem
           ? updateQuery.eq("external_system", normalizedExternalSystem)

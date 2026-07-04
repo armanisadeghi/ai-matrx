@@ -1,35 +1,45 @@
 /**
  * reconcileArtifacts — the on-load safety net for materialization.
  *
- * The stream-end commit materializes artifacts live, but a stream can die, a
- * tab can close, and historical messages predate the pipeline entirely. On
- * conversation load we scan the hydrated assistant messages and materialize any
- * that still carry RAW artifact markup (a `<artifact>` without a real canvas
- * UUID, or a standalone fence). Already-materialized `<artifact id=uuid>` text
- * is recognized and skipped by planMaterialization (vision R3), so re-running is
- * idempotent — and the original is archived in `content_history`, so it's
- * fully recoverable.
+ * The live commit materializes artifacts as they land, but a stream can die, a
+ * tab can close, and historical records predate the pipeline entirely. On
+ * load we scan the hydrated records and materialize any that still carry RAW
+ * artifact markup (a `<artifact>` without a real canvas UUID, or a standalone
+ * fence). Already-materialized `<artifact id=uuid>` text is recognized and
+ * skipped by planMaterialization (vision R3), so re-running is idempotent —
+ * and for chat the original is archived in `content_history`, so it's fully
+ * recoverable.
  *
  * A cheap string pre-filter avoids running the block splitter over every
- * message on every load; only messages that look like they contain a
+ * record on every load; only records that look like they contain a
  * materializable block are considered, capped per load to avoid write storms.
+ *
+ * `reconcileSourceBlocks` is the ANY-SURFACE core (the pre-filter + cap were
+ * always source-agnostic); `reconcileMessagesArtifacts` is the chat
+ * delegation its historical callers keep using.
  */
 
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { ARTIFACT_TYPE_DEFS } from "../artifact-types/artifact-type-registry";
-import { materializeMessageArtifacts } from "./materializeMessageArtifacts";
+import {
+  materializeBlocks,
+  type MaterializeSource,
+  type PersistRewrite,
+} from "./materializeBlocks";
+import { cxMessageContentRewriter } from "./materializeMessageArtifacts";
 
 /**
- * Cheap markers that indicate a message MIGHT contain a materializable block.
+ * Cheap markers that indicate a record MIGHT contain a materializable block.
  * Intentionally inclusive — the authoritative decision is planMaterialization;
- * this only avoids splitting clearly-plain messages.
+ * this only avoids splitting clearly-plain content.
  *
  * DERIVED FROM THE REGISTRY so a new materializable type is covered automatically
  * (the old hand-maintained list silently missed fence-style types like ```tasks,
  * so they never reconciled). For every type alias we match both the fence form
  * (```alias) and the XML-tag form (<alias). JSON-object types (quiz, diagram,
  * comparison, math_problem, decision_tree, presentation) are matched by their
- * JSON root key too, since those carry no fence/tag.
+ * JSON root key too, since those carry no fence/tag. Structured kind blocks
+ * are matched by the `__kind` discriminator itself.
  */
 const MATERIALIZABLE_MARKERS: string[] = (() => {
   const markers = new Set<string>(["<artifact", "```mmd"]);
@@ -39,7 +49,8 @@ const MATERIALIZABLE_MARKERS: string[] = (() => {
       markers.add("<" + alias);
     }
   }
-  // JSON-root-key markers (no fence/tag) for object-payload types.
+  // JSON-root-key markers (no fence/tag) for object-payload types, plus the
+  // kind discriminator key for structured (kind-IR) blocks.
   for (const k of [
     "quiz_title",
     '"decision_tree"',
@@ -49,6 +60,7 @@ const MATERIALIZABLE_MARKERS: string[] = (() => {
     "math_problem",
     '"presentation"',
     "progress_tracker",
+    '"__kind"',
   ]) {
     markers.add(k);
   }
@@ -82,6 +94,71 @@ export function mightContainMaterializable(content: unknown): boolean {
   return MATERIALIZABLE_MARKERS.some((m) => s.includes(m));
 }
 
+// ── Any-surface core ─────────────────────────────────────────────────────────
+
+export interface SourceReconcileInput {
+  source: MaterializeSource;
+  content: unknown;
+  /** Source-record rewrite writer; omit when the caller owns persistence. */
+  persistRewrite?: PersistRewrite;
+}
+
+export interface SourceReconcileResult {
+  source: MaterializeSource;
+  rewrittenContent: CxContentBlock[];
+}
+
+/**
+ * Materialize any records that still carry raw artifact markup. Returns the
+ * rewrites for the caller to mirror into its store. Pure-ish: it performs DB
+ * I/O via materializeBlocks but never touches Redux directly (the store layer
+ * stays the caller's concern).
+ */
+export async function reconcileSourceBlocks(
+  items: SourceReconcileInput[],
+  opts?: { max?: number },
+): Promise<SourceReconcileResult[]> {
+  const max = opts?.max ?? 25;
+  const results: SourceReconcileResult[] = [];
+  let processed = 0;
+
+  for (const item of items) {
+    if (processed >= max) break;
+    if (!mightContainMaterializable(item.content)) continue;
+    if (!Array.isArray(item.content)) continue;
+
+    processed++;
+    try {
+      const res = await materializeBlocks({
+        source: item.source,
+        content: item.content as CxContentBlock[],
+        persistRewrite: item.persistRewrite,
+      });
+      if (res.rewrittenContent) {
+        results.push({
+          source: item.source,
+          rewrittenContent: res.rewrittenContent,
+        });
+      }
+      if (res.errors.length > 0) {
+        console.error(
+          `[reconcileArtifacts] issues materializing ${item.source.system}:${item.source.id}:`,
+          res.errors,
+        );
+      }
+    } catch (err) {
+      console.error(
+        `[reconcileArtifacts] threw for ${item.source.system}:${item.source.id}:`,
+        err,
+      );
+    }
+  }
+
+  return results;
+}
+
+// ── Chat delegation (historical callers) ────────────────────────────────────
+
 export interface ReconcileInput {
   id: string;
   conversationId: string;
@@ -96,45 +173,25 @@ export interface ReconcileResult {
 /**
  * Materialize any assistant messages that still carry raw artifact markup.
  * Returns the rewrites for the caller to mirror into the messages slice.
- * Pure-ish: it performs DB I/O via materializeMessageArtifacts but never
- * touches Redux directly (keeps the redux layer the caller's concern).
  */
 export async function reconcileMessagesArtifacts(
   messages: ReconcileInput[],
   opts?: { max?: number },
 ): Promise<ReconcileResult[]> {
-  const max = opts?.max ?? 25;
-  const results: ReconcileResult[] = [];
-  let processed = 0;
-
-  for (const m of messages) {
-    if (processed >= max) break;
-    if (!mightContainMaterializable(m.content)) continue;
-    if (!Array.isArray(m.content)) continue;
-
-    processed++;
-    try {
-      const res = await materializeMessageArtifacts({
-        messageId: m.id,
+  const results = await reconcileSourceBlocks(
+    messages.map((m) => ({
+      source: {
+        system: "cx_message" as const,
+        id: m.id,
         conversationId: m.conversationId,
-        content: m.content as CxContentBlock[],
-      });
-      if (res.rewrittenContent) {
-        results.push({
-          messageId: m.id,
-          rewrittenContent: res.rewrittenContent,
-        });
-      }
-      if (res.errors.length > 0) {
-        console.error(
-          `[reconcileArtifacts] issues materializing ${m.id}:`,
-          res.errors,
-        );
-      }
-    } catch (err) {
-      console.error(`[reconcileArtifacts] threw for ${m.id}:`, err);
-    }
-  }
-
-  return results;
+      },
+      content: m.content,
+      persistRewrite: cxMessageContentRewriter(m.id),
+    })),
+    opts,
+  );
+  return results.map((r) => ({
+    messageId: r.source.id,
+    rewrittenContent: r.rewrittenContent,
+  }));
 }

@@ -44,6 +44,8 @@ export interface NewCardInput {
   topic?: string | null;
   lesson?: string | null;
   personal_notes?: string | null;
+  /** Extra card fields with no dedicated column (e.g. agent-emitted `tags`) → fc_card.metadata jsonb. */
+  metadata?: Record<string, unknown>;
   /** Optional lineage: the source passage this card came from (§ from-source flow). */
   source?: { file_id: string; processed_document_id?: string; chunk_id?: string; page?: number };
 }

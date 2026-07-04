@@ -11,7 +11,9 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
+import type { ArtifactSourceRef } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
 
 // ---------------------------------------------------------------------------
 // canvasType → cx_artifact artifact_type enum map
@@ -71,7 +73,25 @@ export interface ArtifactUpsertInput {
     type: string;
     title: string;
     content: string;
+    /**
+     * Structured (kind-IR) value — persisted as content.data (an object)
+     * instead of the string, so reloads render with zero reprocessing.
+     */
+    structured?: Record<string, unknown> | null;
     /** Type-specific metadata persisted as content.metadata (e.g. mermaid diagramType/theme). */
+    metadata?: Record<string, unknown>;
+    conversationId?: string | null;
+    sourceType?: "model_direct" | "model_converted" | "user_created" | "forked";
+}
+
+/** Any-surface upsert input — the source ref replaces messageId. */
+export interface SourceArtifactUpsertInput {
+    source: ArtifactSourceRef;
+    artifactIndex: number;
+    type: string;
+    title: string;
+    content: string;
+    structured?: Record<string, unknown> | null;
     metadata?: Record<string, unknown>;
     conversationId?: string | null;
     sourceType?: "model_direct" | "model_converted" | "user_created" | "forked";
@@ -124,7 +144,10 @@ export const canvasArtifactService = {
                 p_type: input.type,
                 p_title: input.title,
                 p_content: {
-                    data: input.content,
+                    // Structured (kind-IR) artifacts persist the value OBJECT —
+                    // self-describing via __kind; readers keep the same
+                    // {data, type, metadata} envelope either way.
+                    data: input.structured ?? input.content,
                     type: input.type,
                     metadata: input.metadata ?? {},
                 },
@@ -140,6 +163,58 @@ export const canvasArtifactService = {
             return data as CanvasArtifactRow;
         } catch (err) {
             console.error("[canvasArtifactService.upsert] Error:", err);
+            return null;
+        }
+    },
+
+    /**
+     * Any-surface upsert (Track 2A). Chat sources delegate to `upsert` (the
+     * exact same cx_canvas_upsert RPC — provably unchanged path); every other
+     * source system goes through cx_canvas_upsert_source, idempotent on the
+     * (source_system, source_id, artifact_index) natural key.
+     */
+    async upsertForSource(
+        input: SourceArtifactUpsertInput,
+    ): Promise<CanvasArtifactRow | null> {
+        if (input.source.system === "cx_message") {
+            return this.upsert({
+                messageId: input.source.id,
+                artifactIndex: input.artifactIndex,
+                type: input.type,
+                title: input.title,
+                content: input.content,
+                structured: input.structured,
+                metadata: input.metadata,
+                conversationId: input.conversationId,
+                sourceType: input.sourceType,
+            });
+        }
+        try {
+            const userId = requireUserId();
+            const { data, error } = await supabase.rpc("cx_canvas_upsert_source", {
+                p_user_id: userId,
+                p_source_system: input.source.system,
+                p_source_id: input.source.id,
+                p_artifact_index: input.artifactIndex,
+                p_type: input.type,
+                p_title: input.title,
+                p_content: {
+                    data: input.structured ?? input.content,
+                    type: input.type,
+                    metadata: input.metadata ?? {},
+                },
+                p_conversation_id: input.conversationId ?? undefined,
+                p_source_type: input.sourceType ?? "model_direct",
+            });
+
+            if (error) {
+                console.error("[canvasArtifactService.upsertForSource] RPC error:", error);
+                return null;
+            }
+
+            return data as CanvasArtifactRow;
+        } catch (err) {
+            console.error("[canvasArtifactService.upsertForSource] Error:", err);
             return null;
         }
     },
@@ -174,6 +249,35 @@ export const canvasArtifactService = {
         } catch (err) {
             console.error("[canvasArtifactService.createVersion] Error:", err);
             return null;
+        }
+    },
+
+    /**
+     * Get all artifacts materialized from an arbitrary source record, ordered
+     * by artifact_index. Chat sources keep the RPC path (getByMessage); other
+     * systems read the RLS-filtered table directly on the source natural key.
+     */
+    async getBySource(source: ArtifactSourceRef): Promise<CanvasArtifactRow[]> {
+        if (source.system === "cx_message") {
+            return this.getByMessage(source.id);
+        }
+        try {
+            const { data, error } = await supabase
+                .schema("canvas").from("canvas_items")
+                .select("*")
+                .eq("source_system", source.system)
+                .eq("source_id", source.id)
+                .is("deleted_at", null)
+                .order("artifact_index", { ascending: true });
+
+            if (error) {
+                console.error("[canvasArtifactService.getBySource] error:", error);
+                return [];
+            }
+            return (data ?? []) as CanvasArtifactRow[];
+        } catch (err) {
+            console.error("[canvasArtifactService.getBySource] Error:", err);
+            return [];
         }
     },
 
@@ -347,18 +451,19 @@ export const canvasArtifactService = {
     },
 
     /**
-     * Upsert a cx_artifact discovery-index row that points back to a canvas_items
-     * row materialised from chat.
+     * Upsert a cx_artifact discovery-index row that points back to a
+     * materialized canvas_items row — from chat OR any other source surface.
      *
      * Idempotent on canvas_item_id: if a cx_artifact row already references this
      * canvas item, it is returned unchanged.  Only types with a known
      * artifact_type enum value are indexed — callers should pre-filter with
      * canvasTypeToArtifactType(), but this method also guards internally.
      *
-     * NOT-NULL contract (from the DB schema):
-     *   conversation_id, message_id, user_id, artifact_type, status — all required.
-     *   org/project/task — all nullable, set null when not available.
-     *   canvas_item_id — nullable column in DB, set to canvasId here.
+     * Identity contract (post any-surface migration):
+     *   source_system/source_id — always written (the natural key).
+     *   message_id/conversation_id — chat rows only (both now nullable);
+     *   non-chat rows insert with both null and org resolved via ensureOrgId
+     *   (RLS owner-fallback covers NULL-conversation rows).
      *
      * NON-BLOCKING: returns null on any error (never throws).
      */
@@ -366,8 +471,9 @@ export const canvasArtifactService = {
         canvasId: string;
         canvasType: string;
         title: string | null;
-        messageId: string;
-        conversationId: string;
+        source: ArtifactSourceRef;
+        /** Chat conversation — required context for chat rows, absent otherwise. */
+        conversationId?: string | null;
     }): Promise<{ id: string } | null> {
         const artifactType = canvasTypeToArtifactType(input.canvasType);
         if (!artifactType) {
@@ -376,6 +482,7 @@ export const canvasArtifactService = {
         }
         try {
             const userId = requireUserId();
+            const isChat = input.source.system === "cx_message";
 
             // Check for an existing row tied to this canvas_item_id first.
             const { data: existing, error: lookupErr } = await supabase
@@ -390,18 +497,34 @@ export const canvasArtifactService = {
             }
             if (existing) return { id: existing.id };
 
-            const { data: conversation, error: conversationErr } = await supabase
-                .schema("chat").from("conversation")
-                .select("organization_id, project_id, task_id")
-                .eq("id", input.conversationId)
-                .maybeSingle();
+            // Scope columns: chat rows inherit the conversation's org/project/
+            // task; non-chat rows fall back to the active/personal org.
+            let organizationId: string | null = null;
+            let projectId: string | null = null;
+            let taskId: string | null = null;
+            if (isChat) {
+                // A chat row needs its conversation for scope columns; some
+                // legitimate callers (on-demand ensure without conversation
+                // context) don't have one — skip quietly, reconcile fills it.
+                if (!input.conversationId) return null;
+                const { data: conversation, error: conversationErr } = await supabase
+                    .schema("chat").from("conversation")
+                    .select("organization_id, project_id, task_id")
+                    .eq("id", input.conversationId)
+                    .maybeSingle();
 
-            if (conversationErr || !conversation) {
-                console.error(
-                    "[canvasArtifactService.upsertDiscoveryIndex] conversation lookup error:",
-                    conversationErr ?? "conversation not found",
-                );
-                return null;
+                if (conversationErr || !conversation) {
+                    console.error(
+                        "[canvasArtifactService.upsertDiscoveryIndex] conversation lookup error:",
+                        conversationErr ?? "conversation not found",
+                    );
+                    return null;
+                }
+                organizationId = conversation.organization_id;
+                projectId = conversation.project_id;
+                taskId = conversation.task_id;
+            } else {
+                organizationId = await ensureOrgId(undefined);
             }
 
             // Insert a new discovery-index row.
@@ -409,15 +532,17 @@ export const canvasArtifactService = {
                 .schema("chat").from("artifact")
                 .insert({
                     canvas_item_id: input.canvasId,
-                    message_id: input.messageId,
-                    conversation_id: input.conversationId,
+                    message_id: isChat ? input.source.id : null,
+                    conversation_id: isChat ? (input.conversationId ?? null) : null,
+                    source_system: input.source.system,
+                    source_id: input.source.id,
                     user_id: userId,
                     artifact_type: artifactType,
                     status: "published",
                     title: input.title ?? null,
-                    organization_id: conversation.organization_id,
-                    project_id: conversation.project_id,
-                    task_id: conversation.task_id,
+                    organization_id: organizationId,
+                    project_id: projectId,
+                    task_id: taskId,
                     external_system: null,
                     external_id: null,
                     external_url: null,

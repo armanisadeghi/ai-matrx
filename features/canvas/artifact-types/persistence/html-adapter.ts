@@ -41,8 +41,11 @@ export const HTML_ADAPTER: ArtifactPersistenceAdapter = {
         userId,
         {},
         {
-          sourceMessageId: info.sourceMessageId,
-          sourceConversationId: info.conversationId,
+          // The server's page-per-source idempotency key. For non-chat
+          // sources the source record id plays the same role — one page per
+          // originating record, updated in place on re-materialize.
+          sourceMessageId: info.sourceMessageId ?? info.source.id,
+          sourceConversationId: info.conversationId ?? undefined,
         },
       );
       const pageId = result?.pageId ?? result?.id;

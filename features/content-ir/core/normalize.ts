@@ -14,7 +14,7 @@
 
 import { fingerprintText } from "./fingerprint";
 import { IR_VERSION, type CanonicalBlockIR, type IrStructuredNode } from "./ir-types";
-import type { KindSchema } from "./kind-schema.types";
+import { KIND_KEY, type KindSchema } from "./kind-schema.types";
 import { IrTree } from "./ir-tree";
 import {
   createKindStreamParser,
@@ -55,6 +55,34 @@ export interface NormalizeJsonRegionOptions {
    * when its fingerprint matches, it is returned as-is and nothing parses.
    */
   existing?: unknown;
+}
+
+/**
+ * Build a resolved, complete envelope directly from an already-structured
+ * value (a persisted artifact's `content.data` object). This is the
+ * zero-reprocessing rehydration path: the stored value IS the reconstructed
+ * region value (schema fields + residue extras merged at persist time), so no
+ * tokenizer/parser run is needed — the envelope wraps it verbatim.
+ */
+export function envelopeFromCompleteValue(
+  value: Record<string, unknown>,
+  kind: string,
+): CanonicalBlockIR {
+  return {
+    v: IR_VERSION,
+    engine: "fe-kind-parser",
+    fingerprint: fingerprintText(JSON.stringify(value)),
+    root: {
+      role: "structured",
+      kind,
+      kindState: "resolved",
+      discriminator: { format: "json", key: KIND_KEY },
+      path: [],
+      status: "complete",
+      value,
+      residue: null,
+    },
+  };
 }
 
 /** One-shot: complete region text in → canonical envelope out. */
