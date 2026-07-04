@@ -165,53 +165,60 @@ export const canvasItemsService = {
       const userId = requireUserId();
       const contentHash = await generateContentHash(input.content);
 
-      // Check for existing item with same hash
-      const { data: existing } = await supabase
+      // Atomic dedupe on the (user_id, content_hash) natural key, backed by the
+      // FULL unique index `canvas_items_user_content_full_unique`. ON CONFLICT
+      // DO NOTHING (`ignoreDuplicates`) NEVER emits a 23505/409 — a concurrent
+      // save or a re-save of identical content returns an EMPTY result, not a
+      // duplicate-key error (which the Error Inspector captures RED at the
+      // transport layer even when the old select-then-insert "recovered").
+      const { data: inserted, error: insertError } = await supabase
         .schema("canvas").from("canvas_items")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("content_hash", contentHash)
-        .single();
+        .upsert(
+          {
+            user_id: userId,
+            organization_id: await ensureOrgId(undefined),
+            type: input.content.type,
+            content: input.content as any,
+            content_hash: contentHash,
+            title: input.title || extractTitle(input.content),
+            description: input.description,
+            session_id: input.session_id,
+            source_message_id: input.source_message_id,
+            task_id: input.task_id,
+            tags: input.tags || [],
+          },
+          { onConflict: "user_id,content_hash", ignoreDuplicates: true },
+        )
+        .select()
+        .maybeSingle();
 
-      if (existing) {
-        // Update last_accessed_at on existing item
-        const { data: updated, error } = await supabase
-          .schema("canvas").from("canvas_items")
-          .update({ last_accessed_at: new Date().toISOString() })
-          .eq("id", existing.id)
-          .select()
-          .single();
+      if (insertError) {
+        return { data: null, isDuplicate: false, error: insertError };
+      }
 
+      // A row came back → we created it (not a duplicate).
+      if (inserted) {
         return {
-          data: updated ? mapDbRowToCanvasItemRow(updated) : null,
-          isDuplicate: true,
-          error,
+          data: mapDbRowToCanvasItemRow(inserted),
+          isDuplicate: false,
+          error: null,
         };
       }
 
-      // Create new item
-      const { data, error } = await supabase
+      // No row → identical content already exists (DO NOTHING). Bump
+      // last_accessed_at on that row and return it as a duplicate.
+      const { data: updated, error: updateError } = await supabase
         .schema("canvas").from("canvas_items")
-        .insert({
-          user_id: userId,
-          organization_id: await ensureOrgId(undefined),
-          type: input.content.type,
-          content: input.content as any,
-          content_hash: contentHash,
-          title: input.title || extractTitle(input.content),
-          description: input.description,
-          session_id: input.session_id,
-          source_message_id: input.source_message_id,
-          task_id: input.task_id,
-          tags: input.tags || [],
-        })
+        .update({ last_accessed_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("content_hash", contentHash)
         .select()
-        .single();
+        .maybeSingle();
 
       return {
-        data: data ? mapDbRowToCanvasItemRow(data) : null,
-        isDuplicate: false,
-        error,
+        data: updated ? mapDbRowToCanvasItemRow(updated) : null,
+        isDuplicate: true,
+        error: updateError,
       };
     } catch (error) {
       return { data: null, isDuplicate: false, error };

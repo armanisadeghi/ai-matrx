@@ -72,7 +72,11 @@ export async function POST(request: NextRequest) {
         // backing constraint, so its "idempotent" claim was fiction — it
         // silently produced duplicate rows under concurrency: 63 excess of 170).
         // `external_system` is nullable and NULLS NOT DISTINCT, so two NULLs
-        // collide correctly (the common case).
+        // collide correctly (the common case). Normalize "" → null ONCE so the
+        // write and the conflict-recovery read agree on what "absent" means
+        // (otherwise an empty string writes as "" but reads via `.is(null)`).
+        const normalizedExternalSystem = externalSystem || null;
+
         const insertRow = {
           message_id: messageId,
           conversation_id: conversationId,
@@ -82,7 +86,7 @@ export async function POST(request: NextRequest) {
           task_id: taskId ?? null,
           artifact_type: artifactType,
           status: "published" as const,
-          external_system: externalSystem ?? null,
+          external_system: normalizedExternalSystem,
           external_id: externalId ?? null,
           external_url: externalUrl ?? null,
           title: title ?? null,
@@ -114,40 +118,22 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ artifact: created });
         }
 
-        // No row → the natural key already existed (DO NOTHING). Apply the
-        // latest-publish fields (external_id/url can change when the underlying
-        // html_page is re-created) and return the current row, matched BY the
-        // natural key (external_system nullable → .is() when absent).
-        const updates: TablesUpdate<{ schema: "chat" }, "artifact"> = {};
+        // No row → the natural key already existed (DO NOTHING). The index is
+        // FULL (spans archived/soft-deleted rows), so the existing row may be
+        // archived — a "create" call means the user wants this artifact LIVE, so
+        // REVIVE it (status→published, clear deleted_at) and apply the latest
+        // publish fields (external_id/url change when the html_page is
+        // re-created). Matched by the natural key (external_system nullable →
+        // .is() when absent).
+        const updates: TablesUpdate<{ schema: "chat" }, "artifact"> = {
+          status: "published",
+          deleted_at: null,
+        };
         if (externalId !== undefined) updates.external_id = externalId;
         if (externalUrl !== undefined) updates.external_url = externalUrl;
         if (title !== undefined) updates.title = title;
         if (description !== undefined) updates.description = description;
         if (thumbnailUrl !== undefined) updates.thumbnail_url = thumbnailUrl;
-
-        // Nothing to update → cheap re-read (the hot "re-open overlay" path).
-        if (Object.keys(updates).length === 0) {
-          let selQuery = supabase
-            .schema("chat")
-            .from("artifact")
-            .select()
-            .eq("user_id", user.id)
-            .eq("message_id", messageId)
-            .eq("artifact_type", artifactType);
-          selQuery = externalSystem
-            ? selQuery.eq("external_system", externalSystem)
-            : selQuery.is("external_system", null);
-
-          const { data: current, error: selError } = await selQuery.single();
-          if (selError) {
-            console.error("[artifacts API] create->reselect error:", selError);
-            return NextResponse.json(
-              { error: selError.message },
-              { status: 500 },
-            );
-          }
-          return NextResponse.json({ artifact: current });
-        }
 
         let updateQuery = supabase
           .schema("chat")
@@ -156,8 +142,8 @@ export async function POST(request: NextRequest) {
           .eq("user_id", user.id)
           .eq("message_id", messageId)
           .eq("artifact_type", artifactType);
-        updateQuery = externalSystem
-          ? updateQuery.eq("external_system", externalSystem)
+        updateQuery = normalizedExternalSystem
+          ? updateQuery.eq("external_system", normalizedExternalSystem)
           : updateQuery.is("external_system", null);
 
         const { data: updated, error: updateError } = await updateQuery

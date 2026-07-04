@@ -432,40 +432,63 @@ export async function fetchTags(): Promise<string[]> {
 export async function createFolder(name: string): Promise<string> {
   const userId = requireUserId();
 
-  // Check if folder already exists
-  const { data: existing } = await supabase
+  // Atomic get-or-create on the (created_by, name) natural key, backed by the
+  // FULL unique index `note_folders_created_by_name_unique`. ON CONFLICT DO
+  // NOTHING (`ignoreDuplicates`) never emits a 23505/409: a concurrent create /
+  // double-Quick-Save returns an EMPTY result instead of silently minting a
+  // second folder (the old select-then-insert had no backing constraint).
+  const { data: inserted, error: insertError } = await supabase
     .schema("workbench").from("note_folders")
-    .select("id")
-    .eq("created_by", userId)
-    .eq("name", name)
-    .is("deleted_at", null)
-    .limit(1)
+    .upsert(
+      {
+        created_by: userId,
+        name,
+        path: name,
+        position: 0,
+        // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
+        organization_id: await ensureOrgId(undefined),
+      },
+      { onConflict: "created_by,name", ignoreDuplicates: true },
+    )
+    .select("id, deleted_at")
     .maybeSingle();
 
-  if (existing?.id) return existing.id;
+  if (insertError) {
+    console.error("Error creating folder:", insertError);
+    throw insertError;
+  }
+  // A row came back → we created it.
+  if (inserted?.id) return inserted.id;
 
-  const { data, error } = await supabase
+  // No row → a folder with this (user, name) already exists (DO NOTHING). It may
+  // be soft-deleted (delete-then-recreate) — revive it, since notes reference
+  // folders by NAME string, so recreating "Recipes" should resurrect the one row.
+  const { data: existing, error: selError } = await supabase
     .schema("workbench").from("note_folders")
-    .insert({
-      created_by: userId,
-      name,
-      path: name,
-      position: 0,
-      // Root entity (no org-inherit trigger) — org is NOT NULL; ride active org.
-      organization_id: await ensureOrgId(undefined),
-    })
-    .select("id")
-    .single();
+    .select("id, deleted_at")
+    .eq("created_by", userId)
+    .eq("name", name)
+    .maybeSingle();
 
-  if (error) {
-    console.error("Error creating folder:", error);
-    throw error;
+  if (selError) {
+    console.error("Error resolving existing folder:", selError);
+    throw selError;
   }
-  if (!data) {
-    throw new Error("Folder insert returned no row");
+  if (!existing?.id) {
+    throw new Error("Folder upsert returned no row and none was found");
+  }
+  if (existing.deleted_at) {
+    const { error: reviveError } = await supabase
+      .schema("workbench").from("note_folders")
+      .update({ deleted_at: null, position: 0 })
+      .eq("id", existing.id);
+    if (reviveError) {
+      console.error("Error reviving folder:", reviveError);
+      throw reviveError;
+    }
   }
 
-  return data.id;
+  return existing.id;
 }
 
 /**
