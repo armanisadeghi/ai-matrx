@@ -108,13 +108,15 @@ function loadEnv(): { url: string; key: string } | null {
 
 async function fetchDbRows(url: string, key: string, names: string[]): Promise<DbToolRow[]> {
   const inList = names.map((n) => encodeURIComponent(n)).join(",");
-  const endpoint = `${url.replace(/\/$/, "")}/rest/v1/tool_def?name=in.(${inList})&select=name,parameters`;
+  // `tool_def` moved out of `public` into the `tool` schema (tool.definition) during the
+  // 2026 schema reorg; reach it via the tool profile, not the old public path.
+  const endpoint = `${url.replace(/\/$/, "")}/rest/v1/definition?name=in.(${inList})&select=name,parameters`;
   const res = await fetch(endpoint, {
     headers: {
       apikey: key,
       Authorization: `Bearer ${key}`,
       Accept: "application/json",
-      "Accept-Profile": "public",
+      "Accept-Profile": "tool",
     },
   });
   if (!res.ok) {
