@@ -32,6 +32,7 @@ import { ThreadTabSelect } from "./ThreadTabSelect";
 import { ThreadTabContent } from "./ThreadTabContent";
 import { ThreadMetricChips } from "./ThreadMetricChips";
 import { ThreadOptionsMenu } from "./ThreadOptionsMenu";
+import { ThreadResourcesButton } from "./ThreadResourcesSheet";
 import { ThreadCopyForAiButton } from "../shared/ThreadCopyForAiButton";
 import { useThreadActions } from "@/features/war-room/hooks/useThreadActions";
 import { useThreadMetrics } from "@/features/war-room/hooks/useThreadMetrics";
@@ -117,10 +118,15 @@ export function WarRoomThread({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          <ThreadResourcesButton
+            threadId={threadId}
+            threadTitle={actions.title}
+          />
           <span onClick={(e) => e.stopPropagation()}>
             <ThreadCopyForAiButton threadId={threadId} />
           </span>
           <ThreadTabSelect
+            threadId={threadId}
             active={shownTab}
             anchorType={anchorType}
             onChange={(tab) =>

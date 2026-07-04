@@ -34,6 +34,7 @@ import {
   selectActiveSessionId,
   selectAttachmentsForThread,
   selectAudioSessionIdsForThread,
+  selectContentAssignmentsForThread,
   selectEffectiveThreadProjectId,
   selectSessionById,
   selectThreadById,
@@ -46,10 +47,14 @@ import type {
 } from "@/features/war-room/types";
 import { selectFileById, selectRagStatusForFile } from "@/features/files";
 import { getThreadFileRagIndexed } from "@/features/war-room/service/threadFileRagCache";
+import { getCachedEntityTitle } from "@/features/scopes/service/entityTitles";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
+import { entityToSource } from "@/features/war-room/service/associations";
 import {
   buildWarRoomContextEntry,
   type WarRoomContextModel,
-  type WarRoomFileModel,
+  type WarRoomResourceCount,
+  type WarRoomResourceModel,
   type WarRoomRoomModel,
   type WarRoomThreadModel,
 } from "@/features/war-room/service/warRoomContextXml";
@@ -66,54 +71,69 @@ function threadLabel(
   return `Thread ${index + 1}`;
 }
 
-/**
- * Build the per-file manifest for ONE thread from its attachment rows + the
- * files slice. Best-effort flags:
- *   - hasExtraction ← the file's `canonicalProcessedDocumentId` (the canonical
- *     "has OUR extraction" signal), else the cloudFiles `ragStatus` slice
- *     (extraction-presence: indexed ⇒ yes, not_indexed ⇒ no), else undefined.
- *   - ragIndexed ← the searchable-RAG probe cache (filled by ThreadAgentPanel's
- *     prefetch); undefined when not yet probed — OMITTED, never guessed.
- * `name` prefers the file slice's `fileName`, falling back to the assignment
- * `label`. Documents (entity_type='document') carry no cld_files extraction —
- * they're read via the agent's `document` tool, so flags stay undefined.
- */
-function buildThreadFiles(
+function isPlainObj(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/** Resolve one assignment row into a titled, token-canonical resource. */
+function assignmentToResource(
   state: RootState,
-  attachments: WarRoomAssignment[],
-): WarRoomFileModel[] {
-  return attachments.map((a): WarRoomFileModel => {
-    const kind: "file" | "document" =
-      a.entity_type === "document" ? "document" : "file";
-    const record =
-      kind === "file" ? selectFileById(state, a.entity_id) : undefined;
-    const name = record?.fileName ?? a.label ?? "untitled";
-    const mime = record?.mimeType ?? undefined;
+  a: WarRoomAssignment,
+): WarRoomResourceModel {
+  const token = entityToSource(a.entity_type);
+  const md = isPlainObj(a.metadata) ? a.metadata : {};
+  let title = a.label?.trim() ?? "";
+  let attrs: WarRoomResourceModel["attrs"];
 
+  if (token === "file") {
+    // Files carry their read/search signals as row attrs (the old <files>
+    // manifest, folded into <resources>).
+    const record = selectFileById(state, a.entity_id);
+    title = record?.fileName ?? title;
     let hasExtraction: boolean | undefined;
-    if (kind === "file") {
-      if (record?.canonicalProcessedDocumentId != null) {
-        hasExtraction = true;
-      } else {
-        const ragSlice = selectRagStatusForFile(state, a.entity_id);
-        if (ragSlice === "indexed") hasExtraction = true;
-        else if (ragSlice === "not_indexed") hasExtraction = false;
-        // "pending" / "unknown" / undefined ⇒ leave unknown (omit the flag).
-      }
+    if (record?.canonicalProcessedDocumentId != null) hasExtraction = true;
+    else {
+      const ragSlice = selectRagStatusForFile(state, a.entity_id);
+      if (ragSlice === "indexed") hasExtraction = true;
+      else if (ragSlice === "not_indexed") hasExtraction = false;
     }
-
-    const ragIndexed =
-      kind === "file" ? getThreadFileRagIndexed(a.entity_id) : undefined;
-
-    return {
-      id: a.entity_id,
-      name,
-      ...(mime ? { mime } : {}),
-      kind,
-      ...(hasExtraction === undefined ? {} : { hasExtraction }),
-      ...(ragIndexed === undefined ? {} : { ragIndexed }),
+    const ragIndexed = getThreadFileRagIndexed(a.entity_id);
+    attrs = {
+      mime: record?.mimeType ?? undefined,
+      extraction:
+        hasExtraction === undefined ? undefined : hasExtraction ? "yes" : "no",
+      rag:
+        ragIndexed === undefined ? undefined : ragIndexed ? "indexed" : "no",
     };
-  });
+  } else if (a.entity_type === "task") {
+    title = selectTaskById(state, a.entity_id)?.title ?? title;
+  } else if (a.entity_type === "note") {
+    title = selectNoteById(a.entity_id)(state)?.label ?? title;
+  }
+
+  if (!title) {
+    title =
+      getCachedEntityTitle(token, a.entity_id) ??
+      `Untitled ${tryGetEntityInfo(token)?.label ?? token}`;
+  }
+
+  return {
+    token,
+    id: a.entity_id,
+    title,
+    pinned: md.pinned === true,
+    ...(attrs ? { attrs } : {}),
+  };
+}
+
+/** Per-token counts (canonical tokens) for a thread's roster attribute. */
+function countResources(rows: WarRoomAssignment[]): WarRoomResourceCount[] {
+  const counts = new Map<string, number>();
+  for (const a of rows) {
+    const token = entityToSource(a.entity_type);
+    counts.set(token, (counts.get(token) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([token, count]) => ({ token, count }));
 }
 
 /** Build one thread model, reading whatever Redux has hydrated. */
@@ -130,11 +150,35 @@ function threadToThreadModel(
   const noteContent = (note?.content ?? "").trim();
   const audioCount = selectAudioSessionIdsForThread(thread.id)(state).length;
   const attachments = selectAttachmentsForThread(thread.id)(state);
+  const allRows = selectContentAssignmentsForThread(thread.id)(state);
+
+  // The full <resources> roster for the CURRENT thread: every content row of
+  // every registered type, minus what the dedicated lines already show (the
+  // active task/note and audio sessions — non-active extras stay listed).
+  const resources = withFiles
+    ? allRows
+        .filter(
+          (a) =>
+            !(a.entity_type === "task" && a.entity_id === taskId) &&
+            !(a.entity_type === "note" && a.entity_id === noteId) &&
+            a.entity_type !== "studio_session",
+        )
+        .map((a) => assignmentToResource(state, a))
+    : undefined;
+  const resourceCounts = countResources(allRows);
+  const pinnedResources = withFiles
+    ? undefined // current thread lists everything already, pinned-first
+    : allRows
+        .filter((a) => isPlainObj(a.metadata) && a.metadata.pinned === true)
+        .map((a) => assignmentToResource(state, a));
 
   return {
     id: thread.id,
     title: threadLabel(thread, task?.title, index),
-    conversationId: null,
+    // Hydrated by loadWarRoomSession (studio_sessions.assistant_conversation_id
+    // of the active audio session) — the handle for cross-agent reads.
+    conversationId:
+      state.warRoom.agentConversationByThread[thread.id] ?? null,
     taskId,
     taskTitle: task?.title,
     taskStatus: task?.status,
@@ -142,8 +186,10 @@ function threadToThreadModel(
     noteChars: noteContent ? noteContent.length : undefined,
     hasAudio: audioCount > 0,
     fileCount: attachments.length,
-    ...(withFiles && attachments.length > 0
-      ? { files: buildThreadFiles(state, attachments) }
+    ...(resources && resources.length > 0 ? { resources } : {}),
+    ...(resourceCounts.length > 0 ? { resourceCounts } : {}),
+    ...(pinnedResources && pinnedResources.length > 0
+      ? { pinnedResources }
       : {}),
   };
 }
@@ -199,20 +245,20 @@ export function buildThreadAgentContextEntries(
       "specific body or to act.",
     howTo:
       "Edit THIS thread's task/note with your war_room tools (the user " +
-      "approves each). To READ an attached file's text, call " +
-      'data_action(operation="read_file_extraction", inputs={file_id:<id from ' +
-      '<files>>, mode:"clean"}) — it returns OUR extracted text on the SERVER ' +
-      '(mode "clean" tidied / "raw" verbatim), never the raw PDF, and never ' +
-      'suspends the conversation; only files with extraction="yes" are readable. ' +
-      'To SEARCH files indexed for RAG (rag="indexed") use rag_search ' +
-      "(source_kinds includes 'cld_file'; pass source_ids=[file_id] to scope the " +
-      "search to specific files). A document-kind attachment is read with your " +
-      "document tool. For this thread's transcripts, the ACTIVE recording is in " +
-      "your studio context as `session_cleaned` when one exists; for any/all " +
-      'recordings use the data tool (resource_type "studio_session"). Read ' +
-      "ANOTHER thread's chain with war_room_read_thread(thread_id=<its id>). " +
-      "Read or edit any task / note / project / other resource by id with the " +
-      "data / data_action tools.",
+      "approves each). EVERYTHING attached to this thread is listed in " +
+      "<resources> — any type: files, documents, datasets, data stores, " +
+      "flashcards, … The <access> legend maps each type to the exact tool " +
+      "that reads or searches it (server tools like data / data_action / " +
+      "document / rag_search are preferred; war_room_read_resource(" +
+      "entity_type, entity_id) reads ANY listed resource, and " +
+      "entity_type='thread' returns a thread's full attachment manifest). " +
+      'A data_store row means: rag_search(query, data_store_id=<its id>) — ' +
+      "the user attached that knowledge store for you to USE. Rows with " +
+      'pin="1" are the user\'s must-use resources. For this thread\'s ' +
+      "transcripts, the ACTIVE recording is in your studio context as " +
+      "`session_cleaned` when one exists; for any/all recordings use the " +
+      'data tool (resource_type "studio_session"). Read ANOTHER thread\'s ' +
+      "chain with war_room_read_thread(thread_id=<its id>).",
     room: roomModel,
     currentThreadId: threadId,
   };

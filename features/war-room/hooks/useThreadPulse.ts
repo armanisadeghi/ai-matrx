@@ -33,6 +33,7 @@ import {
   selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import type { ThreadTab } from "@/features/war-room/types";
+import { normalizeThreadTab } from "./useThreadTabs";
 
 export interface ThreadPulse {
   /** The tile's chosen lead tab — what its "face" should show. */
@@ -117,7 +118,7 @@ export function useThreadPulse(threadId: string): ThreadPulse {
 
   const ctx = useAppSelector((s) => selectThreadEffectiveContext(threadId)(s));
 
-  const activeTab = (tile?.active_tab as ThreadTab) ?? "task";
+  const activeTab = normalizeThreadTab(tile?.active_tab);
 
   const subtaskTotal = subtasks.length;
   const subtaskDone = subtasks.filter((t) => t.status === "completed").length;

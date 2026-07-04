@@ -29,6 +29,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
   AssociationTargetEdge,
@@ -40,7 +41,6 @@ import {
   SINGLE_ACTIVE_ENTITY_TYPES,
   type ContainerRef,
   type WarRoomAssignment,
-  type WarRoomAssignmentEntityType,
   type WarRoomContainerType,
 } from "../types";
 
@@ -63,31 +63,18 @@ function containerTargetType(
  * row is `file` (verified against `platform.entity_types`); everything else
  * passes through. The backfill mapped `user_file → file`, so writes MUST match or
  * a re-attach would create a second, divergent edge.
+ *
+ * The vocabulary is otherwise OPEN — any registered token is content. The old
+ * `CONTENT_SOURCE_TYPES` whitelist silently dropped every other entity type on
+ * read; content vs structure is now decided by the canonical
+ * `isContentSourceEdge` classifier (features/scopes/service/associationEdges).
  */
-function entityToSource(t: string): string {
+export function entityToSource(t: string): string {
   return t === "user_file" ? "file" : t;
 }
-function sourceToEntity(t: string): WarRoomAssignmentEntityType {
-  return (t === "file" ? "user_file" : t) as WarRoomAssignmentEntityType;
+export function sourceToEntity(t: string): string {
+  return t === "file" ? "user_file" : t;
 }
-
-/**
- * The platform SOURCE tokens a war-room container actually HOLDS as content. Used
- * to filter the incoming edges of a container: querying a `war_room` target also
- * returns the `thread → war_room` membership edges of its child threads, which are
- * NOT content assignments and must never enter an assignment bucket. These are
- * platform tokens (note `file`, not `user_file`) because they match the edge's raw
- * `source_type`.
- */
-const CONTENT_SOURCE_TYPES: ReadonlySet<string> = new Set([
-  "project",
-  "task",
-  "note",
-  "conversation",
-  "studio_session",
-  "file",
-  "document",
-]);
 
 /** A thrown error that preserves the canonical RPC's error code for callers. */
 class WarRoomAssocError extends Error {
@@ -140,7 +127,7 @@ function edgeToAssignment(
     metadata: edge.metadata,
     created_by: null,
     created_at: edge.createdAt,
-  } as WarRoomAssignment;
+  };
 }
 
 function byPosition(a: WarRoomAssignment, b: WarRoomAssignment): number {
@@ -151,7 +138,7 @@ function byPosition(a: WarRoomAssignment, b: WarRoomAssignment): number {
 }
 
 function isContentEdge(edge: AssociationTargetEdge): boolean {
-  return CONTENT_SOURCE_TYPES.has(edge.sourceType);
+  return isContentSourceEdge(edge.sourceType, edge.metadata);
 }
 
 /**
@@ -233,7 +220,8 @@ export async function listAssignmentsForContainer(
 
 interface CreateAssignmentInput {
   ref: ContainerRef;
-  entityType: WarRoomAssignmentEntityType;
+  /** Any registered `platform.entity_types` token (war-room `user_file` alias allowed). */
+  entityType: string;
   entityId: string;
   /** Make this the active/focused member of its type (demotes same-type siblings). */
   makeActive?: boolean;
@@ -326,13 +314,13 @@ export async function createAssignment(
     metadata,
     created_by: userId,
     created_at: new Date().toISOString(),
-  } as WarRoomAssignment;
+  };
 }
 
 /** Mark one resource as the active member of its type within the container. */
 export async function setActiveAssignment(
   ref: ContainerRef,
-  entityType: WarRoomAssignmentEntityType,
+  entityType: string,
   entityId: string,
 ): Promise<void> {
   const targetType = containerTargetType(ref.type);
@@ -364,7 +352,7 @@ export async function setActiveAssignment(
 /** Remove a resource from a container by its (type, entity) tuple. */
 export async function removeAssignmentByEntity(
   ref: ContainerRef,
-  entityType: WarRoomAssignmentEntityType,
+  entityType: string,
   entityId: string,
 ): Promise<void> {
   const res = await associationsService.remove({

@@ -54,7 +54,10 @@ import {
   selectAttachmentsForThread,
   selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
-import { loadThreadSubtasks } from "@/features/war-room/redux/thunks";
+import {
+  attachEntityToThread,
+  loadThreadSubtasks,
+} from "@/features/war-room/redux/thunks";
 import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
 import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
 import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
@@ -182,7 +185,17 @@ export default function ThreadAgentPanel({
       threadId,
       conversationId,
     });
-  }, [threadId, conversationId]);
+    // Make the agent conversation a FIRST-CLASS thread resource: a
+    // `conversation → thread` edge (metadata role:"agent") so siblings, the
+    // room agent, and the master SEE it in the resources roster and can read
+    // it. Idempotent — createAssignment no-ops when the edge already matches.
+    void dispatch(
+      attachEntityToThread(threadId, "conversation", conversationId, {
+        label: "Thread agent conversation",
+        metadata: { role: "agent" },
+      }),
+    );
+  }, [threadId, conversationId, dispatch]);
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the
@@ -199,15 +212,19 @@ export default function ThreadAgentPanel({
     dispatch(
       setClientTools({
         conversationId,
-        // Plus the read-only war_room_read_thread (no tile binding, no HITL —
-        // routes to the read dispatcher by name) to read ANOTHER thread's chain
-        // by its tile id. NOTE: war_room_read_file is intentionally NOT armed —
-        // reading an attached file's extracted text is SERVER-side data and was
-        // wrongly a client-delegated tool, which HARD-SUSPENDS the agent loop
-        // (the conversation "stops") to round-trip server data through React.
-        // File reading now happens server-side via the agent's data tools (see
-        // the war-room-thread surface defaults + the aidream file-extraction read).
-        tools: [...WAR_ROOM_TOOL_NAMES, "war_room_read_thread"],
+        // Plus the read-only master-family members (no tile binding, no HITL —
+        // routed to the read dispatcher by name): war_room_read_thread to read
+        // ANOTHER thread's chain by its tile id, and war_room_read_resource to
+        // read ANY <resources> row (any registered entity type) or a
+        // container's full attachment manifest. NOTE: war_room_read_file is
+        // intentionally NOT armed — reading an attached file's extracted text
+        // is SERVER-side data (data_action read_file_extraction); a client
+        // round-trip would hard-suspend the agent loop.
+        tools: [
+          ...WAR_ROOM_TOOL_NAMES,
+          "war_room_read_thread",
+          "war_room_read_resource",
+        ],
       }),
     );
     return () => {

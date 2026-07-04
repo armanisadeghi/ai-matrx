@@ -5,6 +5,8 @@
 
 import { toast } from "sonner";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { Json } from "@/types/database.types";
+import { supabase } from "@/utils/supabase/client";
 import {
   create as createNote,
   update as updateNoteApi,
@@ -55,13 +57,13 @@ import {
   type ThreadTab,
   type ThreadUserState,
   type WarRoomAssignment,
-  type WarRoomAssignmentEntityType,
   type WarRoomSession,
   type WarRoomSessionUpdate,
   type WarRoomThread,
   type WarRoomThreadUpdate,
 } from "../types";
 import {
+  agentConversationsLoaded,
   assignmentActiveSet,
   assignmentRemoved,
   assignmentsLoadedBulk,
@@ -85,6 +87,7 @@ import {
   threadUpserted,
   threadsLoadedForRoom,
 } from "./slice";
+import { normalizeThreadTab } from "../hooks/useThreadTabs";
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -113,6 +116,45 @@ async function loadThreadUserStateBulk(
     };
   }
   dispatch(setThreadUserStateBulk(bulk));
+}
+
+/**
+ * Map each thread's ACTIVE studio session → its assistant conversation id
+ * (one batched read), then store per-thread for the sync context builder.
+ * Best-effort — a failure just leaves sibling rows without `conversation=`.
+ */
+async function hydrateAgentConversations(
+  dispatch: AppDispatch,
+  contentAssignments: WarRoomAssignment[],
+): Promise<void> {
+  const sessionByThread = new Map<string, string>();
+  for (const a of contentAssignments) {
+    if (a.container_type !== "thread" || a.entity_type !== "studio_session") {
+      continue;
+    }
+    if (a.is_active || !sessionByThread.has(a.container_id)) {
+      sessionByThread.set(a.container_id, a.entity_id);
+    }
+  }
+  if (sessionByThread.size === 0) return;
+  const sessionIds = [...new Set(sessionByThread.values())];
+  const { data, error } = await supabase
+    .schema("transcripts")
+    .from("studio_sessions")
+    .select("id,assistant_conversation_id")
+    .in("id", sessionIds);
+  if (error) {
+    reportWarRoomError("hydrateAgentConversations", error, { toast: false });
+    return;
+  }
+  const convoBySession = new Map<string, string | null>(
+    (data ?? []).map((r) => [r.id, r.assistant_conversation_id ?? null]),
+  );
+  const byThread: Record<string, string | null> = {};
+  for (const [threadId, sessionId] of sessionByThread) {
+    byThread[threadId] = convoBySession.get(sessionId) ?? null;
+  }
+  dispatch(agentConversationsLoaded(byThread));
 }
 
 /** Hydrate thread assignment buckets from `thread_contents()` — selectors unchanged. */
@@ -366,6 +408,12 @@ export const loadWarRoomSession =
         .filter((a) => a.entity_type === "task")
         .map((a) => a.entity_id);
       void dispatch(hydrateThreadTasks(taskIds));
+
+      // Resolve each thread's agent conversation id (the ACTIVE audio
+      // session's assistant_conversation_id) so the SYNC Tier-1 context
+      // builder can stamp sibling rows with `conversation=` — the handle for
+      // cross-agent reads (war_room_read_thread). Fire-and-forget.
+      void hydrateAgentConversations(dispatch, contentAssignments);
 
       void service.touchSessionOpened(id);
       return session;
@@ -1029,150 +1077,62 @@ export const loadThreadAttachments =
     }
   };
 
-export const attachFileToThread =
-  (threadId: string, fileId: string, label?: string | null) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
+/** Hydrate one container's assignment bucket (thread or room). */
+export const loadContainerAssignments =
+  (ref: ContainerRef) => async (dispatch: AppDispatch) => {
+    if (ref.type === "thread") {
+      await dispatch(loadThreadAttachments(ref.id));
+      return;
+    }
     try {
-      const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
-        entityType: "user_file",
-        entityId: fileId,
-        label,
-      });
+      const rows = await assoc.listAssignmentsForContainer(ref);
       dispatch(
-        assignmentUpserted({
-          key: containerKey("thread", threadId),
-          assignment,
+        assignmentsLoadedForContainer({
+          key: containerKey(ref.type, ref.id),
+          assignments: rows,
         }),
       );
-      return true;
     } catch (err) {
-      reportWarRoomError("attachFileToThread", err, {
-        toast: "Couldn't attach the file",
-      });
-      return false;
+      reportWarRoomError("loadContainerAssignments", err, { toast: false });
     }
   };
 
-export const attachDocumentToThread =
-  (threadId: string, documentId: string, label?: string | null) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
-    try {
-      const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
-        entityType: "document",
-        entityId: documentId,
-        label,
-      });
-      dispatch(
-        assignmentUpserted({
-          key: containerKey("thread", threadId),
-          assignment,
-        }),
-      );
-      return true;
-    } catch (err) {
-      reportWarRoomError("attachDocumentToThread", err, {
-        toast: "Couldn't attach the document",
-      });
-      return false;
-    }
-  };
+export interface AttachEntityOptions {
+  /** Human title stamped on the edge — pass it whenever the picker knows it. */
+  label?: string | null;
+  /** Single-active types: make this the focused member (default true). */
+  makeActive?: boolean;
+  /** Extra edge metadata (e.g. `{ canvas: true }`, `{ pinned: true }`). */
+  metadata?: Json | null;
+}
 
-export const attachConversationToThread =
-  (threadId: string, conversationId: string, label?: string | null) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
-    try {
-      const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
-        entityType: "conversation",
-        entityId: conversationId,
-        label,
-        makeActive: true,
-      });
-      dispatch(
-        assignmentUpserted({
-          key: containerKey("thread", threadId),
-          assignment,
-        }),
-      );
-      return true;
-    } catch (err) {
-      reportWarRoomError("attachConversationToThread", err, { toast: false });
-      return false;
-    }
-  };
-
-export const attachExistingNoteToThread =
-  (threadId: string, noteId: string) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
-    try {
-      const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
-        entityType: "note",
-        entityId: noteId,
-        makeActive: true,
-      });
-      dispatch(
-        assignmentUpserted({
-          key: containerKey("thread", threadId),
-          assignment,
-        }),
-      );
-      return true;
-    } catch (err) {
-      reportWarRoomError("attachExistingNoteToThread", err, {
-        toast: "Couldn't attach the note",
-      });
-      return false;
-    }
-  };
-
-export const attachExistingTaskToThread =
-  (threadId: string, taskId: string) =>
-  async (dispatch: AppDispatch): Promise<boolean> => {
-    try {
-      const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
-        entityType: "task",
-        entityId: taskId,
-        makeActive: true,
-      });
-      dispatch(
-        assignmentUpserted({
-          key: containerKey("thread", threadId),
-          assignment,
-        }),
-      );
-      void dispatch(hydrateThreadTasks([taskId]));
-      return true;
-    } catch (err) {
-      reportWarRoomError("attachExistingTaskToThread", err, {
-        toast: "Couldn't attach the task",
-      });
-      return false;
-    }
-  };
-
-/** Link a resource to a canvas thread's launcher (metadata.canvas, non-active). */
-export const attachCanvasResourceToThread =
+/**
+ * THE attach path: link any registered entity to a thread or room. Open
+ * vocabulary — the token guard lives in `associationsService`; single-active
+ * demotion/position live in `assoc.createAssignment`. Replaces the deleted
+ * per-type thunks (attachFileToThread / attachDocumentToThread / …), whose
+ * closed vocabulary was the ceiling that hid every other entity type.
+ */
+export const attachEntityToContainer =
   (
-    threadId: string,
-    entityType: WarRoomAssignmentEntityType,
+    ref: ContainerRef,
+    entityType: string,
     entityId: string,
+    opts: AttachEntityOptions = {},
   ) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
       const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
+        ref,
         entityType,
         entityId,
-        makeActive: false,
-        metadata: { canvas: true },
+        label: opts.label,
+        makeActive: opts.makeActive,
+        metadata: opts.metadata,
       });
       dispatch(
         assignmentUpserted({
-          key: containerKey("thread", threadId),
+          key: containerKey(ref.type, ref.id),
           assignment,
         }),
       );
@@ -1181,46 +1141,20 @@ export const attachCanvasResourceToThread =
       }
       return true;
     } catch (err) {
-      reportWarRoomError("attachCanvasResourceToThread", err, {
-        toast: "Couldn't add the resource",
+      reportWarRoomError("attachEntityToContainer", err, {
+        toast: "Couldn't attach the resource",
       });
       return false;
     }
   };
 
-/** Create a task and pin it on a canvas thread (does not change anchor_type). */
-export const createCanvasThreadTask =
-  (threadId: string, title: string) =>
-  async (dispatch: AppDispatch, getState: () => RootState) => {
-    const thread = getState().warRoom.threadsById[threadId];
-    if (!thread || thread.anchor_type !== "canvas") return null;
-    const trimmed = title.trim();
-    if (!trimmed) return null;
-    try {
-      const roomId = findRoomForThread(getState(), threadId);
-      const ctx = selectThreadEffectiveContext(threadId, roomId)(getState());
-      const projectId = selectEffectiveThreadProjectId(
-        threadId,
-        roomId,
-      )(getState());
-      const taskId = await dispatch(
-        createTaskThunk({
-          title: trimmed,
-          organizationId: ctx.organizationId,
-          scopeIds: ctx.scopeIds,
-          projectId,
-        }),
-      ).unwrap();
-      if (!taskId) return null;
-      await dispatch(attachCanvasResourceToThread(threadId, "task", taskId));
-      return taskId;
-    } catch (err) {
-      reportWarRoomError("createCanvasThreadTask", err, {
-        toast: "Couldn't create the task",
-      });
-      return null;
-    }
-  };
+/** Convenience: attach any registered entity to a thread. */
+export const attachEntityToThread = (
+  threadId: string,
+  entityType: string,
+  entityId: string,
+  opts: AttachEntityOptions = {},
+) => attachEntityToContainer(threadRef(threadId), entityType, entityId, opts);
 
 export const moveThreadToRoom =
   (threadId: string, targetRoomId: string) =>
@@ -1335,7 +1269,7 @@ export const importThreadToRoom =
         title: thread.title,
         anchorType: (thread.anchor_type as ThreadAnchorType) ?? "canvas",
         anchorId: thread.anchor_id,
-        activeTab: (thread.active_tab as ThreadTab) ?? "task",
+        activeTab: normalizeThreadTab(thread.active_tab),
         position,
       });
       dispatch(threadUpserted(newThread));
@@ -1366,28 +1300,46 @@ export const importThreadToRoom =
     }
   };
 
-export const detachThreadAttachment =
-  (threadId: string, attachment: WarRoomAssignment) =>
-  async (dispatch: AppDispatch) => {
+/** Optimistically detach any resource from a container (thread or room). */
+export const detachEntityFromContainer =
+  (ref: ContainerRef, attachment: WarRoomAssignment) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
     dispatch(
       assignmentRemoved({
-        key: containerKey("thread", threadId),
+        key: containerKey(ref.type, ref.id),
         id: attachment.id,
       }),
     );
     try {
       await assoc.removeAssignmentByEntity(
-        threadRef(threadId),
-        attachment.entity_type as WarRoomAssignmentEntityType,
+        ref,
+        attachment.entity_type,
         attachment.entity_id,
       );
+      return true;
     } catch (err) {
-      dispatch(loadThreadAttachments(threadId));
-      reportWarRoomError("detachThreadAttachment", err, {
+      if (ref.type === "thread") {
+        dispatch(loadThreadAttachments(ref.id));
+      } else {
+        const rows = await assoc.listAssignmentsForContainer(ref);
+        dispatch(
+          assignmentsLoadedForContainer({
+            key: containerKey(ref.type, ref.id),
+            assignments: rows,
+          }),
+        );
+      }
+      reportWarRoomError("detachEntityFromContainer", err, {
         toast: "Couldn't remove the attachment",
       });
+      return false;
     }
   };
+
+export const detachThreadAttachment = (
+  threadId: string,
+  attachment: WarRoomAssignment,
+) => detachEntityFromContainer(threadRef(threadId), attachment);
 
 /** Map legacy flavor picker values to anchor fields on create. */
 export { flavorToAnchor };

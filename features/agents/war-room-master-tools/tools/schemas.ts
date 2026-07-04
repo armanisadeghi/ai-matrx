@@ -21,8 +21,16 @@ import { z } from "zod";
 export const warRoomReadThreadArgsSchema = z.object({
   /** The thread's id (the roster `threadId` = the war-room tile id). */
   thread_id: z.string().min(1),
+  /**
+   * Read a SPECIFIC conversation instead of the thread's primary agent chain —
+   * for threads holding several agent conversations (the `conversation` rows
+   * in the thread's resources). Defaults to the thread's primary.
+   */
+  conversation_id: z.string().min(1).optional(),
   /** How many of the most recent messages to return. Defaults to 20, capped. */
   limit: z.number().int().min(1).max(100).optional(),
+  /** Also list the conversation's working documents (id + kind). */
+  include_working_documents: z.boolean().optional(),
 });
 
 export type WarRoomReadThreadArgs = z.infer<typeof warRoomReadThreadArgsSchema>;
@@ -40,6 +48,9 @@ export interface WarRoomReadThreadResult {
   conversation_id?: string | null;
   message_count?: number;
   messages?: ThreadMessageSummary[];
+  /** The conversation's working documents (when requested). Read one with
+   *  war_room_read_resource(entity_type='working_document', entity_id=id). */
+  working_documents?: { id: string; kind: string; enabled: boolean }[];
   message?: string;
 }
 
@@ -150,6 +161,53 @@ export const warRoomReadFileArgsSchema = z.object({
 });
 
 export type WarRoomReadFileArgs = z.infer<typeof warRoomReadFileArgsSchema>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// war_room_read_resource — READ any attached resource, any registered type
+// ─────────────────────────────────────────────────────────────────────────────
+// The generic reader behind the `<resources>` roster: pass the row's `type` +
+// `id` and get its content. Registry-driven — a bespoke adapter (conversation
+// history, working-document body) when one exists, else a safe RLS-scoped row
+// read of the backing table. `entity_type='thread' | 'war_room'` returns the
+// container's full attachment MANIFEST (the "<more/>" escape hatch). Read-only,
+// no HITL (same family/dispatcher as war_room_read_thread).
+
+export const READ_RESOURCE_MAX_CHARS_CAP = 100_000;
+export const READ_RESOURCE_DEFAULT_MAX_CHARS = 20_000;
+
+export const warRoomReadResourceArgsSchema = z.object({
+  /** The resource's entity token (the `type` attr of a `<res>` row). */
+  entity_type: z.string().min(1),
+  /** The resource's id (the `id` attr of a `<res>` row). */
+  entity_id: z.string().min(1),
+  /** Token-specific mode (currently unused by most adapters). */
+  mode: z.string().optional(),
+  /** Truncate the returned content to this many characters. */
+  max_chars: z
+    .number()
+    .int()
+    .min(500)
+    .max(READ_RESOURCE_MAX_CHARS_CAP)
+    .optional(),
+});
+
+export type WarRoomReadResourceArgs = z.infer<
+  typeof warRoomReadResourceArgsSchema
+>;
+
+export interface WarRoomReadResourceResult {
+  ok: boolean;
+  entity_type: string;
+  entity_id: string;
+  /** The resource's content (adapter- or row-rendered), truncated if needed. */
+  content?: string;
+  /** Adapter-specific extras (e.g. message_count, truncated). */
+  meta?: Record<string, unknown>;
+  error?: string;
+  /** A short, model-facing explanation / next step. */
+  hint?: string;
+  message?: string;
+}
 
 export interface WarRoomReadFileResult {
   ok: boolean;

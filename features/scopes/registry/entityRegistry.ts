@@ -37,6 +37,8 @@ import {
   AudioLines,
   Boxes,
   Building2,
+  Database,
+  FilePen,
   FileText,
   Folder,
   FolderKanban,
@@ -46,6 +48,7 @@ import {
   ListChecks,
   ListTodo,
   MessagesSquare,
+  Mic,
   NotebookText,
   Sheet,
   Sparkles,
@@ -60,6 +63,7 @@ import {
   isEntityTypeToken,
   type EntityTypeToken,
 } from "@/types/generated/entity-types.generated";
+import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
 
 /**
  * The universal ownership column post-2026-reorg. Every first-class entity
@@ -68,6 +72,82 @@ import {
 export const DEFAULT_OWNER_COLUMN = "created_by";
 /** The universal org-scoping column. Every first-class entity table carries it. */
 export const DEFAULT_ORG_COLUMN = "organization_id";
+
+// ─── Content roles ──────────────────────────────────────────────────────────
+// The knowledge-model grouping axis (docs/knowledge/scopeable_entities.md):
+// every entity brings knowledge in (source), produces it (destination), does
+// both (hybrid), operates on it without truth of its own (utility), or
+// organizes other entities (container). Resource surfaces group by this.
+// Rescued from the deprecated `features/organizations/resource-catalogue.ts`
+// into the canonical registry — when `platform.entity_types` grows a
+// `content_role` column, these assignments move into the generated metadata.
+
+export type ContentRole =
+  | "utility"
+  | "source"
+  | "destination"
+  | "hybrid"
+  | "container";
+
+export interface ContentRoleMeta {
+  id: ContentRole;
+  /** Section heading. */
+  title: string;
+  /** One-line "what is this bucket". */
+  tagline: string;
+  /** Categorical accent classes (tint only — surfaces stay semantic). */
+  accentText: string;
+  accentBg: string;
+  accentBar: string;
+}
+
+/** Ordered for display: capability, data-in, data-out, both, structure. */
+export const CONTENT_ROLES: ContentRoleMeta[] = [
+  {
+    id: "utility",
+    title: "Utilities",
+    tagline: "The agents and tools that act on your knowledge.",
+    accentText: "text-violet-600 dark:text-violet-400",
+    accentBg: "bg-violet-500/10",
+    accentBar: "bg-violet-500",
+  },
+  {
+    id: "source",
+    title: "Sources",
+    tagline: "Incoming sources of truth (Knowledge In).",
+    accentText: "text-sky-600 dark:text-sky-400",
+    accentBg: "bg-sky-500/10",
+    accentBar: "bg-sky-500",
+  },
+  {
+    id: "destination",
+    title: "Outputs",
+    tagline: "Knowledge your team produces.",
+    accentText: "text-emerald-600 dark:text-emerald-400",
+    accentBg: "bg-emerald-500/10",
+    accentBar: "bg-emerald-500",
+  },
+  {
+    id: "hybrid",
+    title: "Sources & Outputs",
+    tagline: "Read from and written to.",
+    accentText: "text-teal-600 dark:text-teal-400",
+    accentBg: "bg-teal-500/10",
+    accentBar: "bg-gradient-to-r from-sky-500 to-emerald-500",
+  },
+  {
+    id: "container",
+    title: "Workspaces",
+    tagline: "How work is organized.",
+    accentText: "text-amber-600 dark:text-amber-400",
+    accentBg: "bg-amber-500/10",
+    accentBar: "bg-amber-500",
+  },
+];
+
+export function getContentRoleMeta(role: ContentRole): ContentRoleMeta {
+  return CONTENT_ROLES.find((r) => r.id === role) ?? CONTENT_ROLES[2];
+}
 
 /**
  * FE-only presentation + query hints for an entity token. The icon is the one
@@ -93,6 +173,20 @@ export interface EntityOverlay {
   orgColumn?: string | null;
   /** Build a route to open one record of this type (new-tab navigation). */
   hrefFor?: (id: string) => string;
+  /** Knowledge-model grouping bucket. Defaults to `destination`. */
+  contentRole?: ContentRole;
+  /**
+   * Candidate-source override for tokens whose backing table can't be read
+   * client-side (e.g. `data_store` — the `rag` schema isn't PostgREST-exposed).
+   * When set, pickers list candidates through this instead of the generic
+   * table read. The function must resolve titles itself.
+   */
+  listCandidates?: (args: {
+    search?: string;
+    limit?: number;
+  }) => Promise<
+    { ok: true; data: { id: string; title: string }[] } | { ok: false; error: string }
+  >;
 }
 
 // ─── The overlay table ──────────────────────────────────────────────────────
@@ -108,31 +202,75 @@ export interface EntityOverlay {
 // valid association edge endpoint.
 const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Agents / Apps / Skills (utilities) ───────────────────────────────────
-  agent: { Icon: Webhook, labelPlural: "Agents", titleColumn: "name" },
+  agent: {
+    Icon: Webhook,
+    labelPlural: "Agents",
+    titleColumn: "name",
+    contentRole: "utility",
+    hrefFor: (id) => `/agents/${id}`,
+  },
   agent_shortcut: {
     Icon: Zap,
     labelPlural: "Agent Shortcuts",
     titleColumn: "label",
+    contentRole: "utility",
   },
-  app: { Icon: AppWindow, labelPlural: "Agent Apps", titleColumn: "name" },
-  skill: { Icon: Sparkles, labelPlural: "Skills", titleColumn: "label" },
-  workflow: { Icon: Workflow, labelPlural: "Workflows", titleColumn: "name" },
+  app: { Icon: AppWindow, labelPlural: "Agent Apps", titleColumn: "name", contentRole: "utility" },
+  skill: { Icon: Sparkles, labelPlural: "Skills", titleColumn: "label", contentRole: "utility" },
+  workflow: { Icon: Workflow, labelPlural: "Workflows", titleColumn: "name", contentRole: "utility" },
   content_template: {
     Icon: LayoutTemplate,
     labelPlural: "Content Templates",
     titleColumn: "label",
+    contentRole: "utility",
   },
 
   // ─── Sources ──────────────────────────────────────────────────────────────
-  file: { Icon: FileText, labelPlural: "Files", titleColumn: "file_name" },
-  folder: { Icon: Folder, labelPlural: "Folders", titleColumn: "folder_name" },
+  file: {
+    Icon: FileText,
+    labelPlural: "Files",
+    titleColumn: "file_name",
+    contentRole: "source",
+    hrefFor: (id) => `/files/f/${id}`,
+  },
+  folder: { Icon: Folder, labelPlural: "Folders", titleColumn: "folder_name", contentRole: "source" },
   transcript: {
     Icon: AudioLines,
     labelPlural: "Transcripts",
     titleColumn: "title",
+    contentRole: "source",
   },
-  dataset: { Icon: Table, labelPlural: "Datasets", titleColumn: "description" },
-  workbook: { Icon: Sheet, labelPlural: "Workbooks", titleColumn: "description" },
+  dataset: {
+    Icon: Table,
+    labelPlural: "Datasets",
+    titleColumn: "description",
+    contentRole: "hybrid",
+    hrefFor: (id) => `/data/${id}`,
+  },
+  workbook: {
+    Icon: Sheet,
+    labelPlural: "Workbooks",
+    titleColumn: "description",
+    contentRole: "hybrid",
+    hrefFor: (id) => `/workbooks/${id}`,
+  },
+  // RAG knowledge store — the scope-gate for rag_search retrieval. `rag.*` is
+  // NOT PostgREST-exposed, so deliberately NO titleColumn (a generic candidate
+  // read would fail); stores list through the Python API via the registered
+  // candidate source. Edges MUST stamp `label` = store name at attach time —
+  // titles can't be re-read client-side.
+  data_store: {
+    Icon: Database,
+    labelPlural: "Data Stores",
+    contentRole: "source",
+    listCandidates: listDataStoreCandidates,
+  },
+  studio_session: {
+    Icon: Mic,
+    labelPlural: "Audio Sessions",
+    titleColumn: "title",
+    contentRole: "source",
+  },
 
   // ─── Outputs ────────────────────────────────────────────────────────────--
   note: {
@@ -140,21 +278,39 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Notes",
     titleColumn: "label",
     hrefFor: (id) => `/notes?active=${id}`,
+    contentRole: "hybrid",
+  },
+  udt_document: {
+    Icon: FileText,
+    labelPlural: "Documents",
+    titleColumn: "document_name",
+    hrefFor: (id) => `/documents/${id}`,
+    contentRole: "hybrid",
+  },
+  working_document: {
+    Icon: FilePen,
+    labelPlural: "Working Documents",
+    titleColumn: "title",
+    contentRole: "destination",
   },
   conversation: {
     Icon: MessagesSquare,
     labelPlural: "Conversations",
     titleColumn: "title",
+    contentRole: "destination",
+    hrefFor: (id) => `/chat/${id}`,
   },
   flashcard_set: {
     Icon: Layers,
     labelPlural: "Flashcard Sets",
     titleColumn: "title",
+    contentRole: "destination",
   },
   quiz_session: {
     Icon: ListChecks,
     labelPlural: "Quizzes",
     titleColumn: "title",
+    contentRole: "destination",
   },
 
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────
@@ -162,19 +318,21 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FolderKanban,
     labelPlural: "Projects",
     titleColumn: "name",
+    contentRole: "container",
   },
   task: {
     Icon: ListTodo,
     labelPlural: "Tasks",
     titleColumn: "title",
     hrefFor: (id) => `/tasks/${id}`,
+    contentRole: "container",
   },
 
   // ─── Container display only (candidates come from the scope tree, not a
   //     generic table read — so NO titleColumn → not listable as candidates) ──
-  scope: { Icon: Tag, labelPlural: "Scopes" },
-  scope_type: { Icon: Layers3, labelPlural: "Scope Types" },
-  organization: { Icon: Building2, labelPlural: "Organizations" },
+  scope: { Icon: Tag, labelPlural: "Scopes", contentRole: "container" },
+  scope_type: { Icon: Layers3, labelPlural: "Scope Types", contentRole: "container" },
+  organization: { Icon: Building2, labelPlural: "Organizations", contentRole: "container" },
 };
 
 /** Fallback icon when a token has no overlay entry yet. */
@@ -203,7 +361,11 @@ export interface EntityInfo {
   hrefFor: ((id: string) => string) | null;
   scopeable: boolean;
   category: string | null;
-  /** True when a picker can list real candidates (needs a title column). */
+  /** Knowledge-model grouping bucket (resource surfaces group by this). */
+  contentRole: ContentRole;
+  /** Candidate-source override (rag-backed tokens etc.); null = generic read. */
+  listCandidates: EntityOverlay["listCandidates"] | null;
+  /** True when a picker can list real candidates (title column OR override). */
   canListCandidates: boolean;
 }
 
@@ -239,7 +401,10 @@ export function getEntityInfo(token: EntityTypeToken): EntityInfo {
     hrefFor: overlay?.hrefFor ?? null,
     scopeable: meta.scopeable,
     category: meta.category,
-    canListCandidates: titleColumn !== null,
+    contentRole: overlay?.contentRole ?? "destination",
+    listCandidates: overlay?.listCandidates ?? null,
+    canListCandidates:
+      titleColumn !== null || overlay?.listCandidates !== undefined,
   };
 }
 
@@ -248,9 +413,10 @@ export function tryGetEntityInfo(token: string): EntityInfo | null {
   return isEntityTypeToken(token) ? getEntityInfo(token) : null;
 }
 
-/** Tokens that currently have a picker-ready overlay (title column present). */
+/** Tokens that currently have a picker-ready overlay (candidates listable). */
 export function listableTokens(): EntityTypeToken[] {
-  return (Object.keys(ENTITY_OVERLAY) as EntityTypeToken[]).filter(
-    (t) => ENTITY_OVERLAY[t]?.titleColumn != null,
-  );
+  return (Object.keys(ENTITY_OVERLAY) as EntityTypeToken[]).filter((t) => {
+    const o = ENTITY_OVERLAY[t];
+    return o?.titleColumn != null || o?.listCandidates !== undefined;
+  });
 }

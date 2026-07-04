@@ -37,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { useTaskDrillStack } from "@/features/war-room/hooks/useTaskDrillStack";
 import { ThreadEmbeddedTaskView } from "./ThreadEmbeddedTaskView";
 import { ThreadProjectTab } from "./ThreadProjectTab";
-import { ThreadCanvasTab } from "./ThreadCanvasTab";
+import { ThreadResourcesTab } from "./ThreadResourcesTab";
 import { SubtaskRail } from "./SubtaskRail";
 import { SubtaskDetailPane } from "./SubtaskDetailPane";
 
@@ -50,12 +50,14 @@ export function ThreadTaskTab({
 }) {
   const anchorType = useAppSelector((s) => selectThreadAnchorType(threadId)(s));
 
-  // Project-anchored → project task list. Canvas-anchored → resource launcher.
+  // Project-anchored → project task list. Canvas-anchored → the full
+  // resources surface (any entity type, universal attach — the superset of
+  // the old canvas launcher).
   if (anchorType === "project") {
     return <ThreadProjectTab threadId={threadId} compact={compact} />;
   }
   if (anchorType === "canvas") {
-    return <ThreadCanvasTab threadId={threadId} compact={compact} />;
+    return <ThreadResourcesTab threadId={threadId} compact={compact} />;
   }
 
   return <ThreadTaskTabAnchored threadId={threadId} compact={compact} />;

@@ -21,6 +21,7 @@ import { resolveThread } from "../service/threadResolver";
 import { messageRecordToText } from "../service/messageText";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { listConversationDocuments } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
 
 const DEFAULT_LIMIT = 20;
 
@@ -44,7 +45,9 @@ export const readThreadHandler: WarRoomMasterToolHandler<
       };
     }
 
-    const conversationId = resolved.conversationId;
+    // A thread can hold SEVERAL agent conversations (conversation rows in its
+    // resources); `conversation_id` targets one of them, else the primary.
+    const conversationId = args.conversation_id ?? resolved.conversationId;
     if (!conversationId) {
       return {
         ok: true,
@@ -82,12 +85,34 @@ export const readThreadHandler: WarRoomMasterToolHandler<
       text: messageRecordToText(rec),
     }));
 
+    // Cross-agent working-document visibility: list the conversation's docs
+    // so an overseer (or sibling agent) can read what this agent produced.
+    let working_documents:
+      | { id: string; kind: string; enabled: boolean }[]
+      | undefined;
+    if (args.include_working_documents) {
+      try {
+        const linked = await listConversationDocuments(conversationId);
+        working_documents = linked.map((d) => ({
+          id: d.documentId,
+          kind: d.kind,
+          enabled: d.enabled,
+        }));
+      } catch (err) {
+        console.warn(
+          `[war-room/master] read_thread listConversationDocuments failed:`,
+          err,
+        );
+      }
+    }
+
     return {
       ok: true,
       thread_id: args.thread_id,
       conversation_id: conversationId,
       message_count: all.length,
       messages,
+      ...(working_documents ? { working_documents } : {}),
     };
   },
 };

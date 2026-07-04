@@ -26,6 +26,7 @@ import { ThreadProjectMarker } from "../thread/ThreadProjectMarker";
 import { ThreadTabContent } from "../thread/ThreadTabContent";
 import { ThreadMetricChips } from "../thread/ThreadMetricChips";
 import { ThreadOptionsMenu } from "../thread/ThreadOptionsMenu";
+import { ThreadResourcesButton } from "../thread/ThreadResourcesSheet";
 import { ThreadCopyForAiButton } from "../shared/ThreadCopyForAiButton";
 import { PulseGlyph } from "../thread/PulseGlyph";
 import { useThreadPulse } from "@/features/war-room/hooks/useThreadPulse";
@@ -107,6 +108,10 @@ export function StageThread({
         </div>
 
         <div className="shrink-0 flex items-center gap-1">
+          <ThreadResourcesButton
+            threadId={threadId}
+            threadTitle={actions.title}
+          />
           <ThreadCopyForAiButton threadId={threadId} />
           <ThreadContextOverride threadId={threadId} />
           {actions.canExpand ? (
@@ -131,6 +136,7 @@ export function StageThread({
       {/* View switcher row */}
       <div className="shrink-0 pl-4 pr-3.5 pb-2.5">
         <ThreadTabBar
+          threadId={threadId}
           active={shownTab}
           anchorType={anchorType}
           onChange={(tab) =>

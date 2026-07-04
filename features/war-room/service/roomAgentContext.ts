@@ -207,6 +207,8 @@ export async function buildRoomAgentContext(
     activeAudioByThread,
     hasAudioByThread,
     fileCountByThread,
+    resourceCountsByThread,
+    pinnedByThread,
   } = indexThreadAssignments(assignments);
 
   // ── Resolve the thread agent conversation ids in one query ─────────────
@@ -304,6 +306,8 @@ export async function buildRoomAgentContext(
       conversationId,
       hasAudio: hasAudioByThread.has(thread.id),
       fileCount: fileCountByThread.get(thread.id) ?? 0,
+      resourceCounts: resourceCountsByThread.get(thread.id),
+      pinnedResources: pinnedByThread.get(thread.id),
     };
     const status = conversationId ? resolveStatus?.(conversationId) : undefined;
     if (status) entry.status = status;
@@ -321,6 +325,8 @@ export async function buildRoomAgentContext(
     noteSnippet: e.noteSnippet,
     hasAudio: e.hasAudio,
     fileCount: e.fileCount,
+    resourceCounts: e.resourceCounts,
+    pinnedResources: e.pinnedResources,
   }));
   return [toEntry(threadModels)];
 }

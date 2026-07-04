@@ -36,7 +36,11 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
       "Read the recent conversation of one thread's agent. Pass the thread's " +
       "`thread_id` from `war_room`. Returns the most recent messages " +
       "in that thread's chain so you can see what was discussed before acting. " +
-      "Read-only — runs immediately, changes nothing.",
+      "A thread can hold several agent conversations (the `conversation` rows " +
+      "in its resources) — pass `conversation_id` to read a specific one. Set " +
+      "`include_working_documents` to also list the documents that agent " +
+      "produced (readable via war_room_read_resource). Read-only — runs " +
+      "immediately, changes nothing.",
     input_schema: {
       type: "object",
       properties: {
@@ -44,9 +48,20 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
           type: "string",
           description: "The thread's id (the `threadId` from war_room).",
         },
+        conversation_id: {
+          type: "string",
+          description:
+            "Optional: a specific conversation of the thread (a `conversation` " +
+            "resource id). Defaults to the thread's primary agent chain.",
+        },
         limit: {
           type: "number",
           description: "How many recent messages to return (default 20, max 100).",
+        },
+        include_working_documents: {
+          type: "boolean",
+          description:
+            "Also list the conversation's working documents (id + kind).",
         },
       },
       required: ["thread_id"],
@@ -86,6 +101,47 @@ const DEFS: Record<WarRoomMasterToolName, ToolSpecInline> = {
         },
       },
       required: ["file_id"],
+    },
+  },
+
+  war_room_read_resource: {
+    kind: "inline",
+    name: "war_room_read_resource",
+    description:
+      "Read ANY resource listed in the war_room <resources> roster — any " +
+      "type: datasets, flashcard sets, transcripts, working documents, " +
+      "attached conversations, and every other registered entity. Pass the " +
+      "row's `type` and `id`. Special containers: entity_type='thread' or " +
+      "'war_room' with the container's id returns its FULL attachment " +
+      "manifest (use it when the roster shows a <more/> row or you need " +
+      "another thread's resources). Prefer the dedicated server tools from " +
+      "the <access> legend when one is named (data / data_action / document / " +
+      "rag_search); use this for everything else. Read-only — runs " +
+      "immediately, changes nothing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        entity_type: {
+          type: "string",
+          description:
+            "The resource's entity type (the `type` attr of a <res> row), " +
+            "or 'thread' / 'war_room' for a container manifest.",
+        },
+        entity_id: {
+          type: "string",
+          description: "The resource's id (the `id` attr of a <res> row).",
+        },
+        mode: {
+          type: "string",
+          description: "Optional token-specific mode.",
+        },
+        max_chars: {
+          type: "number",
+          description:
+            "Truncate the returned content to this many characters (default 20000).",
+        },
+      },
+      required: ["entity_type", "entity_id"],
     },
   },
 
