@@ -28,6 +28,12 @@
  */
 
 import { useCallback } from "react";
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   FileTree,
@@ -138,23 +144,53 @@ function CloudFilesExplorerBody({
   }
 
   return (
-    <FileTree
+    <CloudFilesTree
       className={className}
       onSelectFile={onSelectFile}
       onSelectFolder={onSelectFolder}
       onActivateFile={onActivateFile}
       onActivateFolder={onActivateFolder}
-      emptyState={
-        <div className="px-3 text-center text-[11px] leading-relaxed">
-          <div className="font-medium text-neutral-700 dark:text-neutral-300">
-            No cloud files yet
-          </div>
-          <div className="mt-1 text-neutral-500">
-            Upload files from the Cloud Files page or any chat input to see them
-            here.
-          </div>
-        </div>
-      }
     />
+  );
+}
+
+/** Explorer-only FileTree shell — keeps `/files` + window-panel behavior unchanged. */
+function CloudFilesTree({
+  className,
+  onSelectFile,
+  onSelectFolder,
+  onActivateFile,
+  onActivateFolder,
+}: CloudFilesExplorerBodyProps) {
+  // FileTree calls `useDndMonitor` (needs DndContext) and rows register
+  // draggables. Without PointerSensor distance, bare DndContext swallows
+  // clicks. readOnly disables row drag here — explorer has no move handler.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
+
+  return (
+    <DndContext sensors={sensors}>
+      <FileTree
+        className={className}
+        readOnly
+        expandFolderOnSelect
+        onSelectFile={onSelectFile}
+        onSelectFolder={onSelectFolder}
+        onActivateFile={onActivateFile}
+        onActivateFolder={onActivateFolder}
+        emptyState={
+          <div className="px-3 text-center text-[11px] leading-relaxed">
+            <div className="font-medium text-neutral-700 dark:text-neutral-300">
+              No cloud files yet
+            </div>
+            <div className="mt-1 text-neutral-500">
+              Upload files from the Cloud Files page or any chat input to see
+              them here.
+            </div>
+          </div>
+        }
+      />
+    </DndContext>
   );
 }

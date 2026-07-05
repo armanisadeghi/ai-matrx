@@ -32,6 +32,10 @@ import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
 import { logApiTarget } from "@/lib/api/log-api-target";
+import {
+  capturePythonClientError,
+  relationPathFromUrl,
+} from "@/lib/diagnostics/capturePythonClientError";
 
 // ---------------------------------------------------------------------------
 // Request ID helper
@@ -315,6 +319,21 @@ function meta(response: Response, requestId: string): ResponseMeta {
   };
 }
 
+/** Capture then rethrow — single failure chokepoint for the Error Inspector. */
+function failClient(
+  err: unknown,
+  method: string,
+  path: string,
+  url: string,
+): never {
+  capturePythonClientError(err, {
+    url,
+    method,
+    path: relationPathFromUrl(path),
+  });
+  throw err;
+}
+
 // ---------------------------------------------------------------------------
 // Core methods
 // ---------------------------------------------------------------------------
@@ -324,16 +343,26 @@ export async function getJson<T>(
   path: string,
   opts: RequestOptions = {},
 ): Promise<{ data: T; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, false);
-  const response = await fetchWithTimeout(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "getJson", "GET"),
-    { method: "GET", headers },
-    opts.signal,
-    opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "getJson",
+    "GET",
   );
-  if (!response.ok) throw await parseHttpError(response);
-  const data = (await response.json()) as T;
-  return { data, meta: meta(response, requestId) };
+  try {
+    const { headers, requestId } = await buildHeaders(opts, false);
+    const response = await fetchWithTimeout(
+      url,
+      { method: "GET", headers },
+      opts.signal,
+      opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
+    );
+    if (!response.ok) throw await parseHttpError(response);
+    const data = (await response.json()) as T;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "GET", path, url);
+  }
 }
 
 /** POST JSON. */
@@ -342,19 +371,26 @@ export async function postJson<T, B = unknown>(
   body: B,
   opts: RequestOptions = {},
 ): Promise<{ data: T; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, true);
-  const response = await fetch(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "postJson", "POST"),
-    {
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "postJson",
+    "POST",
+  );
+  try {
+    const { headers, requestId } = await buildHeaders(opts, true);
+    const response = await fetch(url, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
-    },
-  );
-  if (!response.ok) throw await parseHttpError(response);
-  const data = (await response.json()) as T;
-  return { data, meta: meta(response, requestId) };
+    });
+    if (!response.ok) throw await parseHttpError(response);
+    const data = (await response.json()) as T;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "POST", path, url);
+  }
 }
 
 /** PATCH JSON. */
@@ -363,19 +399,26 @@ export async function patchJson<T, B = unknown>(
   body: B,
   opts: RequestOptions = {},
 ): Promise<{ data: T; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, true);
-  const response = await fetch(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "patchJson", "PATCH"),
-    {
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "patchJson",
+    "PATCH",
+  );
+  try {
+    const { headers, requestId } = await buildHeaders(opts, true);
+    const response = await fetch(url, {
       method: "PATCH",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
-    },
-  );
-  if (!response.ok) throw await parseHttpError(response);
-  const data = (await response.json()) as T;
-  return { data, meta: meta(response, requestId) };
+    });
+    if (!response.ok) throw await parseHttpError(response);
+    const data = (await response.json()) as T;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "PATCH", path, url);
+  }
 }
 
 /** PUT with a JSON body. Replace-style semantics — for endpoints that
@@ -385,19 +428,26 @@ export async function putJson<T, B = unknown>(
   body: B,
   opts: RequestOptions = {},
 ): Promise<{ data: T; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, true);
-  const response = await fetch(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "putJson", "PUT"),
-    {
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "putJson",
+    "PUT",
+  );
+  try {
+    const { headers, requestId } = await buildHeaders(opts, true);
+    const response = await fetch(url, {
       method: "PUT",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
-    },
-  );
-  if (!response.ok) throw await parseHttpError(response);
-  const data = (await response.json()) as T;
-  return { data, meta: meta(response, requestId) };
+    });
+    if (!response.ok) throw await parseHttpError(response);
+    const data = (await response.json()) as T;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "PUT", path, url);
+  }
 }
 
 /** DELETE. Returns parsed JSON if the server sends one; null otherwise. */
@@ -405,15 +455,21 @@ export async function del<T = null>(
   path: string,
   opts: RequestOptions = {},
 ): Promise<{ data: T | null; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, false);
-  const response = await fetch(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "del", "DELETE"),
-    { method: "DELETE", headers, signal: opts.signal },
-  );
-  if (!response.ok) throw await parseHttpError(response);
-  const text = await response.text();
-  const data = text ? (JSON.parse(text) as T) : null;
-  return { data, meta: meta(response, requestId) };
+  const url = buildAndLogTargetUrl(path, opts.baseUrlOverride, "del", "DELETE");
+  try {
+    const { headers, requestId } = await buildHeaders(opts, false);
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers,
+      signal: opts.signal,
+    });
+    if (!response.ok) throw await parseHttpError(response);
+    const text = await response.text();
+    const data = text ? (JSON.parse(text) as T) : null;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "DELETE", path, url);
+  }
 }
 
 /**
@@ -426,20 +482,27 @@ export async function delJson<T = null, B = unknown>(
   body: B,
   opts: RequestOptions = {},
 ): Promise<{ data: T | null; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, true);
-  const response = await fetch(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "delJson", "DELETE"),
-    {
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "delJson",
+    "DELETE",
+  );
+  try {
+    const { headers, requestId } = await buildHeaders(opts, true);
+    const response = await fetch(url, {
       method: "DELETE",
       headers,
       body: JSON.stringify(body),
       signal: opts.signal,
-    },
-  );
-  if (!response.ok) throw await parseHttpError(response);
-  const text = await response.text();
-  const data = text ? (JSON.parse(text) as T) : null;
-  return { data, meta: meta(response, requestId) };
+    });
+    if (!response.ok) throw await parseHttpError(response);
+    const text = await response.text();
+    const data = text ? (JSON.parse(text) as T) : null;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "DELETE", path, url);
+  }
 }
 
 /**
@@ -450,15 +513,26 @@ export async function postMultipart<T>(
   form: FormData,
   opts: RequestOptions = {},
 ): Promise<{ data: T; meta: ResponseMeta }> {
-  const { headers, requestId } = await buildHeaders(opts, false);
-  // Never set Content-Type for FormData — the browser adds the boundary.
-  const response = await fetch(
-    buildAndLogTargetUrl(path, opts.baseUrlOverride, "postMultipart", "POST"),
-    { method: "POST", headers, body: form, signal: opts.signal },
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "postMultipart",
+    "POST",
   );
-  if (!response.ok) throw await parseHttpError(response);
-  const data = (await response.json()) as T;
-  return { data, meta: meta(response, requestId) };
+  try {
+    const { headers, requestId } = await buildHeaders(opts, false);
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: form,
+      signal: opts.signal,
+    });
+    if (!response.ok) throw await parseHttpError(response);
+    const data = (await response.json()) as T;
+    return { data, meta: meta(response, requestId) };
+  } catch (err) {
+    failClient(err, "POST", path, url);
+  }
 }
 
 /**

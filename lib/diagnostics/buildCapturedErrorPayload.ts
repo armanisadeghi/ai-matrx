@@ -39,7 +39,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "agent-stream-warning": "Server stream warning",
   "agent-stream-tool-error": "Tool error",
   "agent-stream-provider-retry": "Provider retry failure",
-  "agent-stream-record-failed": "Record persistence failure",
+  "agent-stream-record-failed": "Record ended in failed status",
   "agent-stream-data-error": "Server data error",
   "agent-stream-transport": "Stream transport error",
   "agent-stream-client-error": "Stream connection failure",

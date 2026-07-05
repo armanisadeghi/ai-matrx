@@ -56,10 +56,12 @@ the safety net, not the main event.
     In `next dev` the overlay already surfaces every `console.error`, so the
     wrapper is pure downside there; in prod/preview there is no overlay and the
     Inspector is the one surface. Never reinstate the dev wrap.
-- **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the one
-  error chokepoint in `lib/api/call-api.ts`. Every non-2xx / network failure;
-  extracts the backend's structured `error_type`/`code`/`user_message`/`request_id`
-  instead of flattening `serverDetail`.
+- **Python backend** — `lib/diagnostics/captureApiError.ts`, called from the error
+  chokepoints in `lib/api/call-api.ts` **and** `lib/python-client.ts` (via
+  `capturePythonClientError.ts`). Every non-2xx / network failure; extracts the
+  backend's structured `error_type`/`code`/`user_message`/`request_id`
+  instead of flattening `serverDetail`. Before 2026-07-05 only `call-api` was
+  wired — RAG, cloud-files, PDF, and other `getJson` surfaces were a blind spot.
 - **React render** — `lib/diagnostics/captureReactError.ts`,
   `captureReactRenderError()`. Boundaries swallow errors (the global listener
   can't see them), so a boundary opts in from `componentDidCatch`. The single
@@ -184,6 +186,10 @@ adapter, or tier rule — it holds the full recipe + invariants.
 
 ## Change Log
 
+- 2026-07-05 — **python-client capture.** `capturePythonClientError.ts` wired at
+  the failure chokepoint in `lib/python-client.ts` so RAG/cloud-files/PDF REST
+  failures (previously swallowed into hook state) appear in the Error Inspector
+  as `api-network` / `api-http`.
 - 2026-07-02 — **DB persistence.** Red-tier captures now persist to the canonical
   `public.system_error` sink via the new `public.log_client_error` SECURITY DEFINER
   RPC (`persistCapturedErrors.ts`; prod + authed + throttled). Client errors join

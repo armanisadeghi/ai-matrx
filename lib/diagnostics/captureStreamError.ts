@@ -139,7 +139,17 @@ export function captureStreamEvent(
       return;
     }
 
-    // ── Record persistence failure (a reservation never committed) ─────────
+    // ── Record reached terminal failed status ──────────────────────────────
+    // NOT (usually) a persistence failure: the server's ReservationTracker
+    // emits record_update(status="failed") when an optimistically-reserved row
+    // ends in a legitimate terminal `failed` state (e.g. a provider moderation
+    // block) — the row IS written, with the provider error in its structured
+    // `error` column. The same event shape is also used by fail_all_pending
+    // (a real rollback: reserved but never committed), but the wire payload
+    // carries no field distinguishing the two today — both arrive with empty
+    // metadata. Tiering (errorTierRules.ts `record-failed-terminal-status`)
+    // treats the whole source as a minor terminal-state signal; the provider
+    // error itself is captured red via the `error` event above.
     if (isRecordUpdateEvent(event) && event.data.status === "failed") {
       const d = event.data;
       const recErr = isJsonObject(d.metadata?.error) ? d.metadata.error : {};
@@ -149,8 +159,9 @@ export function captureStreamEvent(
         source: "agent-stream-record-failed",
         relation: d.table,
         code: recErrType ?? "record_failed",
-        message:
-          recErrMessage || `Failed to persist ${d.table} (${d.record_id})`,
+        // Keep record_id out of the message so repeat occurrences on the same
+        // table dedupe into one entry; it stays available in details/raw.
+        message: recErrMessage || `${d.table} ended in failed status (recorded)`,
         details: str({ table: d.table, record_id: d.record_id }),
         ...base,
         raw: d,

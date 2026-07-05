@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 const MatrxDynamicPanel = dynamic(
@@ -48,6 +48,14 @@ export function MatrxDynamicPanelHost({
   headerActions,
   contentClassName = "px-3 pb-4",
 }: MatrxDynamicPanelHostProps) {
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(
+      document.getElementById("glass-layer") ?? document.body,
+    );
+  }, []);
+
   useEffect(() => {
     if (!open || dismissDisabled) return undefined;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -60,16 +68,12 @@ export function MatrxDynamicPanelHost({
     return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [open, dismissDisabled, onOpenChange]);
 
-  if (!open) return null;
-
-  const requestClose = () => {
-    if (!dismissDisabled) onOpenChange(false);
-  };
+  if (!open || !portalTarget) return null;
 
   const collapsedLabel =
     expandButtonLabel ?? (typeof title === "string" ? title : "Panel");
 
-  return (
+  const panel = (
     <MatrxDynamicPanel
       initialPosition={position}
       isExpanded
@@ -101,6 +105,8 @@ export function MatrxDynamicPanelHost({
       <div className={cn(contentClassName)}>{children}</div>
     </MatrxDynamicPanel>
   );
+
+  return createPortal(panel, portalTarget);
 }
 
 /** Map a pixel width target to a viewport percentage for MatrxDynamicPanel sizing. */

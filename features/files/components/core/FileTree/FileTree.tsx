@@ -37,6 +37,9 @@ export interface FileTreeProps {
   initialExpanded?: string[];
   /** Disable drag-and-drop moves (read-only contexts). */
   readOnly?: boolean;
+  /** Single-click a folder row toggles expand/collapse. Off by default — `/files`
+   *  shows folder contents in the main pane instead of relying on tree drill-down. */
+  expandFolderOnSelect?: boolean;
   /** Optional empty-state content. */
   emptyState?: React.ReactNode;
 }
@@ -52,6 +55,7 @@ export function FileTree({
   className,
   initialExpanded,
   readOnly,
+  expandFolderOnSelect,
   emptyState,
 }: FileTreeProps) {
   const selection = useFileSelection();
@@ -97,10 +101,20 @@ export function FileTree({
       if (row.kind === "file") {
         onSelectFile?.(row.id);
       } else {
+        if (expandFolderOnSelect && !row.empty) {
+          expansion.toggle(row.id);
+        }
         onSelectFolder?.(row.id);
       }
     },
-    [selection, rowIds, onSelectFile, onSelectFolder],
+    [
+      selection,
+      rowIds,
+      onSelectFile,
+      onSelectFolder,
+      expandFolderOnSelect,
+      expansion,
+    ],
   );
 
   const handleRowDoubleClick = useCallback(

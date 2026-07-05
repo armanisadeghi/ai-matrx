@@ -108,7 +108,7 @@ export const LibraryTree: React.FC<{ refreshKey?: number }> = ({
     <div
       role="tree"
       aria-label="Code library"
-      className="flex-1 overflow-y-auto py-1"
+      className="flex-1 overflow-y-auto pt-1 pb-64"
     >
       {/* Root: user's own saved files (code_files table). Kept as a
           collapsible root so it sits visually alongside the source

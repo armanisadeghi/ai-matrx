@@ -28,7 +28,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { STUDIO_TEMPLATES, type StudioTemplate } from "./templates";
 import { getBlockTypeStyle } from "./block-type-colors";
@@ -65,15 +64,18 @@ export function TemplatesPalette({ onSelect }: TemplatesPaletteProps) {
           Templates
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[420px] p-0" align="start">
-        <div className="px-3 py-2.5 border-b border-border">
+      <PopoverContent
+        className="flex w-[420px] max-h-[min(480px,var(--radix-popover-content-available-height))] flex-col overflow-hidden p-0"
+        align="start"
+      >
+        <div className="shrink-0 border-b border-border px-3 py-2.5">
           <h3 className="text-sm font-semibold">Start from a template</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             Curated samples covering each render-block type the platform
             supports.
           </p>
         </div>
-        <ScrollArea className="max-h-[480px]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <div className="grid grid-cols-1 gap-1 p-2">
             {STUDIO_TEMPLATES.map((template) => {
               const Icon = ICON_MAP[template.icon];
@@ -127,7 +129,7 @@ export function TemplatesPalette({ onSelect }: TemplatesPaletteProps) {
               );
             })}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

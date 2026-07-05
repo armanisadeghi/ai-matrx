@@ -161,6 +161,16 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "record-failed-terminal-status",
+    tier: "orange",
+    reason:
+      "A record_update with status='failed' is the designed terminal-state signal for an optimistically-reserved row — on a normal failed request (e.g. a provider moderation block) the row IS written, with the provider error in its structured `error` column. The provider error itself is already captured red via agent-stream-error, so this companion signal is a glance-worthy dot, not a second alarm. (The wire payload cannot yet distinguish a genuine rollback — reserved but never written — from a written terminal-failed row; if the server starts stamping that, promote the rollback case to red with a rule ABOVE this one.)",
+    addedAt: "2026-07-05",
+    match: {
+      source: "agent-stream-record-failed",
+    },
+  },
+  {
     id: "redux-rejected-handled",
     tier: "orange",
     reason:

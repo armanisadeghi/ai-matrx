@@ -57,7 +57,12 @@ export type CapturedErrorSource =
   | "agent-stream-tool-error"
   /** A `provider_retry` event that reached a terminal/paused state. */
   | "agent-stream-provider-retry"
-  /** A `record_update` with `status: "failed"` (a reservation failed to persist). */
+  /**
+   * A `record_update` with `status: "failed"` — an optimistically-reserved row
+   * reached a terminal failed state. Usually the row IS written (provider
+   * error in its structured `error` column); rarely a real rollback via
+   * fail_all_pending. The wire payload can't distinguish the two yet.
+   */
   | "agent-stream-record-failed"
   /** A typed `data` event carrying an error (search_error, memory_error, …). */
   | "agent-stream-data-error"

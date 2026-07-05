@@ -243,7 +243,7 @@ export const ExplorerPanel: React.FC<ExplorerPanelProps> = ({ className }) => {
           <FileTree refreshKey={refreshKey} />
         </>
       ) : (
-        <CloudFilesExplorer />
+        <CloudFilesExplorer className="min-h-0 flex-1" />
       )}
     </div>
   );
