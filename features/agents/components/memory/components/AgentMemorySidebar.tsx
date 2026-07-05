@@ -2,33 +2,125 @@
 
 /**
  * AgentMemorySidebar — the WindowPanel `sidebar` slot for the Memory window.
- * Reads nothing from Redux directly; it's a pure view over the hoisted
- * `useAgentMemories()` state passed down from the composition root.
+ * Dense, single-line rows: a prominent 0-10 importance score + title (fades
+ * out at the right edge instead of a hard ellipsis) + scope tag, with a
+ * hover-revealed "..." menu for row actions. A sort control (importance /
+ * updated / created / alphabetical) sits above the list — importance desc
+ * is the default so the most important memories surface first.
  */
 
-import { Layers, Loader2, Plus } from "lucide-react";
+import {
+  ArrowUpDown,
+  Layers,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { displayTitleForMemory } from "../types";
+import {
+  displayTitleForMemory,
+  importanceScore,
+  importanceTier,
+  type AgentMemoryRow,
+} from "../types";
 import {
   ALL_MEMORIES_ID,
   NEW_MEMORY_ID,
+  SORT_MODE_OPTIONS,
   type UseAgentMemoriesReturn,
 } from "../hooks/useAgentMemories";
 
-const IMPORTANCE_DOT_THRESHOLDS: [number, string][] = [
-  [0.8, "bg-primary"],
-  [0.5, "bg-primary/60"],
-  [0, "bg-muted-foreground/30"],
-];
+const TIER_CHIP_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
+  high: "bg-primary/15 text-primary",
+  medium: "bg-muted text-foreground/80",
+  low: "bg-muted text-muted-foreground",
+};
 
-function importanceDotClass(importance: number | null): string {
-  const value = importance ?? 0.5;
-  for (const [threshold, cls] of IMPORTANCE_DOT_THRESHOLDS) {
-    if (value >= threshold) return cls;
-  }
-  return "bg-muted-foreground/30";
+const FADE_MASK =
+  "[mask-image:linear-gradient(to_right,black_78%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_78%,transparent_100%)]";
+
+interface MemoryRowProps {
+  memory: AgentMemoryRow;
+  isActive: boolean;
+  onSelect: () => void;
+  onRequestDelete: () => void;
+}
+
+function MemoryRow({
+  memory,
+  isActive,
+  onSelect,
+  onRequestDelete,
+}: MemoryRowProps) {
+  return (
+    <div
+      className={cn(
+        "group/row relative flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors",
+        isActive
+          ? "bg-primary/10 text-primary"
+          : "text-foreground hover:bg-muted/60",
+      )}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+      >
+        <span
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded px-1 py-px text-[10px] font-bold tabular-nums",
+            TIER_CHIP_CLASS[importanceTier(memory.importance)],
+          )}
+          title="Importance"
+        >
+          {importanceScore(memory.importance)}
+        </span>
+        <span
+          className={cn(
+            "min-w-0 flex-1 overflow-hidden whitespace-nowrap text-xs font-medium",
+            FADE_MASK,
+          )}
+        >
+          {displayTitleForMemory(memory)}
+        </span>
+      </button>
+
+      <span className="shrink-0 text-[9px] uppercase tracking-wide text-muted-foreground/70 transition-opacity group-hover/row:opacity-0">
+        {memory.scope === "organization" ? "org" : "me"}
+      </span>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="absolute right-1 top-1/2 flex h-5 w-5 shrink-0 -translate-y-1/2 items-center justify-center rounded opacity-0 transition-opacity hover:bg-muted group-hover/row:opacity-100 data-[state=open]:opacity-100"
+            aria-label="Memory options"
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" side="right">
+          <DropdownMenuItem
+            onClick={onRequestDelete}
+            className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 }
 
 interface AgentMemorySidebarProps {
@@ -36,11 +128,25 @@ interface AgentMemorySidebarProps {
 }
 
 export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
-  const { memories, loading, selectedId, setSelectedId } = state;
+  const {
+    memories,
+    totalCount,
+    loading,
+    selectedId,
+    setSelectedId,
+    deletingId,
+    sortMode,
+    setSortMode,
+  } = state;
+  const [pendingDelete, setPendingDelete] = useState<AgentMemoryRow | null>(
+    null,
+  );
+  const sortLabel =
+    SORT_MODE_OPTIONS.find((o) => o.value === sortMode)?.label ?? "Importance";
 
   return (
     <div className="flex h-full flex-col">
-      <div className="shrink-0 border-b border-border p-2">
+      <div className="shrink-0 p-2">
         <Button
           type="button"
           size="sm"
@@ -53,7 +159,7 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
         </Button>
       </div>
 
-      <div className="shrink-0 border-b border-border p-1.5">
+      <div className="shrink-0 px-2 pb-1">
         <button
           type="button"
           onClick={() => setSelectedId(ALL_MEMORIES_ID)}
@@ -67,60 +173,90 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
           <Layers className="h-4 w-4 shrink-0" />
           <span className="truncate">All memories</span>
           <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-            {memories.length}
+            {totalCount}
           </span>
         </button>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="flex flex-col gap-0.5 p-1.5">
+      <div className="flex shrink-0 items-center justify-between px-2 pb-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+          Memories
+        </span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <ArrowUpDown className="h-2.5 w-2.5" />
+              {sortLabel}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {SORT_MODE_OPTIONS.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => setSortMode(option.value)}
+                className={cn(
+                  "text-xs",
+                  sortMode === option.value && "bg-primary/10 text-primary",
+                )}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+        <div className="flex flex-col gap-0.5 px-2 pb-2">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-8 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Loading memories…
+              Loading…
             </div>
           )}
 
           {!loading && memories.length === 0 && (
-            <div className="px-2 py-8 text-center text-xs text-muted-foreground">
+            <div className="px-1 py-8 text-center text-xs text-muted-foreground">
               No memories yet.
             </div>
           )}
 
           {!loading &&
-            memories.map((memory) => {
-              const isActive = selectedId === memory.id;
-              return (
-                <button
-                  key={memory.id}
-                  type="button"
-                  onClick={() => setSelectedId(memory.id)}
-                  className={cn(
-                    "flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-foreground hover:bg-muted/60",
-                  )}
-                >
-                  <span className="flex items-center gap-1.5">
-                    <span
-                      className={cn(
-                        "h-1.5 w-1.5 shrink-0 rounded-full",
-                        importanceDotClass(memory.importance),
-                      )}
-                    />
-                    <span className="truncate text-xs font-medium">
-                      {displayTitleForMemory(memory)}
-                    </span>
-                  </span>
-                  <span className="truncate pl-3 text-[11px] text-muted-foreground">
-                    {memory.content}
-                  </span>
-                </button>
-              );
-            })}
+            memories.map((memory) => (
+              <MemoryRow
+                key={memory.id}
+                memory={memory}
+                isActive={selectedId === memory.id}
+                onSelect={() => setSelectedId(memory.id)}
+                onRequestDelete={() => setPendingDelete(memory)}
+              />
+            ))}
         </div>
-      </ScrollArea>
+      </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title="Delete this memory?"
+        description={
+          pendingDelete
+            ? `"${displayTitleForMemory(pendingDelete)}" will no longer be remembered. This cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        busy={!!pendingDelete && deletingId === pendingDelete.id}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          await state.deleteMemory(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+      />
     </div>
   );
 }

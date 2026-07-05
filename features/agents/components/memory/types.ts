@@ -42,3 +42,18 @@ export function displayTitleForMemory(memory: AgentMemoryRow): string {
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+/** `importance` is stored as a 0–1 float; displayed everywhere as a 0–10
+ * integer so it reads as a single, prominent, meaningful number. */
+export function importanceScore(importance: number | null): number {
+  return Math.round((importance ?? 0.5) * 10);
+}
+
+export function importanceTier(
+  importance: number | null,
+): "high" | "medium" | "low" {
+  const value = importance ?? 0.5;
+  if (value >= 0.8) return "high";
+  if (value >= 0.4) return "medium";
+  return "low";
+}

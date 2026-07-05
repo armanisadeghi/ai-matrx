@@ -320,6 +320,16 @@ export interface AgentContextPreferences {
   taskId: string | null;
 }
 
+/**
+ * The user's global scratchpad pointer. Scratchpads are a user-owned POOL of
+ * `workbench.working_documents` rows (kind "scratch"); exactly one is ACTIVE
+ * at all times and is auto-attached (read-only) to every conversation's agent
+ * context — unless empty. Null = none yet; the first open/type creates one.
+ */
+export interface ScratchpadPreferences {
+  activeId: string | null;
+}
+
 export interface OrganizationPreferences {
   /**
    * The user's DEFAULT active organization. When set, the active-org bootstrap
@@ -498,6 +508,7 @@ export interface UserPreferences {
   conversationFilters: ConversationFilterPreferences;
   audioDevices: AudioDevicePreferences;
   organization: OrganizationPreferences;
+  scratchpad: ScratchpadPreferences;
 }
 
 // Add state interface for async operations
@@ -729,6 +740,10 @@ export const initializeUserPreferencesState = (
       // null = no default chosen → header reminder nudges the user.
       defaultOrganizationId: null,
     },
+    scratchpad: {
+      // null = no scratchpad yet; the first open/type creates + activates one.
+      activeId: null,
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -790,6 +805,10 @@ export const initializeUserPreferencesState = (
     organization: {
       ...defaultPreferences.organization,
       ...preferences.organization,
+    },
+    scratchpad: {
+      ...defaultPreferences.scratchpad,
+      ...preferences.scratchpad,
     },
   };
 
@@ -905,6 +924,9 @@ const userPreferencesSlice = createSlice({
         };
         state.organization = {
           ...state._meta.loadedPreferences.organization,
+        };
+        state.scratchpad = {
+          ...state._meta.loadedPreferences.scratchpad,
         };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
@@ -1049,6 +1071,11 @@ const userPreferencesSlice = createSlice({
           ...state.organization,
           ...loaded.organization,
         };
+      if (loaded.scratchpad)
+        state.scratchpad = {
+          ...state.scratchpad,
+          ...loaded.scratchpad,
+        };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -1122,6 +1149,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "conversationFilters",
   "audioDevices",
   "organization",
+  "scratchpad",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({

@@ -1,251 +1,109 @@
 "use client";
 
 /**
- * AgentMemoryEditor — body content for a single memory: new-memory form or
- * existing-memory editor. Content-only (WindowPanel slots handle header/
- * footer/sidebar chrome around it).
+ * MemoryComposer — body content for the new-memory form AND the
+ * single-memory editor (same component, driven by the hoisted draft in
+ * `useAgentMemories`). Title reads like a document heading; content is a
+ * single textarea that fills all remaining vertical space so nothing is
+ * ever cut off or requires an inner scroll. Save/Delete + the importance
+ * slider live in the footer slot — this component is content-only, but
+ * mirrors the current importance score at the top so it's never hidden.
  */
 
-import { useEffect, useState } from "react";
-import { Loader2, Save, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { cn } from "@/lib/utils";
 import {
-  displayTitleForMemory,
+  importanceScore,
+  importanceTier,
   type AgentMemoryRow,
   type AgentMemoryScope,
 } from "../types";
-import type { UseAgentMemoriesReturn } from "../hooks/useAgentMemories";
+import {
+  NEW_MEMORY_ID,
+  type UseAgentMemoriesReturn,
+} from "../hooks/useAgentMemories";
 
-function importanceLabel(value: number): string {
-  if (value >= 0.8) return "High";
-  if (value >= 0.4) return "Medium";
-  return "Low";
-}
+const SCOPE_OPTIONS: { value: AgentMemoryScope; label: string }[] = [
+  { value: "user", label: "Just me" },
+  { value: "organization", label: "Organization" },
+];
 
-interface NewMemoryFormProps {
+const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
+  high: "bg-primary/15 text-primary",
+  medium: "bg-muted text-foreground",
+  low: "bg-muted text-muted-foreground",
+};
+
+interface MemoryComposerProps {
   state: UseAgentMemoriesReturn;
+  memory: AgentMemoryRow | null;
 }
 
-export function NewMemoryForm({ state }: NewMemoryFormProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [importance, setImportance] = useState(0.5);
-  const [scope, setScope] = useState<AgentMemoryScope>("user");
-
-  const canSave = title.trim().length > 0 && content.trim().length > 0;
+export function MemoryComposer({ state, memory }: MemoryComposerProps) {
+  const { draft, setDraftTitle, setDraftContent, selectedId } = state;
+  const isNew = selectedId === NEW_MEMORY_ID;
+  const score = importanceScore(draft.importance);
+  const tier = importanceTier(draft.importance);
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto p-4">
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="new-memory-title" className="text-xs">
-            Title
-          </Label>
-          <Input
-            id="new-memory-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Preferred coding style"
-            autoFocus
-          />
-        </div>
+    <div className="flex h-full flex-col p-3">
+      <div className="mb-2 flex shrink-0 items-center gap-2">
+        <span
+          className={cn(
+            "flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums",
+            TIER_BADGE_CLASS[tier],
+          )}
+          title="Importance"
+        >
+          {score}
+          <span className="text-[9px] font-normal opacity-70">/10</span>
+        </span>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="new-memory-content" className="text-xs">
-            What should the agent remember?
-          </Label>
-          <Textarea
-            id="new-memory-content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write the memory as a clear statement of fact or preference…"
-            className="min-h-32 resize-y"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Importance</Label>
-            <span className="text-xs text-muted-foreground">
-              {importanceLabel(importance)}
-            </span>
-          </div>
-          <Slider
-            value={[importance]}
-            onValueChange={([v]) => setImportance(v)}
-            min={0}
-            max={1}
-            step={0.05}
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label className="text-xs">Scope</Label>
-          <div className="flex gap-2">
-            {(["user", "organization"] as AgentMemoryScope[]).map((opt) => (
-              <Button
-                key={opt}
+        {isNew ? (
+          <div className="flex gap-1.5">
+            {SCOPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
                 type="button"
-                size="sm"
-                variant={scope === opt ? "default" : "outline"}
-                className="h-7 flex-1 text-xs capitalize"
-                onClick={() => setScope(opt)}
+                onClick={() => state.setDraftScope(opt.value)}
+                className={cn(
+                  "rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                  draft.scope === opt.value
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
               >
-                {opt === "user" ? "Just me" : "Organization"}
-              </Button>
+                {opt.label}
+              </button>
             ))}
           </div>
-        </div>
-
-        <div className="mt-auto flex justify-end pt-2">
-          <Button
-            type="button"
-            size="sm"
-            disabled={!canSave || state.saving}
-            onClick={() =>
-              void state.createMemory({ title, content, importance, scope })
-            }
-          >
-            {state.saving ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Save memory
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface MemoryDetailEditorProps {
-  memory: AgentMemoryRow;
-  state: UseAgentMemoriesReturn;
-}
-
-export function MemoryDetailEditor({ memory, state }: MemoryDetailEditorProps) {
-  const [title, setTitle] = useState(() => displayTitleForMemory(memory));
-  const [content, setContent] = useState(memory.content);
-  const [importance, setImportance] = useState(memory.importance ?? 0.5);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-
-  useEffect(() => {
-    setTitle(displayTitleForMemory(memory));
-    setContent(memory.content);
-    setImportance(memory.importance ?? 0.5);
-  }, [memory.id, memory.content, memory.importance, memory.metadata]);
-
-  const isDirty =
-    title !== displayTitleForMemory(memory) ||
-    content !== memory.content ||
-    importance !== (memory.importance ?? 0.5);
-  const isDeleting = state.deletingId === memory.id;
-
-  return (
-    <div className="flex h-full flex-col overflow-y-auto p-4">
-      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-[10px] capitalize">
-            {memory.scope}
-          </Badge>
-          <span className="text-[10px] text-muted-foreground">
-            Updated {new Date(memory.updated_at).toLocaleDateString()}
-          </span>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor={`memory-title-${memory.id}`} className="text-xs">
-            Title
-          </Label>
-          <Input
-            id={`memory-title-${memory.id}`}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor={`memory-content-${memory.id}`} className="text-xs">
-            Content
-          </Label>
-          <Textarea
-            id={`memory-content-${memory.id}`}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-40 resize-y"
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <Label className="text-xs">Importance</Label>
-            <span className="text-xs text-muted-foreground">
-              {importanceLabel(importance)}
-            </span>
-          </div>
-          <Slider
-            value={[importance]}
-            onValueChange={([v]) => setImportance(v)}
-            min={0}
-            max={1}
-            step={0.05}
-          />
-        </div>
-
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            disabled={isDeleting}
-            onClick={() => setConfirmDeleteOpen(true)}
-          >
-            {isDeleting ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Delete
-          </Button>
-
-          <Button
-            type="button"
-            size="sm"
-            disabled={!isDirty || !content.trim() || state.saving}
-            onClick={() =>
-              void state.saveMemory(memory.id, { title, content, importance })
-            }
-          >
-            {state.saving ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Save changes
-          </Button>
-        </div>
+        ) : (
+          memory && (
+            <>
+              <Badge variant="secondary" className="text-[10px] capitalize">
+                {memory.scope}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">
+                Updated {new Date(memory.updated_at).toLocaleDateString()}
+              </span>
+            </>
+          )
+        )}
       </div>
 
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        onOpenChange={setConfirmDeleteOpen}
-        title="Delete this memory?"
-        description="The agent will no longer remember this. This cannot be undone."
-        confirmLabel="Delete"
-        variant="destructive"
-        busy={isDeleting}
-        onConfirm={async () => {
-          await state.deleteMemory(memory.id);
-          setConfirmDeleteOpen(false);
-        }}
+      <input
+        value={draft.title}
+        onChange={(e) => setDraftTitle(e.target.value)}
+        placeholder="Memory title…"
+        autoFocus={isNew}
+        className="mb-2 w-full shrink-0 bg-transparent text-lg font-semibold text-foreground outline-none placeholder:text-muted-foreground/50"
+      />
+
+      <textarea
+        value={draft.content}
+        onChange={(e) => setDraftContent(e.target.value)}
+        placeholder="Write the memory as a clear statement of fact or preference…"
+        className="min-h-0 w-full flex-1 resize-none bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/50"
       />
     </div>
   );

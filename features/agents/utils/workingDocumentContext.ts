@@ -53,6 +53,43 @@ const USER_SCRATCHPAD_DESCRIPTION =
   "ctx_get(user_scratchpad) to understand what the user is thinking about, " +
   "but you must NEVER modify it. It belongs to the user alone.";
 
+/**
+ * THE routing rule for doc-like context keys — any human-facing surface asked
+ * to display one of these keys mounts the EDITABLE documents workspace with the
+ * mapped kind (reading `instanceWorkingDocument`), never a readonly JSON dump
+ * of the published context value. `instanceContext` is the agent-facing
+ * publication only; it is not a human display source for these keys.
+ *
+ * A future doc-like key is ONE entry here — every consumer (detail sheet, rail,
+ * stream gates) resolves through `docKindForContextKey`, so a new key can never
+ * regress to the generic readonly branch.
+ */
+export const DOC_CONTEXT_KINDS: Readonly<Record<string, WorkingDocumentKind>> =
+  {
+    [WORKING_DOCUMENT_CONTEXT_KEY]: "working",
+    [USER_SCRATCHPAD_CONTEXT_KEY]: "scratch",
+  };
+
+/**
+ * Prefix for ADDITIONAL attached scratchpads published alongside the active one
+ * (`user_scratchpad_<docId8>`). Same read-only contract as `user_scratchpad`.
+ */
+export const USER_SCRATCHPAD_EXTRA_PREFIX = `${USER_SCRATCHPAD_CONTEXT_KEY}_`;
+
+/** The context key an attached (non-active) scratchpad publishes under. */
+export function scratchpadExtraContextKey(documentId: string): string {
+  return `${USER_SCRATCHPAD_EXTRA_PREFIX}${documentId.slice(0, 8)}`;
+}
+
+/** Resolve a context key to its document kind, or null for non-doc keys. */
+export function docKindForContextKey(key: string): WorkingDocumentKind | null {
+  const direct = DOC_CONTEXT_KINDS[key];
+  if (direct) return direct;
+  // Attached-scratchpad extras (user_scratchpad_<id8>) are scratch documents.
+  if (key.startsWith(USER_SCRATCHPAD_EXTRA_PREFIX)) return "scratch";
+  return null;
+}
+
 /** The create-if-missing spec the server uses for materialize-on-write. */
 export interface WorkingDocumentMaterializeSpec {
   organization_id: string | null;
@@ -179,13 +216,14 @@ export function buildWorkingDocumentContextValue(
  */
 export function buildUserScratchpadContextValue(
   content: string,
+  label?: string,
 ): WorkingDocumentContextValue {
   return {
     content,
     mutable: false,
     persist: "client",
     type: "text",
-    label: USER_SCRATCHPAD_LABEL,
+    label: label?.trim() || USER_SCRATCHPAD_LABEL,
     description: USER_SCRATCHPAD_DESCRIPTION,
     max_inline_chars: 0,
   };

@@ -54,6 +54,40 @@ export function reservedWorkingDocumentId(
 }
 
 // =============================================================================
+// Scratchpad scope — USER-GLOBAL documents, decoupled from conversations
+// =============================================================================
+//
+// Scratchpads are the user's personal notepads: a user-owned POOL of
+// `workbench.working_documents` rows (kind "scratch"), NOT one row per
+// conversation. One scratchpad is ACTIVE at all times (pointer in
+// `userPreferences.scratchpad.activeId`); the active one is published to the
+// agent (read-only) on every conversation — but never when empty.
+//
+// Slice entries for scratchpads key on a SYNTHETIC scope — `sp:<documentId>` —
+// passed wherever the slice/hooks take a `conversationId`. That reuses ALL of
+// the machinery (draft, debounced commit, optimistic-concurrency, realtime,
+// auto-title) unchanged, and because the scope never equals a real conversation
+// id, `destroyInstance` cleanup never evicts a scratchpad.
+
+const SCRATCH_SCOPE_PREFIX = "sp:";
+
+/** The synthetic slice scope for a user-global scratchpad document. */
+export function scratchScopeId(documentId: string): string {
+  return `${SCRATCH_SCOPE_PREFIX}${documentId}`;
+}
+
+export function isScratchScope(scope: string): boolean {
+  return scope.startsWith(SCRATCH_SCOPE_PREFIX);
+}
+
+/** The document id a scratch scope points at (inverse of scratchScopeId). */
+export function scratchDocIdFromScope(scope: string): string | null {
+  return isScratchScope(scope)
+    ? scope.slice(SCRATCH_SCOPE_PREFIX.length)
+    : null;
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -138,10 +172,18 @@ export interface InstanceWorkingDocumentState {
 
 export interface InstanceWorkingDocumentSliceState {
   byKey: Record<string, InstanceWorkingDocumentState>;
+  /**
+   * ADDITIONAL scratchpads the user attached to a conversation's context (the
+   * active scratchpad is implicit and never listed here). Restored from the
+   * conversation's `platform.associations` edges on hydrate; each id also has
+   * a slice entry at its `sp:<id>` scope holding the content to publish.
+   */
+  attachedScratchByConversation: Record<string, string[]>;
 }
 
 const initialState: InstanceWorkingDocumentSliceState = {
   byKey: {},
+  attachedScratchByConversation: {},
 };
 
 // =============================================================================
@@ -184,7 +226,8 @@ function ensureEntry(
   return entry;
 }
 
-/** Delete every entry (all kinds) belonging to a conversation. */
+/** Delete every entry (all kinds) belonging to a conversation. Scratchpad
+ *  entries live at `sp:<docId>` scopes and are user-global — never evicted. */
 function deleteConversation(
   state: InstanceWorkingDocumentSliceState,
   conversationId: string,
@@ -194,6 +237,7 @@ function deleteConversation(
       delete state.byKey[key];
     }
   }
+  delete state.attachedScratchByConversation[conversationId];
 }
 
 // =============================================================================
@@ -392,6 +436,50 @@ const instanceWorkingDocumentSlice = createSlice({
     removeInstanceWorkingDocument(state, action: PayloadAction<string>) {
       deleteConversation(state, action.payload);
     },
+
+    /** Remove ONE entry by its scope (e.g. a deleted scratchpad's `sp:<id>`). */
+    removeWorkingDocEntry(state, action: PayloadAction<KeyedPayload>) {
+      delete state.byKey[
+        workingDocKey(action.payload.conversationId, action.payload.kind)
+      ];
+    },
+
+    /** Replace a conversation's attached (non-active) scratchpad id list. */
+    setAttachedScratchpads(
+      state,
+      action: PayloadAction<{ conversationId: string; documentIds: string[] }>,
+    ) {
+      state.attachedScratchByConversation[action.payload.conversationId] = [
+        ...new Set(action.payload.documentIds),
+      ];
+    },
+
+    addAttachedScratchpad(
+      state,
+      action: PayloadAction<{ conversationId: string; documentId: string }>,
+    ) {
+      const list =
+        state.attachedScratchByConversation[action.payload.conversationId] ??
+        [];
+      if (!list.includes(action.payload.documentId)) {
+        state.attachedScratchByConversation[action.payload.conversationId] = [
+          ...list,
+          action.payload.documentId,
+        ];
+      }
+    },
+
+    removeAttachedScratchpad(
+      state,
+      action: PayloadAction<{ conversationId: string; documentId: string }>,
+    ) {
+      const list =
+        state.attachedScratchByConversation[action.payload.conversationId];
+      if (list) {
+        state.attachedScratchByConversation[action.payload.conversationId] =
+          list.filter((id) => id !== action.payload.documentId);
+      }
+    },
   },
 
   extraReducers: (builder) => {
@@ -414,6 +502,10 @@ export const {
   markWorkingDocSaving,
   markWorkingDocError,
   removeInstanceWorkingDocument,
+  removeWorkingDocEntry,
+  setAttachedScratchpads,
+  addAttachedScratchpad,
+  removeAttachedScratchpad,
 } = instanceWorkingDocumentSlice.actions;
 
 export default instanceWorkingDocumentSlice.reducer;

@@ -83,6 +83,16 @@ export const selectWorkingDocVersion =
   (state: RootState): number =>
     entryOf(state, conversationId, kind)?.version ?? 0;
 
+const NO_ATTACHED: string[] = [];
+
+/** ADDITIONAL scratchpads attached to a conversation (active one excluded). */
+export const selectAttachedScratchpadIds =
+  (conversationId: string) =>
+  (state: RootState): string[] =>
+    state.instanceWorkingDocument.attachedScratchByConversation[
+      conversationId
+    ] ?? NO_ATTACHED;
+
 /** A pending concurrent-edit conflict the user must reconcile, or null. */
 export const selectWorkingDocConflict =
   (conversationId: string, kind: WorkingDocumentKind = DEFAULT_DOC_KIND) =>

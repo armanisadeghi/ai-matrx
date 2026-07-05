@@ -98,6 +98,9 @@ export async function getCxWorkingDocumentById(
   const { data, error } = await WD()
     .select("*")
     .eq("id", documentId)
+    // Authenticated RLS never gates deleted_at (soft-delete class fix) — the
+    // read path filters explicitly so a deleted doc reads as "gone".
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) {
     throw new Error(`[working-document] get by id failed: ${error.message}`);
@@ -205,6 +208,7 @@ export async function listUserDocuments(
   const { data, error } = await WD()
     .select("*")
     .eq("kind", kind)
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -233,6 +237,7 @@ export async function listRecentUserDocuments(
 ): Promise<CxWorkingDocumentSummary[]> {
   const { data, error } = await WD()
     .select("id, metadata, kind, title, content, updated_at")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (error) {
@@ -264,9 +269,13 @@ export async function listRecentUserDocuments(
 export interface MaterializeArgs {
   /** The client-reserved row id (created up front, written here on first edit). */
   id: string;
-  /** Origin conversation (provenance, stored in metadata — NOT identity). */
-  conversationId: string;
-  /** Owner org (NOT NULL on the row); the conversation's org. */
+  /**
+   * Origin conversation (provenance, stored in metadata — NOT identity).
+   * Null for USER-GLOBAL scratchpads, which are born outside any conversation
+   * and get NO conversation edge at materialize time.
+   */
+  conversationId: string | null;
+  /** Owner org (NOT NULL on the row); the conversation's (or active) org. */
   organizationId: string;
   kind: WorkingDocumentKind;
   title: string;
@@ -311,7 +320,9 @@ async function materializeWorkingDocumentImpl(
         kind: args.kind,
         title: args.title,
         content: args.content,
-        metadata: { origin_conversation_id: args.conversationId } as Json,
+        metadata: {
+          origin_conversation_id: args.conversationId,
+        } as Json,
       },
       { onConflict: "id" },
     )
@@ -325,14 +336,32 @@ async function materializeWorkingDocumentImpl(
   const doc = rowToCxWorkingDocument(data as CxWorkingDocumentRow);
   // Create the conversation link on the SAME first-content transition. Idempotent
   // (assoc_add upserts the edge), so re-materialize is a no-op on the edge.
-  await linkDocumentToConversation({
-    documentId: doc.id,
-    conversationId: args.conversationId,
-    organizationId: args.organizationId,
-    kind: args.kind,
-    enabled: true,
-  });
+  // User-global scratchpads (no origin conversation) get NO edge — they attach
+  // to conversations only when the user explicitly attaches them.
+  if (args.conversationId) {
+    await linkDocumentToConversation({
+      documentId: doc.id,
+      conversationId: args.conversationId,
+      organizationId: args.organizationId,
+      kind: args.kind,
+      enabled: true,
+    });
+  }
   return doc;
+}
+
+/**
+ * Soft-delete a document (scratchpad delete in the switcher). The row + its
+ * full version history survive in the DB; RLS-visible reads filter it out via
+ * the explicit `deleted_at is null` guards on the list queries here.
+ */
+export async function softDeleteWorkingDocument(id: string): Promise<void> {
+  const { error } = await WD()
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) {
+    throw new Error(`[working-document] delete failed: ${error.message}`);
+  }
 }
 
 // =============================================================================

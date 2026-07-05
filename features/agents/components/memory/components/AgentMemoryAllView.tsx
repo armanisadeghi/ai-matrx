@@ -1,15 +1,27 @@
 "use client";
 
 /**
- * AgentMemoryAllView — read-first overview of every memory at once, each
- * card jumping into the single-memory editor on click.
+ * AgentMemoryAllView — every memory rendered as ONE continuous scrollable
+ * document (heading + full content + divider, repeated) — not a grid of
+ * cards, nothing clamped or cut off. Clicking a heading jumps into the
+ * single-memory editor for that entry.
  */
 
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { displayTitleForMemory } from "../types";
+import {
+  displayTitleForMemory,
+  importanceScore,
+  importanceTier,
+} from "../types";
 import type { UseAgentMemoriesReturn } from "../hooks/useAgentMemories";
+
+const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
+  high: "bg-primary/15 text-primary",
+  medium: "bg-muted text-foreground",
+  low: "bg-muted text-muted-foreground",
+};
 
 interface AgentMemoryAllViewProps {
   state: UseAgentMemoriesReturn;
@@ -47,22 +59,32 @@ export function AgentMemoryAllView({ state }: AgentMemoryAllViewProps) {
   }
 
   return (
-    <div className="h-full overflow-y-auto p-4">
-      <div className="mx-auto flex max-w-2xl flex-col gap-2">
-        {memories.map((memory) => (
+    <div className="h-full overflow-y-auto">
+      <div className="p-3">
+        {memories.map((memory, index) => (
           <button
             key={memory.id}
             type="button"
             onClick={() => setSelectedId(memory.id)}
-            className={cn(
-              "flex flex-col gap-1 rounded-lg border border-border bg-card px-3.5 py-3 text-left transition-colors",
-              "hover:border-primary/40 hover:bg-muted/40",
-            )}
+            className={
+              "block w-full py-3 text-left first:pt-0" +
+              (index < memories.length - 1 ? " border-b border-border/60" : "")
+            }
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-sm font-medium text-foreground">
-                {displayTitleForMemory(memory)}
+            <div className="mb-1 flex items-center gap-2">
+              <span
+                className={cn(
+                  "flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                  TIER_BADGE_CLASS[importanceTier(memory.importance)],
+                )}
+                title="Importance"
+              >
+                {importanceScore(memory.importance)}
+                <span className="text-[8px] font-normal opacity-70">/10</span>
               </span>
+              <h3 className="text-sm font-semibold text-foreground">
+                {displayTitleForMemory(memory)}
+              </h3>
               <Badge
                 variant="secondary"
                 className="shrink-0 text-[10px] capitalize"
@@ -70,7 +92,7 @@ export function AgentMemoryAllView({ state }: AgentMemoryAllViewProps) {
                 {memory.scope}
               </Badge>
             </div>
-            <p className="line-clamp-2 text-xs text-muted-foreground">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
               {memory.content}
             </p>
           </button>
