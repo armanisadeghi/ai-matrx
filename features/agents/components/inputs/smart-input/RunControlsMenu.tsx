@@ -7,16 +7,21 @@
  *   - "gear" (SlidersHorizontal) — production toolbar (chat rooms, agent run)
  *   - "plus" (Plus)              — the `/chat/new` hero input
  *
- * Presentation is picked by host environment:
+ * Presentation is picked by variant + host environment:
  *
- *   - Desktop (default)   — opens the `runControlsWindow` overlay: a real,
- *     non-blocking WindowPanel (minimize to tray, maximize, drag, snap).
- *     Dialogs launched from inside it (e.g. "Preview full prompt") stack
- *     ABOVE it — the old fullscreen-popover z-order trap is structurally gone.
+ *   - Desktop "plus"      — `PlusAttachMenu`: the lightweight anchored attach
+ *     popover (ResourcePickerMenu) + one quick row (model override select,
+ *     working-doc switch, All-options button → the window at Context).
+ *   - Desktop "gear"      — opens the `runControlsWindow` overlay on its
+ *     **Context** tab: a real, non-blocking WindowPanel (minimize to tray,
+ *     maximize, drag, snap). Dialogs launched from inside it (e.g. "Preview
+ *     full prompt") stack ABOVE it — the old fullscreen-popover z-order trap
+ *     is structurally gone.
  *   - Mobile              — TabbedBottomSheet (tabs → first-level list).
- *   - Inside a Dialog or a popped-out window — anchored popover fallback
- *     (an overlay window would render behind the modal / in the wrong
- *     browser window).
+ *     NEVER a window on mobile.
+ *   - Inside a Dialog or a popped-out window — anchored tabbed popover
+ *     fallback (an overlay window would render behind the modal / in the
+ *     wrong browser window).
  *
  * Tab definitions, badges, and tab content all live in the shared core:
  * `RunControlsTabPanel.tsx` (also consumed by RunControlsWindow).
@@ -35,6 +40,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TabbedBottomSheet } from "@/components/official/bottom-sheet/TabbedBottomSheet";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
+import { PlusAttachMenu } from "./PlusAttachMenu";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorkingDocument";
 import {
@@ -108,12 +114,11 @@ export function RunControlsMenu({
       title="Chat Options"
       aria-label="Chat Options"
       onClick={
-        useWindowPresentation
+        useWindowPresentation && variant === "gear"
           ? () =>
               openRunControlsWindow({
                 conversationId,
-                includeAttach,
-                initialTab: rc.defaultTab,
+                initialTab: "context",
               })
           : isMobile
             ? () => handleOpenChange(true)
@@ -137,6 +142,16 @@ export function RunControlsMenu({
   );
 
   if (useWindowPresentation) {
+    if (variant === "plus") {
+      return (
+        <PlusAttachMenu
+          conversationId={conversationId}
+          trigger={triggerButton}
+          align={align}
+          side={side}
+        />
+      );
+    }
     return triggerButton;
   }
 

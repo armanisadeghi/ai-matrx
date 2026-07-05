@@ -24,11 +24,15 @@ import {
   resetOverride,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 
-export function RunModelPicker({ conversationId }: { conversationId: string }) {
+/**
+ * Shared genuine-delta model-override state. `model` is never removed, so
+ * effective = override ?? base; picking the base model CLEARS the override.
+ */
+function useModelOverride(conversationId: string) {
   const dispatch = useAppDispatch();
   // Read the (stable-ref) override state and derive everything locally — avoids
   // the new-object selectCurrentSettings, which would re-render on every store
-  // dispatch. `model` is never removed, so effective = override ?? base.
+  // dispatch.
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
@@ -53,6 +57,68 @@ export function RunModelPicker({ conversationId }: { conversationId: string }) {
 
   const handleReset = () =>
     dispatch(resetOverride({ conversationId, key: "model" }));
+
+  return {
+    baseModel,
+    effectiveModel,
+    isOverridden,
+    baseModelLabel,
+    handleChange,
+    handleReset,
+  };
+}
+
+/**
+ * QuickRunModelSelect — single-row compact variant for toolbar/quick rows
+ * (the `+` attach popover). Same override semantics as RunModelPicker;
+ * agent default pinned first; reset icon appears only when overridden.
+ */
+export function QuickRunModelSelect({
+  conversationId,
+  className,
+}: {
+  conversationId: string;
+  className?: string;
+}) {
+  const {
+    baseModel,
+    effectiveModel,
+    isOverridden,
+    handleChange,
+    handleReset,
+  } = useModelOverride(conversationId);
+
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      <SmartModelSelect
+        value={effectiveModel ?? baseModel ?? null}
+        onValueChange={handleChange}
+        priorityValues={baseModel ? [baseModel] : undefined}
+        className={className}
+      />
+      {isOverridden && (
+        <button
+          type="button"
+          onClick={handleReset}
+          title="Reset to agent default"
+          aria-label="Reset model to agent default"
+          className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <RotateCcw className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function RunModelPicker({ conversationId }: { conversationId: string }) {
+  const {
+    baseModel,
+    effectiveModel,
+    isOverridden,
+    handleChange,
+    handleReset,
+  } = useModelOverride(conversationId);
 
   return (
     <div className="flex flex-col gap-2 px-3 py-3">
