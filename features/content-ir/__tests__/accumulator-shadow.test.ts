@@ -169,6 +169,50 @@ describe("accumulator shadow delegation (bare JSON)", () => {
     ).toBe(2);
   });
 
+  it("a TRULY newline-less minified object opens its region live (no raw-text flash)", () => {
+    const { accumulator, upserts, dispatch } = makeAccumulator("req-noNewline");
+    // The real structured-output shape: ONE line, no `\n` anywhere until the
+    // end — including no newline after the opening `{`. Before the fix this
+    // never entered the bare_json substate mid-stream, so the whole JSON
+    // projected as a raw `text` block and only "converted" at finalize.
+    const minified = JSON.stringify({
+      __kind: "flashcard_set",
+      title: "NoNewline",
+      cards: [{ __kind: "flashcard", front: "Q?", back: "a" }],
+    });
+
+    let sawLiveKind = false;
+    let sawRawJsonText = false;
+    for (const chunk of chunkText(minified, 6, 4)) {
+      accumulator.ingest(chunk, dispatch);
+      const latest = upserts[upserts.length - 1]?.block;
+      if (!latest) continue;
+      const env = envelopeOf(latest);
+      if (latest.status === "streaming" && env?.root.kind === "flashcard_set") {
+        sawLiveKind = true;
+      }
+      // The bug's signature: the raw JSON shown as a plain text block mid-stream.
+      if (
+        latest.status === "streaming" &&
+        latest.type === "text" &&
+        (latest.content ?? "").includes("__kind")
+      ) {
+        sawRawJsonText = true;
+      }
+    }
+    accumulator.finalize(dispatch);
+
+    expect(sawRawJsonText).toBe(false); // never flashed as raw text
+    expect(sawLiveKind).toBe(true); // resolved flashcard_set while streaming
+
+    const { envelope } = lastCompleteBlockWithEnvelope(upserts);
+    expect(envelope.root.kind).toBe("flashcard_set");
+    expect(envelope.root.status).toBe("complete");
+    expect(
+      (envelope.root.value.cards as Array<Record<string, unknown>>).length,
+    ).toBe(1);
+  });
+
   it("a truncated region ends with a status:error envelope, never breaking the block", () => {
     const { accumulator, upserts, dispatch } = makeAccumulator("req-truncated");
     accumulator.ingest('{\n"__kind": "flashcard_set",\n"title": "Cut', dispatch);

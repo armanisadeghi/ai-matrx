@@ -146,6 +146,17 @@ function isParseableJsonObject(text: string): boolean {
   }
 }
 
+/**
+ * The unambiguous start of a bare JSON object: an opening brace, a quoted key,
+ * and a colon (`{ "key":`). Once this much has streamed in, we KNOW we're in a
+ * JSON object — no guessing — so a newline-less minified object (the
+ * structured-output shape, where the whole payload is one line with no `\n`
+ * until the very end) can open its region LIVE instead of projecting as raw
+ * text until finalize. Prose almost never opens a line with `{"…":`, and a
+ * false positive degrades gracefully to a JSON code block, so this is safe.
+ */
+const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
+
 function extractFenceInfo(
   trimmed: string,
 ): { language: string; ticks: number } | null {
@@ -352,6 +363,12 @@ export class StreamBlockAccumulator {
     for (const rawLine of parts) {
       this.processLine(rawLine, dispatch);
     }
+
+    // A newline-less minified JSON object never completes a line during the
+    // stream, so processLine never opens its region — it would project as raw
+    // text until finalize. Detect the object's start in the trailing fragment
+    // and open the bare_json region NOW, so the kind resolves live.
+    this.maybeOpenBareJsonFromFragment(dispatch);
 
     // Bare-JSON regions get the trailing fragment's NEW chars immediately —
     // minified single-line JSON (structured outputs) parses live instead of
@@ -712,6 +729,53 @@ export class StreamBlockAccumulator {
     this.appendToCurrentBlock(rawLine);
   }
 
+  /**
+   * Open a bare_json region directly from the trailing line fragment — the
+   * newline-less minified JSON case (`{"__kind":…}` streamed as one line with
+   * no `\n` until the end). Without this, processLine (which only sees COMPLETE
+   * lines) never opens the region and the raw JSON projects as a text block
+   * until finalize — the "shows the whole JSON, converts only when done" bug.
+   *
+   * Mirrors processLine's bare-JSON branch but fragment-driven: it commits the
+   * moment the fragment reveals `{ "key":` (unambiguous JSON), retracting the
+   * speculative text projection of those same chars, and lets the existing
+   * fragment-feed path (in ingest) and finalize/newline completion carry the
+   * region the rest of the way. openBraces/closeBraces start at 0 — the
+   * completing line counts them exactly once (see the bare_json substate case).
+   */
+  private maybeOpenBareJsonFromFragment(dispatch: DispatchFn): void {
+    if (this.subState.kind !== "none") return;
+    // Only when the current block has no committed text: the fragment is the
+    // whole current line. Leading prose on the same line (`Here: {"a":1}`) is
+    // left as text — matching processLine's `trimmed.startsWith("{")` gate.
+    if (this.currentBlockContent) return;
+    const frag = this.pendingLineFragment;
+    if (!BARE_JSON_OPEN_RE.test(frag.trimStart())) return;
+
+    // Retract the speculative text projection of these chars (the previous
+    // ingest emitted them as a `text` block at this index), then open a fresh
+    // block for the JSON region.
+    this.closeCurrentBlock(dispatch);
+    this.openBlock("code", dispatch);
+    this.subState = {
+      kind: "bare_json",
+      openBraces: 0,
+      closeBraces: 0,
+      earlyTypeResolved: false,
+    };
+    this.irOpenRegion();
+    // Feed everything seen so far as an incomplete line part (records fed len);
+    // the ingest fragment-feed path streams later deltas.
+    this.irWriteLinePart(frag, false);
+    // Known-root-key early resolution (unknown/__kind keys resolve via the
+    // envelope + applyIrKindRoute instead, so `code` here is fine).
+    const jsonType = detectJsonBlockType(frag.trimStart());
+    if (jsonType) {
+      this.subState.earlyTypeResolved = true;
+      this.currentBlockType = jsonType;
+    }
+  }
+
   private processSubStateLine(
     rawLine: string,
     trimmed: string,
@@ -1063,9 +1127,22 @@ export class StreamBlockAccumulator {
         this.subState.kind === "code_fence" ||
         this.subState.kind === "bare_json"
       ) {
-        content = content
-          ? content + "\n" + this.pendingLineFragment
-          : this.pendingLineFragment;
+        // HOLD a nascent bare-JSON object: a fresh-block fragment that opens
+        // with `{` may become a JSON region the instant its first `"key":`
+        // streams in (see maybeOpenBareJsonFromFragment). Projecting it as raw
+        // text in the meantime is exactly the "shows the whole JSON, converts
+        // only when done" flash — so we emit nothing for it this frame. It
+        // opens as a region at the key:colon threshold, or (if it never becomes
+        // JSON) is flushed as text the moment its line completes / finalizes.
+        const holdNascentJson =
+          this.subState.kind === "none" &&
+          !this.currentBlockContent &&
+          this.pendingLineFragment.trimStart().startsWith("{");
+        if (!holdNascentJson) {
+          content = content
+            ? content + "\n" + this.pendingLineFragment
+            : this.pendingLineFragment;
+        }
       }
     }
 
