@@ -113,12 +113,25 @@ export function reconstructKindRegistry(
     if (schemas[d.kind]) {
       throw new KindTablesError(`duplicate kind slug "${d.kind}".`);
     }
-    const schema = storageToKindSchema(d.kind, {
-      data: asStoredData(d.data, d.kind),
-      edges: edgesByParent.get(d.id) ?? [],
-    });
-    schemas[d.kind] = schema;
-    entries.push({ id: d.id, label: d.label, slug: d.kind, fields: schema.fields });
+    // Per-kind resilience (loud recovery): a single malformed kind — e.g. a
+    // ref field whose edge is missing (a dangling child), or corrupt `data` —
+    // must NOT take down the whole warm load. Skip it + scream; the compiled
+    // floor covers anything genuinely needed, and a broken kind was unusable
+    // anyway. This is a recovery path firing → a real data defect upstream.
+    try {
+      const schema = storageToKindSchema(d.kind, {
+        data: asStoredData(d.data, d.kind),
+        edges: edgesByParent.get(d.id) ?? [],
+      });
+      schemas[d.kind] = schema;
+      entries.push({ id: d.id, label: d.label, slug: d.kind, fields: schema.fields });
+    } catch (err) {
+      console.warn(
+        `[content_ir] skipped malformed kind "${d.kind}": ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
   }
   return { schemas, entries };
 }
@@ -214,8 +227,18 @@ export async function getKindSchemaBySlugFromTables(
     }
   }
 
-  return storageToKindSchema(def.kind, {
-    data: asStoredData(def.data, def.kind),
-    edges: specs,
-  });
+  try {
+    return storageToKindSchema(def.kind, {
+      data: asStoredData(def.data, def.kind),
+      edges: specs,
+    });
+  } catch (err) {
+    // A malformed kind reads as absent (→ compiled-floor fallback), never a throw.
+    console.warn(
+      `[content_ir] cold-fetch skipped malformed kind "${kind}": ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return null;
+  }
 }

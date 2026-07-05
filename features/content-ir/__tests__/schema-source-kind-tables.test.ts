@@ -6,7 +6,6 @@
 
 import {
   reconstructKindRegistry,
-  KindTablesError,
   type KindDefProjection,
   type KindEdgeProjection,
 } from "../registry/schema-source-kind-tables";
@@ -81,19 +80,36 @@ describe("content_ir read adapter — reconstruction", () => {
     expect(Object.keys(schemas.ordered.fields)).toEqual(["zebra", "alpha"]);
   });
 
-  it("throws loudly on malformed data (not an array of named/typed fields)", () => {
+  it("skips (loudly) a kind whose data is malformed, keeping the rest", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const defs: KindDefProjection[] = [
       { id: "x", kind: "bad", label: "Bad", data: { not: "an array" } },
+      { id: "y", kind: "good", label: "Good", data: [{ name: "t", type: "string" }] },
     ];
-    expect(() => reconstructKindRegistry(defs, [])).toThrow(KindTablesError);
+    const { schemas } = reconstructKindRegistry(defs, []);
+    expect(schemas.good).toBeDefined();
+    expect(schemas.bad).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('skipped malformed kind "bad"'),
+    );
+    warn.mockRestore();
   });
 
-  it("drops a dangling edge (missing child) rather than crashing", () => {
+  it("skips a malformed kind (dangling ref) loudly instead of crashing the batch", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const defs: KindDefProjection[] = [
+      // Good kind — must survive.
+      {
+        id: "ok",
+        kind: "healthy",
+        label: "Healthy",
+        data: [{ name: "title", type: "string" }],
+      },
+      // Broken: object ref whose child edge is missing → storageToKindSchema throws.
       {
         id: "p",
-        kind: "parent",
-        label: "P",
+        kind: "broken",
+        label: "Broken",
         data: [{ name: "child", type: "object" }],
       },
     ];
@@ -101,12 +117,17 @@ describe("content_ir read adapter — reconstruction", () => {
       {
         parent_definition_id: "p",
         field_name: "child",
-        child_definition_id: "gone", // no matching def
+        child_definition_id: "gone", // no matching def → edge dropped → no edge for the ref field
         position: null,
       },
     ];
-    // object field with a dropped edge → storageToKindSchema throws (an object
-    // ref MUST have exactly one edge) — proving refs can't silently vanish.
-    expect(() => reconstructKindRegistry(defs, edges)).toThrow();
+    const { schemas } = reconstructKindRegistry(defs, edges);
+    // The good kind survives; the broken one is skipped, not fatal.
+    expect(schemas.healthy).toBeDefined();
+    expect(schemas.broken).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('skipped malformed kind "broken"'),
+    );
+    warn.mockRestore();
   });
 });
