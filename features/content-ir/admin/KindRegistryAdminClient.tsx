@@ -41,14 +41,14 @@ import type { FieldSchema } from "@/features/content-ir/core/kind-schema.types";
 
 const SOURCE_STYLES: Record<KindCatalogSource, string> = {
   system: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
-  flexible_data:
+  content_ir:
     "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200",
   both: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
 };
 
 const SOURCE_LABELS: Record<KindCatalogSource, string> = {
-  system: "system",
-  flexible_data: "db",
+  system: "compiled",
+  content_ir: "content_ir",
   both: "both",
 };
 
@@ -141,7 +141,7 @@ export default function KindRegistryAdminClient() {
       (entry) =>
         entry.kind.toLowerCase().includes(q) ||
         entry.label.toLowerCase().includes(q) ||
-        (entry.flexibleDataId ?? "").toLowerCase().includes(q),
+        (entry.dbRowId ?? "").toLowerCase().includes(q),
     );
   }, [catalog, query]);
 
@@ -180,7 +180,7 @@ export default function KindRegistryAdminClient() {
     return {
       total: entries.length,
       system: entries.filter((e) => e.source === "system").length,
-      db: entries.filter((e) => e.source === "flexible_data").length,
+      db: entries.filter((e) => e.source === "content_ir").length,
       both: entries.filter((e) => e.source === "both").length,
     };
   }, [catalog]);
@@ -211,8 +211,8 @@ export default function KindRegistryAdminClient() {
           <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.system}`}>
             {stats.system} system
           </span>
-          <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.flexible_data}`}>
-            {stats.db} db
+          <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.content_ir}`}>
+            {stats.db} content_ir
           </span>
           <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.both}`}>
             {stats.both} both
@@ -364,8 +364,8 @@ export default function KindRegistryAdminClient() {
                       label="persist structured"
                       value={selected.facets.persistStructured ? "yes" : null}
                     />
-                    {selected.flexibleDataId && (
-                      <FacetItem label="row id" value={selected.flexibleDataId} />
+                    {selected.dbRowId && (
+                      <FacetItem label="content_ir row id" value={selected.dbRowId} />
                     )}
                   </div>
                 </section>

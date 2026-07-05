@@ -1,9 +1,11 @@
 /**
- * Kind catalog — READ-ONLY helpers over the registry + flexible_data for
+ * Kind catalog — READ-ONLY helpers over the registry + content_ir for
  * browse/inspect surfaces (the /administration/kind-registry admin page).
  * Merges the live registry definitions (compiled system kinds + any
- * runtime-registered facets) with the flexible_data Block Schemas rows and
+ * runtime-registered facets) with the content_ir.kind_definition rows and
  * computes the reference graph (uses / used-by) across the whole catalog.
+ * (Cut over from flexible_data 2026-07-05 — the admin page now reflects the
+ * canonical content_ir tables, matching the runtime registry's warm source.)
  *
  * Pure computation lives in `buildKindCatalog` (jest-testable, no network);
  * `listAllKinds` is the async assembler.
@@ -12,11 +14,8 @@
 import type { FieldSchema, KindSchema } from "../core/kind-schema.types";
 import { formatBlockLabel } from "../core/schema-structure";
 import { collectReferencedKinds } from "../convert/kind-to-json-schema";
-import {
-  BLOCK_SCHEMAS_CATEGORY_ID,
-  listBlockSchemas,
-  type BlockSchemaEntry,
-} from "./schema-source-flexible-data";
+import type { BlockSchemaEntry } from "./schema-source-flexible-data";
+import { listKindSchemasFromTables } from "./schema-source-kind-tables";
 // ORDER MATTERS: kind-registry must load BEFORE system-kinds here. The
 // system-kinds module chain (kinds/* bridges → region-envelope-memo) imports
 // kind-registry, whose module-scope `new KindRegistry(SYSTEM_KIND_DEFINITIONS)`
@@ -25,7 +24,7 @@ import { kindRegistry } from "./kind-registry";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
 import type { KindDefinition, KindTier } from "./kind-registry.types";
 
-export type KindCatalogSource = "system" | "flexible_data" | "both";
+export type KindCatalogSource = "system" | "content_ir" | "both";
 
 export type KindCatalogFacets = {
   /** Facade → BlockComponentRegistry type string (legacy bridge). */
@@ -44,8 +43,8 @@ export type KindCatalogEntry = {
   source: KindCatalogSource;
   /** Registry loading tier; null when the kind is a DB row the registry has not loaded. */
   tier: KindTier | null;
-  /** flexible_data row id when a Block Schemas row exists for this slug. */
-  flexibleDataId: string | null;
+  /** content_ir.kind_definition row id when a DB row exists for this slug. */
+  dbRowId: string | null;
   facets: KindCatalogFacets;
   fields: Record<string, FieldSchema>;
   /** Kinds this kind references (object refs + array itemKinds, transitive through inline_objects — one level). */
@@ -97,9 +96,9 @@ export function buildKindCatalog(
     byKind.set(def.kind, {
       kind: def.kind,
       label: formatBlockLabel(def.kind),
-      source: compiledSlugs.has(def.kind) ? "system" : "flexible_data",
+      source: compiledSlugs.has(def.kind) ? "system" : "content_ir",
       tier: def.tier,
-      flexibleDataId: null,
+      dbRowId: null,
       facets: facetsOf(def),
       fields: def.schema?.fields ?? {},
       referencedKinds: [],
@@ -112,18 +111,18 @@ export function buildKindCatalog(
     if (existing) {
       existing.source = compiledSlugs.has(entry.slug)
         ? "both"
-        : "flexible_data";
+        : "content_ir";
       existing.label = entry.label;
-      existing.flexibleDataId = entry.id;
+      existing.dbRowId = entry.id;
       // DB rows are the schema source of truth (registry warm precedence).
       existing.fields = entry.fields;
     } else {
       byKind.set(entry.slug, {
         kind: entry.slug,
         label: entry.label,
-        source: "flexible_data",
+        source: "content_ir",
         tier: null,
-        flexibleDataId: entry.id,
+        dbRowId: entry.id,
         facets: emptyFacets(),
         fields: entry.fields,
         referencedKinds: [],
@@ -158,7 +157,7 @@ export function buildKindCatalog(
  * when the DB is unreachable (callers may fall back to listCompiledKinds).
  */
 export async function listAllKinds(): Promise<KindCatalogEntry[]> {
-  const { entries } = await listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID);
+  const { entries } = await listKindSchemasFromTables();
   return buildKindCatalog(kindRegistry.listDefinitions(), entries);
 }
 

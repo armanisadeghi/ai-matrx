@@ -79,16 +79,16 @@ describe("buildKindCatalog", () => {
   const catalog = buildKindCatalog(compiledDefs, dbEntries, compiledSlugs);
   const byKind = new Map(catalog.map((entry) => [entry.kind, entry]));
 
-  it("classifies sources: both / system / flexible_data", () => {
+  it("classifies sources: both / system / content_ir", () => {
     expect(mustGet(byKind, "alpha_set").source).toBe("both");
     expect(mustGet(byKind, "alpha_item").source).toBe("system");
-    expect(mustGet(byKind, "user_kind").source).toBe("flexible_data");
+    expect(mustGet(byKind, "user_kind").source).toBe("content_ir");
   });
 
   it("DB rows override compiled fields + label; compiled facets survive", () => {
     const alphaSet = mustGet(byKind, "alpha_set");
     expect(alphaSet.label).toBe("Alpha Set (DB)");
-    expect(alphaSet.flexibleDataId).toBe("row-alpha-set");
+    expect(alphaSet.dbRowId).toBe("row-alpha-set");
     expect(Object.keys(alphaSet.fields)).toContain("subtitle");
     expect(alphaSet.facets).toEqual({
       legacyBlockType: "alpha",
