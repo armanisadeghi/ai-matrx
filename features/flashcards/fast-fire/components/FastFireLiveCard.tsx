@@ -64,7 +64,7 @@ export function FastFireLiveCard({
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpUnavailable, setHelpUnavailable] = useState(false);
-  const cardShownAtRef = useRef<number>(Date.now());
+  const cardShownAtRef = useRef<number>(0);
 
   // L3: clear any help text when the card changes, so the previous card's help
   // doesn't linger over the next card. Keyed on the card id. Also resets the

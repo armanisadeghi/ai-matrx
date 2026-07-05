@@ -10,7 +10,7 @@
  * DB-managed fields — excluded from ALL write payloads (Insert + Update):
  *  - id                 — DB generates on insert
  *  - created_at         — DB trigger
- *  - updated_at         — DB trigger (set_agx_agent_updated_at)
+ *  - updated_at         — DB trigger (set_agent.definition_updated_at)
  *  - source_agent_id    — set only by agx_duplicate_agent() RPC, never by direct writes
  *  - source_snapshot_at — set only by agx_duplicate_agent() RPC, never by direct writes
  *
@@ -96,7 +96,7 @@ type AgentUpdate = Omit<
 export type { AgentInsert, AgentUpdate };
 
 // ---------------------------------------------------------------------------
-// tool_config — the canonical JSONB on agx_agent.
+// tool_config — the canonical JSONB on agent.definition.
 // Shape:
 //   { tools: ToolSpec[], excluded_tools: string[], auto_tools_disabled: bool }
 // where ToolSpec is the same discriminated union as the request schema:
@@ -147,7 +147,7 @@ function splitToolConfig(
 // DB → Frontend
 // ---------------------------------------------------------------------------
 
-/** Defensive parser for the `agx_agent.skill_config` JSONB. Returns the
+/** Defensive parser for the `agent.definition.skill_config` JSONB. Returns the
  * empty default when the column is missing / malformed; the DB CHECK from
  * migration 0095 guarantees the shape when present, so this is mainly
  * about old rows + tests. */
@@ -260,7 +260,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     sharedByEmail: null,
 
     // RAG retrieval-boost for this agent's derivatives. DB default is 0
-    // (no boost); the column is non-nullable on agx_agent so we just
+    // (no boost); the column is non-nullable on agent.definition so we just
     // pass it through.
     defaultRagBoost: row.default_rag_boost ?? 0,
   };
@@ -275,7 +275,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
  * Strips all DB-managed fields (id, created_at, updated_at, version) and
  * removes any key whose value is null/undefined so the DB's defaults apply.
  *
- * This last step is critical: `agx_agent` has many NOT NULL columns with
+ * This last step is critical: `agent.definition` has many NOT NULL columns with
  * defaults (custom_tools, context_slots, messages, settings, tools, tags,
  * mcp_servers, is_*, agent_type, version). Sending `null` for any of them
  * bypasses the default and triggers a 23502 violation. See
@@ -411,10 +411,12 @@ export function agentDefinitionToUpdate(
   return update;
 }
 
-/** SkillConfig → JSONB-shaped object for the agx_agent row. Returns the
+/** SkillConfig → JSONB-shaped object for the agent.definition row. Returns the
  * `{}` empty-default when every field is at its zero value so we don't
  * spam the DB with redundant `{"included":[],"listed":[],...}` rows. */
-function skillConfigToJsonb(cfg: SkillConfig | undefined): Record<string, unknown> {
+function skillConfigToJsonb(
+  cfg: SkillConfig | undefined,
+): Record<string, unknown> {
   if (!cfg) return {};
   const isEmpty =
     cfg.included.length === 0 &&
@@ -499,7 +501,6 @@ export function versionSnapshotRowToAgentDefinition(
     // (no boost) for snapshots that don't carry it; live agents read
     // the real value via dbRowToAgentDefinition.
     defaultRagBoost:
-      (row as unknown as { default_rag_boost?: number }).default_rag_boost ??
-      0,
+      (row as unknown as { default_rag_boost?: number }).default_rag_boost ?? 0,
   };
 }

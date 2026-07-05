@@ -4,7 +4,7 @@
 // report. Body shape:
 //   {
 //     bindingKind: "agent",
-//     bindingId: string,         // agx_agent_surface.id
+//     bindingId: string,         // agent.definition_surface.id
 //     mappingKey: string,        // the JSONB key inside value_mappings
 //     remediation:
 //       | { action: "remap_to"; target: string }

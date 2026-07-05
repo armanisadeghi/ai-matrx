@@ -191,7 +191,9 @@ const JSON_BLOCK_PATTERNS = {
   math_problem: {
     rootKey: "math_problem",
     validate: (parsed: unknown) =>
-      isJsonObject(parsed) && parsed.math_problem && typeof parsed.math_problem === "object",
+      isJsonObject(parsed) &&
+      parsed.math_problem &&
+      typeof parsed.math_problem === "object",
   },
   // A clickable reference to a platform entity (agent, note, task, file, …).
   // Deliberately forgiving: any object under the key with a string `type`
@@ -205,7 +207,7 @@ const JSON_BLOCK_PATTERNS = {
   },
   // An output-schema proposal — what the "JSON Schema Generator" agent emits:
   // `{ name: string, schema: object, strict?: boolean }`. Recognized so the FE
-  // can offer "Apply to an agent" (writes agx_agent.output_schema). The validate
+  // can offer "Apply to an agent" (writes agent.definition.output_schema). The validate
   // is deliberately strict (string `name` AND object `schema`) so ordinary JSON
   // that merely begins with a "name" key never misfires into this block.
   schema_proposal: {

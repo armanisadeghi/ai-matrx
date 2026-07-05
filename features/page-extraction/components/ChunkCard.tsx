@@ -30,14 +30,12 @@ import {
   Loader2,
   AlertTriangle,
   FileText,
-  Compass
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
-import {
-  SOURCE_VARIATION_BY_KIND,
-} from "@/features/page-extraction/constants";
+import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
 import type {
   ChunkPreviewItem,
   SourceVariationKind,
@@ -91,7 +89,8 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
         "group border rounded-md text-[11px] transition-colors bg-card",
         isRunning && "border-primary/40 bg-primary/5 ring-1 ring-primary/10",
         pageRun?.status === "completed" && "border-success/30",
-        pageRun?.status === "failed" && "border-destructive/40 bg-destructive/5",
+        pageRun?.status === "failed" &&
+          "border-destructive/40 bg-destructive/5",
         !pageRun && "border-border",
       )}
     >
@@ -143,9 +142,7 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
       {/* Always-visible per-variation char breakdown — describes the INPUT */}
       <div className="px-2 pb-1.5 flex flex-wrap gap-1.5 text-[9px] text-muted-foreground">
         {Object.entries(chunk.charsByVariation).map(([kind, chars]) => {
-          const def = SOURCE_VARIATION_BY_KIND.get(
-            kind as SourceVariationKind,
-          );
+          const def = SOURCE_VARIATION_BY_KIND.get(kind as SourceVariationKind);
           if (!def) return null;
           return (
             <span
@@ -212,7 +209,9 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
               ) : isRunning ? (
                 <p className="italic text-muted-foreground text-[10px] flex items-center gap-1.5">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  {isThinking ? "Thinking…" : "Waiting for first token…"}
+                  {isThinking
+                    ? "Thinking…"
+                    : "Reasoning and structuring output..."}
                 </p>
               ) : ranButEmpty ? (
                 <p className="italic text-muted-foreground text-[10px]">

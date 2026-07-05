@@ -1,7 +1,7 @@
 /**
  * Progressive JSON parser for agent-generator output.
  *
- * The AI Agent Generator streams back an agx_agent row shape — NOT the
+ * The AI Agent Generator streams back an agent.definition row shape — NOT the
  * legacy prompt shape. Key differences this parser handles:
  *
  *   - `variable_definitions` (snake case) instead of `variableDefaults`

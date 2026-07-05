@@ -19,10 +19,7 @@ export type PageStatus = "stable" | "wip" | "planned";
 
 /** Serializable icon key — resolved to Lucide components on the client. */
 export type ContextMenuIconKey =
-  | "git-compare-arrows"
-  | "microscope"
-  | "layout-grid"
-  | "flask-conical";
+  "git-compare-arrows" | "microscope" | "layout-grid" | "flask-conical";
 
 export interface ContextMenuPage {
   /** URL slug under `/ssr/context-menu/`. Empty string = the hub itself. */
@@ -83,7 +80,7 @@ export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
     tagline:
       "Resolve (agentId × surfaceName × scope) → value_mappings live; preview what mapScopeToInstanceWithSurface emits.",
     description:
-      "Planned. Pick an agent + surface + scope, see the most-specific row from `agx_agent_surface`, and watch `mapScopeToInstanceWithSurface` produce variable + context entries from a sample applicationScope. The missing piece for diagnosing 'surface picked but values didn't land'.",
+      "Planned. Pick an agent + surface + scope, see the most-specific row from `agent.definition_surface`, and watch `mapScopeToInstanceWithSurface` produce variable + context entries from a sample applicationScope. The missing piece for diagnosing 'surface picked but values didn't land'.",
     icon: "flask-conical",
     status: "planned",
     hiddenFromNav: true,

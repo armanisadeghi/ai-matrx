@@ -5,7 +5,7 @@
  *
  * Step-based flow for promoting an agent to a system ("builtin") agent or
  * updating an existing one. Mirrors the legacy prompt `ConvertToBuiltinModal`
- * but simplified: system agents live in the same `agx_agent` table with
+ * but simplified: system agents live in the same `agent.definition` table with
  * `agent_type = 'builtin'`, and there's no separate shortcut linking step.
  *
  * Flow:
@@ -40,11 +40,7 @@ import { cn } from "@/lib/utils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FlowStep =
-  | "checking"
-  | "builtin-choice"
-  | "processing"
-  | "complete"
-  | "error";
+  "checking" | "builtin-choice" | "processing" | "complete" | "error";
 
 interface SystemAgentSummary {
   id: string;

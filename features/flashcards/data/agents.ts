@@ -36,7 +36,7 @@ export const FC_AGENTS = {
    * front, back, result, prior_attempts → { tip } — cheap/fast-model per-card
    * micro-coaching (Phase 4 stretch), surfaced right after grading. NOT YET
    * AUTHORED: no live agent exists for this lane. Register one via
-   * agent_author (spec: features/education/docs/AGENT_SPECS.md §9) and set
+   * agent_author (spec: features/education/docs/AGENT_SPECS.md §11) and set
    * this id to light the lane up — until then it's a clean no-op, same as
    * every other optional tutor lane before its agent existed.
    */

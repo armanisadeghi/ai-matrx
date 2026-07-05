@@ -34,6 +34,7 @@ import {
   Upload,
   X,
   Flame,
+  FileSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,6 +413,18 @@ export function FlashcardsHome() {
             >
               <Upload className="mr-1.5 h-4 w-4" />
               Import
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isPending) return;
+                setNavigatingId("__from_source__");
+                startTransition(() => router.push(`${EDU_BASE}/new/from-source`));
+              }}
+              disabled={isPending && navigatingId === "__from_source__"}
+            >
+              <FileSearch className="mr-1.5 h-4 w-4" />
+              From document
             </Button>
             <Button
               onClick={newSet}

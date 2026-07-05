@@ -3,14 +3,14 @@
  *
  * Edit this file to change what shows up on `/chat/new` without touching any
  * component code. Each entry is an `{ id, label }` pair; the `id` is the
- * `agx_agent.id` and the `label` is what the user sees on the chip.
+ * `agent.definition.id` and the `label` is what the user sees on the chip.
  *
  * Ordering reflects render order — first entry is leftmost (or topmost on
  * narrow widths). Remove or add entries freely; the chip grid will reflow.
  */
 
 export interface ChatQuickAction {
-  /** Canonical `agx_agent.id`. */
+  /** Canonical `agent.definition.id`. */
   id: string;
   /** Chip label as the user sees it. */
   label: string;

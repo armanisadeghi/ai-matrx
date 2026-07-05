@@ -3,7 +3,7 @@
 /**
  * AgentAppsPanel — apps that run a specific agent.
  *
- * Backed by `aga_apps.agent_id` (direct FK to `agx_agent`). The panel just
+ * Backed by `aga_apps.agent_id` (direct FK to `agent.definition`). The panel just
  * renders whatever `getAppsForAgent` returns; filtering and ownership are
  * handled by RLS on the server side.
  */

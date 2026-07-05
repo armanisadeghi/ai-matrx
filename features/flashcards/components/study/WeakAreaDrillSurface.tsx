@@ -45,6 +45,8 @@ export function WeakAreaDrillSurface() {
           goTo={study.goTo}
           grade={study.grade}
           voiceTestForCard={getVoiceTestForCard}
+          masteryByCard={study.masteryByCard}
+          sessionId={study.sessionId}
           errorTitle="Couldn't load your weak areas"
           emptyTitle="No weak areas right now"
           emptyBody="Nothing is flagged as struggling or low-retention yet. Keep studying — cards that need extra practice will surface here automatically."

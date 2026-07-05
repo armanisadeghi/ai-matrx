@@ -393,6 +393,38 @@ literal text → narrate to durable audio.
 
 ---
 
+## 11. `fc_micro_coach` — per-card micro-coaching tip  **(P3, stretch)**
+**Goal:** A one-line, cheap/fast-model tip surfaced immediately after grading a SINGLE card — not the
+end-of-session narrative `fc_review_batch` already owns. Optimize for latency (small model, short
+output) over depth; this fires on every grade, so it must be near-instant and never block advancing to
+the next card (FE dispatches it fire-and-forget — see `features/flashcards/data/tutor/microCoach.ts`).
+
+**Variables:** `front`, `back`, `result` (`correct|partial|incorrect`), `prior_attempts` (array,
+optional — this learner's past attempts on this card, for "you keep missing X" specificity).
+
+```json
+{
+  "type": "json_schema",
+  "json_schema": {
+    "name": "fc_micro_coach",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "tip": { "type": "string", "description": "one sentence, spoken-friendly, no markdown" }
+      },
+      "required": ["tip"],
+      "additionalProperties": false
+    }
+  }
+}
+```
+**Persist:** none (ephemeral, shown as a toast). Register the agent id in
+`features/flashcards/data/agents.ts` (`FC_AGENTS.microCoach`) to light this lane up — until an agent
+exists, `microCoach()` is a clean no-op.
+
+---
+
 > **Adaptive next-batch selection is NOT an agent** — it's an FSRS algorithm + query over `item_mastery`
 > (due/struggle) + `study_goal` topics + the dimension graph. See `lib/srs/fsrs.ts`.
 

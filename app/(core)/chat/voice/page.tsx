@@ -5,7 +5,7 @@
 // can do.
 //
 // Server Component shell — hands off to the client immediately for the
-// realtime voice experience. The intro agent is a normal `agx_agent` row
+// realtime voice experience. The intro agent is a normal `agent.definition` row
 // (`VOICE_INTRO_AGENT_ID`), so editing its instructions / voice / tools is
 // a builder-level operation — no code change needed.
 

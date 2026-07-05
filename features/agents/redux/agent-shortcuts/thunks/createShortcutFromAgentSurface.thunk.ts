@@ -60,7 +60,7 @@ type RpcArgs =
   Database["public"]["Functions"]["create_shortcut_from_agent_surface"]["Args"];
 
 /**
- * Seeds a new `agx_shortcut` from an existing `agx_agent_surface` row via
+ * Seeds a new `agx_shortcut` from an existing `agent.definition_surface` row via
  * the `create_shortcut_from_agent_surface` RPC. Copies the surface's
  * `value_mappings` + `surface_name`, defaults `label` to the agent's name,
  * and applies any overrides the caller passes.
@@ -72,33 +72,28 @@ export const createShortcutFromAgentSurface = createAsyncThunk<
   string,
   CreateShortcutFromAgentSurfaceArgs,
   { dispatch: AppDispatch; state: RootState }
->(
-  "agentShortcut/createFromAgentSurface",
-  async (args, { dispatch }) => {
-    // Postgres reads missing params as null. The generated `Args` type marks
-    // the scope fields as optional `string`, so we omit any that the caller
-    // didn't set rather than passing literal nulls.
-    const rpcArgs: RpcArgs = {
-      p_agent_surface_id: args.agentSurfaceId,
-      p_category_id: args.categoryId,
-      p_overrides: (args.overrides ?? {}) as unknown as RpcArgs["p_overrides"],
-      ...(args.userId ? { p_user_id: args.userId } : {}),
-      ...(args.organizationId
-        ? { p_organization_id: args.organizationId }
-        : {}),
-      ...(args.projectId ? { p_project_id: args.projectId } : {}),
-      ...(args.taskId ? { p_task_id: args.taskId } : {}),
-    };
+>("agentShortcut/createFromAgentSurface", async (args, { dispatch }) => {
+  // Postgres reads missing params as null. The generated `Args` type marks
+  // the scope fields as optional `string`, so we omit any that the caller
+  // didn't set rather than passing literal nulls.
+  const rpcArgs: RpcArgs = {
+    p_agent_surface_id: args.agentSurfaceId,
+    p_category_id: args.categoryId,
+    p_overrides: (args.overrides ?? {}) as unknown as RpcArgs["p_overrides"],
+    ...(args.userId ? { p_user_id: args.userId } : {}),
+    ...(args.organizationId ? { p_organization_id: args.organizationId } : {}),
+    ...(args.projectId ? { p_project_id: args.projectId } : {}),
+    ...(args.taskId ? { p_task_id: args.taskId } : {}),
+  };
 
-    const { data, error } = await supabase.rpc(
-      "create_shortcut_from_agent_surface",
-      rpcArgs,
-    );
+  const { data, error } = await supabase.rpc(
+    "create_shortcut_from_agent_surface",
+    rpcArgs,
+  );
 
-    if (error) throw pgErrorToError(error);
+  if (error) throw pgErrorToError(error);
 
-    const newShortcutId = data as string;
-    await dispatch(fetchFullShortcut(newShortcutId));
-    return newShortcutId;
-  },
-);
+  const newShortcutId = data as string;
+  await dispatch(fetchFullShortcut(newShortcutId));
+  return newShortcutId;
+});

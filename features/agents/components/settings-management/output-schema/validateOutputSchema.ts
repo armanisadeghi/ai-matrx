@@ -1,6 +1,6 @@
 /**
  * Advisory validator for an agent's `outputSchema` (the structured-output JSON
- * schema saved to `agx_agent.output_schema`).
+ * schema saved to `agent.definition.output_schema`).
  *
  * This is a TOOL, not an enforcer: it never mutates the schema and is never
  * applied automatically. The UI runs it on demand and shows the report; the
@@ -66,7 +66,10 @@ export function validateOutputSchema(value: unknown): OutputSchemaValidation {
   }
 
   // ── description / strict ──
-  if (value.description !== undefined && typeof value.description !== "string") {
+  if (
+    value.description !== undefined &&
+    typeof value.description !== "string"
+  ) {
     warnings.push('"description" should be a string.');
   }
   if (value.strict !== undefined && typeof value.strict !== "boolean") {
@@ -86,9 +89,7 @@ export function validateOutputSchema(value: unknown): OutputSchemaValidation {
   } else {
     const schema = value.schema;
     if (schema.type !== "object") {
-      errors.push(
-        'Root "schema.type" must be "object" for structured output.',
-      );
+      errors.push('Root "schema.type" must be "object" for structured output.');
     }
     if (
       !isPlainObject(schema.properties) ||

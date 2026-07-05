@@ -44,7 +44,7 @@ export interface AgentShortcut {
   resolvedId: string | null;
   /**
    * Whether `resolvedId` points at an agx_version row (true) or an
-   * agx_agent row (false). Must be sent with the API call so the server
+   * agent.definition row (false). Must be sent with the API call so the server
    * knows which table to read. Mirrors `!useLatest` for version-pinned
    * shortcuts.
    */
@@ -134,7 +134,7 @@ export interface AgentShortcut {
  *
  * The RPC resolves the version reference and returns:
  *   resolved_id  — ONE uuid to pass to the backend for execution
- *   is_version   — false = resolved_id is an agx_agent.id, true = agx_version.id
+ *   is_version   — false = resolved_id is an agent.definition.id, true = agx_version.id
  *   is_behind    — true = a newer version of the agent exists (drift indicator)
  *
  * Resolution logic (handled inside the RPC):
@@ -153,7 +153,7 @@ export interface AgentShortcutInitialRow {
 
   // Resolved version reference
   resolved_id: string; // single uuid for execution
-  is_version: boolean; // false = agx_agent row, true = agx_version row
+  is_version: boolean; // false = agent.definition row, true = agx_version row
   is_behind: boolean; // true = newer version exists
 
   // Raw reference data (for drift UI and editing the shortcut itself)
@@ -444,7 +444,7 @@ export type AdminNonGlobalShortcutRow = {
 
   created_at: string;
   updated_at: string;
-}
+};
 // Compile-time guard — ties this interface to the generated RPC Returns.
 // Idiom copied from `_CheckAgentShortcutInitialRow` above.
 type _CheckAdminNonGlobalShortcutRow =

@@ -2,7 +2,7 @@
 
 /**
  * OutputSchemaTab — edit the agent's structured-output schema
- * (`agx_agent.output_schema` → AgentDefinition.outputSchema).
+ * (`agent.definition.output_schema` → AgentDefinition.outputSchema).
  *
  * Self-contained: reads/writes Redux directly. Reuses the forgiving
  * SettingsJsonEditor for editing + Apply. The "Validate" button runs advisory
@@ -52,15 +52,16 @@ interface OutputSchemaTabProps {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
-export function OutputSchemaTab({ agentId, onDirtyChange }: OutputSchemaTabProps) {
+export function OutputSchemaTab({
+  agentId,
+  onDirtyChange,
+}: OutputSchemaTabProps) {
   const dispatch = useAppDispatch();
   const outputSchema = useAppSelector((state) =>
     selectAgentOutputSchema(state, agentId),
   );
 
-  const initialText = outputSchema
-    ? JSON.stringify(outputSchema, null, 2)
-    : "";
+  const initialText = outputSchema ? JSON.stringify(outputSchema, null, 2) : "";
 
   // Latest successfully-parsed buffer, captured from the editor so the Validate
   // button can inspect exactly what's on screen without applying it.

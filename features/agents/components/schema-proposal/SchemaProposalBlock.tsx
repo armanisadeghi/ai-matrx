@@ -4,7 +4,7 @@
  * SchemaProposalBlock — renders a `schema_proposal` JSON block (what the "JSON
  * Schema Generator" agent emits: `{ name, schema, strict? }`) as a compact card
  * with a collapsed JSON preview and an "Apply to an agent" action that writes
- * the schema to a chosen agent's `agx_agent.output_schema`.
+ * the schema to a chosen agent's `agent.definition.output_schema`.
  *
  * Fail-safe: invalid/partial JSON renders the raw body in a muted <pre> (never
  * throws). The JSON preview reuses the shared JsonBlock viewer (lazy-loaded).
@@ -32,7 +32,7 @@ interface SchemaProposalBlockProps {
    * parsing `content` — the `schema_proposal` kind's bridge hands over the
    * envelope-derived object with the injected `__kind` discriminator already
    * stripped, which a raw `content` parse would leak into the applied
-   * `agx_agent.output_schema`. Same serverData-over-content precedent as
+   * `agent.definition.output_schema`. Same serverData-over-content precedent as
    * `useFlashcardsSet`.
    */
   serverData?: Record<string, unknown>;
@@ -47,12 +47,12 @@ interface ParseResult {
 function isProposalShape(value: unknown): value is OutputSchema {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      typeof (value as { name?: unknown }).name === "string" &&
-      (value as { schema?: unknown }).schema !== null &&
-      typeof (value as { schema?: unknown }).schema === "object" &&
-      !Array.isArray((value as { schema?: unknown }).schema),
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof (value as { name?: unknown }).name === "string" &&
+    (value as { schema?: unknown }).schema !== null &&
+    typeof (value as { schema?: unknown }).schema === "object" &&
+    !Array.isArray((value as { schema?: unknown }).schema),
   );
 }
 

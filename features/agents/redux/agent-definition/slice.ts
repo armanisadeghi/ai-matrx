@@ -380,7 +380,7 @@ export const agentDefinitionSlice = createSlice({
 
       // Access metadata (isOwner, accessLevel, sharedByEmail) is only populated
       // by the agx_get_list / agx_get_access_level RPCs. Direct table fetches
-      // (e.g. fetchFullAgent reading agx_agent.*) yield null for these. If we
+      // (e.g. fetchFullAgent reading agent.definition.*) yield null for these. If we
       // already know the access level for this record, NEVER let a null payload
       // downgrade it — that would silently drop the agent out of "mine"/"shared"
       // filters and make it vanish from the list.
@@ -630,7 +630,7 @@ export const agentDefinitionSlice = createSlice({
      * Per-agent skill visibility config. The full SkillConfig object is
      * replaced atomically; the picker UI computes the next value and
      * dispatches once. Marked dirty so the next save flushes it through
-     * to `agx_agent.skill_config`.
+     * to `agent.definition.skill_config`.
      */
     setAgentSkillConfig(
       state,
@@ -671,11 +671,14 @@ export const agentDefinitionSlice = createSlice({
     /**
      * Model-gated UI flags (FE-only). The full UiGates object is replaced
      * atomically; the gate editor computes the next value and dispatches once.
-     * Persisted to `agx_agent.ui_gates` — never sent to the server.
+     * Persisted to `agent.definition.ui_gates` — never sent to the server.
      */
     setAgentUiGates(
       state,
-      action: PayloadAction<{ id: string; uiGates: AgentDefinition["uiGates"] }>,
+      action: PayloadAction<{
+        id: string;
+        uiGates: AgentDefinition["uiGates"];
+      }>,
     ) {
       const record = state.agents[action.payload.id];
       if (!record) return;
@@ -684,7 +687,7 @@ export const agentDefinitionSlice = createSlice({
 
     /**
      * Matrx Actions apply config. Replaced atomically by the Matrx Actions tab;
-     * persisted to `agx_agent.matrx_actions`. Read by aidream's output-directive
+     * persisted to `agent.definition.matrx_actions`. Read by aidream's output-directive
      * dispatcher (full rebrand of the retired settings["output_apply"]).
      */
     setAgentMatrxActions(

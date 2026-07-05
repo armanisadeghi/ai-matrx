@@ -31,7 +31,7 @@ function pinnedAgentHref(agentId: string): string {
  * with `favFilter: "yes"`, then read `makeSelectFilteredAgents(consumerId)`.
  * This means the section reflects whatever the user has favorited via the
  * canonical FavoriteAgentButton (toggling persists through `saveAgentField`
- * → `agx_agent.is_favorite`), respects archive/access filters consistently
+ * → `agent.definition.is_favorite`), respects archive/access filters consistently
  * with the rest of the app, and shares the agent registry with the dropdown
  * (no parallel fetches).
  *

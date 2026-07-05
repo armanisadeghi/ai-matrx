@@ -424,6 +424,32 @@ export const fcService = {
     }
   },
 
+  /**
+   * Phase 6 (analytics) — cheap `card_id → topic` lookup, no detail join.
+   * Feeds the study spine's per-topic mastery breakdown (`StudyProgress`),
+   * which is item-type-agnostic and has no column of its own to join against
+   * — this is the flashcards-side half of that bridge.
+   */
+  async getTopicsForCardIds(
+    ids: string[],
+  ): Promise<FcResult<Record<string, string | null>>> {
+    if (ids.length === 0) return { data: {}, error: null };
+    try {
+      const { data, error } = await EDU()
+        .from("fc_card")
+        .select("id, topic")
+        .in("id", ids);
+      if (error) return fail("getTopicsForCardIds", error);
+      const map: Record<string, string | null> = {};
+      for (const row of (data ?? []) as { id: string; topic: string | null }[]) {
+        map[row.id] = row.topic;
+      }
+      return { data: map, error: null };
+    } catch (e) {
+      return fail("getTopicsForCardIds", e);
+    }
+  },
+
   async updateCard(
     cardId: string,
     patch: Partial<

@@ -27,7 +27,7 @@ export interface AgentBuilderResult {
 const DEFAULT_MODEL_ID = "e2150d2f-7dd3-4fad-9d81-6e6ea41d4afd";
 
 /**
- * Builds a minimal INSERT payload for agx_agent.
+ * Builds a minimal INSERT payload for agent.definition.
  *
  * Only includes fields we have real values for. Omitted fields fall back to
  * the DB defaults (e.g. custom_tools → '[]'::jsonb, tools → '{}', is_active
@@ -106,7 +106,7 @@ export async function createAgentFromBuilder(
 
     const supabase = createClient();
 
-    // RLS on agx_agent requires `user_id = auth.uid()` for inserts. When
+    // RLS on agent.definition requires `user_id = auth.uid()` for inserts. When
     // missing, the server rejects the row and the error body can come
     // back as an empty object ({}), which produced the mystery
     // "Agent insert error: {}" in production. Resolve the current user
@@ -114,8 +114,7 @@ export async function createAgentFromBuilder(
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError || !authData.user?.id) {
       const msg =
-        authError?.message ??
-        "You must be signed in to create an agent.";
+        authError?.message ?? "You must be signed in to create an agent.";
       toast.error("Failed to create agent", { description: msg });
       return { success: false, error: msg };
     }

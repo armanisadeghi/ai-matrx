@@ -18,7 +18,7 @@ import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { warmAgent } from "@/lib/api/warm-helpers";
 
 interface UseWarmAgentOptions {
-  /** Pass true when the id is an agx_version id rather than an agx_agent id. */
+  /** Pass true when the id is an agx_version id rather than an agent.definition id. */
   isVersion?: boolean;
   /** Skip warming entirely (e.g. when the id isn't ready yet). */
   enabled?: boolean;

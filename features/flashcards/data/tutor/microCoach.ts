@@ -2,7 +2,7 @@
 //
 // Phase 4 stretch (Flashcards Competitive Parity Push) — a cheap/fast-model
 // per-card tip, surfaced right after grading (not just end-of-session). New
-// OPTIONAL lane (`fc_micro_coach`, AGENT_SPECS.md §9): no live agent is
+// OPTIONAL lane (`fc_micro_coach`, AGENT_SPECS.md §11): no live agent is
 // registered yet (author one via agent_author, then set the id in
 // `tutor/config.ts` / localStorage) — until then `getFcTutorAgentConfig()`
 // returns `microCoachAgentId: null` and this cleanly no-ops, same as every

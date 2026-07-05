@@ -14,6 +14,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { FsrsState } from "@/lib/srs/fsrs";
 import {
   mapResultToRating,
@@ -32,9 +33,14 @@ import type {
   OverrideAttemptInput,
   SessionPatch,
   ListSessionsFilter,
+  ListAttemptsFilter,
   SessionWithAttempts,
   SessionAttemptSummary,
   StudyStreakRow,
+  StudyGoalRow,
+  NewGoalInput,
+  GoalPatch,
+  ListGoalsFilter,
 } from "../types";
 
 const EDU = () => supabase.schema("education");
@@ -220,6 +226,7 @@ export const studyService = {
       if (filter.setId) q = q.eq("source_set_id", filter.setId);
       if (filter.mode) q = q.eq("mode", filter.mode);
       if (filter.status) q = q.eq("status", filter.status);
+      if (filter.since) q = q.gte("created_at", filter.since);
       q = q.order("created_at", { ascending: false });
       if (filter.limit != null) {
         const offset = filter.offset ?? 0;
@@ -734,6 +741,113 @@ export const studyService = {
       return { data: (data ?? null) as StudyStreakRow | null, error: null };
     } catch (e) {
       return fail("getStreak", e);
+    }
+  },
+
+  /**
+   * Phase 6 (cross-session analytics) — the current user's BROAD attempt
+   * ledger for one item_type, oldest-first, optionally since a cutoff. Unlike
+   * `attemptsForItem` (one item) this is cross-set: every fc_card the learner
+   * has ever answered, in one round-trip, for client-side time-bucketing
+   * (accuracy-over-time, weekly time studied via the paired session query).
+   * Capped by `limit` for the same reason `listMastery` is — a heavier trend
+   * query moves to an RPC/materialized view only once this outgrows a single
+   * page load.
+   */
+  async listAttempts(
+    itemType: string,
+    filter: ListAttemptsFilter = {},
+  ): Promise<StudyResult<StudyAttemptRow[]>> {
+    try {
+      let q = EDU()
+        .from("study_attempt")
+        .select("*")
+        .eq("item_type", itemType)
+        .is("deleted_at", null);
+      if (filter.since) q = q.gte("created_at", filter.since);
+      q = q.order("created_at", { ascending: true }).limit(filter.limit ?? 5000);
+      const { data, error } = await q;
+      if (error) return fail("listAttempts", error);
+      return { data: (data ?? []) as StudyAttemptRow[], error: null };
+    } catch (e) {
+      return fail("listAttempts", e);
+    }
+  },
+
+  // ─── GOALS (Phase 6 planner — real CRUD on study_goal) ───────────────────
+  /**
+   * Create a study goal. `study_goal` has no topic/item_type/set columns —
+   * targeting rides in `metadata` (see `StudyGoalMetadata`) so the schema
+   * never has to grow per study mode.
+   */
+  async createGoal(input: NewGoalInput): Promise<StudyResult<StudyGoalRow>> {
+    try {
+      const orgId = await ensureOrgId(input.orgId ?? null);
+      const { data, error } = await EDU()
+        .from("study_goal")
+        .insert({
+          organization_id: orgId,
+          title: input.title,
+          target_date: input.targetDate ?? null,
+          status: input.status ?? "active",
+          metadata: (input.metadata ?? {}) as never,
+        })
+        .select("*")
+        .single();
+      if (error) return fail("createGoal", error);
+      return { data: data as StudyGoalRow, error: null };
+    } catch (e) {
+      return fail("createGoal", e);
+    }
+  },
+
+  /** The current user's goals (RLS-scoped), soonest target date first (nulls last). */
+  async listGoals(
+    filter: ListGoalsFilter = {},
+  ): Promise<StudyResult<StudyGoalRow[]>> {
+    try {
+      let q = EDU().from("study_goal").select("*").is("deleted_at", null);
+      if (filter.status) q = q.eq("status", filter.status);
+      q = q.order("target_date", { ascending: true, nullsFirst: false });
+      const { data, error } = await q;
+      if (error) return fail("listGoals", error);
+      return { data: (data ?? []) as StudyGoalRow[], error: null };
+    } catch (e) {
+      return fail("listGoals", e);
+    }
+  },
+
+  async updateGoal(
+    id: string,
+    patch: GoalPatch,
+  ): Promise<StudyResult<StudyGoalRow>> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_goal")
+        .update(patch as never)
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) return fail("updateGoal", error);
+      return { data: data as StudyGoalRow, error: null };
+    } catch (e) {
+      return fail("updateGoal", e);
+    }
+  },
+
+  /** Soft-delete a goal (sets deleted_at). */
+  async deleteGoal(id: string): Promise<StudyResult<{ id: string }>> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_goal")
+        .update({ deleted_at: new Date().toISOString() } as never)
+        .eq("id", id)
+        .select("id")
+        .single();
+      if (error) return fail("deleteGoal", error);
+      return { data: { id: (data as { id: string }).id }, error: null };
+    } catch (e) {
+      return fail("deleteGoal", e);
     }
   },
 };

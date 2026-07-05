@@ -58,6 +58,8 @@ export function StudySurface({ setId }: { setId: string }) {
           goTo={study.goTo}
           grade={study.grade}
           voiceTestForCard={getVoiceTestForCard}
+          masteryByCard={study.masteryByCard}
+          sessionId={study.sessionId}
           errorTitle="Couldn't load this set"
           emptyBody="This set has no cards yet. Generate some in chat to study it."
           onRestart={() => study.goTo(0)}

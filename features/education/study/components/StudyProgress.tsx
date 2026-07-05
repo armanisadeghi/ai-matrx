@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
 import { displayMasteryPct } from "../utils/masteryFsrs";
+import { StudyTrends } from "./StudyTrends";
 import type { ItemMasteryRow, StudyStreakRow } from "../types";
 
 interface Summary {
@@ -93,6 +94,7 @@ export function StudyProgress({
   backHref,
   reviewHref,
   weakAreaHref,
+  topicSource,
 }: {
   itemType?: string;
   title?: string;
@@ -101,9 +103,16 @@ export function StudyProgress({
   reviewHref?: string;
   /** When set + weak cards exist, shows a "Drill N weak areas" CTA linking here. */
   weakAreaHref?: string;
+  /**
+   * Phase 6 (analytics) — which mode-specific topic join powers the
+   * "By topic" trend section. Only `"fc_card"` is wired today; omit to hide
+   * that section for modes with no topic concept.
+   */
+  topicSource?: "fc_card";
 }) {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [mastery, setMastery] = useState<ItemMasteryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weakCount, setWeakCount] = useState(0);
@@ -123,11 +132,13 @@ export function StudyProgress({
       if (masteryRes.error) {
         setError(masteryRes.error);
         setSummary(null);
+        setMastery([]);
       } else {
         setError(null);
         setSummary(
           summarize(masteryRes.data ?? [], (sessionsRes.data ?? []).length),
         );
+        setMastery(masteryRes.data ?? []);
       }
       setWeakCount(weakRes.data?.length ?? 0);
       setStreak(streakRes.data ?? null);
@@ -271,6 +282,9 @@ export function StudyProgress({
               <Stat icon={TrendingUp} label="Total answers" value={`${summary.totalAttempts}`} />
               <Stat icon={CalendarClock} label="Sessions" value={`${summary.sessions}`} />
             </section>
+
+            {/* Phase 6 — cross-session trends + per-topic breakdown */}
+            <StudyTrends itemType={itemType} mastery={mastery} topicSource={topicSource} />
           </>
         )}
       </div>

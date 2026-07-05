@@ -1,7 +1,7 @@
 /**
  * Agent-shaped progressive JSON display.
  *
- * Sibling of the legacy PromptJsonDisplay but built around the agx_agent
+ * Sibling of the legacy PromptJsonDisplay but built around the agent.definition
  * row shape: `variable_definitions`, `context_slots`, `messages[].content`
  * as a text-part array, `agent_type`, `model_id`, etc.
  *

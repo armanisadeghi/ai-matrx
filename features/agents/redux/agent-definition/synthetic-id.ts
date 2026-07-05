@@ -6,7 +6,7 @@
  * The canonical definition lives HERE, in the agents feature, because the
  * persistence layer (the save thunks in `./thunks.ts`) is what relies on
  * it: every DB-write thunk early-returns on a synthetic id so a `cmp-`
- * record can NEVER reach `supabase.from('agx_agent')`. That makes the
+ * record can NEVER reach `supabase.from('agent.definition')`. That makes the
  * no-persist guarantee structural rather than incidental ("we just didn't
  * mount autosave").
  *

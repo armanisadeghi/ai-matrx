@@ -4,7 +4,7 @@
  * Organization Agents Page
  * Route: /organizations/[slug]/prompts (legacy URL — tile is now labeled "Agents")
  *
- * Lists agents owned by the org (`agx_agent.organization_id = orgId`) plus
+ * Lists agents owned by the org (`agent.definition.organization_id = orgId`) plus
  * agents explicitly shared with the org via the `permissions` table.
  */
 
@@ -77,7 +77,9 @@ export default function OrgAgentsPage() {
           getHref={getHref}
           emptyTitle="No shared agents yet"
           emptyDescription="Agents created under this organization will appear here, along with agents other members share."
-          emptyIcon={<FaIndent className="h-8 w-8 text-teal-600 dark:text-teal-400" />}
+          emptyIcon={
+            <FaIndent className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+          }
         />
       )}
     </OrgResourceLayout>

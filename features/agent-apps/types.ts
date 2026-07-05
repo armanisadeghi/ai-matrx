@@ -2,7 +2,7 @@
 // AGENT APPS — TypeScript Type Definitions
 // ============================================================================
 // Public shareable AI-powered mini-apps with custom UIs, backed by agents
-// (agx_agent / agx_version). Parity port of features/prompt-apps/types.
+// (agent.definition / agx_version). Parity port of features/prompt-apps/types.
 // ============================================================================
 
 import type { Database, Json } from "@/types/database.types";
@@ -10,11 +10,7 @@ import type { Database, Json } from "@/types/database.types";
 export type AppStatus = "draft" | "published" | "archived" | "suspended";
 
 export type AppDisplayMode =
-  | "form"
-  | "form-to-chat"
-  | "chat"
-  | "centered-input"
-  | "chat-with-history";
+  "form" | "form-to-chat" | "chat" | "centered-input" | "chat-with-history";
 
 // ============================================================================
 // Shell + slots model (Phase 1a — see plan)
@@ -93,12 +89,7 @@ export interface AgentAppShellConfigCommon {
    * @see features/agents/components/inputs/variable-input-variations
    */
   variableInputStyle?:
-    | "form"
-    | "inline"
-    | "wizard"
-    | "compact"
-    | "guided"
-    | "cards";
+    "form" | "inline" | "wizard" | "compact" | "guided" | "cards";
   /** Show the pre-execution gate (welcome / consent / setup) before the first run. */
   showPreExecutionGate?: boolean;
   /** Custom message shown on the pre-execution gate (when enabled). */
@@ -151,12 +142,7 @@ export interface AgentAppShellConfigCommon {
 }
 
 export type ComponentLanguage =
-  | "tsx"
-  | "jsx"
-  | "typescript"
-  | "javascript"
-  | "html"
-  | "react";
+  "tsx" | "jsx" | "typescript" | "javascript" | "html" | "react";
 
 export type ErrorType =
   | "missing_variable"

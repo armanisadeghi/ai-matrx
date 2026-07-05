@@ -93,7 +93,7 @@ async function bustAgentCache(
   headers: Record<string, string>,
 ): Promise<void> {
   // `is_version` is omitted — Builder saves always mutate the live
-  // `agx_agent` row, never a version snapshot (the default is false).
+  // `agent.definition` row, never a version snapshot (the default is false).
   try {
     await postInvalidateAgentCache(baseUrl, agentId, headers, {
       keepalive: true,

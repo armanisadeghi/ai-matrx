@@ -217,9 +217,7 @@ const PendingStructuredBlock: React.FC = () => (
   >
     <div className="mb-3 flex items-center gap-2">
       <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-      <span className="text-xs text-muted-foreground">
-        Structured content
-      </span>
+      <span className="text-xs text-muted-foreground">Structured content</span>
     </div>
     <div className="space-y-2">
       <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted" />
@@ -244,9 +242,7 @@ function isPendingStructuredJson(block: {
   if (block.type !== "code") return false;
   const envelope = readEnvelope(block.metadata);
   return (
-    !!envelope &&
-    !envelope.root.kind &&
-    envelope.root.status === "streaming"
+    !!envelope && !envelope.root.kind && envelope.root.status === "streaming"
   );
 }
 
@@ -493,14 +489,12 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         const videoId = (sd.video_id ?? sd.videoId) as string | undefined;
         if (!videoId) return null;
         const externalUrl = (sd.external_url ?? sd.externalUrl) as
-          | string
-          | undefined;
+          string | undefined;
         const start = externalUrl
           ? parseYouTubeUrl(externalUrl)?.start
           : undefined;
         const sourceLabel = (sd.source_label ?? sd.sourceLabel) as
-          | string
-          | undefined;
+          string | undefined;
         return (
           <BlockComponents.YouTubeEmbedBlock
             key={index}
@@ -1022,7 +1016,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
     case "schema_proposal":
       // A ```json output-schema proposal ({ name, schema, strict? }). Offers
-      // "Apply to an agent" → writes agx_agent.output_schema. Fail-safe parse.
+      // "Apply to an agent" → writes agent.definition.output_schema. Fail-safe parse.
       // serverData (the `schema_proposal` kind bridge's clean, __kind-stripped
       // object) is preferred over the content parse when present.
       return (
@@ -1046,9 +1040,13 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
 
     case "decision": {
-      const candidateDecision: unknown = block.serverData ?? block.metadata?.decision;
+      const candidateDecision: unknown =
+        block.serverData ?? block.metadata?.decision;
 
-      if (!isInlineDecision(candidateDecision) || candidateDecision.options.length === 0) {
+      if (
+        !isInlineDecision(candidateDecision) ||
+        candidateDecision.options.length === 0
+      ) {
         return renderBasicMarkdown(block.content);
       }
       const decisionData = candidateDecision;
@@ -1070,7 +1068,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       }
 
       const metadataRawXml = block.metadata?.rawXml;
-      const rawXml = typeof metadataRawXml === "string" ? metadataRawXml : block.content;
+      const rawXml =
+        typeof metadataRawXml === "string" ? metadataRawXml : block.content;
 
       return (
         <BlockComponents.InlineDecisionBlock

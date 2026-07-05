@@ -482,7 +482,7 @@ export const saveAgentField = createAsyncThunk<
  * Toggles the agent's `auto_tools_disabled` kill switch — the inverse of the
  * Builder's "Allow automated tool injection" switch.
  *
- * Persists into `agx_agent.tool_config.auto_tools_disabled` via a read-merge-
+ * Persists into `agent.definition.tool_config.auto_tools_disabled` via a read-merge-
  * write so the other tool_config keys (`tools`, `excluded_tools`) are never
  * clobbered. The server reads this flag from tool_config (agx_manager.py);
  * there is no legacy column and no DB trigger keeping it in sync, so a

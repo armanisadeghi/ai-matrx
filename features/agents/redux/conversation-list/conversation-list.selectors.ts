@@ -142,7 +142,7 @@ export const makeSelectAgentConversations = makeSelectAgentConversationList;
 
 /**
  * Drop-in replacement for the legacy `selectAgentConversationsEntry` selector.
- * Returns the full cache entry or undefined. Accepts canonical agx_agent.id.
+ * Returns the full cache entry or undefined. Accepts canonical agent.definition.id.
  */
 export function selectAgentConversationsEntry(
   state: RootState,

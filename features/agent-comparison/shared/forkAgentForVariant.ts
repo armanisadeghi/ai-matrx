@@ -10,7 +10,7 @@
  * edits.
  *
  * Synthetic ids carry a `cmp-` prefix so the save-agent paths are easy
- * to gate against accidental DB writes. (Server-side, the agx_agent.id
+ * to gate against accidental DB writes. (Server-side, the agent.definition.id
  * column is uuid only, so even if a save slipped through PostgREST would
  * reject the id format.)
  *
@@ -21,9 +21,7 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import {
-  upsertAgent,
-} from "@/features/agents/redux/agent-definition/slice";
+import { upsertAgent } from "@/features/agents/redux/agent-definition/slice";
 import { SYNTHETIC_AGENT_ID_PREFIX } from "@/features/agents/redux/agent-definition/synthetic-id";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
@@ -42,7 +40,10 @@ export function newSyntheticAgentId(): string {
  * from the original — subsequent edits to the synthetic don't leak back
  * to the source.
  */
-function cloneAgent(source: AgentDefinition, syntheticId: string): AgentDefinition {
+function cloneAgent(
+  source: AgentDefinition,
+  syntheticId: string,
+): AgentDefinition {
   const cloned = structuredClone(source);
   cloned.id = syntheticId;
   // Detach from source's lineage so version-pin logic etc. doesn't fire

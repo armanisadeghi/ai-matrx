@@ -30,7 +30,7 @@ export interface FcTutorAgentConfig {
   /**
    * Cheap/fast-model per-card tip, surfaced right after grading (not just
    * end-of-session). No live agent is registered yet — author one via
-   * agent_author (spec: features/education/docs/AGENT_SPECS.md §9) and set
+   * agent_author (spec: features/education/docs/AGENT_SPECS.md §11) and set
    * it here (or via `setFcTutorAgentId`) to light this lane up. Until then
    * this cleanly no-ops, same as every other optional lane.
    */

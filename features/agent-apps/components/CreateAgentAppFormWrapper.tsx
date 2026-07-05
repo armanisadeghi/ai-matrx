@@ -30,7 +30,7 @@ import {
   MousePointerClick,
   Rocket,
   Zap,
-  Wrench
+  Wrench,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,10 @@ import {
   SearchableAgentSelect,
   type AgentOption,
 } from "./SearchableAgentSelect";
-import { selectLiveAgents, selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  selectLiveAgents,
+  selectAgentById,
+} from "@/features/agents/redux/agent-definition/selectors";
 import {
   fetchAgentsListFull,
   fetchFullAgent,
@@ -78,7 +81,7 @@ export function CreateAgentAppFormWrapper({
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(
     preselectedAgentId ?? undefined,
   );
-  // The raw `agx_agent` row we feed downstream (AutoCreate's AI prompt
+  // The raw `agent.definition` row we feed downstream (AutoCreate's AI prompt
   // expects the raw DB shape). Loaded on-demand the first time a card
   // that needs it is clicked.
   const [agentRow, setAgentRow] = useState<any>(null);
@@ -123,7 +126,7 @@ export function CreateAgentAppFormWrapper({
   );
 
   /**
-   * Lazily fetch the full raw agx_agent row for the selected agent.
+   * Lazily fetch the full raw agent.definition row for the selected agent.
    * AutoCreate's AI builtin gets the raw row JSON-stringified — we keep
    * that shape byte-identical to today so the model prompt is unaffected.
    */
@@ -191,9 +194,7 @@ export function CreateAgentAppFormWrapper({
       onSuccess?.();
       router.push(`/agent-apps/${created.id}/run`);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create app",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to create app");
     } finally {
       setSubmitting(false);
     }
@@ -204,8 +205,7 @@ export function CreateAgentAppFormWrapper({
     if (!selectedAgentId) return;
     setSubmitting(true);
     try {
-      const agentName =
-        agentInRedux?.name ?? agentRow?.name ?? "App";
+      const agentName = agentInRedux?.name ?? agentRow?.name ?? "App";
       const baseName = `${agentName} App`;
 
       // Use a UUID as the initial slug. Slugs are globally unique on
@@ -214,9 +214,9 @@ export function CreateAgentAppFormWrapper({
       // app is created for the same agent. The user will pick a real slug
       // in Settings when they're ready to publish.
       const chosenSlug =
-        (typeof crypto !== "undefined" && "randomUUID" in crypto
+        typeof crypto !== "undefined" && "randomUUID" in crypto
           ? crypto.randomUUID()
-          : `app-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`);
+          : `app-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 
       const res = await fetch("/api/agent-apps", {
         method: "POST",
@@ -242,9 +242,7 @@ export function CreateAgentAppFormWrapper({
       onSuccess?.();
       router.push(`/agent-apps/${created.id}/run`);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create app",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to create app");
     } finally {
       setSubmitting(false);
     }
@@ -396,7 +394,11 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-green-500 to-emerald-500"
           title="Let Us Handle It"
           description="We'll create the perfect app for you using smart defaults. Just click and go!"
-          tag={{ icon: <Rocket className="w-3.5 h-3.5" />, text: "Fastest option", className: "text-success" }}
+          tag={{
+            icon: <Rocket className="w-3.5 h-3.5" />,
+            text: "Fastest option",
+            className: "text-success",
+          }}
           onClick={() => handleCardClick("auto-fire")}
           disabled={!selectedAgentId || agentRowLoading || submitting}
           loading={agentRowLoading && mode === "grid"}
@@ -406,7 +408,11 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-blue-500 to-purple-500"
           title="Customize Options"
           description="Choose from preset options to make it easier to guide the AI."
-          tag={{ icon: <Zap className="w-3.5 h-3.5" />, text: "Most popular", className: "text-primary" }}
+          tag={{
+            icon: <Zap className="w-3.5 h-3.5" />,
+            text: "Most popular",
+            className: "text-primary",
+          }}
           onClick={() => handleCardClick("auto-select")}
           disabled={!selectedAgentId || agentRowLoading || submitting}
         />
@@ -415,7 +421,11 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-orange-500 to-pink-500"
           title="Describe Your Vision"
           description="Tell us what you want in plain English. Voice or text. We'll do the rest."
-          tag={{ icon: <Rocket className="w-3.5 h-3.5" />, text: "Most flexible", className: "text-muted-foreground" }}
+          tag={{
+            icon: <Rocket className="w-3.5 h-3.5" />,
+            text: "Most flexible",
+            className: "text-muted-foreground",
+          }}
           onClick={() => handleCardClick("auto-describe")}
           disabled={!selectedAgentId || agentRowLoading || submitting}
         />
@@ -424,7 +434,11 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-cyan-500 to-sky-500"
           title="Live Builder"
           description="Pick a layout and watch it render in real time. No code generation — just pick and ship."
-          tag={{ icon: <Zap className="w-3.5 h-3.5" />, text: "No code", className: "text-cyan-500" }}
+          tag={{
+            icon: <Zap className="w-3.5 h-3.5" />,
+            text: "No code",
+            className: "text-cyan-500",
+          }}
           onClick={() => handleCardClick("live-builder")}
           disabled={!selectedAgentId || submitting}
         />
@@ -433,7 +447,11 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-fuchsia-500 to-rose-500"
           title="Standard Chat Layout"
           description="One click. Full chat UI with history and follow-up turns, ready to run."
-          tag={{ icon: <Rocket className="w-3.5 h-3.5" />, text: "One click", className: "text-rose-500" }}
+          tag={{
+            icon: <Rocket className="w-3.5 h-3.5" />,
+            text: "One click",
+            className: "text-rose-500",
+          }}
           onClick={() => handleCardClick("standard-chat")}
           disabled={!selectedAgentId || submitting}
           loading={submitting && mode === "grid"}
@@ -443,7 +461,11 @@ export function CreateAgentAppFormWrapper({
           iconBg="from-slate-500 to-zinc-500"
           title="Build Manually"
           description="Full control over name, slug, display mode, and starter code. For power users."
-          tag={{ icon: <Code2 className="w-3.5 h-3.5" />, text: "Power user", className: "text-muted-foreground" }}
+          tag={{
+            icon: <Code2 className="w-3.5 h-3.5" />,
+            text: "Power user",
+            className: "text-muted-foreground",
+          }}
           onClick={() => handleCardClick("manual")}
           disabled={!selectedAgentId || submitting}
         />

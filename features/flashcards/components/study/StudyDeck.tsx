@@ -26,7 +26,7 @@ import {
   Trophy,
   HelpCircle,
   Loader2,
-  Sparkles,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,7 @@ import {
   toFlashcardMobileCardsFromStudy,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ItemMasteryRow } from "@/features/education/study/types";
@@ -50,6 +51,7 @@ import {
   reviewSession,
   type ReviewSessionResult,
 } from "../../data/tutor/reviewSession";
+import { microCoach } from "../../data/tutor/microCoach";
 import {
   buildRecentSessionContext,
   buildReviewAggregate,
@@ -170,10 +172,12 @@ export function StudyDeck(props: StudyDeckProps) {
   const [question, setQuestion] = useState("");
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
-  const cardShownAtRef = useRef<number>(Date.now());
+  const [helpAsked, setHelpAsked] = useState(false);
+  const cardShownAtRef = useRef<number>(0);
   useEffect(() => {
     cardShownAtRef.current = Date.now();
     setHelp(null);
+    setHelpAsked(false);
     setAskOpen(false);
     setQuestion("");
   }, [current?.id]);
@@ -182,6 +186,7 @@ export function StudyDeck(props: StudyDeckProps) {
     if (!current) return;
     setHelpLoading(true);
     setHelp(null);
+    setHelpAsked(true);
     try {
       const recent = buildRecentSessionContext(cards, resultsByCard, masteryByCard);
       const [dueRes, historyRes] = await Promise.all([
@@ -228,7 +233,6 @@ export function StudyDeck(props: StudyDeckProps) {
     void dispatch(reviewSession({ sessionId, attempts, aggregate }))
       .then((result) => setReview(result))
       .finally(() => setReviewLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires once, guarded by reviewFiredRef
   }, [completed, sessionId]);
 
   useEffect(() => {
@@ -289,7 +293,18 @@ export function StudyDeck(props: StudyDeckProps) {
 
   const handleGrade = (result: ReviewResult): void => {
     if (grading) return;
-    void grade(result);
+    const card = current;
+    void Promise.resolve(grade(result)).then(() => {
+      // Phase 4 stretch: cheap-model per-card micro-coaching. Fire-and-forget
+      // (never blocks advancing to the next card) and cleanly no-ops until a
+      // fc_micro_coach agent is authored (features/flashcards/data/agents.ts).
+      if (!card) return;
+      void dispatch(microCoach({ front: card.front, back: card.back, result })).then(
+        (tip) => {
+          if (tip) toast.info(tip, { duration: 8000 });
+        },
+      );
+    });
   };
 
   if (loading) {
@@ -352,6 +367,24 @@ export function StudyDeck(props: StudyDeckProps) {
             />
             <Stat label="Accuracy" value={`${accuracy}%`} />
           </div>
+
+          {(reviewLoading || review) && (
+            <div className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-left text-sm">
+              <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <GraduationCap className="h-3.5 w-3.5" />
+                AI review
+              </div>
+              {reviewLoading ? (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Reviewing your session…
+                </div>
+              ) : (
+                <p className="text-foreground">{review?.summary}</p>
+              )}
+            </div>
+          )}
+
           <div className="flex w-full flex-col gap-2 sm:flex-row">
             {onRestart && (
               <Button variant="outline" className="flex-1" onClick={restart}>
@@ -464,6 +497,19 @@ export function StudyDeck(props: StudyDeckProps) {
             disabled={grading}
             className="w-full"
           />
+
+          {enableTutor && (
+            <AskAiPanel
+              open={askOpen}
+              question={question}
+              onQuestionChange={setQuestion}
+              onToggle={() => setAskOpen((o) => !o)}
+              onAsk={() => void askAi()}
+              loading={helpLoading}
+              result={help}
+              unavailable={helpAsked && !helpLoading && !help}
+            />
+          )}
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
@@ -488,6 +534,92 @@ export function StudyDeck(props: StudyDeckProps) {
         </div>
       </div>
     </Shell>
+  );
+}
+
+/** Phase 4 — the "Ask AI" live-help affordance: a toggle button that expands
+ *  into an optional question + the tutor's answer. Shared by every driver
+ *  through <StudyDeck/> (classic set study, adaptive due review, weak-area
+ *  drill); Fast Fire keeps its own timer-driven variant (FastFireLiveCard). */
+function AskAiPanel({
+  open,
+  question,
+  onQuestionChange,
+  onToggle,
+  onAsk,
+  loading,
+  result,
+  unavailable,
+}: {
+  open: boolean;
+  question: string;
+  onQuestionChange: (value: string) => void;
+  onToggle: () => void;
+  onAsk: () => void;
+  loading: boolean;
+  result: HelpLiveResult | null;
+  unavailable: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-full gap-1.5 text-xs"
+        onClick={onToggle}
+      >
+        {loading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <HelpCircle className="h-3.5 w-3.5" />
+        )}
+        Ask AI for help
+      </Button>
+
+      {open && (
+        <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-2.5">
+          <Textarea
+            value={question}
+            onChange={(e) => onQuestionChange(e.target.value)}
+            placeholder="Optional: what specifically is confusing? (Leave blank for a general hint.)"
+            className="min-h-[52px] resize-none text-xs"
+          />
+          <Button
+            type="button"
+            size="sm"
+            className="self-end gap-1.5 text-xs"
+            onClick={onAsk}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <GraduationCap className="h-3.5 w-3.5" />
+            )}
+            Ask
+          </Button>
+        </div>
+      )}
+
+      {result && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+          <p>{result.answer}</p>
+          {result.followups.length > 0 && (
+            <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-xs opacity-80">
+              {result.followups.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {unavailable && (
+        <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          AI help isn&apos;t available right now.
+        </div>
+      )}
+    </div>
   );
 }
 

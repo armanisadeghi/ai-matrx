@@ -15,6 +15,7 @@ export default function FlashcardProgressPage() {
       backHref="/education/flashcards"
       reviewHref="/education/flashcards/review"
       weakAreaHref="/education/flashcards/weak-areas"
+      topicSource="fc_card"
     />
   );
 }

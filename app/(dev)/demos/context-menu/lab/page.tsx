@@ -23,7 +23,7 @@
  *     matrx-user/code, or none). The selection is passed verbatim to
  *     `<UnifiedAgentContextMenu surfaceName={...}>` and propagates to
  *     `runtime.surfaceName` on every shortcut launch. The launch thunk
- *     uses it to look up `agx_agent_surface.value_mappings` for
+ *     uses it to look up `agent.definition_surface.value_mappings` for
  *     (agentId, surfaceName, caller scope) and applies them via
  *     `mapScopeToInstanceWithSurface`. If no surface is selected, the
  *     legacy `scopeMappings` path runs.

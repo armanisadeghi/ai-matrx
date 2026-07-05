@@ -60,10 +60,29 @@ export interface GenerateCardsVariables {
   user_request?: string;
 }
 
+/**
+ * Variables the generateFromSource agent declares (Phase 5 — RAG-sourced
+ * generation). `source_content` is the concatenated text of the chunks the
+ * user curated (checklist UI), NOT a whole document — the agent never sees
+ * anything the user didn't explicitly include.
+ */
+export interface GenerateFromSourceVariables {
+  source_content: string;
+  document_id: string;
+  count: number;
+  difficulty: string;
+}
+
+function isFromSourceVars(
+  vars: GenerateCardsVariables | GenerateFromSourceVariables,
+): vars is GenerateFromSourceVariables {
+  return "source_content" in vars;
+}
+
 export interface GenerateCardsResult {
   generate: (
     agentId: string,
-    vars: GenerateCardsVariables,
+    vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ) => Promise<GeneratedCardSet>;
   isGenerating: boolean;
   error: string | null;
@@ -110,12 +129,35 @@ function coerceCard(raw: unknown): NewCardInput | null {
     return typeof v === "string" && v.trim() ? v.trim() : null;
   };
 
+  // Phase 5 (from-source): the agent echoes which passage a card came from
+  // as `source: { processed_document_id, chunk_id, page }` per
+  // AGENT_SPECS.md §2 — `file_id` is NOT something the agent knows (it's our
+  // cld_file id, not a RAG identifier), so it's left blank here for the
+  // from-source caller to backfill from the document the user picked before
+  // persisting (fcService.addCards skips lineage entirely on an empty id).
+  const rawSource = r.source;
+  const source =
+    rawSource && typeof rawSource === "object" && !Array.isArray(rawSource)
+      ? (() => {
+          const s = rawSource as Record<string, unknown>;
+          const processedDocumentId =
+            typeof s.processed_document_id === "string"
+              ? s.processed_document_id
+              : undefined;
+          const chunkId =
+            typeof s.chunk_id === "string" ? s.chunk_id : undefined;
+          const page = typeof s.page === "number" ? s.page : undefined;
+          return { file_id: "", processed_document_id: processedDocumentId, chunk_id: chunkId, page };
+        })()
+      : undefined;
+
   return {
     front,
     back,
     card_kind: optional("card_kind") ?? "basic",
     difficulty: optional("difficulty"),
     topic: optional("topic"),
+    source,
   };
 }
 
@@ -221,15 +263,18 @@ export function useGenerateCards(): GenerateCardsResult {
 
   async function generate(
     agentId: string,
-    vars: GenerateCardsVariables,
+    vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedCardSet> {
     setIsGenerating(true);
     setError(null);
     setActiveConversationId(null); // a fresh run must not feed off the last one
     try {
+      const fromSource = isFromSourceVars(vars);
       const { requestId } = await dispatch(
         launchAgentExecution({
-          surfaceKey: "flashcards-create-from-topic",
+          surfaceKey: fromSource
+            ? "flashcards-create-from-source"
+            : "flashcards-create-from-topic",
           agentId,
           sourceFeature: "flashcards",
           // The agent already has its response schema baked in — extraction is
@@ -244,13 +289,20 @@ export function useGenerateCards(): GenerateCardsResult {
           onConversationCreated: (conversationId) =>
             setActiveConversationId(conversationId),
           runtime: {
-            variables: {
-              topic: vars.topic,
-              count: String(vars.count),
-              difficulty: vars.difficulty,
-              grade_level: vars.grade_level ?? "",
-              user_request: vars.user_request ?? "",
-            },
+            variables: fromSource
+              ? {
+                  source_content: vars.source_content,
+                  document_id: vars.document_id,
+                  count: String(vars.count),
+                  difficulty: vars.difficulty,
+                }
+              : {
+                  topic: vars.topic,
+                  count: String(vars.count),
+                  difficulty: vars.difficulty,
+                  grade_level: vars.grade_level ?? "",
+                  user_request: vars.user_request ?? "",
+                },
           },
           config: {
             autoRun: true,

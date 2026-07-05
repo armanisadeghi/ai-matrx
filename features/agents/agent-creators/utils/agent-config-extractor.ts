@@ -67,7 +67,7 @@ function extractMessages(obj: Record<string, unknown>): MessageEntry[] {
     .map((m) => ({
       role: String(m.role),
       // Agents ship content as an array of `{type, text}` parts (matches
-      // the agx_agent.messages JSONB shape). String() on an array
+      // the agent.definition.messages JSONB shape). String() on an array
       // produces "[object Object]" — flatten it to the text segments so
       // the builder insert payload re-wraps a valid text part.
       content: flattenAgentContent(m.content),
@@ -99,7 +99,7 @@ function flattenAgentContent(content: unknown): string {
  * them into proper VariableDefinition objects with all required keys present.
  */
 function extractVariables(obj: Record<string, unknown>): VariableDefinition[] {
-  // Agent JSON uses `variable_definitions` (agx_agent column name). The
+  // Agent JSON uses `variable_definitions` (agent.definition column name). The
   // older prompt shape used `variableDefaults`. Support both so legacy
   // shortcuts keep working while we converge on the agent shape.
   const raw =
@@ -114,21 +114,19 @@ function extractVariables(obj: Record<string, unknown>): VariableDefinition[] {
       (v): v is Record<string, unknown> =>
         !!v && typeof v === "object" && "name" in v,
     )
-    .map(
-      (v): VariableDefinition => ({
-        name: String(v.name),
-        defaultValue: v.defaultValue ?? v.default_value ?? v.default ?? "",
-        helpText:
-          typeof v.helpText === "string"
-            ? v.helpText
-            : typeof v.help_text === "string"
-              ? v.help_text
-              : typeof v.description === "string"
-                ? v.description
-                : undefined,
-        required: typeof v.required === "boolean" ? v.required : false,
-      }),
-    );
+    .map((v): VariableDefinition => ({
+      name: String(v.name),
+      defaultValue: v.defaultValue ?? v.default_value ?? v.default ?? "",
+      helpText:
+        typeof v.helpText === "string"
+          ? v.helpText
+          : typeof v.help_text === "string"
+            ? v.help_text
+            : typeof v.description === "string"
+              ? v.description
+              : undefined,
+      required: typeof v.required === "boolean" ? v.required : false,
+    }));
 }
 
 function extractSettings(

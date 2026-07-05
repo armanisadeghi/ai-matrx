@@ -45,6 +45,8 @@ export function ReviewDueSurface() {
           goTo={study.goTo}
           grade={study.grade}
           voiceTestForCard={getVoiceTestForCard}
+          masteryByCard={study.masteryByCard}
+          sessionId={study.sessionId}
           errorTitle="Couldn't load your due cards"
           emptyTitle="You're all caught up"
           emptyBody="No cards are due for review right now. Study a set to build your queue — cards resurface on the spaced-repetition schedule."

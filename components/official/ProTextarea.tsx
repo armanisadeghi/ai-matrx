@@ -24,7 +24,7 @@
  *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
  *     agent from the `clean` role on `matrx-user/transcripts-cleanup`.
  *   - **Bound agents** — when `surfaceName` is set, lists agents from
- *     `agx_agent_surface` (My agents / System / Shared / org), same as the
+ *     `agent.definition_surface` (My agents / System / Shared / org), same as the
  *     context menu. Pass `getApplicationScope` for full surface scope at run.
  *   - **Help with this…** — OFF by default (`enableHelpWithThis`). Placeholder
  *     default: General Chat (`helpAgentId` to override).
@@ -217,7 +217,7 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   customAgentContextItems?: SessionContextItem[];
   /**
    * Surface registry name (`matrx-user/notes`, etc.). When set, the "…" menu
-   * lists agents from `agx_agent_surface` (My agents / System / Shared / org).
+   * lists agents from `agent.definition_surface` (My agents / System / Shared / org).
    */
   surfaceName?: string;
   /**

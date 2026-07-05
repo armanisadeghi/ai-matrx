@@ -14,7 +14,9 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
   slug: "war-room",
   description:
     "Session-based multitasking command center. A user opens saved War Rooms, each a cockpit of threads: a Stage mode (a live watchlist rail + one driven thread) and a Grid mode (the self-arranging bento gallery, all at once), toggled in the header. Every thread bundles a Task + Notes + Audio transcript + Files/Documents + an Agent (the real Scribe Agent+ panel) behind six tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned, parked (hidden), or projected. Header controls: Stage⇄Grid, the instrument projector (set every thread to one view), a Comfortable/Compact density dial, and a live active/parked/pinned meter. A thin consumer of tasks, notes, transcription, files/documents, scribe/agents, and scopes.",
-  docs: [{ label: "War Room FEATURE.md", href: "/features/war-room/FEATURE.md" }],
+  docs: [
+    { label: "War Room FEATURE.md", href: "/features/war-room/FEATURE.md" },
+  ],
   routeScanPath: "app/(core)/war-room",
 
   routes: [
@@ -23,13 +25,15 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       label: "Marketing landing",
       description:
         "Public ModuleLanding pitch. Authenticated users are redirected to /war-room/all.",
-      filePath: "features/auth/components/module-landing/landings/WarRoomLanding.tsx",
+      filePath:
+        "features/auth/components/module-landing/landings/WarRoomLanding.tsx",
       status: "Live",
     },
     {
       url: "/war-room/all",
       label: "My War Rooms",
-      description: "Browse / create / delete saved rooms. The list 'savior' page.",
+      description:
+        "Browse / create / delete saved rooms. The list 'savior' page.",
       filePath: "features/war-room/components/all/WarRoomAllView.tsx",
       status: "Live",
     },
@@ -125,7 +129,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "MasterAgentPanel + useMasterAgent (master agent — all rooms)",
       filePath: "features/war-room/components/master/MasterAgentPanel.tsx",
       description:
-        "The /war-room/all 'Master Agent' button opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the rooms list stays interactive. It REUSES the canonical AgentConversationColumn (composer + streaming) unchanged on surfaceKey 'war-room-master'. useMasterAgent is a thin context layer over the shared useDurableAgentConversation primitive — ONE durable conversation per user keyed 'war-room:master-conversation:<userId>' (per-agent roster + active-agent pointer + legacy-key migration). It DEFAULTS to the dedicated Master persona (WAR_ROOM_MASTER_AGENT_ID — a builtin agx_agent carrying data/data_action/workbook/document so it can list/read the user's own notes/tasks/projects/transcripts), shown + swappable via WarRoomAgentSelector (no hidden default). It pushes READ-ONLY cross-room context (buildMasterAgentContext) with the no-empty-push guard, re-pushing when the room set changes, and ARMS the master tools (setClientTools(WAR_ROOM_MASTER_TOOL_NAMES), cleared on unmount) so the master can read/message threads + create/rename rooms — see the war-room-master-tools entry.",
+        "The /war-room/all 'Master Agent' button opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the rooms list stays interactive. It REUSES the canonical AgentConversationColumn (composer + streaming) unchanged on surfaceKey 'war-room-master'. useMasterAgent is a thin context layer over the shared useDurableAgentConversation primitive — ONE durable conversation per user keyed 'war-room:master-conversation:<userId>' (per-agent roster + active-agent pointer + legacy-key migration). It DEFAULTS to the dedicated Master persona (WAR_ROOM_MASTER_AGENT_ID — a builtin agent.definition carrying data/data_action/workbook/document so it can list/read the user's own notes/tasks/projects/transcripts), shown + swappable via WarRoomAgentSelector (no hidden default). It pushes READ-ONLY cross-room context (buildMasterAgentContext) with the no-empty-push guard, re-pushing when the room set changes, and ARMS the master tools (setClientTools(WAR_ROOM_MASTER_TOOL_NAMES), cleared on unmount) so the master can read/message threads + create/rename rooms — see the war-room-master-tools entry.",
       tier: "candidate",
     },
     {
@@ -139,7 +143,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "RoomAgentPanel + useRoomAgent (room agent — TIER 2, one room)",
       filePath: "features/war-room/components/room/RoomAgentPanel.tsx",
       description:
-        "The TIER-2 room agent: the master agent NARROWED to a single room. The room header's 'Room Agent' button (Bot icon) opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the cockpit stays interactive. REUSES the canonical AgentConversationColumn unchanged on surfaceKey 'war-room-room-agent'. useRoomAgent is a thin context layer over useDurableAgentConversation — ONE durable conversation PER ROOM keyed 'war-room:room-agent:<sessionId>' (per room not per user), so each room has its own agent and switching rooms switches agents. It DEFAULTS to the dedicated Room persona (WAR_ROOM_ROOM_AGENT_ID — a builtin agx_agent carrying data/data_action/workbook/document so it can list/read the user's own resources), shown + swappable via WarRoomAgentSelector. It pushes READ-ONLY single-room context (buildRoomAgentContext(sessionId)) with the no-empty-push guard, re-pushing when THIS room's tile set changes, and ARMS the master tools MINUS war_room_create_room (read_thread + message_thread + rename_room — reads/messages its own threads and renames its room, but does not create rooms), cleared on unmount/room-switch.",
+        "The TIER-2 room agent: the master agent NARROWED to a single room. The room header's 'Room Agent' button (Bot icon) opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the cockpit stays interactive. REUSES the canonical AgentConversationColumn unchanged on surfaceKey 'war-room-room-agent'. useRoomAgent is a thin context layer over useDurableAgentConversation — ONE durable conversation PER ROOM keyed 'war-room:room-agent:<sessionId>' (per room not per user), so each room has its own agent and switching rooms switches agents. It DEFAULTS to the dedicated Room persona (WAR_ROOM_ROOM_AGENT_ID — a builtin agent.definition carrying data/data_action/workbook/document so it can list/read the user's own resources), shown + swappable via WarRoomAgentSelector. It pushes READ-ONLY single-room context (buildRoomAgentContext(sessionId)) with the no-empty-push guard, re-pushing when THIS room's tile set changes, and ARMS the master tools MINUS war_room_create_room (read_thread + message_thread + rename_room — reads/messages its own threads and renames its room, but does not create rooms), cleared on unmount/room-switch.",
       tier: "candidate",
     },
     {

@@ -2,12 +2,12 @@
 
 /**
  * ApplySchemaDialog — pick one of the user's agents and write a proposed
- * output schema to its `agx_agent.output_schema`.
+ * output schema to its `agent.definition.output_schema`.
  *
  * Reuses the canonical agent data paths — never a parallel store:
  *   - list:  `fetchAgentsListFull` thunk + `selectAllAgents` selector.
  *   - write: `saveAgentField({ field: "outputSchema" })` thunk (optimistic +
- *            rollback, hits `agx_agent` via the standard converter). RLS gates
+ *            rollback, hits `agent.definition` via the standard converter). RLS gates
  *            the write; a denied update surfaces loudly as a toast.error.
  *
  * Standard `@/components/ui/dialog` (Radix). Searchable list via `cmdk`

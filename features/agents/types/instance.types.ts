@@ -133,7 +133,14 @@ export type SourceFeature =
   | "fastfire-grade"
   | "fastfire-help"
   | "fastfire-review"
-  | "fastfire-tts";
+  | "fastfire-tts"
+  /** Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
+   *  fc_help_live / fc_review_batch agents Fast Fire uses, generalized to
+   *  every study surface (classic set study, adaptive due review, weak-area
+   *  drill). See features/flashcards/data/tutor/. */
+  | "flashcards-help"
+  | "flashcards-review"
+  | "flashcards-coach";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

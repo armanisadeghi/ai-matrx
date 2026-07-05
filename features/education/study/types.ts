@@ -113,8 +113,17 @@ export interface ListSessionsFilter {
   mode?: string;
   /** Restrict to one status ('active' | 'completed' | 'abandoned'). */
   status?: string;
+  /** Phase 6 (analytics) — only sessions created on/after this ISO timestamp. */
+  since?: string;
   limit?: number;
   offset?: number;
+}
+
+/** Phase 6 (analytics) — filters for the broad, cross-set `listAttempts`. */
+export interface ListAttemptsFilter {
+  /** Only attempts created on/after this ISO timestamp. */
+  since?: string;
+  limit?: number;
 }
 
 /** A session plus its ordered attempt ledger — what the session-detail view reads. */
@@ -149,3 +158,41 @@ export type SessionPatch = Partial<
     | "settings"
   >
 >;
+
+// ─── Planner (Phase 6 — real study_goal CRUD) ─────────────────────────────────
+/**
+ * `study_goal` has no dedicated topic/item_type/set columns — it's a generic
+ * entity row (title/target_date/status/visibility) shared by every future
+ * planner use, not just flashcards. Targeting info rides in `metadata` jsonb
+ * so the column set never has to grow per-mode. The planner's heuristic
+ * ranking (soonest target_date + highest struggle count) reads this back to
+ * find the matching `item_mastery` rows.
+ */
+export interface StudyGoalMetadata {
+  /** e.g. 'fc_card' — which study-spine item_type this goal targets. */
+  itemType?: string;
+  /** A free-form topic tag (matches `fc_card.topic` for flashcards). */
+  topic?: string;
+  /** Optional: scope the goal to one set instead of a whole topic. */
+  setId?: string;
+  [key: string]: unknown;
+}
+
+export type GoalStatus = "active" | "achieved" | "archived";
+
+export interface NewGoalInput {
+  title: string;
+  targetDate?: string | null;
+  status?: GoalStatus;
+  metadata?: StudyGoalMetadata;
+  /** Active-context org; if omitted the DB trigger falls back to the personal org. */
+  orgId?: string;
+}
+
+export type GoalPatch = Partial<
+  Pick<StudyGoalRow, "title" | "status" | "target_date" | "metadata">
+>;
+
+export interface ListGoalsFilter {
+  status?: GoalStatus;
+}
