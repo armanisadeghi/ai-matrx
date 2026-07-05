@@ -6243,9 +6243,91 @@ export type Database = {
   }
   content_ir: {
     Tables: {
+      kind_component: {
+        Row: {
+          component_key: string
+          component_source: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          kind_definition_id: string
+          metadata: Json
+          organization_id: string
+          pinned_kind_version: number | null
+          platform: string
+          props_transform: string | null
+          role: string
+          sort_order: number
+          source: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          component_key: string
+          component_source?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind_definition_id: string
+          metadata?: Json
+          organization_id: string
+          pinned_kind_version?: number | null
+          platform: string
+          props_transform?: string | null
+          role: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          component_key?: string
+          component_source?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          kind_definition_id?: string
+          metadata?: Json
+          organization_id?: string
+          pinned_kind_version?: number | null
+          platform?: string
+          props_transform?: string | null
+          role?: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_component_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kind_definition: {
         Row: {
           authoring_owner: string
+          capture_target: number
+          capture_until: string | null
           created_at: string
           created_by: string | null
           data: Json | null
@@ -6267,6 +6349,8 @@ export type Database = {
         }
         Insert: {
           authoring_owner?: string
+          capture_target?: number
+          capture_until?: string | null
           created_at?: string
           created_by?: string | null
           data?: Json | null
@@ -6288,6 +6372,8 @@ export type Database = {
         }
         Update: {
           authoring_owner?: string
+          capture_target?: number
+          capture_until?: string | null
           created_at?: string
           created_by?: string | null
           data?: Json | null
@@ -6369,6 +6455,151 @@ export type Database = {
           {
             foreignKeyName: "kind_edge_parent_definition_id_fkey"
             columns: ["parent_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kind_example: {
+        Row: {
+          captured_at: string
+          created_at: string
+          created_by: string | null
+          data: Json
+          deleted_at: string | null
+          description: string | null
+          id: string
+          is_canonical: boolean
+          kind_definition_id: string
+          kind_version: number
+          label: string | null
+          metadata: Json
+          organization_id: string
+          source: string
+          source_ref: Json | null
+          updated_at: string
+          updated_by: string | null
+          validated_at: string | null
+          validation_status: string
+          version: number
+        }
+        Insert: {
+          captured_at?: string
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_canonical?: boolean
+          kind_definition_id: string
+          kind_version: number
+          label?: string | null
+          metadata?: Json
+          organization_id: string
+          source?: string
+          source_ref?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string
+          version?: number
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          is_canonical?: boolean
+          kind_definition_id?: string
+          kind_version?: number
+          label?: string | null
+          metadata?: Json
+          organization_id?: string
+          source?: string
+          source_ref?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          validated_at?: string | null
+          validation_status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_example_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kind_surface: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          kind_definition_id: string
+          metadata: Json
+          organization_id: string
+          parser_config: Json
+          parser_strategy: string
+          priority: number
+          streaming: boolean
+          surface_type: string
+          token: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind_definition_id: string
+          metadata?: Json
+          organization_id: string
+          parser_config?: Json
+          parser_strategy: string
+          priority?: number
+          streaming?: boolean
+          surface_type: string
+          token: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          kind_definition_id?: string
+          metadata?: Json
+          organization_id?: string
+          parser_config?: Json
+          parser_strategy?: string
+          priority?: number
+          streaming?: boolean
+          surface_type?: string
+          token?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_surface_kind_definition_id_fkey"
+            columns: ["kind_definition_id"]
             isOneToOne: false
             referencedRelation: "kind_definition"
             referencedColumns: ["id"]
@@ -39302,6 +39533,7 @@ export type Database = {
           id: string
           node_id: string
           output: Json
+          output_kind: string | null
           run_id: string
           sends: Json
           source: string
@@ -39316,6 +39548,7 @@ export type Database = {
           id?: string
           node_id: string
           output?: Json
+          output_kind?: string | null
           run_id: string
           sends?: Json
           source?: string
@@ -39330,6 +39563,7 @@ export type Database = {
           id?: string
           node_id?: string
           output?: Json
+          output_kind?: string | null
           run_id?: string
           sends?: Json
           source?: string
