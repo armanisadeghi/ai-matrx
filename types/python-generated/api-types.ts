@@ -13971,6 +13971,45 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * AgentContextSlot
+         * @description An optional named context object the agent's context system fills.
+         */
+        AgentContextSlot: {
+            /**
+             * Key
+             * @description Slot key; content is passed to the run under this key.
+             */
+            key: string;
+            /**
+             * Type
+             * @description Context object type (document / text / …).
+             * @default
+             */
+            type: string;
+            /**
+             * Label
+             * @description Human label for the slot.
+             */
+            label?: string | null;
+            /**
+             * Description
+             * @description What this slot holds.
+             */
+            description?: string | null;
+            /**
+             * Mutable
+             * @description Agent may ctx_patch this slot.
+             */
+            mutable?: boolean | null;
+            /**
+             * Persist
+             * @description auto | never | client.
+             */
+            persist?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * AgentContractSnapshot
          * @description Declared input contract for one DB-backed agent version.
          */
@@ -14030,6 +14069,10 @@ export interface components {
             model_id?: string | null;
             /** Variables */
             variables?: components["schemas"]["AgentVariableDetail"][];
+            /** Variable Definitions */
+            variable_definitions?: components["schemas"]["AgentVariableDefinition"][];
+            /** Context Slots */
+            context_slots?: components["schemas"]["AgentContextSlot"][];
             /** Output Schema */
             output_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -14684,6 +14727,36 @@ export interface components {
              * @default false
              */
             use_user_agent_overrides: boolean;
+        };
+        /**
+         * AgentVariableDefinition
+         * @description Full variable definition — the shape the FE VariableInputComponent renders.
+         */
+        AgentVariableDefinition: {
+            /**
+             * Name
+             * @description Variable name the agent template references as {{name}}.
+             */
+            name: string;
+            /** @description Pre-filled value if the caller provides none. */
+            defaultValue?: components["schemas"]["JsonValue"];
+            /**
+             * Helptext
+             * @description Help text shown under the field.
+             */
+            helpText?: string | null;
+            /**
+             * Required
+             * @description Must be provided before the agent runs.
+             * @default false
+             */
+            required: boolean;
+            /** @description UI input component config (defaults to a textarea). */
+            customComponent?: components["schemas"]["VariableComponentSpec"] | null;
+            /** @description When set, filled from a scope context item and inherits its component. */
+            binding?: components["schemas"]["ContextItemBinding"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** AgentVariableDetail */
         AgentVariableDetail: {
@@ -17734,6 +17807,34 @@ export interface components {
          * @enum {string}
          */
         ContentType: "generic" | "transcript" | "conversation" | "document";
+        /**
+         * ContextItemBinding
+         * @description Binds a variable to a scope context item; it inherits that item's component.
+         */
+        ContextItemBinding: {
+            /**
+             * Contextitemid
+             * @description ctx_context_items.id supplying the value.
+             */
+            contextItemId: string;
+            /**
+             * Scopetypeid
+             * @description Scope type whose active scope supplies the value.
+             */
+            scopeTypeId: string;
+            /**
+             * Itemkey
+             * @description The item's machine key resolved against the active scope.
+             */
+            itemKey: string;
+            /**
+             * Onmissing
+             * @description empty | skip | error when no active scope supplies it.
+             */
+            onMissing?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * ContextStateResponse
          * @description Same shape as the CONTEXT_STATE stream event payload.
@@ -25022,6 +25123,27 @@ export interface components {
             /** Last Error At */
             last_error_at?: string | null;
         };
+        /** PicklistBinding */
+        PicklistBinding: {
+            /**
+             * Listid
+             * @description udt_picklists.id the options are hydrated from.
+             */
+            listId: string;
+            /**
+             * Groupname
+             * @description Optional group filter within the picklist.
+             */
+            groupName?: string | null;
+            /**
+             * Multiple
+             * @description Multi-select picklist.
+             * @default false
+             */
+            multiple: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /** PicklistCreate */
         PicklistCreate: {
             /**
@@ -30955,6 +31077,51 @@ export interface components {
              * @default []
              */
             issues: components["schemas"]["ValidationIssue"][];
+        };
+        /**
+         * VariableComponentSpec
+         * @description The input component a variable renders as (customComponent).
+         */
+        VariableComponentSpec: {
+            /**
+             * Type
+             * @description Component type: textarea, toggle, radio, select, number, slider, image, …
+             */
+            type: string;
+            /**
+             * Options
+             * @description Choices for choice-style components.
+             */
+            options?: string[] | null;
+            /**
+             * Allowother
+             * @description Allow a free-text 'Other' entry alongside the choices.
+             */
+            allowOther?: boolean | null;
+            /**
+             * Togglevalues
+             * @description [off, on] labels for toggle / light-switch.
+             */
+            toggleValues?: string[] | null;
+            /**
+             * Min
+             * @description Min for number / slider.
+             */
+            min?: number | null;
+            /**
+             * Max
+             * @description Max for number / slider.
+             */
+            max?: number | null;
+            /**
+             * Step
+             * @description Step for number / slider.
+             */
+            step?: number | null;
+            /** @description Bind the options to a user picklist. */
+            picklist?: components["schemas"]["PicklistBinding"] | null;
+        } & {
+            [key: string]: unknown;
         };
         /** VerdictRequest */
         VerdictRequest: {

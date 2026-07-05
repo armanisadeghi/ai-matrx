@@ -39298,6 +39298,76 @@
         "title": "AgentConfigSettings",
         "description": "Sampling / decode settings on an agent_config."
       },
+      "AgentContextSlot": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Slot key; content is passed to the run under this key."
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Context object type (document / text / …).",
+            "default": ""
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Human label for the slot."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "What this slot holds."
+          },
+          "mutable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mutable",
+            "description": "Agent may ctx_patch this slot."
+          },
+          "persist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persist",
+            "description": "auto | never | client."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "AgentContextSlot",
+        "description": "An optional named context object the agent's context system fills."
+      },
       "AgentContractSnapshot": {
         "properties": {
           "variable_required": {
@@ -39391,6 +39461,20 @@
             },
             "type": "array",
             "title": "Variables"
+          },
+          "variable_definitions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentVariableDefinition"
+            },
+            "type": "array",
+            "title": "Variable Definitions"
+          },
+          "context_slots": {
+            "items": {
+              "$ref": "#/components/schemas/AgentContextSlot"
+            },
+            "type": "array",
+            "title": "Context Slots"
           },
           "output_schema": {
             "anyOf": [
@@ -41073,6 +41157,66 @@
         "type": "object",
         "title": "AgentUserInputBody",
         "description": "Minimal request body for endpoints that previously took no body.\n\nUse as `request: AgentUserInputBody = Body(default_factory=AgentUserInputBody)`\nin routes that historically POST'd with an empty payload — old clients\nstill work (FastAPI parses an absent body as the factory default), and\nnew clients can opt into `{\"user_input\": \"...\"}` and/or\n`{\"use_user_agent_overrides\": true}`."
+      },
+      "AgentVariableDefinition": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Variable name the agent template references as {{name}}."
+          },
+          "defaultValue": {
+            "$ref": "#/components/schemas/JsonValue",
+            "description": "Pre-filled value if the caller provides none."
+          },
+          "helpText": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Helptext",
+            "description": "Help text shown under the field."
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "description": "Must be provided before the agent runs.",
+            "default": false
+          },
+          "customComponent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariableComponentSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "UI input component config (defaults to a textarea)."
+          },
+          "binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextItemBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When set, filled from a scope context item and inherits its component."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AgentVariableDefinition",
+        "description": "Full variable definition — the shape the FE VariableInputComponent renders."
       },
       "AgentVariableDetail": {
         "properties": {
@@ -49930,6 +50074,46 @@
           "document"
         ],
         "title": "ContentType"
+      },
+      "ContextItemBinding": {
+        "properties": {
+          "contextItemId": {
+            "type": "string",
+            "title": "Contextitemid",
+            "description": "ctx_context_items.id supplying the value."
+          },
+          "scopeTypeId": {
+            "type": "string",
+            "title": "Scopetypeid",
+            "description": "Scope type whose active scope supplies the value."
+          },
+          "itemKey": {
+            "type": "string",
+            "title": "Itemkey",
+            "description": "The item's machine key resolved against the active scope."
+          },
+          "onMissing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Onmissing",
+            "description": "empty | skip | error when no active scope supplies it."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "contextItemId",
+          "scopeTypeId",
+          "itemKey"
+        ],
+        "title": "ContextItemBinding",
+        "description": "Binds a variable to a scope context item; it inherits that item's component."
       },
       "ContextStateResponse": {
         "properties": {
@@ -69974,6 +70158,39 @@
         "title": "PersistenceSummary",
         "description": "Top-level dashboard signal."
       },
+      "PicklistBinding": {
+        "properties": {
+          "listId": {
+            "type": "string",
+            "title": "Listid",
+            "description": "udt_picklists.id the options are hydrated from."
+          },
+          "groupName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Groupname",
+            "description": "Optional group filter within the picklist."
+          },
+          "multiple": {
+            "type": "boolean",
+            "title": "Multiple",
+            "description": "Multi-select picklist.",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "listId"
+        ],
+        "title": "PicklistBinding"
+      },
       "PicklistCreate": {
         "properties": {
           "name": {
@@ -85901,6 +86118,111 @@
           "valid"
         ],
         "title": "ValidationResult"
+      },
+      "VariableComponentSpec": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Component type: textarea, toggle, radio, select, number, slider, image, …"
+          },
+          "options": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options",
+            "description": "Choices for choice-style components."
+          },
+          "allowOther": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Allowother",
+            "description": "Allow a free-text 'Other' entry alongside the choices."
+          },
+          "toggleValues": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Togglevalues",
+            "description": "[off, on] labels for toggle / light-switch."
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min",
+            "description": "Min for number / slider."
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max",
+            "description": "Max for number / slider."
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step",
+            "description": "Step for number / slider."
+          },
+          "picklist": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PicklistBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Bind the options to a user picklist."
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "VariableComponentSpec",
+        "description": "The input component a variable renders as (customComponent)."
       },
       "VerdictRequest": {
         "properties": {

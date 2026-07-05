@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 224 active entity tokens. A token here is FK-valid for
+// 226 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -85,6 +85,8 @@ export type EntityTypeToken =
   | "component_group"
   | "contact_submission"
   | "content_block"
+  | "content_ir_kind"
+  | "content_ir_kind_edge"
   | "content_template"
   | "context_item"
   | "context_item_suggestion"
@@ -277,6 +279,7 @@ export type ComponentEntityToken =
   | "cmp_entry"
   | "code_file_version"
   | "component_group"
+  | "content_ir_kind_edge"
   | "conversation_value"
   | "cx_agent_plan"
   | "cx_agent_task"
@@ -385,6 +388,8 @@ export type ScopeableEntityToken =
   | "component_group"
   | "contact_submission"
   | "content_block"
+  | "content_ir_kind"
+  | "content_ir_kind_edge"
   | "content_template"
   | "context_item"
   | "context_item_suggestion"
@@ -549,6 +554,7 @@ export type ListedEntityToken =
   | "ai_model"
   | "ai_provider"
   | "ai_setting"
+  | "content_ir_kind"
   | "dataset"
   | "surface"
   | "workbook";
@@ -614,6 +620,8 @@ export const ENTITY_TYPE_METADATA = {
   "component_group": { token: "component_group", schema: "public", table: "component_groups", label: "Component Group", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "contact_submission": { token: "contact_submission", schema: "public", table: "contact_submissions", label: "Contact Submission", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "content_block": { token: "content_block", schema: "public", table: "content_blocks", label: "Content Block", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "content_ir_kind": { token: "content_ir_kind", schema: "content_ir", table: "kind_definition", label: "Content-IR Kind", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "content_ir_kind_edge": { token: "content_ir_kind_edge", schema: "content_ir", table: "kind_edge", label: "Content-IR Kind Edge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "content_template": { token: "content_template", schema: "public", table: "content_template", label: "Content Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "context_item": { token: "context_item", schema: "context", table: "context_items", label: "Context Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "context_item_suggestion": { token: "context_item_suggestion", schema: "reg", table: "context_item_suggestions", label: "Context Item Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -842,6 +850,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "component_group",
   "contact_submission",
   "content_block",
+  "content_ir_kind",
+  "content_ir_kind_edge",
   "content_template",
   "context_item",
   "context_item_suggestion",
