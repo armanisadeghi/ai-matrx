@@ -6241,6 +6241,204 @@ export type Database = {
       [_ in never]: never
     }
   }
+  content_ir: {
+    Tables: {
+      kind_definition: {
+        Row: {
+          authoring_owner: string
+          created_at: string
+          created_by: string | null
+          data: Json | null
+          deleted_at: string | null
+          emitted_block_schema: Json | null
+          emitted_fingerprint: string | null
+          emitted_json_schema: Json | null
+          id: string
+          is_active: boolean
+          kind: string
+          label: string
+          metadata: Json
+          organization_id: string
+          sample_data: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          authoring_owner?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          emitted_block_schema?: Json | null
+          emitted_fingerprint?: string | null
+          emitted_json_schema?: Json | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          label: string
+          metadata?: Json
+          organization_id: string
+          sample_data?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          authoring_owner?: string
+          created_at?: string
+          created_by?: string | null
+          data?: Json | null
+          deleted_at?: string | null
+          emitted_block_schema?: Json | null
+          emitted_fingerprint?: string | null
+          emitted_json_schema?: Json | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          metadata?: Json
+          organization_id?: string
+          sample_data?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      kind_edge: {
+        Row: {
+          child_definition_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          field_name: string
+          id: string
+          metadata: Json
+          organization_id: string
+          parent_definition_id: string
+          pinned_child_version: number | null
+          position: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          child_definition_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          field_name: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          parent_definition_id: string
+          pinned_child_version?: number | null
+          position?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          child_definition_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          field_name?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          parent_definition_id?: string
+          pinned_child_version?: number | null
+          position?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_edge_child_definition_id_fkey"
+            columns: ["child_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_edge_parent_definition_id_fkey"
+            columns: ["parent_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kind_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      kind_definition_version: {
+        Row: {
+          actor_id: string | null
+          data: Json | null
+          definition_id: string | null
+          emitted_block_schema: Json | null
+          emitted_fingerprint: string | null
+          emitted_json_schema: Json | null
+          is_active: boolean | null
+          kind: string | null
+          occurred_at: string | null
+          operation: string | null
+          organization_id: string | null
+          row_data: Json | null
+          sample_data: Json | null
+          version_number: number | null
+        }
+        Insert: {
+          actor_id?: string | null
+          data?: never
+          definition_id?: string | null
+          emitted_block_schema?: never
+          emitted_fingerprint?: never
+          emitted_json_schema?: never
+          is_active?: never
+          kind?: never
+          occurred_at?: string | null
+          operation?: string | null
+          organization_id?: string | null
+          row_data?: Json | null
+          sample_data?: never
+          version_number?: number | null
+        }
+        Update: {
+          actor_id?: string | null
+          data?: never
+          definition_id?: string | null
+          emitted_block_schema?: never
+          emitted_fingerprint?: never
+          emitted_json_schema?: never
+          is_active?: never
+          kind?: never
+          occurred_at?: string | null
+          operation?: string | null
+          organization_id?: string | null
+          row_data?: Json | null
+          sample_data?: never
+          version_number?: number | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   context: {
     Tables: {
       context_access_log: {
@@ -39943,6 +40141,9 @@ export const Constants = {
     Enums: {},
   },
   communication: {
+    Enums: {},
+  },
+  content_ir: {
     Enums: {},
   },
   context: {
