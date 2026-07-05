@@ -125,7 +125,15 @@ export function reconstructKindRegistry(
 
 const DEF_COLUMNS = "id, kind, label, data" as const;
 
-/** Warm tier: every production-ready (is_active) kind in one pair of reads. */
+/**
+ * Warm tier: every non-deleted kind's SCHEMA in one pair of reads.
+ *
+ * NOT filtered on `is_active`. `is_active` is the dual-gate verdict that gates
+ * whether a kind is trusted to RENDER (Arman's law) + the flag that drives the
+ * fix — it does NOT gate schema availability. Parsing/speculation needs every
+ * kind's schema regardless of whether its SAMPLE has been validated (filtering
+ * here would silently drop kinds that lack a sample and regress the parser).
+ */
 export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> {
   const supabase = await getSupabase();
 
@@ -133,7 +141,6 @@ export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> 
     .schema("content_ir")
     .from("kind_definition")
     .select(DEF_COLUMNS)
-    .eq("is_active", true)
     .is("deleted_at", null);
   if (defErr) {
     throw new KindTablesError(`Failed to list kind_definition: ${defErr.message}`);
@@ -165,7 +172,6 @@ export async function getKindSchemaBySlugFromTables(
     .from("kind_definition")
     .select("id, kind, label, data")
     .eq("kind", kind)
-    .eq("is_active", true)
     .is("deleted_at", null)
     .maybeSingle();
   if (defErr) {
