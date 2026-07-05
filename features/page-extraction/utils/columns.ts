@@ -181,6 +181,7 @@ export function inferColumnsFromRows(
   for (const r of results) {
     const payload = (r.payload ?? {}) as Record<string, unknown>;
     for (const key of Object.keys(payload)) {
+      if (CONTENT_IR_META_KEYS.has(key)) continue; // discriminator noise
       if (!seen.has(key)) {
         seen.add(key);
         ordered.push(key);
@@ -188,6 +189,51 @@ export function inferColumnsFromRows(
     }
   }
   return ordered;
+}
+
+/**
+ * Content-IR metadata keys that are structural discriminators, NOT data — e.g.
+ * every unwrapped flashcard row carries `__kind: "flashcard"`. They pollute the
+ * table with a constant-valued column, so they're excluded from inferred / self-
+ * healed columns. (`__text__` is deliberately NOT here — it IS the data for a
+ * text/fallback row and renders as the "Response" column.)
+ */
+export const CONTENT_IR_META_KEYS = new Set(["__kind"]);
+
+/**
+ * Self-heal a declared column set against the ACTUAL rows. Returns the declared
+ * columns PLUS an inferred agent-column for every payload key not already
+ * covered by a declared column (by `key` or `agentField`) and not a content-IR
+ * meta key. This makes stored data impossible to hide behind a stale/mismatched
+ * `output_schema` — the exact failure where a `flashcard_set` template declared
+ * container columns (`__kind/title/cards`) but the rows are individual cards
+ * (`front/back/…`), so the declared columns rendered empty. Declared columns
+ * keep their order/labels/sources; uncovered keys append in first-appearance
+ * order. A no-op when the schema already covers the data.
+ */
+export function augmentColumnsWithUncovered(
+  declared: ExtractionColumn[],
+  results: PageExtractionResult[],
+): ExtractionColumn[] {
+  const covered = new Set<string>();
+  for (const c of declared) {
+    covered.add(c.key);
+    if (c.agentField) covered.add(c.agentField);
+  }
+  const extras: ExtractionColumn[] = [];
+  const seen = new Set<string>();
+  for (const key of inferColumnsFromRows(results)) {
+    if (covered.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    extras.push({
+      key,
+      label: key === TEXT_RESULT_KEY ? "Response" : humanizeKey(key),
+      type: "string",
+      source: "agent",
+      agentField: key,
+    });
+  }
+  return extras.length === 0 ? declared : [...declared, ...extras];
 }
 
 /** Human-friendly label from a snake/kebab/camel key. */
@@ -260,11 +306,43 @@ function normalizeType(t: string | undefined): ColumnType {
   return "string";
 }
 
+/**
+ * Resolve a local JSON-Schema `$ref` (`#/$defs/x` or `#/definitions/x`) against
+ * the root schema's `$defs` / `definitions` bag. Content-IR and OpenAI
+ * structured-output schemas define the row shape ONCE under `$defs` and point
+ * every `items` at it via `$ref` — without resolving that, the descent below
+ * can't see the item's `properties` and wrongly falls back to the container.
+ * Returns the node unchanged when there's no (resolvable) `$ref`.
+ */
+function derefSchemaNode(node: unknown, root: unknown): unknown {
+  const ref = (node as { $ref?: unknown })?.$ref;
+  if (typeof ref !== "string") return node;
+  const m = ref.match(/^#\/(\$defs|definitions)\/(.+)$/);
+  if (!m) return node;
+  const bag = (root as Record<string, unknown> | null)?.[m[1]] as
+    | Record<string, unknown>
+    | undefined;
+  const resolved = bag?.[m[2]];
+  return resolved ?? node;
+}
+
+function itemPropertiesOf(
+  items: unknown,
+  root: unknown,
+): Record<string, unknown> | undefined {
+  const resolved = derefSchemaNode(items, root) as {
+    properties?: Record<string, unknown>;
+  };
+  return resolved?.properties;
+}
+
 /** Walk a possibly-wrapped JSON schema to the object that describes ONE
  *  result row, and return its `properties` map. This is the schema-side twin
  *  of `coerceToRowList` (which does the same unwrapping on response DATA):
  *  both understand the "array, or array wrapped under one key" shape so the
- *  template editor's columns and the actual rows can never disagree. */
+ *  template editor's columns and the actual rows can never disagree. Resolves
+ *  `$ref` items (content-IR / `$defs` schemas) so a `cards: {items: {$ref}}`
+ *  wrapper descends to the CARD fields, not the container's. */
 /** Exported for agent peek / any surface that needs the same key resolution as extraction. */
 export function findItemProperties(
   schema: unknown,
@@ -279,19 +357,23 @@ export function findItemProperties(
   };
   if (!root || typeof root !== "object") return null;
 
-  // Array of objects → use the element's properties.
+  // Array of objects → use the element's properties (resolving a $ref item).
   if (root.type === "array" && root.items) {
-    const items = root.items as { properties?: Record<string, unknown> };
-    if (items.properties) return items.properties;
+    const props = itemPropertiesOf(root.items, root);
+    if (props) return props;
   }
 
   if (root.type === "object" && root.properties) {
-    // If the object wraps a single array-of-objects property, descend.
+    // If the object wraps a single array-of-objects property, descend into its
+    // item shape (resolving a $ref). This is the flashcard_set → flashcard case.
     const arrayChild = Object.values(root.properties).find((p) => {
       const pp = p as { type?: string; items?: unknown };
       return pp?.type === "array" && pp.items;
-    }) as { items?: { properties?: Record<string, unknown> } } | undefined;
-    if (arrayChild?.items?.properties) return arrayChild.items.properties;
+    }) as { items?: unknown } | undefined;
+    const childProps = arrayChild
+      ? itemPropertiesOf(arrayChild.items, root)
+      : undefined;
+    if (childProps) return childProps;
     // Otherwise treat the object itself as one row's shape.
     return root.properties;
   }

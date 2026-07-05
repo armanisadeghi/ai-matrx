@@ -48,6 +48,7 @@ import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/us
 import { useExtractionJobs } from "@/features/page-extraction/hooks/useExtractionJobs";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
 import {
+  augmentColumnsWithUncovered,
   buildMergedDuplicateView,
   cellValueFor,
   COLUMN_SOURCE_META,
@@ -241,10 +242,15 @@ function SingleJobResultsTable({
    * including manual/validation columns that have no data yet. When
    * absent, fall back to inferring columns from the result payload keys.
    */
-  const templateCols = useMemo<ExtractionColumn[] | null>(
-    () => parseTemplateColumns(job?.output_schema),
-    [job?.output_schema],
-  );
+  const templateCols = useMemo<ExtractionColumn[] | null>(() => {
+    const tpl = parseTemplateColumns(job?.output_schema);
+    // Self-heal: surface payload keys the declared schema doesn't cover so a
+    // stale/mismatched template can't hide the actual data (mirrors the
+    // full-view grid). No-op when the schema already covers the rows.
+    return tpl && tpl.length > 0
+      ? augmentColumnsWithUncovered(tpl, normalizedResults)
+      : tpl;
+  }, [job?.output_schema, normalizedResults]);
 
   const inferredCols = useMemo(
     () => inferColumnsFromRows(normalizedResults),
@@ -418,15 +424,6 @@ function SchemaResultsBody({
 }) {
   const toast = useToastManager("page-extraction");
 
-  // A structured template can still accumulate TEXT rows — a chunk whose JSON
-  // didn't parse falls back to a `__text__` row (never dropped). Those rows have
-  // none of the declared columns, so surface a trailing "Response" column when
-  // any row carries the reserved text key, or the fallback text would be stored
-  // but invisible.
-  const hasTextRows = results.some(
-    (r) => typeof (r.payload as Record<string, unknown>)?.[TEXT_RESULT_KEY] === "string",
-  );
-
   return (
     <Table>
       <TableHeader>
@@ -447,19 +444,6 @@ function SchemaResultsBody({
               </span>
             </TableHead>
           ))}
-          {hasTextRows && (
-            <TableHead className="text-xs">
-              <span className="flex items-center gap-1">
-                Response
-                <span
-                  className="text-[8px] uppercase tracking-wider text-muted-foreground/60"
-                  title="Full text stored when a chunk's response wasn't structured JSON."
-                >
-                  text
-                </span>
-              </span>
-            </TableHead>
-          )}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -496,7 +480,9 @@ function SchemaResultsBody({
                 const value = cellValueFor(r, col);
                 return (
                   <TableCell key={col.key} className="text-xs align-top">
-                    {editable ? (
+                    {col.key === TEXT_RESULT_KEY ? (
+                      <TextResultCell value={value} />
+                    ) : editable ? (
                       <ManualCell
                         result={r}
                         column={col}
@@ -510,15 +496,6 @@ function SchemaResultsBody({
                   </TableCell>
                 );
               })}
-              {hasTextRows && (
-                <TableCell className="text-xs align-top">
-                  <TextResultCell
-                    value={
-                      (r.payload as Record<string, unknown>)?.[TEXT_RESULT_KEY]
-                    }
-                  />
-                </TableCell>
-              )}
             </TableRow>
           );
         })}

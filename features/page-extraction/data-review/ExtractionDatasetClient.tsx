@@ -79,6 +79,7 @@ import {
   updateResultPayloadField,
 } from "@/features/page-extraction/api/runs";
 import {
+  augmentColumnsWithUncovered,
   buildMergedDuplicateView,
   cellValueFor,
   COLUMN_SOURCE_META,
@@ -183,7 +184,11 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
 
   const columns: ExtractionColumn[] = useMemo(() => {
     const tpl = job ? parseTemplateColumns(job.output_schema) : null;
-    if (tpl && tpl.length > 0) return tpl;
+    // Self-heal: even with a declared schema, surface any payload keys it
+    // doesn't cover so a stale/mismatched template (e.g. container columns over
+    // unwrapped item rows) can never hide the actual data.
+    if (tpl && tpl.length > 0)
+      return augmentColumnsWithUncovered(tpl, normalizedRows);
     return inferColumnsFromRows(normalizedRows).map((key) => ({
       key,
       label: humanizeKey(key),
