@@ -51,7 +51,11 @@ const PopoverContent = React.forwardRef<
           className={cn(
             // Cap to the viewport space Radix measured and scroll — a popover taller
             // than the screen must never trap the user with unreachable content.
-            "z-[10001] w-72 max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+            // z must EQUAL the dialog layer (z-[10000]), never exceed it: with equal
+            // z, DOM portal order decides, so a dialog opened FROM a popover stacks
+            // above it, and a popover opened from a dialog still stacks above the
+            // dialog. z-[10001] buried dialogs behind fullscreen popovers.
+            "z-[10000] w-72 max-h-[var(--radix-popover-content-available-height)] overflow-y-auto overscroll-contain rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             className,
           )}
           {...props}

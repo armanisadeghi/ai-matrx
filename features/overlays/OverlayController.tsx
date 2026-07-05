@@ -149,6 +149,10 @@ const SystemInstructionWindow = lazyOverlay(
     import("@/features/window-panels/windows/agents/SystemInstructionWindow"),
   { ssr: false },
 );
+const AgentMemoryWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/AgentMemoryWindow"),
+  { ssr: false },
+);
 const AgentCreateAppWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentCreateAppWindow"),
   { ssr: false },
@@ -329,6 +333,10 @@ const FlashcardSubcardsWindow = lazyOverlay(
 );
 const ChatDebugWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/ChatDebugWindow"),
+  { ssr: false },
+);
+const RunControlsWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/RunControlsWindow"),
   { ssr: false },
 );
 const CloudFilesWindow = lazyOverlay(
@@ -906,6 +914,9 @@ export default function OverlayController() {
     chatDebugWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "chatDebugWindow"),
     ),
+    runControlsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "runControlsWindow"),
+    ),
     cloudFilesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cloudFilesWindow"),
     ),
@@ -1079,6 +1090,9 @@ export default function OverlayController() {
     systemInstructionWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "systemInstructionWindow"),
     ),
+    agentMemoryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentMemoryWindow"),
+    ),
   };
 
   const dataById = {
@@ -1166,6 +1180,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     chatDebugWindow: useAppSelector((s) =>
       selectOverlayData(s, "chatDebugWindow"),
+    ) as Record<string, unknown> | null,
+    runControlsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "runControlsWindow"),
     ) as Record<string, unknown> | null,
     cloudFilesWindow: useAppSelector((s) =>
       selectOverlayData(s, "cloudFilesWindow"),
@@ -1771,6 +1788,16 @@ export default function OverlayController() {
           />
         );
       })()}
+
+      {/* agentMemoryWindow */}
+      {isOpenById.agentMemoryWindow && (
+        <AgentMemoryWindow
+          isOpen
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "agentMemoryWindow" }))
+          }
+        />
+      )}
 
       {/* agentCreateAppWindow */}
       {(() => {
@@ -2492,6 +2519,31 @@ export default function OverlayController() {
             }
             sessionId={
               typeof data?.sessionId === "string" ? data.sessionId : null
+            }
+          />
+        );
+      })()}
+
+      {/* runControlsWindow */}
+      {(() => {
+        const isOpen = isOpenById.runControlsWindow;
+        const data = dataById.runControlsWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <RunControlsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "runControlsWindow" }))
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
+            }
+            includeAttach={data?.includeAttach === true}
+            initialTab={
+              typeof data?.initialTab === "string" ? data.initialTab : null
             }
           />
         );

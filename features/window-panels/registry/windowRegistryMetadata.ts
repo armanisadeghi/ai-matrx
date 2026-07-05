@@ -1023,6 +1023,17 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Run Controls (Chat Options) ───────────────────────────────────────────
+  {
+    slug: "run-controls-window",
+    overlayId: "runControlsWindow",
+    kind: "window",
+    label: "Chat Options",
+    defaultData: { conversationId: null },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Projects ──────────────────────────────────────────────────────────────
   {
     slug: "projects-window",
@@ -1673,6 +1684,21 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     // restoring on reload (and the conversationId is caller-supplied).
     ephemeral: true,
     // Settings/form-heavy surface → bottom-sheet on mobile.
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+  },
+
+  // ── Agent Memory ────────────────────────────────────────────────────────
+  {
+    slug: "agent-memory-window",
+    overlayId: "agentMemoryWindow",
+    kind: "window",
+    label: "Memory",
+    defaultData: {},
+    // The window loads memories live from `chat.agent_memory` on open —
+    // no window-local state worth persisting across reload.
+    ephemeral: true,
+    // Has a sidebar → drawer on mobile per the decision tree.
     mobilePresentation: "drawer",
     instanceMode: "singleton",
   },

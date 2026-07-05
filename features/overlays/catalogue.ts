@@ -160,6 +160,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  agentMemoryWindow: {
+    label: "Agent Memory",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentOptimizerWindow: {
     label: "Agent Optimizer Window",
     instanceMode: "singleton",
@@ -552,6 +557,11 @@ export const OVERLAY_CATALOGUE = {
   },
   resourcePickerWindow: {
     label: "Resource Picker Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  runControlsWindow: {
+    label: "Chat Options Window",
     instanceMode: "singleton",
     isWindow: true,
   },
