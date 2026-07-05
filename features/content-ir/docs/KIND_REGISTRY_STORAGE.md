@@ -1,4 +1,7 @@
-# Kind Registry — Storage Design (v4 — anchor LIVE)
+# Kind Registry — Storage Design (v5 — MIGRATED + CUT OVER)
+
+> **v5 status:** all 26 kinds + 22 edges migrated into `content_ir` (`visibility=public`, RLS authed-read verified = 26; `history.row_versions` captured all 26). `kindRegistry` warm/cold now read `content_ir` (compiled `system-kinds.ts` = bootstrap floor; `flexible_data` = rollback source, untouched). Round-trip parity 25/26 (study_pack_set's pre-existing dangling ref). Driver: `scripts/migrate-content-ir-kinds.ts` (dry-run/apply/verify). PostgREST: `content_ir` added to `pgrst.db_schemas`. Remaining below are v1 open items.
+
 
 **Status:** all three SQL surfaces are LIVE and canonical — `content_ir.kind_definition` (table), `content_ir.kind_definition_version` (view over `history.row_versions`), `content_ir.kind_edge` (table) — provisioned via `platform.create_entity_table` (passed `verify_canonical`). Column shapes verified live against this doc + Agent A's transform/harness (they mate 1:1). Naming: **`kind_definition`**, not `definition` (a bare `definition` collides with `agent.definition` in the `shareable_resource_registry` verify check). `flexible_data` is untouched (Agent A's transform). Remaining (non-SQL, db-agent lane): PostgREST exposure of `content_ir`, db-types regen, aidream `db/generate.py`. Agent A's pure pieces are landed + tested: the `flexible_data → {data[], kind_edge[]}` transform (`registry/kind-storage-transform.ts`, round-trip proven) and the dual-gate harness (`registry/kind-dual-gate.ts`). Next: the migration driver + the `schema-source-kind-tables.ts` read adapter (both now unblocked).
 
