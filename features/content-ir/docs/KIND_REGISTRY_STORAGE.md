@@ -1,6 +1,6 @@
 # Kind Registry — Storage Design (v4 — anchor LIVE)
 
-**Status:** the anchor table is provisioned and canonical. `content_ir.kind_definition` (token `content_ir_kind`, variant `system`) is live via `platform.create_entity_table` — it passed `verify_canonical` (all 6 policies + 4 triggers incl. `_version_capture`). Naming: the table is **`kind_definition`**, not `definition` (a bare `definition` collides with `agent.definition` in the `shareable_resource_registry` verify check). The `kind_edge` table is held one step (component-RLS path confirmation); `flexible_data` is untouched (Agent A's transform). Still non-SQL: PostgREST exposure of `content_ir`, db-types regen, aidream `db/generate.py`.
+**Status:** all three SQL surfaces are LIVE and canonical — `content_ir.kind_definition` (table), `content_ir.kind_definition_version` (view over `history.row_versions`), `content_ir.kind_edge` (table) — provisioned via `platform.create_entity_table` (passed `verify_canonical`). Column shapes verified live against this doc + Agent A's transform/harness (they mate 1:1). Naming: **`kind_definition`**, not `definition` (a bare `definition` collides with `agent.definition` in the `shareable_resource_registry` verify check). `flexible_data` is untouched (Agent A's transform). Remaining (non-SQL, db-agent lane): PostgREST exposure of `content_ir`, db-types regen, aidream `db/generate.py`. Agent A's pure pieces are landed + tested: the `flexible_data → {data[], kind_edge[]}` transform (`registry/kind-storage-transform.ts`, round-trip proven) and the dual-gate harness (`registry/kind-dual-gate.ts`). Next: the migration driver + the `schema-source-kind-tables.ts` read adapter (both now unblocked).
 
 **Two canonical corrections from the DB build (better than v3's assumptions):**
 1. **Versioning is central, not per-table.** `platform.create_entity_table` wires a `_version_capture` trigger that snapshots the whole row (incl. `emitted_*`, `sample_data`, `is_active`) into **`history.row_versions`** on every change. There is **no** hand-built `kind_definition_version` table — the version surface is a **view** over `history.row_versions` scoped to the token. No dual-write; append-only is inherent (moots v3's "append-only grants" concern).
@@ -97,7 +97,7 @@ check (authoring_owner <> 'ts' or data is not null)
 ### `content_ir.kind_definition_version` — version surface (VIEW, not a table)
 A **view** over `history.row_versions` filtered to the `content_ir_kind` token. The `_version_capture` trigger snapshots the full `kind_definition` row (incl. `data`, `sample_data`, `emitted_*`, `is_active`) on every INSERT/UPDATE/DELETE — so history is automatic, immutable, and append-only with no separate table and no dual-write. Pinned consumers read frozen `emitted_*` here. v1 grant: `service_role` only (client-facing org-scoped reads = later RPC).
 
-### `content_ir.kind_edge` — kind→kind reference graph (held one step; relational, FK-enforced)
+### `content_ir.kind_edge` — kind→kind reference graph (LIVE; relational, FK-enforced)
 ```
 id                   uuid pk
 parent_definition_id uuid not null -> content_ir.kind_definition(id) on delete cascade
