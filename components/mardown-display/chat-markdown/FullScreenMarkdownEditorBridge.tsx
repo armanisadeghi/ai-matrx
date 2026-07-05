@@ -39,6 +39,7 @@ import {
 import { updateOverlayData } from "@/lib/redux/slices/overlayDataSlice";
 import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
 import { mergeEditedText } from "@/features/agents/redux/execution-system/message-crud/content-blocks.util";
+import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 
 const FullScreenMarkdownEditor = dynamic(
   () =>
@@ -78,6 +79,13 @@ interface FullScreenMarkdownEditorBridgeProps {
   description?: string;
   showSaveButton?: boolean;
   showCopyButton?: boolean;
+  /**
+   * Footer action buttons. When present they replace the single Save button;
+   * clicking one emits a save event carrying the chosen `action` id through
+   * the callback group, so the opener can run different outcomes (Save vs.
+   * Save & Resubmit vs. Create Fork) from one editor with no second dialog.
+   */
+  primaryActions?: EditorPrimaryAction[];
 }
 
 export function FullScreenMarkdownEditorBridge({
@@ -97,6 +105,7 @@ export function FullScreenMarkdownEditorBridge({
   description,
   showSaveButton,
   showCopyButton,
+  primaryActions,
 }: FullScreenMarkdownEditorBridgeProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -194,6 +203,35 @@ export function FullScreenMarkdownEditorBridge({
     ],
   );
 
+  // Multi-outcome footer actions. Each button emits a save event tagged with
+  // its action id so the opener runs the right flow (plain save / resubmit /
+  // fork) with no follow-up confirmation dialog. Mirrors the overlay-data
+  // content into the store first, exactly like `handleSave`, then closes.
+  const handlePrimaryAction = useCallback(
+    (actionId: string, newContent: string) => {
+      dispatch(
+        updateOverlayData({
+          overlayId: "fullScreenEditor",
+          instanceId,
+          updates: { content: newContent },
+        }),
+      );
+      // Actions ALWAYS travel through the callback group. If none was
+      // registered the caller wired the editor wrong — surface it loudly
+      // rather than silently dropping the click.
+      if (callbackGroupId) {
+        emitFullScreenEditorSave(callbackGroupId, newContent, actionId);
+      } else {
+        console.error(
+          "[FullScreenMarkdownEditorBridge] primary action fired with no " +
+            `callbackGroupId — action="${actionId}" instanceId=${instanceId}`,
+        );
+      }
+      dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
+    },
+    [dispatch, instanceId, callbackGroupId],
+  );
+
   return (
     <FullScreenMarkdownEditor
       isOpen={isOpen}
@@ -209,6 +247,8 @@ export function FullScreenMarkdownEditorBridge({
       description={description}
       showSaveButton={showSaveButton}
       showCopyButton={showCopyButton}
+      primaryActions={primaryActions}
+      onPrimaryAction={handlePrimaryAction}
     />
   );
 }

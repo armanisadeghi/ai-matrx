@@ -34,6 +34,13 @@ export interface FullScreenEditorSaveEvent {
   type: "save";
   /** The edited plain-text content the user saved. */
   content: string;
+  /**
+   * Which footer action the user chose. `undefined` for the plain single-Save
+   * editor; set to the action id (e.g. "save" / "resubmit" / "fork") when the
+   * editor was opened with `primaryActions`. Lets one editor offer several
+   * outcomes without a follow-up confirmation dialog.
+   */
+  action?: string;
 }
 
 export type FullScreenEditorEvent = FullScreenEditorSaveEvent;
@@ -43,6 +50,12 @@ export type FullScreenEditorEvent = FullScreenEditorSaveEvent;
 export interface FullScreenEditorHandlers {
   /** Called when the user saves. Receives the edited content. */
   onSave?: (content: string) => void;
+  /**
+   * Called when the user clicks one of the editor's `primaryActions`. Receives
+   * the chosen action id and the edited content. Preferred over `onSave` for
+   * multi-outcome editors (Save vs. Save & Resubmit vs. Create Fork).
+   */
+  onAction?: (action: string, content: string) => void;
   /** Catch-all for any emitted event. */
   onEvent?: (event: FullScreenEditorEvent) => void;
 }
@@ -55,7 +68,10 @@ export function createFullScreenEditorCallbackGroup(
   const callbackGroupId = callbackManager.createGroup();
 
   const fanOut = (event: FullScreenEditorEvent) => {
-    if (event.type === "save") handlers.onSave?.(event.content);
+    if (event.type === "save") {
+      handlers.onSave?.(event.content);
+      handlers.onAction?.(event.action ?? "save", event.content);
+    }
     handlers.onEvent?.(event);
   };
 
@@ -82,11 +98,12 @@ export function createFullScreenEditorCallbackGroup(
 export function emitFullScreenEditorSave(
   callbackGroupId: string | undefined | null,
   content: string,
+  action?: string,
 ): void {
   if (!callbackGroupId) return;
   callbackManager.triggerGroup<FullScreenEditorEvent>(
     callbackGroupId,
-    { type: "save", content },
+    { type: "save", content, action },
     { removeAfterTrigger: true },
   );
 }

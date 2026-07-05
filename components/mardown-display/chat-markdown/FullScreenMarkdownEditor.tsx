@@ -115,11 +115,36 @@ const TAB_LABELS: Record<TabId, string> = {
   section_texts_viewer: "Section Texts Viewer",
 };
 
+/**
+ * A footer action button for the editor. Metadata-only (id / label / variant)
+ * so it can travel through the overlay data payload; the click handler rides
+ * `onPrimaryAction`. When one or more are supplied they REPLACE the single
+ * default Save button — enabling Save / Save & Resubmit / Create Fork from one
+ * editor with no follow-up confirmation dialog.
+ */
+export interface EditorPrimaryAction {
+  id: string;
+  label: string;
+  variant?:
+    | "default"
+    | "secondary"
+    | "outline"
+    | "destructive"
+    | "ghost"
+    | "link";
+}
+
 interface FullScreenMarkdownEditorProps {
   isOpen: boolean;
   initialContent: string;
   onSave?: (newContent: string) => void;
   onCancel?: () => void;
+  /**
+   * Footer action buttons. When non-empty they replace the default Save button;
+   * clicking one calls `onPrimaryAction(action.id, currentContent)`.
+   */
+  primaryActions?: EditorPrimaryAction[];
+  onPrimaryAction?: (actionId: string, content: string) => void;
   /** Called on every content change. Use this to sync edits to an external
    *  store (e.g. Redux overlayDataSlice) so content survives close/reopen. */
   onChange?: (newContent: string) => void;
@@ -995,6 +1020,8 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
   onSave,
   onCancel,
   onChange,
+  primaryActions,
+  onPrimaryAction,
   analysisData,
   messageId,
   title = "Edit Content",
@@ -1485,6 +1512,32 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
     </>
   );
 
+  // Multi-outcome footer. When the caller supplies `primaryActions`, they take
+  // over the right-hand footer slot: one button per action plus a Cancel, and
+  // the overlay's built-in Save/Cancel are suppressed. Each button hands the
+  // CURRENT edited content to `onPrimaryAction` so the caller runs the chosen
+  // flow (plain save / resubmit / fork) directly — no confirmation dialog.
+  const hasPrimaryActions =
+    Array.isArray(primaryActions) && primaryActions.length > 0;
+  const primaryActionFooter = hasPrimaryActions ? (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {showCancelButton && (
+        <Button variant="outline" onClick={() => onCancel?.()}>
+          Cancel
+        </Button>
+      )}
+      {(primaryActions ?? []).map((action) => (
+        <Button
+          key={action.id}
+          variant={action.variant ?? "default"}
+          onClick={() => onPrimaryAction?.(action.id, editedContent)}
+        >
+          {action.label}
+        </Button>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <FullScreenOverlay
       isOpen={isOpen}
@@ -1494,11 +1547,12 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
       tabs={tabDefinitions}
       initialTab={activeTab}
       onTabChange={handleTabChange}
-      showSaveButton={showSaveButton}
+      showSaveButton={hasPrimaryActions ? false : showSaveButton}
       onSave={handleSave}
-      showCancelButton={showCancelButton}
+      showCancelButton={hasPrimaryActions ? false : showCancelButton}
       onCancel={onCancel}
       additionalButtons={additionalButtons}
+      footerContent={primaryActionFooter}
     />
   );
 };

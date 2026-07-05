@@ -761,15 +761,16 @@ function editHistoryItem(ctx: MessageActionContext): MenuItem {
 /**
  * USER MESSAGES ONLY — edit the user's prompt AND resubmit from that point.
  *
- * The canonical (and ONLY) entry point for this flow is the inline Send-icon
- * button on `UserActionBar`, which owns the editor + the fork-vs-overwrite
- * dialog and routes `onSave` through the callback registry. The old menu-item
- * factory was DELETED here: it was never registered, and it carried the exact
- * broken pattern this whole fix removed — an `onSave` function stuffed into
- * `openOverlay` data, which the controller silently drops. Keeping a dead copy
- * of the landmine invites a future dev to re-register it. See
+ * The canonical (and ONLY) entry point for this flow is the inline Edit button
+ * on `UserActionBar`, which opens ONE editor whose footer offers Save / Save &
+ * Resubmit / Create Fork and routes the chosen `onAction` through the callback
+ * registry — no follow-up confirmation dialog. The old menu-item factory was
+ * DELETED here: it was never registered, and it carried the exact broken
+ * pattern that fix removed — an `onSave` function stuffed into `openOverlay`
+ * data, which the controller silently drops. Keeping a dead copy of the
+ * landmine invites a future dev to re-register it. See
  * `features/agents/components/messages-display/user/UserActionBar.tsx`
- * (`handleEditAndResubmit`).
+ * (`handleEdit` / `handleEditAction`).
  */
 
 /**

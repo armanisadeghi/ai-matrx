@@ -26,8 +26,12 @@
  *   4. Mark cache-bypass + invalidate server cache.
  *   5. Reload the conversation so the messages slice mirrors the truncated
  *      DB state exactly (no orphan ids, no stale tool calls).
- *   6. Set the input bar text to the edited content and dispatch
- *      `executeInstance`. Stream begins.
+ *   6. Re-RUN the now-pending turn via `executeInstance({ retry: true })`.
+ *      The edited user message is the conversation's last message, so the
+ *      backend regenerates its reply. We deliberately do NOT re-send
+ *      `user_input`: that would append a SECOND, duplicate user message after
+ *      the one we just edited in place. Retry is the same primitive the manual
+ *      Retry button uses. Stream begins.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -37,7 +41,6 @@ import { editMessage } from "./edit-message.thunk";
 import { mergeEditedText } from "./content-blocks.util";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
-import { setUserInputText } from "../instance-user-input/instance-user-input.slice";
 import { executeInstance } from "../thunks/execute-instance.thunk";
 import { loadConversation } from "../thunks/load-conversation.thunk";
 
@@ -154,14 +157,11 @@ export const overwriteAndResend = createAsyncThunk<
       // next turn. The bundle reload after the new turn will catch up.
     }
 
-    // ── 5. Fire the new turn ──────────────────────────────────────────────
-    dispatch(
-      setUserInputText({
-        conversationId,
-        text: newContent,
-      }),
-    );
-    void dispatch(executeInstance({ conversationId }));
+    // ── 5. Re-run the pending turn ─────────────────────────────────────────
+    // The edited user message is now the conversation's last (unanswered)
+    // message. `retry: true` regenerates its reply without appending a
+    // duplicate user turn (which re-sending `user_input` would do).
+    void dispatch(executeInstance({ conversationId, retry: true }));
 
     return { conversationId, truncatedMessageIds: truncatedIds };
   },

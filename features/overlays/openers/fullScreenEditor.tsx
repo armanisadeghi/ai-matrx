@@ -29,6 +29,7 @@ import {
   createFullScreenEditorCallbackGroup,
   type FullScreenEditorHandlers,
 } from "@/features/overlays/callbacks/fullScreenEditor";
+import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
 
 const OVERLAY_ID = "fullScreenEditor" as const;
 
@@ -50,6 +51,16 @@ export interface OpenFullScreenMarkdownEditorBridgeOptions
   description?: string;
   showSaveButton?: boolean;
   showCopyButton?: boolean;
+  /**
+   * Footer action buttons. When provided, they REPLACE the single default Save
+   * button — each renders as its own footer button and, on click, fires the
+   * caller's `onAction(actionId, content)` (a save event carrying `action`).
+   * This is how one editor offers Save / Save & Resubmit / Create Fork with no
+   * follow-up confirmation dialog. Metadata-only (id/label/variant) so it
+   * travels safely through the overlay data payload; the handler rides the
+   * callback group.
+   */
+  primaryActions?: EditorPrimaryAction[];
 }
 
 export interface FullScreenMarkdownEditorBridgeHandle {
@@ -87,9 +98,10 @@ export function useOpenFullScreenMarkdownEditorBridge() {
       // and let the bridge self-handle — no group needed.
       let callbackGroupId: string | null = null;
       let dispose = () => {};
-      if (opts.onSave || opts.onEvent) {
+      if (opts.onSave || opts.onEvent || opts.onAction) {
         const group = createFullScreenEditorCallbackGroup({
           onSave: opts.onSave,
+          onAction: opts.onAction,
           onEvent: opts.onEvent,
         });
         callbackGroupId = group.callbackGroupId;
@@ -113,6 +125,7 @@ export function useOpenFullScreenMarkdownEditorBridge() {
             description: opts.description,
             showSaveButton: opts.showSaveButton,
             showCopyButton: opts.showCopyButton,
+            primaryActions: opts.primaryActions,
           },
         }),
       );

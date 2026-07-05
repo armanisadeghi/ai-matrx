@@ -3,17 +3,23 @@
 /**
  * UserActionBar — inline action buttons attached under a user message.
  *
- * Differs from the assistant bar in two ways:
- *   1. No like / dislike — rating is for model output, not your own input.
- *   2. Adds "Edit & resubmit" — the common user action of re-asking a
- *      question with different wording. On editor save, the host opens the
- *      EditResubmitOutcomeDialog so the user can choose Fork (preserve
- *      original) or Overwrite (replace this turn and re-run on the same
- *      conversation). Either choice auto-fires the next agent turn.
+ * Differs from the assistant bar in one way: no like / dislike (rating is for
+ * model output, not your own input).
  *
- * Plain "Edit" is also present — use it when you want to correct the
- * recorded user message WITHOUT re-running the AI (for transcript
- * curation, typo fixes, etc.).
+ * "Edit" opens ONE full-screen editor whose footer offers three outcomes —
+ * chosen directly, with NO follow-up confirmation dialog:
+ *   • Save                 — correct the recorded message in place, no re-run
+ *                            (transcript curation, typo fixes).
+ *   • Save & Resubmit       — overwrite this turn, discard everything after it,
+ *                            and re-run on the SAME conversation.
+ *   • Create Fork           — branch at this message, apply the edit on the
+ *                            branch, and re-run there; the original is intact.
+ *
+ * Both re-run outcomes leave the edited user message as the pending last turn
+ * and fire `executeInstance({ retry: true })` — the same primitive as the
+ * manual Retry button. Re-running (not re-sending `user_input`) is what makes
+ * the fork path correct: it neither depends on post-navigation input state nor
+ * duplicates the message.
  *
  * The action bar also owns the destructive delete dialog state (so the
  * overflow-menu Delete item just calls back into this component to open
@@ -21,7 +27,7 @@
  */
 
 import React, { useRef, useState, lazy, Suspense, useCallback } from "react";
-import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
+import { Copy, Check, Edit, MoreHorizontal } from "lucide-react";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
@@ -33,9 +39,20 @@ import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/opene
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toast } from "sonner";
-import { EditResubmitOutcomeDialog } from "../message-options/EditResubmitOutcomeDialog";
 import { DeleteMessageDialog } from "../message-options/DeleteMessageDialog";
 import { extractErrorMessage } from "@/utils/errors";
+import type { EditorPrimaryAction } from "@/components/mardown-display/chat-markdown/FullScreenMarkdownEditor";
+
+/**
+ * The three outcomes offered inside the edit modal. Rendered right-to-most
+ * prominent: Save (secondary) · Save & Resubmit · Create Fork. Ids are matched
+ * in `handleEditAction`.
+ */
+const EDIT_ACTIONS: EditorPrimaryAction[] = [
+  { id: "save", label: "Save", variant: "secondary" },
+  { id: "resubmit", label: "Save & Resubmit" },
+  { id: "fork", label: "Create Fork" },
+];
 
 function serializeSaveError(error: unknown): {
   logPayload: Record<string, unknown>;
@@ -115,14 +132,6 @@ export function UserActionBar({
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const moreOptionsButtonRef = useRef<HTMLDivElement>(null);
 
-  // ── Edit & resubmit dialog state ──────────────────────────────────────
-  // Opens AFTER the editor closes with new content. The dialog asks the
-  // user whether to fork (preserve) or overwrite (replace + re-run).
-  const [resubmitDialogOpen, setResubmitDialogOpen] = useState(false);
-  const [pendingResubmitContent, setPendingResubmitContent] = useState<
-    string | null
-  >(null);
-
   // ── Delete dialog state ────────────────────────────────────────────────
   // Triggered from the overflow menu's "Delete message" item. Owns the
   // destructive-vs-fork choice + cascade warning.
@@ -145,181 +154,198 @@ export function UserActionBar({
     });
   };
 
+  // ── Plain save (no re-run) ──────────────────────────────────────────────
+  // Correct the recorded message in place, preserving any non-text blocks
+  // (attachments/chips). Same effect as the old standalone "Edit" button.
+  const handlePlainSave = useCallback(
+    async (newContent: string) => {
+      try {
+        const { editMessage } =
+          await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
+        const { mergeEditedText } =
+          await import("@/features/agents/redux/execution-system/message-crud/content-blocks.util");
+        const existing =
+          store.getState().messages.byConversationId[conversationId]?.byId?.[
+            messageId
+          ]?.content;
+        await dispatch(
+          editMessage({
+            conversationId,
+            messageId,
+            newContent: mergeEditedText(existing, newContent),
+          }),
+        ).unwrap();
+        toast.success("Message saved");
+      } catch (err) {
+        const { logPayload, message } = serializeSaveError(err);
+        // eslint-disable-next-line no-console
+        console.error(
+          "[UserActionBar] plain save failed",
+          JSON.stringify(logPayload, null, 2),
+        );
+        toast.error(message);
+      }
+    },
+    [dispatch, store, conversationId, messageId],
+  );
+
+  // ── Save & Resubmit (overwrite this turn, re-run on the same conversation) ─
+  const handleOverwriteResubmit = useCallback(
+    async (newContent: string) => {
+      try {
+        const { overwriteAndResend } =
+          await import("@/features/agents/redux/execution-system/message-crud/overwrite-and-resend.thunk");
+        await dispatch(
+          overwriteAndResend({
+            conversationId,
+            messageId,
+            newContent,
+          }),
+        ).unwrap();
+      } catch (err) {
+        const { logPayload, message } = serializeSaveError(err);
+        // eslint-disable-next-line no-console
+        console.error(
+          "[UserActionBar] overwrite-and-resend failed",
+          JSON.stringify(logPayload, null, 2),
+        );
+        toast.error(message);
+      }
+    },
+    [dispatch, conversationId, messageId],
+  );
+
+  // ── Create Fork (branch at this message, edit on the branch, re-run there) ─
+  const handleForkResubmit = useCallback(
+    async (newContent: string) => {
+      try {
+        const { forkConversation } =
+          await import("@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk");
+        const { editMessage } =
+          await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
+        const { executeInstance } =
+          await import("@/features/agents/redux/execution-system/thunks/execute-instance.thunk");
+
+        // Fork at the edited message's OWN position so the fork INCLUDES it
+        // (everything up to and including this user message; the assistant
+        // reply after it — position+1 — is naturally excluded). Forking at
+        // position-1 would exclude the message, and the lookup below would
+        // never find it — the silent "Fork does nothing" bug for any message
+        // past the first turn.
+        const forkPosition = messagePosition ?? 0;
+        const forkResult = await dispatch(
+          forkConversation({
+            conversationId,
+            atPosition: forkPosition,
+          }),
+        ).unwrap();
+        const newConversationId = forkResult.conversationId;
+
+        // forkConversation hydrates the new conversation's messages before
+        // resolving. The user message we want to edit was at `messagePosition`
+        // in the source; the duplicated row sits at the same position on the
+        // fork with a fresh id.
+        const forkedMessagesEntry =
+          store.getState().messages.byConversationId[newConversationId];
+        const findEditedMessageId = forkedMessagesEntry
+          ? (Object.values(forkedMessagesEntry.byId).find(
+              (m) => m.role === "user" && m.position === (messagePosition ?? 0),
+            )?.id ?? null)
+          : null;
+
+        if (typeof findEditedMessageId !== "string") {
+          toast.error("Couldn't find the edited message on the new fork");
+          return;
+        }
+
+        const { mergeEditedText } =
+          await import("@/features/agents/redux/execution-system/message-crud/content-blocks.util");
+        const forkedExisting = store.getState().messages.byConversationId[
+          newConversationId
+        ]?.byId?.[findEditedMessageId]?.content;
+
+        await dispatch(
+          editMessage({
+            conversationId: newConversationId,
+            messageId: findEditedMessageId,
+            newContent: mergeEditedText(forkedExisting, newContent),
+          }),
+        ).unwrap();
+
+        // Surface the new conversation BEFORE firing the turn so the streaming
+        // bubble lands in the right place. If embedded without a registered
+        // surface (rare), `requestSurfaceNavigation` no-ops and we drop a
+        // passive toast so the user can find the branch from the sidebar.
+        if (surfaceKey) {
+          const { requestSurfaceNavigation } =
+            await import("@/features/agents/redux/surfaces/request-surface-navigation.thunk");
+          await dispatch(
+            requestSurfaceNavigation({
+              surfaceKey,
+              conversationId: newConversationId,
+              reason: "fork",
+            }),
+          );
+        } else {
+          toast.success(
+            "Branch created — open it from the conversation sidebar",
+          );
+        }
+
+        // Re-RUN the pending turn, never re-SEND it. The edited user message is
+        // already the fork's last message (a pending turn), so `retry: true`
+        // regenerates its reply — exactly what the manual Retry button does.
+        // Re-sending `user_input` instead was the bug: it (a) duplicated the
+        // message and (b) depended on the input slice surviving the navigation
+        // above, which the remount clears → the backend saw neither
+        // `user_input` nor `retry` and rejected with "Invalid conversation ID".
+        void dispatch(
+          executeInstance({ conversationId: newConversationId, retry: true }),
+        );
+      } catch (err) {
+        const { logPayload, message } = serializeSaveError(err);
+        // eslint-disable-next-line no-console
+        console.error(
+          "[UserActionBar] fork edit-and-resubmit failed",
+          JSON.stringify(logPayload, null, 2),
+        );
+        toast.error(message);
+      }
+    },
+    [dispatch, store, conversationId, messagePosition, surfaceKey],
+  );
+
+  // Route a footer action from the edit modal to its flow. Fires on the
+  // callback group when the user clicks Save / Save & Resubmit / Create Fork —
+  // no follow-up confirmation dialog.
+  const handleEditAction = useCallback(
+    (actionId: string, newContent: string) => {
+      if (actionId === "save") void handlePlainSave(newContent);
+      else if (actionId === "resubmit") void handleOverwriteResubmit(newContent);
+      else if (actionId === "fork") void handleForkResubmit(newContent);
+    },
+    [handlePlainSave, handleOverwriteResubmit, handleForkResubmit],
+  );
+
   const handleEdit = () => {
-    // Plain edit — overwrite the stored content in place, no fork, no resubmit.
-    // No `onSave`: the bridge self-handles via `editMessage` (preserving any
-    // attachment blocks) because we pass conversationId + messageId.
+    // ONE editor, three outcomes chosen from its footer (Save / Save &
+    // Resubmit / Create Fork). The `onAction` handler travels via the callback
+    // registry (callbackGroupId), never through Redux; the bridge closes the
+    // editor itself after emitting.
     openEditor({
       instanceId: `user-edit-${messageId}`,
       content,
       mode: "free",
       conversationId,
       messageId,
+      onAction: handleEditAction,
+      primaryActions: EDIT_ACTIONS,
       tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
       initialTab: "matrx_split",
       analysisData: metadata ?? undefined,
-      showSaveButton: true,
       showCopyButton: true,
     });
   };
-
-  const handleEditAndResubmit = () => {
-    // Open the editor. On save, stash the new content + open the
-    // fork-vs-overwrite choice dialog. The dialog runs the chosen flow
-    // and auto-fires the next agent turn so the user can watch the new
-    // response come in. The `onSave` callback travels via the callback
-    // registry (callbackGroupId), never through Redux. The bridge closes
-    // the editor itself after emitting.
-    openEditor({
-      instanceId: `user-edit-resubmit-${messageId}`,
-      content,
-      mode: "free",
-      conversationId,
-      messageId,
-      onSave: (newContent: string) => {
-        setPendingResubmitContent(newContent);
-        setResubmitDialogOpen(true);
-      },
-      tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-      initialTab: "matrx_split",
-      analysisData: metadata ?? undefined,
-      showSaveButton: true,
-      showCopyButton: true,
-    });
-  };
-
-  const handleResubmitChooseFork = useCallback(async () => {
-    if (pendingResubmitContent == null) return;
-    const newContent = pendingResubmitContent;
-    setPendingResubmitContent(null);
-
-    try {
-      const { forkConversation } =
-        await import("@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk");
-      const { editMessage } =
-        await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-      const { executeInstance } =
-        await import("@/features/agents/redux/execution-system/thunks/execute-instance.thunk");
-      const { setUserInputText } =
-        await import("@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice");
-
-      // Fork at the edited message's OWN position so the fork INCLUDES it
-      // (everything up to and including this user message; the assistant reply
-      // after it — position+1 — is naturally excluded). Forking at position-1
-      // would exclude the message, and the lookup below would never find it —
-      // the silent "Edit & resubmit → Fork does nothing" bug for any message
-      // past the first turn. This mirrors the working Overwrite path (edit in
-      // place, then re-run), just on a branch.
-      const forkPosition = messagePosition ?? 0;
-      const forkResult = await dispatch(
-        forkConversation({
-          conversationId,
-          atPosition: forkPosition,
-        }),
-      ).unwrap();
-      const newConversationId = forkResult.conversationId;
-
-      // forkConversation hydrates the new conversation's messages before
-      // resolving. The user message we want to edit was at `messagePosition`
-      // in the source; the duplicated row sits at the same position on the
-      // fork with a fresh id. Look it up via a thunk-style read.
-      const forkedMessagesEntry =
-        store.getState().messages.byConversationId[newConversationId];
-      const findEditedMessageId = forkedMessagesEntry
-        ? (Object.values(forkedMessagesEntry.byId).find(
-            (m) => m.role === "user" && m.position === (messagePosition ?? 0),
-          )?.id ?? null)
-        : null;
-
-      if (typeof findEditedMessageId !== "string") {
-        toast.error("Couldn't find the edited message on the new fork");
-        return;
-      }
-
-      const { mergeEditedText } =
-        await import("@/features/agents/redux/execution-system/message-crud/content-blocks.util");
-      const forkedExisting = store.getState().messages.byConversationId[
-        newConversationId
-      ]?.byId?.[findEditedMessageId]?.content;
-
-      await dispatch(
-        editMessage({
-          conversationId: newConversationId,
-          messageId: findEditedMessageId,
-          newContent: mergeEditedText(forkedExisting, newContent),
-        }),
-      ).unwrap();
-
-      // Surface the new conversation BEFORE firing the turn so the
-      // streaming bubble lands in the right place. The user edited
-      // a message and explicitly chose "fork and resubmit", so we
-      // auto-navigate — no extra prompt. If we're embedded without a
-      // registered surface (rare), `requestSurfaceNavigation` no-ops
-      // and we drop a passive toast so the user can still find the
-      // new branch from the conversation sidebar.
-      if (surfaceKey) {
-        const { requestSurfaceNavigation } =
-          await import("@/features/agents/redux/surfaces/request-surface-navigation.thunk");
-        await dispatch(
-          requestSurfaceNavigation({
-            surfaceKey,
-            conversationId: newConversationId,
-            reason: "fork",
-          }),
-        );
-      } else {
-        toast.success("Branch created — open it from the conversation sidebar");
-      }
-
-      dispatch(
-        setUserInputText({
-          conversationId: newConversationId,
-          text: newContent,
-        }),
-      );
-      void dispatch(executeInstance({ conversationId: newConversationId }));
-    } catch (err) {
-      const { logPayload, message } = serializeSaveError(err);
-      // eslint-disable-next-line no-console
-      console.error(
-        "[UserActionBar] fork edit-and-resubmit failed",
-        JSON.stringify(logPayload, null, 2),
-      );
-      toast.error(message);
-    }
-  }, [
-    pendingResubmitContent,
-    dispatch,
-    conversationId,
-    messagePosition,
-    surfaceKey,
-  ]);
-
-  const handleResubmitChooseOverwrite = useCallback(async () => {
-    if (pendingResubmitContent == null) return;
-    const newContent = pendingResubmitContent;
-    setPendingResubmitContent(null);
-
-    try {
-      const { overwriteAndResend } =
-        await import("@/features/agents/redux/execution-system/message-crud/overwrite-and-resend.thunk");
-      await dispatch(
-        overwriteAndResend({
-          conversationId,
-          messageId,
-          newContent,
-        }),
-      ).unwrap();
-    } catch (err) {
-      const { logPayload, message } = serializeSaveError(err);
-      // eslint-disable-next-line no-console
-      console.error(
-        "[UserActionBar] overwrite-and-resend failed",
-        JSON.stringify(logPayload, null, 2),
-      );
-      toast.error(message);
-    }
-  }, [pendingResubmitContent, dispatch, conversationId, messageId]);
 
   const handleConfirmDelete = useCallback(async () => {
     try {
@@ -418,12 +444,6 @@ export function UserActionBar({
           icon={<Edit className="w-4 h-4 text-muted-foreground" />}
         />
 
-        <TapTargetButtonForGroup
-          onClick={handleEditAndResubmit}
-          ariaLabel="Edit and resubmit"
-          icon={<Send className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />}
-        />
-
         {showOptions && (
           <div ref={moreOptionsButtonRef}>
             <TapTargetButtonForGroup
@@ -453,16 +473,6 @@ export function UserActionBar({
           />
         </Suspense>
       )}
-
-      <EditResubmitOutcomeDialog
-        open={resubmitDialogOpen}
-        onOpenChange={(open) => {
-          setResubmitDialogOpen(open);
-          if (!open) setPendingResubmitContent(null);
-        }}
-        onChooseFork={handleResubmitChooseFork}
-        onChooseOverwrite={handleResubmitChooseOverwrite}
-      />
 
       <DeleteMessageDialog
         open={deleteDialogOpen}
