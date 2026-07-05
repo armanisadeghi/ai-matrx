@@ -7934,6 +7934,7 @@ export type Database = {
           interval_days: number | null
           item_id: string
           item_type: string
+          lapses: number
           last_attempt_at: string | null
           last_result: string | null
           last_review: string | null
@@ -7964,6 +7965,7 @@ export type Database = {
           interval_days?: number | null
           item_id: string
           item_type: string
+          lapses?: number
           last_attempt_at?: string | null
           last_result?: string | null
           last_review?: string | null
@@ -7994,6 +7996,7 @@ export type Database = {
           interval_days?: number | null
           item_id?: string
           item_type?: string
+          lapses?: number
           last_attempt_at?: string | null
           last_result?: string | null
           last_review?: string | null
@@ -27509,18 +27512,30 @@ export type Database = {
       }
       study_override_attempt: {
         Args: {
+          p_attempt_count?: number
           p_attempt_id: string
+          p_correct_count?: number
+          p_difficulty?: number
+          p_due_at?: string
+          p_lapses?: number
           p_result: string
+          p_retrievability?: number
           p_score?: Json
           p_score_value?: number
+          p_stability?: number
+          p_streak?: number
+          p_struggle_flag?: boolean
         }
         Returns: Json
       }
       study_record_attempt: {
         Args: {
+          p_difficulty?: number
+          p_due_at?: string
           p_graded_by?: string
           p_item_id: string
           p_item_type: string
+          p_lapses?: number
           p_latency_ms?: number
           p_method?: string
           p_response_audio_file_id?: string
@@ -27528,9 +27543,11 @@ export type Database = {
           p_response_kind?: string
           p_response_transcript?: string
           p_result?: string
+          p_retrievability?: number
           p_score?: Json
           p_score_value?: number
           p_session_id?: string
+          p_stability?: number
         }
         Returns: Json
       }

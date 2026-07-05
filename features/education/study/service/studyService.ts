@@ -14,6 +14,13 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import type { FsrsState } from "@/lib/srs/fsrs";
+import {
+  mapResultToRating,
+  nextState,
+  retrievability as fsrsRetrievability,
+} from "@/lib/srs/fsrs";
+import { masteryToFsrsState } from "../utils/masteryFsrs";
 import type {
   StudyResult,
   StudySessionRow,
@@ -349,11 +356,39 @@ export const studyService = {
    *
    * This is the ONLY attempt writer — every study mode funnels through it so
    * mastery can never drift from the ledger.
+   *
+   * Phase 2 (FSRS): for a graded result, this reads the item's PRIOR mastery
+   * row, converts it to `FsrsState` (null if never reviewed under FSRS — no
+   * box-history backfill, by design), and calls `lib/srs/fsrs.ts#nextState`
+   * to compute the next difficulty/stability/due/lapses BEFORE calling the
+   * RPC. The RPC is a dumb atomic writer of that pre-computed state — see
+   * `migrations/edu_study_fsrs_scheduler.sql` for why the math never runs in
+   * SQL. Callers are unaffected: the FSRS step is fully internal here.
    */
   async recordAttempt(
     input: RecordAttemptInput,
   ): Promise<StudyResult<{ attemptId: string; mastery: ItemMasteryRow }>> {
     try {
+      let fsrsParams: Record<string, unknown> = {};
+      if (input.result != null) {
+        const priorRes = await this.getMastery({
+          itemType: input.itemType,
+          itemId: input.itemId,
+        });
+        if (priorRes.error) return fail("recordAttempt", priorRes.error);
+        const prev = masteryToFsrsState(priorRes.data);
+        const now = new Date();
+        const rating = mapResultToRating(input.result);
+        const next = nextState(prev, rating, now);
+        fsrsParams = {
+          p_difficulty: next.difficulty,
+          p_stability: next.stability,
+          p_due_at: next.due,
+          p_retrievability: fsrsRetrievability(next, now),
+          p_lapses: next.lapses,
+        };
+      }
+
       const { data, error } = await supabase.rpc("study_record_attempt", {
         p_item_type: input.itemType,
         p_item_id: input.itemId,
@@ -378,6 +413,7 @@ export const studyService = {
           : {}),
         ...(input.latencyMs != null ? { p_latency_ms: input.latencyMs } : {}),
         ...(input.gradedBy != null ? { p_graded_by: input.gradedBy } : {}),
+        ...fsrsParams,
       });
       if (error) return fail("recordAttempt", error);
       if (!isRecordAttemptResult(data)) {
@@ -423,6 +459,13 @@ export const studyService = {
    * item from its FULL attempt history — box/streak are sequential, so this
    * can never be a delta patch. The RPC itself checks `created_by = auth.uid()`;
    * it is not exposed for editing someone else's attempt.
+   *
+   * Phase 2 (FSRS): the replay now runs `lib/srs/fsrs.ts#nextState` in TS —
+   * fetch the item's full chronological attempt history, splice in the edited
+   * result/score at the target attempt, replay FSRS sequentially (each row
+   * using ITS OWN `created_at` as the review time, exactly like the old SQL
+   * loop did for box/streak), then hand the RPC the final computed state to
+   * write atomically. See `migrations/edu_study_fsrs_scheduler.sql`.
    */
   async overrideAttempt(
     input: OverrideAttemptInput,
@@ -430,6 +473,68 @@ export const studyService = {
     StudyResult<{ attempt: StudyAttemptRow; mastery: ItemMasteryRow }>
   > {
     try {
+      const { data: targetRow, error: targetErr } = await EDU()
+        .from("study_attempt")
+        .select("id, item_type, item_id, created_at")
+        .eq("id", input.attemptId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (targetErr) return fail("overrideAttempt", targetErr);
+      if (!targetRow) return fail("overrideAttempt", "Attempt not found");
+
+      const historyRes = await this.attemptsForItem({
+        itemType: targetRow.item_type,
+        itemId: targetRow.item_id,
+      });
+      if (historyRes.error) return fail("overrideAttempt", historyRes.error);
+
+      const history = (historyRes.data ?? []).map((row) =>
+        row.id === input.attemptId
+          ? {
+              ...row,
+              result: input.result,
+              score_value: input.scoreValue ?? row.score_value,
+            }
+          : row,
+      );
+
+      let prev: FsrsState | null = null;
+      let streak = 0;
+      let prevStreakBeforeLast = 0;
+      let attemptCount = 0;
+      let correctCount = 0;
+      let lastResult: string | null = null;
+      for (const row of history) {
+        attemptCount += 1;
+        if (!row.result) continue;
+        const rating = mapResultToRating(
+          row.result as "correct" | "partial" | "incorrect",
+        );
+        const reviewedAt = row.created_at ? new Date(row.created_at) : new Date();
+        prevStreakBeforeLast = streak;
+        prev = nextState(prev, rating, reviewedAt);
+        if (row.result === "correct") {
+          streak += 1;
+          correctCount += 1;
+        } else {
+          streak = 0;
+        }
+        lastResult = row.result;
+      }
+
+      if (!prev) {
+        return fail(
+          "overrideAttempt",
+          "Cannot override: item has no graded attempts",
+        );
+      }
+
+      const now = new Date();
+      const retrievabilityNow = fsrsRetrievability(prev, now);
+      const struggleFlag =
+        (lastResult !== "correct" && lastResult !== "partial") ||
+        (prevStreakBeforeLast === 0 && lastResult !== "correct");
+
       const { data, error } = await supabase.rpc("study_override_attempt", {
         p_attempt_id: input.attemptId,
         p_result: input.result,
@@ -437,6 +542,15 @@ export const studyService = {
           ? { p_score_value: input.scoreValue }
           : {}),
         ...(input.score != null ? { p_score: input.score as never } : {}),
+        p_difficulty: prev.difficulty,
+        p_stability: prev.stability,
+        p_due_at: prev.due,
+        p_retrievability: retrievabilityNow,
+        p_lapses: prev.lapses,
+        p_streak: streak,
+        p_attempt_count: attemptCount,
+        p_correct_count: correctCount,
+        p_struggle_flag: struggleFlag,
       });
       if (error) return fail("overrideAttempt", error);
       if (!isOverrideAttemptResult(data)) {

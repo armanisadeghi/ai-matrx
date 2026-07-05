@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
+import { displayMasteryPct } from "../utils/masteryFsrs";
 import type { ItemMasteryRow } from "../types";
 
 interface Summary {
@@ -42,7 +43,8 @@ interface Summary {
 }
 
 function summarize(mastery: ItemMasteryRow[], sessions: number): Summary {
-  const now = Date.now();
+  const now = new Date();
+  const nowMs = now.getTime();
   let mastered = 0;
   let learning = 0;
   let struggling = 0;
@@ -51,11 +53,14 @@ function summarize(mastery: ItemMasteryRow[], sessions: number): Summary {
   let totalCorrect = 0;
   let bestStreak = 0;
   for (const m of mastery) {
-    const score = m.mastery_score ?? 0;
+    // Phase 2 (FSRS): recompute live retrievability from difficulty/stability/
+    // last_review rather than trusting the stale write-time snapshot in
+    // mastery_score — a card studied weeks ago has decayed since then.
+    const score = displayMasteryPct(m, now) ?? 0;
     if (m.struggle_flag || score < 0.4) struggling += 1;
     else if (score >= 0.8) mastered += 1;
     else learning += 1;
-    if (m.due_at && new Date(m.due_at).getTime() <= now) dueNow += 1;
+    if (m.due_at && new Date(m.due_at).getTime() <= nowMs) dueNow += 1;
     totalAttempts += m.attempt_count ?? 0;
     totalCorrect += m.correct_count ?? 0;
     if ((m.streak ?? 0) > bestStreak) bestStreak = m.streak ?? 0;

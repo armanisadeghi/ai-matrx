@@ -18,6 +18,8 @@ export const CATEGORY_DIMENSIONS = {
   industry: "industry",
   /** Context-item groupings (was hardcoded DEFAULT_CATEGORIES). */
   contextItem: "context-item",
+  /** Flashcard set folders/tags (fc_set → category via EDGE_ROLE.theme). */
+  flashcardFolder: "flashcard-folder",
 } as const;
 
 export type KnownCategoryDimension =

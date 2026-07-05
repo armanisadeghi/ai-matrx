@@ -15,6 +15,7 @@ import FlashcardItem from "@/components/mardown-display/blocks/flashcards/Flashc
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import type { ItemMasteryRow } from "@/features/education/study/types";
+import { displayMasteryPct } from "@/features/education/study/utils/masteryFsrs";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 
 export interface StudyProgress {
@@ -313,10 +314,11 @@ function FlashcardStudySidebarStats({
   mastery: ItemMasteryRow | undefined;
 }) {
   const hasHistory = mastery && mastery.attempt_count > 0;
+  // Phase 2 (FSRS): live retrievability (decays with elapsed time), falling
+  // back to the legacy write-time snapshot for pre-FSRS rows.
+  const liveMasteryPct = displayMasteryPct(mastery);
   const masteryPct =
-    mastery?.mastery_score != null
-      ? `${Math.round(mastery.mastery_score * 100)}%`
-      : null;
+    liveMasteryPct != null ? `${Math.round(liveMasteryPct * 100)}%` : null;
   const dueLabel =
     mastery?.due_at &&
     new Date(mastery.due_at).toLocaleDateString([], {

@@ -114,6 +114,7 @@ export function addAssociation(args: {
   targetId: string;
   orgId?: string;
   label?: string;
+  role?: string;
 }): AppThunk<Promise<AssociationWriteResult>> {
   return async (dispatch) => {
     const res = await associationsService.add(args);
@@ -133,6 +134,7 @@ export function removeAssociation(args: {
   sourceId: string;
   targetType: string;
   targetId: string;
+  role?: string;
 }): AppThunk<Promise<AssociationWriteResult>> {
   return async (dispatch) => {
     const res = await associationsService.remove(args);
@@ -158,6 +160,7 @@ export function setAssociationTargets(args: {
   targetType: AssociationTargetType;
   targetIds: string[];
   orgId?: string;
+  role?: string;
 }): AppThunk<Promise<AssociationWriteResult>> {
   return async (dispatch) => {
     const res = await associationsService.setTargets(args);

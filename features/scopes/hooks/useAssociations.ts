@@ -55,17 +55,21 @@ export interface UseAssociationsReturn {
     targetId: string;
     orgId?: string;
     label?: string;
+    /** Typed edge role (e.g. 'theme' for a folder/tag) — omit for a role-less edge. */
+    role?: string;
   }) => Promise<AssociationWriteResult>;
   /** Detach this entity (as source) → a target. */
   remove: (args: {
     targetType: string;
     targetId: string;
+    role?: string;
   }) => Promise<AssociationWriteResult>;
   /** Replace this entity's edges of one target type with exactly `targetIds`. */
   setTargets: (args: {
     targetType: AssociationTargetType;
     targetIds: string[];
     orgId?: string;
+    role?: string;
   }) => Promise<AssociationWriteResult>;
   /** Force a refetch of this entity's edges. */
   reload: () => Promise<void>;
