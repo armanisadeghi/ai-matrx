@@ -275,7 +275,11 @@ export function reduce(
       // value lands again via podcast_complete / the episode row.
       const url = data.cdn_url || data.url || null;
       if (!url) return state;
-      return { ...state, audioUrl: state.audioUrl ?? url };
+      return {
+        ...state,
+        audioUrl: state.audioUrl ?? url,
+        audioFileId: state.audioFileId ?? data.file_id ?? null,
+      };
     }
 
     case "podcast_complete": {

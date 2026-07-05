@@ -177,7 +177,9 @@ export function deriveConversationLifecycle(
   autoClearConversation?: boolean,
   showAutoClearToggle?: boolean,
 ): ConversationLifecycle {
-  return autoClearConversation || showAutoClearToggle ? "iterate" : "continuous";
+  return autoClearConversation || showAutoClearToggle
+    ? "iterate"
+    : "continuous";
 }
 
 /**

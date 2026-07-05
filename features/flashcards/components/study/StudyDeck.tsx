@@ -158,13 +158,21 @@ export function StudyDeck(props: StudyDeckProps) {
   const [mobileDismissed, setMobileDismissed] = useState(false);
 
   // Completion once every card has a result this load (state so the user can
-  // re-enter from the summary).
+  // re-enter from the summary). Gated on `progress.total` rather than
+  // `cards.length` — Phase 1B's Learn mode drains `cards` to empty exactly
+  // when the LAST card is mastered (working-queue removal), so `cards.length`
+  // alone can't distinguish "just finished" from "never had any cards".
   const [completed, setCompleted] = useState(false);
+  // `completed` is a one-way latch (see `restart` below), not a pure
+  // derivation of progress — it must survive a "Study again" reset where
+  // progress itself doesn't change, so a synchronizing effect is correct
+  // here, not a render-time derivation.
   useEffect(() => {
-    if (cards.length > 0 && progress.done >= progress.total) {
+    if (progress.total > 0 && progress.done >= progress.total) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompleted(true);
     }
-  }, [cards.length, progress.done, progress.total]);
+  }, [progress.done, progress.total]);
 
   // ── Phase 4: "Ask AI" live help ─────────────────────────────────────────
   const current = cards[currentIndex];
@@ -188,7 +196,11 @@ export function StudyDeck(props: StudyDeckProps) {
     setHelp(null);
     setHelpAsked(true);
     try {
-      const recent = buildRecentSessionContext(cards, resultsByCard, masteryByCard);
+      const recent = buildRecentSessionContext(
+        cards,
+        resultsByCard,
+        masteryByCard,
+      );
       const [dueRes, historyRes] = await Promise.all([
         studyService.listDue(FC_CARD_ITEM_TYPE, 200),
         studyService.listAttemptsForItem(FC_CARD_ITEM_TYPE, current.id, 5),
@@ -198,7 +210,8 @@ export function StudyDeck(props: StudyDeckProps) {
           front: current.front,
           back: current.back,
           question: question.trim() || undefined,
-          sessionScore: progress.done > 0 ? progress.correct / progress.done : null,
+          sessionScore:
+            progress.done > 0 ? progress.correct / progress.done : null,
           recentCorrect: recent.recentCorrect,
           recentWrong: recent.recentWrong,
           struggledTopics: recent.struggledTopics,
@@ -299,11 +312,11 @@ export function StudyDeck(props: StudyDeckProps) {
       // (never blocks advancing to the next card) and cleanly no-ops until a
       // fc_micro_coach agent is authored (features/flashcards/data/agents.ts).
       if (!card) return;
-      void dispatch(microCoach({ front: card.front, back: card.back, result })).then(
-        (tip) => {
-          if (tip) toast.info(tip, { duration: 8000 });
-        },
-      );
+      void dispatch(
+        microCoach({ front: card.front, back: card.back, result }),
+      ).then((tip) => {
+        if (tip) toast.info(tip, { duration: 8000 });
+      });
     });
   };
 
@@ -327,18 +340,9 @@ export function StudyDeck(props: StudyDeckProps) {
     );
   }
 
-  if (cards.length === 0) {
-    return (
-      <Shell>
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
-          <BookOpen className="h-6 w-6 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
-          <p className="max-w-sm text-xs text-muted-foreground">{emptyBody}</p>
-        </div>
-      </Shell>
-    );
-  }
-
+  // Checked BEFORE the empty-queue state below: Learn mode drains `cards` to
+  // empty exactly when the last card is mastered, so a completed session
+  // must win over "no cards" (which only applies when it never started).
   if (completed) {
     const accuracy =
       progress.done > 0
@@ -399,6 +403,18 @@ export function StudyDeck(props: StudyDeckProps) {
               </Button>
             )}
           </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <Shell>
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+          <BookOpen className="h-6 w-6 text-muted-foreground" />
+          <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
+          <p className="max-w-sm text-xs text-muted-foreground">{emptyBody}</p>
         </div>
       </Shell>
     );

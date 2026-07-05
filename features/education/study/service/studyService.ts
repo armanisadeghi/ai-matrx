@@ -518,7 +518,9 @@ export const studyService = {
         const rating = mapResultToRating(
           row.result as "correct" | "partial" | "incorrect",
         );
-        const reviewedAt = row.created_at ? new Date(row.created_at) : new Date();
+        const reviewedAt = row.created_at
+          ? new Date(row.created_at)
+          : new Date();
         prevStreakBeforeLast = streak;
         prev = nextState(prev, rating, reviewedAt);
         if (row.result === "correct") {
@@ -765,7 +767,9 @@ export const studyService = {
         .eq("item_type", itemType)
         .is("deleted_at", null);
       if (filter.since) q = q.gte("created_at", filter.since);
-      q = q.order("created_at", { ascending: true }).limit(filter.limit ?? 5000);
+      q = q
+        .order("created_at", { ascending: true })
+        .limit(filter.limit ?? 5000);
       const { data, error } = await q;
       if (error) return fail("listAttempts", error);
       return { data: (data ?? []) as StudyAttemptRow[], error: null };

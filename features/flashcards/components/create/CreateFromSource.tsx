@@ -51,7 +51,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { useLibrary } from "@/features/rag/hooks/useLibrary";
-import { useDocument, useDocumentChunks } from "@/features/rag/hooks/useDocument";
+import {
+  useDocument,
+  useDocumentChunks,
+} from "@/features/rag/hooks/useDocument";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import type { ChunkRow } from "@/features/rag/types/documents";
 import { FC_AGENTS } from "../../data/agents";
@@ -103,13 +106,13 @@ export function CreateFromSource() {
   } = useLibrary({ status: "ready", search: query.trim() || undefined });
 
   const { data: docDetail } = useDocument(
-    step === "curate" ? selectedDoc?.id ?? null : null,
+    step === "curate" ? (selectedDoc?.id ?? null) : null,
   );
   const {
     data: chunks,
     loading: chunksLoading,
     error: chunksError,
-  } = useDocumentChunks(step === "curate" ? selectedDoc?.id ?? null : null, {
+  } = useDocumentChunks(step === "curate" ? (selectedDoc?.id ?? null) : null, {
     limit: CHUNK_FETCH_LIMIT,
   });
 
@@ -201,7 +204,9 @@ export function CreateFromSource() {
       );
 
       if (setRes.error || !setRes.data) {
-        toast.error(setRes.error ?? "Could not save the generated flashcard set");
+        toast.error(
+          setRes.error ?? "Could not save the generated flashcard set",
+        );
         return;
       }
 
@@ -228,7 +233,11 @@ export function CreateFromSource() {
             className="h-9 w-9 shrink-0"
             onClick={goBack}
             disabled={busy}
-            aria-label={step === "curate" ? "Back to document picker" : "Back to flashcards"}
+            aria-label={
+              step === "curate"
+                ? "Back to document picker"
+                : "Back to flashcards"
+            }
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -254,8 +263,9 @@ export function CreateFromSource() {
               <LoadingSpinner size="sm" />
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Generating {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))}{" "}
-                  cards from {selectedChunkIds.size}{" "}
+                  Generating{" "}
+                  {Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10))} cards
+                  from {selectedChunkIds.size}{" "}
                   {selectedChunkIds.size === 1 ? "passage" : "passages"}
                 </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -338,8 +348,7 @@ function DocPickerStep({
           </p>
           <p className="max-w-sm text-xs text-muted-foreground">
             Upload and process a PDF or document in your RAG library first —
-            once it finishes chunking, it'll show up here to build a deck
-            from.
+            once it finishes chunking, it'll show up here to build a deck from.
           </p>
           <Button variant="outline" size="sm" asChild className="mt-1">
             <a href="/rag/library">Open RAG library</a>
@@ -477,7 +486,9 @@ function CurateStep({
             min={COUNT_MIN}
             max={COUNT_MAX}
             value={count}
-            onChange={(e) => onCountChange(Number.parseInt(e.target.value, 10) || 0)}
+            onChange={(e) =>
+              onCountChange(Number.parseInt(e.target.value, 10) || 0)
+            }
             className={FIELD_INPUT_CLASS}
             disabled={busy}
           />
@@ -508,7 +519,12 @@ function CurateStep({
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-2 pt-1">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={busy}
+        >
           Back
         </Button>
         <Button type="button" onClick={onGenerate} disabled={!canGenerate}>
@@ -559,7 +575,9 @@ function ChunkRowItem({
             {chunk.page_numbers?.length ? (
               <span>· page {chunk.page_numbers.join(", ")}</span>
             ) : null}
-            {chunk.token_count ? <span>· {chunk.token_count} tokens</span> : null}
+            {chunk.token_count ? (
+              <span>· {chunk.token_count} tokens</span>
+            ) : null}
           </div>
           <p className="mt-0.5 text-xs text-foreground/90">{preview}</p>
         </div>

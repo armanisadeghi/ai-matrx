@@ -339,6 +339,12 @@ export interface PodcastRunState {
    *  run record. Null until composed (or when there wasn't enough media). */
   officialVideoUrl: string | null;
   audioUrl: string | null;
+  /** Durable file_id for `audioUrl`, when the backend reports one (from
+   *  `audio_stream_end`) — the ONLY thing safe to persist long-term (see
+   *  the media-durability doctrine: a signed URL expires, a file_id doesn't).
+   *  Consumers that need to store the result (e.g. a flashcard set's
+   *  `audio_overview_file_id`) must use this, not `audioUrl`. */
+  audioFileId: string | null;
   script: string;
   /** Real ~500-char sneak-peek of the script (from create_script stage_done). */
   scriptPreview: string;
@@ -366,6 +372,7 @@ export const INITIAL_RUN_STATE: PodcastRunState = {
   videos: [],
   officialVideoUrl: null,
   audioUrl: null,
+  audioFileId: null,
   script: "",
   scriptPreview: "",
   sourcePreview: "",

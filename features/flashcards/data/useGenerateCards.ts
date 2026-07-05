@@ -23,11 +23,7 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useState } from "react";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import {
   selectConversationRequestIds,
@@ -147,7 +143,12 @@ function coerceCard(raw: unknown): NewCardInput | null {
           const chunkId =
             typeof s.chunk_id === "string" ? s.chunk_id : undefined;
           const page = typeof s.page === "number" ? s.page : undefined;
-          return { file_id: "", processed_document_id: processedDocumentId, chunk_id: chunkId, page };
+          return {
+            file_id: "",
+            processed_document_id: processedDocumentId,
+            chunk_id: chunkId,
+            page,
+          };
         })()
       : undefined;
 
@@ -232,7 +233,9 @@ export function useGenerateCards(): GenerateCardsResult {
    * with an added fast-fail on a fatal request error so a dead stream doesn't
    * burn the full timeout.
    */
-  async function waitForExtraction(requestId: string): Promise<GeneratedCardSet> {
+  async function waitForExtraction(
+    requestId: string,
+  ): Promise<GeneratedCardSet> {
     const start = Date.now();
     while (Date.now() - start < EXTRACTION_TIMEOUT_MS) {
       const state = store.getState() as RootState;

@@ -233,5 +233,8 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     progress,
     masteryByCard,
     sessionId: session?.id ?? null,
+    // No Learn-mode reshuffle here — every card graded correct counts, same
+    // as `progress.correct` (the field only diverges once reshuffling is on).
+    masteredCount: gradedIds.filter((id) => resultsByCard[id] === "correct").length,
   };
 }

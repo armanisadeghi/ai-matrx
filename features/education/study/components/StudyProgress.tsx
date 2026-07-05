@@ -74,7 +74,9 @@ function summarize(mastery: ItemMasteryRow[], sessions: number): Summary {
     dueNow,
     totalAttempts,
     accuracyPct:
-      totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) : null,
+      totalAttempts > 0
+        ? Math.round((totalCorrect / totalAttempts) * 100)
+        : null,
     bestStreak,
     sessions,
   };
@@ -184,7 +186,11 @@ export function StudyProgress({
               </Button>
             )}
             {reviewHref && summary && summary.dueNow > 0 && (
-              <Button size="sm" className="gap-1.5" onClick={() => router.push(reviewHref)}>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => router.push(reviewHref)}
+              >
                 <CalendarClock className="h-4 w-4" />
                 Review {summary.dueNow} due
               </Button>
@@ -201,16 +207,20 @@ export function StudyProgress({
         ) : error ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card px-6 py-14 text-center">
             <AlertCircle className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm text-foreground">Couldn&apos;t load progress</p>
+            <p className="text-sm text-foreground">
+              Couldn&apos;t load progress
+            </p>
             <p className="max-w-md text-xs text-muted-foreground">{error}</p>
           </div>
         ) : !summary || summary.studied === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
             <Layers className="h-6 w-6 text-muted-foreground" />
-            <p className="text-sm font-medium text-foreground">No progress yet</p>
+            <p className="text-sm font-medium text-foreground">
+              No progress yet
+            </p>
             <p className="max-w-sm text-xs text-muted-foreground">
-              Study a set or run a Fast Fire drill and your mastery, accuracy, and
-              what&apos;s due will show up here.
+              Study a set or run a Fast Fire drill and your mastery, accuracy,
+              and what&apos;s due will show up here.
             </p>
           </div>
         ) : (
@@ -230,7 +240,9 @@ export function StudyProgress({
                 icon={Flame}
                 label="Day streak"
                 value={`${streak?.current_streak ?? 0}`}
-                accent={streak && streak.current_streak > 0 ? "amber" : undefined}
+                accent={
+                  streak && streak.current_streak > 0 ? "amber" : undefined
+                }
               />
               <Stat
                 icon={Layers}
@@ -240,7 +252,9 @@ export function StudyProgress({
               <Stat
                 icon={Target}
                 label="Accuracy"
-                value={summary.accuracyPct === null ? "—" : `${summary.accuracyPct}%`}
+                value={
+                  summary.accuracyPct === null ? "—" : `${summary.accuracyPct}%`
+                }
               />
               <Stat
                 icon={CalendarClock}
@@ -248,7 +262,11 @@ export function StudyProgress({
                 value={`${summary.dueNow}`}
                 accent={summary.dueNow > 0 ? "amber" : undefined}
               />
-              <Stat icon={Target} label="Best per-card streak" value={`${summary.bestStreak}`} />
+              <Stat
+                icon={Target}
+                label="Best per-card streak"
+                value={`${summary.bestStreak}`}
+              />
             </div>
 
             {/* Mastery distribution */}
@@ -267,24 +285,50 @@ export function StudyProgress({
                 />
                 <div
                   className="bg-red-500"
-                  style={{ width: `${(summary.struggling / distTotal) * 100}%` }}
+                  style={{
+                    width: `${(summary.struggling / distTotal) * 100}%`,
+                  }}
                 />
               </div>
               <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
-                <Legend color="bg-green-500" label="Mastered" value={summary.mastered} />
-                <Legend color="bg-amber-500" label="Learning" value={summary.learning} />
-                <Legend color="bg-red-500" label="Needs work" value={summary.struggling} />
+                <Legend
+                  color="bg-green-500"
+                  label="Mastered"
+                  value={summary.mastered}
+                />
+                <Legend
+                  color="bg-amber-500"
+                  label="Learning"
+                  value={summary.learning}
+                />
+                <Legend
+                  color="bg-red-500"
+                  label="Needs work"
+                  value={summary.struggling}
+                />
               </div>
             </section>
 
             {/* Activity */}
             <section className="mt-3 grid grid-cols-2 gap-3">
-              <Stat icon={TrendingUp} label="Total answers" value={`${summary.totalAttempts}`} />
-              <Stat icon={CalendarClock} label="Sessions" value={`${summary.sessions}`} />
+              <Stat
+                icon={TrendingUp}
+                label="Total answers"
+                value={`${summary.totalAttempts}`}
+              />
+              <Stat
+                icon={CalendarClock}
+                label="Sessions"
+                value={`${summary.sessions}`}
+              />
             </section>
 
             {/* Phase 6 — cross-session trends + per-topic breakdown */}
-            <StudyTrends itemType={itemType} mastery={mastery} topicSource={topicSource} />
+            <StudyTrends
+              itemType={itemType}
+              mastery={mastery}
+              topicSource={topicSource}
+            />
           </>
         )}
       </div>
@@ -312,7 +356,9 @@ function Stat({
       <div
         className={cn(
           "text-xl font-semibold tabular-nums",
-          accent === "amber" ? "text-amber-600 dark:text-amber-400" : "text-foreground",
+          accent === "amber"
+            ? "text-amber-600 dark:text-amber-400"
+            : "text-foreground",
         )}
       >
         {value}

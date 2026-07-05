@@ -19,7 +19,15 @@
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
 import { useEffect, useState } from "react";
-import { CartesianGrid, Line, LineChart, Bar, BarChart, XAxis, YAxis } from "recharts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  Bar,
+  BarChart,
+  XAxis,
+  YAxis,
+} from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -30,7 +38,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
 import { displayMasteryPct } from "../utils/masteryFsrs";
-import type { ItemMasteryRow, StudyAttemptRow, StudySessionRow } from "../types";
+import type {
+  ItemMasteryRow,
+  StudyAttemptRow,
+  StudySessionRow,
+} from "../types";
 
 /** The only mode wired to a topic join today — see the header note above. */
 type TopicSource = "fc_card";
@@ -76,10 +88,18 @@ function buildWeekBuckets(
   weeks: number,
 ): WeekBucket[] {
   const now = new Date();
-  const firstWeekStart = startOfWeek(new Date(now.getTime() - (weeks - 1) * MS_PER_WEEK));
+  const firstWeekStart = startOfWeek(
+    new Date(now.getTime() - (weeks - 1) * MS_PER_WEEK),
+  );
   const buckets: WeekBucket[] = Array.from({ length: weeks }, (_, i) => {
     const weekStart = new Date(firstWeekStart.getTime() + i * MS_PER_WEEK);
-    return { label: weekLabel(weekStart), weekStart, attempts: 0, correct: 0, minutes: 0 };
+    return {
+      label: weekLabel(weekStart),
+      weekStart,
+      attempts: 0,
+      correct: 0,
+      minutes: 0,
+    };
   });
 
   const bucketFor = (ts: number): WeekBucket | undefined => {
@@ -137,7 +157,10 @@ function buildTopicStats(
   topicsById: Record<string, string | null>,
 ): TopicStat[] {
   const now = new Date();
-  const byTopic = new Map<string, { sum: number; count: number; struggling: number }>();
+  const byTopic = new Map<
+    string,
+    { sum: number; count: number; struggling: number }
+  >();
   for (const m of mastery) {
     const topic = topicsById[m.item_id]?.trim();
     if (!topic) continue;
@@ -188,7 +211,9 @@ export function StudyTrends({
       ]);
       if (cancelled) return;
       if (attemptsRes.error || sessionsRes.error) {
-        setLoadError(attemptsRes.error ?? sessionsRes.error ?? "Failed to load trends");
+        setLoadError(
+          attemptsRes.error ?? sessionsRes.error ?? "Failed to load trends",
+        );
         return;
       }
       setBuckets(
@@ -219,13 +244,16 @@ export function StudyTrends({
 
   const accuracyData = (buckets ?? []).map((b) => ({
     label: b.label,
-    accuracy: b.attempts > 0 ? Math.round((b.correct / b.attempts) * 100) : null,
+    accuracy:
+      b.attempts > 0 ? Math.round((b.correct / b.attempts) * 100) : null,
   }));
   const timeData = (buckets ?? []).map((b) => ({
     label: b.label,
     minutes: Math.round(b.minutes),
   }));
-  const hasAnyActivity = (buckets ?? []).some((b) => b.attempts > 0 || b.minutes > 0);
+  const hasAnyActivity = (buckets ?? []).some(
+    (b) => b.attempts > 0 || b.minutes > 0,
+  );
 
   return (
     <div className="mt-3 flex flex-col gap-3">
@@ -237,14 +265,22 @@ export function StudyTrends({
           {buckets === null ? (
             <Skeleton className="h-40 w-full rounded-lg" />
           ) : loadError ? (
-            <p className="py-8 text-center text-xs text-destructive">{loadError}</p>
+            <p className="py-8 text-center text-xs text-destructive">
+              {loadError}
+            </p>
           ) : !hasAnyActivity ? (
             <p className="py-8 text-center text-xs text-muted-foreground">
               Not enough recent activity yet.
             </p>
           ) : (
-            <ChartContainer config={accuracyChartConfig} className="aspect-auto h-40 w-full">
-              <LineChart data={accuracyData} margin={{ left: -20, right: 8, top: 8 }}>
+            <ChartContainer
+              config={accuracyChartConfig}
+              className="aspect-auto h-40 w-full"
+            >
+              <LineChart
+                data={accuracyData}
+                margin={{ left: -20, right: 8, top: 8 }}
+              >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="label"
@@ -263,7 +299,9 @@ export function StudyTrends({
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(value) => (value == null ? "No data" : `${value}%`)}
+                      formatter={(value) =>
+                        value == null ? "No data" : `${value}%`
+                      }
                     />
                   }
                 />
@@ -287,14 +325,22 @@ export function StudyTrends({
           {buckets === null ? (
             <Skeleton className="h-40 w-full rounded-lg" />
           ) : loadError ? (
-            <p className="py-8 text-center text-xs text-destructive">{loadError}</p>
+            <p className="py-8 text-center text-xs text-destructive">
+              {loadError}
+            </p>
           ) : !hasAnyActivity ? (
             <p className="py-8 text-center text-xs text-muted-foreground">
               Not enough recent activity yet.
             </p>
           ) : (
-            <ChartContainer config={timeChartConfig} className="aspect-auto h-40 w-full">
-              <BarChart data={timeData} margin={{ left: -20, right: 8, top: 8 }}>
+            <ChartContainer
+              config={timeChartConfig}
+              className="aspect-auto h-40 w-full"
+            >
+              <BarChart
+                data={timeData}
+                margin={{ left: -20, right: 8, top: 8 }}
+              >
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
                   dataKey="label"
@@ -303,10 +349,17 @@ export function StudyTrends({
                   fontSize={11}
                   minTickGap={20}
                 />
-                <YAxis tickLine={false} axisLine={false} fontSize={11} width={32} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  fontSize={11}
+                  width={32}
+                />
                 <ChartTooltip
                   content={
-                    <ChartTooltipContent formatter={(value) => `${value} min`} />
+                    <ChartTooltipContent
+                      formatter={(value) => `${value} min`}
+                    />
                   }
                 />
                 <Bar dataKey="minutes" fill="var(--color-minutes)" radius={4} />
@@ -333,7 +386,10 @@ export function StudyTrends({
             <ul className="flex flex-col gap-2">
               {topicStats.map((t) => (
                 <li key={t.topic} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 truncate text-xs text-foreground" title={t.topic}>
+                  <span
+                    className="w-28 shrink-0 truncate text-xs text-foreground"
+                    title={t.topic}
+                  >
                     {t.topic}
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">

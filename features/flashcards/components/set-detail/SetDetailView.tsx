@@ -25,16 +25,36 @@ import {
   Expand,
   History,
   Download,
+  ChevronDown,
+  GraduationCap,
+  ListChecks,
+  Grid3x3,
+  PenLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
 import { downloadSetCsv } from "../../utils/importExportCsv";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
+import { AudioOverviewSection } from "./AudioOverviewSection";
+
+/** Phase 1B — the extra study modes on the spine, alongside classic Study. */
+const OTHER_STUDY_MODES = [
+  { key: "learn", label: "Learn", description: "Adaptive reshuffle toward weak cards", icon: GraduationCap, path: "learn" },
+  { key: "test", label: "Test", description: "Multiple-choice quiz", icon: ListChecks, path: "test" },
+  { key: "match", label: "Match", description: "Timed pairing game", icon: Grid3x3, path: "match" },
+  { key: "write", label: "Write", description: "Type the answer from memory", icon: PenLine, path: "write" },
+] as const;
 
 const EDU_BASE = "/education/flashcards";
 
@@ -119,7 +139,7 @@ export function SetDetailView({ setId }: { setId: string }) {
   }, [setId]);
 
   const [pendingAction, setPendingAction] = useState<
-    "study" | "fastfire" | "edit" | "sessions" | null
+    "study" | "learn" | "test" | "match" | "write" | "fastfire" | "edit" | "sessions" | null
   >(null);
 
   const exportCsv = () => {
@@ -132,7 +152,7 @@ export function SetDetailView({ setId }: { setId: string }) {
   // button shows the busy state) and routes via a transition. Guards against
   // duplicate clicks while a transition is pending. (UI standards.)
   const navigate = (
-    action: "study" | "fastfire" | "edit" | "sessions",
+    action: "study" | "learn" | "test" | "match" | "write" | "fastfire" | "edit" | "sessions",
     path: string,
   ) => {
     if (isPending) return;
@@ -245,11 +265,43 @@ export function SetDetailView({ setId }: { setId: string }) {
                     navigate("study", `${EDU_BASE}/${setId}/study`)
                   }
                   disabled={isPending || data.cards.length === 0}
-                  className={cn(pendingAction === "study" && "opacity-70")}
+                  className={cn(
+                    "rounded-r-none",
+                    pendingAction === "study" && "opacity-70",
+                  )}
                 >
                   <Play className="mr-1.5 h-4 w-4" />
                   Study
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      disabled={isPending || data.cards.length === 0}
+                      className="-ml-2 rounded-l-none px-2"
+                      aria-label="Other study modes"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {OTHER_STUDY_MODES.map((m) => (
+                      <DropdownMenuItem
+                        key={m.key}
+                        onClick={() =>
+                          navigate(m.key, `${EDU_BASE}/${setId}/${m.path}`)
+                        }
+                      >
+                        <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span>{m.label}</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {m.description}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <FlashcardStudyWindowDevTrigger
                   setId={setId}
                   title={data.set.name}
@@ -299,7 +351,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                   onClick={() =>
                     toast.info("Enhance & expand", {
                       description:
-                        "Agentic card enrichment, sub-card expansion, and audio generation are coming soon.",
+                        "Agentic card enrichment and sub-card expansion are coming soon.",
                     })
                   }
                 >
@@ -307,6 +359,22 @@ export function SetDetailView({ setId }: { setId: string }) {
                   Enhance
                 </Button>
               </div>
+            </div>
+
+            {/* Audio overview (Phase 7 — podcast-from-deck) */}
+            <div className="mt-4">
+              <AudioOverviewSection
+                setId={setId}
+                set={data.set}
+                cards={data.cards}
+                onFileIdChange={(fileId) =>
+                  setData((prev) =>
+                    prev
+                      ? { ...prev, set: { ...prev.set, audio_overview_file_id: fileId } }
+                      : prev,
+                  )
+                }
+              />
             </div>
 
             {/* Cards */}

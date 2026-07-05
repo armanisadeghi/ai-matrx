@@ -92,7 +92,11 @@ const VISIBILITY_LABEL: Record<FcSetRow["visibility"], string> = {
   public: "Public",
 };
 
-function VisibilityChip({ visibility }: { visibility: FcSetRow["visibility"] }) {
+function VisibilityChip({
+  visibility,
+}: {
+  visibility: FcSetRow["visibility"];
+}) {
   const label = VISIBILITY_LABEL[visibility] ?? "Private";
   return (
     <span className="shrink-0 inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4 text-muted-foreground">
@@ -228,9 +232,13 @@ export function FlashcardsHome() {
   const [isPending, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [folderIds, setFolderIds] = useState<Set<string>>(new Set());
-  const [foldersBySet, setFoldersBySet] = useState<Record<string, string[]>>({});
+  const [foldersBySet, setFoldersBySet] = useState<Record<string, string[]>>(
+    {},
+  );
   const [streak, setStreak] = useState<StudyStreakRow | null>(null);
-  const { categories: folders } = useCategories({ dimension: FOLDER_DIMENSION });
+  const { categories: folders } = useCategories({
+    dimension: FOLDER_DIMENSION,
+  });
 
   // Phase 3 (daily streak): read-only — the streak row is written exclusively
   // by the education.bump_study_streak() DB trigger on study_session insert,
@@ -361,7 +369,8 @@ export function FlashcardsHome() {
                 title={`Longest streak: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
               >
                 <Flame className="h-3.5 w-3.5" />
-                {streak.current_streak} day{streak.current_streak === 1 ? "" : "s"}
+                {streak.current_streak} day
+                {streak.current_streak === 1 ? "" : "s"}
               </span>
             )}
           </div>
@@ -419,7 +428,9 @@ export function FlashcardsHome() {
               onClick={() => {
                 if (isPending) return;
                 setNavigatingId("__from_source__");
-                startTransition(() => router.push(`${EDU_BASE}/new/from-source`));
+                startTransition(() =>
+                  router.push(`${EDU_BASE}/new/from-source`),
+                );
               }}
               disabled={isPending && navigatingId === "__from_source__"}
             >

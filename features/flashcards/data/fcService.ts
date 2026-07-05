@@ -114,6 +114,31 @@ export const fcService = {
     }
   },
 
+  /**
+   * Phase 7 — persist (or clear) the set's generated audio overview. Callers
+   * MUST pass a durable `file_id`, never a raw/signed URL (media-durability
+   * doctrine) — `AudioOverviewSection` resolves one from the podcast run's
+   * `audio_stream_end.file_id` (falling back to `fileIdFromUserFilesUrl`)
+   * before calling this.
+   */
+  async updateSetAudioOverview(
+    setId: string,
+    fileId: string | null,
+  ): Promise<FcResult<FcSetRow>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .update({ audio_overview_file_id: fileId })
+        .eq("id", setId)
+        .select("*")
+        .single();
+      if (error) return fail("updateSetAudioOverview", error);
+      return { data: data as FcSetRow, error: null };
+    } catch (e) {
+      return fail("updateSetAudioOverview", e);
+    }
+  },
+
   /** Phase 1A — flip a set's share visibility (private/internal/link/public). */
   async updateSetVisibility(
     setId: string,
@@ -441,7 +466,10 @@ export const fcService = {
         .in("id", ids);
       if (error) return fail("getTopicsForCardIds", error);
       const map: Record<string, string | null> = {};
-      for (const row of (data ?? []) as { id: string; topic: string | null }[]) {
+      for (const row of (data ?? []) as {
+        id: string;
+        topic: string | null;
+      }[]) {
         map[row.id] = row.topic;
       }
       return { data: map, error: null };
