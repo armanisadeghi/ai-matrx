@@ -2,6 +2,8 @@
 
 **Status:** Phases 0–5 live, ALWAYS ON — no env flag (repo rule: features are never guarded behind environment variables). One library parses every JSON region — live agent streams, DB reloads, any source — into one IR that all layers pass through without reprocessing.
 
+**The Shape System** — this feature is the home of the platform-wide Shape registry: every kind carries schema + skills + content block + components + samples (`content_ir.kind_example`) + pydantic mirror; `kind_surface` is the one detection list; `kind_component` the (kind, platform, role) → component resolver; workflow node I/O already speaks kinds. **Read [`docs/SHAPE_SYSTEM.md`](./docs/SHAPE_SYSTEM.md) before any Shape-system work** (rulings, posture, roadmap, definition of done).
+
 **Read this BEFORE touching:** stream/DB block parsing (`stream-block-accumulator.ts`, `content-splitter-v2.ts`), anything reading or writing `__kind`, kind schemas in `flexible_data`, or `metadata.__ir` on render blocks.
 
 ## The model (compiler frame)
