@@ -24,12 +24,18 @@ import {
   type FlexibleDataRecord,
 } from "../features/content-ir/registry/schema-source-flexible-data";
 import { planKindMigration } from "../features/content-ir/registry/kind-migration-plan";
+import {
+  reconstructKindRegistry,
+  type KindDefProjection,
+  type KindEdgeProjection,
+} from "../features/content-ir/registry/schema-source-kind-tables";
 import { kindRegistry } from "../features/content-ir/registry/kind-registry";
 import type { DualGateDefinition } from "../features/content-ir/registry/kind-dual-gate";
 
 dotenv.config({ path: resolve(process.cwd(), ".env.local") });
 
 const APPLY = process.argv.includes("--apply");
+const VERIFY = process.argv.includes("--verify");
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SECRET_KEY;
 if (!url || !key) {
@@ -67,6 +73,47 @@ async function main() {
     labels[r.slug] = r.label;
     orgBySlug[r.slug] = r.organization_id;
     visBySlug[r.slug] = (r.visibility as string) ?? "private";
+  }
+
+  // --verify: read content_ir back and prove it reconstructs the SOURCE
+  // schemas losslessly (DB round-trip parity). Compares field-by-field.
+  if (VERIFY) {
+    const { data: defRows, error: dErr } = await supabase
+      .schema("content_ir")
+      .from("kind_definition")
+      .select("id, kind, label, data")
+      .is("deleted_at", null);
+    if (dErr) throw new Error(`read kind_definition: ${dErr.message}`);
+    const { data: edgeRows, error: eErr } = await supabase
+      .schema("content_ir")
+      .from("kind_edge")
+      .select("parent_definition_id, field_name, child_definition_id, position")
+      .is("deleted_at", null);
+    if (eErr) throw new Error(`read kind_edge: ${eErr.message}`);
+
+    const { schemas: dbSchemas } = reconstructKindRegistry(
+      (defRows ?? []) as unknown as KindDefProjection[],
+      (edgeRows ?? []) as unknown as KindEdgeProjection[],
+    );
+
+    let match = 0;
+    const mismatches: string[] = [];
+    for (const [kind, srcSchema] of Object.entries(schemas)) {
+      const dbSchema = dbSchemas[kind];
+      if (!dbSchema) {
+        mismatches.push(`${kind}: MISSING from content_ir reconstruction`);
+        continue;
+      }
+      if (JSON.stringify(dbSchema) === JSON.stringify(srcSchema)) match++;
+      else mismatches.push(`${kind}: differs from source`);
+    }
+    console.log(
+      `\nPARITY: ${match}/${Object.keys(schemas).length} kinds reconstruct identically to flexible_data.`,
+    );
+    for (const m of mismatches) console.log(`  ✗ ${m}`);
+    if (mismatches.length === 0) console.log(`  ✓ lossless round-trip through the DB.\n`);
+    else console.log("");
+    return;
   }
 
   // 2. Plan (pure).
