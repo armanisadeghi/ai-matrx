@@ -27,6 +27,7 @@ import {
   parseXmlAttributes,
   extractAudioLink,
   detectImageMarkdown,
+  countInlineImages,
   detectVideoMarkdown,
   detectMatrxFileMarkdown,
   normalizeCodeLanguage,
@@ -588,7 +589,8 @@ export class StreamBlockAccumulator {
     // incomplete or reference-style images (![alt][id]) fall through to text.
     if (
       hasCandidate(flags, Candidate.IMAGE) &&
-      detectImageMarkdown(rawLine).isImage
+      detectImageMarkdown(rawLine).isImage &&
+      countInlineImages(rawLine) < 2
     ) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("image", dispatch);

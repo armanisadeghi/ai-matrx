@@ -8193,14 +8193,20 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          edited_at: string | null
+          edited_by: string | null
           graded_by: string | null
           id: string
+          is_manually_edited: boolean
           item_id: string
           item_type: string
           latency_ms: number | null
           metadata: Json
           method: string
           organization_id: string
+          original_result: string | null
+          original_score: Json | null
+          original_score_value: number | null
           response_audio_file_id: string | null
           response_image_file_id: string | null
           response_kind: string | null
@@ -8217,14 +8223,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          edited_at?: string | null
+          edited_by?: string | null
           graded_by?: string | null
           id?: string
+          is_manually_edited?: boolean
           item_id: string
           item_type: string
           latency_ms?: number | null
           metadata?: Json
           method?: string
           organization_id: string
+          original_result?: string | null
+          original_score?: Json | null
+          original_score_value?: number | null
           response_audio_file_id?: string | null
           response_image_file_id?: string | null
           response_kind?: string | null
@@ -8241,14 +8253,20 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          edited_at?: string | null
+          edited_by?: string | null
           graded_by?: string | null
           id?: string
+          is_manually_edited?: boolean
           item_id?: string
           item_type?: string
           latency_ms?: number | null
           metadata?: Json
           method?: string
           organization_id?: string
+          original_result?: string | null
+          original_score?: Json | null
+          original_score_value?: number | null
           response_audio_file_id?: string | null
           response_image_file_id?: string | null
           response_kind?: string | null
@@ -27488,6 +27506,15 @@ export type Database = {
           recording_count: number
           session_id: string
         }[]
+      }
+      study_override_attempt: {
+        Args: {
+          p_attempt_id: string
+          p_result: string
+          p_score?: Json
+          p_score_value?: number
+        }
+        Returns: Json
       }
       study_record_attempt: {
         Args: {

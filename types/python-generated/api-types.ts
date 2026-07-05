@@ -8501,6 +8501,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/{definition_id}/nodes/{node_id}/input-form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Node Input Form
+         * @description The input form for ONE node — generalizes the run form to any node type.
+         *     Uses the compiled effective schema for dynamic-output nodes (io.user_input),
+         *     else the registry input schema.
+         */
+        get: operations["get_node_input_form_workflows__definition_id__nodes__node_id__input_form_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/nodes/{node_id}/input-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Definition Node Input Status
+         * @description Per-node input status BEFORE any run exists (empty invocation inputs) —
+         *     used to render a test/prompt form for a node in a fresh draft.
+         */
+        get: operations["get_definition_node_input_status_workflows__definition_id__nodes__node_id__input_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/nodes/{node_id}/input-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Run Node Input Status
+         * @description Per-node input status for a live/parked run — resolves against the run's
+         *     frontier + stored channel/seed values, so the studio knows whether the node
+         *     can run yet and which fields to prompt for.
+         */
+        get: operations["get_run_node_input_status_runs__run_id__nodes__node_id__input_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/step-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Step Run
+         * @description Create a step-mode run: a ``paused`` workflow.run seeded at its entry
+         *     frontier (step 0), ready for per-node execution. No node runs yet.
+         */
+        post: operations["start_step_run_workflows__definition_id__step_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/nodes/{node_id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Node
+         * @description Execute exactly ONE node of a parked/step-mode run and persist its result,
+         *     then park again — so a downstream node can be run independently against the
+         *     stored output. Streams the resumed (single-step) run.
+         */
+        post: operations["execute_node_runs__run_id__nodes__node_id__execute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/bulk-archive": {
         parameters: {
             query?: never;
@@ -19577,6 +19685,27 @@ export interface components {
             reason?: string | null;
         };
         /**
+         * ExecuteNodeRequest
+         * @description Body for POST /runs/{id}/nodes/{nid}/execute — run exactly this node.
+         */
+        ExecuteNodeRequest: {
+            /** Inputs */
+            inputs?: {
+                [key: string]: unknown;
+            } | null;
+            /** Config Override */
+            config_override?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Rerun
+             * @default false
+             */
+            rerun: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * ExecutionError
          * @description Structured error captured on a non-success terminal transition. Mirrors the
          *     repo's `describe_db_exception` shape — never a bare string in a status column.
@@ -21293,6 +21422,18 @@ export interface components {
             exclusive: boolean;
             /** Title */
             title?: string | null;
+        };
+        /** FrontierInvocation */
+        FrontierInvocation: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Attempt
+             * @default 1
+             */
+            attempt: number;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * GenerateTagsRequest
@@ -23551,6 +23692,34 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * MissingInputField
+         * @description One input a node needs before it can run — surfaced so the studio can
+         *     render a prompt form for EXACTLY these fields.
+         */
+        MissingInputField: {
+            /** Key */
+            key: string;
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+            /**
+             * Reason
+             * @default missing
+             * @enum {string}
+             */
+            reason: "missing" | "invalid";
+            /** Message */
+            message?: string | null;
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
         /** MockStreamRequest */
         MockStreamRequest: {
             /**
@@ -23777,6 +23946,110 @@ export interface components {
             position: components["schemas"]["Position"];
             /** Data */
             data?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * NodeInputFormResponse
+         * @description The input form for ONE node — GET /workflows/{id}/nodes/{nid}/input-form.
+         *     Generalizes the run form to any node type.
+         */
+        NodeInputFormResponse: {
+            /** Node Id */
+            node_id: string;
+            /** Spec Type */
+            spec_type: string;
+            /** Title */
+            title: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "input_schema" | "effective_output_schema";
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            };
+            /** Required */
+            required?: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * NodeInputStatusField
+         * @description One resolved input field — what value the node WILL receive and where it
+         *     came from (so the studio can show "from *Step X*").
+         */
+        NodeInputStatusField: {
+            /** Key */
+            key: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Satisfied
+             * @default false
+             */
+            satisfied: boolean;
+            /**
+             * Provenance
+             * @default none
+             * @enum {string}
+             */
+            provenance: "upstream" | "static" | "seed" | "none";
+            /** Source Node Id */
+            source_node_id?: string | null;
+            /** Value */
+            value?: unknown;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * NodeInputStatusResponse
+         * @description Whether a node can run yet, field-by-field — GET
+         *     /runs/{id}/nodes/{nid}/input-status (and the definition-level variant).
+         */
+        NodeInputStatusResponse: {
+            /** Run Id */
+            run_id?: string | null;
+            /** Definition Id */
+            definition_id: string;
+            /** Node Id */
+            node_id: string;
+            /** Spec Type */
+            spec_type: string;
+            /**
+             * In Frontier
+             * @default false
+             */
+            in_frontier: boolean;
+            /** Step */
+            step?: number | null;
+            /**
+             * Attempt
+             * @default 1
+             */
+            attempt: number;
+            /**
+             * Already Ran
+             * @default false
+             */
+            already_ran: boolean;
+            /**
+             * Executable
+             * @default false
+             */
+            executable: boolean;
+            /** Fields */
+            fields?: components["schemas"]["NodeInputStatusField"][];
+            /** Missing */
+            missing?: components["schemas"]["MissingInputField"][];
+            /** Form Schema */
+            form_schema?: {
                 [key: string]: unknown;
             };
         } & {
@@ -28323,6 +28596,26 @@ export interface components {
             cld_file_id: string | null;
             /** Stages */
             stages: components["schemas"]["StageStatus"][];
+        };
+        /**
+         * StartStepRunResponse
+         * @description A freshly created step-mode run — a ``paused`` run seeded at its entry
+         *     frontier, ready for per-node execution.
+         */
+        StartStepRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Seed Checkpoint Id */
+            seed_checkpoint_id: string;
+            /**
+             * Status
+             * @default paused
+             */
+            status: string;
+            /** Frontier */
+            frontier?: components["schemas"]["FrontierInvocation"][];
+        } & {
+            [key: string]: unknown;
         };
         /** StatelessApplicant */
         StatelessApplicant: {
@@ -46952,6 +47245,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TestNodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_node_input_form_workflows__definition_id__nodes__node_id__input_form_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeInputFormResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_definition_node_input_status_workflows__definition_id__nodes__node_id__input_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeInputStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_run_node_input_status_runs__run_id__nodes__node_id__input_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeInputStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_step_run_workflows__definition_id__step_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartStepRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execute_node_runs__run_id__nodes__node_id__execute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExecuteNodeRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

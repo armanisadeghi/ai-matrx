@@ -4,6 +4,8 @@
  * Walks a Next.js App Router directory tree and returns route segment paths
  * (no leading slash, no basePath prefix). Skips `_`-prefixed private folders;
  * includes dynamic segments literally (`[id]`, `[...slug]`, `[[...path]]`).
+ *
+ * Do not import from client components — use `@/utils/route-discovery` (server-only barrel).
  */
 
 import { readdir } from "fs/promises";

@@ -21,6 +21,9 @@ import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeSafeRawHtml, {
+  ALLOWED_RAW_HTML_TAGS,
+} from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
 import "katex/dist/katex.min.css";
 import { cn } from "@/styles/themes/utils";
 import { PencilIcon } from "lucide-react";
@@ -223,10 +226,18 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
     // Escape XML/HTML-style angle-bracket tokens, but SKIP content inside
     // backtick code spans — HTML entities are not decoded inside code spans,
     // so escaping there causes literal "&lt;" to appear on screen.
+    //
+    // EXCEPTION: a curated allow-list of real HTML tags (`<img>`, `<table>` and
+    // friends — see ALLOWED_RAW_HTML_TAGS) is left un-escaped so it survives as
+    // a raw-HTML node that `rehypeSafeRawHtml` parses + sanitizes into real
+    // elements. Every other tag (`<tools>`, `<Admin>`, `<Resource>`…) is still
+    // escaped to literal text, preserving the bare-XML behavior below.
     processed = processed.replace(
       /(`+)([\s\S]*?)\1|<(\/?[\w][\w-]*)([^>]*?)>/g,
       (match, backticks, _codeContent, tagName, tagAttrs) => {
         if (backticks !== undefined) return match; // preserve code spans verbatim
+        const bareTag = String(tagName).replace(/^\//, "").toLowerCase();
+        if (ALLOWED_RAW_HTML_TAGS.has(bareTag)) return match; // render as HTML
         return `&lt;${tagName}${tagAttrs}&gt;`; // escape tags outside code spans
       },
     );
@@ -812,8 +823,12 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           );
         },
         img: ({ node, ...props }) => (
+          // Inline images flow rather than fill the width, so multiple images on
+          // one line sit side by side and wrap. Standalone images on their own
+          // line take the dedicated full-width ImageBlock path (the splitter
+          // only leaves an image here when it shares a line with other content).
           <img
-            className="w-full h-auto rounded-md my-4 object-contain max-w-[700px]"
+            className="inline-block h-auto max-w-full rounded-md my-2 mr-2 object-contain align-top"
             style={{ maxHeight: 700 }}
             {...props}
             alt={props.alt || "Image"}
@@ -852,7 +867,10 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
                 {children}
               </table>
             </div>
-            {tableRenderDiagnostic ? (
+            {/* HTML tables (parsed by rehypeSafeRawHtml) are correctly rendered
+                here and were never promotion candidates — skip the diagnostic
+                so it only flags genuinely un-promoted markdown pipe tables. */}
+            {tableRenderDiagnostic && !node?.data?.matrxRawHtmlTable ? (
               <TableRenderPathDiagnostic
                 context={{
                   ...tableRenderDiagnostic,
@@ -951,7 +969,13 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
           [remarkMath, { singleDollarTextMath: false }],
           remarkMatrxVariable,
         ]}
-        rehypePlugins={[[rehypeKatex, { strict: "ignore" }]]}
+        rehypePlugins={[
+          // Parse + sanitize allow-listed raw HTML (img/table/…) BEFORE KaTeX,
+          // so KaTeX's rendered output is never sanitized and matrx-variable /
+          // math element nodes are never touched.
+          rehypeSafeRawHtml,
+          [rehypeKatex, { strict: "ignore" }],
+        ]}
         components={components}
       >
         {processedContent}

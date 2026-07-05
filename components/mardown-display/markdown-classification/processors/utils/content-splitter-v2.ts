@@ -1369,6 +1369,24 @@ export function detectImageMarkdown(line: string): {
   return { isImage: false };
 }
 
+/**
+ * Count standalone (http/https) markdown images on a single line.
+ *
+ * Drives the standalone-block-vs-inline-flow decision: a line with exactly ONE
+ * image becomes a full-width `image` block (the deliberate "big incoming image"
+ * treatment); a line with 2+ images is intentionally LEFT as text so
+ * react-markdown renders them side by side. The rule is "respect line breaks" —
+ * no line break between images means the author wants them inline, a line break
+ * means stacked. Only the `![alt](url)` form is counted; the single custom
+ * `[Image URL: …]` form never yields more than one.
+ */
+export function countInlineImages(line: string): number {
+  const re = /!\[(.*?)\]\((https?:\/\/[^\s)]+)(?:\s+(?:"[^"]*"|'[^']*'))?\)/g;
+  let count = 0;
+  while (re.exec(line) !== null) count++;
+  return count;
+}
+
 export function detectVideoMarkdown(line: string): {
   isVideo: boolean;
   src?: string;
@@ -1887,9 +1905,13 @@ export const splitContentIntoBlocksV2 = (
       continue;
     }
 
-    // 4. Check for image markdown
+    // 4. Check for image markdown. Only a SINGLE image on the line becomes a
+    // standalone full-width `image` block; a line with 2+ images falls through
+    // to text so react-markdown lays them out side by side (respect the missing
+    // line break). This also avoids the old bug where a two-image line emitted
+    // one block that rendered only the first image.
     const imageCheck = detectImageMarkdown(line);
-    if (imageCheck.isImage) {
+    if (imageCheck.isImage && countInlineImages(line) < 2) {
       if (currentText.trim()) {
         blocks.push({ type: "text", content: currentText.trimEnd() });
         currentText = "";

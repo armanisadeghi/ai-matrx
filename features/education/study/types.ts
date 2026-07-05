@@ -77,12 +77,29 @@ export interface RecordAttemptInput {
   result?: "correct" | "partial" | "incorrect";
   score?: Record<string, unknown> | null;
   scoreValue?: number | null;
-  responseKind?: "spoken" | "written" | "typed" | "handwritten" | "selected" | null;
+  responseKind?:
+    "spoken" | "written" | "typed" | "handwritten" | "selected" | null;
   responseAudioFileId?: string | null;
   responseImageFileId?: string | null;
   responseTranscript?: string | null;
   latencyMs?: number | null;
   gradedBy?: string | null;
+}
+
+/**
+ * A learner manually overriding their own attempt's grade — see
+ * `study_override_attempt` (edu_study_attempt_manual_override.sql). Only the
+ * attempt's `created_by` may call it; it flags `is_manually_edited`, preserves
+ * the FIRST-ever grade in `original_*`, and replays `item_mastery` for that
+ * item from its full attempt history (box/streak are sequential, so a
+ * mid-history edit can't be patched in place).
+ */
+export interface OverrideAttemptInput {
+  attemptId: string;
+  result: "correct" | "partial" | "incorrect";
+  scoreValue?: number | null;
+  /** Merged into the existing `score` jsonb (e.g. an updated feedback note); omit to leave it as-is. */
+  score?: Record<string, unknown> | null;
 }
 
 // ─── Session browsing (history / results UI) ──────────────────────────────────
@@ -102,6 +119,14 @@ export interface ListSessionsFilter {
 export interface SessionWithAttempts {
   session: StudySessionRow;
   attempts: StudyAttemptRow[];
+}
+
+/** Rollup counts for a session row in the history list. */
+export interface SessionAttemptSummary {
+  total: number;
+  correct: number;
+  partial: number;
+  incorrect: number;
 }
 
 // ─── Session patch (what updateSession accepts) ───────────────────────────────

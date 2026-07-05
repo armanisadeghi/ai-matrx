@@ -22,9 +22,11 @@ import type {
   ItemRef,
   NewSessionInput,
   RecordAttemptInput,
+  OverrideAttemptInput,
   SessionPatch,
   ListSessionsFilter,
   SessionWithAttempts,
+  SessionAttemptSummary,
 } from "../types";
 
 const EDU = () => supabase.schema("education");
@@ -50,7 +52,12 @@ function describeError(error: unknown): string {
   if (error instanceof Error) return error.message || error.name || "Error";
   if (typeof error === "string") return error;
   if (typeof error === "object") {
-    const e = error as { message?: string; details?: string; hint?: string; code?: string };
+    const e = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
     const parts = [
       e.message,
       e.details,
@@ -97,11 +104,32 @@ interface RecordAttemptRpcResult {
   mastery: ItemMasteryRow;
 }
 
-function isRecordAttemptResult(value: unknown): value is RecordAttemptRpcResult {
+function isRecordAttemptResult(
+  value: unknown,
+): value is RecordAttemptRpcResult {
   return (
     typeof value === "object" &&
     value !== null &&
     typeof (value as { attempt_id?: unknown }).attempt_id === "string" &&
+    typeof (value as { mastery?: unknown }).mastery === "object" &&
+    (value as { mastery?: unknown }).mastery !== null
+  );
+}
+
+/** Shape the `study_override_attempt` RPC returns: `{ attempt, mastery }`. */
+interface OverrideAttemptRpcResult {
+  attempt: StudyAttemptRow;
+  mastery: ItemMasteryRow;
+}
+
+function isOverrideAttemptResult(
+  value: unknown,
+): value is OverrideAttemptRpcResult {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { attempt?: unknown }).attempt === "object" &&
+    (value as { attempt?: unknown }).attempt !== null &&
     typeof (value as { mastery?: unknown }).mastery === "object" &&
     (value as { mastery?: unknown }).mastery !== null
   );
@@ -113,7 +141,9 @@ export const studyService = {
    * Open a study session. `organization_id` is omitted unless `orgId` is given,
    * so the `_stamp_org_default` trigger fills the creator's personal org.
    */
-  async createSession(input: NewSessionInput): Promise<StudyResult<StudySessionRow>> {
+  async createSession(
+    input: NewSessionInput,
+  ): Promise<StudyResult<StudySessionRow>> {
     const payload = {
       ...(input.orgId ? { organization_id: input.orgId } : {}),
       mode: input.mode,
@@ -178,10 +208,7 @@ export const studyService = {
     filter: ListSessionsFilter = {},
   ): Promise<StudyResult<StudySessionRow[]>> {
     try {
-      let q = EDU()
-        .from("study_session")
-        .select("*")
-        .is("deleted_at", null);
+      let q = EDU().from("study_session").select("*").is("deleted_at", null);
       if (filter.setId) q = q.eq("source_set_id", filter.setId);
       if (filter.mode) q = q.eq("mode", filter.mode);
       if (filter.status) q = q.eq("status", filter.status);
@@ -198,8 +225,44 @@ export const studyService = {
     }
   },
 
+  /** Attempt rollups for many sessions — powers the history list stats line. */
+  async getAttemptSummariesForSessions(
+    sessionIds: string[],
+  ): Promise<StudyResult<Record<string, SessionAttemptSummary>>> {
+    if (sessionIds.length === 0) return { data: {}, error: null };
+    try {
+      const { data, error } = await EDU()
+        .from("study_attempt")
+        .select("session_id, result")
+        .in("session_id", sessionIds)
+        .is("deleted_at", null);
+      if (error) return fail("getAttemptSummariesForSessions", error);
+      const map: Record<string, SessionAttemptSummary> = {};
+      for (const row of data ?? []) {
+        const sid = row.session_id;
+        if (!sid) continue;
+        const summary = map[sid] ?? {
+          total: 0,
+          correct: 0,
+          partial: 0,
+          incorrect: 0,
+        };
+        summary.total += 1;
+        if (row.result === "correct") summary.correct += 1;
+        else if (row.result === "partial") summary.partial += 1;
+        else if (row.result === "incorrect") summary.incorrect += 1;
+        map[sid] = summary;
+      }
+      return { data: map, error: null };
+    } catch (e) {
+      return fail("getAttemptSummariesForSessions", e);
+    }
+  },
+
   /** One session + its ordered attempt ledger (RLS-gated). null session = not found/hidden. */
-  async getSession(sessionId: string): Promise<StudyResult<SessionWithAttempts | null>> {
+  async getSession(
+    sessionId: string,
+  ): Promise<StudyResult<SessionWithAttempts | null>> {
     try {
       const { data: session, error: sErr } = await EDU()
         .from("study_session")
@@ -245,7 +308,10 @@ export const studyService = {
   },
 
   /** Patch a session — status / ended_at / aggregate_score / audio / transcript / review / settings. */
-  async updateSession(id: string, patch: SessionPatch): Promise<StudyResult<StudySessionRow>> {
+  async updateSession(
+    id: string,
+    patch: SessionPatch,
+  ): Promise<StudyResult<StudySessionRow>> {
     try {
       const { data, error } = await EDU()
         .from("study_session")
@@ -280,8 +346,12 @@ export const studyService = {
         ...(input.method != null ? { p_method: input.method } : {}),
         ...(input.result != null ? { p_result: input.result } : {}),
         ...(input.score != null ? { p_score: input.score as never } : {}),
-        ...(input.scoreValue != null ? { p_score_value: input.scoreValue } : {}),
-        ...(input.responseKind != null ? { p_response_kind: input.responseKind } : {}),
+        ...(input.scoreValue != null
+          ? { p_score_value: input.scoreValue }
+          : {}),
+        ...(input.responseKind != null
+          ? { p_response_kind: input.responseKind }
+          : {}),
         ...(input.responseAudioFileId != null
           ? { p_response_audio_file_id: input.responseAudioFileId }
           : {}),
@@ -312,7 +382,9 @@ export const studyService = {
    * the input an external scheduler (e.g. `lib/srs/fsrs.ts`) replays to compute
    * the next review state.
    */
-  async attemptsForItem(item: ItemRef): Promise<StudyResult<StudyAttemptRow[]>> {
+  async attemptsForItem(
+    item: ItemRef,
+  ): Promise<StudyResult<StudyAttemptRow[]>> {
     try {
       const { data, error } = await EDU()
         .from("study_attempt")
@@ -325,6 +397,42 @@ export const studyService = {
       return { data: (data ?? []) as StudyAttemptRow[], error: null };
     } catch (e) {
       return fail("attemptsForItem", e);
+    }
+  },
+
+  /**
+   * A learner overrides their own past attempt's grade (e.g. the AI grader
+   * marked something wrong that was actually right). Calls the
+   * `study_override_attempt` RPC, which flags `is_manually_edited`, preserves
+   * the first-ever grade in `original_*`, and replays `item_mastery` for that
+   * item from its FULL attempt history — box/streak are sequential, so this
+   * can never be a delta patch. The RPC itself checks `created_by = auth.uid()`;
+   * it is not exposed for editing someone else's attempt.
+   */
+  async overrideAttempt(
+    input: OverrideAttemptInput,
+  ): Promise<
+    StudyResult<{ attempt: StudyAttemptRow; mastery: ItemMasteryRow }>
+  > {
+    try {
+      const { data, error } = await supabase.rpc("study_override_attempt", {
+        p_attempt_id: input.attemptId,
+        p_result: input.result,
+        ...(input.scoreValue != null
+          ? { p_score_value: input.scoreValue }
+          : {}),
+        ...(input.score != null ? { p_score: input.score as never } : {}),
+      });
+      if (error) return fail("overrideAttempt", error);
+      if (!isOverrideAttemptResult(data)) {
+        return fail("overrideAttempt", "RPC returned an unexpected shape");
+      }
+      return {
+        data: { attempt: data.attempt, mastery: data.mastery },
+        error: null,
+      };
+    } catch (e) {
+      return fail("overrideAttempt", e);
     }
   },
 
@@ -350,7 +458,9 @@ export const studyService = {
    * Mastery rows for many items of ONE item_type in a single round-trip. Items
    * with no mastery row are simply absent from the result (map by item_id).
    */
-  async getMasteryBulk(items: ItemRef[]): Promise<StudyResult<ItemMasteryRow[]>> {
+  async getMasteryBulk(
+    items: ItemRef[],
+  ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
       if (items.length === 0) return { data: [], error: null };
       const itemType = items[0].itemType;
@@ -374,7 +484,10 @@ export const studyService = {
    * Capped by `limit` — a learner with more than this many studied items is well
    * past where a client-side summary should move to an RPC.
    */
-  async listMastery(itemType: string, limit = 2000): Promise<StudyResult<ItemMasteryRow[]>> {
+  async listMastery(
+    itemType: string,
+    limit = 2000,
+  ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
       const { data, error } = await EDU()
         .from("item_mastery")
@@ -395,7 +508,10 @@ export const studyService = {
    * item_type that are due now (`due_at <= now()`), soonest-first. Uses the
    * `idx_item_mastery_due` index.
    */
-  async listDue(itemType: string, limit = 50): Promise<StudyResult<ItemMasteryRow[]>> {
+  async listDue(
+    itemType: string,
+    limit = 50,
+  ): Promise<StudyResult<ItemMasteryRow[]>> {
     try {
       const { data, error } = await EDU()
         .from("item_mastery")

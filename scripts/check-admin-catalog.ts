@@ -11,7 +11,7 @@
  * Also cross-checks the route scanner against an independent page-file walk.
  */
 
-import { checkAdminRouteCatalog } from "../features/admin/utils/admin-route-catalog";
+import { checkAdminRouteCatalog } from "../features/admin/utils/admin-route-catalog-server";
 
 const YELLOW = "\x1b[33m";
 const RED = "\x1b[31m";

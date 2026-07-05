@@ -32,7 +32,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
@@ -45,6 +44,7 @@ import {
   ensureSpokenFrontsForSet,
   getSpokenFrontReadiness,
 } from "../spoken-front/generateSpokenFront.thunk";
+import { FastFireSetPicker } from "./FastFireSetPicker";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -60,7 +60,10 @@ export function FastFireSetup() {
   // Spoken-front prep (TTS): generated ON-DEMAND here (a pre-step, so the mic-warm
   // in the Start gesture stays in-gesture). Cached after — instant on later runs.
   const [prepping, setPrepping] = useState(false);
-  const [prepProgress, setPrepProgress] = useState<{ done: number; total: number } | null>(null);
+  const [prepProgress, setPrepProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
   const [prepDone, setPrepDone] = useState(false);
 
   const prepareAudio = async (): Promise<void> => {
@@ -159,37 +162,11 @@ export function FastFireSetup() {
               No sets yet. Create one in the Flashcard Studio first.
             </div>
           ) : (
-            <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto">
-              {sets.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => dispatch(updateConfig({ setId: s.id }))}
-                  className={cn(
-                    "flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors",
-                    config.setId === s.id
-                      ? "border-orange-400 bg-orange-50 dark:border-orange-700 dark:bg-orange-950/40"
-                      : "border-border bg-background hover:bg-accent",
-                  )}
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-foreground">
-                      {s.name}
-                    </div>
-                    {s.description && (
-                      <div className="truncate text-xs text-muted-foreground">
-                        {s.description}
-                      </div>
-                    )}
-                  </div>
-                  {config.setId === s.id && (
-                    <span className="shrink-0 rounded-full bg-orange-500 px-2 py-0.5 text-[10px] font-medium text-white">
-                      Selected
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
+            <FastFireSetPicker
+              sets={sets}
+              value={config.setId}
+              onChange={(setId) => dispatch(updateConfig({ setId }))}
+            />
           )}
         </section>
 
@@ -272,8 +249,8 @@ export function FastFireSetup() {
                   Hear the questions
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  A fast-paced host reads each question aloud. Generated once, then
-                  cached for instant playback.
+                  A fast-paced host reads each question aloud. Generated once,
+                  then cached for instant playback.
                 </div>
               </div>
             </div>
@@ -357,9 +334,10 @@ export function FastFireSetup() {
                 }
               />
               <p className="mt-1.5 text-[11px] text-muted-foreground">
-                The timer starts only after the spoken question finishes — so you
-                never lose time to the reading. Kept shorter than the {config.secondsPerCard}s
-                above since you don&apos;t spend part of it reading.
+                The timer starts only after the spoken question finishes — so
+                you never lose time to the reading. Kept shorter than the{" "}
+                {config.secondsPerCard}s above since you don&apos;t spend part
+                of it reading.
               </p>
             </div>
           )}
@@ -389,9 +367,7 @@ export function FastFireSetup() {
               <AudioDevicesPanel />
               <div className="flex items-start gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
                 <Video className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                  Camera setup for video study aids is coming soon.
-                </span>
+                <span>Camera setup for video study aids is coming soon.</span>
               </div>
             </div>
           )}

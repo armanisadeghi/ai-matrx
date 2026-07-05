@@ -49,10 +49,22 @@ function describeError(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (error && typeof error === "object" && "message" in error) {
-    const e = error as { message?: string; details?: string; hint?: string; code?: string };
-    return [e.message, e.details, e.hint && `hint: ${e.hint}`, e.code && `(${e.code})`]
-      .filter(Boolean)
-      .join(" — ") || "Unknown error";
+    const e = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
+    return (
+      [
+        e.message,
+        e.details,
+        e.hint && `hint: ${e.hint}`,
+        e.code && `(${e.code})`,
+      ]
+        .filter(Boolean)
+        .join(" — ") || "Unknown error"
+    );
   }
   return "Unknown error";
 }
@@ -84,7 +96,9 @@ export const fcService = {
 
   async updateSet(
     setId: string,
-    patch: Partial<Pick<FcSetRow, "name" | "description" | "topic" | "lesson" | "difficulty">>,
+    patch: Partial<
+      Pick<FcSetRow, "name" | "description" | "topic" | "lesson" | "difficulty">
+    >,
   ): Promise<FcResult<FcSetRow>> {
     try {
       const { data, error } = await EDU()
@@ -112,7 +126,11 @@ export const fcService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getSet", error);
-      if (!data) return { data: null, error: "Set not found or you don't have access to it" };
+      if (!data)
+        return {
+          data: null,
+          error: "Set not found or you don't have access to it",
+        };
       return { data: data as FcSetRow, error: null };
     } catch (e) {
       return fail("getSet", e);
@@ -131,6 +149,27 @@ export const fcService = {
       return { data: (data ?? []) as FcSetRow[], error: null };
     } catch (e) {
       return fail("listSets", e);
+    }
+  },
+
+  /** Resolve set names for session history rows (batch, RLS-filtered). */
+  async getSetNamesByIds(
+    setIds: string[],
+  ): Promise<FcResult<Record<string, string>>> {
+    const unique = [...new Set(setIds.filter(Boolean))];
+    if (unique.length === 0) return { data: {}, error: null };
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("id, name")
+        .in("id", unique)
+        .is("deleted_at", null);
+      if (error) return fail("getSetNamesByIds", error);
+      const map: Record<string, string> = {};
+      for (const row of data ?? []) map[row.id] = row.name;
+      return { data: map, error: null };
+    } catch (e) {
+      return fail("getSetNamesByIds", e);
     }
   },
 
@@ -161,7 +200,10 @@ export const fcService = {
         // Columnless extras (e.g. tags) ride the jsonb metadata — never dropped.
         metadata: c.metadata ?? {},
       }));
-      const { data, error } = await EDU().from("fc_card").insert(rows).select("*");
+      const { data, error } = await EDU()
+        .from("fc_card")
+        .insert(rows)
+        .select("*");
       if (error) return fail("addCards", error);
       const created = (data ?? []) as FcCardRow[];
 
@@ -179,7 +221,8 @@ export const fcService = {
             position: base + i,
             orgId: opts.orgId,
           });
-          if (!member.ok) console.error("[fcService.addCards] member edge failed:", member);
+          if (!member.ok)
+            console.error("[fcService.addCards] member edge failed:", member);
 
           const src = cards[i].source;
           if (src?.file_id) {
@@ -197,7 +240,10 @@ export const fcService = {
               } as never,
             });
             if (!lineage.ok)
-              console.error("[fcService.addCards] lineage edge failed:", lineage);
+              console.error(
+                "[fcService.addCards] lineage edge failed:",
+                lineage,
+              );
           }
         }),
       );
@@ -215,7 +261,9 @@ export const fcService = {
     const setRes = await this.createSet(input);
     if (!setRes.data) return { data: null, error: setRes.error };
     const set = setRes.data;
-    const cardsRes = await this.addCards(set.id, cards, { orgId: set.organization_id });
+    const cardsRes = await this.addCards(set.id, cards, {
+      orgId: set.organization_id,
+    });
     if (cardsRes.error) return { data: null, error: cardsRes.error };
     return this.getSetWithCards(set.id);
   },
@@ -227,22 +275,31 @@ export const fcService = {
       if (!setRes.data) return { data: null, error: setRes.error };
 
       // Membership edges (cards → this set), ordered by position.
-      const edgesRes = await associationsService.listForTargets("fc_set", [setId]);
-      if (!edgesRes.ok) return fail("getSetWithCards", "failed to load membership edges");
+      const edgesRes = await associationsService.listForTargets("fc_set", [
+        setId,
+      ]);
+      if (!edgesRes.ok)
+        return fail("getSetWithCards", "failed to load membership edges");
       const members = edgesRes.data.edges
-        .filter((e) => e.sourceType === "fc_card" && e.role === EDGE_ROLE.member)
+        .filter(
+          (e) => e.sourceType === "fc_card" && e.role === EDGE_ROLE.member,
+        )
         // Deterministic order: position first (null → last), then createdAt, then id —
         // so a set never silently reshuffles when positions are missing/duplicated.
         .sort(
           (a, b) =>
-            (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER) ||
+            (a.position ?? Number.MAX_SAFE_INTEGER) -
+              (b.position ?? Number.MAX_SAFE_INTEGER) ||
             a.createdAt.localeCompare(b.createdAt) ||
             a.id.localeCompare(b.id),
         );
       const cardIds = members.map((e) => e.sourceId);
-      const posByCard = new Map(members.map((e) => [e.sourceId, e.position ?? null]));
+      const posByCard = new Map(
+        members.map((e) => [e.sourceId, e.position ?? null]),
+      );
 
-      if (cardIds.length === 0) return { data: { set: setRes.data, cards: [] }, error: null };
+      if (cardIds.length === 0)
+        return { data: { set: setRes.data, cards: [] }, error: null };
 
       const { data: cardRows, error: cardErr } = await EDU()
         .from("fc_card")
@@ -266,7 +323,9 @@ export const fcService = {
         detailsByCard.set(d.card_id, arr);
       }
 
-      const byId = new Map((cardRows ?? []).map((c) => [(c as FcCardRow).id, c as FcCardRow]));
+      const byId = new Map(
+        (cardRows ?? []).map((c) => [(c as FcCardRow).id, c as FcCardRow]),
+      );
       const cards: CardWithDetails[] = cardIds
         .map((id) => byId.get(id))
         .filter((c): c is FcCardRow => !!c)
@@ -314,7 +373,9 @@ export const fcService = {
         detailsByCard.set(d.card_id, arr);
       }
 
-      const byId = new Map((cardRows ?? []).map((c) => [(c as FcCardRow).id, c as FcCardRow]));
+      const byId = new Map(
+        (cardRows ?? []).map((c) => [(c as FcCardRow).id, c as FcCardRow]),
+      );
       const cards: CardWithDetails[] = ids
         .map((id) => byId.get(id))
         .filter((c): c is FcCardRow => !!c)
@@ -332,7 +393,18 @@ export const fcService = {
 
   async updateCard(
     cardId: string,
-    patch: Partial<Pick<FcCardRow, "front" | "back" | "card_kind" | "difficulty" | "topic" | "lesson" | "personal_notes">>,
+    patch: Partial<
+      Pick<
+        FcCardRow,
+        | "front"
+        | "back"
+        | "card_kind"
+        | "difficulty"
+        | "topic"
+        | "lesson"
+        | "personal_notes"
+      >
+    >,
   ): Promise<FcResult<FcCardRow>> {
     try {
       const { data, error } = await EDU()
@@ -353,7 +425,11 @@ export const fcService = {
     cardId: string,
     kind: string,
     text: string,
-    opts: { audio_file_id?: string; generated_by?: "agent" | "user"; position?: number } = {},
+    opts: {
+      audio_file_id?: string;
+      generated_by?: "agent" | "user";
+      position?: number;
+    } = {},
   ): Promise<FcResult<FcDetailRow>> {
     try {
       // fc_detail is a composition child: organization_id is inherited from the

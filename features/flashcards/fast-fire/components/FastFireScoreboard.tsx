@@ -23,7 +23,6 @@ import {
   Play,
   RotateCcw,
   Layers,
-  GraduationCap,
   MicOff,
   History,
 } from "lucide-react";
@@ -43,6 +42,8 @@ import {
   type ReviewFilter,
   type GradeResult,
 } from "../redux/fastFireSlice";
+import { CoachReviewPanel } from "@/features/education/study/components/CoachReviewPanel";
+import { parsedSessionReviewFromSummary } from "@/features/education/study/utils/parseSessionReview";
 import { FastFireReviewPlayer } from "./FastFireReviewPlayer";
 
 const RESULT_META: Record<
@@ -89,6 +90,7 @@ export function FastFireScoreboard({
   const rows = useAppSelector(selectReviewRows);
   const filter = useAppSelector(selectReviewFilter);
   const pending = useAppSelector(selectPendingGradeCount);
+  const coachReview = parsedSessionReviewFromSummary(review);
 
   return (
     // h-full (not min-h-full): the parent route is a fixed-height,
@@ -132,17 +134,7 @@ export function FastFireScoreboard({
         )}
 
         {/* Professor review (optional lane) */}
-        {review && (
-          <div className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/40">
-            <div className="mb-1.5 flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
-              <GraduationCap className="h-4 w-4" />
-              Coach&apos;s review
-            </div>
-            <p className="text-sm leading-relaxed text-blue-900/90 dark:text-blue-200/90">
-              {review}
-            </p>
-          </div>
-        )}
+        <CoachReviewPanel review={coachReview} />
 
         {/* Filter tabs */}
         <div className="mb-3 flex items-center gap-1.5">
@@ -208,11 +200,12 @@ export function FastFireScoreboard({
                       >
                         <meta.icon className="h-3 w-3" />
                         {meta.label}
-                        {grade?.score !== null && grade?.score !== undefined && (
-                          <span className="tabular-nums opacity-70">
-                            {Math.round(grade.score * 100)}%
-                          </span>
-                        )}
+                        {grade?.score !== null &&
+                          grade?.score !== undefined && (
+                            <span className="tabular-nums opacity-70">
+                              {Math.round(grade.score * 100)}%
+                            </span>
+                          )}
                       </span>
                     )}
                   </div>
@@ -233,7 +226,10 @@ export function FastFireScoreboard({
                       <Play className="h-3 w-3" />
                       Your answer
                     </div>
-                    <FastFireReviewPlayer fileId={audioFileId} cardId={card.id} />
+                    <FastFireReviewPlayer
+                      fileId={audioFileId}
+                      cardId={card.id}
+                    />
                   </div>
                 )}
               </div>
@@ -243,7 +239,11 @@ export function FastFireScoreboard({
 
         {/* Actions */}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-          <Button variant="outline" className="flex-1 gap-1.5" onClick={onRestart}>
+          <Button
+            variant="outline"
+            className="flex-1 gap-1.5"
+            onClick={onRestart}
+          >
             <RotateCcw className="h-4 w-4" />
             Run again
           </Button>

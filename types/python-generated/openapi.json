@@ -23074,6 +23074,282 @@
         }
       }
     },
+    "/workflows/{definition_id}/nodes/{node_id}/input-form": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Node Input Form",
+        "description": "The input form for ONE node — generalizes the run form to any node type.\nUses the compiled effective schema for dynamic-output nodes (io.user_input),\nelse the registry input schema.",
+        "operationId": "get_node_input_form_workflows__definition_id__nodes__node_id__input_form_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeInputFormResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/nodes/{node_id}/input-status": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Definition Node Input Status",
+        "description": "Per-node input status BEFORE any run exists (empty invocation inputs) —\nused to render a test/prompt form for a node in a fresh draft.",
+        "operationId": "get_definition_node_input_status_workflows__definition_id__nodes__node_id__input_status_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeInputStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/input-status": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Run Node Input Status",
+        "description": "Per-node input status for a live/parked run — resolves against the run's\nfrontier + stored channel/seed values, so the studio knows whether the node\ncan run yet and which fields to prompt for.",
+        "operationId": "get_run_node_input_status_runs__run_id__nodes__node_id__input_status_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeInputStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/step-runs": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Start Step Run",
+        "description": "Create a step-mode run: a ``paused`` workflow.run seeded at its entry\nfrontier (step 0), ready for per-node execution. No node runs yet.",
+        "operationId": "start_step_run_workflows__definition_id__step_runs_post",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunWorkflowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartStepRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/runs/{run_id}/nodes/{node_id}/execute": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Execute Node",
+        "description": "Execute exactly ONE node of a parked/step-mode run and persist its result,\nthen park again — so a downstream node can be run independently against the\nstored output. Streams the resumed (single-step) run.",
+        "operationId": "execute_node_runs__run_id__nodes__node_id__execute_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ExecuteNodeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflows/bulk-archive": {
       "post": {
         "tags": [
@@ -54867,6 +55143,43 @@
         "type": "object",
         "title": "ExcludePageBody"
       },
+      "ExecuteNodeRequest": {
+        "properties": {
+          "inputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputs"
+          },
+          "config_override": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config Override"
+          },
+          "rerun": {
+            "type": "boolean",
+            "title": "Rerun",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "ExecuteNodeRequest",
+        "description": "Body for POST /runs/{id}/nodes/{nid}/execute — run exactly this node."
+      },
       "ExecutionError": {
         "properties": {
           "error_type": {
@@ -59592,6 +59905,25 @@
         "type": "object",
         "title": "ForkRequest",
         "description": "Payload for forking a conversation.\n\nSelectors (provide at most one; default copies everything):\n- ``up_to_position`` — copy messages with ``position <= N``.\n- ``from_message_id`` — copy messages up to and including this\n  message. Set ``exclusive=True`` to fork up to but NOT including it\n  (i.e. \"fork the conversation before this message\" — the natural\n  shape for \"edit this message\").\n\n``title`` — optional title for the forked conversation. Defaults to\nthe source conversation's title prefixed with ``\"Fork: \"``."
+      },
+      "FrontierInvocation": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt",
+            "default": 1
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "node_id"
+        ],
+        "title": "FrontierInvocation"
       },
       "GenerateTagsRequest": {
         "properties": {
@@ -66375,6 +66707,51 @@
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
       },
+      "MissingInputField": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": true
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "missing",
+              "invalid"
+            ],
+            "title": "Reason",
+            "default": "missing"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "MissingInputField",
+        "description": "One input a node needs before it can run — surfaced so the studio can\nrender a prompt form for EXACTLY these fields."
+      },
       "MockStreamRequest": {
         "properties": {
           "chunk_count": {
@@ -66805,6 +67182,188 @@
         ],
         "title": "NodeDef",
         "description": "User-authored node in a ReactFlow-compatible definition.\n\nThe `data.config` payload is validated against the registered NodeSpec's\n`config_schema` at compile time — not at definition time — so the raw JSON\nround-trips cleanly regardless of whether the target NodeSpec is loaded."
+      },
+      "NodeInputFormResponse": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "spec_type": {
+            "type": "string",
+            "title": "Spec Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "input_schema",
+              "effective_output_schema"
+            ],
+            "title": "Source"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          },
+          "required": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "node_id",
+          "spec_type",
+          "title",
+          "source"
+        ],
+        "title": "NodeInputFormResponse",
+        "description": "The input form for ONE node — GET /workflows/{id}/nodes/{nid}/input-form.\nGeneralizes the run form to any node type."
+      },
+      "NodeInputStatusField": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "satisfied": {
+            "type": "boolean",
+            "title": "Satisfied",
+            "default": false
+          },
+          "provenance": {
+            "type": "string",
+            "enum": [
+              "upstream",
+              "static",
+              "seed",
+              "none"
+            ],
+            "title": "Provenance",
+            "default": "none"
+          },
+          "source_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Node Id"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "NodeInputStatusField",
+        "description": "One resolved input field — what value the node WILL receive and where it\ncame from (so the studio can show \"from *Step X*\")."
+      },
+      "NodeInputStatusResponse": {
+        "properties": {
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "spec_type": {
+            "type": "string",
+            "title": "Spec Type"
+          },
+          "in_frontier": {
+            "type": "boolean",
+            "title": "In Frontier",
+            "default": false
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt",
+            "default": 1
+          },
+          "already_ran": {
+            "type": "boolean",
+            "title": "Already Ran",
+            "default": false
+          },
+          "executable": {
+            "type": "boolean",
+            "title": "Executable",
+            "default": false
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/NodeInputStatusField"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "missing": {
+            "items": {
+              "$ref": "#/components/schemas/MissingInputField"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "form_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Form Schema"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "definition_id",
+          "node_id",
+          "spec_type"
+        ],
+        "title": "NodeInputStatusResponse",
+        "description": "Whether a node can run yet, field-by-field — GET\n/runs/{id}/nodes/{nid}/input-status (and the definition-level variant)."
       },
       "NodeStateAtCheckpoint": {
         "properties": {
@@ -78680,6 +79239,38 @@
           "stages"
         ],
         "title": "StagesStatusResponse"
+      },
+      "StartStepRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "seed_checkpoint_id": {
+            "type": "string",
+            "title": "Seed Checkpoint Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "paused"
+          },
+          "frontier": {
+            "items": {
+              "$ref": "#/components/schemas/FrontierInvocation"
+            },
+            "type": "array",
+            "title": "Frontier"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "run_id",
+          "seed_checkpoint_id"
+        ],
+        "title": "StartStepRunResponse",
+        "description": "A freshly created step-mode run — a ``paused`` run seeded at its entry\nfrontier, ready for per-node execution."
       },
       "StatelessApplicant": {
         "properties": {

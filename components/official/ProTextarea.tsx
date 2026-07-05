@@ -148,6 +148,20 @@ import {
   ProTextFieldStatsPanel,
 } from "./ProTextFieldStats";
 
+const FILL_HEIGHT_REGEX =
+  /(?:^|\s)(h-full|h-dvh|flex-1|grow|inset-0|min-h-0)(?:\s|$)/;
+
+/** Detect when the caller wants the field to stretch to its container. */
+function wantsFillHeight(
+  className?: string,
+  wrapperClassName?: string,
+): boolean {
+  return (
+    FILL_HEIGHT_REGEX.test(className ?? "") ||
+    FILL_HEIGHT_REGEX.test(wrapperClassName ?? "")
+  );
+}
+
 /** Real HTMLTextAreaElement with optional expando methods set by ProTextarea. */
 export interface ProTextareaElement extends HTMLTextAreaElement {
   requestClose?: () => void;
@@ -794,6 +808,7 @@ export const ProTextarea = React.forwardRef<
         showBoundAgentsMenu);
     const showTextStats = enableTextStats && showMenu;
     const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
+    const fillHeight = wantsFillHeight(className, wrapperClassName);
 
     const isInvalid =
       props["aria-invalid"] === true || props["aria-invalid"] === "true";
@@ -811,16 +826,27 @@ export const ProTextarea = React.forwardRef<
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Column stack isolates textarea + stats from caller `wrapperClassName`
-            flex direction (e.g. `flex min-h-0 flex-1` without flex-col). */}
-        <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
+            flex direction (e.g. `flex min-h-0 flex-1` without flex-col). When
+            the caller signals fill-height (`h-full`, `flex-1`, `inset-0`, …),
+            wire the flex chain so the textarea consumes all space above the
+            optional stats bar — even when empty. */}
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 w-full flex-col",
+            fillHeight ? "h-full flex-1" : "flex-1",
+          )}
+        >
           <textarea
             ref={textareaRef}
             id={inputId}
             placeholder={floatingLabel ? undefined : placeholder}
             className={cn(
-              "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm resize-y placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+              "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
               "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               "disabled:cursor-not-allowed disabled:opacity-50",
+              fillHeight
+                ? "min-h-0 flex-1 resize-none overflow-y-auto"
+                : "resize-y",
               // Auto-grow disables the manual resize handle. Use overflow-y-auto
               // (not overflow-hidden) so that once content hits `maxHeight` the
               // textarea becomes internally scrollable instead of clipping text

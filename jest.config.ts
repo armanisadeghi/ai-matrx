@@ -42,7 +42,17 @@ const config: Config = {
     // so a bare `(?!uuid)` matches at the FIRST `/node_modules/` (followed by
     // `.pnpm`) and the file stays untransformed — the "Unexpected token
     // 'export'" failure for any suite that transitively imports uuid.
-    transformIgnorePatterns: ["/node_modules/(?!\\.pnpm/|uuid).+\\.js$"],
+    // The lookahead must ALSO name the ESM-only unified/unist/hast/mdast/
+    // micromark ecosystem: pnpm nests real packages a second level deep
+    // (`.pnpm/unist-util-visit@5/node_modules/unist-util-visit/index.js`), so a
+    // bare `(?!\.pnpm/)` only clears the FIRST `/node_modules/` — the nested
+    // `/node_modules/unist-util-visit/` position still matches and the file
+    // stays untransformed ("Unexpected token 'export'"). Listing the package
+    // prefixes makes that nested position fail the ignore, so ESM markdown
+    // deps (needed by rehypeSafeRawHtml et al.) get transpiled to CJS.
+    transformIgnorePatterns: [
+      "/node_modules/(?!\\.pnpm/|uuid|unist|hast|mdast|micromark|remark|rehype|unified|vfile|property-information|space-separated-tokens|comma-separated-tokens|web-namespaces|zwitch|html-void-elements|html-url-attributes|ccount|character-entities|character-reference-invalid|decode-named-character-reference|stringify-entities|parse-entities|trim-lines|bail|trough|devlop|longest-streak|markdown-table|estree|mathml-tag-names|parse5).+\\.js$",
+    ],
     testPathIgnorePatterns: ["/node_modules/", "/.next/", "/.claude/"],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our
