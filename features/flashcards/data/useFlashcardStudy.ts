@@ -74,6 +74,10 @@ export interface UseFlashcardStudyResult {
   progress: FlashcardStudyProgress;
   /** Per-card mastery rows (seeded on load, updated on grade). */
   masteryByCard: Record<string, ItemMasteryRow | undefined>;
+  /** The open `study_session.id` tagging every attempt this load, or null
+   *  (no session — `withSession: false`, or still loading). Phase 4: lets the
+   *  shared <StudyDeck/> auto-run the end-of-session AI review against it. */
+  sessionId: string | null;
 }
 
 export interface UseFlashcardStudyOptions {
@@ -293,5 +297,6 @@ export function useFlashcardStudy(
     grading,
     progress,
     masteryByCard,
+    sessionId: session?.id ?? null,
   };
 }

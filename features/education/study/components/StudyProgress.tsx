@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { studyService } from "../service/studyService";
 import { displayMasteryPct } from "../utils/masteryFsrs";
-import type { ItemMasteryRow } from "../types";
+import type { ItemMasteryRow, StudyStreakRow } from "../types";
 
 interface Summary {
   studied: number;
@@ -79,30 +79,45 @@ function summarize(mastery: ItemMasteryRow[], sessions: number): Summary {
   };
 }
 
+/** True if the streak is active but today hasn't been counted yet (UTC date,
+ * matching the `bump_study_streak` trigger) — a day of inactivity would break it. */
+function streakEndsToday(streak: StudyStreakRow): boolean {
+  if (!streak.last_active_date) return false;
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  return streak.last_active_date !== todayUtc;
+}
+
 export function StudyProgress({
   itemType = "fc_card",
   title = "Your progress",
   backHref,
   reviewHref,
+  weakAreaHref,
 }: {
   itemType?: string;
   title?: string;
   backHref?: string;
   /** When set + cards are due, shows a "Review N due" CTA linking here. */
   reviewHref?: string;
+  /** When set + weak cards exist, shows a "Drill N weak areas" CTA linking here. */
+  weakAreaHref?: string;
 }) {
   const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [weakCount, setWeakCount] = useState(0);
+  const [streak, setStreak] = useState<StudyStreakRow | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       setLoading(true);
-      const [masteryRes, sessionsRes] = await Promise.all([
+      const [masteryRes, sessionsRes, weakRes, streakRes] = await Promise.all([
         studyService.listMastery(itemType),
         studyService.listSessions({ limit: 500 }),
+        studyService.listWeakest(itemType),
+        studyService.getStreak(),
       ]);
       if (cancelled) return;
       if (masteryRes.error) {
@@ -114,6 +129,8 @@ export function StudyProgress({
           summarize(masteryRes.data ?? [], (sessionsRes.data ?? []).length),
         );
       }
+      setWeakCount(weakRes.data?.length ?? 0);
+      setStreak(streakRes.data ?? null);
       setLoading(false);
     })();
     return () => {
@@ -143,12 +160,25 @@ export function StudyProgress({
             <TrendingUp className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold text-foreground">{title}</h1>
           </div>
-          {reviewHref && summary && summary.dueNow > 0 && (
-            <Button size="sm" className="gap-1.5" onClick={() => router.push(reviewHref)}>
-              <CalendarClock className="h-4 w-4" />
-              Review {summary.dueNow} due
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {weakAreaHref && weakCount > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => router.push(weakAreaHref)}
+              >
+                <Flame className="h-4 w-4" />
+                Drill {weakCount} weak {weakCount === 1 ? "area" : "areas"}
+              </Button>
+            )}
+            {reviewHref && summary && summary.dueNow > 0 && (
+              <Button size="sm" className="gap-1.5" onClick={() => router.push(reviewHref)}>
+                <CalendarClock className="h-4 w-4" />
+                Review {summary.dueNow} due
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -174,8 +204,23 @@ export function StudyProgress({
           </div>
         ) : (
           <>
+            {/* Day streak — at-risk banner (in-app only, no push/email per the plan) */}
+            {streak && streak.current_streak > 0 && streakEndsToday(streak) && (
+              <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200">
+                <Flame className="h-4 w-4 shrink-0" />
+                Your {streak.current_streak}-day streak ends today — study
+                something to keep it going.
+              </div>
+            )}
+
             {/* Headline stats */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              <Stat
+                icon={Flame}
+                label="Day streak"
+                value={`${streak?.current_streak ?? 0}`}
+                accent={streak && streak.current_streak > 0 ? "amber" : undefined}
+              />
               <Stat
                 icon={Layers}
                 label="Cards studied"
@@ -192,7 +237,7 @@ export function StudyProgress({
                 value={`${summary.dueNow}`}
                 accent={summary.dueNow > 0 ? "amber" : undefined}
               />
-              <Stat icon={Flame} label="Best streak" value={`${summary.bestStreak}`} />
+              <Stat icon={Target} label="Best per-card streak" value={`${summary.bestStreak}`} />
             </div>
 
             {/* Mastery distribution */}

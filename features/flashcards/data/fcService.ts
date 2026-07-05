@@ -114,6 +114,39 @@ export const fcService = {
     }
   },
 
+  /** Phase 1A — flip a set's share visibility (private/internal/link/public). */
+  async updateSetVisibility(
+    setId: string,
+    visibility: FcSetRow["visibility"],
+  ): Promise<FcResult<FcSetRow>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .update({ visibility })
+        .eq("id", setId)
+        .select("*")
+        .single();
+      if (error) return fail("updateSetVisibility", error);
+      return { data: data as FcSetRow, error: null };
+    } catch (e) {
+      return fail("updateSetVisibility", e);
+    }
+  },
+
+  /** Soft-delete a set (RLS/ownership-gated by the update itself). */
+  async deleteSet(setId: string): Promise<FcResult<null>> {
+    try {
+      const { error } = await EDU()
+        .from("fc_set")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", setId);
+      if (error) return fail("deleteSet", error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("deleteSet", e);
+    }
+  },
+
   async getSet(setId: string): Promise<FcResult<FcSetRow>> {
     try {
       // maybeSingle (not single): an RLS-hidden or missing row returns no row
@@ -417,6 +450,53 @@ export const fcService = {
       return { data: data as FcCardRow, error: null };
     } catch (e) {
       return fail("updateCard", e);
+    }
+  },
+
+  /** Soft-delete a card. The `member` edge is left in place (harmless — the
+   * card row is filtered by `deleted_at` everywhere it's read), avoiding a
+   * second round-trip for something with no user-visible effect. */
+  async deleteCard(cardId: string): Promise<FcResult<null>> {
+    try {
+      const { error } = await EDU()
+        .from("fc_card")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", cardId);
+      if (error) return fail("deleteCard", error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("deleteCard", e);
+    }
+  },
+
+  /**
+   * Rewrite the `member` edges' `position` to match `orderedCardIds` exactly
+   * (index = new position). Each write is an idempotent upsert
+   * (`assoc_add` ON CONFLICT), so a partial failure just leaves some cards at
+   * their old position rather than corrupting the set.
+   */
+  async reorderCards(
+    setId: string,
+    orderedCardIds: string[],
+  ): Promise<FcResult<null>> {
+    try {
+      const results = await Promise.all(
+        orderedCardIds.map((cardId, position) =>
+          associationsService.add({
+            sourceType: "fc_card",
+            sourceId: cardId,
+            targetType: "fc_set",
+            targetId: setId,
+            role: EDGE_ROLE.member,
+            position,
+          }),
+        ),
+      );
+      const failed = results.find((r) => !r.ok);
+      if (failed) return fail("reorderCards", failed.error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("reorderCards", e);
     }
   },
 

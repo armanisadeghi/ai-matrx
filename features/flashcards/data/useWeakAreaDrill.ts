@@ -1,17 +1,18 @@
-// features/flashcards/data/useDueReview.ts
+// features/flashcards/data/useWeakAreaDrill.ts
 //
-// The adaptive "Review due" study hook — the vision's north-star (surface the
-// exact cards a learner needs, across ALL their sets, on the FSRS schedule).
-// Loads the due queue from the shared spine (`studyService.listDue('fc_card')`,
-// ordered by `item_mastery.due_at`), hydrates the cards cross-set
-// (`fcService.getCardsByIds`, preserving the due order), and drives the same
-// flip + grade flow as `useFlashcardStudy` — but over a dynamic, cross-set queue
-// instead of one set.
+// Phase 3 (Flashcards Competitive Parity Push) — the weak-area drill: the
+// learner's worst cards across ALL their sets, worst-first. Mirrors
+// `useDueReview` almost exactly (same shared-spine session/grade plumbing,
+// same <StudyDeck/> result shape) — the only real difference is the queue
+// source: `studyService.listWeakest` (struggle_flag / low retrievability
+// candidates) instead of `listDue` (due_at <= now), and the queue is re-sorted
+// client-side by LIVE (time-decayed) retrievability via
+// `currentRetrievability` — the DB snapshot doesn't account for FSRS decay
+// since `last_review`, so a true worst-first order can't be a pure SQL ORDER
+// BY today.
 //
 // Grading funnels through the SAME canonical path (`studyService.recordAttempt`
-// → study_attempt + item_mastery), stamped `method='adaptive'` so the provenance
-// is distinguishable from classic/fast_fire review. Returns the identical result
-// shape the shared <StudyDeck/> consumes.
+// → study_attempt + item_mastery), stamped `method='weak_area'`.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
@@ -20,6 +21,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
 import type { CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
@@ -32,11 +34,9 @@ import type {
 } from "./useFlashcardStudy";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
-/** mode + provenance for the adaptive due queue (source_kind CHECK allows it). */
-const STUDY_MODE = "adaptive";
+const STUDY_MODE = "weak_area";
 
-/** Same shape the shared StudyDeck consumes, minus `set` (there is no single set). */
-export type UseDueReviewResult = Omit<UseFlashcardStudyResult, "set">;
+export type UseWeakAreaDrillResult = Omit<UseFlashcardStudyResult, "set">;
 
 function clampIndex(index: number, length: number): number {
   if (length <= 0) return 0;
@@ -45,17 +45,16 @@ function clampIndex(index: number, length: number): number {
   return index;
 }
 
-/** Distinct cards graded this session (a defined result). */
 function progressDone(
   results: Record<string, ReviewResult | undefined>,
 ): number {
   return Object.values(results).filter((r) => r !== undefined).length;
 }
 
-export function useDueReview(options: { limit?: number } = {}): UseDueReviewResult {
-  // Generous per-session cap; a due session studies a batch, more resurface next
-  // visit. (Kept close to the progress-page "N due" count to avoid a big mismatch.)
-  const { limit = 100 } = options;
+export function useWeakAreaDrill(
+  options: { limit?: number } = {},
+): UseWeakAreaDrillResult {
+  const { limit = 20 } = options;
 
   const [cards, setCards] = useState<CardWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,18 +80,27 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
       setIsFlipped(false);
       setMasteryByCard({});
 
-      // 1. The FSRS due queue (mastery rows, soonest-due first).
-      const dueRes = await studyService.listDue(FC_CARD_ITEM_TYPE, limit);
+      // 1. Candidate weak rows (struggling OR low write-time retrievability).
+      const weakRes = await studyService.listWeakest(FC_CARD_ITEM_TYPE);
       if (cancelled) return;
-      if (dueRes.error) {
-        setError(dueRes.error);
+      if (weakRes.error) {
+        setError(weakRes.error);
         setCards([]);
         setResultsByCard({});
         setLoading(false);
         return;
       }
-      const due = dueRes.data ?? [];
-      const ids = due.map((m) => m.item_id);
+
+      // 2. Re-rank by LIVE (decayed) retrievability, worst first, then cap.
+      const now = new Date();
+      const ranked = [...(weakRes.data ?? [])].sort((a, b) => {
+        const ra = currentRetrievability(a, now) ?? 0;
+        const rb = currentRetrievability(b, now) ?? 0;
+        if (a.struggle_flag !== b.struggle_flag) return a.struggle_flag ? -1 : 1;
+        return ra - rb;
+      });
+      const worst = ranked.slice(0, limit);
+      const ids = worst.map((m) => m.item_id);
       if (ids.length === 0) {
         setCards([]);
         setResultsByCard({});
@@ -100,7 +108,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
         return;
       }
 
-      // 2. Hydrate the cards cross-set, in the due order.
+      // 3. Hydrate the cards cross-set, preserving the worst-first order.
       const cardsRes = await fcService.getCardsByIds(ids);
       if (cancelled) return;
       if (cardsRes.error) {
@@ -110,22 +118,16 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
         return;
       }
       setCards(cardsRes.data ?? []);
-
-      // CRITICAL: do NOT seed from prior results. Every due card has a prior
-      // last_result (that's WHY due_at is set and it's in the queue) — counting
-      // those as "done" would make progress.done === total on the first render
-      // and instantly show "Review complete" with zero cards studied.
-      // resultsByCard holds ONLY this session's grades.
       setResultsByCard({});
 
-      // 3. Open an adaptive session tagging every attempt.
+      // 4. Open a weak_area session tagging every attempt.
       const sessionRes = await studyService.createSession({
         mode: STUDY_MODE,
-        sourceKind: "adaptive",
+        sourceKind: "weak_area",
       });
       if (!cancelled) {
         if (sessionRes.error) {
-          console.error("[useDueReview] createSession:", sessionRes.error);
+          console.error("[useWeakAreaDrill] createSession:", sessionRes.error);
         }
         setSession(sessionRes.data);
         setLoading(false);
@@ -137,11 +139,6 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
     };
   }, [limit]);
 
-  // ── Close the adaptive session (don't leak it 'active'; the reaper is only a
-  //    6h backstop). A ref holds the close flag so the completion + unmount
-  //    effects coordinate without set-state-in-effect. Mirrors FastFire's
-  //    finish/abort close. (The classic set-study path has a pre-existing leak
-  //    this doesn't touch.)
   const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
   useEffect(() => {
     closeRef.current = session ? { id: session.id, closed: false } : null;
@@ -195,7 +192,7 @@ export function useDueReview(options: { limit?: number } = {}): UseDueReviewResu
         ...(session ? { sessionId: session.id } : {}),
       });
       if (res.error || !res.data) {
-        console.error("[useDueReview] recordAttempt:", res.error);
+        console.error("[useWeakAreaDrill] recordAttempt:", res.error);
         return null;
       }
       const { mastery } = res.data;

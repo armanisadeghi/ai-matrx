@@ -67,12 +67,10 @@ async function main() {
   for (const s of sampleList) samples[s.slug] = s.data;
   const labels: Record<string, string> = {};
   const orgBySlug: Record<string, string> = {};
-  const visBySlug: Record<string, string> = {};
   for (const r of schemaRows) {
     if (!r.slug) continue;
     labels[r.slug] = r.label;
     orgBySlug[r.slug] = r.organization_id;
-    visBySlug[r.slug] = (r.visibility as string) ?? "private";
   }
 
   // --verify: read content_ir back and prove it reconstructs the SOURCE
@@ -160,7 +158,14 @@ async function main() {
           emitted_fingerprint: k.emittedFingerprint,
           is_active: k.isActive,
           organization_id: org,
-          visibility: (visBySlug[k.kind] ?? "private") as never,
+          // System kind SCHEMAS are non-sensitive structural definitions every
+          // surface (authed, anon, public share pages) must read to render —
+          // so they are 'public'. This is what makes the registry readable
+          // post-cutover (std_select/pub_read grant on visibility='public');
+          // the source flexible_data 'private' + global_readable-org path did
+          // NOT grant authed reads (verified), which would have silently
+          // starved the registry.
+          visibility: "public" as never,
         },
         { onConflict: "organization_id,kind" },
       )

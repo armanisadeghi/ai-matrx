@@ -1,25 +1,26 @@
 // features/flashcards/fast-fire/config.ts
 //
-// FastFire's agent-id settings. The three AI lanes — per-card grading
+// FastFire's agent-id settings. Three AI lanes — per-card grading
 // (`fc_grade_spoken`), live help (`fc_help_live`), and the batch "professor"
-// review (`fc_review_batch`) — are each OPTIONAL. The agents are authored by the
-// user in-system; until an id is set here, that lane is simply skipped and the
-// drill still runs fully (hard-requirement #6: grader-agent-optional). Grading
-// "lights up" the moment an id is configured — no code change needed.
+// review (`fc_review_batch`) — are each OPTIONAL; the agents are authored by
+// the user in-system, and until an id is set that lane is simply skipped
+// (hard-requirement #6: grader-agent-optional).
 //
-// Stored in localStorage (a per-user, per-browser setting) so they're trivially
-// settable now for testing and survive reloads. Read through the typed helpers
-// so callsites never touch the raw keys. Server-safe: guarded for SSR.
+// Grading (`fc_grade_spoken`) is Fast-Fire-only, so it keeps its own
+// localStorage override here. Help + review are now MODE-AGNOSTIC (Phase 4
+// parity push generalized them to every study surface) — this module
+// delegates those two to the shared `features/flashcards/data/tutor/config.ts`
+// so there is exactly ONE override per lane, not a FastFire-local one that
+// could silently diverge from what every other surface reads.
 
 import { FC_AGENTS } from "@/features/flashcards/data/agents";
+import { getFcTutorAgentConfig } from "@/features/flashcards/data/tutor/config";
 
 const STORAGE_KEYS = {
   grader: "fastfire.agent.grade_spoken",
-  help: "fastfire.agent.help_live",
-  review: "fastfire.agent.review_batch",
 } as const;
 
-export type FastFireAgentLane = keyof typeof STORAGE_KEYS;
+export type FastFireAgentLane = "grader";
 
 /** The configured agent ids, any of which may be null (lane disabled). */
 export interface FastFireAgentConfig {
@@ -52,12 +53,11 @@ function write(key: string, value: string | null): void {
 }
 
 export function getFastFireAgentConfig(): FastFireAgentConfig {
-  // Live published agents are the default; a localStorage value overrides per-browser
-  // (for swapping in a frozen version or a test agent). All three lanes ship enabled.
+  const tutor = getFcTutorAgentConfig();
   return {
     graderAgentId: read(STORAGE_KEYS.grader) ?? FC_AGENTS.gradeSpoken,
-    helpAgentId: read(STORAGE_KEYS.help) ?? FC_AGENTS.helpLive,
-    reviewAgentId: read(STORAGE_KEYS.review) ?? FC_AGENTS.reviewBatch,
+    helpAgentId: tutor.helpAgentId,
+    reviewAgentId: tutor.reviewAgentId,
   };
 }
 

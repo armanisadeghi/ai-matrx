@@ -66,10 +66,9 @@ export function FolderTagPicker({ setId }: { setId: string }) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
-  const { categories, reload: reloadCategories } = useCategories({
-    dimension: DIMENSION,
-  });
-  const { edges, setTargets, reload: reloadAssociations } = useAssociations({
+  const { categories, create: createCategory, reload: reloadCategories } =
+    useCategories({ dimension: DIMENSION });
+  const { edges, setTargets } = useAssociations({
     type: "fc_set",
     id: setId,
   });
@@ -105,14 +104,10 @@ export function FolderTagPicker({ setId }: { setId: string }) {
     if (!name) return;
     setCreating(true);
     try {
-      const orgId = await ensureOrgId();
-      const res = await useCategories.toString
-        ? null
-        : null;
-      void res;
-      const createRes = await createCategoryDirect(name, orgId);
+      const orgId = await ensureOrgId(null);
+      const createRes = await createCategory({ name, orgId });
       if (!createRes.ok || !createRes.id) {
-        console.error("[FolderTagPicker] create failed:", createRes.error);
+        console.error("[FolderTagPicker] create failed:", createRes);
         return;
       }
       await reloadCategories();
@@ -122,16 +117,6 @@ export function FolderTagPicker({ setId }: { setId: string }) {
       setCreating(false);
     }
   };
-
-  // `useCategories().create` needs to be called through the hook (Redux
-  // dispatch), so we resolve it via a small local wrapper bound at render time.
-  async function createCategoryDirect(
-    name: string,
-    orgId: string,
-  ): Promise<{ ok: boolean; id?: string; error?: string }> {
-    const result = await createCategoryBound(name, orgId);
-    return result;
-  }
 
   const filtered = categories.filter((c) =>
     c.name.toLowerCase().includes(search.trim().toLowerCase()),
@@ -224,22 +209,4 @@ export function FolderTagPicker({ setId }: { setId: string }) {
       </Popover>
     </div>
   );
-}
-
-// Bound at module scope via a tiny redux-free indirection: `useCategories`'s
-// `create` dispatcher is only available inside the hook (it needs `dispatch`),
-// so this component's `createAndAttach` calls it through the hook's own
-// `create` — wired below, replacing the placeholder above at hook-call time.
-let createCategoryBound: (
-  name: string,
-  orgId: string,
-) => Promise<{ ok: boolean; id?: string; error?: string }> = async () => ({
-  ok: false,
-  error: "not wired",
-});
-
-export function __bindCategoryCreate(
-  fn: typeof createCategoryBound,
-): void {
-  createCategoryBound = fn;
 }

@@ -1,25 +1,15 @@
 // features/flashcards/fast-fire/agents/reviewSession.thunk.ts
 //
-// The "professor" end-of-session review (REQUIREMENTS §8, AGENT_SPECS §7,
-// fc_review_batch). OPTIONAL (hard-requirement #6): if no review agent is
-// configured, this is a clean no-op and the drill completes normally. When the
-// agent IS set, it reviews the whole batch together — cross-card patterns,
-// systematic misconceptions — and the summary is folded into the slice
-// (`setSessionReview`) AND persisted to `study_session.session_review`.
-//
-// Like grading, this is read-from-Redux-after-resolve, never a same-tick re-read.
+// Fast Fire's thin wrapper over the generalized end-of-session review
+// (`features/flashcards/data/tutor/reviewSession.ts`, Phase 4 parity push).
+// Builds the `attempts`/`aggregate` shape from Fast Fire's OWN grade state
+// (it has real per-card `transcript`/`score`, unlike the generic study spine
+// drivers) and folds the result into the Fast Fire Redux slice for its own
+// completion screen, in addition to the shared `study_session.session_review`
+// persistence the generalized core already does.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
-import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
-import {
-  selectFirstExtractedObject,
-  selectJsonExtractionComplete,
-  selectRequestStatus,
-} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
-import { studyService } from "@/features/education/study/service/studyService";
-import { getFastFireAgentConfig } from "../config";
+import { reviewSession as reviewSessionCore } from "../../data/tutor/reviewSession";
 import { setSessionReview } from "../redux/fastFireSlice";
 import {
   selectGradesInOrder,
@@ -30,34 +20,12 @@ interface ReviewSessionArgs {
   sessionId: string | null;
 }
 
-async function waitForObject(
-  getState: () => RootState,
-  requestId: string,
-  timeoutMs = 120_000,
-): Promise<unknown | null> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const state = getState();
-    if (selectJsonExtractionComplete(requestId)(state)) {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    if (selectRequestStatus(requestId)(state) === "error") {
-      return selectFirstExtractedObject(requestId)(state)?.value ?? null;
-    }
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  return null;
-}
-
 /** Run the holistic review. Call WITHOUT awaiting (it catches up after complete). */
 export function reviewSession(args: ReviewSessionArgs) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<void> => {
-    const config = getFastFireAgentConfig();
-    if (!config.reviewAgentId) return; // optional lane — clean skip
-
     const state = getState();
     const cards = selectFastFireCards(state);
     const grades = selectGradesInOrder(state);
@@ -81,64 +49,9 @@ export function reviewSession(args: ReviewSessionArgs) {
       accuracy: resolved.length > 0 ? correct / resolved.length : 0,
     };
 
-    let conversationId: string | null = null;
-    try {
-      // Launch WITHOUT auto-running (autoRun:false + background) — exactly the
-      // grading lane's pattern. With autoRun:true the launch thunk internally
-      // executes AND polls to completion (up to 300s) before returning, blocking
-      // finalize; autoRun:false returns the conversationId immediately and we run
-      // it ourselves so the existing `waitForObject` polling owns the wait.
-      const launch = await dispatch(
-        launchAgentExecution({
-          agentId: config.reviewAgentId,
-          surfaceKey: "fastfire-review-session",
-          // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
-          // normal chats via a distinct system source_feature (source-registry.ts).
-          sourceFeature: "fastfire-review",
-          isEphemeral: false,
-          runtime: {
-            variables: {
-              transcript: attempts
-                .map((a) => a.transcript)
-                .filter(Boolean)
-                .join("\n"),
-              attempts,
-              aggregate,
-              remaining_cards: [],
-            },
-          },
-          config: {
-            autoRun: false,
-            displayMode: "background",
-            // No response_format / llmOverrides: fc_review_batch is OUR agent.
-            // A call-time override only PARTIALLY modifies the agent's settings
-            // (guaranteed failures) and wrecks the prod agent cache. If the
-            // output shape is wrong, fix the agent in the DB via agent_author.
-          },
-          jsonExtraction: { enabled: true, fuzzyOnFinalize: true },
-        }),
-      ).unwrap();
-      conversationId = launch.conversationId;
-
-      const exec = await dispatch(executeInstance({ conversationId })).unwrap();
-      const requestId = exec.requestId;
-      if (!requestId) return;
-
-      const raw = await waitForObject(getState, requestId);
-      if (!raw || typeof raw !== "object") return;
-      const summary = (raw as Record<string, unknown>).summary;
-      if (typeof summary !== "string" || summary.length === 0) return;
-
-      dispatch(setSessionReview({ review: summary }));
-      if (args.sessionId) {
-        await studyService.updateSession(args.sessionId, {
-          session_review: raw as never,
-        });
-      }
-    } catch (err) {
-      console.error("[fastfire.reviewSession] failed:", err);
-    } finally {
-      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
-    }
+    const result = await dispatch(
+      reviewSessionCore({ sessionId: args.sessionId, attempts, aggregate }),
+    );
+    if (result) dispatch(setSessionReview({ review: result.summary }));
   };
 }

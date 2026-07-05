@@ -2,10 +2,13 @@
 //
 // The flashcard set AUTHORING surface (the view↔edit split, ROUTING.md §2). This
 // is the real edit page, not a placeholder: rename the set + edit its details,
-// edit each card's front/back inline (dirty-tracked, per-card save), and add a
-// new card. Writes go through fcService (RLS-gated — you can only edit sets you
-// own); the VIEW-vs-EDIT permission gate + duplicate-to-edit for view-only
-// sharees is the Wave-5 sharing follow-up.
+// set its share visibility + folders/tags, edit each card's front/back inline
+// (dirty-tracked, per-card save, markdown/LaTeX preview toggle, delete,
+// up/down reorder), and add a new card. Writes go through fcService
+// (RLS-gated — you can only edit sets you own); the VIEW-vs-EDIT permission
+// gate + duplicate-to-edit for view-only sharees is the Wave-5 sharing
+// follow-up. Image/audio card attachments via the canonical fileHandler are
+// NOT yet wired here — tracked as a Phase 1A fast-follow, not faked.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
@@ -20,15 +23,25 @@ import {
   Layers,
   AlertCircle,
   Eye,
+  EyeOff,
   Loader2,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Share2,
+  FolderTree,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
+import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
+import { FolderTagPicker } from "../organize/FolderTagPicker";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -109,6 +122,40 @@ export function EditSetView({ setId }: { setId: string }) {
       toast.error("Couldn't add a card", { description: res.error });
     } else {
       toast.success("Card added");
+      setReloadKey((k) => k + 1);
+    }
+  };
+
+  const [deleteTarget, setDeleteTarget] = useState<CardWithDetails | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [reordering, setReordering] = useState(false);
+
+  const confirmDeleteCard = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const res = await fcService.deleteCard(deleteTarget.id);
+    setDeleting(false);
+    setDeleteTarget(null);
+    if (res.error) {
+      toast.error("Couldn't delete the card", { description: res.error });
+    } else {
+      toast.success("Card deleted");
+      setReloadKey((k) => k + 1);
+    }
+  };
+
+  const moveCard = async (index: number, direction: -1 | 1) => {
+    if (!data || reordering) return;
+    const target = index + direction;
+    if (target < 0 || target >= data.cards.length) return;
+    const ids = data.cards.map((c) => c.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    setReordering(true);
+    const res = await fcService.reorderCards(setId, ids);
+    setReordering(false);
+    if (res.error) {
+      toast.error("Couldn't reorder cards", { description: res.error });
+    } else {
       setReloadKey((k) => k + 1);
     }
   };
@@ -223,6 +270,32 @@ export function EditSetView({ setId }: { setId: string }) {
                     Save details
                   </Button>
                 </div>
+
+                {/* Sharing */}
+                <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Share2 className="h-3.5 w-3.5" />
+                    Sharing
+                  </label>
+                  <SetVisibilityControl
+                    setId={setId}
+                    visibility={data.set.visibility}
+                    onChange={(v) =>
+                      setData((prev) =>
+                        prev ? { ...prev, set: { ...prev.set, visibility: v } } : prev,
+                      )
+                    }
+                  />
+                </div>
+
+                {/* Folders / tags */}
+                <div className="flex flex-col gap-1.5 border-t border-border pt-3">
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <FolderTree className="h-3.5 w-3.5" />
+                    Folders / tags
+                  </label>
+                  <FolderTagPicker setId={setId} />
+                </div>
               </div>
             </section>
 
@@ -243,23 +316,65 @@ export function EditSetView({ setId }: { setId: string }) {
 
             <div className="mt-3 space-y-3">
               {data.cards.map((card, i) => (
-                <CardEditor key={card.id} card={card} index={i} />
+                <CardEditor
+                  key={card.id}
+                  card={card}
+                  index={i}
+                  count={data.cards.length}
+                  reordering={reordering}
+                  onMove={(dir) => void moveCard(i, dir)}
+                  onDelete={() => setDeleteTarget(card)}
+                />
               ))}
             </div>
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteTarget(null);
+        }}
+        title="Delete this card"
+        description={
+          <>
+            Permanently delete &ldquo;{deleteTarget?.front}&rdquo;. This cannot
+            be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        busy={deleting}
+        onConfirm={confirmDeleteCard}
+      />
     </div>
   );
 }
 
-/** One card's inline editor — dirty-tracked front/back with a per-card save. */
-function CardEditor({ card, index }: { card: CardWithDetails; index: number }) {
+/** One card's inline editor — dirty-tracked front/back with a per-card save,
+ * a markdown/LaTeX live-preview toggle, delete, and up/down reorder. */
+function CardEditor({
+  card,
+  index,
+  count,
+  reordering,
+  onMove,
+  onDelete,
+}: {
+  card: CardWithDetails;
+  index: number;
+  count: number;
+  reordering: boolean;
+  onMove: (direction: -1 | 1) => void;
+  onDelete: () => void;
+}) {
   // Baseline (last-saved) vs. live edits — never mutate the card prop.
   const [base, setBase] = useState({ front: card.front, back: card.back });
   const [front, setFront] = useState(card.front);
   const [back, setBack] = useState(card.back);
   const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState(false);
 
   const dirty = front !== base.front || back !== base.back;
 
@@ -289,45 +404,109 @@ function CardEditor({ card, index }: { card: CardWithDetails; index: number }) {
         <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
           Card {index + 1}
         </span>
-        <Button
-          size="sm"
-          variant={dirty ? "default" : "ghost"}
-          onClick={save}
-          disabled={!dirty || saving}
-          className="h-7 px-2 text-xs"
-        >
-          {saving ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="mr-1 h-3.5 w-3.5" />
-          )}
-          Save
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            title="Move up"
+            aria-label={`Move card ${index + 1} up`}
+            disabled={index === 0 || reordering}
+            onClick={() => onMove(-1)}
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            title="Move down"
+            aria-label={`Move card ${index + 1} down`}
+            disabled={index === count - 1 || reordering}
+            onClick={() => onMove(1)}
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2 text-xs"
+            onClick={() => setPreview((p) => !p)}
+          >
+            {preview ? (
+              <EyeOff className="mr-1 h-3.5 w-3.5" />
+            ) : (
+              <Eye className="mr-1 h-3.5 w-3.5" />
+            )}
+            {preview ? "Edit" : "Preview"}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            title="Delete card"
+            aria-label={`Delete card ${index + 1}`}
+            onClick={onDelete}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant={dirty ? "default" : "ghost"}
+            onClick={save}
+            disabled={!dirty || saving}
+            className="h-7 px-2 text-xs"
+          >
+            {saving ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="mr-1 h-3.5 w-3.5" />
+            )}
+            Save
+          </Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
             Front
           </label>
-          <Textarea
-            value={front}
-            onChange={(e) => setFront(e.target.value)}
-            rows={3}
-            className="resize-y text-sm"
-          />
+          {preview ? (
+            <div className="min-h-[76px] rounded-md border border-border bg-muted/30 p-2">
+              <ConfigurableMarkdownContent content={front || "*empty*"} />
+            </div>
+          ) : (
+            <Textarea
+              value={front}
+              onChange={(e) => setFront(e.target.value)}
+              rows={3}
+              className="resize-y text-sm"
+            />
+          )}
         </div>
         <div>
           <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
             Back
           </label>
-          <Textarea
-            value={back}
-            onChange={(e) => setBack(e.target.value)}
-            rows={3}
-            className="resize-y text-sm"
-          />
+          {preview ? (
+            <div className="min-h-[76px] rounded-md border border-border bg-muted/30 p-2">
+              <ConfigurableMarkdownContent content={back || "*empty*"} />
+            </div>
+          ) : (
+            <Textarea
+              value={back}
+              onChange={(e) => setBack(e.target.value)}
+              rows={3}
+              className="resize-y text-sm"
+            />
+          )}
         </div>
       </div>
+      {preview ? (
+        <p className="mt-1.5 text-[10px] text-muted-foreground">
+          Markdown &amp; LaTeX preview — switch back to Edit to change the text.
+        </p>
+      ) : null}
     </div>
   );
 }

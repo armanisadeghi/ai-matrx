@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   HelpCircle,
   SkipForward,
@@ -64,12 +64,15 @@ export function FastFireLiveCard({
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpUnavailable, setHelpUnavailable] = useState(false);
+  const cardShownAtRef = useRef<number>(Date.now());
 
   // L3: clear any help text when the card changes, so the previous card's help
-  // doesn't linger over the next card. Keyed on the card id.
+  // doesn't linger over the next card. Keyed on the card id. Also resets the
+  // "time on card" clock the help lane reports as real context.
   useEffect(() => {
     setHelp(null);
     setHelpUnavailable(false);
+    cardShownAtRef.current = Date.now();
   }, [card?.id]);
 
   if (!card) return null;
@@ -89,7 +92,12 @@ export function FastFireLiveCard({
     setHelp(null);
     try {
       const result = await dispatch(
-        helpLive({ front: card.front, back: card.back }),
+        helpLive({
+          cardId: card.id,
+          front: card.front,
+          back: card.back,
+          timeOnCardMs: Date.now() - cardShownAtRef.current,
+        }),
       );
       setHelp(result);
     } finally {

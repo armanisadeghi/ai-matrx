@@ -24,6 +24,7 @@ import {
   Pencil,
   Expand,
   History,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ import { cn } from "@/lib/utils";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
+import { downloadSetCsv } from "../../utils/importExportCsv";
+import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -118,6 +121,12 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [pendingAction, setPendingAction] = useState<
     "study" | "fastfire" | "edit" | "sessions" | null
   >(null);
+
+  const exportCsv = () => {
+    if (!data) return;
+    downloadSetCsv(data.set, data.cards);
+    toast.success("Exported set as CSV");
+  };
 
   // Single navigation helper: marks which action is in flight (so only that
   // button shows the busy state) and routes via a transition. Guards against
@@ -212,6 +221,19 @@ export function SetDetailView({ setId }: { setId: string }) {
                       {data.set.description}
                     </p>
                   ) : null}
+                  <div className="mt-2">
+                    <SetVisibilityControl
+                      setId={setId}
+                      visibility={data.set.visibility}
+                      onChange={(v) =>
+                        setData((prev) =>
+                          prev
+                            ? { ...prev, set: { ...prev.set, visibility: v } }
+                            : prev,
+                        )
+                      }
+                    />
+                  </div>
                 </div>
               </div>
               {/* Action row — the hub: every path you can take with this set.
@@ -263,6 +285,14 @@ export function SetDetailView({ setId }: { setId: string }) {
                 >
                   <History className="mr-1.5 h-4 w-4" />
                   History
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={exportCsv}
+                  disabled={data.cards.length === 0}
+                >
+                  <Download className="mr-1.5 h-4 w-4" />
+                  Export
                 </Button>
                 <Button
                   variant="outline"

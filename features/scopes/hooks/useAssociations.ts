@@ -97,7 +97,7 @@ export function useAssociations(
     status: entry.status,
     error: entry.error,
     fetchedAt: entry.fetchedAt,
-    add: async ({ targetType, targetId, orgId, label }) => {
+    add: async ({ targetType, targetId, orgId, label, role }) => {
       if (!id) return { ok: false, error: "Missing entity id" };
       return dispatch(
         addAssociationThunk({
@@ -107,10 +107,11 @@ export function useAssociations(
           targetId,
           orgId,
           label,
+          role,
         }),
       );
     },
-    remove: async ({ targetType, targetId }) => {
+    remove: async ({ targetType, targetId, role }) => {
       if (!id) return { ok: false, error: "Missing entity id" };
       return dispatch(
         removeAssociationThunk({
@@ -118,10 +119,11 @@ export function useAssociations(
           sourceId: id,
           targetType,
           targetId,
+          role,
         }),
       );
     },
-    setTargets: async ({ targetType, targetIds, orgId }) => {
+    setTargets: async ({ targetType, targetIds, orgId, role }) => {
       if (!id) return { ok: false, error: "Missing entity id" };
       return dispatch(
         setAssociationTargetsThunk({
@@ -130,6 +132,7 @@ export function useAssociations(
           targetType,
           targetIds,
           orgId,
+          role,
         }),
       );
     },

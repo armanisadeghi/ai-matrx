@@ -8,9 +8,10 @@
 // "New" → /education/flashcards/new (the AI create-from-topic flow).
 //
 // NOTE: listSets() returns ALL rows with no server-side search/pagination yet,
-// so search + visibility filtering run client-side over the in-memory list.
-// Server-side search, pagination, and folders/tags are a follow-up once set
-// counts grow — this page does NOT cover those.
+// so search + visibility + folder filtering all run client-side over the
+// in-memory list. Server-side search/pagination is a follow-up once set
+// counts grow. Folder/tag membership (fc_set → category via EDGE_ROLE.theme)
+// is loaded in one batched `assoc_for_sources` round-trip, not per-row.
 //
 // React Compiler is on: no manual useMemo / useCallback / React.memo.
 
@@ -30,16 +31,26 @@ import {
   AlertCircle,
   TrendingUp,
   CalendarClock,
+  Upload,
+  X,
+  Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fcService } from "../../data/fcService";
+import { EDGE_ROLE } from "../../data/types";
 import type { FcSetRow } from "../../data/types";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import { studyService } from "@/features/education/study/service/studyService";
+import type { StudyStreakRow } from "@/features/education/study/types";
 
 const EDU_BASE = "/education/flashcards";
 const FAST_FIRE_BASE = "/education/fastfire";
+const FOLDER_DIMENSION = CATEGORY_DIMENSIONS.flashcardFolder;
 
 /** Sentinel nav id for the "New" button (set ids are real UUIDs). */
 const NEW_SET_NAV_ID = "__new__";
@@ -215,6 +226,24 @@ export function FlashcardsHome() {
   const [visibility, setVisibility] = useState<VisibilityFilter>("all");
   const [isPending, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
+  const [folderIds, setFolderIds] = useState<Set<string>>(new Set());
+  const [foldersBySet, setFoldersBySet] = useState<Record<string, string[]>>({});
+  const [streak, setStreak] = useState<StudyStreakRow | null>(null);
+  const { categories: folders } = useCategories({ dimension: FOLDER_DIMENSION });
+
+  // Phase 3 (daily streak): read-only — the streak row is written exclusively
+  // by the education.bump_study_streak() DB trigger on study_session insert,
+  // so it reflects activity across every study mode (flashcards, fast fire...).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await studyService.getStreak();
+      if (!cancelled && !res.error) setStreak(res.data ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -235,6 +264,42 @@ export function FlashcardsHome() {
       cancelled = true;
     };
   }, []);
+
+  // Folder/tag membership for every visible set, one batched round-trip
+  // (assoc_for_sources) rather than N per-row lookups.
+  useEffect(() => {
+    if (!sets || sets.length === 0) {
+      setFoldersBySet({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const res = await associationsService.listForSources(
+        "fc_set",
+        sets.map((s) => s.id),
+        "category",
+      );
+      if (cancelled || !res.ok) return;
+      const map: Record<string, string[]> = {};
+      for (const e of res.data.edges) {
+        if (e.role !== EDGE_ROLE.theme) continue;
+        (map[e.sourceId] ??= []).push(e.targetId);
+      }
+      setFoldersBySet(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sets]);
+
+  const toggleFolder = (id: string) => {
+    setFolderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const open = (id: string) => {
     if (isPending) return;
@@ -270,7 +335,11 @@ export function FlashcardsHome() {
 
   const q = query.trim().toLowerCase();
   const visible = (sets ?? []).filter(
-    (s) => matchesVisibility(visibility, s.visibility) && matchesQuery(s, q),
+    (s) =>
+      matchesVisibility(visibility, s.visibility) &&
+      matchesQuery(s, q) &&
+      (folderIds.size === 0 ||
+        (foldersBySet[s.id] ?? []).some((id) => folderIds.has(id))),
   );
 
   return (
@@ -285,8 +354,29 @@ export function FlashcardsHome() {
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
               Flashcards
             </h1>
+            {streak && streak.current_streak > 0 && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+                title={`Longest streak: ${streak.longest_streak} day${streak.longest_streak === 1 ? "" : "s"}`}
+              >
+                <Flame className="h-3.5 w-3.5" />
+                {streak.current_streak} day{streak.current_streak === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isPending) return;
+                setNavigatingId("__weak__");
+                startTransition(() => router.push(`${EDU_BASE}/weak-areas`));
+              }}
+              disabled={isPending && navigatingId === "__weak__"}
+            >
+              <Flame className="mr-1.5 h-4 w-4" />
+              Drill weak areas
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
@@ -310,6 +400,18 @@ export function FlashcardsHome() {
             >
               <TrendingUp className="mr-1.5 h-4 w-4" />
               Progress
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isPending) return;
+                setNavigatingId("__import__");
+                startTransition(() => router.push(`${EDU_BASE}/new/import`));
+              }}
+              disabled={isPending && navigatingId === "__import__"}
+            >
+              <Upload className="mr-1.5 h-4 w-4" />
+              Import
             </Button>
             <Button
               onClick={newSet}
@@ -351,15 +453,36 @@ export function FlashcardsHome() {
               </button>
             ))}
 
-            {/* Folders / tags are a reserved, not-yet-built affordance. */}
-            <span
-              className="ml-auto inline-flex cursor-not-allowed items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-xs text-muted-foreground opacity-70"
-              title="Folders and tags are coming soon"
-              aria-disabled="true"
-            >
-              <FolderTree className="h-3.5 w-3.5" />
-              Folders / tags — coming soon
-            </span>
+            {folders.length > 0 ? (
+              <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                <FolderTree className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {folders.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => toggleFolder(f.id)}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                      folderIds.has(f.id)
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-muted text-muted-foreground hover:bg-accent",
+                    )}
+                  >
+                    {f.name}
+                  </button>
+                ))}
+                {folderIds.size > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setFolderIds(new Set())}
+                    className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+                    aria-label="Clear folder filter"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 

@@ -21,6 +21,8 @@ export type StudySessionRow = Edu["study_session"]["Row"];
 export type StudyAttemptRow = Edu["study_attempt"]["Row"];
 export type ItemMasteryRow = Edu["item_mastery"]["Row"];
 export type StudyGoalRow = Edu["study_goal"]["Row"];
+/** Phase 3 (weak-area drill + streak) — one row per user, DB-trigger-written only. */
+export type StudyStreakRow = Edu["study_streak"]["Row"];
 
 // ─── Service result (supabase-style; services never throw) ────────────────────
 export interface StudyResult<T> {

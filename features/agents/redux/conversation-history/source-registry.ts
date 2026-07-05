@@ -119,6 +119,13 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   "fastfire-review": { label: "Fast Fire Review", icon: GraduationCap, system: true },
   "fastfire-tts": { label: "Fast Fire Speech", icon: GraduationCap, system: true },
 
+  // Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
+  // fc_help_live / fc_review_batch agents Fast Fire uses, generalized to every
+  // study surface (classic set study, adaptive due review, weak-area drill).
+  "flashcards-help": { label: "Flashcards Tutor", icon: GraduationCap, system: true },
+  "flashcards-review": { label: "Flashcards Review", icon: GraduationCap, system: true },
+  "flashcards-coach": { label: "Flashcards Micro-Coach", icon: GraduationCap, system: true },
+
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
   research: { label: "Research", icon: Globe },
@@ -186,6 +193,12 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     label: "Fast Fire",
     icon: GraduationCap,
     features: ["fastfire-grade", "fastfire-help", "fastfire-review", "fastfire-tts"],
+  },
+  {
+    id: "flashcards-tutor",
+    label: "Flashcards AI Tutor",
+    icon: GraduationCap,
+    features: ["flashcards-help", "flashcards-review", "flashcards-coach"],
   },
 ];
 

@@ -8683,6 +8683,33 @@ export type Database = {
           },
         ]
       }
+      study_streak: {
+        Row: {
+          current_streak: number
+          last_active_date: string | null
+          longest_streak: number
+          organization_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          organization_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_structured_section: {
         Row: {
           body: string

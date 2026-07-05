@@ -15,7 +15,7 @@
 
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -24,8 +24,12 @@ import {
   AlertCircle,
   BookOpen,
   Trophy,
+  HelpCircle,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
@@ -35,9 +39,27 @@ import {
   toFlashcardMobileCardsFromStudy,
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { studyService } from "@/features/education/study/service/studyService";
+import type { ItemMasteryRow } from "@/features/education/study/types";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
+import { helpLive, type HelpLiveResult } from "../../data/tutor/helpLive";
+import {
+  reviewSession,
+  type ReviewSessionResult,
+} from "../../data/tutor/reviewSession";
+import {
+  buildRecentSessionContext,
+  buildReviewAggregate,
+  buildReviewAttempts,
+} from "../../data/tutor/learnerContext";
+
+const FC_CARD_ITEM_TYPE = "fc_card";
+/** Below this many graded cards, an end-of-session AI review is more noise
+ *  than signal (nothing systematic to say about 1-2 cards) — skip it. */
+const MIN_CARDS_FOR_REVIEW = 3;
 
 export interface StudyDeckProgress {
   done: number;
@@ -80,6 +102,25 @@ export interface StudyDeckProps {
     cardId: string;
     spokenFrontFileId?: string | null;
   };
+  /**
+   * Phase 4 (AI tutor) — per-card mastery, feeding the "Ask AI" panel's real
+   * learner context (struggled topics, live retrievability) instead of a
+   * stub. Omit to disable the struggled-topics signal (context still works,
+   * just thinner).
+   */
+  masteryByCard?: Record<string, ItemMasteryRow | undefined>;
+  /**
+   * Phase 4 — the open `study_session.id` this deck's attempts are tagged
+   * with. When set + enough cards were graded, the deck automatically runs
+   * the end-of-session AI review (`fc_review_batch`) on completion and
+   * writes `study_session.session_review` — the SAME persistence every
+   * session-history surface (CoachReviewPanel, SessionScorecard) already
+   * reads, so review "just works" for classic/adaptive/weak-area sessions
+   * with zero per-surface code. Omit to skip the review lane entirely.
+   */
+  sessionId?: string | null;
+  /** Set false to hide the "Ask AI" affordance even when a help agent is configured. */
+  enableTutor?: boolean;
 }
 
 export function StudyDeck(props: StudyDeckProps) {
@@ -105,8 +146,12 @@ export function StudyDeck(props: StudyDeckProps) {
     onRestart,
     completionPrimary,
     voiceTestForCard,
+    masteryByCard = {},
+    sessionId = null,
+    enableTutor = true,
   } = props;
 
+  const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const [mobileDismissed, setMobileDismissed] = useState(false);
 
@@ -118,6 +163,73 @@ export function StudyDeck(props: StudyDeckProps) {
       setCompleted(true);
     }
   }, [cards.length, progress.done, progress.total]);
+
+  // ── Phase 4: "Ask AI" live help ─────────────────────────────────────────
+  const current = cards[currentIndex];
+  const [askOpen, setAskOpen] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [help, setHelp] = useState<HelpLiveResult | null>(null);
+  const [helpLoading, setHelpLoading] = useState(false);
+  const cardShownAtRef = useRef<number>(Date.now());
+  useEffect(() => {
+    cardShownAtRef.current = Date.now();
+    setHelp(null);
+    setAskOpen(false);
+    setQuestion("");
+  }, [current?.id]);
+
+  const askAi = async (): Promise<void> => {
+    if (!current) return;
+    setHelpLoading(true);
+    setHelp(null);
+    try {
+      const recent = buildRecentSessionContext(cards, resultsByCard, masteryByCard);
+      const [dueRes, historyRes] = await Promise.all([
+        studyService.listDue(FC_CARD_ITEM_TYPE, 200),
+        studyService.listAttemptsForItem(FC_CARD_ITEM_TYPE, current.id, 5),
+      ]);
+      const result = await dispatch(
+        helpLive({
+          front: current.front,
+          back: current.back,
+          question: question.trim() || undefined,
+          sessionScore: progress.done > 0 ? progress.correct / progress.done : null,
+          recentCorrect: recent.recentCorrect,
+          recentWrong: recent.recentWrong,
+          struggledTopics: recent.struggledTopics,
+          dueCount: dueRes.data?.length ?? 0,
+          timeOnCardMs: Date.now() - cardShownAtRef.current,
+          cardHistory: historyRes.data ?? [],
+        }),
+      );
+      setHelp(result);
+    } finally {
+      setHelpLoading(false);
+    }
+  };
+
+  // ── Phase 4: end-of-session AI review (fc_review_batch), auto-run once ──
+  const [review, setReview] = useState<ReviewSessionResult | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const reviewFiredRef = useRef(false);
+  useEffect(() => {
+    if (
+      !completed ||
+      !sessionId ||
+      reviewFiredRef.current ||
+      progress.done < MIN_CARDS_FOR_REVIEW
+    ) {
+      return;
+    }
+    reviewFiredRef.current = true;
+    setReviewLoading(true);
+    const attempts = buildReviewAttempts(cards, resultsByCard, masteryByCard);
+    const aggregate = buildReviewAggregate(attempts, progress.total);
+    void dispatch(reviewSession({ sessionId, attempts, aggregate }))
+      .then((result) => setReview(result))
+      .finally(() => setReviewLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires once, guarded by reviewFiredRef
+  }, [completed, sessionId]);
 
   useEffect(() => {
     if (loading || error || cards.length === 0 || completed || isMobile)
@@ -276,7 +388,6 @@ export function StudyDeck(props: StudyDeckProps) {
     );
   }
 
-  const current = cards[currentIndex];
   const positionPct =
     cards.length > 0
       ? Math.round(((currentIndex + 1) / cards.length) * 100)

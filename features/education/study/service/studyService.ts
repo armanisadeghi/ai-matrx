@@ -34,6 +34,7 @@ import type {
   ListSessionsFilter,
   SessionWithAttempts,
   SessionAttemptSummary,
+  StudyStreakRow,
 } from "../types";
 
 const EDU = () => supabase.schema("education");
@@ -654,6 +655,85 @@ export const studyService = {
       return { data: (data ?? []) as ItemMasteryRow[], error: null };
     } catch (e) {
       return fail("listDue", e);
+    }
+  },
+
+  /**
+   * Phase 3 (weak-area drill) — worst-first candidate rows for one item_type:
+   * every studied item (`attempt_count > 0`) that is EITHER flagged
+   * `struggle_flag` OR has a low write-time `retrievability` snapshot. Capped
+   * generously above the caller's real limit (`candidateLimit`) because the
+   * snapshot doesn't account for FSRS decay since `last_review` — callers
+   * should re-sort by `displayMasteryPct`/`currentRetrievability`
+   * (`features/education/study/utils/masteryFsrs.ts`) client-side for the
+   * true worst-first order, then slice to the UI limit.
+   */
+  async listWeakest(
+    itemType: string,
+    candidateLimit = 200,
+  ): Promise<StudyResult<ItemMasteryRow[]>> {
+    try {
+      const { data, error } = await EDU()
+        .from("item_mastery")
+        .select("*")
+        .eq("item_type", itemType)
+        .is("deleted_at", null)
+        .gt("attempt_count", 0)
+        .or("struggle_flag.eq.true,retrievability.lt.0.7")
+        .order("struggle_flag", { ascending: false })
+        .order("retrievability", { ascending: true, nullsFirst: false })
+        .limit(candidateLimit);
+      if (error) return fail("listWeakest", error);
+      return { data: (data ?? []) as ItemMasteryRow[], error: null };
+    } catch (e) {
+      return fail("listWeakest", e);
+    }
+  },
+
+  /**
+   * Phase 4 (AI tutor context) — this learner's most recent attempts on ONE
+   * item, newest first. Feeds `fc_help_live`'s `card_history` variable (and
+   * any future per-card coaching) with REAL prior-attempt signal instead of
+   * the long-standing `[]` stub — small, capped, read-only.
+   */
+  async listAttemptsForItem(
+    itemType: string,
+    itemId: string,
+    limit = 10,
+  ): Promise<StudyResult<StudyAttemptRow[]>> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_attempt")
+        .select("*")
+        .eq("item_type", itemType)
+        .eq("item_id", itemId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) return fail("listAttemptsForItem", error);
+      return { data: (data ?? []) as StudyAttemptRow[], error: null };
+    } catch (e) {
+      return fail("listAttemptsForItem", e);
+    }
+  },
+
+  /**
+   * Phase 3 (daily streak) — the current user's streak row. Read-only from
+   * the client; `education.bump_study_streak()` (an AFTER INSERT trigger on
+   * `study_session`) is the ONLY writer, so every study mode's session
+   * creation counts toward the streak with zero per-surface wiring. `null`
+   * data (no error) means the user has never started a session.
+   */
+  async getStreak(): Promise<StudyResult<StudyStreakRow | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("study_streak")
+        .select("*")
+        .maybeSingle();
+      if (error) return fail("getStreak", error);
+      return { data: (data ?? null) as StudyStreakRow | null, error: null };
+    } catch (e) {
+      return fail("getStreak", e);
     }
   },
 };

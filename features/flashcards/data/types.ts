@@ -26,7 +26,7 @@ export const EDGE_ROLE = {
   prerequisiteOf: "prerequisite_of",
   related: "related",
   source: "source", //              fc_card/fc_set → file (knowledge lineage)
-  theme: "theme", //                fc_card → category (cross-set "string")
+  theme: "theme", //                fc_card/fc_set → category (cross-set "string"; fc_set→category is folders/tags)
   illustration: "illustration", //  fc_card → file (media)
   diagram: "diagram",
   chart: "chart",
