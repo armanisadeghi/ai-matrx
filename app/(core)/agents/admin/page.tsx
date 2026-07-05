@@ -59,6 +59,12 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
 
   windowPanels: [
     {
+      overlayId: "scratchpadPanel",
+      description:
+        "Global scratchpad — the user's always-there notepad (pool + one active) in a right side panel, opened from Quick Actions on any page. Active scratchpad auto-attaches read-only to every conversation's agent context when non-empty.",
+      status: "Live",
+    },
+    {
       overlayId: "agentFindUsagesWindow",
       description:
         "Find Usages — every place an agent is used (own + org-managed in detail, others aggregated), drift red flags first, one-click + bulk remediation.",

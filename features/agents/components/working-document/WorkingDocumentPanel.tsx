@@ -10,11 +10,22 @@
  * in the Smart Input "Document" tab.
  */
 
-import { useEffect } from "react";
-import { FileText, Link2, Loader2, Maximize2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { FileText, Link2, Loader2, Lock, Maximize2, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
+import { DocumentLinkPicker } from "./DocumentLinkPicker";
 import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumentActionProvider";
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
@@ -62,6 +73,13 @@ interface WorkingDocumentPanelProps {
    */
   showHeaderTitle?: boolean;
   /**
+   * Show the compact source-controls row (rename, bind note, link existing,
+   * saved-status) under the header. On by default so EVERY mount — canvas,
+   * window, sidebar, sheet, run-controls tab — gets rename/bind/link; gate it
+   * off only in containers too tight to fit it.
+   */
+  showSourceControls?: boolean;
+  /**
    * Host page context carried into the document SURFACE — the conversation's
    * context + scope selections — so agents launched from the highlight→agent
    * menu see what the chat agent sees. The host (chat, war-room, the window)
@@ -78,6 +96,7 @@ export function WorkingDocumentPanel({
   showEnableToggle = true,
   showHeader = true,
   showHeaderTitle = true,
+  showSourceControls = true,
   surfaceContext,
 }: WorkingDocumentPanelProps) {
   const {
@@ -93,8 +112,16 @@ export function WorkingDocumentPanel({
     onChange,
     flush,
     setEnabled,
+    setTitle,
+    bindToNote,
+    unbind,
+    linkToDocument,
     openInCanvas,
   } = useWorkingDocument(conversationId, kind);
+
+  // Note id awaiting a merge decision (user picked a note while the document
+  // already has content). Null = no pending decision.
+  const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
 
   const { before, after, hasUnseenChange, markSeen } = useWorkingDocChanges(
     content,
@@ -183,7 +210,7 @@ export function WorkingDocumentPanel({
             <div className="min-w-0 flex-1" />
           )}
 
-          {enabled && kind === "working" && (
+          {enabled && (
             <WorkingDocumentViewControls conversationId={conversationId} />
           )}
 
@@ -212,12 +239,103 @@ export function WorkingDocumentPanel({
             </>
           )}
 
-          {showEnableToggle && (
+          {showEnableToggle && !isScratch && (
             <Switch
               checked={enabled}
               onCheckedChange={setEnabled}
               aria-label="Toggle working document"
             />
+          )}
+        </div>
+      )}
+
+      {/* Source controls — rename, bind note (working), link existing, status.
+          Part of the panel so EVERY mount gets the full document chrome. */}
+      {showSourceControls && enabled && (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-border px-2 py-1.5">
+          {isScratch ? (
+            <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <Link2
+              className={cn(
+                "h-3.5 w-3.5 shrink-0",
+                isBound ? "text-primary" : "text-muted-foreground",
+              )}
+            />
+          )}
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            disabled={isBound}
+            placeholder={
+              isScratch ? "Name this scratchpad…" : "Name this document…"
+            }
+            aria-label={isScratch ? "Scratchpad name" : "Document name"}
+            className={cn(
+              "min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-medium text-foreground",
+              "placeholder:font-normal placeholder:text-muted-foreground",
+              "hover:border-border focus:border-border focus:outline-none focus:ring-1 focus:ring-ring",
+              "disabled:opacity-60",
+            )}
+          />
+          <span className="shrink-0 truncate text-[11px] text-muted-foreground">
+            {isScratch
+              ? saving
+                ? "Saving…"
+                : "Private — agent reads, never edits"
+              : isBound
+                ? binding.label || "Bound note"
+                : saving
+                  ? "Saving…"
+                  : "Auto-saved"}
+          </span>
+          {isBound && (
+            <button
+              type="button"
+              onClick={unbind}
+              aria-label="Unbind note (revert to this conversation's document)"
+              title="Unbind note"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {!isScratch && (
+            <>
+              <NotePickerPopover
+                onSelectNote={(noteId) => {
+                  // No existing content → adopt directly, nothing to lose.
+                  if (!content.trim()) bindToNote(noteId, "replace");
+                  else setPendingNoteId(noteId);
+                }}
+                align="end"
+                trigger={
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+                  >
+                    {isBound ? "Change" : "Bind note"}
+                  </button>
+                }
+              />
+              <DocumentLinkPicker
+                kind={kind}
+                align="end"
+                excludeDocumentId={
+                  binding.kind === "cx_working_document" ? binding.id : null
+                }
+                onSelect={linkToDocument}
+                trigger={
+                  <button
+                    type="button"
+                    className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+                  >
+                    Link
+                  </button>
+                }
+              />
+            </>
           )}
         </div>
       )}
@@ -303,7 +421,7 @@ export function WorkingDocumentPanel({
               />
             )}
           </div>
-          {kind === "working" && (
+          {enabled && (
             <WorkingDocumentVersionHistory
               conversationId={conversationId}
               currentContent={draft}
@@ -337,6 +455,46 @@ export function WorkingDocumentPanel({
           </button>
         </div>
       )}
+
+      {/* Merge decision — append current document to the note, or replace it. */}
+      <AlertDialog
+        open={!!pendingNoteId}
+        onOpenChange={(open) => {
+          if (!open) setPendingNoteId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Keep your current document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You already have content in this working document. Append it below
+              the note&apos;s content, or replace it with the note.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setPendingNoteId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (pendingNoteId) bindToNote(pendingNoteId, "replace");
+                setPendingNoteId(null);
+              }}
+            >
+              Replace
+            </Button>
+            <Button
+              onClick={() => {
+                if (pendingNoteId) bindToNote(pendingNoteId, "append");
+                setPendingNoteId(null);
+              }}
+            >
+              Append below
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

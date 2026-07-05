@@ -83,6 +83,13 @@ export const selectWorkingDocVersion =
   (state: RootState): number =>
     entryOf(state, conversationId, kind)?.version ?? 0;
 
+/**
+ * The user's ACTIVE scratchpad id (durable, cross-device pointer). Lives in
+ * the synced userPreferences store; null until the first scratchpad exists.
+ */
+export const selectActiveScratchpadId = (state: RootState): string | null =>
+  state.userPreferences.scratchpad.activeId;
+
 const NO_ATTACHED: string[] = [];
 
 /** ADDITIONAL scratchpads attached to a conversation (active one excluded). */

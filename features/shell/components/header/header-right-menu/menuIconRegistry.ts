@@ -1,4 +1,5 @@
 import {
+  NotebookPen,
   StickyNote,
   CheckSquare,
   MessageSquare,
@@ -24,6 +25,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 export const MENU_ICON_REGISTRY = {
+  NotebookPen,
   StickyNote,
   CheckSquare,
   MessageSquare,

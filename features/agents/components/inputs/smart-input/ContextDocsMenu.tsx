@@ -37,12 +37,20 @@ import { INPUT_BUTTON_IDLE_TINT } from "./InputActionButtons";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveContextLayersPanel } from "@/features/scopes/components/active-context/ActiveContextLayersPanel";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
-import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import {
+  selectActiveScratchpadId,
+  selectWorkingDocContent,
+  selectWorkingDocEnabled,
+  selectWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   setConversationDocumentEnabledThunk,
   linkConversationDocumentThunk,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
-import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  scratchScopeId,
+  type WorkingDocumentKind,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import { DocumentLinkPicker } from "@/features/agents/components/working-document/DocumentLinkPicker";
 
 interface ContextDocsMenuProps {
@@ -146,6 +154,61 @@ function DocRow({
   );
 }
 
+/**
+ * ScratchRow — the user's GLOBAL scratchpad. Always on (no toggle): the active
+ * scratchpad follows the user everywhere and is sent to the agent only when it
+ * has content. This row just shows its state and opens it.
+ */
+function ScratchRow({
+  conversationId,
+  onOpen,
+}: {
+  conversationId: string;
+  onOpen?: () => void;
+}) {
+  const openPanel = useOpenWorkingDocumentPanel();
+  const activeId = useAppSelector(selectActiveScratchpadId);
+  const scope = activeId ? scratchScopeId(activeId) : "sp:none";
+  const title = useAppSelector(selectWorkingDocTitle(scope, "scratch"));
+  const content = useAppSelector(selectWorkingDocContent(scope, "scratch"));
+  const hasContent = content.trim() !== "";
+
+  return (
+    <div className="flex items-start gap-2.5 px-3 py-2">
+      <NotebookPen className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground">
+            {title?.trim() || "My scratchpad"}
+          </span>
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
+            <Lock className="h-2.5 w-2.5" />
+            Read-only to agent
+          </span>
+        </div>
+        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+          {hasContent
+            ? "Attached to this chat — the agent can read it for context."
+            : "Empty — type in it and it attaches to your chats automatically."}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              openPanel({ conversationId, initialKind: "scratch" });
+              onOpen?.();
+            }}
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <PanelRight className="h-3 w-3" />
+            Open
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ContextDocsMenuBody({
   conversationId,
   onClose,
@@ -163,14 +226,7 @@ function ContextDocsMenuBody({
         description="A shared, living document you build with the agent. It can read and edit it each round."
         onOpen={onClose}
       />
-      <DocRow
-        conversationId={conversationId}
-        kind="scratch"
-        icon={NotebookPen}
-        title="My scratchpad"
-        description="A private space the agent can read for context — but never edits."
-        onOpen={onClose}
-      />
+      <ScratchRow conversationId={conversationId} onOpen={onClose} />
 
       <div className="border-t border-border px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         Context
@@ -194,12 +250,17 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
   const workingEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId, "working"),
   );
-  const scratchEnabled = useAppSelector(
-    selectWorkingDocEnabled(conversationId, "scratch"),
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
+  const scratchContent = useAppSelector(
+    selectWorkingDocContent(
+      activeScratchId ? scratchScopeId(activeScratchId) : "sp:none",
+      "scratch",
+    ),
   );
   const hasActiveContext = useAppSelector(selectHasActiveContext);
 
-  const isActive = workingEnabled || scratchEnabled || hasActiveContext;
+  const isActive =
+    workingEnabled || scratchContent.trim() !== "" || hasActiveContext;
 
   const triggerButton = (
     <button

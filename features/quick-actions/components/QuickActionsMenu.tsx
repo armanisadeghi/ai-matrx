@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Database,
   FolderOpen,
+  NotebookPen,
   Star,
 } from "lucide-react";
 import {
@@ -24,6 +25,7 @@ import { useQuickActions } from "../hooks/useQuickActions";
 
 export function QuickActionsMenu() {
   const {
+    openScratchpad,
     openQuickNotes,
     openQuickTasks,
     openQuickChat,
@@ -42,6 +44,20 @@ export function QuickActionsMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Quick Access</DropdownMenuLabel>
         <DropdownMenuSeparator />
+
+        {/* Scratchpad Option — the user's always-there notepad */}
+        <DropdownMenuItem
+          onClick={() => openScratchpad()}
+          className="cursor-pointer"
+        >
+          <NotebookPen className="h-4 w-4 mr-2" />
+          <div className="flex flex-col">
+            <span>Scratchpad</span>
+            <span className="text-xs text-zinc-500">
+              Your notepad, everywhere you go
+            </span>
+          </div>
+        </DropdownMenuItem>
 
         {/* Notes Option */}
         <DropdownMenuItem

@@ -28,7 +28,7 @@ import {
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextSlotIcons";
-import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
+import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import {
   KnownContextDetail,
   getKnownContextDefinition,
@@ -93,11 +93,14 @@ export function ContextSlotDetailSheet({
     CONTEXT_TYPE_CHIP_CLASS[type] ?? CONTEXT_TYPE_CHIP_CLASS.text;
 
   const label = slot?.label?.trim() || entry?.label?.trim() || contextKey;
-  const isWorkingDocument = contextKey === WORKING_DOCUMENT_CONTEXT_KEY;
+  // Doc-like keys (working document, scratchpad, future doc kinds) route to
+  // the EDITABLE documents workspace — never the readonly value dump below.
+  const docKind = docKindForContextKey(contextKey);
 
   const workingDocItem = useMemo(
-    () => buildWorkingDocumentDrawerItem(conversationId, label),
-    [conversationId, label],
+    () =>
+      buildWorkingDocumentDrawerItem(conversationId, label, docKind ?? "working"),
+    [conversationId, label, docKind],
   );
 
   const inlinePolicyText = useMemo(() => {
@@ -126,7 +129,7 @@ export function ContextSlotDetailSheet({
         </span>
       }
       description={
-        isWorkingDocument ? undefined : (
+        docKind !== null ? undefined : (
           <span className="font-mono">
             {contextKey} · {type}
           </span>
@@ -134,12 +137,12 @@ export function ContextSlotDetailSheet({
       }
       expandButtonLabel="Context slot"
       position="right"
-      defaultSize={isWorkingDocument ? 44 : 34}
+      defaultSize={docKind !== null ? 44 : 34}
       contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
-      {isWorkingDocument ? (
+      {docKind !== null ? (
         <div className="min-h-0 flex-1">
-          <WorkingDocumentBody item={workingDocItem} />
+          <WorkingDocumentBody item={workingDocItem} initialKind={docKind} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">

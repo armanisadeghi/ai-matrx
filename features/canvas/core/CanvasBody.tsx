@@ -21,6 +21,7 @@
 
 import React, { isValidElement } from "react";
 import dynamic from "next/dynamic";
+import { isScratchScope } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import {
@@ -53,6 +54,16 @@ const DocumentsWorkspace = dynamic(
   () =>
     import("@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace").then(
       (m) => ({ default: m.DocumentsWorkspace }),
+    ),
+  { ssr: false },
+);
+// Single-document editor for GLOBAL scratchpad pointers (sp:<docId> scopes,
+// which have no conversation to anchor a workspace on). Same heavy chunk
+// rationale as the workspace above.
+const WorkingDocumentPanel = dynamic(
+  () =>
+    import("@/features/agents/components/working-document/WorkingDocumentPanel").then(
+      (m) => ({ default: m.WorkingDocumentPanel }),
     ),
   { ssr: false },
 );
@@ -176,12 +187,26 @@ function renderContent(content: CanvasContent): React.ReactNode {
   // (cases removed in Wave F; only NON_PERSISTABLE types remain below)
   switch (type) {
     case "working_document":
-    case "scratchpad":
-      // `data` is a pointer { conversationId, kind }. The multi-document
-      // workspace reads live docs from Redux + the DB and self-persists: a
-      // document list (attach / detach / swap) + the Working document /
-      // Scratchpad tabs + the active editor. CanvasPane owns the "Documents"
-      // container title; the tab strip names each doc (no nested repeat).
+    case "scratchpad": {
+      // `data` is a pointer { conversationId, kind }. A GLOBAL scratchpad
+      // pointer (sp:<docId> scope — no conversation to anchor a workspace on)
+      // renders the single-document panel; conversation pointers get the full
+      // multi-document workspace (document list + Working/Scratch tabs).
+      // CanvasPane owns the container title; inner chrome names each doc.
+      const pointerScope =
+        typeof data.conversationId === "string" ? data.conversationId : "";
+      if (isScratchScope(pointerScope)) {
+        return (
+          <WorkingDocumentPanel
+            conversationId={pointerScope}
+            kind="scratch"
+            showHeader
+            showHeaderTitle={false}
+            showOpenInWindow={false}
+            className="h-full"
+          />
+        );
+      }
       return (
         <DocumentsWorkspace
           conversationId={data.conversationId}
@@ -190,6 +215,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
           className="h-full"
         />
       );
+    }
 
     case "code_preview":
       return (

@@ -15,22 +15,31 @@
  */
 
 import { useEffect } from "react";
-import { FileText } from "lucide-react";
+import { FileText, NotebookPen } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import {
+  scratchScopeId,
+  type WorkingDocumentKind,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  selectActiveScratchpadId,
+  selectWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import type { ContextDrawerItem, ContextItemBodyProps } from "../types";
 import { DocumentsWorkspace } from "../../working-document/documents-workspace/DocumentsWorkspace";
 
 export function buildWorkingDocumentDrawerItem(
   conversationId: string,
   title = "Working document",
+  kind: WorkingDocumentKind = "working",
 ): ContextDrawerItem {
+  const isScratch = kind === "scratch";
   return {
-    id: `working_document:${conversationId}`,
+    id: `${isScratch ? "user_scratchpad" : "working_document"}:${conversationId}`,
     blockType: "working_document",
-    typeLabel: "Working document",
+    typeLabel: isScratch ? "Scratchpad" : "Working document",
     title,
-    icon: FileText,
+    icon: isScratch ? NotebookPen : FileText,
     themeKey: "input_document",
     origin: "block",
     conversationId,
@@ -40,18 +49,31 @@ export function buildWorkingDocumentDrawerItem(
   };
 }
 
-export function WorkingDocumentBody({ item, setTitle }: ContextItemBodyProps) {
+export function WorkingDocumentBody({
+  item,
+  setTitle,
+  initialKind = "working",
+}: ContextItemBodyProps & { initialKind?: WorkingDocumentKind }) {
   const conversationId = item.conversationId;
-  const title = useAppSelector(selectWorkingDocTitle(conversationId, "working"));
+  const isScratch = initialKind === "scratch";
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
+  const titleScope =
+    isScratch && activeScratchId
+      ? scratchScopeId(activeScratchId)
+      : conversationId;
+  const title = useAppSelector(
+    selectWorkingDocTitle(titleScope, initialKind),
+  );
 
   // Keep the drawer's title bar in sync with the (possibly auto-derived) name.
   useEffect(() => {
-    setTitle?.(title?.trim() || "Working document");
-  }, [title, setTitle]);
+    setTitle?.(title?.trim() || (isScratch ? "Scratchpad" : "Working document"));
+  }, [title, setTitle, isScratch]);
 
   return (
     <DocumentsWorkspace
       conversationId={conversationId}
+      initialKind={initialKind}
       defaultRailOpen={false}
       className="h-full"
     />

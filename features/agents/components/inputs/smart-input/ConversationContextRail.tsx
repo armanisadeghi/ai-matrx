@@ -58,8 +58,17 @@ import { ContextSlotDetailSheet } from "@/features/agents/components/context-slo
 import {
   USER_SCRATCHPAD_CONTEXT_KEY,
   WORKING_DOCUMENT_CONTEXT_KEY,
+  docKindForContextKey,
 } from "@/features/agents/utils/workingDocumentContext";
-import { selectWorkingDocSaving } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  selectActiveScratchpadId,
+  selectAttachedScratchpadIds,
+  selectWorkingDocContent,
+  selectWorkingDocEnabled,
+  selectWorkingDocSaving,
+  selectWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   selectHasAgentListsContent,
   selectAgentTaskCounts,
@@ -117,9 +126,39 @@ export function ConversationContextRail({
   );
   const entries = useAppSelector(selectEntries);
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
+
+  // ── Document pills read the EDITOR slice (the SSOT), never instanceContext
+  // (which is the agent-facing publication). Working: shown iff enabled.
+  // Scratch: shown iff the user's global active scratchpad has content, or
+  // extra scratchpads are attached — an empty scratchpad is invisible here
+  // AND absent from the agent's context. ──────────────────────────────────
+  const workingDocEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId, "working"),
+  );
+  const workingDocTitle = useAppSelector(
+    selectWorkingDocTitle(conversationId, "working"),
+  );
   const workingDocSaving = useAppSelector(
     selectWorkingDocSaving(conversationId, "working"),
   );
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
+  const scratchScope = activeScratchId
+    ? scratchScopeId(activeScratchId)
+    : "sp:none";
+  const scratchContent = useAppSelector(
+    selectWorkingDocContent(scratchScope, "scratch"),
+  );
+  const scratchTitle = useAppSelector(
+    selectWorkingDocTitle(scratchScope, "scratch"),
+  );
+  const scratchSaving = useAppSelector(
+    selectWorkingDocSaving(scratchScope, "scratch"),
+  );
+  const attachedScratchIds = useAppSelector(
+    selectAttachedScratchpadIds(conversationId),
+  );
+  const showScratchPill =
+    scratchContent.trim() !== "" || attachedScratchIds.length > 0;
 
   // ── Agent lists (plan / tasks / todos). Hydrate + live-subscribe here so the
   // rail is the single owner now that the standalone chip is gone. ──────────
@@ -140,15 +179,16 @@ export function ConversationContextRail({
   const layers = useActiveContextLayerItems(conversationId);
 
   // ── Detail surfaces (one of each, opened on demand) ────────────────────────
-  const [activeEntry, setActiveEntry] = useState<InstanceContextEntry | null>(
-    null,
-  );
+  const [activeEntry, setActiveEntry] = useState<{
+    key: string;
+    snapshotValue?: unknown;
+  } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [listsOpen, setListsOpen] = useState(false);
   const layerDrawer = useContextItemDrawer();
 
-  const openEntry = (entry: InstanceContextEntry) => {
-    setActiveEntry(entry);
+  const openEntry = (key: string, snapshotValue?: unknown) => {
+    setActiveEntry({ key, snapshotValue });
     setDetailOpen(true);
   };
 
@@ -157,28 +197,28 @@ export function ConversationContextRail({
     const out: RailItem[] = [];
     const valued = entries.filter(entryHasValue);
 
-    const workingDoc = valued.find(
-      (e) => e.key === WORKING_DOCUMENT_CONTEXT_KEY,
-    );
-    const scratch = valued.find((e) => e.key === USER_SCRATCHPAD_CONTEXT_KEY);
-
-    if (workingDoc) {
+    if (workingDocEnabled) {
       out.push({
         id: "working_document",
         icon: FileText,
-        label: workingDoc.label?.trim() || "Working doc",
+        label: workingDocTitle?.trim() || "Working doc",
         tone: "primary",
         busy: workingDocSaving,
         detail: workingDocSaving ? undefined : "Live",
-        onOpen: () => openEntry(workingDoc),
+        onOpen: () => openEntry(WORKING_DOCUMENT_CONTEXT_KEY),
       });
     }
-    if (scratch) {
+    if (showScratchPill) {
       out.push({
         id: "scratchpad",
         icon: NotebookPen,
-        label: scratch.label?.trim() || "Scratchpad",
-        onOpen: () => openEntry(scratch),
+        label: scratchTitle?.trim() || "Scratchpad",
+        busy: scratchSaving,
+        detail:
+          attachedScratchIds.length > 0
+            ? `+${attachedScratchIds.length}`
+            : undefined,
+        onOpen: () => openEntry(USER_SCRATCHPAD_CONTEXT_KEY),
       });
     }
 
@@ -209,18 +249,16 @@ export function ConversationContextRail({
     }
 
     for (const e of valued) {
-      if (
-        e.key === WORKING_DOCUMENT_CONTEXT_KEY ||
-        e.key === USER_SCRATCHPAD_CONTEXT_KEY
-      ) {
-        continue;
-      }
+      // Doc-like keys (working doc, scratchpad, attached-scratchpad extras)
+      // already have their slice-driven pills above — never re-surface their
+      // published context values as generic pills.
+      if (docKindForContextKey(e.key) !== null) continue;
       const Icon = CONTEXT_TYPE_ICON[e.type] ?? FALLBACK_CONTEXT_ICON;
       out.push({
         id: `ctx:${e.key}`,
         icon: Icon,
         label: e.label?.trim() || e.key,
-        onOpen: () => openEntry(e),
+        onOpen: () => openEntry(e.key, e.value),
       });
     }
 
@@ -234,7 +272,13 @@ export function ConversationContextRail({
     todoCounts.open,
     layers.count,
     layers.summary,
+    workingDocEnabled,
+    workingDocTitle,
     workingDocSaving,
+    showScratchPill,
+    scratchTitle,
+    scratchSaving,
+    attachedScratchIds.length,
   ]);
 
   // ── Inline vs overflow split. Keep the highest-priority pills visible; fold
@@ -406,7 +450,7 @@ function DetailSurfaces({
 }: {
   conversationId: string;
   agentId: string | null;
-  activeEntry: InstanceContextEntry | null;
+  activeEntry: { key: string; snapshotValue?: unknown } | null;
   detailOpen: boolean;
   setDetailOpen: (open: boolean) => void;
   listsOpen: boolean;
@@ -422,7 +466,7 @@ function DetailSurfaces({
           conversationId={conversationId}
           agentId={agentId}
           contextKey={activeEntry.key}
-          snapshotValue={activeEntry.value}
+          snapshotValue={activeEntry.snapshotValue}
         />
       )}
       <TaskPanel

@@ -17,14 +17,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { FileText, Lock, PanelLeftOpen, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import { selectWorkingDocBinding } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import {
+  scratchScopeId,
+  type WorkingDocumentKind,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  selectActiveScratchpadId,
+  selectWorkingDocBinding,
+  selectWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import {
   detachWorkspaceDocumentThunk,
   listAttachedDocumentTabsThunk,
   openWorkspaceDocumentThunk,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import {
+  createScratchpadThunk,
+  hydrateActiveScratchpadThunk,
+} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
 import { WorkingDocumentPanel } from "../WorkingDocumentPanel";
 import type { WorkingDocumentSurfaceContext } from "../workingDocumentSurface";
 import {
@@ -74,13 +85,67 @@ export function DocumentsWorkspace({
   className,
 }: DocumentsWorkspaceProps) {
   const dispatch = useAppDispatch();
-  const [tabs, setTabs] = useState<DocTab[]>(() => [
-    { conversationId, kind: "working", closable: false },
-    { conversationId, kind: "scratch", closable: false },
-  ]);
-  const [activeKey, setActiveKey] = useState(() =>
-    tabKey({ conversationId, kind: initialKind }),
+  const store = useAppStore();
+
+  // The scratch base tab is the user's GLOBAL active scratchpad (sp:<id>
+  // scope) — one scratchpad everywhere, decoupled from the conversation. If
+  // none exists yet, resolve (adopt newest) then create a fresh one so the tab
+  // is always typeable ("one active at all times"; the row materializes on the
+  // first byte of content).
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
+  const scratchScope = activeScratchId ? scratchScopeId(activeScratchId) : null;
+  const scratchTitle = useAppSelector(
+    selectWorkingDocTitle(scratchScope ?? "sp:none", "scratch"),
   );
+  useEffect(() => {
+    let cancelled = false;
+    void dispatch(hydrateActiveScratchpadThunk())
+      .then(() => {
+        if (cancelled) return;
+        if (!selectActiveScratchpadId(store.getState())) {
+          void dispatch(createScratchpadThunk());
+        }
+      })
+      .catch((err: unknown) => {
+        console.error("[documents-workspace] scratchpad resolve failed", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, store]);
+
+  // Attached (closable) tabs only — base tabs are derived each render so the
+  // scratch tab re-points automatically when the active scratchpad changes.
+  const [attachedTabs, setAttachedTabs] = useState<DocTab[]>([]);
+  const baseTabs: DocTab[] = [
+    { conversationId, kind: "working", closable: false },
+    ...(scratchScope
+      ? [
+          {
+            conversationId: scratchScope,
+            kind: "scratch" as const,
+            label: scratchTitle?.trim() || "Scratchpad",
+            closable: false,
+          },
+        ]
+      : []),
+  ];
+  const tabs: DocTab[] = [...baseTabs, ...attachedTabs];
+  // "Open on the scratch tab" before the active scratchpad has resolved is a
+  // SENTINEL that resolves purely at render time once the scope exists — no
+  // effect, no cascading state.
+  const SCRATCH_PENDING = "__scratch_pending__";
+  const [activeKeyRaw, setActiveKey] = useState(() =>
+    initialKind === "scratch"
+      ? scratchScope
+        ? tabKey({ conversationId: scratchScope, kind: "scratch" })
+        : SCRATCH_PENDING
+      : tabKey({ conversationId, kind: initialKind }),
+  );
+  const activeKey =
+    activeKeyRaw === SCRATCH_PENDING && scratchScope
+      ? tabKey({ conversationId: scratchScope, kind: "scratch" })
+      : activeKeyRaw;
   const [railOpen, setRailOpen] = useState(defaultRailOpen);
 
   // Restore this conversation's ATTACHED documents (persisted association
@@ -92,7 +157,7 @@ export function DocumentsWorkspace({
       .unwrap()
       .then((restored) => {
         if (cancelled || restored.length === 0) return;
-        setTabs((prev) => {
+        setAttachedTabs((prev) => {
           const open = new Set(prev.map(tabKey));
           const added = restored
             .filter((r) => !open.has(tabKey(r)))
@@ -117,36 +182,35 @@ export function DocumentsWorkspace({
     };
   }, [dispatch, conversationId]);
 
-  // The base tabs' current bindings — a rail doc that IS the conversation's
-  // primary (linked/adopted) doc activates its base tab instead of opening the
-  // same document under a second tab.
+  // The working base tab's current binding — a rail doc that IS the
+  // conversation's primary (linked/adopted) doc activates its base tab instead
+  // of opening the same document under a second tab. The scratch base tab is
+  // simply the active scratchpad (compared by id below).
   const workingBinding = useAppSelector(
     selectWorkingDocBinding(conversationId, "working"),
-  );
-  const scratchBinding = useAppSelector(
-    selectWorkingDocBinding(conversationId, "scratch"),
   );
 
   const openDoc = useCallback(
     (sel: DocumentsRailSelection) => {
-      const boundKind =
+      if (
         workingBinding.kind === "cx_working_document" &&
         workingBinding.id === sel.documentId
-          ? "working"
-          : scratchBinding.kind === "cx_working_document" &&
-              scratchBinding.id === sel.documentId
-            ? "scratch"
-            : null;
-      if (boundKind) {
-        setActiveKey(tabKey({ conversationId, kind: boundKind }));
+      ) {
+        setActiveKey(tabKey({ conversationId, kind: "working" }));
+        return;
+      }
+      if (sel.kind === "scratch" && sel.documentId === activeScratchId) {
+        if (scratchScope) {
+          setActiveKey(tabKey({ conversationId: scratchScope, kind: "scratch" }));
+        }
         return;
       }
       const key = tabKey(sel);
       const alreadyOpen = tabs.some((t) => tabKey(t) === key);
       if (!alreadyOpen) {
-        // Cross-conversation doc: load its content into its origin slice entry
-        // and persist the attach edge so the tab restores on the next mount.
-        // (Idempotent — safe if the edge already exists.)
+        // Cross-conversation doc / non-active scratchpad: load its content
+        // into its scope's slice entry and persist the attach edge so the tab
+        // (and its context publication, for scratch) restores on next mount.
         if (sel.conversationId !== conversationId) {
           void dispatch(
             openWorkspaceDocumentThunk({
@@ -155,7 +219,7 @@ export function DocumentsWorkspace({
             }),
           );
         }
-        setTabs((prev) =>
+        setAttachedTabs((prev) =>
           prev.some((t) => tabKey(t) === key)
             ? prev
             : [
@@ -172,12 +236,19 @@ export function DocumentsWorkspace({
       }
       setActiveKey(key);
     },
-    [tabs, conversationId, dispatch, workingBinding, scratchBinding],
+    [
+      tabs,
+      conversationId,
+      dispatch,
+      workingBinding,
+      activeScratchId,
+      scratchScope,
+    ],
   );
 
   const handleDocumentRenamed = useCallback(
     (documentId: string, title: string) => {
-      setTabs((prev) =>
+      setAttachedTabs((prev) =>
         prev.map((t) =>
           t.documentId === documentId ? { ...t, label: title } : t,
         ),
@@ -190,7 +261,7 @@ export function DocumentsWorkspace({
     (key: string) => {
       // Closing an attached tab also removes its persisted edge (keeps the
       // doc) — otherwise it silently reappears on the next mount.
-      const target = tabs.find((t) => tabKey(t) === key);
+      const target = attachedTabs.find((t) => tabKey(t) === key);
       if (target?.closable && target.documentId) {
         void dispatch(
           detachWorkspaceDocumentThunk({
@@ -199,17 +270,12 @@ export function DocumentsWorkspace({
           }),
         );
       }
-      setTabs((prev) => {
-        const next = prev.filter((t) => tabKey(t) !== key);
-        return next.length ? next : prev;
-      });
-      setActiveKey((cur) => {
-        if (cur !== key) return cur;
-        const remaining = tabs.filter((t) => tabKey(t) !== key);
-        return remaining.length ? tabKey(remaining[0]) : cur;
-      });
+      setAttachedTabs((prev) => prev.filter((t) => tabKey(t) !== key));
+      setActiveKey((cur) =>
+        cur === key ? tabKey({ conversationId, kind: "working" }) : cur,
+      );
     },
-    [tabs, conversationId, dispatch],
+    [attachedTabs, conversationId, dispatch],
   );
 
   const active = tabs.find((t) => tabKey(t) === activeKey) ?? tabs[0];

@@ -208,4 +208,8 @@ export const defaultUserPreferences: UserPreferences = {
   organization: {
     defaultOrganizationId: null,
   },
+  // null = no scratchpad yet; the first open/type creates + activates one.
+  scratchpad: {
+    activeId: null,
+  },
 };

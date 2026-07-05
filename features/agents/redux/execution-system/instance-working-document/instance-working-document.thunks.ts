@@ -31,12 +31,17 @@ import {
 } from "@/features/notes/redux/thunks";
 import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
 import {
+  addAttachedScratchpad,
+  removeAttachedScratchpad,
   applyAgentWorkingDocContent,
   DEFAULT_DOC_KIND,
+  isScratchScope,
   markWorkingDocError,
   markWorkingDocMaterialized,
   NO_BINDING,
   reservedWorkingDocumentId,
+  scratchDocIdFromScope,
+  scratchScopeId,
   setWorkingDocBinding,
   setWorkingDocContent,
   setWorkingDocEnabled,
@@ -45,6 +50,7 @@ import {
   type WorkingDocumentKind,
 } from "./instance-working-document.slice";
 import {
+  selectActiveScratchpadId,
   selectWorkingDocBinding,
   selectWorkingDocContent,
   selectWorkingDocMaterialized,
@@ -69,7 +75,10 @@ interface ThunkConfig {
   dispatch: AppDispatch;
 }
 
-const DOC_KINDS: WorkingDocumentKind[] = ["working", "scratch"];
+// Conversation-scoped hydration is WORKING-ONLY: scratchpads are user-global
+// (sp:<docId> scopes, see scratchpad.thunks.ts) and never hydrate into a
+// (conversationId, "scratch") slot. Attached-doc listings still cover both.
+const DOC_KINDS: WorkingDocumentKind[] = ["working"];
 
 /** Title char budget for auto-derived document names (longer than a note). */
 const AUTO_TITLE_MAX = 60;
@@ -215,10 +224,10 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
     const binding = selectWorkingDocBinding(conversationId, kind)(getState());
 
     if (enabled) {
-      // Reserve the DETERMINISTIC id only if not already pointing at a
-      // working_document (a hydrated/linked doc keeps its id). NO durable write
-      // here — the id is deterministic per (conversation, kind) so every tab
-      // agrees and materialize-on-write collapses to one row.
+      // Reserve the id only if not already pointing at a working_document (a
+      // hydrated/linked doc keeps its id). NO durable write here. Conversation
+      // docs reserve the DETERMINISTIC per-(conversation, kind) id; a global
+      // scratchpad scope (sp:<docId>) already carries its id in the scope.
       if (binding.kind === "none" || !binding.id) {
         dispatch(
           setWorkingDocBinding({
@@ -226,7 +235,9 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
             kind,
             binding: {
               kind: "cx_working_document",
-              id: reservedWorkingDocumentId(conversationId, kind),
+              id:
+                scratchDocIdFromScope(conversationId) ??
+                reservedWorkingDocumentId(conversationId, kind),
               label: null,
             },
           }),
@@ -236,6 +247,8 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
     }
 
     // Disable: persist enabled=false on the edge only if the row exists.
+    // Global scratchpads have no conversation edge — nothing to persist.
+    if (isScratchScope(conversationId)) return;
     const materialized = selectWorkingDocMaterialized(
       conversationId,
       kind,
@@ -286,7 +299,10 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
     { dispatch, getState },
   ) => {
     const state = getState();
-    if (selectIsCacheOnly(conversationId)(state)) return;
+    // User-global scratchpads (sp:<docId> scope) have no backing conversation:
+    // no cacheOnly gate, no conversation edge, no origin provenance.
+    const isGlobalScratch = isScratchScope(conversationId);
+    if (!isGlobalScratch && selectIsCacheOnly(conversationId)(state)) return;
 
     const binding = selectWorkingDocBinding(conversationId, kind)(state);
     if (binding.kind !== "cx_working_document" || !binding.id) return;
@@ -308,7 +324,7 @@ export const materializeWorkingDocumentThunk = createAsyncThunk<
     try {
       const doc = await materializeWorkingDocument({
         id: binding.id,
-        conversationId,
+        conversationId: isGlobalScratch ? null : conversationId,
         organizationId: orgId,
         kind,
         title,
@@ -834,8 +850,19 @@ export const openWorkspaceDocumentThunk = createAsyncThunk<
       });
       return null;
     }
-    if (!doc || !doc.conversationId) return null;
-    if (skipOrigin && doc.conversationId === skipOrigin) return null;
+    if (!doc) return null;
+    // Scratchpads are user-global: their workspace scope is sp:<docId>, never
+    // an origin conversation (which may be null for pool-born scratchpads).
+    const isScratch = doc.kind === "scratch";
+    if (!isScratch && !doc.conversationId) return null;
+    if (!isScratch && skipOrigin && doc.conversationId === skipOrigin) {
+      return null;
+    }
+    // The ACTIVE scratchpad is always a base tab (and always in context) —
+    // never open/attach it a second time.
+    if (isScratch && selectActiveScratchpadId(getState()) === doc.id) {
+      return null;
+    }
 
     if (attachTo) {
       const orgId = resolveOrgId(getState(), attachTo);
@@ -856,9 +883,18 @@ export const openWorkspaceDocumentThunk = createAsyncThunk<
           });
         }
       }
+      // Attached scratchpads also join the conversation's publication list so
+      // the agent receives them as read-only context extras.
+      if (doc.kind === "scratch") {
+        dispatch(
+          addAttachedScratchpad({ conversationId: attachTo, documentId }),
+        );
+      }
     }
 
-    const originConv = doc.conversationId;
+    const originConv = isScratch
+      ? scratchScopeId(doc.id)
+      : (doc.conversationId as string);
     const kind = doc.kind;
     dispatch(setWorkingDocEnabled({ conversationId: originConv, kind, enabled: true }));
     dispatch(
@@ -892,7 +928,10 @@ export const detachWorkspaceDocumentThunk = createAsyncThunk<
   ThunkConfig
 >(
   "instanceWorkingDocument/detachWorkspaceDoc",
-  async ({ conversationId, documentId }) => {
+  async ({ conversationId, documentId }, { dispatch }) => {
+    // If it was an attached scratchpad, drop it from the publication list too
+    // (no-op for working docs).
+    dispatch(removeAttachedScratchpad({ conversationId, documentId }));
     try {
       await unlinkDocumentFromConversation(documentId, conversationId);
     } catch (err) {
@@ -929,8 +968,8 @@ export const listAttachedDocumentTabsThunk = createAsyncThunk<
       return [];
     }
     // A linked doc the hydrate path already ADOPTED as this conversation's
-    // primary (kind slot) is the base tab — an attached tab for it would show
-    // the same document twice.
+    // primary working slot — or the user's ACTIVE scratchpad (already a base
+    // tab) — must not appear a second time as an attached tab.
     const state = getState();
     const boundIds = new Set(
       DOC_KINDS.map(
@@ -939,6 +978,8 @@ export const listAttachedDocumentTabsThunk = createAsyncThunk<
         .filter((b) => b.kind === "cx_working_document" && b.id)
         .map((b) => b.id),
     );
+    const activeScratchId = selectActiveScratchpadId(state);
+    if (activeScratchId) boundIds.add(activeScratchId);
     const tabs: WorkspaceDocTab[] = [];
     for (const link of links) {
       if (boundIds.has(link.documentId)) continue;

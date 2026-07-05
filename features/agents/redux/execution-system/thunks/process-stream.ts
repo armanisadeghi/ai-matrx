@@ -106,7 +106,7 @@ import {
   reflectAgentMaterializedThunk,
   syncWorkingDocumentFromAgentThunk,
 } from "../instance-working-document/instance-working-document.thunks";
-import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
+import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import { StreamingJsonTracker } from "@/utils/json/streaming-json-tracker";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import { deriveAnswerText } from "../active-requests/active-requests.selectors";
@@ -755,7 +755,9 @@ export async function processStream({
           // event carries no new content, so for the working document we re-read
           // its bound source to reflect the agent's edit.
           const cd = d as ContextChangedData | ContextPersistedData;
-          if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+          // The map is the single routing authority for doc-like context keys.
+          // Only the working kind is agent-writable (scratch never emits these).
+          if (docKindForContextKey(cd.key) === "working") {
             const persisted = cd as ContextPersistedData;
             if (persisted.materialized && persisted.source_id) {
               // MATERIALIZE-ON-WRITE: the agent's first edit CREATED the row (at
@@ -779,7 +781,7 @@ export async function processStream({
           // nothing is lost — reflect it and flag the divergence loudly so the
           // user can reconcile from version history. (Diff/merge UI: follow-up.)
           const cd = d as { key?: string; base_version?: number };
-          if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+          if (docKindForContextKey(cd.key ?? "") === "working") {
             console.warn(
               "[working-document] context_conflict — a concurrent user edit " +
                 "raced the agent; both versions are in history, reconcile there",
@@ -793,7 +795,7 @@ export async function processStream({
           // Server failed to persist a mutable context object. Surface loudly
           // (a recovery/observability signal) but never break the turn.
           const cd = d as ContextPersistFailedData;
-          if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+          if (docKindForContextKey(cd.key) === "working") {
             console.error(
               "[working-document] backend failed to persist working document",
               { conversationId, error: cd.error },

@@ -101,7 +101,13 @@ export function useQuickActions() {
     dispatch(openOverlay({ overlayId: "voicePad" }));
   }, [dispatch]);
 
+  /** The user's global scratchpad — one click from any page. */
+  const openScratchpad = useCallback(() => {
+    dispatch(openOverlay({ overlayId: "scratchpadPanel" }));
+  }, [dispatch]);
+
   return {
+    openScratchpad,
     openQuickNotes,
     openQuickTasks,
     openQuickChat,

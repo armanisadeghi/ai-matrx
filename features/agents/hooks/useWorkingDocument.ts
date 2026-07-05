@@ -29,7 +29,7 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { supabase } from "@/utils/supabase/client";
 import { saveNoteField } from "@/features/notes/redux/thunks";
@@ -41,6 +41,7 @@ import {
   WORKING_DOCUMENT_LABEL,
   buildUserScratchpadContextValue,
   buildWorkingDocumentContextValue,
+  scratchpadExtraContextKey,
 } from "@/features/agents/utils/workingDocumentContext";
 import {
   removeContextEntry,
@@ -49,6 +50,9 @@ import {
 import {
   applyAgentWorkingDocContent,
   DEFAULT_DOC_KIND,
+  isScratchScope,
+  scratchScopeId,
+  workingDocKey,
   markWorkingDocError,
   clearWorkingDocConflict,
   markWorkingDocConflict,
@@ -61,6 +65,8 @@ import {
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
+  selectActiveScratchpadId,
+  selectAttachedScratchpadIds,
   selectWorkingDocBinding,
   selectWorkingDocConflict,
   selectWorkingDocContent,
@@ -80,6 +86,10 @@ import {
   unbindWorkingDocumentThunk,
   type BindNoteMode,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import {
+  hydrateActiveScratchpadThunk,
+  hydrateAttachedScratchpadsThunk,
+} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   commitWorkingDocumentContent,
   updateCxWorkingDocumentTitle,
@@ -143,45 +153,11 @@ function subscribeWorkingDocRow(
   };
 }
 
-/** The instanceContext key + label + value builder for a document kind. */
-function contextDescriptorFor(args: {
-  kind: WorkingDocumentKind;
-  content: string;
-  binding: WorkingDocumentBinding;
-  conversationId: string;
-  organizationId: string | null;
-  title: string;
-  version: number;
-}): {
-  key: string;
-  label: string;
-  value: ReturnType<typeof buildWorkingDocumentContextValue>;
-} {
-  if (args.kind === "scratch") {
-    return {
-      key: USER_SCRATCHPAD_CONTEXT_KEY,
-      label: USER_SCRATCHPAD_LABEL,
-      value: buildUserScratchpadContextValue(args.content),
-    };
-  }
-  return {
-    key: WORKING_DOCUMENT_CONTEXT_KEY,
-    label: WORKING_DOCUMENT_LABEL,
-    value: buildWorkingDocumentContextValue({
-      content: args.content,
-      binding: args.binding,
-      conversationId: args.conversationId,
-      organizationId: args.organizationId,
-      docKind: args.kind,
-      title: args.title,
-      version: args.version,
-    }),
-  };
-}
-
 // =============================================================================
 // Context sync (effect-only) — keeps the document's instanceContext entry
-// current for an active conversation.
+// current for an active conversation. Scratch publication is the SEPARATE
+// `useScratchpadContextSync` (scratchpads are user-global; this hook's scratch
+// mounts run only the materialize + realtime effects at their sp:<id> scope).
 // =============================================================================
 
 export function useWorkingDocumentContextSync(
@@ -208,8 +184,11 @@ export function useWorkingDocumentContextSync(
       state.conversations.byConversationId[conversationId]?.organizationId ??
       null,
   );
-  // `cacheOnly` is true until the server confirms the cx_conversation row exists.
-  const isCacheOnly = useAppSelector(selectIsCacheOnly(conversationId));
+  // `cacheOnly` is true until the server confirms the cx_conversation row
+  // exists. A user-global scratchpad (sp:<docId> scope) has no conversation —
+  // never gated.
+  const isCacheOnlyRaw = useAppSelector(selectIsCacheOnly(conversationId));
+  const isCacheOnly = isScratchScope(conversationId) ? false : isCacheOnlyRaw;
 
   // MATERIALIZE-ON-WRITE: create the durable row + conversation edge the moment
   // content FIRST exists — never on mere activation (that produced the empty-row
@@ -298,12 +277,19 @@ export function useWorkingDocumentContextSync(
   ]);
 
   useEffect(() => {
-    const { key, label, value } = contextDescriptorFor({
-      kind,
+    // Scratch mounts never publish from here: the scratchpad's read-only
+    // context entry is owned by `useScratchpadContextSync` per conversation
+    // (an sp:<docId> scope isn't a conversation to publish into).
+    if (kind === "scratch") return;
+
+    const key = WORKING_DOCUMENT_CONTEXT_KEY;
+    const label = WORKING_DOCUMENT_LABEL;
+    const value = buildWorkingDocumentContextValue({
       content,
       binding,
       conversationId,
       organizationId,
+      docKind: kind,
       title,
       version,
     });
@@ -337,13 +323,126 @@ export function useWorkingDocumentContextSync(
   ]);
 }
 
+// A never-matching scope so hooks stay unconditional while no scratchpad
+// exists yet (its slice entry is absent → every effect no-ops).
+const SCRATCH_SYNC_SENTINEL = "sp:none";
+
 /**
- * Always-on per-conversation bridge: restore the PERSISTED opt-in/link for both
- * kinds on mount, then keep both documents' instanceContext entries current.
+ * useScratchpadContextSync — publishes the user's GLOBAL scratchpads into ONE
+ * conversation's agent context:
+ *
+ *   • the ACTIVE scratchpad → `user_scratchpad` (read-only) — NEVER when empty.
+ *   • each ATTACHED scratchpad → `user_scratchpad_<id8>` extras, same rule.
+ *
+ * Also keeps the active scratchpad's realtime + materialize effects mounted
+ * (via the shared sync hook at its sp:<id> scope), so cross-tab edits arrive
+ * even when no editor is open.
+ */
+export function useScratchpadContextSync(conversationId: string): void {
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const activeId = useAppSelector(selectActiveScratchpadId);
+  const activeScope = activeId
+    ? scratchScopeId(activeId)
+    : SCRATCH_SYNC_SENTINEL;
+
+  // Realtime + materialize for the active scratchpad, app-wide.
+  useWorkingDocumentContextSync(activeScope, "scratch");
+
+  const content = useAppSelector(
+    selectWorkingDocContent(activeScope, "scratch"),
+  );
+  const title = useAppSelector(selectWorkingDocTitle(activeScope, "scratch"));
+
+  // Active scratchpad → `user_scratchpad`. EMPTY IS NOT SENT: an empty
+  // scratchpad publishes nothing (and removes any prior entry).
+  useEffect(() => {
+    if (!activeId || content.trim() === "") {
+      dispatch(
+        removeContextEntry({
+          conversationId,
+          key: USER_SCRATCHPAD_CONTEXT_KEY,
+        }),
+      );
+      return;
+    }
+    dispatch(
+      setContextEntries({
+        conversationId,
+        entries: [
+          {
+            key: USER_SCRATCHPAD_CONTEXT_KEY,
+            value: buildUserScratchpadContextValue(content, title),
+            type: "text",
+            label: title?.trim() || USER_SCRATCHPAD_LABEL,
+          },
+        ],
+      }),
+    );
+  }, [dispatch, conversationId, activeId, content, title]);
+
+  // Attached extras. The snapshot string re-runs the effect whenever any
+  // attached scratchpad's title/content changes without allocating fresh
+  // arrays per render.
+  const attachedIds = useAppSelector(
+    selectAttachedScratchpadIds(conversationId),
+  );
+  const attachedSnapshot = useAppSelector((state) =>
+    attachedIds
+      .map((id) => {
+        const e =
+          state.instanceWorkingDocument.byKey[
+            workingDocKey(scratchScopeId(id), "scratch")
+          ];
+        return `${id} ${e?.title ?? ""} ${e?.content ?? ""}`;
+      })
+      .join(""),
+  );
+  const prevExtraKeysRef = useRef<string[]>([]);
+  useEffect(() => {
+    const state = store.getState();
+    const entries: {
+      key: string;
+      value: ReturnType<typeof buildUserScratchpadContextValue>;
+      type: "text";
+      label: string;
+    }[] = [];
+    const liveKeys: string[] = [];
+    for (const id of attachedIds) {
+      const e =
+        state.instanceWorkingDocument.byKey[
+          workingDocKey(scratchScopeId(id), "scratch")
+        ];
+      const c = e?.content ?? "";
+      if (c.trim() === "") continue; // empty is not sent
+      const key = scratchpadExtraContextKey(id);
+      liveKeys.push(key);
+      entries.push({
+        key,
+        value: buildUserScratchpadContextValue(c, e?.title),
+        type: "text",
+        label: e?.title?.trim() || USER_SCRATCHPAD_LABEL,
+      });
+    }
+    for (const stale of prevExtraKeysRef.current) {
+      if (!liveKeys.includes(stale)) {
+        dispatch(removeContextEntry({ conversationId, key: stale }));
+      }
+    }
+    prevExtraKeysRef.current = liveKeys;
+    if (entries.length) {
+      dispatch(setContextEntries({ conversationId, entries }));
+    }
+  }, [dispatch, store, conversationId, attachedIds, attachedSnapshot]);
+}
+
+/**
+ * Always-on per-conversation bridge: restore the conversation's persisted
+ * WORKING document + attached scratchpads, resolve the user's global ACTIVE
+ * scratchpad, then keep the conversation's document context entries current.
  * Mount this once where a conversation is always present (the Smart Input), so
- * the agent receives whichever documents the user has turned on — and a doc
- * they enabled in a previous session comes back — regardless of which editor
- * (if any) is open.
+ * the agent receives the current documents regardless of which editor (if any)
+ * is open.
  */
 export function useConversationDocumentsBridge(conversationId: string): void {
   const dispatch = useAppDispatch();
@@ -351,9 +450,18 @@ export function useConversationDocumentsBridge(conversationId: string): void {
   useEffect(() => {
     if (!userId) return;
     void dispatch(hydrateConversationDocumentsThunk({ conversationId }));
+    // Attached-scratchpad hydration must run AFTER the active pointer resolves
+    // (it excludes the active id from the attached list).
+    void dispatch(hydrateActiveScratchpadThunk())
+      .then(() =>
+        dispatch(hydrateAttachedScratchpadsThunk({ conversationId })),
+      )
+      .catch((err: unknown) => {
+        console.error("[scratchpad] bridge hydrate failed", err);
+      });
   }, [dispatch, conversationId, userId]);
   useWorkingDocumentContextSync(conversationId, "working");
-  useWorkingDocumentContextSync(conversationId, "scratch");
+  useScratchpadContextSync(conversationId);
 }
 
 // =============================================================================

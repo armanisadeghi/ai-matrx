@@ -637,6 +637,13 @@ const DocumentsWorkspace = lazyOverlay(
     ),
   { ssr: false },
 );
+const ScratchpadQuickPanel = lazyOverlay(
+  () =>
+    import("@/features/agents/components/working-document/ScratchpadQuickPanel").then(
+      (m) => ({ default: m.ScratchpadQuickPanel }),
+    ),
+  { ssr: false },
+);
 const NoteKnowledgePanel = lazyOverlay(
   () =>
     import("@/features/notes/components/NoteKnowledgePanel").then((m) => ({
@@ -1040,6 +1047,9 @@ export default function OverlayController() {
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
     workingDocumentPanel: useAppSelector((s) =>
       selectIsOverlayOpen(s, "workingDocumentPanel"),
+    ),
+    scratchpadPanel: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "scratchpadPanel"),
     ),
     noteKnowledgePanel: useAppSelector((s) =>
       selectIsOverlayOpen(s, "noteKnowledgePanel"),
@@ -4092,6 +4102,28 @@ export default function OverlayController() {
               defaultRailOpen
               className="h-full"
             />
+          </SidePanelSurface>
+        );
+      })()}
+
+      {/* scratchpadPanel — the user's GLOBAL scratchpad (active + pool
+          switcher) in a resizable right sidebar, opened from Quick Actions on
+          any page. No data payload: the panel resolves the active scratchpad
+          from userPreferences itself. */}
+      {(() => {
+        const isOpen = isOpenById.scratchpadPanel;
+        if (!isOpen) return null;
+        return (
+          <SidePanelSurface
+            title="Scratchpad"
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "scratchpadPanel" }))
+            }
+            storageKey="scratchpad-panel"
+            defaultWidth={520}
+            maxWidth={900}
+          >
+            <ScratchpadQuickPanel className="h-full" />
           </SidePanelSurface>
         );
       })()}

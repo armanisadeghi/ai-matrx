@@ -11,7 +11,10 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { setWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  scratchScopeId,
+  setWorkingDocTitle,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   FileText,
   Loader2,
@@ -95,15 +98,18 @@ export function DocumentsListRail({
   }, []);
 
   const q = query.trim().toLowerCase();
-  const filtered = (docs ?? []).filter(
-    (d): d is CxWorkingDocumentSummary & { conversationId: string } => {
-      if (!d.conversationId) return false; // conversation-scoped open only
-      if (!q) return true;
-      return (
-        d.title.toLowerCase().includes(q) || d.preview.toLowerCase().includes(q)
-      );
-    },
-  );
+  // A document's WORKSPACE SCOPE: scratchpads are user-global and key on their
+  // sp:<id> scope (origin conversation may be null for pool-born scratchpads);
+  // working docs key on their origin conversation.
+  const scopeOf = (d: CxWorkingDocumentSummary): string | null =>
+    d.kind === "scratch" ? scratchScopeId(d.id) : d.conversationId;
+  const filtered = (docs ?? []).filter((d) => {
+    if (!scopeOf(d)) return false; // origin-less working doc — unopenable
+    if (!q) return true;
+    return (
+      d.title.toLowerCase().includes(q) || d.preview.toLowerCase().includes(q)
+    );
+  });
   // Current conversation's docs first, then the rest (already newest-first).
   const pinned = filtered.filter(
     (d) => d.conversationId === currentConversationId,
@@ -167,7 +173,8 @@ export function DocumentsListRail({
         )}
         {ordered.map((d) => {
           const isScratch = d.kind === "scratch";
-          const key = railTabKey(d.conversationId, d.kind);
+          const scope = scopeOf(d) as string;
+          const key = railTabKey(scope, d.kind);
           const isOpen = openKeys?.has(key) ?? false;
           const isActive = activeKey != null && key === activeKey;
           const canDetach = (closableKeys?.has(key) ?? false) && !!onDetach;
@@ -175,7 +182,7 @@ export function DocumentsListRail({
             d.title?.trim() || (isScratch ? "Scratchpad" : "Working document");
           const open = () =>
             onOpen({
-              conversationId: d.conversationId,
+              conversationId: scope,
               kind: d.kind,
               documentId: d.id,
               title: d.title,
@@ -211,7 +218,7 @@ export function DocumentsListRail({
                   await updateCxWorkingDocumentTitle(d.id, trimmed);
                   dispatch(
                     setWorkingDocTitle({
-                      conversationId: d.conversationId,
+                      conversationId: scope,
                       kind: d.kind,
                       title: trimmed,
                     }),

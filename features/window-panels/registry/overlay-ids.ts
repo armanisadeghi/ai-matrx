@@ -130,6 +130,7 @@ export const OVERLAY_IDS = [
   "saveToNotes",
   "saveToNotesFullscreen",
   "scopeEditWindow",
+  "scratchpadPanel",
   "scraperWindow",
   "shareModal",
   "shareModalWindow",

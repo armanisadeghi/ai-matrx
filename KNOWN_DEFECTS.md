@@ -17,6 +17,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D29 — Working-document sync model: accepted post-re-read design + two deferred gaps (cross-ref D9)
+**Severity: low — recorded 2026-07-05 during the scratchpad-goes-global build.** The working-document round-trip is deliberately a **post-event re-read** model: `context_changed`/`context_persisted` carry no content, so the editor slice updates only after `syncWorkingDocumentFromAgentThunk` re-reads the row (plus doc-id-filtered realtime). The tool-viz diff (`PatchDiffInline`) applies its patch optimistically for DISPLAY only and never writes the slice — making it a slice writer would race the re-read and the user's version-guarded commit. This is the accepted design until aidream ships mid-stream deltas (D9). Two deferred gaps, both data-safe:
+1. **Mid-typing invisibility.** `useWorkingDocument` refuses to merge remote/agent content into the visible draft while the user is actively typing (`editingRef` guard — it protects the draft); the agent's edit surfaces as a **conflict** on the next commit instead of live-merging. Proper fix is a 3-way merge, D9-adjacent.
+2. **Unmounted-origin attached docs.** A non-primary attached document syncs via realtime only while a mount subscribes its scope; an agent edit to an unmounted attached doc reaches the UI on next open/reload. Currently unreachable from agent writes (agents only patch the current conversation's `working_document`).
+
 ### D28 — `study_record_attempt` RPC rejects a NULL `result` (NOT-NULL `item_mastery.struggle_flag`)
 **Severity: medium — found 2026-06-30 building FastFire ([`features/flashcards/fast-fire/`](features/flashcards/fast-fire/)).** A DB-side defect in the committed study spine, NOT in FastFire code; the DDL fix was correctly **denied** by the auto-mode classifier (DB is locked during the transition), so it is logged here for the DB owner to apply.
 

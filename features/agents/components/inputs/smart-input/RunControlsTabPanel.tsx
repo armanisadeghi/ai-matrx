@@ -42,8 +42,13 @@ import { SandboxPanel } from "@/features/agents/components/chat/SandboxPanel";
 import { RunSettingsEditor } from "@/features/agents/components/run-controls/RunSettingsEditor";
 import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
-import { WorkingDocumentControls } from "@/features/agents/components/working-document/WorkingDocumentControls";
-import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
+import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  selectActiveScratchpadId,
+  selectWorkingDocContent,
+  selectWorkingDocEnabled,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveContextLayersPanel } from "@/features/scopes/components/active-context/ActiveContextLayersPanel";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
@@ -167,6 +172,16 @@ export function useRunControlsState(
   const workingDocEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId),
   );
+  // The scratchpad counts as "document active" when the user's global active
+  // scratchpad actually has content (empty is never sent to the agent).
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
+  const scratchContent = useAppSelector(
+    selectWorkingDocContent(
+      activeScratchId ? scratchScopeId(activeScratchId) : "sp:none",
+      "scratch",
+    ),
+  );
+  const anyDocActive = workingDocEnabled || scratchContent.trim() !== "";
   const hasActiveContext = useAppSelector(selectHasActiveContext);
 
   const openChatDebug = useOpenChatDebugWindow();
@@ -209,7 +224,7 @@ export function useRunControlsState(
     addedSkillsCount > 0 ||
     hasSandbox ||
     hasModelOverride ||
-    workingDocEnabled ||
+    anyDocActive ||
     hasActiveContext ||
     !!settings?.disableToolInjection ||
     !!settings?.surfaceOverride;
@@ -228,8 +243,8 @@ export function useRunControlsState(
     if (tabId === "context" && hasActiveContext) {
       return <TabStatusDot label="working context set" />;
     }
-    if (tabId === "document" && workingDocEnabled) {
-      return <TabStatusDot label="working document active" />;
+    if (tabId === "document" && anyDocActive) {
+      return <TabStatusDot label="document active" />;
     }
     return null;
   };
@@ -242,7 +257,7 @@ export function useRunControlsState(
     addedCount,
     hasModelOverride,
     hasActiveContext,
-    workingDocEnabled,
+    anyDocActive,
     isCustomized,
     attachmentCapabilities,
     panelProps: {
@@ -332,7 +347,11 @@ export function RunControlsTabPanel({
       )}
       {activeTab === "document" && (
         <div className="h-full overflow-hidden">
-          <WorkingDocumentControls conversationId={conversationId} />
+          <DocumentsWorkspace
+            conversationId={conversationId}
+            defaultRailOpen={false}
+            className="h-full"
+          />
         </div>
       )}
       {activeTab === "model" && (

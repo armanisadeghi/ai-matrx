@@ -585,6 +585,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  scratchpadPanel: {
+    label: "Scratchpad",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   scraperWindow: {
     label: "Scraper Window",
     instanceMode: "singleton",

@@ -51,9 +51,9 @@ The panel must be hyper-focused — ~all space usable. Enforced by structure:
 
 If you find yourself adding a header or a tall block inside a body, stop — it goes in the footer or the title bar.
 
-## Working document
+## Working document & scratchpad
 
-Shown as a **context-slot chip** (live `working_document` key). Clicking opens `ContextSlotDetailSheet` with the same rich surface as Notes:
+Shown as **context pills** (working doc + scratchpad in `ConversationContextRail`). **Every doc-like context key routes to the EDITABLE workspace**: `ContextSlotDetailSheet` resolves the key through `docKindForContextKey` (`features/agents/utils/workingDocumentContext.ts`) and mounts `WorkingDocumentBody` with `initialKind` → `DocumentsWorkspace` (Working + Scratch tabs) — never the readonly `ValueRenderer`. The scratchpad is the user's GLOBAL active one (`sp:<docId>` scope) — always user-editable, agent read-only. Inside each tab, the same rich surface as Notes:
 
 - **Editor modes** — Edit / Split / Rich / MD Split / Preview (`NoteEditorCore` via `WorkingDocumentEditor`)
 - **Agent diff** — canonical `DiffViewer` fed by `useWorkingDocChanges` (lights up when the agent edits unseen)
@@ -63,6 +63,7 @@ Only the Body mounts `useWorkingDocument`; title actions + history read the shar
 
 ## Change log
 
+- `2026-07-05` — claude: **scratchpad routes to the editable workspace.** `ContextSlotDetailSheet` now resolves ANY doc-like key via `docKindForContextKey` and mounts `WorkingDocumentBody` (`initialKind`-aware, kind-aware drawer-item id) — killed the readonly JSON dump the `user_scratchpad` pill used to hit. Scratchpads are user-global (`sp:<docId>` scopes, one active) — see `features/agents/FEATURE.md` → Working document & scratchpad.
 - `2026-06-23` — claude: **fixed empty media drawer preview for DB-loaded image attachments.** `normalize.ts#extractMediaRefs` only read top-level `raw.file_id` and `data.url`; post-submit `image_output` blocks carry `fileId` / `cdnUrl` / `signedUrl` on `block.data` (UnifiedImageBlock). Drawer now lifts refs from every media shape (pre-submit MediaRef, wire blocks, normalized output blocks) so `MediaBody` + `InlineMediaRef` render instead of "No media source".
 - `2026-06-22` — claude: **working document drawer parity with Notes.** Context-slot sheet now mounts `WorkingDocumentBody` (not plain `ProTextarea`): full `NoteEditorCore` view modes, nested version-history panel (note versions or per-turn snapshots with compare/restore), and agent-change diff. Shared primitives live under `features/agents/components/working-document/`. `NoteBody` drawer now wires `NoteVersionHistory` when the history toggle is on.
 - `2026-06-22` — claude: **note drawer gets view-mode controls; attachments no longer duplicate in context strip.** `NoteTitleActions` + `NoteViewControls` in the drawer title bar (Edit / Split / Rich / MD Split / Preview + history). `AgentUserMessage` stopped rendering `model_context.input_items` in `ContextSlotChipStrip` — attachments belong exclusively on the attachment chip row.

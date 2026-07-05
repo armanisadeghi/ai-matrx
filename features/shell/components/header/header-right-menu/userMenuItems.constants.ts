@@ -24,6 +24,14 @@ export interface OverlayMenuItemConfig {
 
 export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
   {
+    overlayId: "scratchpadPanel",
+    icon: "NotebookPen",
+    label: "Scratchpad",
+    requiresAuth: true,
+    guestDescription:
+      "Your always-there notepad. Scribble anywhere; agents can read it for context but never touch it.",
+  },
+  {
     overlayId: "quickNotes",
     icon: "StickyNote",
     label: "Quick Note",
