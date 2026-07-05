@@ -1,0 +1,950 @@
+{
+  "generated_for": "37-kinds+3dcb252ab4ad",
+  "columns": [
+    "definition",
+    "example",
+    "gate_structural",
+    "component",
+    "skill",
+    "content_block",
+    "surface"
+  ],
+  "rows": [
+    {
+      "kind": "basic_card",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "boolean",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "branch_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "comparison_criterion",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "comparison_set",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "decision_node",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "decision_tree",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "diagram_edge",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "diagram_node",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "diagram_spec",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "enhanced_flashcard",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "flashcard",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "flashcard_set",
+      "is_active": true,
+      "assets": {
+        "definition": "ok",
+        "example": "warn",
+        "gate_structural": "ok",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "gather_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "http_response",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "item_presentation",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "json",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "map_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "math_problem",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "math_solution",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "math_solution_step",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "number",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "presentation_deck",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "presentation_slide",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "q_and_a_set",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "warn",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "quiz_question",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "quiz_set",
+      "is_active": true,
+      "assets": {
+        "definition": "ok",
+        "example": "warn",
+        "gate_structural": "ok",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "regex_extract_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "schema_proposal",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "warn",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "schema_showcase",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "warn",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "schema_showcase_item",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "schema_showcase_ref",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "string_list",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "study_pack_set",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "warn",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "text",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "tiered_flashcard",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "workflow_run_result",
+      "is_active": false,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    }
+  ],
+  "findings": [
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"artifact\" (xml_tag; stream-block-accumulator.ts#ATTR_XML_TAGS, content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"audiocite\" (xml_tag; content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"comparison_table\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"cooking_recipe\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"decision_tree\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"decision\" (xml_tag; stream-block-accumulator.ts#ATTR_XML_TAGS, content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"diagram\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"editor_code_snippet\" (xml_tag; stream-block-accumulator.ts#ATTR_XML_TAGS, content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"editor_error\" (xml_tag; stream-block-accumulator.ts#ATTR_XML_TAGS, content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"flashcards\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"item_presentation\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"math_problem\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"presentation\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"progress_tracker\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"questionnaire\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"quiz\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"research\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"resources\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"schema_proposal\" (json_root; content-splitter-v2.ts#JSON_BLOCK_PATTERNS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"timeline\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "detector-token-unregistered",
+      "message": "detector token \"troubleshooting\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "boolean",
+      "message": "kind \"boolean\" has no content block referencing \"__kind\": \"boolean\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "branch_result",
+      "message": "kind \"branch_result\" has no content block referencing \"__kind\": \"branch_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "enhanced_flashcard",
+      "message": "kind \"enhanced_flashcard\" has no content block referencing \"__kind\": \"enhanced_flashcard\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "gather_result",
+      "message": "kind \"gather_result\" has no content block referencing \"__kind\": \"gather_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "http_response",
+      "message": "kind \"http_response\" has no content block referencing \"__kind\": \"http_response\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "json",
+      "message": "kind \"json\" has no content block referencing \"__kind\": \"json\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "map_result",
+      "message": "kind \"map_result\" has no content block referencing \"__kind\": \"map_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "number",
+      "message": "kind \"number\" has no content block referencing \"__kind\": \"number\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "q_and_a_set",
+      "message": "kind \"q_and_a_set\" has no content block referencing \"__kind\": \"q_and_a_set\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "regex_extract_result",
+      "message": "kind \"regex_extract_result\" has no content block referencing \"__kind\": \"regex_extract_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "schema_showcase",
+      "message": "kind \"schema_showcase\" has no content block referencing \"__kind\": \"schema_showcase\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "schema_showcase_item",
+      "message": "kind \"schema_showcase_item\" has no content block referencing \"__kind\": \"schema_showcase_item\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "schema_showcase_ref",
+      "message": "kind \"schema_showcase_ref\" has no content block referencing \"__kind\": \"schema_showcase_ref\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "string_list",
+      "message": "kind \"string_list\" has no content block referencing \"__kind\": \"string_list\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "study_pack_set",
+      "message": "kind \"study_pack_set\" has no content block referencing \"__kind\": \"study_pack_set\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "text",
+      "message": "kind \"text\" has no content block referencing \"__kind\": \"text\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "workflow_run_result",
+      "message": "kind \"workflow_run_result\" has no content block referencing \"__kind\": \"workflow_run_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "basic_card",
+      "message": "kind \"basic_card\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "comparison_criterion",
+      "message": "kind \"comparison_criterion\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "comparison_set",
+      "message": "kind \"comparison_set\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "decision_node",
+      "message": "kind \"decision_node\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "decision_tree",
+      "message": "kind \"decision_tree\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "diagram_edge",
+      "message": "kind \"diagram_edge\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "diagram_node",
+      "message": "kind \"diagram_node\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "diagram_spec",
+      "message": "kind \"diagram_spec\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "enhanced_flashcard",
+      "message": "kind \"enhanced_flashcard\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "flashcard",
+      "message": "kind \"flashcard\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "item_presentation",
+      "message": "kind \"item_presentation\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "math_problem",
+      "message": "kind \"math_problem\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "math_solution",
+      "message": "kind \"math_solution\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "math_solution_step",
+      "message": "kind \"math_solution_step\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "presentation_deck",
+      "message": "kind \"presentation_deck\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "presentation_slide",
+      "message": "kind \"presentation_slide\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "quiz_question",
+      "message": "kind \"quiz_question\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "schema_proposal",
+      "message": "kind \"schema_proposal\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "schema_showcase_item",
+      "message": "kind \"schema_showcase_item\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "schema_showcase_ref",
+      "message": "kind \"schema_showcase_ref\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "tiered_flashcard",
+      "message": "kind \"tiered_flashcard\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "basic_card",
+      "message": "kind \"basic_card\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "boolean",
+      "message": "kind \"boolean\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "branch_result",
+      "message": "kind \"branch_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "enhanced_flashcard",
+      "message": "kind \"enhanced_flashcard\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "flashcard",
+      "message": "kind \"flashcard\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "gather_result",
+      "message": "kind \"gather_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "http_response",
+      "message": "kind \"http_response\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "json",
+      "message": "kind \"json\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "map_result",
+      "message": "kind \"map_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "number",
+      "message": "kind \"number\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "q_and_a_set",
+      "message": "kind \"q_and_a_set\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "regex_extract_result",
+      "message": "kind \"regex_extract_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "schema_showcase",
+      "message": "kind \"schema_showcase\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "schema_showcase_item",
+      "message": "kind \"schema_showcase_item\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "schema_showcase_ref",
+      "message": "kind \"schema_showcase_ref\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "string_list",
+      "message": "kind \"string_list\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "study_pack_set",
+      "message": "kind \"study_pack_set\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "text",
+      "message": "kind \"text\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "tiered_flashcard",
+      "message": "kind \"tiered_flashcard\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "workflow_run_result",
+      "message": "kind \"workflow_run_result\" has no render_block skill teaching it"
+    }
+  ]
+}

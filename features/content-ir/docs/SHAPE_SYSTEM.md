@@ -60,3 +60,4 @@
 ## Change Log
 
 - 2026-07-05 — Created (Stage 0). Stage W recorded: 3 new content_ir tables, 11 workflow-I/O kinds, engine integration, `response_format_for_kind`.
+- 2026-07-05 — Shape doctor shipped (R10): pure `registry/shape-doctor.ts` + `pnpm check:shapes[:strict|:refresh]` (CLI `scripts/shape/check-shapes.ts`) → committed snapshot `scripts/shape/shapes-status.json` + generated [`SHAPES_STATUS.md`](./SHAPES_STATUS.md). Recomputes the structural gate via `validateStructuralLeg` (never trusts stored `validation_status`); reds = active-gate-fail / duplicate-skill / component-without-schema / snapshot-drift.

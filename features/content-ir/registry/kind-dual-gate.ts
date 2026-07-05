@@ -86,8 +86,15 @@ function stripKind(value: unknown): unknown {
   return value;
 }
 
-function validateStructural(
-  sample: Record<string, unknown>,
+/**
+ * The structural leg, exported on its own so the shape doctor
+ * (`shape-doctor.ts`) RECOMPUTES gate validation with the exact same ajv
+ * config + `__kind`-stripping semantics as activation — never a parallel
+ * validator. `sample` is `unknown` (not `Record`) because kind examples may
+ * legitimately be scalars/arrays (workflow I/O kinds like `text`/`number`).
+ */
+export function validateStructuralLeg(
+  sample: unknown,
   emittedJsonSchema: unknown,
 ): LegResult {
   let validate: ValidateFunction;
@@ -160,7 +167,7 @@ function validateRender(
 }
 
 export function runKindDualGate(input: DualGateInput): DualGateResult {
-  const structural = validateStructural(input.sample, input.emittedJsonSchema);
+  const structural = validateStructuralLeg(input.sample, input.emittedJsonSchema);
   const render = validateRender(input.kind, input.sample, input.definition);
   return { isActive: structural.ok && render.ok, structural, render };
 }
