@@ -27,6 +27,11 @@ import { Edit3, Loader2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
+import {
+  isLiteralExtraInput,
+  isTemplateExtraInput,
+  partitionExtraInputs,
+} from "@/features/page-extraction/utils/extra-inputs";
 import type {
   PageExtractionJob,
   SourceVariationKind,
@@ -37,9 +42,7 @@ export interface TemplateReadOnlyViewProps {
   agentName: string | null;
   /** Agent variables hydrated from `agx_get_execution_minimal`. */
   agentVariables:
-    | { name: string; helpText?: string | null }[]
-    | null
-    | undefined;
+    { name: string; helpText?: string | null }[] | null | undefined;
   running: boolean;
   onEdit: () => void;
   onRun: () => void | Promise<void>;
@@ -167,6 +170,10 @@ export function TemplateReadOnlyView({
             <ul className="space-y-0.5">
               {agentVariables.map((v) => {
                 const surfaceKey = inverseMapping.get(v.name);
+                const literalEntry = (job.extra_inputs ?? []).find(
+                  (e) => e.name === v.name && isLiteralExtraInput(e),
+                );
+                const isLiteral = surfaceKey === v.name && !!literalEntry;
                 return (
                   <li
                     key={v.name}
@@ -176,7 +183,11 @@ export function TemplateReadOnlyView({
                       {v.name}
                     </code>
                     <span className="text-muted-foreground">←</span>
-                    {surfaceKey ? (
+                    {isLiteral ? (
+                      <code className="font-mono text-primary">
+                        {String(literalEntry!.value)}
+                      </code>
+                    ) : surfaceKey ? (
                       <code className="font-mono text-primary">
                         {surfaceKey}
                       </code>
@@ -197,22 +208,41 @@ export function TemplateReadOnlyView({
             </em>
           )}
         </Row>
-        {job.extra_inputs && job.extra_inputs.length > 0 && (
-          <Row label="Extra inputs">
-            <ul className="space-y-0.5">
-              {job.extra_inputs.map((ei, i) => (
-                <li
-                  key={`${ei.name}-${i}`}
-                  className="font-mono text-[10px] text-foreground/80"
-                >
-                  {ei.name || (
-                    <em className="text-muted-foreground">unnamed</em>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </Row>
-        )}
+        {(() => {
+          const { manual } = partitionExtraInputs(
+            job.extra_inputs ?? [],
+            job.variable_mapping ?? {},
+          );
+          if (manual.length === 0) return null;
+          return (
+            <Row label="Extra inputs">
+              <ul className="space-y-0.5">
+                {manual.map((ei, i) => (
+                  <li
+                    key={`${ei.name}-${i}`}
+                    className="font-mono text-[10px] text-foreground/80"
+                  >
+                    {ei.name || (
+                      <em className="text-muted-foreground">unnamed</em>
+                    )}
+                    {isLiteralExtraInput(ei) ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        ← {String(ei.value)}
+                      </span>
+                    ) : isTemplateExtraInput(ei) ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        ← template
+                        {ei.source_run_id ? " (one run)" : " (all runs)"}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </Row>
+          );
+        })()}
         {job.rag_boost != null && (
           <Row label="RAG boost">
             <span className="font-mono text-foreground/90">

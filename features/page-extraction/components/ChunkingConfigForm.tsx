@@ -28,7 +28,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Loader2, Plus, Save, Sparkles } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  PanelRight,
+  Plus,
+  Save,
+  Sparkles,
+} from "lucide-react";
 import {
   upsertJobInCache,
   useExtractionJobs,
@@ -38,7 +45,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useToastManager } from "@/hooks/useToastManager";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectIsAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
@@ -83,6 +94,8 @@ import type {
   PageExtractionJob,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
+import { normalizeExtraInputs } from "@/features/page-extraction/utils/extra-inputs";
+import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -151,6 +164,9 @@ export function ChunkingConfigForm({
     loadedAgentId ? selectAgentById(s, loadedAgentId) : undefined,
   );
 
+  const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
+  const userId = useAppSelector(selectUserId);
+
   // Run handler — shared by the readonly view's Run button and any
   // future "save & run" flow.
   const {
@@ -160,10 +176,47 @@ export function ChunkingConfigForm({
   } = useExtractionRunLauncher();
   const handleRunSelected = useCallback(async () => {
     if (!selectedJobId || !loadedJob) return;
-    // The launcher guards re-runs (replace / run-as-new) when this template
-    // has produced data before. First run streams immediately.
-    await launch(fileId, loadedJob);
-  }, [selectedJobId, loadedJob, launch, fileId]);
+    let jobToRun = loadedJob;
+    if (userId && draftDiffersFromJob(draft, loadedJob)) {
+      const saveIssues = validateDraft(draft);
+      if (saveIssues.length > 0) {
+        toast.error(
+          saveIssues[0] ??
+            "Save the template before running — wiring is incomplete.",
+        );
+        return;
+      }
+      try {
+        jobToRun = await saveTemplateFromDraft(draft, {
+          fileId,
+          processedDocumentId,
+          ownerId: userId,
+          fallbackName: documentName,
+          existingJobId: selectedJobId,
+        });
+        upsertJobInCache(fileId, jobToRun);
+        setLoadedJob(jobToRun);
+        dispatch(patchDraft({ fileId, patch: jobToDraftPatch(jobToRun) }));
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "Could not save before run",
+        );
+        return;
+      }
+    }
+    await launch(fileId, jobToRun);
+  }, [
+    selectedJobId,
+    loadedJob,
+    launch,
+    fileId,
+    userId,
+    draft,
+    processedDocumentId,
+    documentName,
+    dispatch,
+    toast,
+  ]);
 
   // Delete every run this template produced — chunk runs + result rows —
   // while keeping the template. Canonical wipe via `clearJobResults`
@@ -314,6 +367,10 @@ function TemplateEditor({
   const dispatch = useAppDispatch();
   const toast = useToastManager("page-extraction");
   const userId = useAppSelector(selectUserId);
+  const isAdmin = useAppSelector(selectIsAdmin);
+  const isDebugMode = useAppSelector(selectIsDebugMode);
+  const showRecommendedDebug = isAdmin && isDebugMode;
+  const openAgentEditor = useOpenAgentContentWindow();
   const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
   const selectedJobId = useAppSelector((s) =>
     selectSelectedJobForFile(s, fileId),
@@ -369,6 +426,15 @@ function TemplateEditor({
     dispatch(patchDraft({ fileId, patch: { agentId } }));
   };
 
+  const handleOpenAgentEditor = () => {
+    if (!draft.agentId) return;
+    openAgentEditor({
+      initialAgentId: draft.agentId,
+      initialTab: "overview",
+      tabs: null,
+    });
+  };
+
   const [saving, setSaving] = useState(false);
 
   const isDirty = useMemo(
@@ -408,6 +474,7 @@ function TemplateEditor({
       cleanCharacters: contentMeta.cleanCharacters,
       variableMapping: draft.variableMapping,
       sourceVariations,
+      logDebug: showRecommendedDebug,
     });
 
     if (!result) {
@@ -416,7 +483,9 @@ function TemplateEditor({
     }
 
     setRangeError(null);
-    setRecommendedDebug(result.debug);
+    if (showRecommendedDebug) {
+      setRecommendedDebug(result.debug);
+    }
     dispatch(
       patchDraft({
         fileId,
@@ -563,11 +632,25 @@ function TemplateEditor({
       <div className="flex-1 min-h-0 overflow-y-auto px-3 space-y-3 pb-3">
         {/* 1. Agent first — pick the agent, then wire variables. */}
         <Field label="Agent" required>
-          <AgentListDropdown
-            onSelect={handleAgentSelect}
-            label={agent?.name ?? "Select an Agent"}
-            noBorder={false}
-          />
+          <div className="flex items-center gap-1">
+            <AgentListDropdown
+              onSelect={handleAgentSelect}
+              label={agent?.name ?? "Select an Agent"}
+              noBorder={false}
+              className="min-w-0 flex-1"
+            />
+            {draft.agentId && (
+              <button
+                type="button"
+                onClick={handleOpenAgentEditor}
+                title={`Open Agent Advanced Editor · ${draft.agentId}`}
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                <PanelRight className="h-3.5 w-3.5" />
+                <span className="sr-only">Open Agent Advanced Editor</span>
+              </button>
+            )}
+          </div>
           {agent && (
             <VariableMappingEditor
               agentName={agent.name}
@@ -670,7 +753,7 @@ function TemplateEditor({
                 <Sparkles className="h-3.5 w-3.5 shrink-0" />
                 Apply Recommended
               </Button>
-              {recommendedDebug && (
+              {showRecommendedDebug && recommendedDebug && (
                 <p className="text-[9px] text-muted-foreground/80 leading-snug font-mono">
                   {recommendedDebug.rules} · {recommendedDebug.charCountSource}{" "}
                   {recommendedDebug.effectiveCharCount.toLocaleString()} chars →{" "}
@@ -1018,7 +1101,7 @@ function jobToDraftPatch(job: PageExtractionJob) {
     variableMapping: job.variable_mapping ?? {},
     outputSchema: job.output_schema as unknown,
     maxConcurrent: job.max_concurrent,
-    extraInputs: job.extra_inputs ?? [],
+    extraInputs: normalizeExtraInputs(job.extra_inputs),
     ragBoost: job.rag_boost ?? null,
     attachCombinedPdf: job.attach_combined_pdf ?? false,
     kind: job.kind ?? "extraction",

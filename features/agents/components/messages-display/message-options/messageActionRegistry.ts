@@ -27,6 +27,7 @@ import {
   Brain,
   Save,
   Edit,
+  Send,
   CheckSquare,
   Mail,
   Printer,
@@ -729,6 +730,72 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
 }
 
 /**
+ * USER MESSAGES ONLY — edit the prompt and choose an outcome from the editor
+ * footer (Save only / Save & resubmit / Fork & resubmit). Opens the SAME
+ * three-outcome editor as the inline `UserActionBar` pencil + paper-plane
+ * buttons — one shared definition (`USER_EDIT_ACTIONS` + `routeUserEditAction`)
+ * drives all three surfaces so they can't drift, and there's no follow-up
+ * confirmation dialog. `onAction` rides the callback group (a function can't
+ * travel through `openOverlay` data); the group auto-disposes on save
+ * (removeAfterTrigger), a cancel-without-save leaks one tiny group.
+ */
+function editAndResubmitUserItem(ctx: MessageActionContext): MenuItem {
+  const {
+    content,
+    conversationId,
+    messageId,
+    metadata,
+    surfaceKey,
+    dispatch,
+    onClose,
+  } = ctx;
+  return {
+    key: "edit-resubmit",
+    icon: Send,
+    iconColor: "text-cyan-500 dark:text-cyan-400",
+    label: "Edit & resubmit",
+    action: async () => {
+      onClose();
+      if (!conversationId || !messageId) return;
+      const { USER_EDIT_ACTIONS, routeUserEditAction } =
+        await import("./userEditActions");
+      const { callbackGroupId } = createFullScreenEditorCallbackGroup({
+        onAction: (actionId, newContent) => {
+          void routeUserEditAction(dispatch, {
+            actionId,
+            conversationId,
+            messageId,
+            newContent,
+            surfaceKey,
+          });
+        },
+      });
+      dispatch(
+        openOverlay({
+          overlayId: "fullScreenEditor",
+          instanceId: `user-edit-${messageId}`,
+          data: {
+            content,
+            mode: "free",
+            conversationId,
+            messageId,
+            callbackGroupId,
+            primaryActions: USER_EDIT_ACTIONS,
+            tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
+            initialTab: "matrx_split",
+            analysisData: metadata as Record<string, unknown> | undefined,
+            showCopyButton: true,
+          },
+        }),
+      );
+    },
+    category: "Edit",
+    showToast: false,
+    hidden: !conversationId || !messageId,
+  };
+}
+
+/**
  * View archived versions of this message from `cx_message.content_history`
  * and restore any of them. The dialog itself is owned by the host action
  * bar (`AssistantActionBar`) so it stays mounted after the menu closes —
@@ -774,11 +841,13 @@ function editHistoryItem(ctx: MessageActionContext): MenuItem {
  */
 
 /**
- * Fork the conversation at this message. Works for both roles:
- *   - On a user message: fork captures everything up through (and including)
- *     this question — useful to explore an alternate path from here.
- *   - On an assistant message: fork captures the conversation including this
- *     response — useful to keep this answer but try a different continuation.
+ * ASSISTANT MESSAGES — fork the conversation including this response, then ask
+ * where to go (stay / jump). No re-run: an assistant message already ends the
+ * turn, so the branch is a complete conversation ready to continue.
+ *
+ * User messages must NOT use this: forking a question with no reply after it
+ * leaves the branch ending on an unanswered message — a dead-end. They use
+ * `forkUserMessageItem` (fork + regenerate) instead.
  */
 function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
   const { conversationId, messageId, surfaceKey, dispatch, onClose } = ctx;
@@ -828,6 +897,40 @@ function forkAtMessageItem(ctx: MessageActionContext): MenuItem {
     category: "Edit",
     // The post-fork toast handles success messaging; suppress the
     // generic "Conversation forked" success toast so we don't double up.
+    showToast: false,
+    errorMessage: "Failed to fork conversation",
+    hidden: !conversationId || !messageId,
+  };
+}
+
+/**
+ * USER MESSAGES — fork at this question and REGENERATE its answer on the
+ * branch (no edit). Uses the shared `forkAndResubmitFromMessage` thunk so the
+ * branch never dead-ends on an unanswered question. This is the answer to
+ * "what am I supposed to do with a fork that ends on my own message?" — you
+ * get a fresh answer to the same question on a new branch, original intact.
+ */
+function forkUserMessageItem(ctx: MessageActionContext): MenuItem {
+  const { conversationId, messageId, surfaceKey, dispatch, onClose } = ctx;
+  return {
+    key: "fork-at-message",
+    icon: GitBranch,
+    iconColor: "text-violet-500 dark:text-violet-400",
+    label: "Fork & regenerate from here",
+    action: async () => {
+      onClose();
+      if (!conversationId || !messageId) return;
+      try {
+        const { forkAndResubmitFromMessage } =
+          await import("@/features/agents/redux/execution-system/message-crud/fork-and-resubmit-from-message.thunk");
+        await dispatch(
+          forkAndResubmitFromMessage({ conversationId, messageId, surfaceKey }),
+        ).unwrap();
+      } catch (err) {
+        console.error("[fork-user-message] failed", err);
+      }
+    },
+    category: "Edit",
     showToast: false,
     errorMessage: "Failed to fork conversation",
     hidden: !conversationId || !messageId,
@@ -1376,7 +1479,7 @@ export function getAssistantMessageActions(
 
 /**
  * Menu items for a user-authored message. Shape:
- *   Edit → Edit content, Edit & resubmit, Fork at this message, Delete
+ *   Edit → Edit & resubmit, Edit history, Fork & regenerate, Delete
  *   Copy → plain / Docs / Word
  *   Export → HTML preview, Copy HTML page, Email, Print, (Full print)
  *   Actions → Save to Scratch/Notes/File, Add to Tasks
@@ -1386,13 +1489,16 @@ export function getAssistantMessageActions(
  * play/pause toggle, with markdown cleanup), not in this menu.
  */
 export function getUserMessageActions(ctx: MessageActionContext): MenuItem[] {
-  // Note: "Edit & resubmit" lives only on the inline UserActionBar Send
-  // button now — the host owns the editor + fork-vs-overwrite dialog
-  // state. Keeping it out of this menu eliminates the duplicate flow.
+  // "Edit & resubmit" opens the SAME three-outcome editor as the inline
+  // pencil / paper-plane buttons (shared `USER_EDIT_ACTIONS`). We deliberately
+  // DON'T also expose the old plain "Edit content" here — for a user message
+  // that path saved silently with no resubmit choice, which read as a bug.
+  // "Fork & regenerate" replaces the old "Fork at this message", which on a
+  // user message dead-ended on an unanswered question.
   return [
-    editContentItem(ctx),
+    editAndResubmitUserItem(ctx),
     editHistoryItem(ctx),
-    forkAtMessageItem(ctx),
+    forkUserMessageItem(ctx),
     deleteMessageItem(ctx),
     ...creatorItems(ctx),
     ...copyItems(ctx),

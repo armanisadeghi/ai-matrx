@@ -10,12 +10,7 @@
  */
 
 export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | Json[]
-  | { [key: string]: Json };
+  string | number | boolean | null | Json[] | { [key: string]: Json };
 
 // ─── Wire-aligned shapes (1:1 with Supabase rows) ─────────────────────────
 
@@ -79,21 +74,35 @@ export interface PageExtractionJob {
 }
 
 /**
- * A reference to another template's result rows that gets injected as an
- * input variable for this template's agent.
+ * An extra input injected into every chunk alongside the built-in surface
+ * values. Either pulls result rows from another template (optionally pinned
+ * to one run) or supplies a fixed literal string/number.
  *
- *   { name: "medical_findings", source_job_id: "<uuid>" }
+ * Template reference:
+ *   { name: "medical_findings", source_job_id: "<uuid>", source_run_id?: "<uuid>" }
+ *
+ * Literal:
+ *   { name: "batch_size", value: 50 }
  *
  * `name` is the surface variable key — the Job's `variable_mapping`
- * routes it to a specific agent variable name. The backend filters to
- * results whose `source_pages` overlap the current chunk's pages so the
- * variable is per-chunk-relevant; when the source template's results
- * don't carry pages, the full result set is injected.
+ * routes it to a specific agent variable name. Template rows are filtered
+ * to results whose `source_pages` overlap the current chunk's pages;
+ * when source_pages is empty/null, the full result set is injected.
  */
-export interface ExtraExtractionInput {
-  name: string;
-  source_job_id: string;
-}
+export type ExtraExtractionInput =
+  | {
+      name: string;
+      source_job_id: string;
+      /** When set, only rows from this run are injected. Omit = all runs. */
+      source_run_id?: string | null;
+      value?: never;
+    }
+  | {
+      name: string;
+      value: string | number;
+      source_job_id?: never;
+      source_run_id?: never;
+    };
 
 /**
  * What we send to the agent for each chunk. A Job can request multiple
@@ -185,18 +194,10 @@ export type PageExtractionJobUpdate = Partial<PageExtractionJobInsert>;
 // ─── Status unions (mirroring CHECK constraints) ──────────────────────────
 
 export type RunStatus =
-  | "queued"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled";
+  "queued" | "running" | "completed" | "failed" | "cancelled";
 
 export type PageRunStatus =
-  | "queued"
-  | "running"
-  | "completed"
-  | "failed"
-  | "skipped";
+  "queued" | "running" | "completed" | "failed" | "skipped";
 
 export type TriggerSource = "manual_ui" | "scheduled" | "api" | "tool_call";
 
@@ -404,5 +405,4 @@ export interface FlatPropertySchema {
 }
 
 export type JobOutputSchema =
-  | FlatObjectSchema
-  | { type: "array"; items: FlatObjectSchema };
+  FlatObjectSchema | { type: "array"; items: FlatObjectSchema };

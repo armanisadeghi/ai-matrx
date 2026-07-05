@@ -11,6 +11,7 @@
 // React Compiler is on: no manual memo.
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -22,6 +23,8 @@ import {
   CheckCircle2,
   CircleDashed,
   XCircle,
+  Trophy,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,8 +36,10 @@ import { studyService } from "../service/studyService";
 import type { SessionAttemptSummary, StudySessionRow } from "../types";
 import {
   buildSessionListLines,
+  sessionListScorePct,
   sessionModeLabel,
 } from "../utils/sessionListDisplay";
+import { ScoreRing, scoreAccentBgClasses } from "./ScoreRing";
 
 const STATUS_META: Record<
   string,
@@ -219,7 +224,7 @@ export function SessionsBrowser({
             </p>
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {sessions.map((s) => (
               <SessionRow
                 key={s.id}
@@ -228,6 +233,7 @@ export function SessionsBrowser({
                   s.source_set_id ? setNames[s.source_set_id] : undefined
                 }
                 attempts={attemptSummaries[s.id]}
+                detailHref={`${detailBasePath}/${s.id}`}
                 isNavigating={navigatingId === s.id && isPending}
                 disabled={isPending || deletingId !== null}
                 onOpen={() => open(s.id)}
@@ -257,6 +263,7 @@ function SessionRow({
   session,
   setName,
   attempts,
+  detailHref,
   isNavigating,
   disabled,
   isDeleting,
@@ -266,6 +273,7 @@ function SessionRow({
   session: StudySessionRow;
   setName?: string;
   attempts?: SessionAttemptSummary;
+  detailHref: string;
   isNavigating: boolean;
   disabled: boolean;
   isDeleting: boolean;
@@ -279,25 +287,70 @@ function SessionRow({
     attempts,
     modeLabel(session.mode),
   );
+  const scorePct = sessionListScorePct(attempts);
+  const isHighScore = scorePct !== null && scorePct >= 90;
+  const editedCount = attempts?.editedCount ?? 0;
+
+  const handleOpen = (e: React.MouseEvent) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+    e.preventDefault();
+    onOpen();
+  };
 
   return (
     <li
       className={cn(
-        "group flex items-stretch overflow-hidden rounded-lg border border-border bg-card transition-colors",
-        "hover:border-primary/40 hover:bg-accent/40",
+        "group relative flex items-stretch overflow-hidden rounded-2xl border border-border bg-card transition-all",
+        "hover:border-primary/40 hover:shadow-md",
         isNavigating && "opacity-70",
       )}
     >
-      <button
-        type="button"
-        onClick={onOpen}
-        disabled={disabled}
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 px-3 py-3 text-left disabled:cursor-not-allowed"
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-y-0 left-0 w-1",
+          scoreAccentBgClasses(scorePct),
+        )}
+      />
+
+      <Link
+        href={detailHref}
+        onClick={handleOpen}
+        aria-disabled={disabled}
+        className={cn(
+          "flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-3",
+          disabled && "pointer-events-none",
+        )}
       >
+        <ScoreRing
+          pct={scorePct}
+          size={48}
+          strokeWidth={5}
+          valueClassName="text-[13px]"
+        />
+
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">
-            {lines.title}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {lines.title}
+            </p>
+            {isHighScore && (
+              <Trophy
+                className="h-3.5 w-3.5 shrink-0 text-amber-500"
+                aria-label="High score"
+              />
+            )}
+            {editedCount > 0 && (
+              <Pencil
+                className="h-3 w-3 shrink-0 text-muted-foreground"
+                aria-label={`${editedCount} answer${editedCount === 1 ? "" : "s"} manually edited`}
+              />
+            )}
+          </div>
           <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {lines.detail}
           </p>
@@ -323,7 +376,7 @@ function SessionRow({
         </span>
 
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-      </button>
+      </Link>
 
       <button
         type="button"

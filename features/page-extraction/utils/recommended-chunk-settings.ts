@@ -23,15 +23,13 @@ export interface RecommendedChunkInput {
   /** `{ surface_value_name: agent_var_name }` — drives which char total to use. */
   variableMapping: Record<string, string>;
   sourceVariations: SourceVariationKind[];
+  /** When false, skip console logging (admin + debug mode only). */
+  logDebug?: boolean;
 }
 
 export interface RecommendedChunkDebug {
   effectiveCharCount: number;
-  charCountSource:
-    | "clean_text"
-    | "raw_text"
-    | "estimated_from_pages"
-    | "none";
+  charCountSource: "clean_text" | "raw_text" | "estimated_from_pages" | "none";
   targetChunkCount: number;
   pageCountInScope: number;
   chunkSize: number;
@@ -135,10 +133,11 @@ export function computeRecommendedChunkSettings(
 
   if (scopePages.length === 0) return null;
 
-  const { chars, source, notes: charNotes } = pickEffectiveCharCount(
-    input,
-    scopePages.length,
-  );
+  const {
+    chars,
+    source,
+    notes: charNotes,
+  } = pickEffectiveCharCount(input, scopePages.length);
   const targetChunks = targetChunkCountFromChars(chars);
   const pageCount = scopePages.length;
 
@@ -146,9 +145,7 @@ export function computeRecommendedChunkSettings(
   chunkSize = clampChunkSize(Math.min(chunkSize, MAX_CHUNK_SIZE));
 
   const chunkOverlap =
-    targetChunks <= 1
-      ? 0
-      : Math.max(1, Math.round(chunkSize * 0.15));
+    targetChunks <= 1 ? 0 : Math.max(1, Math.round(chunkSize * 0.15));
 
   const overlapClamped = Math.min(chunkOverlap, Math.max(0, chunkSize - 1));
   const scopePagesInputRaw = formatPageRange(scopePages);
@@ -186,7 +183,7 @@ export function computeRecommendedChunkSettings(
     debug,
   };
 
-  if (typeof console !== "undefined") {
+  if (input.logDebug && typeof console !== "undefined") {
     console.info(LOG_PREFIX, result.debug, {
       input: {
         availablePageCount: input.availablePages.length,

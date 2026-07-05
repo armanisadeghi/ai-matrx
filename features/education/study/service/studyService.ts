@@ -233,10 +233,11 @@ export const studyService = {
     try {
       const { data, error } = await EDU()
         .from("study_attempt")
-        .select("session_id, result")
+        .select("session_id, result, score_value, is_manually_edited")
         .in("session_id", sessionIds)
         .is("deleted_at", null);
       if (error) return fail("getAttemptSummariesForSessions", error);
+      const scoreSums: Record<string, { sum: number; count: number }> = {};
       const map: Record<string, SessionAttemptSummary> = {};
       for (const row of data ?? []) {
         const sid = row.session_id;
@@ -246,12 +247,26 @@ export const studyService = {
           correct: 0,
           partial: 0,
           incorrect: 0,
+          avgScorePct: null,
+          editedCount: 0,
         };
         summary.total += 1;
         if (row.result === "correct") summary.correct += 1;
         else if (row.result === "partial") summary.partial += 1;
         else if (row.result === "incorrect") summary.incorrect += 1;
+        if (row.is_manually_edited) summary.editedCount += 1;
         map[sid] = summary;
+        if (row.score_value != null) {
+          const agg = scoreSums[sid] ?? { sum: 0, count: 0 };
+          agg.sum += Number(row.score_value);
+          agg.count += 1;
+          scoreSums[sid] = agg;
+        }
+      }
+      for (const [sid, agg] of Object.entries(scoreSums)) {
+        if (agg.count > 0) {
+          map[sid].avgScorePct = Math.round((agg.sum / agg.count) * 100);
+        }
       }
       return { data: map, error: null };
     } catch (e) {

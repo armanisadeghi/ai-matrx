@@ -24,9 +24,7 @@ import {
   summarizeSessionAttempts,
   formatSessionDuration,
 } from "../utils/summarizeSessionAttempts";
-
-const RING_RADIUS = 42;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+import { ScoreRing } from "./ScoreRing";
 
 function verdictFor(accuracyPct: number | null): {
   label: string;
@@ -59,13 +57,6 @@ function verdictFor(accuracyPct: number | null): {
   };
 }
 
-function ringClasses(accuracyPct: number | null): string {
-  if (accuracyPct === null) return "text-muted-foreground";
-  if (accuracyPct >= 75) return "text-green-500";
-  if (accuracyPct >= 50) return "text-amber-500";
-  return "text-red-500";
-}
-
 export function SessionScorecard({
   session,
   attempts,
@@ -85,7 +76,6 @@ export function SessionScorecard({
   // headline, and only available when there's nothing better to rank by.
   const primaryPct = summary.avgScorePct ?? summary.accuracyPct;
   const verdict = verdictFor(primaryPct);
-  const dashOffset = RING_CIRCUMFERENCE * (1 - (primaryPct ?? 0) / 100);
   const showBothMetrics =
     summary.avgScorePct !== null &&
     summary.accuracyPct !== null &&
@@ -95,43 +85,7 @@ export function SessionScorecard({
     <section className="mb-4 overflow-hidden rounded-2xl border border-border bg-card">
       <div className="flex flex-col items-center gap-4 px-4 pt-5 pb-4 sm:flex-row sm:gap-6">
         {/* Score ring — the headline metric, front and center */}
-        <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
-          <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90">
-            <circle
-              cx="50"
-              cy="50"
-              r={RING_RADIUS}
-              className="stroke-muted"
-              strokeWidth="8"
-              fill="none"
-            />
-            {primaryPct !== null && (
-              <circle
-                cx="50"
-                cy="50"
-                r={RING_RADIUS}
-                className={cn(
-                  "transition-[stroke-dashoffset] duration-700 ease-out",
-                  ringClasses(primaryPct),
-                )}
-                stroke="currentColor"
-                strokeWidth="8"
-                strokeLinecap="round"
-                fill="none"
-                strokeDasharray={RING_CIRCUMFERENCE}
-                strokeDashoffset={dashOffset}
-              />
-            )}
-          </svg>
-          <div className="absolute flex flex-col items-center">
-            <span className="text-2xl font-bold tabular-nums text-foreground">
-              {primaryPct === null ? "—" : `${primaryPct}%`}
-            </span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Score
-            </span>
-          </div>
-        </div>
+        <ScoreRing pct={primaryPct} size={112} label="Score" />
 
         {/* Verdict + the different ways this session's score can be read */}
         <div className="flex flex-1 flex-col items-center gap-1.5 text-center sm:items-start sm:text-left">

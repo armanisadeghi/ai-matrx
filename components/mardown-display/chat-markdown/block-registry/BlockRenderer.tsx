@@ -23,6 +23,8 @@ import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
 import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
+import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { Loader2 } from "lucide-react";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -196,6 +198,59 @@ const ARTIFACT_LOADING_COMPONENTS: Partial<
 };
 
 /**
+ * Neutral streaming skeleton for a JSON region whose kind is still resolving.
+ *
+ * A bare/fenced JSON region carries a `metadata.__ir` envelope but cannot know
+ * its kind until the `__kind` discriminator streams in (the chat root has no
+ * `expectedRootKind`, so there is no structural speculation). Until then the
+ * block type is the untyped `"code"` — and rendering it verbatim is the
+ * "shows the whole JSON, converts only when done" flash. While the region is
+ * still streaming with an unresolved kind we show this instead; the instant the
+ * kind resolves the block routes to its real component (with its own type-aware
+ * loader), and if the region completes with NO kind it falls through to the raw
+ * code block. Deliberately generic — we do not yet know which kind it is.
+ */
+const PendingStructuredBlock: React.FC = () => (
+  <div
+    className="my-3 rounded-lg border border-border bg-card/50 p-4"
+    aria-busy="true"
+  >
+    <div className="mb-3 flex items-center gap-2">
+      <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+      <span className="text-xs text-muted-foreground">
+        Structured content
+      </span>
+    </div>
+    <div className="space-y-2">
+      <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted" />
+      <div className="h-2.5 w-1/2 animate-pulse rounded bg-muted" />
+      <div className="h-2.5 w-5/6 animate-pulse rounded bg-muted" />
+    </div>
+  </div>
+);
+
+/**
+ * True when a block is an untyped JSON `code` region that is still streaming
+ * and whose content-ir envelope has NOT yet resolved a kind. This is the
+ * pending window in which a bare/fenced JSON block would otherwise flash its
+ * raw text (see PendingStructuredBlock). Gated on `type === "code"` so a block
+ * the splitter/accumulator already typed (quiz, flashcards, …) keeps its own
+ * type-aware loader and is never masked by the generic skeleton.
+ */
+function isPendingStructuredJson(block: {
+  type: string;
+  metadata?: Record<string, unknown>;
+}): boolean {
+  if (block.type !== "code") return false;
+  const envelope = readEnvelope(block.metadata);
+  return (
+    !!envelope &&
+    !envelope.root.kind &&
+    envelope.root.status === "streaming"
+  );
+}
+
+/**
  * Renders individual content blocks with lazy-loaded components
  * Extracted from MarkdownStream for better code splitting
  */
@@ -280,6 +335,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 
   // ── Unified artifact renderer (Wave B) ───────────────────────────────────
   // Standalone materializable blocks whose type has a unified renderer are
+  // A JSON region still streaming with an unresolved kind renders a neutral
+  // skeleton, NOT its raw text — the moment `__kind` arrives it routes to the
+  // real component (above), and if it completes kind-less it falls through to
+  // the code block below. Kills the "shows the whole JSON, converts only when
+  // done" flash for bare/late-`__kind` JSON. (Placed after all hooks so the
+  // early return never changes hook order.)
+  if (isPendingStructuredJson(block)) {
+    return <PendingStructuredBlock key={index} />;
+  }
+
   // rendered through the single shared path (chat/canvas/artifact identical).
   // `artifact` blocks go through the dedicated `case "artifact"` below (UUID id
   // → render-by-id; else inline ArtifactBlock chrome). Standalone materializable
@@ -1045,6 +1110,12 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
               version: artifactMeta?.version,
               title: artifactMeta?.artifactTitle,
             }}
+            // Inline archive body — lets ArtifactRefBlock fall back to rendering
+            // the content if the UUID is invented / not-yet-persisted / missing,
+            // instead of dead-ending on the "couldn't load" card.
+            fallbackContent={block.content}
+            fallbackMetadata={artifactMeta}
+            fallbackServerData={block.serverData}
             messageId={messageId}
             taskId={taskId}
           />

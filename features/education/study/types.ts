@@ -127,6 +127,11 @@ export interface SessionAttemptSummary {
   correct: number;
   partial: number;
   incorrect: number;
+  /** Mean of score_value (0-1) across graded attempts, as 0-100 — the same
+   *  weighted metric the session scorecard leads with (see SessionScorecard). */
+  avgScorePct: number | null;
+  /** How many of this session's attempts have been manually score-overridden. */
+  editedCount: number;
 }
 
 // ─── Session patch (what updateSession accepts) ───────────────────────────────

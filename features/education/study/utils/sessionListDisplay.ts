@@ -64,6 +64,22 @@ export function whenLabel(iso: string | null): string {
   }
 }
 
+/**
+ * The single headline score for a session-list row — same priority as the
+ * detail page's scorecard: the weighted score (partial credit counts) beats
+ * strict accuracy, which beats nothing. Independent of the AI coach's score
+ * (shown separately), which is a holistic judgment, not derived from this.
+ */
+export function sessionListScorePct(
+  attempts: SessionAttemptSummary | undefined,
+): number | null {
+  if (!attempts || attempts.total === 0) return null;
+  if (attempts.avgScorePct != null) return attempts.avgScorePct;
+  const graded = attempts.correct + attempts.partial + attempts.incorrect;
+  if (graded === 0) return null;
+  return Math.round((attempts.correct / graded) * 100);
+}
+
 /** Primary + secondary lines for a session history row. */
 export function buildSessionListLines(
   session: StudySessionRow,
@@ -87,9 +103,8 @@ export function buildSessionListLines(
   if (when) metaParts.push(when);
 
   if (attempts && attempts.total > 0) {
-    const graded = attempts.correct + attempts.partial + attempts.incorrect;
     metaParts.push(
-      `${attempts.total} answered${graded > 0 ? ` · ${Math.round((attempts.correct / graded) * 100)}% correct` : ""}`,
+      `${attempts.total} ${attempts.total === 1 ? "answer" : "answers"}`,
     );
   } else if (session.status === "active") {
     metaParts.push("No answers recorded yet");

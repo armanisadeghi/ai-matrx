@@ -22,6 +22,30 @@ interface ArtifactRefBlockProps {
     serverData?: ArtifactRefServerData | null;
     messageId?: string;
     taskId?: string;
+    /**
+     * The inline `<artifact>` body + metadata from the message text. Used ONLY
+     * as a fallback when the by-id load misses — i.e. the UUID is model-invented
+     * / never persisted, the row was deleted, or a transient load failure. In
+     * that case we render the inline archive body inline (vision R3: a bogus id
+     * is ignored, the content still shows) instead of dead-ending on the amber
+     * "couldn't load" card. The happy path (a real materialized row) never
+     * touches these.
+     */
+    fallbackContent?: string;
+    fallbackMetadata?: {
+        artifactId?: string;
+        artifactType?: string;
+        artifactTitle?: string;
+        version?: number;
+        artifactIndex?: number;
+    };
+    fallbackServerData?: {
+        artifactId?: string;
+        artifactIndex?: number;
+        artifactType?: string;
+        title?: string;
+        content?: string;
+    } | null;
 }
 
 /**
@@ -39,6 +63,9 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
     serverData,
     messageId,
     taskId,
+    fallbackContent,
+    fallbackMetadata,
+    fallbackServerData,
 }) => {
     const artifactId = serverData?.artifact_id;
     // Mermaid artifacts are user-editable — always show the newest version in
@@ -58,6 +85,34 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
     }
 
     if (error || !row) {
+        // The by-id load missed. If we have the inline archive body, render it
+        // (vision R3: an invented / unresolved id is ignored, the content still
+        // shows) rather than dead-ending. The id is deliberately dropped so
+        // ArtifactBlock treats it as unmaterialized — no version history or
+        // "open in canvas" against a row that isn't there.
+        if (fallbackContent != null) {
+            return (
+                <ArtifactBlock
+                    content={fallbackContent}
+                    metadata={{
+                        isComplete: true,
+                        artifactId: undefined,
+                        artifactIndex: fallbackMetadata?.artifactIndex,
+                        artifactType: fallbackMetadata?.artifactType,
+                        artifactTitle:
+                            fallbackMetadata?.artifactTitle ?? serverData?.title,
+                    }}
+                    serverData={
+                        fallbackServerData
+                            ? { ...fallbackServerData, artifactId: undefined }
+                            : undefined
+                    }
+                    messageId={messageId}
+                    taskId={taskId}
+                />
+            );
+        }
+
         return (
             <div className="my-3 rounded-lg border border-border bg-card overflow-hidden">
                 <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">

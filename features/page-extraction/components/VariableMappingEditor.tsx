@@ -37,7 +37,7 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, X, Zap } from "lucide-react";
 import {
   Select,
@@ -55,8 +55,20 @@ import { getManifest } from "@/features/surfaces/manifests/registry";
 import { CONTENT_EXTRACTOR_SURFACE_NAME } from "@/features/page-extraction/constants";
 import type { SurfaceValue } from "@/features/surfaces/types";
 import { deriveVariableMapping } from "@/features/page-extraction/utils/derive-variable-mapping";
-import type { ExtraExtractionInput } from "@/features/page-extraction/types";
-import type { PageExtractionJob } from "@/features/page-extraction/types";
+import {
+  isAgentVarLiteralWiring,
+  isLiteralExtraInput,
+  isTemplateExtraInput,
+  literalValueForAgentVar,
+  literalWiringKey,
+  partitionExtraInputs,
+} from "@/features/page-extraction/utils/extra-inputs";
+import type {
+  ExtraExtractionInput,
+  PageExtractionJob,
+  PageExtractionRun,
+} from "@/features/page-extraction/types";
+import { listRunsForJob } from "@/features/page-extraction/api/runs";
 
 export interface AgentVariableForMapping {
   name: string;
@@ -80,6 +92,9 @@ export interface VariableMappingEditorProps {
 
 /** Sentinel value used by the dropdown to mean "no mapping for this variable". */
 const UNMAPPED_VALUE = "__unmapped__";
+
+/** Sentinel to switch a wiring row into literal-value mode. */
+const LITERAL_MODE_VALUE = "__literal_mode__";
 
 /** Surface keys that represent dynamic chunk text — drive `source_variations` derivation. */
 const CHUNK_KEYS = ["clean_text", "raw_text", "pdf_page"] as const;
@@ -106,6 +121,24 @@ function buildInverse(mapping: Record<string, string>): Map<string, string> {
   return inverse;
 }
 
+function setAgentVarLiteral(
+  current: Record<string, string>,
+  extraInputs: ExtraExtractionInput[],
+  agentVar: string,
+  literalValue: string,
+): { mapping: Record<string, string>; extraInputs: ExtraExtractionInput[] } {
+  const legacyKey = literalWiringKey(agentVar);
+  const without = extraInputs.filter(
+    (e) => e.name !== agentVar && e.name !== legacyKey,
+  );
+  const mapping = setAgentVarMapping(current, agentVar, agentVar);
+  const nextExtras: ExtraExtractionInput[] = [
+    ...without,
+    { name: agentVar, value: literalValue },
+  ];
+  return { mapping, extraInputs: nextExtras };
+}
+
 function setAgentVarMapping(
   current: Record<string, string>,
   agentVar: string,
@@ -119,6 +152,35 @@ function setAgentVarMapping(
     next[surfaceKey] = agentVar;
   }
   return next;
+}
+
+function setAgentVarSurfaceMapping(
+  current: Record<string, string>,
+  extraInputs: ExtraExtractionInput[],
+  agentVar: string,
+  surfaceKey: string,
+): { mapping: Record<string, string>; extraInputs: ExtraExtractionInput[] } {
+  const legacyKey = literalWiringKey(agentVar);
+  return {
+    mapping: setAgentVarMapping(current, agentVar, surfaceKey),
+    extraInputs: extraInputs.filter(
+      (e) => e.name !== agentVar && e.name !== legacyKey,
+    ),
+  };
+}
+
+function clearAgentVarLiteral(
+  current: Record<string, string>,
+  extraInputs: ExtraExtractionInput[],
+  agentVar: string,
+): { mapping: Record<string, string>; extraInputs: ExtraExtractionInput[] } {
+  const legacyKey = literalWiringKey(agentVar);
+  return {
+    mapping: setAgentVarMapping(current, agentVar, UNMAPPED_VALUE),
+    extraInputs: extraInputs.filter(
+      (e) => e.name !== agentVar && e.name !== legacyKey,
+    ),
+  };
 }
 
 // ─── Dropdown-row label types ──────────────────────────────────────────────
@@ -187,8 +249,9 @@ export function VariableMappingEditor({
         chunkCount,
         extraInputs,
         jobNameById,
+        mapping,
       }),
-    [byName, chunkCount, extraInputs, jobNameById],
+    [byName, chunkCount, extraInputs, jobNameById, mapping],
   );
 
   // Auto-reveal the advanced section when an existing mapping points there.
@@ -240,6 +303,14 @@ export function VariableMappingEditor({
       <ul className="space-y-1.5">
         {agentVariables.map((v) => {
           const currentKey = inverse.get(v.name) ?? UNMAPPED_VALUE;
+          const isLiteralMode = isAgentVarLiteralWiring(
+            v.name,
+            mapping,
+            extraInputs,
+          );
+          const literalValue = isLiteralMode
+            ? literalValueForAgentVar(v.name, extraInputs)
+            : "";
           return (
             <li key={v.name} className="space-y-0.5">
               <div className="flex items-center gap-1.5">
@@ -247,19 +318,81 @@ export function VariableMappingEditor({
                   {v.name}
                 </code>
                 <span className="text-muted-foreground text-[10px]">←</span>
-                <OptionSelect
-                  value={currentKey}
-                  primaryGroups={primaryGroups}
-                  advancedGroup={advancedGroup}
-                  expandAdvanced={expandAdvanced}
-                  onToggleAdvanced={() => setShowAdvanced((p) => !p)}
-                  disabledKeys={
-                    new Set([...claimedKeys].filter((k) => k !== currentKey))
-                  }
-                  onChange={(nextKey) =>
-                    onChange(setAgentVarMapping(mapping, v.name, nextKey))
-                  }
-                />
+                {isLiteralMode ? (
+                  <Input
+                    value={literalValue}
+                    onChange={(e) => {
+                      const next = setAgentVarLiteral(
+                        mapping,
+                        extraInputs,
+                        v.name,
+                        e.target.value,
+                      );
+                      onChange(next.mapping);
+                      onChangeExtraInputs(next.extraInputs);
+                    }}
+                    placeholder="Enter value…"
+                    className="h-6 text-[11px] flex-1 min-w-0 max-w-[55%] font-mono"
+                    aria-label={`Literal value for ${v.name}`}
+                  />
+                ) : (
+                  <OptionSelect
+                    value={currentKey}
+                    primaryGroups={primaryGroups}
+                    advancedGroup={advancedGroup}
+                    expandAdvanced={expandAdvanced}
+                    onToggleAdvanced={() => setShowAdvanced((p) => !p)}
+                    disabledKeys={
+                      new Set([...claimedKeys].filter((k) => k !== currentKey))
+                    }
+                    onChange={(nextKey) => {
+                      if (nextKey === LITERAL_MODE_VALUE) {
+                        const cleared = clearAgentVarLiteral(
+                          mapping,
+                          extraInputs,
+                          v.name,
+                        );
+                        const next = setAgentVarLiteral(
+                          cleared.mapping,
+                          cleared.extraInputs,
+                          v.name,
+                          "",
+                        );
+                        onChange(next.mapping);
+                        onChangeExtraInputs(next.extraInputs);
+                        return;
+                      }
+                      const next = setAgentVarSurfaceMapping(
+                        mapping,
+                        extraInputs,
+                        v.name,
+                        nextKey,
+                      );
+                      onChange(next.mapping);
+                      onChangeExtraInputs(next.extraInputs);
+                    }}
+                  />
+                )}
+                {isLiteralMode ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1.5 text-[10px] shrink-0"
+                    onClick={() => {
+                      const next = clearAgentVarLiteral(
+                        mapping,
+                        extraInputs,
+                        v.name,
+                      );
+                      onChange(next.mapping);
+                      onChangeExtraInputs(next.extraInputs);
+                    }}
+                    title="Switch back to surface value picker"
+                  >
+                    Surface
+                  </Button>
+                ) : null}
               </div>
               {v.helpText && (
                 <p className="text-[10px] text-muted-foreground/70 leading-snug pl-1">
@@ -273,6 +406,7 @@ export function VariableMappingEditor({
 
       <ExtraInputsManager
         extraInputs={extraInputs}
+        mapping={mapping}
         candidateJobs={candidateJobs}
         onChange={onChangeExtraInputs}
       />
@@ -287,11 +421,13 @@ function buildOptionGroups({
   chunkCount,
   extraInputs,
   jobNameById,
+  mapping,
 }: {
   byName: Map<string, SurfaceValue>;
   chunkCount: number;
   extraInputs: ExtraExtractionInput[];
   jobNameById: Map<string, string>;
+  mapping: Record<string, string>;
 }): { primaryGroups: OptionGroup[]; advancedGroup: OptionGroup | null } {
   const groups: OptionGroup[] = [];
   const countLabel = chunkCount > 0 ? `${chunkCount} ` : "";
@@ -318,17 +454,33 @@ function buildOptionGroups({
   }
 
   // 2. Extra inputs — user-defined named inputs sourced from other
-  //    templates. Each gets its own dropdown option.
-  if (extraInputs.length > 0) {
-    const opts: Option[] = extraInputs
+  //    templates or fixed literals. Each gets its own dropdown option.
+  //    Inline literal-wiring keys (__literal__:*) are managed on the
+  //    wiring row itself and excluded here.
+  const { manual: manualExtras } = partitionExtraInputs(extraInputs, mapping);
+  if (manualExtras.length > 0) {
+    const opts: Option[] = manualExtras
       .filter((e) => e.name.trim() !== "")
-      .map((e) => ({
-        kind: "extra",
-        key: e.name,
-        label: e.name,
-        hint:
-          jobNameById.get(e.source_job_id) ?? "Select a source template below",
-      }));
+      .map((e) => {
+        if (isLiteralExtraInput(e)) {
+          return {
+            kind: "extra" as const,
+            key: e.name,
+            label: e.name,
+            hint: `Literal: ${String(e.value)}`,
+          };
+        }
+        const runHint =
+          e.source_run_id != null && e.source_run_id !== ""
+            ? "Pinned run"
+            : "All runs";
+        return {
+          kind: "extra" as const,
+          key: e.name,
+          label: e.name,
+          hint: `${jobNameById.get(e.source_job_id) ?? "Template"} · ${runHint}`,
+        };
+      });
     if (opts.length > 0) {
       groups.push({ id: "extras", label: "Extra inputs", options: opts });
     }
@@ -538,6 +690,9 @@ function OptionSelect({
         <SelectItem value={UNMAPPED_VALUE} className="text-[11px]">
           <span className="text-muted-foreground italic">Not mapped</span>
         </SelectItem>
+        <SelectItem value={LITERAL_MODE_VALUE} className="text-[11px]">
+          <span className="text-foreground">Literal value…</span>
+        </SelectItem>
         <SelectSeparator className="my-1" />
         {primaryGroups.flatMap((group, idx) => [
           renderGroup(group),
@@ -578,47 +733,186 @@ function OptionSelect({
 /**
  * Compact inline editor for the user's named extra inputs. Lives at
  * the bottom of the wiring panel so options stay near where they're
- * configured. Each row: name + source template. The named entry then
- * appears in every variable's dropdown under "Extra inputs".
+ * configured. Each row: name + either a template/run source or a literal
+ * text/number value. Named entries appear in every variable's dropdown
+ * under "Extra inputs".
  */
 function ExtraInputsManager({
   extraInputs,
+  mapping,
   candidateJobs,
   onChange,
 }: {
   extraInputs: ExtraExtractionInput[];
+  mapping: Record<string, string>;
   candidateJobs: PageExtractionJob[];
   onChange: (next: ExtraExtractionInput[]) => void;
 }) {
-  if (candidateJobs.length === 0 && extraInputs.length === 0) return null;
+  const { inlineLiterals, manual: manualExtras } = partitionExtraInputs(
+    extraInputs,
+    mapping,
+  );
 
-  const addRow = () =>
-    onChange([...extraInputs, { name: "", source_job_id: "" }]);
-  const updateRow = (idx: number, patch: Partial<ExtraExtractionInput>) =>
-    onChange(
-      extraInputs.map((row, i) => (i === idx ? { ...row, ...patch } : row)),
+  const mergeLists = (manual: ExtraExtractionInput[]) => [
+    ...inlineLiterals,
+    ...manual,
+  ];
+
+  const addTemplateRow = () =>
+    onChange([
+      ...mergeLists(manualExtras),
+      { name: "", source_job_id: "", source_run_id: null },
+    ]);
+  const addLiteralRow = () =>
+    onChange([...mergeLists(manualExtras), { name: "", value: "" }]);
+
+  const updateRow = (idx: number, patch: Partial<ExtraExtractionInput>) => {
+    const nextManual = manualExtras.map((row, i) =>
+      i === idx ? ({ ...row, ...patch } as ExtraExtractionInput) : row,
     );
-  const removeRow = (idx: number) =>
-    onChange(extraInputs.filter((_, i) => i !== idx));
+    onChange(mergeLists(nextManual));
+  };
+
+  const removeRow = (idx: number) => {
+    onChange(mergeLists(manualExtras.filter((_, i) => i !== idx)));
+  };
+
+  const setRowKind = (idx: number, kind: "template" | "literal") => {
+    const row = manualExtras[idx];
+    if (!row) return;
+    const name = row.name;
+    const nextRow: ExtraExtractionInput =
+      kind === "literal"
+        ? { name, value: "" }
+        : { name, source_job_id: "", source_run_id: null };
+    onChange(mergeLists(manualExtras.map((r, i) => (i === idx ? nextRow : r))));
+  };
 
   return (
     <div className="pt-1.5 border-t border-border/60 space-y-1">
       <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-        Extra inputs ({extraInputs.length})
+        Extra inputs ({manualExtras.length})
       </p>
-      {extraInputs.map((row, idx) => (
-        <div key={idx} className="flex items-center gap-1.5">
-          <Input
-            value={row.name}
-            onChange={(e) => updateRow(idx, { name: e.target.value })}
-            placeholder="variable_name"
-            className="h-6 text-[11px] w-1/3 font-mono"
-          />
-          <span className="text-[10px] text-muted-foreground">←</span>
+      {manualExtras.map((row, idx) => (
+        <ExtraInputRow
+          key={idx}
+          row={row}
+          candidateJobs={candidateJobs}
+          onPatch={(patch) => updateRow(idx, patch)}
+          onRemove={() => removeRow(idx)}
+          onSetKind={(kind) => setRowKind(idx, kind)}
+        />
+      ))}
+      <div className="flex gap-1">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 text-[10px] flex-1"
+          onClick={addTemplateRow}
+          disabled={candidateJobs.length === 0}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          From template
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-6 text-[10px] flex-1"
+          onClick={addLiteralRow}
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Literal value
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ExtraInputRow({
+  row,
+  candidateJobs,
+  onPatch,
+  onRemove,
+  onSetKind,
+}: {
+  row: ExtraExtractionInput;
+  candidateJobs: PageExtractionJob[];
+  onPatch: (patch: Partial<ExtraExtractionInput>) => void;
+  onRemove: () => void;
+  onSetKind: (kind: "template" | "literal") => void;
+}) {
+  const isLiteral = isLiteralExtraInput(row);
+  const [runs, setRuns] = useState<PageExtractionRun[]>([]);
+  const sourceJobId = isTemplateExtraInput(row) ? row.source_job_id : "";
+
+  useEffect(() => {
+    if (!sourceJobId) {
+      setRuns([]);
+      return;
+    }
+    let cancelled = false;
+    void listRunsForJob(sourceJobId).then((loaded) => {
+      if (!cancelled) setRuns(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceJobId]);
+
+  const runLabel = (run: PageExtractionRun, index: number) => {
+    const when = run.started_at ?? run.created_at;
+    const date = when ? new Date(when).toLocaleString() : `Run ${index + 1}`;
+    return `${date} · ${run.status}`;
+  };
+
+  return (
+    <div className="space-y-1 rounded-md border border-border/50 bg-muted/20 px-1.5 py-1">
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={row.name}
+          onChange={(e) => onPatch({ name: e.target.value })}
+          placeholder="variable_name"
+          className="h-6 text-[11px] w-1/3 font-mono"
+        />
+        <select
+          value={isLiteral ? "literal" : "template"}
+          onChange={(e) =>
+            onSetKind(e.target.value === "literal" ? "literal" : "template")
+          }
+          className="h-6 text-[10px] w-16 shrink-0 rounded-md border border-input bg-background px-1"
+          aria-label="Input kind"
+        >
+          <option value="template">Template</option>
+          <option value="literal">Value</option>
+        </select>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 w-6 p-0 shrink-0 ml-auto text-muted-foreground hover:text-destructive"
+          onClick={onRemove}
+          title="Remove this input"
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+      {isLiteral ? (
+        <Input
+          value={String(row.value ?? "")}
+          onChange={(e) => onPatch({ value: e.target.value })}
+          placeholder="Text or number"
+          className="h-6 text-[11px] w-full font-mono"
+        />
+      ) : (
+        <div className="flex flex-col gap-1">
           <select
-            value={row.source_job_id}
-            onChange={(e) => updateRow(idx, { source_job_id: e.target.value })}
-            className="h-6 text-[11px] flex-1 min-w-0 rounded-md border border-input bg-background px-2"
+            value={row.source_job_id ?? ""}
+            onChange={(e) =>
+              onPatch({
+                source_job_id: e.target.value,
+                source_run_id: null,
+              })
+            }
+            className="h-6 text-[11px] w-full rounded-md border border-input bg-background px-2"
           >
             <option value="">Template…</option>
             {candidateJobs.map((j) => (
@@ -627,27 +921,26 @@ function ExtraInputsManager({
               </option>
             ))}
           </select>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
-            onClick={() => removeRow(idx)}
-            title="Remove this input"
-          >
-            <X className="w-3 h-3" />
-          </Button>
+          {sourceJobId ? (
+            <select
+              value={row.source_run_id ?? ""}
+              onChange={(e) =>
+                onPatch({
+                  source_run_id: e.target.value || null,
+                })
+              }
+              className="h-6 text-[11px] w-full rounded-md border border-input bg-background px-2"
+            >
+              <option value="">All runs (default)</option>
+              {runs.map((run, i) => (
+                <option key={run.id} value={run.id}>
+                  {runLabel(run, i)}
+                </option>
+              ))}
+            </select>
+          ) : null}
         </div>
-      ))}
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-6 text-[10px] w-full"
-        onClick={addRow}
-        disabled={candidateJobs.length === 0}
-      >
-        <Plus className="w-3 h-3 mr-1" />
-        Add extra input
-      </Button>
+      )}
     </div>
   );
 }
