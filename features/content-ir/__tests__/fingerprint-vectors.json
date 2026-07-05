@@ -1,0 +1,85 @@
+{
+  "_comment": "Shared fingerprint parity vectors — generated from the TypeScript source of truth (matrx-frontend features/content-ir/core/fingerprint.ts). Twin files: matrx-frontend/features/content-ir/__tests__/fingerprint-vectors.json AND aidream/packages/matrx-ai/tests/fixtures/fingerprint_vectors.json — they MUST stay byte-identical. Inputs are hashed over UTF-16 code units (JS charCodeAt); lone-surrogate vectors are intentional (JS slice can split a pair). Regenerate ONLY from the TS implementation, never by hand.",
+  "vectors": [
+    {
+      "name": "empty",
+      "input": "",
+      "fingerprint": "0-ztntfp9zloz"
+    },
+    {
+      "name": "ascii_single_char",
+      "input": "a",
+      "fingerprint": "1-1r9wi7g10wmara"
+    },
+    {
+      "name": "ascii_sentence",
+      "input": "The quick brown fox jumps over the lazy dog.",
+      "fingerprint": "18-1to6tqy19pk3b4"
+    },
+    {
+      "name": "ascii_multiline_json",
+      "input": "{\n  \"__kind\": \"note\",\n  \"text\": \"plain ascii body\"\n}",
+      "fingerprint": "1g-1y5qsp94q8oz3"
+    },
+    {
+      "name": "unicode_escapes_in_source",
+      "input": "{\n  \"__kind\": \"note\",\n  \"title\": \"caf\\u00e9 \\u4e2d\\u6587\",\n  \"body\": \"emoji escape pair: \\ud83d\\ude00\",\n  \"mixed\": \"literal \\u00f1 next to raw ñ\"\n}",
+      "fingerprint": "43-p61xn5bxbmhf"
+    },
+    {
+      "name": "latin_accents_literal",
+      "input": "é ñ à ü ß",
+      "fingerprint": "9-rbll1ul4cqnk"
+    },
+    {
+      "name": "cjk_literal",
+      "input": "中文测试：内容指纹",
+      "fingerprint": "9-1kjabi71ena2ft"
+    },
+    {
+      "name": "mixed_bmp",
+      "input": "café — naïve résumé — 中文 — Ωμέγα",
+      "fingerprint": "w-1ipj9sajqc7is"
+    },
+    {
+      "name": "emoji_single",
+      "input": "😀",
+      "fingerprint": "2-1kdnhdkofwfoe"
+    },
+    {
+      "name": "astral_clef",
+      "input": "𝄞",
+      "fingerprint": "2-1oqa6knrsdtlt"
+    },
+    {
+      "name": "astral_mixed",
+      "input": "before 😀 middle 𝄞 after 👍🏽 end",
+      "fingerprint": "y-1lhig7s17tfege"
+    },
+    {
+      "name": "lone_high_surrogate",
+      "input": "\ud83d",
+      "fingerprint": "1-fegh9kiemy96"
+    },
+    {
+      "name": "lone_low_surrogate",
+      "input": "\ude00",
+      "fingerprint": "1-18wbofaxay5l"
+    },
+    {
+      "name": "lone_high_mid_string",
+      "input": "a\ud83db",
+      "fingerprint": "3-1xger1v15wbvyh"
+    },
+    {
+      "name": "swapped_surrogates",
+      "input": "\ude00\ud83d",
+      "fingerprint": "2-eq8qkmlvcenw"
+    },
+    {
+      "name": "large_kind_region_10kb",
+      "input": "{\n  \"__kind\": \"flashcard_set\",\n  \"title\": \"Cell Biology — Électron Transport 中文\",\n  \"description\": \"Deterministic parity fixture: ascii, accents (é ñ), CJK (中文), astral pairs (😀 𝄞).\",\n  \"cards\": [\n    {\n      \"front\": \"Question 0: what is the 0th term of the mitochondrial électron-transport chain (中文注释 0)?\",\n      \"back\": \"Answer 0 😀 — the 0th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 0: piña colada mnemonic №0\"\n    },\n    {\n      \"front\": \"Question 1: what is the 1th term of the mitochondrial électron-transport chain (中文注释 1)?\",\n      \"back\": \"Answer 1 😀 — the 1th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 2: what is the 2th term of the mitochondrial électron-transport chain (中文注释 2)?\",\n      \"back\": \"Answer 2 😀 — the 2th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 3: what is the 3th term of the mitochondrial électron-transport chain (中文注释 3)?\",\n      \"back\": \"Answer 3 😀 — the 3th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 3: piña colada mnemonic №3\"\n    },\n    {\n      \"front\": \"Question 4: what is the 4th term of the mitochondrial électron-transport chain (中文注释 4)?\",\n      \"back\": \"Answer 4 😀 — the 4th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 5: what is the 5th term of the mitochondrial électron-transport chain (中文注释 5)?\",\n      \"back\": \"Answer 5 😀 — the 5th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 6: what is the 6th term of the mitochondrial électron-transport chain (中文注释 6)?\",\n      \"back\": \"Answer 6 😀 — the 6th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 6: piña colada mnemonic №6\"\n    },\n    {\n      \"front\": \"Question 7: what is the 7th term of the mitochondrial électron-transport chain (中文注释 7)?\",\n      \"back\": \"Answer 7 😀 — the 7th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 8: what is the 8th term of the mitochondrial électron-transport chain (中文注释 8)?\",\n      \"back\": \"Answer 8 😀 — the 8th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 9: what is the 9th term of the mitochondrial électron-transport chain (中文注释 9)?\",\n      \"back\": \"Answer 9 😀 — the 9th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 9: piña colada mnemonic №9\"\n    },\n    {\n      \"front\": \"Question 10: what is the 10th term of the mitochondrial électron-transport chain (中文注释 10)?\",\n      \"back\": \"Answer 10 😀 — the 10th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 11: what is the 11th term of the mitochondrial électron-transport chain (中文注释 11)?\",\n      \"back\": \"Answer 11 😀 — the 11th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 12: what is the 12th term of the mitochondrial électron-transport chain (中文注释 12)?\",\n      \"back\": \"Answer 12 😀 — the 12th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 12: piña colada mnemonic №12\"\n    },\n    {\n      \"front\": \"Question 13: what is the 13th term of the mitochondrial électron-transport chain (中文注释 13)?\",\n      \"back\": \"Answer 13 😀 — the 13th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 14: what is the 14th term of the mitochondrial électron-transport chain (中文注释 14)?\",\n      \"back\": \"Answer 14 😀 — the 14th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 15: what is the 15th term of the mitochondrial électron-transport chain (中文注释 15)?\",\n      \"back\": \"Answer 15 😀 — the 15th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 15: piña colada mnemonic №15\"\n    },\n    {\n      \"front\": \"Question 16: what is the 16th term of the mitochondrial électron-transport chain (中文注释 16)?\",\n      \"back\": \"Answer 16 😀 — the 16th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 17: what is the 17th term of the mitochondrial électron-transport chain (中文注释 17)?\",\n      \"back\": \"Answer 17 😀 — the 17th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 18: what is the 18th term of the mitochondrial électron-transport chain (中文注释 18)?\",\n      \"back\": \"Answer 18 😀 — the 18th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 18: piña colada mnemonic №18\"\n    },\n    {\n      \"front\": \"Question 19: what is the 19th term of the mitochondrial électron-transport chain (中文注释 19)?\",\n      \"back\": \"Answer 19 😀 — the 19th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 20: what is the 20th term of the mitochondrial électron-transport chain (中文注释 20)?\",\n      \"back\": \"Answer 20 😀 — the 20th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 21: what is the 21th term of the mitochondrial électron-transport chain (中文注释 21)?\",\n      \"back\": \"Answer 21 😀 — the 21th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 21: piña colada mnemonic №21\"\n    },\n    {\n      \"front\": \"Question 22: what is the 22th term of the mitochondrial électron-transport chain (中文注释 22)?\",\n      \"back\": \"Answer 22 😀 — the 22th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 23: what is the 23th term of the mitochondrial électron-transport chain (中文注释 23)?\",\n      \"back\": \"Answer 23 😀 — the 23th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 24: what is the 24th term of the mitochondrial électron-transport chain (中文注释 24)?\",\n      \"back\": \"Answer 24 😀 — the 24th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 24: piña colada mnemonic №24\"\n    },\n    {\n      \"front\": \"Question 25: what is the 25th term of the mitochondrial électron-transport chain (中文注释 25)?\",\n      \"back\": \"Answer 25 😀 — the 25th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 26: what is the 26th term of the mitochondrial électron-transport chain (中文注释 26)?\",\n      \"back\": \"Answer 26 😀 — the 26th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 27: what is the 27th term of the mitochondrial électron-transport chain (中文注释 27)?\",\n      \"back\": \"Answer 27 😀 — the 27th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 27: piña colada mnemonic №27\"\n    },\n    {\n      \"front\": \"Question 28: what is the 28th term of the mitochondrial électron-transport chain (中文注释 28)?\",\n      \"back\": \"Answer 28 😀 — the 28th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 29: what is the 29th term of the mitochondrial électron-transport chain (中文注释 29)?\",\n      \"back\": \"Answer 29 😀 — the 29th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 30: what is the 30th term of the mitochondrial électron-transport chain (中文注释 30)?\",\n      \"back\": \"Answer 30 😀 — the 30th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 30: piña colada mnemonic №30\"\n    },\n    {\n      \"front\": \"Question 31: what is the 31th term of the mitochondrial électron-transport chain (中文注释 31)?\",\n      \"back\": \"Answer 31 😀 — the 31th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 32: what is the 32th term of the mitochondrial électron-transport chain (中文注释 32)?\",\n      \"back\": \"Answer 32 😀 — the 32th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": null\n    },\n    {\n      \"front\": \"Question 33: what is the 33th term of the mitochondrial électron-transport chain (中文注释 33)?\",\n      \"back\": \"Answer 33 😀 — the 33th complex pumps protons across the inner membrane; clef 𝄞 marks the mnemonic melody.\",\n      \"hint\": \"Hint 33: piña colada mnemonic №33\"\n    }\n  ]\n}",
+      "fingerprint": "7ej-11q0b14s4ko9q"
+    }
+  ]
+}

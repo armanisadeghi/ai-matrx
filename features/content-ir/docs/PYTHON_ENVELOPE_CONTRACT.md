@@ -44,7 +44,7 @@ The fingerprint is computed over the **exact `render_block.content` string** of 
   - per unit: `h ^= unit; h = (h * 16777619) & 0xFFFFFFFF`
 - Result string: `"{length}-{a}{b}"` where `length` = UTF-16 code-unit count and `length`/`a`/`b` are **lowercase base-36**.
 
-Python mirror sketch: `units = [int.from_bytes(source.encode("utf-16-le")[i:i+2], "little") for i in range(0, ...)]`; run both passes; base-36-encode.
+**Parity is pinned by shared vectors** — `__tests__/fingerprint-vectors.json` ↔ aidream `packages/matrx-ai/tests/fixtures/fingerprint_vectors.json` are **byte-identical twins**, generated ONLY from the TS implementation (never edited by hand; includes astral-pair and lone-surrogate vectors — JS `slice` can split a pair, so lone surrogates are legal input). Python implementation: aidream `packages/matrx-ai/matrx_ai/processing/blocks/fingerprint.py` (encode `"utf-16-le", "surrogatepass"`, walk 2-byte units). Enforced both sides: `__tests__/fingerprint-parity.test.ts` (FE) + `tests/test_fingerprint_parity.py` (aidream). An algorithm change is a wire-format break — regenerate BOTH twins from TS and port the change to Python in the same PR.
 
 ## FE guarantees (what Python gets for free)
 
