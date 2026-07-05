@@ -21,10 +21,9 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { KindSchema } from "../core/kind-schema.types";
 import type { SchemaResolver } from "../core/kind-parser";
 import {
-  BLOCK_SCHEMAS_CATEGORY_ID,
-  getBlockSchemaBySlug,
-  listBlockSchemas,
-} from "./schema-source-flexible-data";
+  getKindSchemaBySlugFromTables,
+  listKindSchemasFromTables,
+} from "./schema-source-kind-tables";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
 import type { KindDefinition } from "./kind-registry.types";
 
@@ -77,11 +76,11 @@ class KindRegistry {
   /** One list fetch per app session — resolves when user kinds are loaded. */
   ensureWarm(): Promise<void> {
     if (!this.warmPromise) {
-      this.warmPromise = listBlockSchemas(BLOCK_SCHEMAS_CATEGORY_ID)
+      this.warmPromise = listKindSchemasFromTables()
         .then(({ schemas }) => {
           for (const [kind, schema] of Object.entries(schemas)) {
             const existing = this.defs.get(kind);
-            // DB rows override the SCHEMA (flexible_data is the source of
+            // DB rows override the SCHEMA (content_ir is the source of
             // truth once warm); compiled facets — legacyBlockType,
             // toLegacyServerData, toMarkdown, artifact, persistence —
             // survive via the spread. The compiled schema is only the
@@ -90,7 +89,7 @@ class KindRegistry {
               ...existing,
               kind,
               schema,
-              schemaSource: "flexible_data",
+              schemaSource: "content_ir",
               tier: existing?.tier ?? "warm",
             });
           }
@@ -126,14 +125,14 @@ class KindRegistry {
         let schema = this.getSchema(kind) ?? null;
 
         if (!schema) {
-          schema = await getBlockSchemaBySlug(kind);
+          schema = await getKindSchemaBySlugFromTables(kind);
         }
 
         if (schema) {
           this.upsertDefinition({
             kind,
             schema,
-            schemaSource: "flexible_data",
+            schemaSource: "content_ir",
             tier: "cold",
           });
         } else {

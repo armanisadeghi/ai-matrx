@@ -36,7 +36,7 @@ export interface KindDefinition {
   kind: string;
   /** null until the warm/cold fetch delivers it. */
   schema: KindSchema | null;
-  schemaSource: "system" | "flexible_data";
+  schemaSource: "system" | "flexible_data" | "content_ir";
   tier: KindTier;
   /** Component facet — lazy-loaded renderer for this kind. */
   component?: {
