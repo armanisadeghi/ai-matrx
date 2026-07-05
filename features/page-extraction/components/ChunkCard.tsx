@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
+import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import {
   SOURCE_VARIATION_BY_KIND,
 } from "@/features/page-extraction/constants";
@@ -72,7 +73,12 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
   const finalText = pageRun?.rawResponse ?? "";
   // Show the running buffer while in flight; once terminal, prefer the
   // final raw_response (more reliable — comes from the persisted event).
-  const outputText = isTerminal && finalText ? finalText : streamingText;
+  const rawOutput = isTerminal && finalText ? finalText : streamingText;
+  // Never render the model's chain-of-thought. The backend strips it from the
+  // stored/final answer, but live streaming deltas still arrive raw — so strip
+  // here too (idempotent on already-clean text). `isThinking` lets us show a
+  // "thinking…" beat while an unclosed <reasoning> block streams in.
+  const { visible: outputText, isThinking } = stripThinkingStreaming(rawOutput);
   const hasOutput = pageRun !== undefined && outputText.length > 0;
   // True after the agent ran but produced nothing — fairly common when
   // the chunk's pages contain no extractable content for the agent's task.
@@ -206,7 +212,7 @@ export function ChunkCard({ chunk, pageRun, onJumpToPage }: ChunkCardProps) {
               ) : isRunning ? (
                 <p className="italic text-muted-foreground text-[10px] flex items-center gap-1.5">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Waiting for first token…
+                  {isThinking ? "Thinking…" : "Waiting for first token…"}
                 </p>
               ) : ranButEmpty ? (
                 <p className="italic text-muted-foreground text-[10px]">

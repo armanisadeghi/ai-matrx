@@ -21,6 +21,11 @@ import type {
   PageExtractionJobUpdate,
   SourceVariationKind,
 } from "@/features/page-extraction/types";
+import {
+  extraInputsEqual,
+  buildMappingWithLiterals,
+  sanitizeExtraInputsForSave,
+} from "@/features/page-extraction/utils/extra-inputs";
 
 /**
  * Surface keys that, when claimed by the variable mapping, imply the
@@ -131,14 +136,21 @@ export async function saveTemplateFromDraft(
   // from the backend.
   const sourceVariations = deriveSourceVariations(draft.variableMapping);
 
-  // Saved templates are always is_saved=true going forward. The
-  // distinction between "ad-hoc" and "saved" Jobs is going away — every
-  // template the user creates is a named row they explicitly saved.
+  const extraInputs = sanitizeExtraInputsForSave(
+    draft.extraInputs,
+    draft.variableMapping,
+  );
+  const variableMapping = buildMappingWithLiterals(
+    draft.variableMapping,
+    extraInputs,
+  );
+
+  // Saved templates are always is_saved=true going forward.
   if (opts.existingJobId) {
     const patch: PageExtractionJobUpdate = {
       name,
       agent_id: draft.agentId,
-      variable_mapping: draft.variableMapping,
+      variable_mapping: variableMapping,
       output_schema: (draft.outputSchema ?? {
         type: "object",
         properties: {},
@@ -149,7 +161,7 @@ export async function saveTemplateFromDraft(
       source_variations: sourceVariations,
       chunking_strategy: draft.chunkingStrategy,
       is_saved: true,
-      extra_inputs: draft.extraInputs,
+      extra_inputs: extraInputs,
       attach_combined_pdf: draft.attachCombinedPdf,
       kind: draft.kind,
       validates_job_id:
@@ -167,7 +179,7 @@ export async function saveTemplateFromDraft(
     description: null,
     agent_id: draft.agentId,
     shortcut_id: null,
-    variable_mapping: draft.variableMapping,
+    variable_mapping: variableMapping,
     output_schema: (draft.outputSchema ?? {
       type: "object",
       properties: {},
@@ -178,11 +190,14 @@ export async function saveTemplateFromDraft(
     source_variations: sourceVariations,
     chunking_strategy: draft.chunkingStrategy,
     is_saved: true,
-    extra_inputs: draft.extraInputs,
+    // Persist the SANITIZED extra inputs (same as the UPDATE path above) —
+    // writing raw `draft.extraInputs` here let a brand-new template save empty /
+    // legacy-`__literal__:` / half-filled rows the mapping never matched, a
+    // silent create-vs-update divergence.
+    extra_inputs: extraInputs,
     attach_combined_pdf: draft.attachCombinedPdf,
     kind: draft.kind,
-    validates_job_id:
-      draft.kind === "validation" ? draft.validatesJobId : null,
+    validates_job_id: draft.kind === "validation" ? draft.validatesJobId : null,
     model_overrides: null,
     max_concurrent: draft.maxConcurrent,
     // Null = inherit the agent's defaultRagBoost; a number overrides it
@@ -251,7 +266,11 @@ function outputSchemaEqual(a: unknown, b: unknown): boolean {
     if (v == null) return "";
     if (
       typeof v === "object" &&
-      (v as { kind?: string }).kind !== "extraction_columns"
+      (v as { kind?: string }).kind !== "extraction_columns" &&
+      // `{ kind: "text" }` is a REAL, distinct schema (text output mode) — it
+      // must never collapse to the empty/"no schema" bucket, or toggling into
+      // text mode wouldn't register as a change and wouldn't persist.
+      (v as { kind?: string }).kind !== "text"
     ) {
       const props = (v as { properties?: Record<string, unknown> }).properties;
       if (!props || Object.keys(props).length === 0) return "";
@@ -263,18 +282,6 @@ function outputSchemaEqual(a: unknown, b: unknown): boolean {
     }
   };
   return norm(a) === norm(b);
-}
-
-function extraInputsEqual(
-  a: { name: string; source_job_id: string }[],
-  b: { name: string; source_job_id: string }[],
-): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i].name !== b[i].name) return false;
-    if (a[i].source_job_id !== b[i].source_job_id) return false;
-  }
-  return true;
 }
 
 function arraysEqual<T>(a: T[], b: T[]): boolean {

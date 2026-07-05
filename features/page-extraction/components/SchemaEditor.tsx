@@ -23,10 +23,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   buildTemplateSchema,
+  buildTextSchema,
   humanizeKey,
   importColumnsFromAgentSchema,
+  parseOutputMode,
   parseTemplateColumns,
 } from "@/features/page-extraction/utils/columns";
+import { cn } from "@/lib/utils";
 import type {
   ColumnSource,
   ColumnType,
@@ -52,6 +55,7 @@ export function SchemaEditor({
   onChange,
 }: SchemaEditorProps) {
   const columns = parseTemplateColumns(outputSchema) ?? [];
+  const mode = parseOutputMode(outputSchema);
 
   const commit = (next: ExtractionColumn[]) => {
     if (next.length === 0) {
@@ -114,6 +118,48 @@ export function SchemaEditor({
 
   return (
     <div className="space-y-2">
+      {/* Output mode — Structured (JSON, auto-fallback to text) vs Text. */}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => {
+            // Leaving text mode → clear the text schema so the template goes
+            // back to structured (empty = inherit the agent schema).
+            if (mode === "text") onChange(null);
+          }}
+          className={cn(
+            "flex-1 h-7 rounded-md border text-[11px] font-medium transition-colors",
+            mode !== "text"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border bg-card text-muted-foreground hover:text-foreground",
+          )}
+          title="Parse the response as structured data (JSON → table rows). If a chunk isn't JSON, its text is stored anyway, anchored to its pages."
+        >
+          Structured data
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(buildTextSchema())}
+          className={cn(
+            "flex-1 h-7 rounded-md border text-[11px] font-medium transition-colors",
+            mode === "text"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border bg-card text-muted-foreground hover:text-foreground",
+          )}
+          title="Store the agent's full response as one text row per chunk, anchored to its pages. No JSON parsing."
+        >
+          Text
+        </button>
+      </div>
+
+      {mode === "text" ? (
+        <p className="text-[10px] text-muted-foreground/70 leading-snug">
+          Each chunk&apos;s response is stored as a single <b>Response</b> text
+          row, anchored to its pages — no JSON schema needed. Use this when the
+          agent writes a summary, description, or any prose answer per chunk.
+        </p>
+      ) : (
+        <>
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
           Output columns
@@ -140,7 +186,8 @@ export function SchemaEditor({
           No columns defined — the Results table will inherit the agent&apos;s
           schema (or infer columns from the data). Import from the agent or
           add columns to take control of the table shape, add review fields,
-          or drop fields you don&apos;t want.
+          or drop fields you don&apos;t want. Any chunk that doesn&apos;t return
+          JSON is stored as a <b>Response</b> text row (never dropped).
         </p>
       ) : (
         <ul className="space-y-1">
@@ -265,6 +312,8 @@ export function SchemaEditor({
           <Plus className="w-3 h-3 mr-0.5" /> Validation
         </Button>
       </div>
+        </>
+      )}
     </div>
   );
 }

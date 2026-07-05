@@ -25,6 +25,48 @@ import type {
 
 export const SYSTEM_PAGE_COLUMN_KEY = "__page__";
 
+/**
+ * Reserved payload key for a TEXT result row — a chunk stored in text mode, or
+ * an auto-mode chunk whose JSON didn't parse and fell back to text. Reserved
+ * (`__`) so it never collides with a real agent output field. Kept in lock-step
+ * with `_TEXT_RESULT_KEY` in
+ * aidream/aidream/api/routers/page_extraction.py.
+ */
+export const TEXT_RESULT_KEY = "__text__";
+
+/** True when a stored result row is a text/fallback row (carries `__text__`). */
+export function isTextResultRow(payload: unknown): boolean {
+  return isPlainObject(payload) && typeof payload[TEXT_RESULT_KEY] === "string";
+}
+
+/**
+ * The output MODE of a template, resolved from its `output_schema`:
+ *   - `text`  → `{ kind: "text" }` — always store the response text; the
+ *     backend skips JSON parsing.
+ *   - `auto`  → anything else (columns schema, empty, legacy) — parse JSON and,
+ *     on non-JSON / no rows, fall back to storing the response text. Never
+ *     drops the answer.
+ * There is deliberately no strict-JSON mode; the product rule is "always store
+ * what came back + its page relationship."
+ */
+export type OutputMode = "auto" | "text";
+
+export function parseOutputMode(outputSchema: unknown): OutputMode {
+  if (
+    outputSchema &&
+    typeof outputSchema === "object" &&
+    (outputSchema as { kind?: unknown }).kind === "text"
+  ) {
+    return "text";
+  }
+  return "auto";
+}
+
+/** The durable `output_schema` value that marks a template as text-mode. */
+export function buildTextSchema(): { kind: "text" } {
+  return { kind: "text" };
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // The wrapping rule — THE single source of truth.
 //

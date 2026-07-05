@@ -54,6 +54,7 @@ import {
   inferColumnsFromRows,
   normalizeResultRows,
   parseTemplateColumns,
+  TEXT_RESULT_KEY,
 } from "@/features/page-extraction/utils/columns";
 
 // Stable empty map so the no-duplicates path doesn't allocate a new
@@ -382,7 +383,11 @@ function SingleJobResultsTable({
                     </TableCell>
                     {inferredCols.map((key) => (
                       <TableCell key={key} className="text-xs align-top">
-                        {renderCell(payload[key])}
+                        {key === TEXT_RESULT_KEY ? (
+                          <TextResultCell value={payload[key]} />
+                        ) : (
+                          renderCell(payload[key])
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -413,6 +418,15 @@ function SchemaResultsBody({
 }) {
   const toast = useToastManager("page-extraction");
 
+  // A structured template can still accumulate TEXT rows — a chunk whose JSON
+  // didn't parse falls back to a `__text__` row (never dropped). Those rows have
+  // none of the declared columns, so surface a trailing "Response" column when
+  // any row carries the reserved text key, or the fallback text would be stored
+  // but invisible.
+  const hasTextRows = results.some(
+    (r) => typeof (r.payload as Record<string, unknown>)?.[TEXT_RESULT_KEY] === "string",
+  );
+
   return (
     <Table>
       <TableHeader>
@@ -433,6 +447,19 @@ function SchemaResultsBody({
               </span>
             </TableHead>
           ))}
+          {hasTextRows && (
+            <TableHead className="text-xs">
+              <span className="flex items-center gap-1">
+                Response
+                <span
+                  className="text-[8px] uppercase tracking-wider text-muted-foreground/60"
+                  title="Full text stored when a chunk's response wasn't structured JSON."
+                >
+                  text
+                </span>
+              </span>
+            </TableHead>
+          )}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -483,6 +510,15 @@ function SchemaResultsBody({
                   </TableCell>
                 );
               })}
+              {hasTextRows && (
+                <TableCell className="text-xs align-top">
+                  <TextResultCell
+                    value={
+                      (r.payload as Record<string, unknown>)?.[TEXT_RESULT_KEY]
+                    }
+                  />
+                </TableCell>
+              )}
             </TableRow>
           );
         })}
@@ -741,9 +777,44 @@ function RecoveryBanner({ count }: { count: number }) {
 }
 
 function prettifyKey(key: string): string {
+  // The reserved text/fallback key renders as "Response".
+  if (key === TEXT_RESULT_KEY) return "Response";
   // Snake/kebab → Title Case. Cheap fallback when there's no schema to
   // pull a polished label from (`columnLabel` requires a schema).
   return key.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Cell for a TEXT / fallback result row's `__text__` value — a prose answer,
+ * not a scalar. Wraps, preserves newlines, and clamps tall text behind a
+ * show-more toggle so one long chunk answer doesn't blow out the row height.
+ */
+function TextResultCell({ value }: { value: unknown }) {
+  const [expanded, setExpanded] = useState(false);
+  const text = typeof value === "string" ? value : renderCell(value);
+  if (!text) return null;
+  const long = text.length > 320;
+  return (
+    <div className="min-w-[16rem] max-w-[40rem]">
+      <div
+        className={cn(
+          "whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground/85",
+          !expanded && long && "line-clamp-4",
+        )}
+      >
+        {text}
+      </div>
+      {long && (
+        <button
+          type="button"
+          className="mt-0.5 text-[10px] text-primary hover:underline"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function renderCell(value: unknown): string {
