@@ -82,7 +82,6 @@ import {
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import {
   commitWorkingDocumentContent,
-  rowToCxWorkingDocument,
   updateCxWorkingDocumentTitle,
   type CxWorkingDocumentRow,
 } from "@/features/agents/redux/execution-system/instance-working-document/cx-working-document.service";
@@ -256,21 +255,34 @@ export function useWorkingDocumentContextSync(
       binding.id,
       `${conversationId}:${kind}:${mountId}`,
       (row) => {
-        const doc = rowToCxWorkingDocument(row);
-        dispatch(
-          applyAgentWorkingDocContent({
-            conversationId,
-            kind,
-            content: doc.content,
-          }),
-        );
+        // Title-only UPDATEs (rename in the rail, auto-title, etc.) emit partial
+        // realtime payloads when REPLICA IDENTITY is DEFAULT — `content` is
+        // omitted, not empty. Never treat a missing column as a blank document.
+        if (typeof row.content === "string") {
+          dispatch(
+            applyAgentWorkingDocContent({
+              conversationId,
+              kind,
+              content: row.content,
+            }),
+          );
+        }
+        if (typeof row.title === "string") {
+          dispatch(
+            setWorkingDocTitle({
+              conversationId,
+              kind,
+              title: row.title,
+            }),
+          );
+        }
         // A realtime echo proves the row exists — latch version + materialized so
         // the next turn's base_version is current.
         dispatch(
           markWorkingDocMaterialized({
             conversationId,
             kind,
-            version: doc.version,
+            version: typeof row.version === "number" ? row.version : undefined,
           }),
         );
       },

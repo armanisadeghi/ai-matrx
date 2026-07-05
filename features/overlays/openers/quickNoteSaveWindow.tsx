@@ -22,6 +22,7 @@ const OVERLAY_ID = "quickNoteSaveWindow" as const;
 export interface OpenQuickNoteSaveWindowOptions {
   initialContent?: string;
   defaultFolder?: string;
+  defaultNoteName?: string;
   /** TODO: tighten to `EditorMode` once that type is imported. */
   initialEditorMode?: unknown;
 }
@@ -40,6 +41,7 @@ export function useOpenQuickNoteSaveWindow() {
           data: {
             initialContent: opts.initialContent,
             defaultFolder: opts.defaultFolder,
+            defaultNoteName: opts.defaultNoteName,
             initialEditorMode: opts.initialEditorMode,
           },
         }),
@@ -57,11 +59,19 @@ export function useOpenQuickNoteSaveWindow() {
  * closes it on unmount. Use this when a caller wants to express overlay
  * state declaratively (the way they'd render a normal component).
  */
-export function QuickNoteSaveWindowController(props: OpenQuickNoteSaveWindowOptions): null {
+export function QuickNoteSaveWindowController(
+  props: OpenQuickNoteSaveWindowOptions,
+): null {
   const open = useOpenQuickNoteSaveWindow();
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.initialContent, props.defaultFolder, props.initialEditorMode]);
+  }, [
+    open,
+    props.initialContent,
+    props.defaultFolder,
+    props.defaultNoteName,
+    props.initialEditorMode,
+  ]);
   return null;
 }

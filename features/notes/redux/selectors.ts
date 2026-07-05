@@ -15,6 +15,7 @@ import type {
   NotesSliceState,
   FindReplaceState,
 } from "./notes.types";
+import { DEFAULT_FOLDER_NAMES } from "../constants/defaultFolders";
 
 // ── Selector cache to prevent re-creation on every render ───────────────────
 
@@ -27,15 +28,9 @@ function cached<T>(key: string, factory: () => T): T {
   return selectorCache.get(key) as T;
 }
 
-// ── Default folder ordering ─────────────────────────────────────────────────
+// ── Default folder ordering (single source: `constants/defaultFolders.ts`) ──
 
-const DEFAULT_FOLDER_ORDER: readonly string[] = [
-  "Draft",
-  "Personal",
-  "Business",
-  "Prompts",
-  "Scratch",
-];
+const DEFAULT_FOLDER_ORDER: readonly string[] = DEFAULT_FOLDER_NAMES;
 
 const EMPTY_NOTE_TAGS: string[] = [];
 
@@ -208,8 +203,7 @@ export const selectNoteEditorMode = (noteId: string) =>
       selectNotesMap,
       (notes): string | undefined =>
         (notes[noteId]?.metadata as Record<string, unknown>)?.lastEditorMode as
-          | string
-          | undefined,
+          string | undefined,
     ),
   );
 

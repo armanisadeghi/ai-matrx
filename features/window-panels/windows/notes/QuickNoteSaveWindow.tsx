@@ -14,6 +14,7 @@ export interface QuickNoteSaveWindowProps {
   onClose: () => void;
   initialContent?: string;
   defaultFolder?: string;
+  defaultNoteName?: string;
   /** Optional instance id so multiple captures can open concurrently. */
   instanceId?: string;
   /**
@@ -32,6 +33,7 @@ export default function QuickNoteSaveWindow({
   onClose,
   initialContent,
   defaultFolder,
+  defaultNoteName,
   instanceId,
   initialEditorMode,
 }: QuickNoteSaveWindowProps) {
@@ -50,6 +52,9 @@ export default function QuickNoteSaveWindow({
           ? defaultFolder
           : "Scratch"
       }
+      defaultNoteName={
+        typeof defaultNoteName === "string" ? defaultNoteName : undefined
+      }
       instanceId={instanceId}
       initialEditorMode={initialEditorMode}
     />
@@ -60,12 +65,14 @@ function QuickNoteSaveWindowInner({
   onClose,
   initialContent,
   defaultFolder,
+  defaultNoteName,
   instanceId,
   initialEditorMode,
 }: {
   onClose: () => void;
   initialContent: string;
   defaultFolder: string;
+  defaultNoteName?: string;
   instanceId?: string;
   initialEditorMode?: EditorMode;
 }) {
@@ -77,6 +84,12 @@ function QuickNoteSaveWindowInner({
     if (action !== "none") onClose();
   };
 
+  const viewportPad = 24;
+  const maxWidth =
+    typeof window !== "undefined" ? window.innerWidth - viewportPad : 1400;
+  const maxHeight =
+    typeof window !== "undefined" ? window.innerHeight - viewportPad : 900;
+
   return (
     <WindowPanel
       title="Quick Save Note"
@@ -84,8 +97,10 @@ function QuickNoteSaveWindowInner({
       overlayId={OVERLAY_ID}
       minWidth={520}
       minHeight={420}
-      width={1080}
-      height={760}
+      width="90vw"
+      height="85dvh"
+      maxWidth={maxWidth}
+      maxHeight={maxHeight}
       position="center"
       onClose={onClose}
     >
@@ -93,6 +108,7 @@ function QuickNoteSaveWindowInner({
         <QuickNoteSaveCore
           initialContent={initialContent}
           defaultFolder={defaultFolder}
+          defaultNoteName={defaultNoteName}
           initialEditorMode={initialEditorMode}
           onSaved={handleSaved}
           onCancel={onClose}

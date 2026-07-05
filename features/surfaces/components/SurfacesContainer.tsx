@@ -16,7 +16,7 @@ import {
   Plus,
   RefreshCw,
   Zap,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,13 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
@@ -49,19 +42,19 @@ import { SurfaceDetailPanel } from "@/features/surfaces/components/SurfaceDetail
 import { SurfaceCandidatesDialog } from "@/features/surfaces/components/SurfaceCandidatesDialog";
 import { ManifestSyncDialog } from "@/features/surfaces/components/ManifestSyncDialog";
 import { ManifestDriftDialog } from "@/features/surfaces/components/ManifestDriftDialog";
+import { NewSurfaceDialog } from "@/features/surfaces/components/NewSurfaceDialog";
 
 import {
   bulkSetSurfacesActive,
-  createSurface,
   createUiClient,
   deleteSurface,
   listClientNames,
   listSurfacesWithStats,
-  SURFACE_TIERS,
   type SurfaceWithStats,
 } from "@/features/surfaces/services/surfaces.service";
 import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registry";
 import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates";
+import { listParentFilterOptions } from "@/features/surfaces/utils/surface-hierarchy";
 
 export function SurfacesContainer() {
   const router = useRouter();
@@ -137,10 +130,25 @@ export function SurfacesContainer() {
     [clients],
   );
 
+  const parentNames = useMemo(
+    () => listParentFilterOptions(surfaces),
+    [surfaces],
+  );
+
   const visible = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return surfaces.filter((s) => {
       if (filters.client !== "__all__" && s.client_name !== filters.client) {
+        return false;
+      }
+      if (filters.parent === "__none__" && s.parent_surface_name !== null) {
+        return false;
+      }
+      if (
+        filters.parent !== "__all__" &&
+        filters.parent !== "__none__" &&
+        s.parent_surface_name !== filters.parent
+      ) {
         return false;
       }
       if (filters.status === "active" && !s.is_active) return false;
@@ -311,6 +319,7 @@ export function SurfacesContainer() {
         state={filters}
         onChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
         clientNames={clientNames}
+        parentNames={parentNames}
       />
 
       {error && (
@@ -360,8 +369,9 @@ export function SurfacesContainer() {
         <NewSurfaceDialog
           clients={clients.filter((c) => c.is_active !== false)}
           existingNames={new Set(surfaces.map((s) => s.name))}
+          parentOptions={parentNames}
           onClose={() => setCreating(false)}
-          onCreated={() => {
+          onCreated={(_name) => {
             setCreating(false);
             void load();
           }}
@@ -410,156 +420,8 @@ export function SurfacesContainer() {
 }
 
 // ------------------------------------------------------------------
-// New surface / new client dialogs (lifted from the legacy admin page)
+// New client dialog (lifted from the legacy admin page)
 // ------------------------------------------------------------------
-
-function NewSurfaceDialog({
-  clients,
-  existingNames,
-  onClose,
-  onCreated,
-}: {
-  clients: {
-    name: string;
-    description: string | null;
-    is_active: boolean | null;
-  }[];
-  existingNames: Set<string>;
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const [client, setClient] = useState(clients[0]?.name ?? "");
-  const [local, setLocal] = useState("");
-  const [description, setDescription] = useState("");
-  const [tier, setTier] = useState<string>("Pages");
-  const [busy, setBusy] = useState(false);
-
-  const tierEntry =
-    SURFACE_TIERS.find((t) => t.label === tier) ?? SURFACE_TIERS[1];
-  const fullName = client && local ? `${client}/${local}` : "";
-  const LOCAL_RE = /^[a-z0-9-/]+$/;
-  const localValid = LOCAL_RE.test(local);
-  const nameClash = fullName !== "" && existingNames.has(fullName);
-
-  const submit = async () => {
-    if (!client || !localValid || nameClash) return;
-    setBusy(true);
-    try {
-      await createSurface({
-        name: fullName,
-        client_name: client,
-        description: description,
-        sort_order: tierEntry.min + 50,
-        is_active: true,
-      });
-      toast.success(`${fullName} created`);
-      onCreated();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Create failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>New UI surface</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs">Client</Label>
-            <Select value={client} onValueChange={setClient} disabled={busy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pick a client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Local part of name</Label>
-            <Input
-              value={local}
-              onChange={(e) => setLocal(e.target.value.toLowerCase())}
-              placeholder="e.g. notes or debug/state-analyzer"
-              className="font-mono text-sm"
-              style={{ fontSize: "16px" }}
-              disabled={busy}
-              autoFocus
-            />
-            <p className="text-[11px] text-muted-foreground">
-              Full name:{" "}
-              <code className="bg-muted px-1 py-0.5 rounded font-mono">
-                {fullName || `${client || "<client>"}/<local>`}
-              </code>
-            </p>
-            {!localValid && local.length > 0 && (
-              <p className="text-[11px] text-destructive">
-                Use lowercase letters, digits, hyphens, and slashes.
-              </p>
-            )}
-            {nameClash && (
-              <p className="text-[11px] text-destructive">
-                <code className="font-mono">{fullName}</code> already exists.
-              </p>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Tier (sort_order band)</Label>
-            <Select value={tier} onValueChange={setTier} disabled={busy}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SURFACE_TIERS.filter((t) => t.label !== "Reserved").map(
-                  (t) => (
-                    <SelectItem key={t.label} value={t.label}>
-                      <div className="flex flex-col items-start">
-                        <span>{t.label}</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {t.description}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ),
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="Short, agent-facing description"
-              style={{ fontSize: "16px" }}
-              disabled={busy}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => void submit()}
-            disabled={busy || !client || !localValid || nameClash || !local}
-          >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function NewClientDialog({
   existingNames,

@@ -4013,6 +4013,11 @@ export default function OverlayController() {
                 ? data.defaultFolder
                 : undefined
             }
+            defaultNoteName={
+              typeof data?.defaultNoteName === "string"
+                ? data.defaultNoteName
+                : undefined
+            }
             initialEditorMode={
               data?.initialEditorMode as EditorMode | undefined
             }

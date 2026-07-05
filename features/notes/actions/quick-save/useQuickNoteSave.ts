@@ -16,8 +16,10 @@ import {
 import type { Note } from "@/features/notes/types";
 import type { NoteRecord } from "@/features/notes/redux/notes.types";
 import { useToastManager } from "@/hooks/useToastManager";
-import { stripThinking, hasThinkingTags } from "./utils/stripThinking";
-import { applyTrim } from "./utils/trimContent";
+import {
+  useRefinableContent,
+  type RefinableContent,
+} from "@/components/content-refine/useRefinableContent";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 
@@ -27,9 +29,11 @@ export type UpdateMethod = "append" | "overwrite";
 export interface UseQuickNoteSaveArgs {
   initialContent: string;
   defaultFolder?: string;
+  /** Pre-filled note title (e.g. chat save: "My topic Message 4"). */
+  defaultNoteName?: string;
 }
 
-function defaultNoteName(): string {
+function buildTimestampNoteName(): string {
   const now = new Date();
   const date = now.toLocaleDateString("en-US", {
     month: "short",
@@ -47,18 +51,27 @@ function defaultNoteName(): string {
 export function useQuickNoteSave({
   initialContent: rawInitialContent,
   defaultFolder = "Scratch",
+  defaultNoteName: initialNoteName,
 }: UseQuickNoteSaveArgs) {
-  // Coerce to string at the boundary — every call below (`.length`, `.trim()`,
-  // `applyTrim`, `stripThinking`, persistence payload) assumes a string.
-  // A null/undefined leak from a parent (overlay data, stale props) would
-  // crash the editor on mount otherwise.
-  const initialContent =
-    typeof rawInitialContent === "string" ? rawInitialContent : "";
   const dispatch = useAppDispatch();
   const toast = useToastManager("notes");
 
+  // Content transforms (strip-thinking, trim, edit override) live in the
+  // shared refine primitive (it coerces null/undefined content at the
+  // boundary); this hook owns only the note-destination state.
+  const refine: RefinableContent = useRefinableContent({
+    initialContent: rawInitialContent,
+  });
+  const { workingContent, initialContent } = refine;
+
   const allNotes = useAppSelector(selectAllNotesList);
-  const allFolders = useAppSelector(selectAllFolders);
+  const foldersFromRedux = useAppSelector(selectAllFolders);
+  const allFolders = useMemo(() => {
+    if (!defaultFolder || foldersFromRedux.includes(defaultFolder)) {
+      return foldersFromRedux;
+    }
+    return [defaultFolder, ...foldersFromRedux];
+  }, [foldersFromRedux, defaultFolder]);
   const listStatus = useAppSelector(selectNotesListStatus);
 
   useEffect(() => {
@@ -67,34 +80,10 @@ export function useQuickNoteSave({
     }
   }, [listStatus, dispatch]);
 
-  // Transform flags
-  const [stripThinkingEnabled, setStripThinkingEnabled] = useState(false);
-  const [trimStart, setTrimStart] = useState(0);
-  const [trimEnd, setTrimEnd] = useState(0);
-
-  // User-editable override of the working content (after transforms).
-  // null = derive from initialContent + transforms; string = user has edited.
-  const [editedContent, setEditedContent] = useState<string | null>(null);
-
-  // Trim is applied to the raw input first; other transforms (strip-thinking, etc)
-  // then operate on the trimmed slice.
-  const basePostTransform = useMemo(() => {
-    const trimmed = applyTrim(initialContent, trimStart, trimEnd);
-    return stripThinkingEnabled ? stripThinking(trimmed) : trimmed;
-  }, [initialContent, stripThinkingEnabled, trimStart, trimEnd]);
-
-  const workingContent = editedContent ?? basePostTransform;
-
-  // Reset edited content when source transforms change
-  useEffect(() => {
-    setEditedContent(null);
-  }, [initialContent, stripThinkingEnabled, trimStart, trimEnd]);
-
-  // Trim sliders operate on the original content length.
-  const maxTrim = initialContent.length;
-
   // Target fields
-  const [noteName, setNoteName] = useState(defaultNoteName());
+  const [noteName, setNoteName] = useState(
+    () => initialNoteName?.trim() || buildTimestampNoteName(),
+  );
   const [folder, setFolder] = useState(defaultFolder);
   const [mode, setMode] = useState<SaveMode>("create");
   const [selectedNoteId, setSelectedNoteId] = useState<string>("");
@@ -115,8 +104,6 @@ export function useQuickNoteSave({
     () => allNotes.find((n) => n.id === selectedNoteId),
     [allNotes, selectedNoteId],
   );
-
-  const canStripThinking = hasThinkingTags(initialContent);
 
   const save = useCallback(async (): Promise<Note | null> => {
     if (!workingContent.trim()) {
@@ -244,18 +231,15 @@ export function useQuickNoteSave({
   ]);
 
   const reset = useCallback(() => {
-    setStripThinkingEnabled(false);
-    setTrimStart(0);
-    setTrimEnd(0);
-    setEditedContent(null);
-    setNoteName(defaultNoteName());
+    refine.resetTransforms();
+    setNoteName(initialNoteName?.trim() || buildTimestampNoteName());
     setFolder(defaultFolder);
     setMode("create");
     setSelectedNoteId("");
     setUpdateMethod("append");
     setSavedNote(null);
     setIsSaving(false);
-  }, [defaultFolder]);
+  }, [defaultFolder, initialNoteName, refine]);
 
   const isSaveDisabled =
     isSaving ||
@@ -263,17 +247,11 @@ export function useQuickNoteSave({
     (mode === "update" && !selectedNoteId);
 
   return {
-    // content + transforms
-    workingContent,
-    setEditedContent,
-    stripThinkingEnabled,
-    setStripThinkingEnabled,
-    canStripThinking,
-    trimStart,
-    setTrimStart,
-    trimEnd,
-    setTrimEnd,
-    maxTrim,
+    // content transforms — the shared refine primitive, also spread flat for
+    // consumers that predate it. New consumers: hand `refine` to
+    // <RefinableContentEditor> instead of rebuilding toolbar/trim UI.
+    refine,
+    ...refine,
 
     // targets
     noteName,

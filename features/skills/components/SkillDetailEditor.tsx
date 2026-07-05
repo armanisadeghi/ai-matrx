@@ -28,14 +28,13 @@ import {
   emptySkillDraft,
   skillRowToDraft,
 } from "../redux/skillsConverters";
-import {
-  createSkill,
-  deleteSkill,
-  patchSkill,
-} from "../redux/skillsThunks";
+import { createSkill, deleteSkill, patchSkill } from "../redux/skillsThunks";
 import type { SkillDraft, SkillType } from "../types";
+import MarkdownStream from "@/components/MarkdownStream";
 import { SkillProjectAssociations } from "./SkillProjectAssociations";
 import { SkillResourcesPanel } from "./SkillResourcesPanel";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import type { SessionContextItem } from "@/features/transcript-studio/types";
 
 interface SkillDetailEditorProps {
   skillId: string;
@@ -85,6 +84,53 @@ export function SkillDetailEditor({
 
   const readOnly = !isNew && (skill?.isSystem ? !isAdmin : false);
 
+  // The metadata fields around Body (skill_id, label, description, type,
+  // triggers) so agent actions run on the body text (Clean up, bound agents,
+  // etc.) know what skill they're editing rather than seeing bare markdown.
+  const skillContextItems = useMemo<SessionContextItem[]>(() => {
+    const items: SessionContextItem[] = [
+      {
+        id: "skill-id",
+        key: "skill_id",
+        label: "Skill ID",
+        value: draft.skillId || "(unset)",
+      },
+      {
+        id: "skill-label",
+        key: "skill_label",
+        label: "Skill label",
+        value: draft.label || "(unset)",
+      },
+      {
+        id: "skill-description",
+        key: "skill_description",
+        label: "Skill description",
+        value: draft.description || "(unset)",
+      },
+      {
+        id: "skill-type",
+        key: "skill_type",
+        label: "Skill type",
+        value: draft.skillType,
+      },
+    ];
+    if (draft.triggerPatterns.length > 0) {
+      items.push({
+        id: "skill-trigger-patterns",
+        key: "skill_trigger_patterns",
+        label: "Trigger patterns",
+        value: draft.triggerPatterns.join("\n"),
+      });
+    }
+    return items;
+  }, [
+    draft.skillId,
+    draft.label,
+    draft.description,
+    draft.skillType,
+    draft.triggerPatterns,
+  ]);
+
   const set = <K extends keyof SkillDraft>(key: K, value: SkillDraft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }));
     setChanged((s) => {
@@ -101,7 +147,11 @@ export function SkillDetailEditor({
     setSaving(true);
     try {
       if (isNew) {
-        if (!draft.skillId.trim() || !draft.label.trim() || !draft.description.trim()) {
+        if (
+          !draft.skillId.trim() ||
+          !draft.label.trim() ||
+          !draft.description.trim()
+        ) {
           toast.error("skill_id, label, and description are required.");
           return;
         }
@@ -122,17 +172,13 @@ export function SkillDetailEditor({
       const patch = draftToPatchBody(draft, changed);
       // Admin-only fields (is_active toggle, etc) — admins can edit
       // is_active; non-admins only ever soft-delete via the trash button.
-      const result = await dispatch(
-        patchSkill({ skillId: skill.id, patch }),
-      );
+      const result = await dispatch(patchSkill({ skillId: skill.id, patch }));
       if (patchSkill.fulfilled.match(result)) {
         toast.success(`Saved “${result.payload.label}”.`);
         setChanged(new Set());
       }
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save skill.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save skill.");
     } finally {
       setSaving(false);
     }
@@ -235,7 +281,7 @@ export function SkillDetailEditor({
         }
       />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 overflow-y-auto scrollbar-thin pb-72">
         <div className="px-4 py-4 space-y-5">
           {readOnly && (
             <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
@@ -310,9 +356,7 @@ export function SkillDetailEditor({
             <Field label="Model preference">
               <Input
                 value={draft.modelPreference ?? ""}
-                onChange={(e) =>
-                  set("modelPreference", e.target.value || null)
-                }
+                onChange={(e) => set("modelPreference", e.target.value || null)}
                 placeholder="claude-opus-4-7"
                 disabled={readOnly}
               />
@@ -337,6 +381,7 @@ export function SkillDetailEditor({
               previewMode={previewMode}
               setPreviewMode={setPreviewMode}
               disabled={readOnly}
+              contextItems={skillContextItems}
             />
           </Field>
 
@@ -352,7 +397,9 @@ export function SkillDetailEditor({
             <FieldRow>
               <Switch
                 checked={draft.disableAutoInvocation}
-                onCheckedChange={(v) => set("disableAutoInvocation", Boolean(v))}
+                onCheckedChange={(v) =>
+                  set("disableAutoInvocation", Boolean(v))
+                }
                 disabled={readOnly}
               />
               <Label className="text-sm">
@@ -395,10 +442,7 @@ export function SkillDetailEditor({
                 skillId={skill.id}
                 editable={!readOnly}
               />
-              <SkillResourcesPanel
-                skillId={skill.id}
-                editable={!readOnly}
-              />
+              <SkillResourcesPanel skillId={skill.id} editable={!readOnly} />
             </div>
           )}
         </div>
@@ -510,11 +554,7 @@ function ChipListField({
     <Field label={label}>
       <div className="flex flex-wrap gap-1.5 items-center">
         {values.map((v) => (
-          <Badge
-            key={v}
-            variant="secondary"
-            className="gap-1 pr-1 font-normal"
-          >
+          <Badge key={v} variant="secondary" className="gap-1 pr-1 font-normal">
             <span>{v}</span>
             {!disabled && (
               <button
@@ -556,12 +596,16 @@ function BodyEditor({
   previewMode,
   setPreviewMode,
   disabled,
+  contextItems,
 }: {
   value: string;
   onChange: (v: string) => void;
   previewMode: boolean;
   setPreviewMode: (b: boolean) => void;
   disabled?: boolean;
+  /** Skill metadata (id, label, description, type, triggers) — passed to
+   * every agent action (Clean up, bound agents) run against the body. */
+  contextItems: SessionContextItem[];
 }) {
   const lineCount = useMemo(() => value.split("\n").length, [value]);
   return (
@@ -600,21 +644,27 @@ function BodyEditor({
         </div>
       </div>
       {previewMode ? (
-        <pre className="text-xs font-mono whitespace-pre-wrap p-3 max-h-[400px] overflow-y-auto bg-muted/20">
-          {value || (
-            <span className="text-muted-foreground/60">
+        <div className="p-3">
+          {value === "" ? (
+            <span className="text-xs text-muted-foreground/60">
               Nothing to preview yet.
             </span>
+          ) : (
+            <MarkdownStream content={value} />
           )}
-        </pre>
+        </div>
       ) : (
-        <Textarea
+        <ProTextarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          rows={14}
+          autoGrow={true}
+          // rows={14}
           disabled={disabled}
           className="font-mono text-xs border-0 rounded-none focus-visible:ring-0 resize-y"
           placeholder="# My Skill\n\nUse this skill when…"
+          surfaceName="connections-skills"
+          cleanupContextItems={contextItems}
+          surfaceContextItems={contextItems}
         />
       )}
     </div>

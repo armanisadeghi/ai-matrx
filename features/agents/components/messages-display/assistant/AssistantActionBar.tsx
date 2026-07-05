@@ -196,9 +196,10 @@ export function AssistantActionBar({
     return out.length > 0 ? out : null;
   }, [groupMessageIds, byId]);
 
-  // Copy / Speak target the whole turn; Edit / notes / overflow-menu stay
-  // anchored to the latest message (`content`) because those flows want
-  // "the answer", not the multi-step trace.
+  // Copy / Speak target the whole turn. The overflow menu gets BOTH: the
+  // single-message `content` (edit paths mutate one cx_message row) and the
+  // aggregated `turnContent` (consumption actions — copy/save/export/task —
+  // match what the user reads on screen).
   const copySpeakContent = aggregatedContent ?? content;
 
   // In compact (agentic) density, hide the action bar by default for any
@@ -395,6 +396,7 @@ export function AssistantActionBar({
             isOpen={showOptionsMenu}
             onClose={() => setShowOptionsMenu(false)}
             content={content}
+            turnContent={aggregatedContent}
             messageId={messageId}
             conversationId={conversationId}
             metadata={metadata}

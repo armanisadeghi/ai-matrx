@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
-import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
 import type {
   ChunkPreviewItem,

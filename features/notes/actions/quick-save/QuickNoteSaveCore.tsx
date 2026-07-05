@@ -65,6 +65,8 @@ export type PostSaveAction = "newTab" | "navigate" | "openWindow" | "none";
 export interface QuickNoteSaveCoreProps {
   initialContent: string;
   defaultFolder?: string;
+  /** Pre-filled note title when the caller knows it (e.g. chat save). */
+  defaultNoteName?: string;
   /** Compact footprint (popover). */
   compact?: boolean;
   /** Show post-save action row once a note is saved. Default true. */
@@ -93,6 +95,7 @@ const ALERT_Z = "z-[2147483600]";
 export function QuickNoteSaveCore({
   initialContent,
   defaultFolder = "Scratch",
+  defaultNoteName,
   compact = false,
   showPostSaveActions = true,
   initialEditorMode = "split",
@@ -137,7 +140,11 @@ export function QuickNoteSaveCore({
     isSaveDisabled,
     savedNote,
     save,
-  } = useQuickNoteSave({ initialContent: safeInitialContent, defaultFolder });
+  } = useQuickNoteSave({
+    initialContent: safeInitialContent,
+    defaultFolder,
+    defaultNoteName,
+  });
 
   const [editorMode, setEditorMode] = useState<EditorMode>(initialEditorMode);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);

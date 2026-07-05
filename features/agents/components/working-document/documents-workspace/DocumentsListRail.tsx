@@ -10,6 +10,8 @@
  */
 
 import { useEffect, useState } from "react";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setWorkingDocTitle } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import {
   FileText,
   Loader2,
@@ -53,6 +55,8 @@ interface DocumentsListRailProps {
   onOpen: (sel: DocumentsRailSelection) => void;
   /** Detach (close) an open document tab by its key. */
   onDetach?: (key: string) => void;
+  /** After a successful rename — sync outer tab chrome (keyed by document id). */
+  onDocumentRenamed?: (documentId: string, title: string) => void;
   /** Collapse the rail. */
   onCollapse?: () => void;
   className?: string;
@@ -65,9 +69,11 @@ export function DocumentsListRail({
   closableKeys,
   onOpen,
   onDetach,
+  onDocumentRenamed,
   onCollapse,
   className,
 }: DocumentsListRailProps) {
+  const dispatch = useAppDispatch();
   const [docs, setDocs] = useState<CxWorkingDocumentSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -94,8 +100,7 @@ export function DocumentsListRail({
       if (!d.conversationId) return false; // conversation-scoped open only
       if (!q) return true;
       return (
-        d.title.toLowerCase().includes(q) ||
-        d.preview.toLowerCase().includes(q)
+        d.title.toLowerCase().includes(q) || d.preview.toLowerCase().includes(q)
       );
     },
   );
@@ -204,6 +209,14 @@ export function DocumentsListRail({
                   const trimmed = next.trim();
                   if (!trimmed || trimmed === label) return;
                   await updateCxWorkingDocumentTitle(d.id, trimmed);
+                  dispatch(
+                    setWorkingDocTitle({
+                      conversationId: d.conversationId,
+                      kind: d.kind,
+                      title: trimmed,
+                    }),
+                  );
+                  onDocumentRenamed?.(d.id, trimmed);
                   setDocs(
                     (prev) =>
                       prev?.map((x) =>

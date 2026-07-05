@@ -1043,6 +1043,44 @@
     outline-offset: 1px;
   }
 
+  /* Global clickable-cursor default: Tailwind's Preflight resets native
+     `button` cursor to `default` (matching the browser), so every clickable
+     element needs `cursor-pointer` added by hand or it silently falls back
+     to the arrow. Cover native interactive elements plus the common custom
+     "clickable" patterns (role="button", tabIndex-driven divs/cards, labels
+     for inputs) once, globally, instead of per-component. Disabled/aria
+     -disabled elements are excluded so they correctly show `not-allowed`/
+     `default`. Anything needing a different cursor can still override with
+     an explicit `cursor-*` utility (higher specificity via class wins). */
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  label[for],
+  select,
+  summary,
+  [role="button"]:not([aria-disabled="true"]),
+  [role="link"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]),
+  [role="radio"]:not([aria-disabled="true"]),
+  [role="switch"]:not([aria-disabled="true"]),
+  [tabindex]:not([tabindex="-1"]):not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [type="button"]:disabled,
+  [type="submit"]:disabled,
+  [type="reset"]:disabled,
+  [role="button"][aria-disabled="true"],
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   html {
     font-size: 16px; /* Base font size */
   }

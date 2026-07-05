@@ -84,10 +84,7 @@ export function workingDocKey(
  *   - "studio_document"    — a `studio_documents` row (Scribe's source).
  */
 export type WorkingDocumentBindingKind =
-  | "none"
-  | "note"
-  | "cx_working_document"
-  | "studio_document";
+  "none" | "note" | "cx_working_document" | "studio_document";
 
 export interface WorkingDocumentBinding {
   kind: WorkingDocumentBindingKind;
@@ -247,11 +244,11 @@ const instanceWorkingDocumentSlice = createSlice({
         action.payload.kind,
       );
       // LOUD recovery (mirrors Scribe's BUG-B guard): never let a transient
-      // EMPTY remote wipe non-empty content. An empty realtime echo on row
-      // creation, or a bad agent cycle, would otherwise blank the document and
-      // then persist the blank. If this fires, a real upstream bug produced an
-      // empty remote — keep the user's content and scream.
-      if (action.payload.content === "" && entry.content !== "") {
+      // EMPTY remote wipe non-empty content. Title-only UPDATEs on tables with
+      // REPLICA IDENTITY DEFAULT omit unchanged columns from realtime payloads —
+      // callers must not dispatch without `content`, but guard here too.
+      const remote = action.payload.content ?? "";
+      if (remote === "" && entry.content !== "") {
         console.warn(
           "[working-document] blocked an empty remote from wiping a non-empty document (BUG-B guard fired)",
           {
@@ -261,7 +258,7 @@ const instanceWorkingDocumentSlice = createSlice({
         );
         return;
       }
-      entry.content = action.payload.content;
+      entry.content = remote;
       entry.agentRevision += 1;
     },
 

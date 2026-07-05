@@ -30,7 +30,7 @@ import {
 import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
 import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
 import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
-import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { ValueMappingMap } from "@/features/surfaces/types";

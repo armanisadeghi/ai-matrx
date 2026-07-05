@@ -10,6 +10,7 @@ import {
   ChevronsUpDown,
   Edit2,
   ExternalLink,
+  GitBranch,
   Loader2,
   Plus,
   RefreshCw,
@@ -45,6 +46,7 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
@@ -53,6 +55,7 @@ import {
   getSurfaceByName,
   getSurfaceToolDefaults,
   getSurfaceUsage,
+  listClientNames,
   listSurfaceOptions,
   listSurfaceValues,
   renameSurface,
@@ -65,6 +68,7 @@ import {
   type ToolSurfaceDefaultsRow,
   type UiSurfaceRow,
 } from "@/features/surfaces/services/surfaces.service";
+import { NewSurfaceDialog } from "@/features/surfaces/components/NewSurfaceDialog";
 import {
   fetchSurfaceConfigBundle,
   setRoleSelection,
@@ -83,11 +87,23 @@ import {
   listAllToolOptions,
   type ToolCatalogOption,
 } from "@/features/tool-registry/tools-admin/services/dimensions.service";
-import { listBundles, type BundleRow } from "@/features/tool-registry/bundles/services/bundles.service";
+import {
+  listBundles,
+  type BundleRow,
+} from "@/features/tool-registry/bundles/services/bundles.service";
 import { EXECUTION_MODES } from "@/features/agents/runtime/pickRuntime";
 import type { SurfaceValue } from "@/features/surfaces/types";
+import {
+  buildChildrenByParent,
+  getAncestorChain,
+  surfaceAdminHref,
+} from "@/features/surfaces/utils/surface-hierarchy";
 
 const NONE = "__none__";
+
+/** Active form controls on bg-card panels — full contrast unless disabled. */
+const ACTIVE_FIELD =
+  "bg-background text-foreground disabled:cursor-not-allowed disabled:opacity-50";
 
 interface Props {
   /** Server-fetched `ui_surface` row; the page reloads it after mutations. */
@@ -115,6 +131,9 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
   );
   const [dbValues, setDbValues] = useState<SurfaceValue[] | null>(null);
   const [surfaceOptions, setSurfaceOptions] = useState<SurfaceOption[]>([]);
+  const [clients, setClients] = useState<
+    { name: string; description: string | null; is_active: boolean | null }[]
+  >([]);
   const [executorNames, setExecutorNames] = useState<string[]>([]);
   const [bundles, setBundles] = useState<BundleRow[]>([]);
   const [agentNames, setAgentNames] = useState<Record<string, string>>({});
@@ -124,6 +143,7 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
   // Rename
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState("");
+  const [creatingChild, setCreatingChild] = useState(false);
 
   const manifest = getManifest(surface.name);
   const tier = tierFor(surface.sort_order);
@@ -136,13 +156,14 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
     setLoadingData(true);
     setLoadError(null);
     try {
-      const [row, u, d, cb, v, opts, execs, bnds] = await Promise.all([
+      const [row, u, d, cb, v, opts, cl, execs, bnds] = await Promise.all([
         getSurfaceByName(surfaceName),
         getSurfaceUsage(surfaceName),
         getSurfaceToolDefaults(surfaceName),
         fetchSurfaceConfigBundle(surfaceName),
         listSurfaceValues(surfaceName),
-        listSurfaceOptions(),
+        listSurfaceOptions({ includeInactive: true }),
+        listClientNames(),
         listAllExecutorNames(),
         listBundles({ includeInactive: true }),
       ]);
@@ -152,10 +173,13 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
       setConfigBundle(cb);
       setDbValues(v);
       setSurfaceOptions(opts);
+      setClients(cl);
       setExecutorNames(execs);
       setBundles(bnds);
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Failed to load surface data");
+      setLoadError(
+        e instanceof Error ? e.message : "Failed to load surface data",
+      );
     } finally {
       setLoadingData(false);
     }
@@ -427,7 +451,7 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
               value={newName}
               onChange={(e) => setNewName(e.target.value.toLowerCase())}
               placeholder={surface.name}
-              className="font-mono text-sm h-8 max-w-md"
+              className={cn("font-mono text-sm h-8 max-w-md", ACTIVE_FIELD)}
               style={{ fontSize: "16px" }}
               autoFocus
               disabled={busy}
@@ -457,7 +481,8 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
               Cancel
             </Button>
             <span className="text-[11px] text-muted-foreground">
-              Renames cascade via <code className="font-mono">ON UPDATE CASCADE</code>.
+              Renames cascade via{" "}
+              <code className="font-mono">ON UPDATE CASCADE</code>.
             </span>
           </div>
         )}
@@ -485,6 +510,13 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
             executorNames={executorNames}
             busy={busy}
             onSave={patchSurface}
+          />
+
+          <HierarchySection
+            surface={surface}
+            surfaceOptions={surfaceOptions}
+            loading={loadingData && surfaceOptions.length === 0}
+            onAddChild={() => setCreatingChild(true)}
           />
 
           <ToolDefaultsSection
@@ -522,9 +554,30 @@ export function SurfaceAdminDetailPage({ initialSurface }: Props) {
             configBundle={configBundle}
           />
 
-          <UsageSection surfaceName={surface.name} usage={usage} loading={loadingData && usage === null} />
+          <UsageSection
+            surfaceName={surface.name}
+            usage={usage}
+            loading={loadingData && usage === null}
+          />
         </div>
       </div>
+
+      {creatingChild && (
+        <NewSurfaceDialog
+          clients={clients.filter((c) => c.is_active !== false)}
+          existingNames={new Set(surfaceOptions.map((o) => o.name))}
+          parentOptions={surfaceOptions.map((o) => o.name)}
+          initialClient={surface.client_name}
+          initialParent={surface.name}
+          title="Add child surface"
+          onClose={() => setCreatingChild(false)}
+          onCreated={(name) => {
+            setCreatingChild(false);
+            void load(surface.name);
+            navigateTo(surfaceAdminHref(name));
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -594,6 +647,7 @@ function IdentitySection({
             onChange={(e) => setDesc(e.target.value)}
             rows={3}
             placeholder="Short, agent-facing description"
+            className={ACTIVE_FIELD}
             style={{ fontSize: "16px" }}
             disabled={busy}
           />
@@ -604,7 +658,7 @@ function IdentitySection({
             value={urlPattern}
             onChange={(e) => setUrlPattern(e.target.value)}
             placeholder="e.g. /transcripts/cleanup"
-            className="font-mono text-sm"
+            className={cn("font-mono text-sm", ACTIVE_FIELD)}
             style={{ fontSize: "16px" }}
             disabled={busy}
           />
@@ -719,7 +773,7 @@ function ClassificationSection({
             }}
             disabled={busy}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className={cn("h-8 text-xs", ACTIVE_FIELD)}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -746,7 +800,7 @@ function ClassificationSection({
             onKeyDown={(e) => {
               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             }}
-            className="h-8 text-xs tabular-nums"
+            className={cn("h-8 text-xs tabular-nums", ACTIVE_FIELD)}
             style={{ fontSize: "16px" }}
             disabled={busy}
           />
@@ -760,7 +814,7 @@ function ClassificationSection({
             }
             disabled={busy}
           >
-            <SelectTrigger className="h-8 text-xs font-mono">
+            <SelectTrigger className={cn("h-8 text-xs font-mono", ACTIVE_FIELD)}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -781,7 +835,10 @@ function ClassificationSection({
                 role="combobox"
                 aria-expanded={parentOpen}
                 disabled={busy}
-                className="h-8 w-full justify-between text-xs font-mono font-normal"
+                className={cn(
+                  "h-8 w-full justify-between text-xs font-mono font-normal",
+                  ACTIVE_FIELD,
+                )}
               >
                 <span className="truncate">
                   {surface.parent_surface_name ?? "(none)"}
@@ -791,7 +848,10 @@ function ClassificationSection({
             </PopoverTrigger>
             <PopoverContent className="w-[320px] p-0" align="start">
               <Command>
-                <CommandInput placeholder="Search surfaces…" className="text-xs" />
+                <CommandInput
+                  placeholder="Search surfaces…"
+                  className="text-xs"
+                />
                 <CommandList>
                   <CommandEmpty>No surface found.</CommandEmpty>
                   <CommandGroup>
@@ -848,7 +908,7 @@ function ClassificationSection({
             }
             disabled={busy}
           >
-            <SelectTrigger className="h-8 text-xs font-mono">
+            <SelectTrigger className={cn("h-8 text-xs font-mono", ACTIVE_FIELD)}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -864,6 +924,209 @@ function ClassificationSection({
           </Select>
         </div>
       </div>
+    </section>
+  );
+}
+
+const LINEAGE_INDENT = [
+  "pl-0",
+  "pl-3",
+  "pl-6",
+  "pl-9",
+  "pl-12",
+  "pl-16",
+] as const;
+
+function lineageIndent(depth: number): string {
+  return LINEAGE_INDENT[Math.min(depth, LINEAGE_INDENT.length - 1)];
+}
+
+function HierarchySection({
+  surface,
+  surfaceOptions,
+  loading,
+  onAddChild,
+}: {
+  surface: UiSurfaceRow;
+  surfaceOptions: SurfaceOption[];
+  loading: boolean;
+  onAddChild: () => void;
+}) {
+  const byName = new Map(surfaceOptions.map((o) => [o.name, o]));
+  const ancestors = getAncestorChain(surface.name, byName);
+  const childrenByParent = buildChildrenByParent(surfaceOptions);
+  const children = childrenByParent.get(surface.name) ?? [];
+
+  return (
+    <section className="space-y-4">
+      <SectionHeading
+        title="Hierarchy"
+        hint="UI surface inheritance chain (parent → child) for tool defaults and config."
+      />
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading hierarchy…
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1.5">
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
+              Lineage
+            </Label>
+            <div className="rounded-md border border-border bg-card p-3 font-mono text-xs">
+              {ancestors.length === 0 && !surface.parent_surface_name ? (
+                <div className="flex items-start gap-2">
+                  <span className="text-muted-foreground select-none">└─</span>
+                  <div className="min-w-0">
+                    <Badge
+                      variant="secondary"
+                      className="font-mono text-[10px]"
+                    >
+                      {surface.name}
+                    </Badge>
+                    <span className="ml-1.5 text-[10px] text-muted-foreground font-sans">
+                      root · current
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <ul className="space-y-0">
+                  {ancestors.map((a, i) => (
+                    <li
+                      key={a.name}
+                      className={`flex items-start gap-2 ${lineageIndent(i)}`}
+                    >
+                      <span className="text-muted-foreground select-none shrink-0">
+                        {i === 0 ? "└─" : "  └─"}
+                      </span>
+                      <Link
+                        href={surfaceAdminHref(a.name)}
+                        className="text-foreground hover:text-primary hover:underline truncate min-w-0"
+                        title={a.description ?? a.name}
+                      >
+                        {a.name}
+                      </Link>
+                    </li>
+                  ))}
+                  <li
+                    className={`flex items-start gap-2 ${lineageIndent(ancestors.length)}`}
+                  >
+                    <span className="text-muted-foreground select-none shrink-0">
+                      └─
+                    </span>
+                    <div className="min-w-0 flex flex-wrap items-center gap-1.5">
+                      <Badge
+                        variant="secondary"
+                        className="font-mono text-[10px] truncate max-w-full"
+                      >
+                        {surface.name}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground font-sans">
+                        current
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+              )}
+              {surface.parent_surface_name &&
+                !byName.has(surface.parent_surface_name) && (
+                  <p className="text-[11px] text-warning mt-2 font-sans">
+                    Parent{" "}
+                    <code className="font-mono">
+                      {surface.parent_surface_name}
+                    </code>{" "}
+                    is not in the active surface list (missing or inactive).
+                  </p>
+                )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs flex items-center gap-1.5">
+                Direct children
+                <Badge variant="outline" className="text-[10px] tabular-nums">
+                  {children.length}
+                </Badge>
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onAddChild}
+                className="h-7 gap-1.5 text-xs shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add child
+              </Button>
+            </div>
+            {children.length === 0 ? (
+              <EmptyHint>
+                No direct children — this surface has no child surfaces.
+              </EmptyHint>
+            ) : (
+              <div className="rounded-md border border-border bg-card overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40">
+                      <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Surface
+                      </th>
+                      <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[100px]">
+                        Client
+                      </th>
+                      <th className="px-2 py-1.5 text-left text-[10px] font-medium uppercase tracking-wide text-muted-foreground hidden sm:table-cell">
+                        Description
+                      </th>
+                      <th className="px-2 py-1.5 text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground w-[72px]">
+                        Open
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {children.map((child) => (
+                      <tr key={child.name} className="hover:bg-muted/30">
+                        <td className="px-2 py-1.5 font-mono align-middle">
+                          <Link
+                            href={surfaceAdminHref(child.name)}
+                            className="text-foreground hover:text-primary hover:underline truncate block max-w-[280px]"
+                            title={child.name}
+                          >
+                            {child.name}
+                          </Link>
+                        </td>
+                        <td className="px-2 py-1.5 text-muted-foreground align-middle">
+                          {child.client_name}
+                        </td>
+                        <td className="px-2 py-1.5 text-muted-foreground align-middle hidden sm:table-cell max-w-[200px] truncate">
+                          {child.description ?? "—"}
+                        </td>
+                        <td className="px-2 py-1.5 text-right align-middle">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                          >
+                            <Link
+                              href={surfaceAdminHref(child.name)}
+                              aria-label={`Open ${child.name}`}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -1054,6 +1317,7 @@ function ToolDefaultsSection({
                 void onPatch({ notes: notesDraft || null }, "Notes saved");
               }}
               placeholder="Admin-facing notes about this surface's tool policy"
+              className={ACTIVE_FIELD}
               style={{ fontSize: "16px" }}
               disabled={busy}
             />
@@ -1180,7 +1444,7 @@ function BundleChipList({
           onValueChange={(v) => onAdd(v)}
           disabled={busy || available.length === 0}
         >
-          <SelectTrigger className="h-6 w-[200px] text-[11px]">
+          <SelectTrigger className={cn("h-6 w-[200px] text-[11px]", ACTIVE_FIELD)}>
             <SelectValue placeholder="Add bundle…" />
           </SelectTrigger>
           <SelectContent>
@@ -1312,7 +1576,10 @@ function JsonRecordEditor({
       )}
       <div className="space-y-2">
         {keys.map((key) => (
-          <div key={key} className="rounded-md border border-border p-2 space-y-1">
+          <div
+            key={key}
+            className="rounded-md border border-border p-2 space-y-1"
+          >
             <div className="flex items-center justify-between gap-2">
               <code className="font-mono text-[11px] text-foreground">
                 {key}
@@ -1342,7 +1609,11 @@ function JsonRecordEditor({
               }
               onBlur={() => commitKey(key)}
               rows={3}
-              className={`font-mono ${errors[key] ? "border-destructive" : ""}`}
+              className={cn(
+                "font-mono",
+                ACTIVE_FIELD,
+                errors[key] ? "border-destructive" : "",
+              )}
               style={{ fontSize: "13px" }}
               disabled={busy}
             />
@@ -1357,7 +1628,7 @@ function JsonRecordEditor({
             if (e.key === "Enter") addKey();
           }}
           placeholder="tool_name"
-          className="h-7 max-w-[240px] font-mono text-xs"
+          className={cn("h-7 max-w-[240px] font-mono text-xs", ACTIVE_FIELD)}
           style={{ fontSize: "16px" }}
           disabled={busy}
         />
@@ -1472,7 +1743,10 @@ function RolesSection({
                     {role.kind}
                   </Badge>
                   {role.kind === "multi" && (
-                    <Badge variant="outline" className="text-[10px] tabular-nums">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] tabular-nums"
+                    >
                       max {role.maxAgents}
                     </Badge>
                   )}
@@ -1495,8 +1769,9 @@ function RolesSection({
                     <span key={p.id} className="inline-flex items-center gap-1">
                       <Badge variant="default" className="text-[10px] gap-1">
                         Override
-                        {role.kind === "multi" ? ` (pos ${p.position})` : ""}:{" "}
-                        {nameFor(p.agentId)}
+                        {role.kind === "multi"
+                          ? ` (pos ${p.position})`
+                          : ""}: {nameFor(p.agentId)}
                       </Badge>
                       {isSuperAdmin && (
                         <button

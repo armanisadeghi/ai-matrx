@@ -28,7 +28,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
-import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {
   AI_POST_PROCESS_AGENTS,

@@ -35,6 +35,11 @@ export interface MessageOptionsMenuProps {
   role: PrimingMessageRole;
   /** Flat-text rendering of the message content (for copy/print/TTS). */
   content: string;
+  /**
+   * Aggregated flat text of the whole multi-iteration turn, when the host
+   * bar has one. Consumption-only actions prefer it; edit paths ignore it.
+   */
+  turnContent?: string | null;
   /** Server-assigned `cx_message.id`. Null hides mutation actions. */
   messageId: string | null;
   /** Server-assigned `cx_conversation.id`. Null hides mutation actions. */
@@ -70,6 +75,7 @@ export function MessageOptionsMenu({
   onClose,
   role,
   content,
+  turnContent = null,
   messageId,
   conversationId,
   metadata = null,
@@ -121,6 +127,7 @@ export function MessageOptionsMenu({
 
   const ctx: MessageActionContext = {
     content,
+    turnContent,
     isAuthenticated,
     messageId,
     conversationId,

@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useEnsureHierarchyLoaded } from "@/features/agent-context/hooks/useNavTree";
+import { useRefinableContent } from "@/components/content-refine/useRefinableContent";
+import { RefinableContentEditor } from "@/components/content-refine/RefinableContentEditor";
 import { useAssociateTask } from "@/features/tasks/hooks/useAssociateTask";
 import { selectProjects } from "@/features/tasks/redux/selectors";
 import { setSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
@@ -116,7 +119,12 @@ export function TaskQuickCreateCore({
   const router = useRouter();
   const { createAndAssociate, associate, isBusy } = useAssociateTask();
 
-  // Context defaults (data is already in Redux via useNavTree — no fetch needed)
+  // Ensure the org/project/task hierarchy is hydrated — this window opens
+  // from anywhere (chat, notes, files), so it can NOT assume a prior page
+  // already fetched. Idempotent: no-op when the data is present.
+  useEnsureHierarchyLoaded();
+
+  // Context defaults
   const orgId = useAppSelector(selectOrganizationId);
   const appProjectId = useAppSelector(selectProjectId);
   const appProjectName = useAppSelector(selectProjectName);
@@ -139,9 +147,12 @@ export function TaskQuickCreateCore({
   const hasParent = validParent !== null;
 
   const [title, setTitle] = useState(prePopulate?.title ?? "");
-  const [description, setDescription] = useState(
-    prePopulate?.description ?? "",
-  );
+  // Description runs through the shared refine primitive so seeded message
+  // content gets the full cleanup toolkit (strip thinking, trim, edit,
+  // markdown preview) — same contract as the quick note save window.
+  const refine = useRefinableContent({
+    initialContent: prePopulate?.description ?? "",
+  });
   const [priority, setPriority] = useState<Priority>(
     (prePopulate?.priority as Priority) ?? "",
   );
@@ -238,7 +249,7 @@ export function TaskQuickCreateCore({
 
     const taskId = await createAndAssociate({
       title: title.trim(),
-      description: description.trim() || null,
+      description: refine.workingContent.trim() || null,
       priority: (priority || null) as "low" | "medium" | "high" | null,
       due_date: dueDate || null,
       project_id: projectId || null,
@@ -280,7 +291,7 @@ export function TaskQuickCreateCore({
     associate,
     dispatch,
     title,
-    description,
+    refine.workingContent,
     priority,
     dueDate,
     projectId,
@@ -367,20 +378,12 @@ export function TaskQuickCreateCore({
       {!savedTaskId && (
         <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3">
           <div className="lg:flex-[3] flex flex-col min-h-0 min-w-0 gap-1">
-            <Label htmlFor="tqc-desc" className="text-xs shrink-0">
-              Description
-            </Label>
-            <textarea
-              id="tqc-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+            <Label className="text-xs shrink-0">Description</Label>
+            <RefinableContentEditor
+              refine={refine}
+              initialEditorMode="plain"
               placeholder="Optional — more detail about this task"
-              className={cn(
-                "flex-1 min-h-0 w-full resize-none rounded-md border border-input bg-background px-3 py-2",
-                "text-sm placeholder:text-muted-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0",
-              )}
-              style={{ fontSize: "16px" }}
+              className="flex-1 min-h-0"
             />
           </div>
 

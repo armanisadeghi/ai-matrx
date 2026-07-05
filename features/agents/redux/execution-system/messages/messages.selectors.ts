@@ -31,7 +31,17 @@ import {
 } from "@/types/python-generated/stream-events";
 import { fromCxMediaPart } from "@/features/files/blocks/image/adapters/from-cx-media-part";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
+import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+
+export interface ExtractFlatTextOptions {
+  /**
+   * When true, keeps `thinking` / `reasoning` blocks and inline
+   * `<thinking>` tags. Default false — copy/TTS/save paths want answer text only.
+   */
+  includeThinking?: boolean;
+}
 
 const EMPTY_RECORDS: MessageRecord[] = [];
 /** Stable empty list for selectors / hooks when no conversation is mounted yet. */
@@ -256,10 +266,19 @@ export const selectConversationKeywords =
 
 /**
  * Flat text extracted from a MessageRecord's content blocks. Used by
- * components that render plain-text previews (copy buttons, TTS, etc.).
+ * components that render plain-text previews (copy buttons, TTS, save, etc.).
+ *
+ * By default excludes `thinking` / `reasoning` blocks and strips inline
+ * `<thinking>` tags — the same answer-only contract as `deriveAnswerText`
+ * for live requests. Pass `{ includeThinking: true }` for debug or the
+ * explicit "Copy with thinking" menu action.
  */
-export function extractFlatText(record: MessageRecord | undefined): string {
+export function extractFlatText(
+  record: MessageRecord | undefined,
+  options?: ExtractFlatTextOptions,
+): string {
   if (!record) return "";
+  const includeThinking = options?.includeThinking ?? false;
   const blocks = Array.isArray(record.content)
     ? (record.content as Array<{
         type?: string;
@@ -269,6 +288,9 @@ export function extractFlatText(record: MessageRecord | undefined): string {
     : [];
   let out = "";
   for (const b of blocks) {
+    if (!includeThinking && b.type && NON_ANSWER_BLOCK_TYPES.has(b.type)) {
+      continue;
+    }
     if (typeof b?.text === "string" && b.text.length > 0) {
       // content-ir Phase 5: this flat text is what EnhancedChatMarkdown
       // re-splits on DB reload. Seed the part's persisted envelope cache
@@ -282,6 +304,9 @@ export function extractFlatText(record: MessageRecord | undefined): string {
       if (out.length > 0) out += "\n";
       out += b.text;
     }
+  }
+  if (!includeThinking && out.length > 0) {
+    out = removeThinkingContent(out);
   }
   return out;
 }
@@ -321,7 +346,8 @@ export function extractRecordError(
 ): string | undefined {
   if (!record) return undefined;
   const structured = record.error?.message;
-  if (typeof structured === "string" && structured.length > 0) return structured;
+  if (typeof structured === "string" && structured.length > 0)
+    return structured;
   const md = record.metadata;
   if (md && typeof md === "object" && !Array.isArray(md)) {
     const err = (md as Record<string, unknown>).error;

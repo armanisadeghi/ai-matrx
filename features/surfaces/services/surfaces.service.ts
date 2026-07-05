@@ -133,14 +133,19 @@ export interface SurfaceOption {
  * aggregation. Returns every surface across every client so a creator can
  * mimic anything (matrx-user / matrx-admin / matrx-public / chrome-extension).
  */
-export async function listSurfaceOptions(): Promise<SurfaceOption[]> {
-  const { data, error } = await sb()
+export async function listSurfaceOptions(options?: {
+  includeInactive?: boolean;
+}): Promise<SurfaceOption[]> {
+  let q = sb()
     .schema("ui")
     .from("ui_surface")
     .select(
       "name, client_name, description, executor_name, parent_surface_name",
-    )
-    .eq("is_active", true)
+    );
+  if (!options?.includeInactive) {
+    q = q.eq("is_active", true);
+  }
+  const { data, error } = await q
     .order("client_name", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;

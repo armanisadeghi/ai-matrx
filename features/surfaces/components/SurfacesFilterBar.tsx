@@ -1,6 +1,24 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -8,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
 
 export type StatusFilter = "all" | "active" | "inactive";
 export type ManifestFilter = "all" | "with_manifest" | "without_manifest";
@@ -18,6 +35,8 @@ export interface SurfacesFilterState {
   status: StatusFilter;
   client: string;
   manifest: ManifestFilter;
+  /** `__all__` | `__none__` (roots) | a parent surface name */
+  parent: string;
 }
 
 export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
@@ -25,15 +44,134 @@ export const DEFAULT_FILTER_STATE: SurfacesFilterState = {
   status: "all",
   client: "__all__",
   manifest: "all",
+  parent: "__all__",
 };
 
 interface Props {
   state: SurfacesFilterState;
   onChange: (patch: Partial<SurfacesFilterState>) => void;
   clientNames: string[];
+  parentNames: string[];
 }
 
-export function SurfacesFilterBar({ state, onChange, clientNames }: Props) {
+function parentFilterLabel(value: string): string {
+  if (value === "__all__") return "All parents";
+  if (value === "__none__") return "Root surfaces (no parent)";
+  return value;
+}
+
+function ParentFilterCombobox({
+  value,
+  parentNames,
+  onChange,
+}: {
+  value: string;
+  parentNames: string[];
+  onChange: (parent: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const label = parentFilterLabel(value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-7 w-[220px] justify-between px-2 text-xs font-normal bg-background text-foreground"
+        >
+          <span className="truncate font-mono">{label}</span>
+          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[320px] p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder="Search parent surfaces…"
+            className="text-xs h-9"
+          />
+          <CommandList className="max-h-[min(320px,50dvh)]">
+            <CommandEmpty>No parent surface found.</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value="all parents"
+                onSelect={() => {
+                  onChange("__all__");
+                  setOpen(false);
+                }}
+                className="text-xs"
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-3.5 w-3.5",
+                    value === "__all__" ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                All parents
+              </CommandItem>
+              <CommandItem
+                value="root surfaces no parent"
+                onSelect={() => {
+                  onChange("__none__");
+                  setOpen(false);
+                }}
+                className="text-xs"
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-3.5 w-3.5",
+                    value === "__none__" ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                Root surfaces (no parent)
+              </CommandItem>
+            </CommandGroup>
+            {parentNames.length > 0 && (
+              <>
+                <CommandSeparator />
+                <CommandGroup heading="Parent surface">
+                  {parentNames.map((name) => (
+                    <CommandItem
+                      key={name}
+                      value={name}
+                      onSelect={() => {
+                        onChange(name);
+                        setOpen(false);
+                      }}
+                      className="text-xs font-mono"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-3.5 w-3.5 shrink-0",
+                          value === name ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="truncate">{name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+export function SurfacesFilterBar({
+  state,
+  onChange,
+  clientNames,
+  parentNames,
+}: Props) {
+  const sortedParentNames = useMemo(
+    () => [...parentNames].sort((a, b) => a.localeCompare(b)),
+    [parentNames],
+  );
+
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border bg-card">
       <div className="relative flex-1 max-w-md min-w-[180px]">
@@ -91,6 +229,12 @@ export function SurfacesFilterBar({ state, onChange, clientNames }: Props) {
           <SelectItem value="without_manifest">No SurfaceValues</SelectItem>
         </SelectContent>
       </Select>
+
+      <ParentFilterCombobox
+        value={state.parent}
+        parentNames={sortedParentNames}
+        onChange={(parent) => onChange({ parent })}
+      />
     </div>
   );
 }

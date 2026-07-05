@@ -43,7 +43,10 @@ interface DocTab {
   documentId?: string;
 }
 
-function tabKey(t: { conversationId: string; kind: WorkingDocumentKind }): string {
+function tabKey(t: {
+  conversationId: string;
+  kind: WorkingDocumentKind;
+}): string {
   return `${t.conversationId}:${t.kind}`;
 }
 
@@ -172,6 +175,17 @@ export function DocumentsWorkspace({
     [tabs, conversationId, dispatch, workingBinding, scratchBinding],
   );
 
+  const handleDocumentRenamed = useCallback(
+    (documentId: string, title: string) => {
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.documentId === documentId ? { ...t, label: title } : t,
+        ),
+      );
+    },
+    [],
+  );
+
   const closeTab = useCallback(
     (key: string) => {
       // Closing an attached tab also removes its persisted edge (keeps the
@@ -216,6 +230,7 @@ export function DocumentsWorkspace({
           closableKeys={closableKeys}
           onOpen={openDoc}
           onDetach={closeTab}
+          onDocumentRenamed={handleDocumentRenamed}
           onCollapse={() => setRailOpen(false)}
         />
       )}

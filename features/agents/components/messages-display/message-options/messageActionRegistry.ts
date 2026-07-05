@@ -25,7 +25,6 @@ import {
   Eye,
   Globe,
   Brain,
-  Save,
   Edit,
   Send,
   CheckSquare,
@@ -48,6 +47,7 @@ import {
   History,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import { NotesRouteIcon } from "@/components/branding/RouteFaviconIcon";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -63,6 +63,14 @@ import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbac
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
+import {
+  extractFlatText,
+  selectMessagePosition,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectConversationTitle } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { CHAT_SAVES_FOLDER } from "@/features/notes/constants/defaultFolders";
+import { buildConversationMessageTitle } from "@/features/agents/utils/conversation-message-title";
+import { buildTaskSeedFromMessage } from "./buildTaskSeedFromMessage";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -73,6 +81,15 @@ const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 export interface MessageActionContext {
   /** Flat-text rendering of the message (for copy/print/email). */
   content: string;
+  /**
+   * Aggregated flat text of the ENTIRE multi-iteration assistant turn, when
+   * the host bar rendered one (AssistantTurnGroup). Consumption-only actions
+   * (copy, save, export, create-task) prefer `turnContent ?? content` so they
+   * match what the user reads on screen. Actions that WRITE BACK to the
+   * message (edit content, HTML preview save) must keep using `content` —
+   * they mutate a single `cx_message` row.
+   */
+  turnContent?: string | null;
   /** Is the viewer signed in? Gates auth-required actions. */
   isAuthenticated: boolean;
   /** Server `cx_message.id`. Required for any mutation path; null hides those items. */
@@ -212,7 +229,8 @@ function extractFirstCodeBlock(content: string): {
 // ============================================================================
 
 function copyItems(ctx: MessageActionContext): MenuItem[] {
-  const { content } = ctx;
+  // Copy matches what the user reads — the whole turn, like the bar's Copy.
+  const content = ctx.turnContent ?? ctx.content;
   return [
     {
       key: "copy-plain",
@@ -285,6 +303,9 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
     onFullPrint,
     isCapturing,
   } = ctx;
+  // Exports consume the whole turn; `content` stays single-message for the
+  // HTML preview because its Save writes back to this one cx_message row.
+  const turnText = ctx.turnContent ?? content;
 
   const items: MenuItem[] = [
     {
@@ -323,7 +344,7 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-orange-500 dark:text-orange-400",
       label: "Copy HTML page",
       action: async () => {
-        await copyToClipboard(content, {
+        await copyToClipboard(turnText, {
           isMarkdown: true,
           formatForWordPress: true,
           showHtmlPreview: true,
@@ -356,7 +377,7 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
             openOverlay({
               overlayId: "emailDialog",
               data: {
-                content,
+                content: turnText,
                 metadata: metadata ?? null,
               },
             }),
@@ -367,7 +388,7 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            content,
+            content: turnText,
             metadata: { ...metadata, timestamp: new Date().toLocaleString() },
           }),
         });
@@ -385,7 +406,7 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-slate-500 dark:text-slate-400",
       label: "Print / Save PDF",
       action: () => {
-        printMarkdownContent(content, "Message");
+        printMarkdownContent(turnText, "Message");
         onClose();
       },
       category: "Export",
@@ -414,15 +435,68 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
   return items;
 }
 
+function saveAsItems(ctx: MessageActionContext): MenuItem[] {
+  const { conversationId, messageId, dispatch, onClose } = ctx;
+  // Save destinations open a refine editor — seed the whole turn and let the
+  // user trim, rather than silently dropping earlier iterations.
+  const content = ctx.turnContent ?? ctx.content;
+
+  return [
+    {
+      key: "save-as-note",
+      icon: NotesRouteIcon,
+      label: "Note",
+      action: () => {
+        if (
+          !requireAuth(
+            ctx,
+            "save-as-note",
+            "Save as Note",
+            "Sign in to save this response as a note.",
+          )
+        )
+          return;
+
+        const state = ctx.getState();
+        const conversationTitle =
+          conversationId != null
+            ? selectConversationTitle(conversationId)(state)
+            : null;
+        const messagePosition =
+          conversationId != null && messageId != null
+            ? selectMessagePosition(conversationId, messageId)(state)
+            : undefined;
+        const defaultNoteName = buildConversationMessageTitle(
+          conversationTitle,
+          messagePosition,
+        );
+
+        dispatch(
+          openOverlay({
+            overlayId: "quickNoteSaveWindow",
+            data: {
+              initialContent: content,
+              defaultFolder: CHAT_SAVES_FOLDER,
+              defaultNoteName,
+              initialEditorMode: undefined,
+            },
+          }),
+        );
+        onClose();
+      },
+      category: "Save as",
+      showToast: false,
+      hidden: !conversationId || !messageId,
+    },
+  ];
+}
+
 function saveItems(ctx: MessageActionContext): MenuItem[] {
-  const { content, dispatch, onClose, messageId } = ctx;
-  // Per-message instance keys so saving from two different messages doesn't
-  // overwrite the first window's draft via the singleton "default" slot.
-  // Falls back to a random id when there's no messageId (shouldn't happen
-  // for saved messages, but keeps the contract robust).
-  const saveNotesInstanceId = messageId
-    ? `save-notes-${messageId}`
-    : `save-notes-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const { dispatch, onClose, messageId } = ctx;
+  // Saves + task creation consume the whole turn (matches what the user
+  // reads); code extraction also scans the whole turn so a block from an
+  // earlier iteration isn't invisible.
+  const content = ctx.turnContent ?? ctx.content;
   const saveCodeInstanceId = messageId
     ? `save-code-${messageId}`
     : `save-code-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -452,36 +526,6 @@ function saveItems(ctx: MessageActionContext): MenuItem[] {
       category: "Actions",
       successMessage: "Saved to Scratch!",
       errorMessage: "Failed to save",
-    },
-    {
-      key: "save-notes",
-      icon: Save,
-      iconColor: "text-violet-500 dark:text-violet-400",
-      label: "Save to Notes",
-      action: () => {
-        if (
-          !requireAuth(
-            ctx,
-            "save-notes",
-            "Save to Notes",
-            "Sign in to save notes and organize your messages.",
-          )
-        )
-          return;
-        dispatch(
-          openOverlay({
-            overlayId: "saveToNotes",
-            instanceId: saveNotesInstanceId,
-            data: {
-              initialContent: content,
-              defaultFolder: undefined,
-              initialEditorMode: undefined,
-            },
-          }),
-        );
-      },
-      category: "Actions",
-      showToast: false,
     },
     {
       key: "save-code-scratch",
@@ -590,43 +634,26 @@ function saveItems(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
-        const preview = content.slice(0, 400);
-        // "Task Related To: <start of message>" — makes it clear at a glance
-        // what the task is about. Fully editable in the window.
-        const firstLine =
-          content
-            .trim()
-            .split(/\n+/)[0]
-            ?.replace(/^[#>*\-\s]+/, "")
-            .slice(0, 60) || "";
-        const seedTitle = firstLine
-          ? `Task Related To: ${firstLine}${firstLine.length >= 60 ? "…" : ""}`
-          : "Task Related To AI message";
+        const state = ctx.getState();
+        const conversationTitle = ctx.conversationId
+          ? selectConversationTitle(ctx.conversationId)(state)
+          : null;
+        const messagePosition =
+          ctx.conversationId && ctx.messageId
+            ? selectMessagePosition(ctx.conversationId, ctx.messageId)(state)
+            : undefined;
 
         dispatch(
-          setPendingSource({
-            entity_type: "message",
-            entity_id: ctx.messageId ?? null,
-            label: preview,
-            metadata: {
-              // Also attach the whole conversation when available so the
-              // resulting task is reachable from either side.
-              ...(ctx.conversationId
-                ? {
-                    parent: {
-                      entity_type: "conversation",
-                      entity_id: ctx.conversationId,
-                      label: preview.slice(0, 120),
-                    },
-                  }
-                : {}),
-              ...(ctx.metadata ?? {}),
-            },
-            prePopulate: {
-              title: seedTitle,
-              description: content,
-            },
-          }),
+          setPendingSource(
+            buildTaskSeedFromMessage({
+              content,
+              messageId: ctx.messageId,
+              conversationId: ctx.conversationId,
+              conversationTitle,
+              messagePosition,
+              metadata: ctx.metadata,
+            }),
+          ),
         );
         onClose();
       },
@@ -1033,7 +1060,7 @@ function creatorItems(ctx: MessageActionContext): MenuItem[] {
 // ============================================================================
 
 function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
-  const { content } = ctx;
+  const { conversationId, messageId, getState } = ctx;
   return [
     {
       key: "copy-thinking",
@@ -1041,7 +1068,14 @@ function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-purple-500 dark:text-purple-400",
       label: "Copy with thinking",
       action: async () => {
-        await copyToClipboard(content, {
+        const record =
+          conversationId && messageId
+            ? getState().messages.byConversationId[conversationId]?.byId?.[
+                messageId
+              ]
+            : undefined;
+        const fullContent = extractFlatText(record, { includeThinking: true });
+        await copyToClipboard(fullContent, {
           isMarkdown: true,
           includeThinking: true,
           onSuccess: () => {},
@@ -1088,7 +1122,7 @@ function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
         // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
         const { pushMarkdownToDocument } =
           await import("@/features/data-tables/export-targets");
-        const res = await pushMarkdownToDocument(ctx.content);
+        const res = await pushMarkdownToDocument(ctx.turnContent ?? ctx.content);
         if (!res.ok || !res.href) {
           // showToast is false on this item, so AdvancedMenu won't surface a
           // thrown error — toast it ourselves.
@@ -1451,9 +1485,10 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
 /**
  * Menu items for an assistant-authored message. Shape:
  *   Edit → Edit content, Fork at this message, Delete
+ *   Save as → Note (window panel)
  *   Copy → plain / Docs / Word / with thinking
  *   Export → HTML preview, Copy HTML page, Email, Print, (Full print)
- *   Actions → Save to Scratch/Notes/File, Add to Tasks, Convert to broker, Add to docs
+ *   Actions → Save to Scratch/File, Add to Tasks, Convert to broker, Add to docs
  *   App → Feedback, Announcements, Preferences
  *
  * Audio playback lives on the inline AssistantActionBar (SpeakerButton —
@@ -1467,6 +1502,7 @@ export function getAssistantMessageActions(
     editHistoryItem(ctx),
     forkAtMessageItem(ctx),
     deleteMessageItem(ctx),
+    ...saveAsItems(ctx),
     ...creatorItems(ctx),
     ...copyItems(ctx),
     ...assistantOnlyItems(ctx),
@@ -1542,6 +1578,17 @@ export function resumePendingAuthAction(
       })
         .then(() => toast.success("Saved to Scratch!"))
         .catch(() => toast.error("Failed to save to Scratch"));
+    } else if (action === "save-as-note") {
+      dispatch(
+        openOverlay({
+          overlayId: "quickNoteSaveWindow",
+          data: {
+            initialContent: savedContent,
+            defaultFolder: CHAT_SAVES_FOLDER,
+            initialEditorMode: undefined,
+          },
+        }),
+      );
     } else if (action === "save-notes") {
       dispatch(
         openOverlay({
@@ -1581,25 +1628,16 @@ export function resumePendingAuthAction(
           .catch(() => toast.error("Failed to save code"));
       }
     } else if (action === "add-to-tasks") {
-      const preview = savedContent.slice(0, 400);
-      const firstLine =
-        savedContent
-          .trim()
-          .split(/\n+/)[0]
-          ?.replace(/^[#>*\-\s]+/, "")
-          .slice(0, 60) || "";
-      const seedTitle = firstLine
-        ? `Task Related To: ${firstLine}${firstLine.length >= 60 ? "…" : ""}`
-        : "Task Related To AI message";
+      // No live message context on the post-auth resume path (working from
+      // saved content only) — null ids, no conversation edge.
       dispatch(
-        setPendingSource({
-          entity_type: "message",
-          // No live message context on the post-auth resume path (working
-          // from saved content only) — null, not a fake empty id.
-          entity_id: null,
-          label: preview,
-          prePopulate: { title: seedTitle, description: savedContent },
-        }),
+        setPendingSource(
+          buildTaskSeedFromMessage({
+            content: savedContent,
+            messageId: null,
+            conversationId: null,
+          }),
+        ),
       );
     }
   } catch {

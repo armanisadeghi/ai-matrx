@@ -15,7 +15,7 @@ import {
   useAiPostProcess,
   type AiProcessPhase,
 } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
-import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 

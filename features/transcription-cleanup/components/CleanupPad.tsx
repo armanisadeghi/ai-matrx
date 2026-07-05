@@ -88,7 +88,7 @@ import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerW
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v2/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
+import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import {
   buildTranscriptsCleanupContextData,
   withActivePane,

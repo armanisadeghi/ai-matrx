@@ -69,6 +69,14 @@ function TaskQuickCreateWindowInner({
 
   const title = source ? "Create task from source" : "Create task";
 
+  // Match the QuickNoteSaveWindow footprint: near-fullscreen with a 24px
+  // viewport pad so the refine editor (split view, trim rows) has room.
+  const viewportPad = 24;
+  const maxWidth =
+    typeof window !== "undefined" ? window.innerWidth - viewportPad : 1600;
+  const maxHeight =
+    typeof window !== "undefined" ? window.innerHeight - viewportPad : 1000;
+
   return (
     <WindowPanel
       title={title}
@@ -76,8 +84,10 @@ function TaskQuickCreateWindowInner({
       overlayId={OVERLAY_ID}
       minWidth={520}
       minHeight={480}
-      width={720}
-      height={560}
+      width="90vw"
+      height="85dvh"
+      maxWidth={maxWidth}
+      maxHeight={maxHeight}
       position="center"
       onClose={onClose}
     >
