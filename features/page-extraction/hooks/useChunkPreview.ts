@@ -31,6 +31,10 @@ import type {
   SourceVariationKind,
 } from "@/features/page-extraction/types";
 import type { ChunkingConfigDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
+import { deriveSourceVariations } from "@/features/page-extraction/services/run-from-draft";
+
+/** Fallback chunk size for preview labels before the user sets one explicitly. */
+const PREVIEW_DEFAULT_CHUNK_SIZE = 12;
 
 interface PageRow {
   page_number: number;
@@ -66,7 +70,11 @@ export interface UseChunkPreviewResult {
  */
 export type ChunkConfigOverride = Pick<
   ChunkingConfigDraft,
-  "scopePages" | "chunkSize" | "chunkOverlap" | "sourceVariations"
+  | "scopePages"
+  | "chunkSize"
+  | "chunkOverlap"
+  | "sourceVariations"
+  | "variableMapping"
 >;
 
 export function useChunkPreview(opts: {
@@ -74,8 +82,19 @@ export function useChunkPreview(opts: {
   processedDocumentId: string | null;
   /** When set, compute the preview from this config instead of the draft. */
   configOverride?: ChunkConfigOverride | null;
+  /**
+   * When true, an unset chunk size uses {@link PREVIEW_DEFAULT_CHUNK_SIZE}
+   * so variable-wiring labels show realistic counts before the user fills
+   * in chunk size. Run validation still requires an explicit value.
+   */
+  previewDefaultChunkSize?: boolean;
 }): UseChunkPreviewResult {
-  const { fileId, processedDocumentId, configOverride } = opts;
+  const {
+    fileId,
+    processedDocumentId,
+    configOverride,
+    previewDefaultChunkSize,
+  } = opts;
   const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
   const cfg = configOverride ?? draft;
 
@@ -129,6 +148,27 @@ export function useChunkPreview(opts: {
     [pages],
   );
 
+  /** Empty scope means "all pages" at run time — mirror that in preview. */
+  const effectiveScopePages = useMemo(() => {
+    if (cfg.scopePages.length > 0) return cfg.scopePages;
+    return availablePages;
+  }, [cfg.scopePages, availablePages]);
+
+  const effectiveVariations = useMemo<SourceVariationKind[]>(() => {
+    const mapping = cfg.variableMapping ?? {};
+    if (Object.keys(mapping).length > 0) {
+      return deriveSourceVariations(mapping);
+    }
+    if (cfg.sourceVariations.length > 0) return cfg.sourceVariations;
+    return ["clean_text"];
+  }, [cfg.variableMapping, cfg.sourceVariations]);
+
+  const effectiveChunkSize = useMemo(() => {
+    if (cfg.chunkSize != null && cfg.chunkSize >= 1) return cfg.chunkSize;
+    if (previewDefaultChunkSize) return PREVIEW_DEFAULT_CHUNK_SIZE;
+    return null;
+  }, [cfg.chunkSize, previewDefaultChunkSize]);
+
   const contentMeta = useMemo<DocumentContentMeta>(
     () => ({
       totalPages: pages.length,
@@ -145,13 +185,13 @@ export function useChunkPreview(opts: {
   );
 
   const bundles = useMemo<PageTextBundle[]>(() => {
-    if (cfg.scopePages.length === 0) return [];
-    const scope = new Set(cfg.scopePages);
+    if (effectiveScopePages.length === 0) return [];
+    const scope = new Set(effectiveScopePages);
     return pages
       .filter((p) => scope.has(p.page_number))
       .map<PageTextBundle>((p) => {
         const texts: Partial<Record<SourceVariationKind, string>> = {};
-        for (const v of cfg.sourceVariations) {
+        for (const v of effectiveVariations) {
           if (v === "clean_text") texts.clean_text = p.cleaned_text ?? "";
           else if (v === "raw_text") texts.raw_text = p.raw_text ?? "";
           // pdf_page is text-less; the textual preview shows "(PDF attachment)"
@@ -159,17 +199,17 @@ export function useChunkPreview(opts: {
         }
         return { pageNumber: p.page_number, texts };
       });
-  }, [pages, cfg.scopePages, cfg.sourceVariations]);
+  }, [pages, effectiveScopePages, effectiveVariations]);
 
   const chunks = useMemo(() => {
-    if (cfg.chunkSize == null || cfg.chunkSize < 1) return [];
+    if (effectiveChunkSize == null || effectiveChunkSize < 1) return [];
     return previewChunks({
       pages: bundles,
-      chunkSize: cfg.chunkSize,
+      chunkSize: effectiveChunkSize,
       chunkOverlap: cfg.chunkOverlap,
-      variations: cfg.sourceVariations,
+      variations: effectiveVariations,
     });
-  }, [bundles, cfg.chunkSize, cfg.chunkOverlap, cfg.sourceVariations]);
+  }, [bundles, effectiveChunkSize, cfg.chunkOverlap, effectiveVariations]);
 
   const stats = useMemo(() => computeChunkStats(chunks), [chunks]);
 

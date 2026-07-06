@@ -89,6 +89,7 @@ export function ChunksTab({
       sourceVariations: (job.source_variations ?? [
         "clean_text",
       ]) as SourceVariationKind[],
+      variableMapping: job.variable_mapping ?? {},
     };
   }, [job]);
 

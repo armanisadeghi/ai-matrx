@@ -781,6 +781,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             findQuery={findQuery}
             onRunPipeline={handleRunPipeline}
             pipelineRunning={pipelineRunning}
+            onRunAiClean={handleRunAiClean}
             aiCleanRunning={aiCleanRunning}
             streamingCleanText={streamingCleanText}
             onOpenUpload={() => setUploadOpen(true)}

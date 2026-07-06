@@ -381,7 +381,27 @@ function TemplateEditor({
     availablePages,
     contentMeta,
     loading: pagesLoading,
-  } = useChunkPreview({ fileId, processedDocumentId });
+  } = useChunkPreview({
+    fileId,
+    processedDocumentId,
+    previewDefaultChunkSize: true,
+  });
+
+  const chunkCountsByVariation = useMemo(() => {
+    if (chunks.length === 0) return {};
+    const counts: Partial<
+      Record<"clean_text" | "raw_text" | "pdf_page", number>
+    > = {
+      pdf_page: chunks.length,
+    };
+    counts.raw_text = chunks.filter(
+      (c) => (c.charsByVariation.raw_text ?? 0) > 0,
+    ).length;
+    counts.clean_text = chunks.filter(
+      (c) => (c.charsByVariation.clean_text ?? 0) > 0,
+    ).length;
+    return counts;
+  }, [chunks]);
 
   // Other saved templates on this file — feed the extra-inputs manager
   // inside VariableMappingEditor (each becomes a wireable option).
@@ -656,7 +676,7 @@ function TemplateEditor({
               agentName={agent.name}
               agentVariables={agent.variableDefinitions}
               mapping={draft.variableMapping}
-              chunkCount={chunks.length}
+              chunkCountsByVariation={chunkCountsByVariation}
               extraInputs={draft.extraInputs}
               candidateJobs={candidateJobs}
               onChange={(next) =>
@@ -819,13 +839,19 @@ function TemplateEditor({
                 />
               </Field>
             </div>
-            {draft.chunkSize != null && draft.scopePages.length > 0 && (
+            {chunks.length > 0 && (
               <p className="text-[10px] text-muted-foreground -mt-2">
                 →{" "}
                 <span className="font-mono text-foreground/80">
                   {chunks.length}
                 </span>{" "}
                 chunk{chunks.length === 1 ? "" : "s"}
+                {!draft.chunkSize && (
+                  <span className="text-muted-foreground/70">
+                    {" "}
+                    (preview · set chunk size to confirm)
+                  </span>
+                )}
                 {stats.avgChars > 0 && (
                   <>
                     {" "}

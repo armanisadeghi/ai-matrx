@@ -80,8 +80,8 @@ export interface VariableMappingEditorProps {
   agentVariables: AgentVariableForMapping[] | null | undefined;
   /** The Job's `variable_mapping`: `{ surface_value_name: agent_var_name }`. */
   mapping: Record<string, string>;
-  /** Live chunk count from the draft's chunk-preview. Shown next to each "X Chunks" option. */
-  chunkCount: number;
+  /** Live chunk counts per variation — shown next to each "X Chunks" option. */
+  chunkCountsByVariation: ChunkCountsByVariation;
   /** User-defined named inputs sourced from other templates. Appear in the dropdown as their own options. */
   extraInputs: ExtraExtractionInput[];
   /** Other saved templates on this file — used to render extra-input dropdowns and labels. */
@@ -98,7 +98,9 @@ const LITERAL_MODE_VALUE = "__literal_mode__";
 
 /** Surface keys that represent dynamic chunk text — drive `source_variations` derivation. */
 const CHUNK_KEYS = ["clean_text", "raw_text", "pdf_page"] as const;
-type ChunkKey = (typeof CHUNK_KEYS)[number];
+export type ChunkKey = (typeof CHUNK_KEYS)[number];
+
+export type ChunkCountsByVariation = Partial<Record<ChunkKey, number>>;
 
 /** Advanced / legacy keys hidden behind "Show more". */
 const ADVANCED_KEYS = [
@@ -218,7 +220,7 @@ export function VariableMappingEditor({
   agentName,
   agentVariables,
   mapping,
-  chunkCount,
+  chunkCountsByVariation,
   extraInputs,
   candidateJobs,
   onChange,
@@ -246,12 +248,12 @@ export function VariableMappingEditor({
     () =>
       buildOptionGroups({
         byName,
-        chunkCount,
+        chunkCountsByVariation,
         extraInputs,
         jobNameById,
         mapping,
       }),
-    [byName, chunkCount, extraInputs, jobNameById, mapping],
+    [byName, chunkCountsByVariation, extraInputs, jobNameById, mapping],
   );
 
   // Auto-reveal the advanced section when an existing mapping points there.
@@ -418,19 +420,22 @@ export function VariableMappingEditor({
 
 function buildOptionGroups({
   byName,
-  chunkCount,
+  chunkCountsByVariation,
   extraInputs,
   jobNameById,
   mapping,
 }: {
   byName: Map<string, SurfaceValue>;
-  chunkCount: number;
+  chunkCountsByVariation: ChunkCountsByVariation;
   extraInputs: ExtraExtractionInput[];
   jobNameById: Map<string, string>;
   mapping: Record<string, string>;
 }): { primaryGroups: OptionGroup[]; advancedGroup: OptionGroup | null } {
   const groups: OptionGroup[] = [];
-  const countLabel = chunkCount > 0 ? `${chunkCount} ` : "";
+  const maxChunkCount = Math.max(
+    0,
+    ...CHUNK_KEYS.map((k) => chunkCountsByVariation[k] ?? 0),
+  );
 
   // 1. Dynamic chunks — live counts in the label so the user sees
   //    immediately how many runs each option produces.
@@ -441,14 +446,17 @@ function buildOptionGroups({
     chunkOpts.push({
       kind: "surface",
       key,
-      label: chunkLabel(key, countLabel),
+      label: chunkLabel(key, chunkCountsByVariation[key]),
       hint: chunkHint(key),
     });
   }
   if (chunkOpts.length > 0) {
     groups.push({
       id: "chunks",
-      label: chunkCount > 0 ? `${chunkCount} dynamic chunks` : "Dynamic chunks",
+      label:
+        maxChunkCount > 0
+          ? `${maxChunkCount} dynamic chunks`
+          : "Dynamic chunks",
       options: chunkOpts,
     });
   }
@@ -595,7 +603,8 @@ function pickGroup({
   return { id, label, options };
 }
 
-function chunkLabel(key: ChunkKey, countPrefix: string): string {
+function chunkLabel(key: ChunkKey, count: number | undefined): string {
+  const countPrefix = count != null && count > 0 ? `${count} ` : "";
   switch (key) {
     case "clean_text":
       return `${countPrefix}clean-text chunks`;

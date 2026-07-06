@@ -42,6 +42,7 @@ import {
   EyeOff,
   AlertTriangle,
   Zap,
+  Sparkles,
   Upload,
   Crop,
   Download,
@@ -178,6 +179,8 @@ export interface PdfStudioReaderProps {
   /** Called when the user wants to re-run the full pipeline on this doc. */
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
+  /** Called when the user wants to run AI Clean on this doc. */
+  onRunAiClean: () => void | Promise<unknown>;
   /**
    * True while AI Clean is streaming. The cleaned pane uses this to render
    * `streamingCleanText` as a single live preview block instead of the
@@ -221,6 +224,7 @@ export function PdfStudioReader({
   findQuery,
   onRunPipeline,
   pipelineRunning,
+  onRunAiClean,
   aiCleanRunning = false,
   streamingCleanText = null,
   onOpenUpload,
@@ -305,6 +309,8 @@ export function PdfStudioReader({
           allPagesEmpty={rawPagesEmpty}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
+          onRunAiClean={onRunAiClean}
+          aiCleanRunning={aiCleanRunning}
           onRefreshPages={onRefreshPages}
         />
       )}
@@ -328,6 +334,8 @@ export function PdfStudioReader({
           allPagesEmpty={cleanedPagesEmpty}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
+          onRunAiClean={onRunAiClean}
+          aiCleanRunning={aiCleanRunning}
           onRefreshPages={onRefreshPages}
           streaming={aiCleanRunning}
           streamingText={streamingCleanText}
@@ -480,7 +488,8 @@ async function saveAsCropDerivative(params: {
     };
   }
   const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc").from("processed_documents")
+    .schema("docproc")
+    .from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
       storage_uri: storageUri,
@@ -534,7 +543,8 @@ async function saveAsReorderDerivative(params: {
     };
   }
   const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc").from("processed_documents")
+    .schema("docproc")
+    .from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
       storage_uri: storageUri,
@@ -1126,6 +1136,8 @@ function TextPane({
   allPagesEmpty,
   onRunPipeline,
   pipelineRunning,
+  onRunAiClean,
+  aiCleanRunning,
   onRefreshPages,
   streaming = false,
   streamingText = null,
@@ -1153,6 +1165,8 @@ function TextPane({
   allPagesEmpty: boolean;
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
+  onRunAiClean: () => void | Promise<unknown>;
+  aiCleanRunning: boolean;
   onRefreshPages: () => void;
   /** True while a clean/pipeline stream is actively writing into `streamingText`. */
   streaming?: boolean;
@@ -1305,6 +1319,8 @@ function TextPane({
           field={field}
           onRunPipeline={onRunPipeline}
           pipelineRunning={pipelineRunning}
+          onRunAiClean={onRunAiClean}
+          aiCleanRunning={aiCleanRunning}
         />
       )}
 
@@ -1417,12 +1433,18 @@ function BlankPagesBanner({
   field,
   onRunPipeline,
   pipelineRunning,
+  onRunAiClean,
+  aiCleanRunning,
 }: {
   docHasAggregate: boolean;
   field: "raw" | "cleaned";
   onRunPipeline: () => void | Promise<unknown>;
   pipelineRunning: boolean;
+  onRunAiClean: () => void | Promise<unknown>;
+  aiCleanRunning: boolean;
 }) {
+  const isCleanPane = field === "cleaned";
+
   return (
     <div className="shrink-0 mx-2 mt-2 border border-amber-500/30 bg-amber-500/5 rounded-md p-2.5 text-[11px] text-amber-700 dark:text-amber-400">
       <div className="flex items-start gap-2">
@@ -1432,29 +1454,54 @@ function BlankPagesBanner({
             Per-page rows exist for this doc, but every page is empty.
           </p>
           <p className="mt-0.5 text-amber-700/90 dark:text-amber-300/80 leading-snug">
-            {docHasAggregate
-              ? "Showing the aggregate document text below as a fallback. Re-run the pipeline to populate per-page rows so synced scrolling and word-level highlighting work."
-              : `No ${field === "cleaned" ? "cleaned" : "raw"} text was persisted. Re-run the pipeline to repopulate.`}
+            {isCleanPane
+              ? docHasAggregate
+                ? "Showing the aggregate AI-cleaned text below as a fallback. Run AI Clean again to refresh it, or re-run the pipeline to populate per-page rows for synced scrolling."
+                : "No AI-cleaned text yet. Run AI Clean to generate cleaned content from the raw extraction."
+              : docHasAggregate
+                ? "Showing the aggregate document text below as a fallback. Re-run the pipeline to populate per-page rows so synced scrolling and word-level highlighting work."
+                : "No raw text was persisted. Re-run the pipeline to repopulate."}
           </p>
           <div className="mt-1.5">
-            <Button
-              size="sm"
-              className="h-7 text-[11px] gap-1"
-              onClick={() => void onRunPipeline()}
-              disabled={pipelineRunning}
-            >
-              {pipelineRunning ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Re-running…
-                </>
-              ) : (
-                <>
-                  <Zap className="w-3 h-3" />
-                  Re-run pipeline
-                </>
-              )}
-            </Button>
+            {isCleanPane ? (
+              <Button
+                size="sm"
+                className="h-7 text-[11px] gap-1"
+                onClick={() => void onRunAiClean()}
+                disabled={aiCleanRunning}
+              >
+                {aiCleanRunning ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Running AI Clean…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3 h-3" />
+                    {docHasAggregate ? "Run AI Clean again" : "Run AI Clean"}
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="h-7 text-[11px] gap-1"
+                onClick={() => void onRunPipeline()}
+                disabled={pipelineRunning}
+              >
+                {pipelineRunning ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Re-running…
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-3 h-3" />
+                    Re-run pipeline
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -1507,7 +1554,8 @@ function PageBlock({
     const charCol =
       field === "cleaned" ? "cleaned_char_count" : "raw_char_count";
     const { error } = await (supabase as any)
-      .schema("docproc").from("processed_document_pages")
+      .schema("docproc")
+      .from("processed_document_pages")
       .update({ [col]: editText, [charCol]: editText.length })
       .eq("id", page.id);
     setSaving(false);
