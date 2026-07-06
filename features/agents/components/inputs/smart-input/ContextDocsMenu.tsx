@@ -47,6 +47,7 @@ import {
   setConversationDocumentEnabledThunk,
   linkConversationDocumentThunk,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   scratchScopeId,
   type WorkingDocumentKind,
@@ -155,9 +156,10 @@ function DocRow({
 }
 
 /**
- * ScratchRow — the user's GLOBAL scratchpad. Always on (no toggle): the active
- * scratchpad follows the user everywhere and is sent to the agent only when it
- * has content. This row just shows its state and opens it.
+ * ScratchRow — the user's GLOBAL scratchpad, gated PER CONVERSATION. The switch
+ * is the opt-in: OFF (default) means this chat's agent never sees it; ON sends
+ * the active scratchpad (when it has content). Toggling never touches the
+ * scratchpad's content or which one is active.
  */
 function ScratchRow({
   conversationId,
@@ -166,11 +168,15 @@ function ScratchRow({
   conversationId: string;
   onOpen?: () => void;
 }) {
+  const dispatch = useAppDispatch();
   const openPanel = useOpenWorkingDocumentPanel();
   const activeId = useAppSelector(selectActiveScratchpadId);
   const scope = activeId ? scratchScopeId(activeId) : "sp:none";
   const title = useAppSelector(selectWorkingDocTitle(scope, "scratch"));
   const content = useAppSelector(selectWorkingDocContent(scope, "scratch"));
+  const enabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId, "scratch"),
+  );
   const hasContent = content.trim() !== "";
 
   return (
@@ -187,24 +193,38 @@ function ScratchRow({
           </span>
         </div>
         <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-          {hasContent
-            ? "Attached to this chat — the agent can read it for context."
-            : "Empty — type in it and it attaches to your chats automatically."}
+          {enabled
+            ? hasContent
+              ? "Attached to this chat — the agent can read it for context."
+              : "Attached to this chat — empty, so nothing is sent yet."
+            : "Off for this chat — the agent never sees your scratchpad here."}
         </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              openPanel({ conversationId, initialKind: "scratch" });
-              onOpen?.();
-            }}
-            className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            <PanelRight className="h-3 w-3" />
-            Open
-          </button>
-        </div>
+        {enabled && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                openPanel({ conversationId, initialKind: "scratch" });
+                onOpen?.();
+              }}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <PanelRight className="h-3 w-3" />
+              Open
+            </button>
+          </div>
+        )}
       </div>
+      <Switch
+        checked={enabled}
+        onCheckedChange={(value) =>
+          void dispatch(
+            setScratchpadGateThunk({ conversationId, enabled: value }),
+          )
+        }
+        aria-label="Toggle scratchpad for this chat"
+        className="mt-0.5 shrink-0"
+      />
     </div>
   );
 }
@@ -250,17 +270,12 @@ export function ContextDocsMenu({ conversationId }: ContextDocsMenuProps) {
   const workingEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId, "working"),
   );
-  const activeScratchId = useAppSelector(selectActiveScratchpadId);
-  const scratchContent = useAppSelector(
-    selectWorkingDocContent(
-      activeScratchId ? scratchScopeId(activeScratchId) : "sp:none",
-      "scratch",
-    ),
+  const scratchEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId, "scratch"),
   );
   const hasActiveContext = useAppSelector(selectHasActiveContext);
 
-  const isActive =
-    workingEnabled || scratchContent.trim() !== "" || hasActiveContext;
+  const isActive = workingEnabled || scratchEnabled || hasActiveContext;
 
   const triggerButton = (
     <button

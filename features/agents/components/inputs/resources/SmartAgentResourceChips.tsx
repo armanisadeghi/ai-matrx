@@ -3,8 +3,9 @@
 /**
  * SmartAgentResourceChips
  *
- * Renders attachment tiles for all resources on an execution instance.
- * Non-file blocks use ResourceAttachmentTile; file_id media uses FileResourceChip.
+ * Renders attachment chips for all resources on an execution instance — every
+ * attachment is a compact ResourceAttachmentTile (variant="compact": icon +
+ * one word + floating X + tooltip) so the composer never gets crowded.
  * Reads from instanceResources, dispatches removeResource directly.
  */
 
@@ -248,6 +249,7 @@ function ResourceChip({
         onToggleEditable={onToggleEditable}
         pending={isPending}
         error={isError}
+        variant="compact"
       />
     </motion.div>
   );

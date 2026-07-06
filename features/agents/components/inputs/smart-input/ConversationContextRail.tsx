@@ -10,11 +10,16 @@
  * zero pixels when there isn't.
  *
  * Today it gathers (in priority order):
- *   • Working document      → opens the live editable doc in the side drawer.
- *   • Scratchpad            → opens the private (agent-read-only) doc.
+ *   • Working document      → click toggles it in/out of the CANVAS; X turns it
+ *                             off for this chat (same as the docs-menu switch).
+ *   • Scratchpad            → same canvas toggle + X (per-conversation gate).
  *   • Agent lists           → plan / tasks / todos (the `TaskPanel` drawer).
  *   • Active context layers → org / scope(s) / project / task (the layer drawer).
- *   • Any other live context entry the agent or user set (slot / ad-hoc).
+ *   • Any other live context entry the agent or user set (slot / ad-hoc) —
+ *     click opens the detail sheet; X removes the entry from context.
+ *
+ * Pills are TINY on purpose: icon + one word. The full name, status, and click
+ * hint live in the tooltip. Keep it that way — the composer is not a dashboard.
  *
  * It is the ONE rail — adding a future source (artifacts, canvas items, …) is a
  * single push into `items`, never a new bespoke strip. It reuses the existing
@@ -36,6 +41,7 @@ import {
   Layers,
   MoreHorizontal,
   NotebookPen,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -47,7 +53,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  openCanvas,
+  closeCanvas,
+  selectCanvasIsOpen,
+  selectCurrentCanvasItem,
+} from "@/features/canvas/redux/canvasSlice";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
+import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import {
@@ -55,16 +73,13 @@ import {
   FALLBACK_CONTEXT_ICON,
 } from "@/features/agents/components/context-slots-display/contextSlotIcons";
 import { ContextSlotDetailSheet } from "@/features/agents/components/context-slots-display/ContextSlotDetailSheet";
-import {
-  USER_SCRATCHPAD_CONTEXT_KEY,
-  WORKING_DOCUMENT_CONTEXT_KEY,
-  docKindForContextKey,
-} from "@/features/agents/utils/workingDocumentContext";
+import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
+import { setScratchpadGateThunk } from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
 import {
   selectActiveScratchpadId,
   selectAttachedScratchpadIds,
-  selectWorkingDocContent,
   selectWorkingDocEnabled,
   selectWorkingDocSaving,
   selectWorkingDocTitle,
@@ -94,15 +109,22 @@ type RailTone = "default" | "primary";
 interface RailItem {
   id: string;
   icon: LucideIcon;
+  /** Full name — shown in the tooltip and the overflow menu, never on the pill. */
   label: string;
-  /** Short trailing meta (e.g. "3/5", a count, a status word). */
+  /** ONE word for the pill face (chips stay tiny; the tooltip carries the rest). */
+  word: string;
+  /** Short trailing meta (e.g. "3/5", a count, a status word) — tooltip only. */
   detail?: string;
+  /** One-line description of what clicking does, for the tooltip. */
+  hint?: string;
   tone?: RailTone;
   /** Tiny spinner instead of a static state (e.g. saving). */
   busy?: boolean;
   /** Pill's detail surface is currently open. */
   active?: boolean;
   onOpen: () => void;
+  /** Floating X — detaches the item from this conversation's context. */
+  onRemove?: () => void;
 }
 
 function entryHasValue(e: InstanceContextEntry): boolean {
@@ -131,9 +153,9 @@ export function ConversationContextRail({
 
   // ── Document pills read the EDITOR slice (the SSOT), never instanceContext
   // (which is the agent-facing publication). Working: shown iff enabled.
-  // Scratch: shown iff the user's global active scratchpad has content, or
-  // extra scratchpads are attached — an empty scratchpad is invisible here
-  // AND absent from the agent's context. ──────────────────────────────────
+  // Scratch: shown iff this conversation OPTED IN (per-conversation gate,
+  // default OFF) or extra scratchpads are attached. An opted-in empty
+  // scratchpad shows the pill (affordance to type) but publishes nothing. ──
   const workingDocEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId, "working"),
   );
@@ -147,20 +169,25 @@ export function ConversationContextRail({
   const scratchScope = activeScratchId
     ? scratchScopeId(activeScratchId)
     : "sp:none";
-  const scratchContent = useAppSelector(
-    selectWorkingDocContent(scratchScope, "scratch"),
-  );
   const scratchTitle = useAppSelector(
     selectWorkingDocTitle(scratchScope, "scratch"),
   );
   const scratchSaving = useAppSelector(
     selectWorkingDocSaving(scratchScope, "scratch"),
   );
+  const scratchEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId, "scratch"),
+  );
   const attachedScratchIds = useAppSelector(
     selectAttachedScratchpadIds(conversationId),
   );
-  const showScratchPill =
-    scratchContent.trim() !== "" || attachedScratchIds.length > 0;
+  const showScratchPill = scratchEnabled || attachedScratchIds.length > 0;
+
+  // ── Canvas state for the doc pills' visibility toggle ─────────────────────
+  const canvasOpen = useAppSelector(selectCanvasIsOpen);
+  const currentCanvasSourceId = useAppSelector(
+    (s) => selectCurrentCanvasItem(s)?.sourceMessageId ?? null,
+  );
 
   // ── Agent lists (plan / tasks / todos). Hydrate + live-subscribe here so the
   // rail is the single owner now that the standalone chip is gone. ──────────
@@ -205,6 +232,36 @@ export function ConversationContextRail({
     setDetailOpen(true);
   };
 
+  /**
+   * Doc pill click = CANVAS VISIBILITY TOGGLE: open the canvas on this doc,
+   * or close it if it's already showing this doc. Deliberately not the detail
+   * sheet — the pill is the "see it / hide it" affordance; management lives in
+   * the docs menu. `openCanvas` dedups on the stable sourceMessageId shared
+   * with ChatCanvasButton / openInCanvas, so all surfaces reuse one item.
+   */
+  const toggleDocInCanvas = (kind: "working" | "scratch") => {
+    const scope = kind === "scratch" ? scratchScope : conversationId;
+    if (kind === "scratch" && !activeScratchId) return;
+    const stableId = `wd:${scope}:${kind}`;
+    if (canvasOpen && currentCanvasSourceId === stableId) {
+      dispatch(closeCanvas());
+      return;
+    }
+    dispatch(
+      openCanvas({
+        type: kind === "scratch" ? "scratchpad" : "working_document",
+        data: { conversationId: scope, kind },
+        metadata: {
+          title:
+            (kind === "scratch" ? scratchTitle : workingDocTitle)?.trim() ||
+            (kind === "scratch" ? "Scratchpad" : "Working document"),
+          conversationId: scope,
+          sourceMessageId: stableId,
+        },
+      }),
+    );
+  };
+
   const toggleLists = () => {
     if (listsOpen) {
       setListsOpen(false);
@@ -234,12 +291,24 @@ export function ConversationContextRail({
       out.push({
         id: "working_document",
         icon: FileText,
-        label: workingDocTitle?.trim() || "Working doc",
+        label: workingDocTitle?.trim() || "Working document",
+        word: "Doc",
         tone: "primary",
         busy: workingDocSaving,
-        detail: workingDocSaving ? undefined : "Live",
-        active: detailOpen && activeEntry?.key === WORKING_DOCUMENT_CONTEXT_KEY,
-        onOpen: () => toggleEntry(WORKING_DOCUMENT_CONTEXT_KEY),
+        detail: workingDocSaving ? "Saving…" : "Live",
+        hint: "Click: show / hide in canvas · X: turn off for this chat",
+        active:
+          canvasOpen &&
+          currentCanvasSourceId === `wd:${conversationId}:working`,
+        onOpen: () => toggleDocInCanvas("working"),
+        onRemove: () =>
+          void dispatch(
+            setConversationDocumentEnabledThunk({
+              conversationId,
+              kind: "working",
+              enabled: false,
+            }),
+          ),
       });
     }
     if (showScratchPill) {
@@ -247,13 +316,20 @@ export function ConversationContextRail({
         id: "scratchpad",
         icon: NotebookPen,
         label: scratchTitle?.trim() || "Scratchpad",
+        word: "Scratch",
         busy: scratchSaving,
         detail:
           attachedScratchIds.length > 0
-            ? `+${attachedScratchIds.length}`
-            : undefined,
-        active: detailOpen && activeEntry?.key === USER_SCRATCHPAD_CONTEXT_KEY,
-        onOpen: () => toggleEntry(USER_SCRATCHPAD_CONTEXT_KEY),
+            ? `+${attachedScratchIds.length} attached`
+            : "Read-only to agent",
+        hint: "Click: show / hide in canvas · X: turn off for this chat",
+        active:
+          canvasOpen && currentCanvasSourceId === `wd:${scratchScope}:scratch`,
+        onOpen: () => toggleDocInCanvas("scratch"),
+        onRemove: () =>
+          void dispatch(
+            setScratchpadGateThunk({ conversationId, enabled: false }),
+          ),
       });
     }
 
@@ -262,13 +338,15 @@ export function ConversationContextRail({
       out.push({
         id: "lists",
         icon: ListChecks,
-        label: "Tasks",
+        label: "Tasks & todos",
+        word: "Tasks",
         detail:
           taskCounts.total > 0
             ? `${taskCounts.done}/${taskCounts.total}${open > 0 ? ` · ${open}` : ""}`
             : open > 0
               ? `${open} todo${open === 1 ? "" : "s"}`
               : undefined,
+        hint: "Click: open the task panel",
         active: listsOpen,
         onOpen: toggleLists,
       });
@@ -279,7 +357,9 @@ export function ConversationContextRail({
         id: "context_layers",
         icon: Layers,
         label: layers.summary,
-        detail: layers.count > 1 ? String(layers.count) : undefined,
+        word: "Scopes",
+        detail: layers.count > 1 ? `${layers.count} layers` : undefined,
+        hint: "Click: view the active context layers",
         active: layerDrawer.open,
         onOpen: toggleLayers,
       });
@@ -291,12 +371,17 @@ export function ConversationContextRail({
       // published context values as generic pills.
       if (docKindForContextKey(e.key) !== null) continue;
       const Icon = CONTEXT_TYPE_ICON[e.type] ?? FALLBACK_CONTEXT_ICON;
+      const label = e.label?.trim() || e.key;
       out.push({
         id: `ctx:${e.key}`,
         icon: Icon,
-        label: e.label?.trim() || e.key,
+        label,
+        word: label.split(/\s+/)[0] ?? label,
+        hint: "Click: view details · X: remove from context",
         active: detailOpen && activeEntry?.key === e.key,
         onOpen: () => toggleEntry(e.key, e.value),
+        onRemove: () =>
+          dispatch(removeContextEntry({ conversationId, key: e.key })),
       });
     }
 
@@ -320,6 +405,9 @@ export function ConversationContextRail({
     activeEntry?.key,
     listsOpen,
     layerDrawer.open,
+    canvasOpen,
+    currentCanvasSourceId,
+    scratchScope,
   ]);
 
   // ── Inline vs overflow split. Keep the highest-priority pills visible; fold
@@ -440,44 +528,73 @@ export function ConversationContextRail({
 
 // ── Pill ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Tiny pill: icon + ONE word. Everything else (full name, status, click hint)
+ * lives in the tooltip; a floating X (hover/focus reveal, always visible on
+ * touch) detaches the item from this conversation's context.
+ */
 function RailPill({ item }: { item: RailItem }) {
   const Icon = item.icon;
   return (
-    <button
-      type="button"
-      onClick={item.onOpen}
-      title={item.detail ? `${item.label} · ${item.detail}` : item.label}
-      className={cn(
-        "group inline-flex h-7 min-w-0 max-w-[10rem] items-center gap-1.5 rounded-full border px-2.5",
-        "text-xs font-medium transition-colors",
-        item.active
-          ? item.tone === "primary"
-            ? "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
-            : "border-foreground/20 bg-muted text-foreground ring-1 ring-inset ring-foreground/10"
-          : item.tone === "primary"
-            ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-            : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-      )}
-    >
-      {item.busy ? (
-        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-      ) : (
-        <Icon className="h-3.5 w-3.5 shrink-0" />
-      )}
-      <span className="min-w-0 truncate">{item.label}</span>
-      {item.detail && (
-        <span
-          className={cn(
-            "shrink-0 text-[10px] tabular-nums",
-            item.tone === "primary"
-              ? "text-primary/70"
-              : "text-muted-foreground/70",
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="group relative inline-flex shrink-0">
+          <button
+            type="button"
+            onClick={item.onOpen}
+            aria-label={item.label}
+            className={cn(
+              "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border px-2",
+              "text-[11px] font-medium transition-colors",
+              item.active
+                ? item.tone === "primary"
+                  ? "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
+                  : "border-foreground/20 bg-muted text-foreground ring-1 ring-inset ring-foreground/10"
+                : item.tone === "primary"
+                  ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+            )}
+          >
+            {item.busy ? (
+              <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+            ) : (
+              <Icon className="h-3 w-3 shrink-0" />
+            )}
+            <span className="max-w-[4.5rem] truncate">{item.word}</span>
+          </button>
+          {item.onRemove && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                item.onRemove?.();
+              }}
+              aria-label={`Remove ${item.label} from context`}
+              className={cn(
+                "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",
+                "border border-border bg-background text-muted-foreground shadow-sm",
+                "transition-opacity hover:bg-destructive hover:text-destructive-foreground",
+                "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+                "pointer-coarse:opacity-100",
+              )}
+            >
+              <X className="h-2.5 w-2.5" />
+            </button>
           )}
-        >
-          {item.detail}
         </span>
-      )}
-    </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-[16rem]">
+        <div className="font-medium text-popover-foreground">{item.label}</div>
+        {item.detail && (
+          <div className="mt-0.5 text-muted-foreground">{item.detail}</div>
+        )}
+        {item.hint && (
+          <div className="mt-0.5 text-[10px] text-muted-foreground/80">
+            {item.hint}
+          </div>
+        )}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

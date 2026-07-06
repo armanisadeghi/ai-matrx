@@ -3,6 +3,9 @@
 /**
  * E3 stacked-rows attachment tile — adaptive light/dark chrome, transparent icon.
  * Canonical chip for agent input bar + sent user messages (+ dev gallery).
+ * Two variants: "default" (two-line fixed-width tile) and "compact" (tiny
+ * icon + one-word pill with floating X + tooltip — the composer uses this so
+ * attachments never crowd the input).
  *
  * When `onRemove` (and/or the editable toggle) is present, the controls live in
  * a dedicated right column: remove (X) on top, the agent-editable toggle on the
@@ -63,6 +66,12 @@ export interface ResourceAttachmentTileProps {
   pending?: boolean;
   error?: boolean;
   className?: string;
+  /**
+   * "default": two-line fixed-width tile (sent messages, galleries).
+   * "compact": tiny single-row pill — icon + one word, floating X, tooltip
+   * with the full info. Use in the composer so chips never crowd the input.
+   */
+  variant?: "default" | "compact";
 }
 
 export function ResourceAttachmentTile({
@@ -77,6 +86,7 @@ export function ResourceAttachmentTile({
   pending = false,
   error = false,
   className,
+  variant = "default",
 }: ResourceAttachmentTileProps) {
   const theme = resolveResourceAttachmentTileTheme(themeKey);
 
@@ -128,6 +138,154 @@ export function ResourceAttachmentTile({
   const editableTooltip = editable
     ? "Editable: Click to avoid agent changes"
     : "Read Only: Click to allow agent editing";
+
+  if (variant === "compact") {
+    const word = title.trim().split(/\s+/)[0] || typeLabel;
+    return (
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverAnchor asChild>
+          <span
+            className={cn("group relative inline-flex shrink-0", className)}
+            onPointerDown={handlePointerDown}
+            onPointerUp={clearLongPress}
+            onPointerMove={clearLongPress}
+            onPointerLeave={clearLongPress}
+            onPointerCancel={clearLongPress}
+            onClickCapture={handleClickCapture}
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onClick}
+                  aria-label={`${typeLabel}: ${title}`}
+                  className={cn(
+                    "inline-flex h-6 min-w-0 items-center gap-1 rounded-full border border-border px-2",
+                    "text-[11px] font-medium transition-colors",
+                    "bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    error && "ring-1 ring-destructive/50",
+                  )}
+                >
+                  {pending ? (
+                    <Loader2
+                      className={cn("h-3 w-3 shrink-0 animate-spin", theme.icon)}
+                    />
+                  ) : error ? (
+                    <AlertCircle className="h-3 w-3 shrink-0 text-destructive" />
+                  ) : (
+                    createElement(Icon, {
+                      className: cn("h-3 w-3 shrink-0", theme.icon),
+                    })
+                  )}
+                  <span className="max-w-[4.5rem] truncate">{word}</span>
+                  {showToggle && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={editable}
+                      aria-label={editableTooltip}
+                      onClick={(e) => {
+                        stop(e);
+                        toggleEditable();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          stop(e);
+                          toggleEditable();
+                        }
+                      }}
+                      className="inline-flex shrink-0 items-center justify-center text-foreground/70 hover:text-foreground"
+                    >
+                      {editable ? (
+                        <Pencil className="h-2.5 w-2.5" />
+                      ) : (
+                        <Lock className="h-2.5 w-2.5" />
+                      )}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-[16rem]">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {typeLabel}
+                </div>
+                <div className="font-medium text-popover-foreground">
+                  {title}
+                </div>
+                {showToggle && (
+                  <div className="mt-0.5 text-[10px] text-muted-foreground/80">
+                    {editable ? "Agent can edit" : "Read-only to agent"}
+                  </div>
+                )}
+              </TooltipContent>
+            </Tooltip>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  onRemove();
+                }}
+                aria-label={`Remove ${title}`}
+                className={cn(
+                  "absolute -right-1 -top-1 z-10 flex h-3.5 w-3.5 items-center justify-center rounded-full",
+                  "border border-border bg-background text-muted-foreground shadow-sm",
+                  "transition-opacity hover:bg-destructive hover:text-destructive-foreground",
+                  "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+                  "pointer-coarse:opacity-100",
+                )}
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            )}
+          </span>
+        </PopoverAnchor>
+        {hasControls ? (
+          <PopoverContent side="top" align="end" sideOffset={6} className="w-52 p-1">
+            <div className="px-2 py-1.5">
+              <p className="truncate text-xs font-semibold text-foreground">
+                {title}
+              </p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                {typeLabel}
+              </p>
+            </div>
+            {showToggle ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  toggleEditable();
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-foreground hover:bg-accent"
+              >
+                {editable ? (
+                  <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <Pencil className="h-4 w-4 shrink-0 text-muted-foreground" />
+                )}
+                <span>{editable ? "Make read-only" : "Allow agent editing"}</span>
+              </button>
+            ) : null}
+            {onRemove ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  setMenuOpen(false);
+                  onRemove();
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4 shrink-0" />
+                <span>Remove</span>
+              </button>
+            ) : null}
+          </PopoverContent>
+        ) : null}
+      </Popover>
+    );
+  }
 
   return (
     <Popover open={menuOpen} onOpenChange={setMenuOpen}>

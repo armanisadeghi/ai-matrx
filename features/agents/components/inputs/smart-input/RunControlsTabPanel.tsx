@@ -43,12 +43,7 @@ import { RunSettingsEditor } from "@/features/agents/components/run-controls/Run
 import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { DocumentsWorkspace } from "@/features/agents/components/working-document/documents-workspace/DocumentsWorkspace";
-import { scratchScopeId } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
-import {
-  selectActiveScratchpadId,
-  selectWorkingDocContent,
-  selectWorkingDocEnabled,
-} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
 import { ActiveContextLayersPanel } from "@/features/scopes/components/active-context/ActiveContextLayersPanel";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
@@ -172,16 +167,12 @@ export function useRunControlsState(
   const workingDocEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId),
   );
-  // The scratchpad counts as "document active" when the user's global active
-  // scratchpad actually has content (empty is never sent to the agent).
-  const activeScratchId = useAppSelector(selectActiveScratchpadId);
-  const scratchContent = useAppSelector(
-    selectWorkingDocContent(
-      activeScratchId ? scratchScopeId(activeScratchId) : "sp:none",
-      "scratch",
-    ),
+  // The scratchpad counts as "document active" when THIS conversation opted in
+  // (per-conversation gate, default OFF — publication also skips empty content).
+  const scratchEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId, "scratch"),
   );
-  const anyDocActive = workingDocEnabled || scratchContent.trim() !== "";
+  const anyDocActive = workingDocEnabled || scratchEnabled;
   const hasActiveContext = useAppSelector(selectHasActiveContext);
 
   const openChatDebug = useOpenChatDebugWindow();

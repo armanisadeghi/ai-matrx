@@ -4,10 +4,11 @@
  * Scratchpads are the user's personal notepads: `workbench.working_documents`
  * rows (kind "scratch") owned by the user, DECOUPLED from conversations. One is
  * ACTIVE at all times (`userPreferences.scratchpad.activeId`, synced
- * cross-device); the active one is published read-only into every
- * conversation's agent context — never when empty. The user can additionally
- * ATTACH other scratchpads to a specific conversation (platform.associations
- * edges), published as `user_scratchpad_<id8>` extras.
+ * cross-device); the active one is published read-only into a conversation's
+ * agent context ONLY when that conversation opted in (per-conversation gate,
+ * default OFF — `setScratchpadGateThunk`) and never when empty. The user can
+ * additionally ATTACH other scratchpads to a specific conversation
+ * (platform.associations edges), published as `user_scratchpad_<id8>` extras.
  *
  * Slice entries live at the synthetic `sp:<documentId>` scope (see
  * `scratchScopeId`) so all of the working-document machinery — draft, debounced
@@ -28,6 +29,7 @@ import {
   addAttachedScratchpad,
   removeAttachedScratchpad,
   setAttachedScratchpads,
+  reservedWorkingDocumentId,
   scratchScopeId,
   workingDocKey,
   setWorkingDocBinding,
@@ -35,6 +37,7 @@ import {
   setWorkingDocTitle,
 } from "./instance-working-document.slice";
 import { selectActiveScratchpadId } from "./instance-working-document.selectors";
+import { setConversationDocumentEnabledThunk } from "./instance-working-document.thunks";
 import {
   getCxWorkingDocumentById,
   linkDocumentToConversation,
@@ -193,6 +196,32 @@ export const createScratchpadThunk = createAsyncThunk<
   return id;
 });
 
+/**
+ * Toggle the PER-CONVERSATION scratchpad gate — the one canonical opt-in for
+ * "send my active scratchpad to the agent in this chat". Turning ON with an
+ * empty pool first creates (and activates) a scratchpad so the user has
+ * something to type into; the durable row still materializes on first content.
+ */
+export const setScratchpadGateThunk = createAsyncThunk<
+  void,
+  { conversationId: string; enabled: boolean },
+  ThunkConfig
+>(
+  "scratchpad/setGate",
+  async ({ conversationId, enabled }, { dispatch, getState }) => {
+    if (enabled && !selectActiveScratchpadId(getState())) {
+      await dispatch(createScratchpadThunk());
+    }
+    await dispatch(
+      setConversationDocumentEnabledThunk({
+        conversationId,
+        kind: "scratch",
+        enabled,
+      }),
+    );
+  },
+);
+
 /** Switch the active scratchpad (loads it into the slice if needed). */
 export const setActiveScratchpadThunk = createAsyncThunk<
   void,
@@ -342,8 +371,17 @@ export const hydrateAttachedScratchpadsThunk = createAsyncThunk<
       return;
     }
     const activeId = selectActiveScratchpadId(getState());
+    // Skip the per-conversation GATE edge (deterministic id, no backing row —
+    // see setConversationDocumentEnabledThunk) alongside the active pointer.
+    const gateId = reservedWorkingDocumentId(conversationId, "scratch");
     const ids = links
-      .filter((l) => l.kind === "scratch" && l.enabled && l.documentId !== activeId)
+      .filter(
+        (l) =>
+          l.kind === "scratch" &&
+          l.enabled &&
+          l.documentId !== activeId &&
+          l.documentId !== gateId,
+      )
       .map((l) => l.documentId);
     const resolved: string[] = [];
     await Promise.all(

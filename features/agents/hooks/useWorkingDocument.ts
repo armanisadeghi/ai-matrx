@@ -331,8 +331,11 @@ const SCRATCH_SYNC_SENTINEL = "sp:none";
  * useScratchpadContextSync — publishes the user's GLOBAL scratchpads into ONE
  * conversation's agent context:
  *
- *   • the ACTIVE scratchpad → `user_scratchpad` (read-only) — NEVER when empty.
- *   • each ATTACHED scratchpad → `user_scratchpad_<id8>` extras, same rule.
+ *   • the ACTIVE scratchpad → `user_scratchpad` (read-only) — ONLY when this
+ *     conversation has opted in (per-conversation gate, default OFF) and the
+ *     content is non-empty. NEVER forced onto unrelated chats.
+ *   • each ATTACHED scratchpad → `user_scratchpad_<id8>` extras — attaching is
+ *     itself the per-conversation opt-in, so only the empty rule applies.
  *
  * Also keeps the active scratchpad's realtime + materialize effects mounted
  * (via the shared sync hook at its sp:<id> scope), so cross-tab edits arrive
@@ -353,11 +356,18 @@ export function useScratchpadContextSync(conversationId: string): void {
     selectWorkingDocContent(activeScope, "scratch"),
   );
   const title = useAppSelector(selectWorkingDocTitle(activeScope, "scratch"));
+  // Per-conversation opt-in gate (default OFF) — the `enabled` flag at the
+  // conversation's own (conversationId, "scratch") slot, persisted on the
+  // deterministic gate edge by setConversationDocumentEnabledThunk.
+  const scratchEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId, "scratch"),
+  );
 
-  // Active scratchpad → `user_scratchpad`. EMPTY IS NOT SENT: an empty
-  // scratchpad publishes nothing (and removes any prior entry).
+  // Active scratchpad → `user_scratchpad`. Published ONLY when the conversation
+  // opted in AND there is content (empty is not sent); otherwise any prior
+  // entry is removed.
   useEffect(() => {
-    if (!activeId || content.trim() === "") {
+    if (!scratchEnabled || !activeId || content.trim() === "") {
       dispatch(
         removeContextEntry({
           conversationId,
@@ -379,7 +389,7 @@ export function useScratchpadContextSync(conversationId: string): void {
         ],
       }),
     );
-  }, [dispatch, conversationId, activeId, content, title]);
+  }, [dispatch, conversationId, scratchEnabled, activeId, content, title]);
 
   // Attached extras. The snapshot string re-runs the effect whenever any
   // attached scratchpad's title/content changes without allocating fresh

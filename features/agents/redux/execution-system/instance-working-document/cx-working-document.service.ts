@@ -20,6 +20,13 @@
  * on the edge `metadata` (`{enabled, doc_kind}`). The bespoke
  * `cx_conversation_documents` junction is retired.
  *
+ * SCRATCH GATE EDGE: the per-conversation scratchpad opt-in is a scratch-kind
+ * edge whose source_id is the deterministic `reservedWorkingDocumentId(
+ * conversationId, "scratch")` — a PHANTOM id with no backing row (assoc_add
+ * doesn't validate sources). It is a pure conversation-level boolean ("send the
+ * user's ACTIVE scratchpad here"), never a doc pointer; hydrate paths must skip
+ * it when resolving real documents.
+ *
  * snake_case (DB) ↔ camelCase (domain) mapping happens here. Access is
  * owner-scoped (`created_by = auth.uid()`) via the entity-variant RLS.
  */

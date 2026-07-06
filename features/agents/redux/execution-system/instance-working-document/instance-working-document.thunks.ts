@@ -142,6 +142,18 @@ export const hydrateConversationDocumentsThunk = createAsyncThunk<
       });
       return;
     }
+    // Restore the per-conversation scratch GATE (pure opt-in flag at the
+    // deterministic gate id — never loads a doc; scratch content is user-global
+    // at sp:<docId> scopes, published by useScratchpadContextSync).
+    const scratchGateId = reservedWorkingDocumentId(conversationId, "scratch");
+    const scratchGate = links.find(
+      (l) => l.kind === "scratch" && l.documentId === scratchGateId,
+    );
+    if (scratchGate?.enabled) {
+      dispatch(
+        setWorkingDocEnabled({ conversationId, kind: "scratch", enabled: true }),
+      );
+    }
     await Promise.all(
       DOC_KINDS.map(async (kind) => {
         // Prefer the conversation's OWN (born-here, deterministic-id) document as
@@ -221,6 +233,34 @@ export const setConversationDocumentEnabledThunk = createAsyncThunk<
     { dispatch, getState },
   ) => {
     dispatch(setWorkingDocEnabled({ conversationId, kind, enabled }));
+
+    // PER-CONVERSATION SCRATCH GATE: kind "scratch" on a REAL conversation
+    // scope is a pure opt-in flag — no binding, no content at this key (scratch
+    // content lives at sp:<docId> scopes). Persist BOTH directions on the
+    // deterministic gate edge; `assoc_add` doesn't require the source row to
+    // exist, so the edge works even while the scratch pool is unmaterialized.
+    if (kind === "scratch" && !isScratchScope(conversationId)) {
+      if (selectIsCacheOnly(conversationId)(getState())) return; // Redux flag holds for the session
+      const orgId = resolveOrgId(getState(), conversationId);
+      if (!orgId) return;
+      try {
+        await setConversationDocumentEnabled(
+          reservedWorkingDocumentId(conversationId, "scratch"),
+          conversationId,
+          orgId,
+          "scratch",
+          enabled,
+        );
+      } catch (err) {
+        console.error("[scratchpad] failed to persist per-conversation gate", {
+          conversationId,
+          enabled,
+          err,
+        });
+      }
+      return;
+    }
+
     const binding = selectWorkingDocBinding(conversationId, kind)(getState());
 
     if (enabled) {
