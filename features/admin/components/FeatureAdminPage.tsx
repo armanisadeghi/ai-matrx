@@ -214,16 +214,16 @@ function ResourceRow({
 async function RouteDriftWarning({
   scanPath,
   declaredUrls,
-  slug,
+  baseUrl,
 }: {
   scanPath: string;
   declaredUrls: Set<string>;
-  slug: string;
+  baseUrl: string;
 }) {
   const found = await scanRoutesShallow(scanPath);
   const drift = found.filter((name) => {
     if (name === "admin") return false;
-    return !declaredUrls.has(`/${slug}/${name}`);
+    return !declaredUrls.has(`${baseUrl}/${name}`);
   });
   if (drift.length === 0) return null;
   return (
@@ -234,7 +234,7 @@ async function RouteDriftWarning({
           Undeclared sub-routes:
         </span>
         <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
-          {drift.map((n) => `/${slug}/${n}`).join(", ")}
+          {drift.map((n) => `${baseUrl}/${n}`).join(", ")}
         </span>
       </div>
     </div>
@@ -288,7 +288,13 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
     redirect("/");
   }
 
-  const declaredRouteUrls = new Set(map.routes.map((r) => r.url));
+  const baseUrl = map.baseUrl ?? `/${map.slug}`;
+  // Route rows may write params as `<id>` (readable) while the filesystem
+  // scanner reports `[id]` — normalize declared urls to bracket form so the
+  // drift check compares like with like.
+  const declaredRouteUrls = new Set(
+    map.routes.map((r) => r.url.replace(/</g, "[").replace(/>/g, "]")),
+  );
   const declaredOverlayIds = new Set([
     ...(map.windowPanels ?? []).map((w) => w.overlayId),
     ...(map.overlays ?? []).map((o) => o.overlayId),
@@ -300,7 +306,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
       <header className="border-b border-border px-4 py-2.5 flex items-center gap-3 flex-wrap">
         <div className="flex items-baseline gap-2 min-w-0">
           <span className="text-xs text-muted-foreground font-mono">
-            /{map.slug}/admin
+            {baseUrl}/admin
           </span>
           <span className="text-xs text-muted-foreground">·</span>
           <h1 className="text-sm font-bold tracking-tight">{map.name}</h1>
@@ -351,7 +357,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               <RouteDriftWarning
                 scanPath={map.routeScanPath}
                 declaredUrls={declaredRouteUrls}
-                slug={map.slug}
+                baseUrl={baseUrl}
               />
             </Suspense>
           )}

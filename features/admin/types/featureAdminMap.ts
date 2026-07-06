@@ -125,6 +125,12 @@ export interface FeatureAdminMap {
   name: string;
   /** Slug — e.g. "transcription". */
   slug: string;
+  /**
+   * URL base the feature's routes live under when it differs from
+   * `/${slug}` — e.g. `/tools/pdf-extractor`. Drives the header readout
+   * and the route-drift check (scanned dir names are appended to it).
+   */
+  baseUrl?: string;
   /** One-paragraph description of what this feature owns. */
   description: string;
   /** Links to FEATURE.md and any other internal docs for this feature. */
