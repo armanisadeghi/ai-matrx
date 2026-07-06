@@ -3,6 +3,7 @@ import {
   previewKnownContext,
   resolveContextEntryValue,
 } from "./knownContextValues";
+import { unwrapRichContextValue } from "./contextValueUtils";
 
 const PREVIEW_MAX = 32;
 
@@ -16,16 +17,11 @@ function formatCharCount(n: number): string {
 /** Char length from a plain string or rich `{ content }` context object. */
 function extractCharCount(value: unknown): number | null {
   if (value === undefined || value === null) return null;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
+  const unwrapped = unwrapRichContextValue(value);
+  if (typeof unwrapped === "string") {
+    const trimmed = unwrapped.trim();
     if (!trimmed || SIZE_HINT_RE.test(trimmed)) return null;
-    return value.length;
-  }
-  if (typeof value === "object" && value !== null && "content" in value) {
-    const content = (value as { content: unknown }).content;
-    if (typeof content === "string" && content.length > 0) {
-      return content.length;
-    }
+    return unwrapped.length;
   }
   return null;
 }
@@ -35,6 +31,7 @@ export function contextSlotValuePreview(
   type: ContextObjectType,
 ): string {
   if (value === undefined || value === null) return "";
+  value = unwrapRichContextValue(value);
   if (type === "file_url" && typeof value === "string") {
     try {
       const url = new URL(value);

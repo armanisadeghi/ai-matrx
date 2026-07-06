@@ -1,5 +1,7 @@
 "use client";
 
+// CANONICAL: This is the canonical application-wide JSON Display component.
+
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {

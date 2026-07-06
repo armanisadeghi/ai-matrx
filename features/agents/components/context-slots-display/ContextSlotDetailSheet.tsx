@@ -12,8 +12,6 @@
  */
 
 import { useMemo } from "react";
-import dynamic from "next/dynamic";
-import { ExternalLink } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
@@ -29,22 +27,13 @@ import {
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextSlotIcons";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
-import {
-  KnownContextDetail,
-  getKnownContextDefinition,
-  isKnownContextKey,
-  parseContextRecord,
-  resolveContextEntryValue,
-} from "./knownContextValues";
+import { resolveContextEntryValue } from "./knownContextValues";
+import { ContextValueBody } from "./ContextValueBody";
 import {
   WorkingDocumentBody,
   buildWorkingDocumentDrawerItem,
 } from "../context-items/bodies/WorkingDocumentBody";
 import { cn } from "@/lib/utils";
-
-const MarkdownStream = dynamic(() => import("@/components/MarkdownStream"), {
-  ssr: false,
-});
 
 interface ContextSlotDetailSheetProps {
   open: boolean;
@@ -99,7 +88,11 @@ export function ContextSlotDetailSheet({
 
   const workingDocItem = useMemo(
     () =>
-      buildWorkingDocumentDrawerItem(conversationId, label, docKind ?? "working"),
+      buildWorkingDocumentDrawerItem(
+        conversationId,
+        label,
+        docKind ?? "working",
+      ),
     [conversationId, label, docKind],
   );
 
@@ -155,7 +148,7 @@ export function ContextSlotDetailSheet({
           )}
 
           <DetailSection title="Value">
-            <ValueRenderer
+            <ContextValueBody
               type={type}
               contextKey={contextKey}
               value={displayValue}
@@ -216,84 +209,5 @@ function DetailSection({
       </h3>
       {children}
     </section>
-  );
-}
-
-function ValueRenderer({
-  type,
-  contextKey,
-  value,
-}: {
-  type: ContextObjectType;
-  contextKey: string;
-  value: unknown;
-}) {
-  if (value === undefined || value === null) {
-    return (
-      <p className="text-[11px] italic text-muted-foreground/70">
-        No value set for this conversation.
-      </p>
-    );
-  }
-
-  if (
-    isKnownContextKey(contextKey) &&
-    parseContextRecord(value) &&
-    getKnownContextDefinition(contextKey)
-  ) {
-    return <KnownContextDetail contextKey={contextKey} value={value} />;
-  }
-
-  const v = value;
-
-  if (type === "file_url" && typeof v === "string") {
-    return (
-      <a
-        href={v}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="inline-flex items-center gap-1.5 break-all text-xs text-primary hover:underline"
-      >
-        <ExternalLink className="h-3 w-3 shrink-0" />
-        <span className="break-all">{v}</span>
-      </a>
-    );
-  }
-
-  if (type === "text" && typeof v === "string") {
-    return (
-      <div className="text-xs">
-        <MarkdownStream content={v} hideCopyButton />
-      </div>
-    );
-  }
-
-  if (type === "variable" && (typeof v === "string" || typeof v === "number")) {
-    return (
-      <p className="break-words font-mono text-xs text-foreground">
-        {String(v)}
-      </p>
-    );
-  }
-
-  let pretty: string;
-  if (typeof v === "string") {
-    try {
-      const parsed = JSON.parse(v);
-      pretty = JSON.stringify(parsed, null, 2);
-    } catch {
-      pretty = v;
-    }
-  } else {
-    try {
-      pretty = JSON.stringify(v, null, 2);
-    } catch {
-      pretty = String(v);
-    }
-  }
-  return (
-    <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded border border-border bg-muted/40 p-2 font-mono text-[11px]">
-      {pretty}
-    </pre>
   );
 }

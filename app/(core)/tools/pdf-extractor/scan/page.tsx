@@ -17,8 +17,12 @@ export default async function PdfScannerPage() {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) redirect("/login?next=/tools/pdf-extractor/scan");
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-background">
-      <ScannerRouteClient />
+    <div className="h-dvh flex flex-col overflow-hidden bg-background">
+      {/* Spacer: content starts below the glass shell header */}
+      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
+      <div className="min-h-0 flex-1">
+        <ScannerRouteClient />
+      </div>
     </div>
   );
 }

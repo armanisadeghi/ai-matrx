@@ -2,15 +2,23 @@
 
 /**
  * Registry of well-known ambient / system context keys (user, client,
- * route_brief, conversation, …). These ride on the first turn and are persisted
- * on `model_context.items` — they are NOT in the live `instanceContext` slice.
+ * route_brief, conversation, war_room, …). These ride on the first turn and are
+ * persisted on `model_context.items` — they are NOT in the live `instanceContext`
+ * slice.
  *
  * Provides human-readable chip previews and detail-panel renderers instead of
  * raw JSON dumps.
+ *
+ * Two shapes:
+ *   • JSON record keys (`user`, `client`, …) — `KNOWN_CONTEXT_VALUES`
+ *   • Rich text / XML keys (`war_room`, …) — `KNOWN_TEXT_CONTEXT_VALUES`
+ *     Built in feature services (see war_room → `warRoomContextXml.ts`).
  */
 
 import type { ReactNode } from "react";
+import { WAR_ROOM_CONTEXT_KEY } from "@/features/war-room/service/warRoomContextXml";
 import { cn } from "@/lib/utils";
+import { unwrapRichContextValue } from "./contextValueUtils";
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -198,6 +206,67 @@ export const KNOWN_CONTEXT_VALUES: Record<string, KnownContextDefinition> = {
   conversation: CONVERSATION,
 };
 
+// ── Rich text / XML keys (not JSON records) ──────────────────────────────────
+
+interface KnownTextContextDefinition {
+  typeLabel?: string;
+  preview: (text: string) => string | null;
+  /** Optional custom detail panel — omit to use default selectable monospace. */
+  Detail?: (props: { text: string }) => ReactNode;
+}
+
+const WAR_ROOM: KnownTextContextDefinition = {
+  typeLabel: "War Room",
+  preview: (text) => {
+    const scope = text.match(/<war_room[^>]*scope="([^"]+)"/)?.[1];
+    return scope ? `War Room · ${scope}` : "War Room overview";
+  },
+  // Detail: register a structured XML / roster view here (next step).
+};
+
+/** Text/XML ambient keys whose value is a rich `{ content: string }` envelope. */
+export const KNOWN_TEXT_CONTEXT_VALUES: Record<
+  string,
+  KnownTextContextDefinition
+> = {
+  [WAR_ROOM_CONTEXT_KEY]: WAR_ROOM,
+};
+
+export function getKnownTextContextDefinition(
+  key: string,
+): KnownTextContextDefinition | null {
+  return KNOWN_TEXT_CONTEXT_VALUES[key] ?? null;
+}
+
+export function previewKnownTextContext(
+  key: string,
+  value: unknown,
+): string | null {
+  const def = getKnownTextContextDefinition(key);
+  if (!def) return null;
+  const unwrapped = unwrapRichContextValue(value);
+  if (typeof unwrapped !== "string" || !unwrapped.trim()) return null;
+  return def.preview(unwrapped);
+}
+
+export function KnownTextContextDetail({
+  contextKey,
+  value,
+}: {
+  contextKey: string;
+  value: unknown;
+}) {
+  const def = getKnownTextContextDefinition(contextKey);
+  const unwrapped = unwrapRichContextValue(value);
+  if (!def || typeof unwrapped !== "string") return null;
+  if (def.Detail) return <def.Detail text={unwrapped} />;
+  return null;
+}
+
+export function isKnownTextContextKey(key: string): boolean {
+  return key in KNOWN_TEXT_CONTEXT_VALUES;
+}
+
 export function getKnownContextDefinition(
   key: string,
 ): KnownContextDefinition | null {
@@ -208,6 +277,9 @@ export function previewKnownContext(
   key: string,
   value: unknown,
 ): string | null {
+  const textPreview = previewKnownTextContext(key, value);
+  if (textPreview) return textPreview;
+
   const def = getKnownContextDefinition(key);
   if (!def) return null;
   const record = parseContextRecord(value);

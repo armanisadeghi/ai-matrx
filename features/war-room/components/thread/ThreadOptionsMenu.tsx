@@ -92,7 +92,7 @@ export function ThreadOptionsMenu({
           <MoreHorizontal className={size === "md" ? "size-4" : "size-3.5"} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-52">
         {onStage && !isStaged ? (
           <DropdownMenuItem onClick={onStage} className="gap-2">
             <Focus className="size-3.5 shrink-0" />
@@ -163,7 +163,9 @@ export function ThreadOptionsMenu({
               {otherRooms.map((room) => (
                 <DropdownMenuItem
                   key={room.id}
-                  onClick={() => void dispatch(moveThreadToRoom(threadId, room.id))}
+                  onClick={() =>
+                    void dispatch(moveThreadToRoom(threadId, room.id))
+                  }
                   className="gap-2"
                 >
                   <span className="truncate">

@@ -31,7 +31,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import HeaderBack from "@/features/shell/components/header/variants/shared/HeaderBack";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
 import { createScanPdf } from "../api";
@@ -68,6 +69,9 @@ export default function ScannerSurface() {
 
   // Context prompt runs in parallel with the save stream.
   const [contextPromptOpen, setContextPromptOpen] = useState(false);
+  // Captured at save start — session.label is cleared on success while the
+  // prompt is still open, so the prompt must not read the live label.
+  const [savedLabel, setSavedLabel] = useState("");
   const savePromiseRef = useRef<Promise<ScanPdfResult> | null>(null);
   const contextDoneRef = useRef(true);
   const pendingDocIdRef = useRef<string | null>(null);
@@ -125,6 +129,8 @@ export default function ScannerSurface() {
     setSaving(true);
     setProgressMessage(null);
     pendingDocIdRef.current = null;
+    const labelAtSave = session.label.trim() || defaultLabel();
+    setSavedLabel(labelAtSave);
 
     const payload = {
       items: uploaded.map((i) => ({
@@ -133,7 +139,7 @@ export default function ScannerSurface() {
         quad: i.kind === "image" ? (i.quad ?? null) : undefined,
         rotation: (i.kind === "image" ? i.rotation : 0) as ScanRotation,
       })),
-      filename: session.label.trim() || defaultLabel(),
+      filename: labelAtSave,
       folder_path: "Scans",
     };
 
@@ -198,31 +204,33 @@ export default function ScannerSurface() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Header row */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <ChevronLeftTapButton onClick={() => router.back()} />
-        <ScanLine className="h-4 w-4 text-primary" />
-        <h1 className="text-sm font-semibold">Scan to PDF</h1>
-        <div className="ml-auto flex items-center gap-1">
-          {session.uploadingCount > 0 && (
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              saving {session.uploadingCount}
-            </span>
-          )}
-          {!empty && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground"
-              onClick={() => setConfirmDiscard(true)}
-              aria-label="Discard scan"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+      {/* Route chrome — portals into the shell header row */}
+      <PageHeader>
+        <div className="flex w-full min-w-0 items-center gap-2 pr-12">
+          <HeaderBack onClick={() => router.back()} />
+          <ScanLine className="h-4 w-4 shrink-0 text-primary" />
+          <h1 className="truncate text-sm font-semibold">Scan to PDF</h1>
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            {session.uploadingCount > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                saving {session.uploadingCount}
+              </span>
+            )}
+            {!empty && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                onClick={() => setConfirmDiscard(true)}
+                aria-label="Discard scan"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Resume banner */}
       {session.resumable && (
@@ -378,7 +386,7 @@ export default function ScannerSurface() {
       <UploadContextPrompt
         open={contextPromptOpen}
         onOpenChange={handleContextPromptChange}
-        fileNames={[session.label || "Scanned document"]}
+        fileNames={[savedLabel || "Scanned document"]}
         awaitFileIds={awaitFileIds}
       />
 
