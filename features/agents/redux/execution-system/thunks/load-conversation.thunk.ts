@@ -49,6 +49,7 @@ import {
 } from "../observational-memory/observational-memory.slice";
 import { loadCodeEditHistoryThunk } from "@/features/code/redux/codeEditHistoryHydration";
 import {
+  CONVERSATION_NOT_MATERIALIZED,
   fetchConversationBundle,
   describeSupabaseError,
   extractBundleToolCalls,
@@ -123,14 +124,14 @@ export const loadConversation = createAsyncThunk<
     try {
       const { data: authData } = await supabase.auth.getUser();
       authedUserId = authData?.user?.id ?? null;
-      // eslint-disable-next-line no-console
+       
       console.log(
         "[loadConversation] auth at fetch time: userId=%s conversationId=%s",
         authedUserId ?? "(none)",
         conversationId,
       );
     } catch (authErr) {
-      // eslint-disable-next-line no-console
+       
       console.warn(
         "[loadConversation] auth.getUser() threw:",
         describeSupabaseError(authErr),
@@ -150,7 +151,16 @@ export const loadConversation = createAsyncThunk<
         beforePosition,
       });
     } catch (err) {
-      // eslint-disable-next-line no-console
+      // A conversation minted but never submitted has NO row yet (the server
+      // creates it on the first turn) — nothing to hydrate, not a failure.
+      // The local instance already holds the correct (empty) state.
+      if (
+        (err as { code?: string } | null)?.code === CONVERSATION_NOT_MATERIALIZED
+      ) {
+        void historyPromise.catch?.(() => undefined);
+        return { conversationId };
+      }
+       
       console.error(
         "[loadConversation] fetchConversationBundle failed:",
         describeSupabaseError(err),
@@ -163,7 +173,7 @@ export const loadConversation = createAsyncThunk<
     // separately from the bundle — never block hydration on it.
     void historyPromise.catch?.(() => undefined);
     const conv = bundle.conversation;
-    // eslint-disable-next-line no-console
+     
     // console.log(
     //   "[loadConversation] bundle received: conv=%s messages=%d toolCalls=%d",
     //   conv?.id ?? "(none)",
@@ -413,7 +423,7 @@ export const loadConversation = createAsyncThunk<
       // server-side fetch problem (RPC missing the join, RLS hiding
       // rows, or field-name drift). Surface it loudly so we don't
       // silently render empty tool cards.
-      // eslint-disable-next-line no-console
+       
       console.warn(
         "[loadConversation] cid=%s has tool messages but bundle.tool_calls is empty — check RPC return shape",
         conversationId,
@@ -472,7 +482,7 @@ export const loadConversation = createAsyncThunk<
       dispatch(setFocus({ surfaceKey, conversationId }));
     }
 
-    // eslint-disable-next-line no-console
+     
     // console.log(
     //   "[loadConversation] DONE cid=%s — all 7 dimensions hydrated",
     //   conversationId,

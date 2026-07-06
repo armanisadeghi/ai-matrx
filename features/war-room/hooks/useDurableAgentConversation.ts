@@ -3,9 +3,12 @@
 /**
  * useDurableAgentConversation
  *
- * The ONE durable-conversation primitive shared by the War Room TIER-2 (room)
- * and TIER-3 (master) agents — extracted from the two near-identical hooks that
- * each re-implemented this recipe (and a third copy in the Scribe assistant).
+ * The durable-conversation primitive for the War Room TIER-3 (master) agent.
+ * (TIER-2 room agents moved OFF this hook 2026-07-06 — their chats are
+ * `conversation → war_room` association edges, provisioned once at room
+ * creation and bound by `useRoomAgent`; this localStorage-roster recipe now
+ * serves only the master scope, which has no container entity to hang edges
+ * on.)
  *
  * Responsibilities:
  *   1. Resolve a durable conversation for the active agent, surviving refresh:

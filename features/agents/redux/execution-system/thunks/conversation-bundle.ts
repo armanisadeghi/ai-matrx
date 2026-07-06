@@ -26,6 +26,13 @@ import type {
   CxToolCallRecord,
 } from "../observability/observability.slice";
 
+/**
+ * Error code for "the conversation row doesn't exist YET" — a client-minted
+ * conversation only gets its `chat.conversation` row when the first turn
+ * streams. Loaders treat this as benign (nothing to hydrate), never a failure.
+ */
+export const CONVERSATION_NOT_MATERIALIZED = "CONVERSATION_NOT_MATERIALIZED";
+
 // =============================================================================
 // Bundle shape — mirrors `get_cx_conversation_bundle` return JSONB
 // =============================================================================
@@ -145,15 +152,31 @@ export async function fetchConversationBundle(
       p_before_position: beforePosition ?? undefined,
     });
     if (!error && data) {
-      return data as unknown as CxConversationBundle;
+      const bundle = data as unknown as CxConversationBundle;
+      if (!bundle.conversation) {
+        // Row doesn't exist yet (pre-first-turn conversation) — benign.
+        throw Object.assign(
+          new Error(`Conversation ${conversationId} not found`),
+          { code: CONVERSATION_NOT_MATERIALIZED },
+        );
+      }
+      return bundle;
     }
-    // eslint-disable-next-line no-console
+     
     console.warn(
       "[conversation-bundle] RPC unavailable — falling back to parallel queries.",
       describeSupabaseError(error),
     );
   } catch (rpcErr) {
-    // eslint-disable-next-line no-console
+    // Not an RPC availability problem — the conversation just isn't there
+    // yet. Surface it as-is; no fallback round-trip needed.
+    if (
+      (rpcErr as { code?: string } | null)?.code ===
+      CONVERSATION_NOT_MATERIALIZED
+    ) {
+      throw rpcErr;
+    }
+
     console.warn(
       "[conversation-bundle] RPC threw — falling back to parallel queries.",
       describeSupabaseError(rpcErr),
@@ -192,11 +215,15 @@ export async function fetchConversationBundle(
         .order("created_at", { ascending: true });
 
   const [conversationRes, messagesRes, requestsRes] = await Promise.all([
+    // maybeSingle, NOT single: a client-minted conversation has no row until
+    // its FIRST turn streams (the server creates it then). Loading one of
+    // those (e.g. a provisioned-but-unused war-room chat) is an expected
+    // state, not a 406 to scream about.
     supabase
       .schema("chat").from("conversation")
       .select("*")
       .eq("id", conversationId)
-      .single(),
+      .maybeSingle(),
     messageQuery,
     requestsQuery,
   ]);
@@ -218,7 +245,7 @@ export async function fetchConversationBundle(
   }
 
   if (conversationRes.error) {
-    // eslint-disable-next-line no-console
+     
     console.error(
       "[conversation-bundle] cx_conversation query error:",
       describeSupabaseError(conversationRes.error),
@@ -226,7 +253,12 @@ export async function fetchConversationBundle(
     throw conversationRes.error;
   }
   if (!conversationRes.data) {
-    throw new Error(`Conversation ${conversationId} not found`);
+    // Recognizable, benign-by-code: callers (loadConversation) treat a
+    // not-yet-materialized conversation as "nothing to hydrate", not a failure.
+    throw Object.assign(
+      new Error(`Conversation ${conversationId} not found`),
+      { code: CONVERSATION_NOT_MATERIALIZED },
+    );
   }
 
   const rawMessages: CxMessageRow[] = messagesRes.data ?? [];

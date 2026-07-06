@@ -2,51 +2,75 @@
 
 // features/war-room/components/room/RoomAgentPanel.tsx
 //
-// The body of a War Room's TIER-2 ROOM agent — a real chat the user composes in,
+// The body of a War Room's TIER-2 ROOM agent — the room's OVERSIGHT chat set,
 // scoped to a READ-ONLY roster of every thread in THIS ONE room. The tier-2
-// counterpart to MasterAgentPanel: same construction, narrowed from all-rooms to
-// a single session.
+// counterpart to MasterAgentPanel.
+//
+// The header is the SAME chrome as every thread tab: blue chat icon + the
+// canonical AssociationEntitySelect over the room's `conversation → war_room`
+// edges (label = conversation title, agent name until the first turn labels
+// it; inline rename; switch; unlink; "+ New Chat" = the canonical agent
+// picker → `startRoomConversation`). Binding/tools/context are owned by
+// `useRoomAgent`, which only ever BINDS — the room's chat is created ONCE at
+// war-room provisioning (invariant 11), never automatically here.
 //
 // It REUSES the canonical `AgentConversationColumn` (the same column the /chat
-// route, agent runner, Scribe assistant, and the master panel render) unchanged
-// — composer + streaming all key off the conversationId. The single-room context
-// + durable per-room conversation are owned by `useRoomAgent`; this component is
-// just the header + the column + a loading state until the conversation resolves.
+// route, agent runner, Scribe assistant, and the master panel render)
+// unchanged — composer + streaming all key off the conversationId.
 //
 // Heavy by construction (the column pulls the agent execution graph). The room
-// shell loads THIS component lazily (next/dynamic, ssr:false) so the graph stays
-// out of the /war-room/[id] bundle until the user opens the panel.
+// shell loads THIS component lazily (next/dynamic, ssr:false) so the graph
+// stays out of the /war-room/[id] bundle until the user opens the panel.
 
-import { Bot, Loader2 } from "lucide-react";
+import { Loader2, MessageCircle, Plus } from "lucide-react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import { WAR_ROOM_ROOM_AGENT_ID } from "@/features/war-room/constants";
 import { useRoomAgent } from "@/features/war-room/hooks/useRoomAgent";
-import { WarRoomAgentSelector } from "@/features/war-room/components/shared/WarRoomAgentSelector";
+import { useRoomConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
+import { startRoomConversation } from "@/features/war-room/redux/thunks";
 
 export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
-  const { conversationId, agentId, ready, switchAgent } = useRoomAgent(sessionId);
+  const dispatch = useAppDispatch();
+  const { conversationId, loaded, ready } = useRoomAgent(sessionId);
+  const adapter = useRoomConversationSelectAdapter(sessionId);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* Header — the active agent (visible + swappable) + its scope. shrink-0
-          so the column below owns the remaining height. */}
-      <header className="shrink-0 flex items-center gap-2 border-b border-border px-3 py-2">
-        <span className="grid place-items-center size-6 shrink-0 text-primary">
-          <Bot className="size-3.5" />
-        </span>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <WarRoomAgentSelector
-            agentId={agentId}
-            onSwitch={switchAgent}
-            fallbackLabel="Room Agent"
-          />
-          <p className="px-1 text-[11px] text-muted-foreground leading-tight truncate">
-            Sees every thread in this room
-          </p>
-        </div>
+      {/* Header — identical chrome to the thread tabs: icon + the canonical
+          chat select. shrink-0 so the column below owns the remaining height. */}
+      <header className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
+        <AssociationEntitySelect
+          token="conversation"
+          adapter={adapter}
+          align="start"
+          emptyLabel="Room chat"
+          iconClassName="text-primary"
+          className="min-w-0 flex-1"
+          createSlot={(close) => (
+            <AgentListDropdown
+              onSelect={(agentId) => {
+                void dispatch(startRoomConversation(sessionId, agentId));
+                close();
+              }}
+              triggerSlot={
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Plus className="size-3.5" />
+                  New Chat
+                </button>
+              }
+            />
+          )}
+        />
       </header>
 
-      {/* Body — the real conversation column, or a loading state until the
-          durable conversation resolves. */}
+      {/* Body — the real conversation column; an explicit Start-chat state for
+          legacy rooms with no chat (never auto-created); else loading. */}
       <div className="min-h-0 flex-1">
         {ready && conversationId ? (
           <AgentConversationColumn
@@ -54,6 +78,30 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
             surfaceKey="war-room-room-agent"
             constrainWidth
           />
+        ) : loaded && adapter.items.length === 0 ? (
+          <div className="grid h-full place-items-center">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <MessageCircle
+                className="size-5 text-muted-foreground/60"
+                aria-hidden
+              />
+              <span className="text-xs text-muted-foreground">
+                This room has no oversight chat yet
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  void dispatch(
+                    startRoomConversation(sessionId, WAR_ROOM_ROOM_AGENT_ID),
+                  )
+                }
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                <Plus className="size-3.5" />
+                Start chat
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-6 animate-spin text-muted-foreground" />

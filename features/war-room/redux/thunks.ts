@@ -35,8 +35,10 @@ import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import {
   WAR_ROOM_AUDIO_SOURCE,
+  WAR_ROOM_ROOM_AGENT_ID,
   WAR_ROOM_THREAD_AGENT_ID,
 } from "../constants";
 import { reportWarRoomError } from "../utils/reportWarRoomError";
@@ -281,6 +283,9 @@ export const createWarRoomSession =
           }),
         );
       }
+      // The ONE moment the room's oversight chat is created (invariant 11's
+      // room-level twin) — never auto-created after this.
+      void dispatch(provisionRoomDefaults(session.id));
       return session;
     } catch {
       toast.error("Couldn't create the War Room");
@@ -671,6 +676,7 @@ export const createRoomFromProject =
         }),
       );
       void dispatch(provisionThreadDefaults(thread.id, session.id));
+      void dispatch(provisionRoomDefaults(session.id));
       return session;
     } catch {
       toast.error("Couldn't open a room for the project");
@@ -995,6 +1001,154 @@ export const hydrateThreadAssignments =
     inFlightThreadOps.add(key);
     try {
       await dispatch(loadThreadAttachments(threadId));
+    } finally {
+      inFlightThreadOps.delete(key);
+    }
+  };
+
+// ── Room (oversight) conversations — conversation → war_room edges ─────────
+// The room agent's chat set mirrors the per-thread model exactly: created ONCE
+// at war-room provisioning (or an explicit "+ New Chat"), bound from the
+// durable edge, never auto-minted.
+
+/**
+ * Start a NEW oversight chat on a room with a picked agent — mint + attach +
+ * make active. The ONLY way a room conversation is ever created.
+ */
+export const startRoomConversation =
+  (roomId: string, agentId: string) =>
+  async (dispatch: AppDispatch): Promise<string | null> => {
+    try {
+      const conversationId = await dispatch(
+        createManualInstance({
+          agentId,
+          apiEndpointMode: "agent",
+          sourceFeature: "agent-runner",
+          allowChat: true,
+          autoRun: false,
+          displayMode: "chat-assistant",
+        }),
+      ).unwrap();
+      await dispatch(
+        attachEntityToContainer(roomRef(roomId), "conversation", conversationId, {
+          makeActive: true,
+          metadata: { role: "agent", agentId },
+        }),
+      );
+      return conversationId;
+    } catch (err) {
+      reportWarRoomError("startRoomConversation", err, {
+        toast: "Couldn't start the room chat",
+      });
+      return null;
+    }
+  };
+
+/**
+ * One-time room provisioning — the ONLY automatic creator of the room's
+ * oversight conversation. Fired right after the war_room row is created.
+ */
+export const provisionRoomDefaults =
+  (roomId: string) =>
+  async (dispatch: AppDispatch): Promise<void> => {
+    const key = `provision-room:${roomId}`;
+    if (inFlightThreadOps.has(key)) return;
+    inFlightThreadOps.add(key);
+    try {
+      await dispatch(
+        startRoomConversation(roomId, WAR_ROOM_ROOM_AGENT_ID),
+      );
+    } finally {
+      inFlightThreadOps.delete(key);
+    }
+  };
+
+/** Flip which oversight chat the room panel is bound to (edge is_active). */
+export const setRoomActiveConversation =
+  (roomId: string, conversationId: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(
+      assignmentActiveSet({
+        key: containerKey("room", roomId),
+        entityType: "conversation",
+        entityId: conversationId,
+      }),
+    );
+    try {
+      await assoc.setActiveAssignment(
+        roomRef(roomId),
+        "conversation",
+        conversationId,
+      );
+    } catch (err) {
+      reportWarRoomError("setRoomActiveConversation", err, {
+        toast: "Couldn't switch the room chat",
+      });
+    }
+  };
+
+/**
+ * Unlink an oversight chat from a room (edge only, never the conversation
+ * row). If it was active, focus flips to the first remaining.
+ */
+export const removeConversationFromRoom =
+  (roomId: string, conversationId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<boolean> => {
+    const key = containerKey("room", roomId);
+    const row = selectAssignmentsForContainer("room", roomId)(getState()).find(
+      (a) => a.entity_type === "conversation" && a.entity_id === conversationId,
+    );
+    if (!row) return false;
+    dispatch(assignmentRemoved({ key, id: row.id }));
+    try {
+      await assoc.removeAssignmentByEntity(
+        roomRef(roomId),
+        "conversation",
+        conversationId,
+      );
+    } catch (err) {
+      dispatch(assignmentUpserted({ key, assignment: row }));
+      reportWarRoomError("removeConversationFromRoom", err, {
+        toast: "Couldn't remove the chat",
+      });
+      return false;
+    }
+    if (row.is_active) {
+      const remaining = selectAssignmentsForContainer(
+        "room",
+        roomId,
+      )(getState()).find((a) => a.entity_type === "conversation");
+      if (remaining) {
+        void dispatch(setRoomActiveConversation(roomId, remaining.entity_id));
+      }
+    }
+    return true;
+  };
+
+/** Hydrate a room's assignment bucket if needed — NEVER creates anything. */
+export const hydrateRoomAssignments =
+  (roomId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<void> => {
+    if (selectContainerAssignmentsLoaded("room", roomId)(getState())) return;
+    const key = `hydrate-room:${roomId}`;
+    if (inFlightThreadOps.has(key)) return;
+    inFlightThreadOps.add(key);
+    try {
+      const rows = await assoc.listAssignmentsForContainer(roomRef(roomId));
+      dispatch(
+        assignmentsLoadedForContainer({
+          key: containerKey("room", roomId),
+          assignments: rows,
+        }),
+      );
+    } catch (err) {
+      reportWarRoomError("hydrateRoomAssignments", err, { toast: false });
     } finally {
       inFlightThreadOps.delete(key);
     }

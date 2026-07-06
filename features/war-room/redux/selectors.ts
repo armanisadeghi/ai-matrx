@@ -398,6 +398,35 @@ export const selectActiveConversationId =
       ? activeEntityId(bucket(state, "thread", threadId), "conversation")
       : null;
 
+/** The ROOM's attached chat conversations (conversation → war_room edges) —
+ *  the oversight agent's chat set, sibling of the per-thread selectors. */
+const roomEntityIdsCache = new Map<string, (state: RootState) => string[]>();
+export const selectConversationIdsForRoom = (roomId: string | null) => {
+  if (!roomId) return () => EMPTY_IDS;
+  const cacheKey = `room:${roomId}:conversation`;
+  let sel = roomEntityIdsCache.get(cacheKey);
+  if (!sel) {
+    sel = createSelector(
+      selectAssignmentsForContainer("room", roomId),
+      (rows): string[] => {
+        const ids = rows
+          .filter((r) => r.entity_type === "conversation")
+          .map((r) => r.entity_id);
+        return ids.length > 0 ? ids : EMPTY_IDS;
+      },
+    );
+    roomEntityIdsCache.set(cacheKey, sel);
+  }
+  return sel;
+};
+
+export const selectActiveConversationIdForRoom =
+  (roomId: string | null) =>
+  (state: RootState): string | null =>
+    roomId
+      ? activeEntityId(bucket(state, "room", roomId), "conversation")
+      : null;
+
 const attachmentsCache = new Map<
   string,
   (state: RootState) => WarRoomAssignment[]

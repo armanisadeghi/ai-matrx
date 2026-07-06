@@ -34,16 +34,21 @@ import { renameConversation } from "@/features/agents/redux/conversation-list/co
 import {
   selectActiveAudioSessionId,
   selectActiveConversationId,
+  selectActiveConversationIdForRoom,
   selectActiveNoteId,
+  selectAssignmentsForContainer,
   selectAudioSessionIdsForThread,
   selectContainerAssignmentsLoaded,
+  selectConversationIdsForRoom,
   selectConversationIdsForThread,
   selectNoteIdsForThread,
 } from "@/features/war-room/redux/selectors";
 import {
   addAudioSessionToThread,
   addNoteToThread,
+  removeConversationFromRoom,
   removeEntityFromThread,
+  setRoomActiveConversation,
   setThreadActiveAudioSession,
   setThreadActiveConversation,
   setThreadActiveNote,
@@ -211,5 +216,69 @@ export function useThreadConversationSelectAdapter(
       }
     },
     detach: (id) => dispatch(removeEntityFromThread(threadId, "conversation", id)),
+  };
+}
+
+/**
+ * The ROOM's oversight chats — `conversation → war_room` edges. Same model as
+ * the thread adapter; the pre-label stand-in agent name comes from the edge's
+ * `metadata.agentId` stamp (rooms have no studio-session roster).
+ */
+export function useRoomConversationSelectAdapter(
+  roomId: string,
+): AssociationEntitySelectAdapter {
+  const dispatch = useAppDispatch();
+  const loaded = useAppSelector(
+    selectContainerAssignmentsLoaded("room", roomId),
+  );
+  const ids = useAppSelector(selectConversationIdsForRoom(roomId));
+  const activeId = useAppSelector(selectActiveConversationIdForRoom(roomId));
+  const rows = useAppSelector(selectAssignmentsForContainer("room", roomId));
+  const listById = useAppSelector((s) => s.conversationList.byConversationId);
+  const agentsById = useAppSelector(selectAllAgents);
+
+  useEntityTitles(
+    ids.map((id) => ({
+      token: "conversation",
+      id,
+      label: listById[id]?.title ?? null,
+    })),
+  );
+
+  const items = ids.map((id, i) => {
+    const row = rows.find(
+      (a) => a.entity_type === "conversation" && a.entity_id === id,
+    );
+    const agentId = (row?.metadata as { agentId?: string } | null)?.agentId;
+    const agentName = agentId ? agentsById[agentId]?.name : undefined;
+    return {
+      id,
+      title:
+        listById[id]?.title?.trim() ||
+        getCachedEntityTitle("conversation", id) ||
+        agentName?.trim() ||
+        `Chat ${i + 1}`,
+    };
+  });
+
+  return {
+    loading: !loaded,
+    items,
+    activeId,
+    setActive: (id) => dispatch(setRoomActiveConversation(roomId, id)),
+    rename: async (id, title) => {
+      try {
+        await dispatch(renameConversation({ conversationId: id, title })).unwrap();
+        primeEntityTitle("conversation", id, title);
+        return true;
+      } catch (err) {
+        console.error("[useRoomConversationSelectAdapter] rename failed", {
+          id,
+          err,
+        });
+        return false;
+      }
+    },
+    detach: (id) => dispatch(removeConversationFromRoom(roomId, id)),
   };
 }
