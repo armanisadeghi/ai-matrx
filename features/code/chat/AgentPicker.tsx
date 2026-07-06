@@ -27,6 +27,7 @@ import type { CodeAgentFilter } from "@/lib/redux/preferences/userPreferencesSli
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { HOVER_ROW } from "../styles/tokens";
+import { beginFreshCodeChat } from "./begin-fresh-code-chat";
 
 interface AgentPickerProps {
   /** Shown inside the empty chat panel. */
@@ -126,13 +127,16 @@ export const AgentPicker: React.FC<AgentPickerProps> = ({
 
   const select = useCallback(
     (agentId: string) => {
-      const next = new URLSearchParams(searchParams.toString());
-      next.set("agentId", agentId);
-      next.delete("conversationId");
-      router.replace(`${pathname}?${next.toString()}`);
+      beginFreshCodeChat({
+        dispatch,
+        router,
+        pathname,
+        searchParams,
+        agentId,
+      });
       setOpen(false);
     },
-    [pathname, router, searchParams],
+    [dispatch, pathname, router, searchParams],
   );
 
   const openFilterSettings = useCallback(() => {

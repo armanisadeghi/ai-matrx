@@ -208,13 +208,19 @@ export default function KindRegistryAdminClient() {
         </h1>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Badge variant="secondary">{stats.total} kinds</Badge>
-          <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.system}`}>
+          <span
+            className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.system}`}
+          >
             {stats.system} system
           </span>
-          <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.content_ir}`}>
+          <span
+            className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.content_ir}`}
+          >
             {stats.db} content_ir
           </span>
-          <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.both}`}>
+          <span
+            className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${SOURCE_STYLES.both}`}
+          >
             {stats.both} both
           </span>
         </div>
@@ -354,7 +360,9 @@ export default function KindRegistryAdminClient() {
                     />
                     <FacetItem
                       label="toLegacyServerData"
-                      value={selected.facets.hasToLegacyServerData ? "yes" : null}
+                      value={
+                        selected.facets.hasToLegacyServerData ? "yes" : null
+                      }
                     />
                     <FacetItem
                       label="component"
@@ -365,7 +373,10 @@ export default function KindRegistryAdminClient() {
                       value={selected.facets.persistStructured ? "yes" : null}
                     />
                     {selected.dbRowId && (
-                      <FacetItem label="content_ir row id" value={selected.dbRowId} />
+                      <FacetItem
+                        label="content_ir row id"
+                        value={selected.dbRowId}
+                      />
                     )}
                   </div>
                 </section>
@@ -394,7 +405,9 @@ export default function KindRegistryAdminClient() {
                           >
                             <td
                               className="px-3 py-1.5 font-mono text-xs text-foreground"
-                              style={{ paddingLeft: `${12 + row.depth * 16}px` }}
+                              style={{
+                                paddingLeft: `${12 + row.depth * 16}px`,
+                              }}
                             >
                               {row.name}
                             </td>
@@ -548,7 +561,7 @@ export default function KindRegistryAdminClient() {
                   )}
 
                   {exportPayload ? (
-                    <div className="flex h-[420px] flex-col overflow-hidden p-2">
+                    <div className="flex flex-col overflow-hidden p-2">
                       <JsonInspector
                         data={exportPayload}
                         label={`${selected.kind} schema`}

@@ -12,6 +12,7 @@ import { describeFilter } from "@/features/agents/redux/agent-filter/selectors";
 import { SidePanelHeader, SidePanelAction } from "../views/SidePanelChrome";
 import { AVATAR_RESERVE } from "../styles/tokens";
 import { useCodeWorkspaceHistory } from "./useCodeWorkspaceHistory";
+import { beginFreshCodeChat } from "./begin-fresh-code-chat";
 
 interface ChatHistorySlotProps {
   className?: string;
@@ -72,10 +73,14 @@ export const ChatHistorySlot: React.FC<ChatHistorySlotProps> = ({
 
   const handleNewChat = useCallback(() => {
     if (!agentId) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("conversationId");
-    router.replace(`${pathname}?${next.toString()}`);
-  }, [agentId, pathname, router, searchParams]);
+    beginFreshCodeChat({
+      dispatch,
+      router,
+      pathname,
+      searchParams,
+      agentId,
+    });
+  }, [agentId, dispatch, pathname, router, searchParams]);
 
   const filterLabel = useMemo(() => describeFilter(filter), [filter]);
 

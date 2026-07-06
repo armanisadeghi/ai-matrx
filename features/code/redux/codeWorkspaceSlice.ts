@@ -55,6 +55,9 @@ export interface CodeWorkspaceState {
   activeFilesystemLabel: string | null;
   activeFilesystemRoot: string | null;
   editorMode: EditorMode;
+  /** Bumped when the user explicitly starts a new chat (+). Drives launcher
+   *  reminting on fresh routes even when the URL stays on `/code?agentId=…`. */
+  freshSessionNonce: number;
 }
 
 const initialState: CodeWorkspaceState = {
@@ -69,6 +72,7 @@ const initialState: CodeWorkspaceState = {
   activeFilesystemLabel: null,
   activeFilesystemRoot: null,
   editorMode: "mock",
+  freshSessionNonce: 0,
 };
 
 const slice = createSlice({
@@ -132,6 +136,9 @@ const slice = createSlice({
       state.activeFilesystemRoot = rootPath;
       state.editorMode = mode;
     },
+    bumpFreshSession(state) {
+      state.freshSessionNonce += 1;
+    },
   },
 });
 
@@ -144,6 +151,7 @@ export const {
   setActiveSandboxProxyUrl,
   setExplorerRootOverride,
   setActiveFilesystem,
+  bumpFreshSession,
 } = slice.actions;
 
 export default slice.reducer;
@@ -177,6 +185,9 @@ export const selectActiveFilesystemRoot = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).activeFilesystemRoot;
 export const selectActiveFilesystemLabel = (state: WithCodeWorkspace) =>
   selectCodeWorkspace(state).activeFilesystemLabel;
+export const selectCodeWorkspaceFreshSessionNonce = (
+  state: WithCodeWorkspace,
+) => selectCodeWorkspace(state).freshSessionNonce;
 
 /**
  * Derive an `EditorMode` from a filesystem adapter id. Lives here (not

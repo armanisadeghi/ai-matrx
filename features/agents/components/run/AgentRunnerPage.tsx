@@ -29,6 +29,7 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,15 @@ interface AgentRunnerPageProps {
    * URL. Default: `${basePath}/${agentId}/run?conversationId={cid}`.
    */
   buildConversationUrl?: (conversationId: string) => string;
+  /**
+   * When true and no `?conversationId=` in the URL, the launcher mints a
+   * brand-new conversation on every fresh-session bump (+) instead of
+   * reviving the surface's last focus. Used by the /code workspace.
+   */
+  preferFresh?: boolean;
+  /** Drives launcher remint when `preferFresh` is active. Pass the code
+   *  workspace fresh-session nonce (or 0 to disable). */
+  freshSessionKey?: number;
 }
 
 export function AgentRunnerPage({
@@ -75,6 +85,8 @@ export function AgentRunnerPage({
   backHref = "/agents/all",
   basePath = "/agents",
   buildConversationUrl,
+  preferFresh = false,
+  freshSessionKey = 0,
 }: AgentRunnerPageProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -92,6 +104,13 @@ export function AgentRunnerPage({
   const [initAttempt, setInitAttempt] = useState(0);
 
   const conversationIdFromUrl = searchParams.get("conversationId") ?? undefined;
+  const surfaceKey = surfaceKeyProp ?? `${sourceFeature}:${agentId}`;
+  const isFreshRoute = preferFresh && !conversationIdFromUrl;
+
+  useEffect(() => {
+    if (!isFreshRoute) return;
+    dispatch(clearFocus(surfaceKey));
+  }, [isFreshRoute, surfaceKey, dispatch, agentId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,8 +138,6 @@ export function AgentRunnerPage({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId, initAttempt]);
-
-  const surfaceKey = surfaceKeyProp ?? `${sourceFeature}:${agentId}`;
 
   // Register this page as a `page` surface so action bars and shared
   // components can route fork/retry navigation outcomes correctly. The
@@ -164,6 +181,9 @@ export function AgentRunnerPage({
     surfaceKey,
     sourceFeature,
     ready: !isInitializing,
+    preferFresh: isFreshRoute,
+    freshSessionKey: isFreshRoute ? freshSessionKey : 0,
+    config: preferFresh ? { responseDensity: "compact" } : undefined,
   });
 
   // Completely unrelated to the normal run.

@@ -257,6 +257,48 @@ export function useSandboxInstances(projectId?: string) {
     }
   }, []);
 
+  const deleteInstances = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) {
+      return { deletedIds: [] as string[], failed: [] as string[] };
+    }
+
+    setError(null);
+    const results = await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
+          if (!resp.ok && resp.status !== 204) {
+            throw new Error(
+              await extractSandboxError(resp, "Failed to delete sandbox"),
+            );
+          }
+          return { id, ok: true as const };
+        } catch {
+          return { id, ok: false as const };
+        }
+      }),
+    );
+
+    const deletedIds = results.filter((r) => r.ok).map((r) => r.id);
+    const failed = results.filter((r) => !r.ok).map((r) => r.id);
+
+    if (deletedIds.length > 0) {
+      const deletedSet = new Set(deletedIds);
+      setInstances((prev) => prev.filter((i) => !deletedSet.has(i.id)));
+      setTotal((prev) => Math.max(0, prev - deletedIds.length));
+    }
+
+    if (failed.length > 0) {
+      setError(
+        failed.length === ids.length
+          ? "Failed to delete sandbox history"
+          : `Deleted ${deletedIds.length}, but ${failed.length} failed`,
+      );
+    }
+
+    return { deletedIds, failed };
+  }, []);
+
   const execCommand = useCallback(
     async (
       id: string,
@@ -321,6 +363,7 @@ export function useSandboxInstances(projectId?: string) {
     stopInstance,
     extendInstance,
     deleteInstance,
+    deleteInstances,
     execCommand,
     requestAccess,
   };

@@ -38,6 +38,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { sandboxInstanceSummary } from "@/lib/sandbox/format";
 import { toast } from "sonner";
@@ -83,6 +85,7 @@ export default function SandboxListPage() {
     createInstance,
     stopInstance,
     deleteInstance,
+    deleteInstances,
   } = useSandboxInstances();
 
   // Open the create modal when arriving via `?create=1` (the shell's "New
@@ -107,6 +110,13 @@ export default function SandboxListPage() {
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [ttlHours, setTtlHours] = useState(2);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [historyDeleteMode, setHistoryDeleteMode] = useState<
+    "selected" | "all" | null
+  >(null);
+  const [historyDeleting, setHistoryDeleting] = useState(false);
 
   // Tier/template state, last-used persistence, and template catalog fetch
   // all live in `useSandboxCreate` so the `CreateSandboxModal` (in the /code
@@ -250,6 +260,65 @@ export default function SandboxListPage() {
     (i) => !LIST_ACTIVE_STATUSES.includes(getEffectiveStatus(i)),
   );
   const activeCount = activeInstances.length;
+  const selectedHistoryCount = selectedHistoryIds.size;
+  const allHistorySelected =
+    historicalInstances.length > 0 &&
+    historicalInstances.every((i) => selectedHistoryIds.has(i.id));
+  const historyDeleteCount =
+    historyDeleteMode === "all"
+      ? historicalInstances.length
+      : selectedHistoryCount;
+
+  const toggleHistorySelection = (id: string) => {
+    setSelectedHistoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllHistorySelection = () => {
+    setSelectedHistoryIds((prev) => {
+      if (allHistorySelected) return new Set();
+      return new Set(historicalInstances.map((i) => i.id));
+    });
+  };
+
+  const handleHistoryBatchDelete = async () => {
+    if (!historyDeleteMode || historyDeleting) return;
+    const ids =
+      historyDeleteMode === "all"
+        ? historicalInstances.map((i) => i.id)
+        : Array.from(selectedHistoryIds);
+    if (ids.length === 0) {
+      setHistoryDeleteMode(null);
+      return;
+    }
+
+    setHistoryDeleting(true);
+    const { deletedIds, failed } = await deleteInstances(ids);
+    setHistoryDeleting(false);
+    setHistoryDeleteMode(null);
+
+    if (deletedIds.length > 0) {
+      setSelectedHistoryIds((prev) => {
+        const next = new Set(prev);
+        for (const id of deletedIds) next.delete(id);
+        return next;
+      });
+      toast.success(
+        `Deleted ${deletedIds.length} sandbox record${deletedIds.length === 1 ? "" : "s"}`,
+      );
+    }
+    if (failed.length > 0) {
+      toast.error(
+        failed.length === ids.length
+          ? "Failed to delete sandbox history"
+          : `${failed.length} record${failed.length === 1 ? "" : "s"} could not be deleted`,
+      );
+    }
+  };
 
   return (
     <div className="h-page flex flex-col bg-textured overflow-hidden">
@@ -618,7 +687,7 @@ export default function SandboxListPage() {
                   >
                     <History className="w-4 h-4" />
                     <span className="font-medium flex-1 text-left">
-                      History — read-only record
+                      History
                     </span>
                     <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
                       {historicalInstances.length}
@@ -631,21 +700,49 @@ export default function SandboxListPage() {
                   </button>
                   {historyOpen && (
                     <>
-                      <div className="px-4 pb-2 text-xs text-muted-foreground">
-                        These sandboxes have ended — their containers were
-                        destroyed when the session closed. Anything you saved
-                        inside <code className="font-mono">/home/agent</code> is
-                        preserved on this tier and is mounted automatically on
-                        the next sandbox you create. Anything outside that
-                        directory (running processes, packages installed at the
-                        system level, env vars set in the shell) is gone. See
-                        the session report on your next sandbox for a
-                        per-session summary of what was carried over and what
-                        was not.
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-2">
+                        <div className="text-xs text-muted-foreground max-w-3xl">
+                          Ended sandboxes — containers were destroyed when the
+                          session closed. Anything saved in{" "}
+                          <code className="font-mono">/home/agent</code> stays
+                          on this tier and mounts on your next sandbox.
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={
+                              selectedHistoryCount === 0 || historyDeleting
+                            }
+                            onClick={() => setHistoryDeleteMode("selected")}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1.5" />
+                            Delete selected
+                            {selectedHistoryCount > 0
+                              ? ` (${selectedHistoryCount})`
+                              : ""}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={historyDeleting}
+                            onClick={() => setHistoryDeleteMode("all")}
+                          >
+                            <Trash2 className="w-3 h-3 mr-1.5" />
+                            Delete all history
+                          </Button>
+                        </div>
                       </div>
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/20">
+                            <TableHead className="w-10">
+                              <Checkbox
+                                checked={allHistorySelected}
+                                onCheckedChange={toggleAllHistorySelection}
+                                aria-label="Select all history rows"
+                              />
+                            </TableHead>
                             <TableHead>Sandbox ID</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Created</TableHead>
@@ -659,6 +756,9 @@ export default function SandboxListPage() {
                           {historicalInstances.map((instance) => {
                             const effectiveStatus =
                               getEffectiveStatus(instance);
+                            const selected = selectedHistoryIds.has(
+                              instance.id,
+                            );
                             return (
                               <TableRow
                                 key={instance.id}
@@ -667,6 +767,18 @@ export default function SandboxListPage() {
                                   router.push(`/sandbox/${instance.id}`)
                                 }
                               >
+                                <TableCell
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-10"
+                                >
+                                  <Checkbox
+                                    checked={selected}
+                                    onCheckedChange={() =>
+                                      toggleHistorySelection(instance.id)
+                                    }
+                                    aria-label={`Select ${instance.sandbox_id}`}
+                                  />
+                                </TableCell>
                                 <TableCell className="font-mono text-sm text-muted-foreground">
                                   {instance.sandbox_id}
                                 </TableCell>
@@ -806,6 +918,35 @@ export default function SandboxListPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={historyDeleteMode !== null}
+        onOpenChange={(open) => {
+          if (!open && !historyDeleting) setHistoryDeleteMode(null);
+        }}
+        title={
+          historyDeleteMode === "all"
+            ? "Delete all sandbox history?"
+            : "Delete selected history?"
+        }
+        description={
+          <>
+            Permanently remove{" "}
+            <strong>
+              {historyDeleteCount} sandbox record
+              {historyDeleteCount === 1 ? "" : "s"}
+            </strong>{" "}
+            from your list. Your <code className="font-mono">/home/agent</code>{" "}
+            volume on each tier is not deleted — only these history rows.
+          </>
+        }
+        confirmLabel={
+          historyDeleteMode === "all" ? "Delete all history" : "Delete selected"
+        }
+        variant="destructive"
+        busy={historyDeleting}
+        onConfirm={() => void handleHistoryBatchDelete()}
+      />
     </div>
   );
 }

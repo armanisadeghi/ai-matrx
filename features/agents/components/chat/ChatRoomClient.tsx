@@ -10,6 +10,7 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -293,46 +294,74 @@ export function ChatRoomClient({
     );
   }, [conversationIdProp, liveConversationId, agentId, dispatch]);
 
-  // ── Post-submit URL promotion (only on /chat/a/[agentId]) ────────────────
-  // On /chat/a/[agentId] the launcher pre-creates an instance with a client
-  // UUID, but the conversation isn't persisted in cx_conversation until the
-  // server processes the first request and emits its initial `record_reserved`
-  // events. Promoting on the user's optimistic local message alone races the
-  // server — the SSR query at /chat/[cid] would 404-redirect back to /chat/new.
-  // The agent's reserved message arrives only AFTER the cx_conversation row
-  // exists, so message-count >= 2 is the reliable post-persistence signal.
+  // ── Post-submit URL promotion (only on /chat/new + /chat/a/[agentId]) ─────
+  // The launcher pre-creates an instance with a client UUID, but the
+  // conversation isn't persisted in chat.conversation until the server writes
+  // it. `record_reserved` events only *announce* the reserved UUIDs mid-stream
+  // — they are NOT a commit. The backend now persists the whole turn (conv +
+  // user + assistant message) atomically at stream-end, so message-count >= 2
+  // is NO LONGER a reliable "row committed" signal (it once was, when the row
+  // was inserted up front). Promoting before the row is committed makes the
+  // /chat/[cid] SSR guard miss and hard-redirect back to /chat/new — the
+  // "can't leave /chat/new" bounce.
+  //
+  // Fix: gate the URL swap on `waitForConversationPersisted`, a client read
+  // that mirrors the SSR seed lookup exactly. A `true` there guarantees the
+  // SSR guard resolves a seed. Backend-timing-agnostic — instant when the row
+  // commits early, deferred to turn-end when it commits atomically.
   const messageCount = useAppSelector((state) =>
     liveConversationId ? selectMessageCount(liveConversationId)(state) : 0,
   );
+  // Boolean trigger (not raw count) so later messages in the same turn don't
+  // re-fire / churn the effect. Toggles false→true once, then stays true.
+  const readyToPromote =
+    !conversationIdProp && !!liveConversationId && messageCount >= 2;
   const promotedRef = useRef<string | null>(null);
+  const promotionWaitRef = useRef<string | null>(null);
   useEffect(() => {
     promotedRef.current = null;
+    promotionWaitRef.current = null;
   }, [freshSessionKey, agentId]);
   useEffect(() => {
-    if (conversationIdProp) return; // already at /chat/[cid]
-    if (!liveConversationId || messageCount < 2) return;
-    if (promotedRef.current === liveConversationId) return;
+    if (!readyToPromote || !liveConversationId) return undefined;
+    const target = liveConversationId;
+    if (promotedRef.current === target) return undefined;
+    if (promotionWaitRef.current === target) return undefined;
     // Stale-closure guard — THE fix for "click + and it snaps back to the old
-    // chat". `/chat/[id]` and `/chat/a/[agentId]` share the same surfaceKey, so
-    // when you click `+` from an existing conversation this effect can be
-    // scheduled with the INHERITED `liveConversationId` (the old conversation,
-    // which already has >=2 messages) for one transitional render — before the
-    // launcher swaps focus to the fresh conversation. Promoting that would
-    // `router.replace` you straight back to the old chat. Only promote the
-    // conversation that is STILL the focused one on this surface right now.
+    // chat". `/chat/[id]`, `/chat/new`, and `/chat/a/[agentId]` share the same
+    // surfaceKey, so when you click `+` from an existing conversation this
+    // effect can be scheduled with the INHERITED `liveConversationId` (the old
+    // conversation, which already has >=2 messages) for one transitional render
+    // — before the launcher swaps focus to the fresh conversation. Promoting
+    // that would `router.replace` you straight back to the old chat. Only
+    // promote the conversation STILL focused on this surface right now.
     const currentInputFocus =
       store.getState().conversationFocus?.bySurface[surfaceKey]?.input ?? null;
-    if (currentInputFocus !== liveConversationId) return;
-    promotedRef.current = liveConversationId;
-    router.replace(`/chat/${liveConversationId}`);
-  }, [
-    conversationIdProp,
-    liveConversationId,
-    messageCount,
-    router,
-    store,
-    surfaceKey,
-  ]);
+    if (currentInputFocus !== target) return undefined;
+
+    promotionWaitRef.current = target;
+    const ctrl = new AbortController();
+    void (async () => {
+      const persisted = await waitForConversationPersisted(target, {
+        signal: ctrl.signal,
+      });
+      if (ctrl.signal.aborted) return;
+      if (promotionWaitRef.current === target) promotionWaitRef.current = null;
+      if (!persisted) return;
+      // Re-check focus: a `+` / agent switch may have moved it while we waited.
+      const focusNow =
+        store.getState().conversationFocus?.bySurface[surfaceKey]?.input ??
+        null;
+      if (focusNow !== target) return;
+      promotedRef.current = target;
+      router.replace(`/chat/${target}`);
+    })();
+
+    return () => {
+      ctrl.abort();
+      if (promotionWaitRef.current === target) promotionWaitRef.current = null;
+    };
+  }, [readyToPromote, liveConversationId, router, store, surfaceKey]);
 
   // ── Single source of truth ───────────────────────────────────────────────
   // Prop wins when present (loading existing). Otherwise launcher's id wins.

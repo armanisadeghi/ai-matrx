@@ -9,6 +9,7 @@ import { AgentRunnerPage } from "@/features/agents/components/run/AgentRunnerPag
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import {
   selectFarRightOpen,
+  selectCodeWorkspaceFreshSessionNonce,
   setFarRightOpen,
 } from "../redux/codeWorkspaceSlice";
 import { SidePanelHeader, SidePanelAction } from "../views/SidePanelChrome";
@@ -23,6 +24,7 @@ import {
   selectActiveSandboxProxyUrl,
 } from "../redux/codeWorkspaceSlice";
 import { setResponseDensity } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { beginFreshCodeChat } from "./begin-fresh-code-chat";
 
 interface ChatPanelSlotProps {
   /** Base path used by header controls inside the runner. Defaults to the
@@ -82,6 +84,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   }, [defaultAgentId]);
   const { filter } = useCodeWorkspaceHistory();
   const farRightOpen = useAppSelector(selectFarRightOpen);
+  const freshSessionKey = useAppSelector(selectCodeWorkspaceFreshSessionNonce);
 
   // The runner registers itself with surfaceKey `agent-runner:${agentId}` —
   // mirror that string here so we can read the focused conversation directly
@@ -128,10 +131,14 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
 
   const handleNewChat = useCallback(() => {
     if (!agentId) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("conversationId");
-    router.replace(`${pathname}?${next.toString()}`);
-  }, [agentId, pathname, router, searchParams]);
+    beginFreshCodeChat({
+      dispatch,
+      router,
+      pathname,
+      searchParams,
+      agentId,
+    });
+  }, [agentId, dispatch, pathname, router, searchParams]);
 
   // Code workspace lives at `${basePath}?agentId=X` — no nested `/run` segment.
   // Override the runner's default URL builder so fork / retry navigation
@@ -189,6 +196,8 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
             basePath={basePath}
             backHref={basePath}
             buildConversationUrl={buildConversationUrl}
+            preferFresh
+            freshSessionKey={freshSessionKey}
           />
         ) : (
           <AgentPicker
