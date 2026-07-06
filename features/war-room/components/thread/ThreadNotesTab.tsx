@@ -14,7 +14,7 @@
 // Compact ("All"): same merged toolbar; editor fills the section below.
 
 import { useEffect } from "react";
-import { Loader2, Type, Columns2, Eye } from "lucide-react";
+import { Loader2, Plus, StickyNote, Type, Columns2, Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import {
@@ -30,8 +30,14 @@ import {
   updateNoteContent,
 } from "@/features/notes/redux/slice";
 import { fetchNoteContent } from "@/features/notes/redux/thunks";
-import { selectActiveNoteId } from "@/features/war-room/redux/selectors";
-import { ensureThreadNote } from "@/features/war-room/redux/thunks";
+import {
+  selectActiveNoteId,
+  selectContainerAssignmentsLoaded,
+} from "@/features/war-room/redux/selectors";
+import {
+  addNoteToThread,
+  hydrateThreadAssignments,
+} from "@/features/war-room/redux/thunks";
 import { useThreadNoteSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { cn } from "@/lib/utils";
 
@@ -52,37 +58,26 @@ export function ThreadNotesTab({
 }) {
   const dispatch = useAppDispatch();
   const noteId = useAppSelector(selectActiveNoteId(threadId));
+  const loaded = useAppSelector(
+    selectContainerAssignmentsLoaded("thread", threadId),
+  );
 
-  // Ensure the tile has a backing note so the editor always has one to bind to
-  // (idempotent + coalesced inside the thunk). A fresh tile gets its first note
-  // here; an existing tile resolves its active 'note' assignment.
+  // Hydrate the thread's assignments — NEVER creates a note. A thread's note
+  // is created exactly once at thread provisioning; a thread genuinely
+  // without one gets the explicit "New Note" empty state below.
   useEffect(() => {
-    if (!noteId) void dispatch(ensureThreadNote(threadId));
-  }, [noteId, threadId, dispatch]);
+    void dispatch(hydrateThreadAssignments(threadId));
+  }, [threadId, dispatch]);
 
-  // Compact ("All" combined view): merged toolbar + plain editor only.
-  if (compact) {
-    if (!noteId) {
-      return (
-        <div className="grid h-full place-items-center">
-          <Loader2 className="size-5 animate-spin text-muted-foreground" />
-        </div>
-      );
-    }
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        <ThreadNotesToolbar
-          threadId={threadId}
-          sessionId={sessionId}
-          noteId={noteId}
-          compact
-        />
-        <div className="min-h-0 flex-1">
-          <ThreadNoteEditor noteId={noteId} compact />
-        </div>
-      </div>
-    );
-  }
+  const body = noteId ? (
+    <ThreadNoteEditor noteId={noteId} compact={compact} />
+  ) : loaded ? (
+    <NoNoteEmptyState threadId={threadId} sessionId={sessionId} />
+  ) : (
+    <div className="grid h-full place-items-center">
+      <Loader2 className="size-5 animate-spin text-muted-foreground" />
+    </div>
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -90,16 +85,37 @@ export function ThreadNotesTab({
         threadId={threadId}
         sessionId={sessionId}
         noteId={noteId}
+        compact={compact}
       />
+      <div className="min-h-0 flex-1">{body}</div>
+    </div>
+  );
+}
 
-      <div className="min-h-0 flex-1">
-        {noteId ? (
-          <ThreadNoteEditor noteId={noteId} />
-        ) : (
-          <div className="grid h-full place-items-center">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
+/** Loaded-and-empty: creating a note is an EXPLICIT user action, never automatic. */
+function NoNoteEmptyState({
+  threadId,
+  sessionId,
+}: {
+  threadId: string;
+  sessionId: string;
+}) {
+  const dispatch = useAppDispatch();
+  return (
+    <div className="grid h-full place-items-center">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <StickyNote className="size-5 text-muted-foreground/60" aria-hidden />
+        <span className="text-xs text-muted-foreground">
+          No note on this thread yet
+        </span>
+        <button
+          type="button"
+          onClick={() => void dispatch(addNoteToThread(threadId, sessionId))}
+          className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+        >
+          <Plus className="size-3.5" />
+          New Note
+        </button>
       </div>
     </div>
   );

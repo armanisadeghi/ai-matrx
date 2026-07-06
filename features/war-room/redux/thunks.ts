@@ -25,15 +25,20 @@ import {
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
 import {
+  persistAssistantConversationThunk,
   setActiveAssistantConversationThunk,
   switchAssistantAgentThunk,
 } from "@/features/transcript-studio/redux/assistantAgent.thunk";
 import { selectRawSegmentsLoaded } from "@/features/transcript-studio/redux/selectors";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
+import {
+  WAR_ROOM_AUDIO_SOURCE,
+  WAR_ROOM_THREAD_AGENT_ID,
+} from "../constants";
 import { reportWarRoomError } from "../utils/reportWarRoomError";
 import {
   selectActiveAudioSessionId,
@@ -518,7 +523,7 @@ export const clearThreadContextOverrideThunk =
 // ── Threads ───────────────────────────────────────────────────────────
 
 export const createThread =
-  (input: CreateThreadInput) =>
+  (input: CreateThreadInput, provisionOpts?: { noteContent?: string }) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -540,6 +545,12 @@ export const createThread =
           dispatch(orphanThreadsLoaded([...orphans, thread.id]));
         }
       }
+      // The ONE moment a thread's note / audio session / chat conversation are
+      // created — never auto-created again after this (fire-and-forget; a
+      // partial failure surfaces as the tab's explicit-create empty state).
+      void dispatch(
+        provisionThreadDefaults(thread.id, input.roomId ?? null, provisionOpts),
+      );
       return thread;
     } catch {
       toast.error("Couldn't create the thread");
@@ -659,6 +670,7 @@ export const createRoomFromProject =
           threads: [thread],
         }),
       );
+      void dispatch(provisionThreadDefaults(thread.id, session.id));
       return session;
     } catch {
       toast.error("Couldn't open a room for the project");
@@ -872,45 +884,43 @@ export const setThreadActiveAudioSession =
     }
   };
 
-export const ensureThreadAudioSession =
+/**
+ * Hydrate-ONLY resolver for a thread's audio session — NEVER creates one.
+ * Sessions (like notes and conversations) are created exactly once at thread
+ * provisioning, or by the user's explicit "+ New Session"; a thread genuinely
+ * without one renders the explicit-create empty state instead.
+ */
+export const hydrateThreadAudio =
   (threadId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    // Coalesce concurrent ensures SYNCHRONOUSLY — the same thread's audio tab
-    // mounts twice (own tab + combined "All" view), and both instances used to
-    // pass the empty-check during the shared hydration await below, each then
-    // creating a session. The guard must be taken before the first await.
-    const key = `ensure-audio:${threadId}`;
+    const key = `hydrate-audio:${threadId}`;
     if (inFlightThreadOps.has(key)) return null;
     inFlightThreadOps.add(key);
     try {
-      // Never decide "nothing exists yet" from an unhydrated bucket — that
-      // race is what caused ghost creations. Wait for the real data first.
       if (!selectContainerAssignmentsLoaded("thread", threadId)(getState())) {
         await dispatch(loadThreadAttachments(threadId));
       }
       const active = selectActiveAudioSessionId(threadId)(getState());
-      if (active) {
-        // Only pull raw segments if this session has never been fetched. In
-        // gallery mode every tile mounts its audio tab and calls this; without
-        // the guard a single "switch all tiles to audio" broadcast fired N
-        // parallel fetchRawSegments. Gate on "loaded?" (key present) rather than
-        // "count === 0" so a legitimately-empty session isn't re-fetched forever.
-        if (!selectRawSegmentsLoaded(active)(getState())) {
-          dispatch(fetchRawSegmentsThunk({ sessionId: active }));
-        }
-        return active;
+      if (!active) return null;
+      // Only pull raw segments if this session has never been fetched. In
+      // gallery mode every tile mounts its audio tab and calls this; without
+      // the guard a single "switch all tiles to audio" broadcast fired N
+      // parallel fetchRawSegments. Gate on "loaded?" (key present) rather than
+      // "count === 0" so a legitimately-empty session isn't re-fetched forever.
+      if (!selectRawSegmentsLoaded(active)(getState())) {
+        dispatch(fetchRawSegmentsThunk({ sessionId: active }));
       }
-      return await dispatch(addAudioSessionToThread(threadId));
+      return active;
     } finally {
       inFlightThreadOps.delete(key);
     }
   };
 
 export const addNoteToThread =
-  (threadId: string, roomId: string, label?: string) =>
+  (threadId: string, roomId: string, label?: string, content?: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -920,7 +930,7 @@ export const addNoteToThread =
     inFlightThreadOps.add(key);
     try {
       const note = await createNote({
-        content: "",
+        content: content ?? "",
         label:
           label?.trim() || deriveThreadNoteLabel(getState(), threadId, roomId),
         task_id: selectThreadTaskId(threadId)(getState()) ?? undefined,
@@ -966,33 +976,94 @@ export const setThreadActiveNote =
     }
   };
 
-export const ensureThreadNote =
+/**
+ * Hydrate a thread's assignment bucket if it hasn't loaded yet — NEVER
+ * creates anything. The tabs call this on mount instead of the old ensure-*
+ * thunks (which auto-created a note/session and were a duplicate factory).
+ */
+export const hydrateThreadAssignments =
   (threadId: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
-  ): Promise<string | null> => {
-    // Coalesce concurrent ensures SYNCHRONOUSLY (see ensureThreadAudioSession):
-    // the notes tab mounts twice (own tab + combined "All" view), and both
-    // instances used to pass the empty-check during the shared hydration await
-    // below, each then creating a note — the "duplicate auto-created notes"
-    // bug. The guard must be taken before the first await.
-    const key = `ensure-note:${threadId}`;
-    if (inFlightThreadOps.has(key)) return null;
+  ): Promise<void> => {
+    if (selectContainerAssignmentsLoaded("thread", threadId)(getState())) {
+      return;
+    }
+    const key = `hydrate:${threadId}`;
+    if (inFlightThreadOps.has(key)) return;
     inFlightThreadOps.add(key);
     try {
-      // Same class of bug: an unhydrated bucket reads identically to "no note
-      // yet", so a fresh page load (assignments still in flight) would create
-      // a brand-new note on every mount. Wait for the real answer first.
-      if (!selectContainerAssignmentsLoaded("thread", threadId)(getState())) {
-        await dispatch(loadThreadAttachments(threadId));
-      }
-      const active = selectActiveNoteId(threadId)(getState());
-      if (active) return active;
-      const roomId = findRoomForThread(getState(), threadId);
-      return await dispatch(addNoteToThread(threadId, roomId ?? ""));
+      await dispatch(loadThreadAttachments(threadId));
     } finally {
       inFlightThreadOps.delete(key);
+    }
+  };
+
+/**
+ * One-shot cleanup of PHANTOM conversation edges — debris from the old
+ * refresh-mint bug (every page load minted a fresh conversation and attached
+ * it; the id never got a cx_conversation row, so the thread's chat list grew
+ * with dead entries). An edge is pruned only when ALL of: its conversation
+ * has no server row, it isn't referenced by the session pointer/roster, and
+ * it carries no `metadata.agentId` (every post-fix mint stamps one). Loud:
+ * each prune is a console.error — this firing after today means a creation
+ * path regressed.
+ */
+const phantomPrunedThreads = new Set<string>();
+export const pruneThreadPhantomConversations =
+  (threadId: string, sessionId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<void> => {
+    if (phantomPrunedThreads.has(threadId)) return;
+    phantomPrunedThreads.add(threadId);
+    const rows = selectAssignmentsForContainer(
+      "thread",
+      threadId,
+    )(getState()).filter((a) => a.entity_type === "conversation");
+    if (rows.length === 0) return;
+
+    const info = getEntityInfo("conversation");
+    const ids = rows.map((r) => r.entity_id);
+    const db = (
+      info.schema && info.schema !== "public"
+        ? supabase.schema(info.schema as "files")
+        : supabase
+    ) as typeof supabase;
+    const { data, error } = await db
+      .from(info.table as never)
+      .select("id")
+      .in("id" as never, ids as never[]);
+    if (error) {
+      reportWarRoomError("pruneThreadPhantomConversations", error, {
+        toast: false,
+      });
+      return;
+    }
+    const real = new Set(
+      ((data as Array<{ id: unknown }>) ?? []).map((r) => String(r.id)),
+    );
+    const session = getState().transcriptStudio.byId[sessionId];
+    const protectedIds = new Set<string>([
+      ...(session?.assistantConversations ?? []).map((r) => r.conversationId),
+      ...(session?.assistantConversationId
+        ? [session.assistantConversationId]
+        : []),
+    ]);
+
+    for (const row of rows) {
+      const id = row.entity_id;
+      const hasAgentStamp = Boolean(
+        (row.metadata as { agentId?: string } | null)?.agentId,
+      );
+      if (real.has(id) || protectedIds.has(id) || hasAgentStamp) continue;
+      console.error(
+        "[war-room] pruning phantom conversation edge (refresh-mint debris)",
+        { threadId, conversationId: id },
+      );
+      await dispatch(removeEntityFromThread(threadId, "conversation", id));
     }
   };
 
@@ -1029,11 +1100,14 @@ export const setThreadActiveConversation =
   };
 
 /**
- * Start a NEW chat on a thread with a picked agent: mints a fresh conversation
- * for the thread's session (durable only after its first turn streams — see
- * persistAssistantConversationThunk), attaches it to the thread, and makes it
- * the active one. Until the server auto-labels it, surfaces show the agent's
- * name in place of the chat label.
+ * Start a NEW chat on a thread with a picked agent — the ONLY way a thread
+ * conversation is ever created (called from thread provisioning and the Chat
+ * toolbar's "+ New Chat"; the panel itself never mints — autoCreate:false).
+ * Mints a fresh conversation for the thread's session, PERSISTS the pointer +
+ * roster onto the session row immediately (so a refresh re-binds instead of
+ * fabricating a new chat — the resolve path tolerates the row not existing
+ * until the first turn streams), and attaches it to the thread. Until the
+ * server auto-labels it, surfaces show the agent's name as the chat label.
  */
 export const startThreadConversation =
   (threadId: string, sessionId: string, agentId: string) =>
@@ -1044,8 +1118,11 @@ export const startThreadConversation =
       ).unwrap();
       if (!conversationId) return null;
       await dispatch(
+        persistAssistantConversationThunk({ sessionId, conversationId }),
+      );
+      await dispatch(
         attachEntityToThread(threadId, "conversation", conversationId, {
-          metadata: { role: "agent" },
+          metadata: { role: "agent", agentId },
         }),
       );
       return conversationId;
@@ -1054,6 +1131,41 @@ export const startThreadConversation =
         toast: "Couldn't start the chat",
       });
       return null;
+    }
+  };
+
+/**
+ * One-time thread provisioning — the ONLY place a thread's note, audio
+ * session, and chat conversation are created automatically. Runs right after
+ * the thread row is created (createThread / ensureRoomForProject); nothing
+ * else may auto-create these — every later create is an explicit user action
+ * (the toolbars' "+ New …"). Fire-and-forget: a partial failure logs loudly
+ * and the affected tab shows its explicit-create empty state instead.
+ */
+export const provisionThreadDefaults =
+  (threadId: string, roomId: string | null, opts?: { noteContent?: string }) =>
+  async (dispatch: AppDispatch): Promise<void> => {
+    const key = `provision:${threadId}`;
+    if (inFlightThreadOps.has(key)) return;
+    inFlightThreadOps.add(key);
+    try {
+      await dispatch(
+        addNoteToThread(threadId, roomId ?? "", undefined, opts?.noteContent),
+      );
+      const sessionId = await dispatch(addAudioSessionToThread(threadId));
+      if (sessionId) {
+        await dispatch(
+          startThreadConversation(
+            threadId,
+            sessionId,
+            WAR_ROOM_THREAD_AGENT_ID,
+          ),
+        );
+      }
+    } catch (err) {
+      reportWarRoomError("provisionThreadDefaults", err, { toast: false });
+    } finally {
+      inFlightThreadOps.delete(key);
     }
   };
 

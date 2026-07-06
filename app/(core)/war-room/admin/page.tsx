@@ -122,7 +122,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "ThreadAgentTab + ThreadAgentPanel (Agent)",
       filePath: "features/war-room/components/thread/ThreadAgentTab.tsx",
       description:
-        "The Agent tab: REUSES the real Scribe Agent+ panel unchanged — AssistantAgentBar (pick/switch agent) + WorkingDocumentHeader (user+agent co-edited working document) + ExperimentalAgentScreen (conversation + auto-voice/record/text-input + RecordActionSheet). ThreadAgentTab resolves the tile's studio session (selectActiveAudioSessionId → ensureThreadAudioSession, same as Audio); ThreadAgentPanel is the lazy (next/dynamic ssr:false) composed body, plus a post-turn document re-fetch covering the single-active-session realtime gap. Bound to the SAME studio_sessions row the Audio tab records into, so the tile's recordings are the agent's transcript context.",
+        "The Agent tab: REUSES the real Scribe Agent+ panel unchanged — AssistantAgentBar (pick/switch agent) + WorkingDocumentHeader (user+agent co-edited working document) + ExperimentalAgentScreen (conversation + auto-voice/record/text-input + RecordActionSheet). ThreadAgentTab resolves the tile's studio session (selectActiveAudioSessionId; hydrate-only — session/conversation are provisioned once at thread creation, never auto-created); ThreadAgentPanel is the lazy (next/dynamic ssr:false) composed body, plus a post-turn document re-fetch covering the single-active-session realtime gap. Bound to the SAME studio_sessions row the Audio tab records into, so the tile's recordings are the agent's transcript context.",
       tier: "internal",
     },
     {

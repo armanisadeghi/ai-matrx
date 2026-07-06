@@ -164,12 +164,16 @@ export default function ThreadAgentPanel({
   // Resolve this tile's assistant conversation (same hook the screens use; it is
   // de-duplicated by sessionId, so mounting it here costs nothing extra). We
   // merge in the tile's read-only context via buildExtraEntries (Scribe omits
-  // this, so its context is untouched), and default a FRESH tile conversation to
-  // the dedicated War Room Thread persona (which knows its thread role and can
-  // list/read the user's data) instead of the audio-cleanup scribe.
+  // this, so its context is untouched). `autoCreate: false` is load-bearing:
+  // a thread's conversation is created EXACTLY ONCE (thread provisioning or
+  // the Chat toolbar's explicit "+ New Chat") — this panel only ever binds to
+  // an existing one. The old auto-mint fabricated a new conversation on every
+  // refresh (a fresh id has no cx_conversation row until its first turn, so
+  // the pointer was lost and re-minted each load).
   const { conversationId } = useStudioAssistant(sessionId, {
     buildExtraEntries,
     defaultAgentId: WAR_ROOM_THREAD_AGENT_ID,
+    autoCreate: false,
   });
 
   useEffect(() => {

@@ -72,6 +72,15 @@ export interface UseStudioAssistantOptions {
    * via the AssistantAgentBar after that.
    */
   defaultAgentId?: string;
+  /**
+   * When false, this surface NEVER mints a conversation — it only resolves
+   * one that already exists (Redux slot or the id persisted on the session
+   * row). War Room passes false: its conversations are created exactly once
+   * (thread provisioning / the Chat tab's explicit "+ New Chat") and any
+   * auto-mint here would fabricate a new conversation on every refresh.
+   * Defaults true (Scribe keeps its mint-on-first-open behavior).
+   */
+  autoCreate?: boolean;
 }
 
 interface UseStudioAssistantReturn {
@@ -92,13 +101,16 @@ export function useStudioAssistant(
   const store = useAppStore();
   const buildExtraEntries = options?.buildExtraEntries;
   const defaultAgentId = options?.defaultAgentId;
+  const autoCreate = options?.autoCreate ?? true;
 
   const conversationId = useAppSelector(
     selectAssistantConversationId(sessionId),
   );
   const workingDocument = useAppSelector(selectWorkingDocument(sessionId));
   const workingDocIdRef = useRef<string | null>(workingDocument?.id ?? null);
-  if (workingDocument?.id) workingDocIdRef.current = workingDocument.id;
+  useEffect(() => {
+    if (workingDocument?.id) workingDocIdRef.current = workingDocument.id;
+  }, [workingDocument?.id]);
 
   // The project this session is attached to (if any). Drives the inline session
   // brief + deferred task list so the agent sees its project/tasks up front
@@ -128,13 +140,17 @@ export function useStudioAssistant(
       }
       if (cancelled) return;
       await dispatch(
-        ensureAssistantConversationThunk({ sessionId, defaultAgentId }),
+        ensureAssistantConversationThunk({
+          sessionId,
+          defaultAgentId,
+          autoCreate,
+        }),
       );
     })();
     return () => {
       cancelled = true;
     };
-  }, [sessionId, conversationId, defaultAgentId, dispatch]);
+  }, [sessionId, conversationId, defaultAgentId, autoCreate, dispatch]);
 
   // Hydrate the attached project + its tasks once per project, so the resource
   // context builder has them in Redux to assemble the brief. Idempotent —

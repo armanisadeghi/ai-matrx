@@ -9,21 +9,31 @@
 // context, and the agent's working-document edits land in the doc this tile owns.
 //
 // This thin shell resolves the tile's session id exactly like ThreadAudioTab
-// (selectActiveAudioSessionId → ensureThreadAudioSession; spinner until it exists)
-// and then renders the composed panel. The panel itself is code-split via
-// next/dynamic (ssr:false) — it pulls the whole agent execution + TTS +
-// working-document graph, so loading it lazily keeps it out of the War Room
-// bundle and the gallery hydrates fast.
+// (hydrate-only — a thread's session/conversation are created ONCE at thread
+// provisioning, never automatically here) and then renders the composed panel.
+// The panel itself is code-split via next/dynamic (ssr:false) — it pulls the
+// whole agent execution + TTS + working-document graph, so loading it lazily
+// keeps it out of the War Room bundle and the gallery hydrates fast.
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, MessageCircle, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
+import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
+import { WAR_ROOM_THREAD_AGENT_ID } from "@/features/war-room/constants";
 import {
-  ensureThreadAudioSession,
+  selectActiveAudioSessionId,
+  selectActiveConversationId,
+  selectContainerAssignmentsLoaded,
+  selectConversationIdsForThread,
+} from "@/features/war-room/redux/selectors";
+import {
+  addAudioSessionToThread,
+  hydrateThreadAssignments,
+  pruneThreadPhantomConversations,
+  setThreadActiveConversation,
   startThreadConversation,
 } from "@/features/war-room/redux/thunks";
 import { useThreadConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
@@ -111,13 +121,53 @@ export function ThreadAgentTab({
 }) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(threadId));
+  const loaded = useAppSelector(
+    selectContainerAssignmentsLoaded("thread", threadId),
+  );
+  const conversationIds = useAppSelector(
+    selectConversationIdsForThread(threadId),
+  );
+  const activeEdgeConversationId = useAppSelector(
+    selectActiveConversationId(threadId),
+  );
+  const boundConversationId = useAppSelector(
+    selectAssistantConversationId(sessionId),
+  );
 
-  // Ensure the tile has a backing studio session so the agent panel always has
-  // one to bind to (idempotent + coalesced inside the thunk). Shared with the
-  // Audio tab — recordings made there become this agent's transcript context.
+  // Hydrate-only — NEVER creates a session or conversation (that happens
+  // exactly once, at thread provisioning). A legacy thread missing either
+  // gets the explicit "Set up chat" empty state below.
   useEffect(() => {
-    if (!sessionId) void dispatch(ensureThreadAudioSession(threadId));
-  }, [sessionId, threadId, dispatch]);
+    void dispatch(hydrateThreadAssignments(threadId));
+  }, [threadId, dispatch]);
+
+  // Bind the panel to the thread's active conversation edge when nothing is
+  // bound yet (refresh, legacy thread). A BIND, not a create.
+  useEffect(() => {
+    if (!sessionId || !loaded) return;
+    if (boundConversationId || !activeEdgeConversationId) return;
+    void dispatch(
+      setThreadActiveConversation(
+        threadId,
+        sessionId,
+        activeEdgeConversationId,
+      ),
+    );
+  }, [
+    threadId,
+    sessionId,
+    loaded,
+    boundConversationId,
+    activeEdgeConversationId,
+    dispatch,
+  ]);
+
+  // One-shot cleanup of refresh-mint debris (conversation edges whose chat
+  // never existed server-side). Loud — see the thunk.
+  useEffect(() => {
+    if (!sessionId || !loaded) return;
+    void dispatch(pruneThreadPhantomConversations(threadId, sessionId));
+  }, [threadId, sessionId, loaded, dispatch]);
 
   useEffect(() => {
     traceWarRoomRenderPath(7, "ThreadAgentTab.tsx", "mount", { threadId });
@@ -132,9 +182,86 @@ export function ThreadAgentTab({
   }, [threadId, sessionId]);
 
   if (!sessionId) {
+    if (!loaded) {
+      return (
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+    // Legacy thread with no session (pre-provisioning). Explicit setup only.
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      <div className="grid h-full place-items-center">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <MessageCircle
+            className="size-5 text-muted-foreground/60"
+            aria-hidden
+          />
+          <span className="text-xs text-muted-foreground">
+            This thread has no chat yet
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              void dispatch(addAudioSessionToThread(threadId)).then((sid) => {
+                if (sid) {
+                  void dispatch(
+                    startThreadConversation(
+                      threadId,
+                      sid,
+                      WAR_ROOM_THREAD_AGENT_ID,
+                    ),
+                  );
+                }
+              })
+            }
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+          >
+            <Plus className="size-3.5" />
+            Set up chat
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Session exists but the thread has NO conversation at all (legacy, or
+  // provisioning half-failed): explicit start, never an auto-mint.
+  if (loaded && !boundConversationId && conversationIds.length === 0) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {!compact ? (
+          <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
+            <ThreadChatChrome threadId={threadId} sessionId={sessionId} />
+          </div>
+        ) : null}
+        <div className="grid min-h-0 flex-1 place-items-center">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <MessageCircle
+              className="size-5 text-muted-foreground/60"
+              aria-hidden
+            />
+            <span className="text-xs text-muted-foreground">
+              No chat on this thread yet
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                void dispatch(
+                  startThreadConversation(
+                    threadId,
+                    sessionId,
+                    WAR_ROOM_THREAD_AGENT_ID,
+                  ),
+                )
+              }
+              className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+            >
+              <Plus className="size-3.5" />
+              Start chat
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

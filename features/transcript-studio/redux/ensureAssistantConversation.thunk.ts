@@ -71,11 +71,16 @@ async function createInstanceForSession(
 
 export const ensureAssistantConversationThunk = createAsyncThunk<
   string | null,
-  { sessionId: string; defaultAgentId?: string },
+  {
+    sessionId: string;
+    defaultAgentId?: string;
+    /** false = resolve-only (branches 1-2); NEVER mint. See useStudioAssistant. */
+    autoCreate?: boolean;
+  },
   ThunkApi
 >(
   "transcriptStudio/ensureAssistantConversation",
-  async ({ sessionId, defaultAgentId }, { dispatch, getState }) => {
+  async ({ sessionId, defaultAgentId, autoCreate = true }, { dispatch, getState }) => {
     if (!sessionId) return null;
 
     const existingFlight = inFlight.get(sessionId);
@@ -101,7 +106,7 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
             storedId = session.assistantConversationId;
           }
         } catch (err) {
-          // eslint-disable-next-line no-console
+           
           console.error(
             "[studio] ensureAssistantConversation: getSession failed",
             err,
@@ -145,7 +150,7 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
             });
             if (updated) dispatch(sessionUpserted(updated));
           } catch (err) {
-            // eslint-disable-next-line no-console
+             
             console.warn(
               "[studio] ensureAssistantConversation: roster backfill failed",
               err,
@@ -160,7 +165,7 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
             loadConversation({ conversationId: storedId }),
           ).unwrap();
         } catch (err) {
-          // eslint-disable-next-line no-console
+           
           console.warn(
             "[studio] ensureAssistantConversation: loadConversation skipped",
             err,
@@ -172,6 +177,11 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         dispatch(setShowMicrophone({ conversationId: storedId, value: true }));
         return storedId;
       }
+
+      // Resolve-only mode: the surface creates conversations explicitly (e.g.
+      // War Room provisions one per thread at creation) — minting here would
+      // fabricate a new conversation on every refresh.
+      if (!autoCreate) return null;
 
       // 3. Fresh conversation — mint with the resolved default agent (user-wide
       // default → seeded agent), seed UI. The id is set in Redux (optimistic

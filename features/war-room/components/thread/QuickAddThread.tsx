@@ -18,11 +18,9 @@ import { Plus, LayoutGrid, ListChecks, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
-  addNoteToThread,
   attachEntityToThread,
   createThread,
 } from "@/features/war-room/redux/thunks";
-import { update as updateNote } from "@/features/notes/service/notesApi";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
 import type { ThreadPickerOption } from "@/features/war-room/types";
@@ -128,26 +126,31 @@ export function QuickAddThread({
     setBusy(true);
     try {
       const thread = await dispatch(
-        createThread({
-          roomId: sessionId,
-          position: nextPosition,
-          title:
-            trimmedName ||
-            (flavor === "project"
-              ? (projectName ?? undefined)
-              : flavor === "task"
-                ? (taskName ?? undefined)
-                : undefined),
-          projectId: flavor === "project" ? projectId : undefined,
-          taskId: flavor === "task" ? taskId : undefined,
-          anchorType:
-            flavor === "project"
-              ? "project"
-              : flavor === "task"
-                ? "task"
-                : "canvas",
-          activeTab: "task",
-        }),
+        createThread(
+          {
+            roomId: sessionId,
+            position: nextPosition,
+            title:
+              trimmedName ||
+              (flavor === "project"
+                ? (projectName ?? undefined)
+                : flavor === "task"
+                  ? (taskName ?? undefined)
+                  : undefined),
+            projectId: flavor === "project" ? projectId : undefined,
+            taskId: flavor === "task" ? taskId : undefined,
+            anchorType:
+              flavor === "project"
+                ? "project"
+                : flavor === "task"
+                  ? "task"
+                  : "canvas",
+            activeTab: "task",
+          },
+          // The typed description seeds the thread's ONE provisioned note —
+          // never a second note.
+          trimmedDescription ? { noteContent: trimmedDescription } : undefined,
+        ),
       );
       if (!thread?.id) return;
 
@@ -155,26 +158,13 @@ export function QuickAddThread({
         await dispatch(attachEntityToThread(thread.id, "task", taskId));
       }
 
-      await finishCreate(mode, thread.id, trimmedDescription);
+      await finishCreate(mode, thread.id);
     } finally {
       setBusy(false);
     }
   }
 
-  async function finishCreate(
-    mode: "stay" | "open",
-    threadId: string,
-    trimmedDescription: string,
-  ) {
-    if (trimmedDescription) {
-      const noteId = await dispatch(addNoteToThread(threadId, sessionId));
-      if (noteId) {
-        await updateNote(noteId, { content: trimmedDescription }).catch(
-          () => {},
-        );
-      }
-    }
-
+  async function finishCreate(mode: "stay" | "open", threadId: string) {
     if (mode === "open") {
       onOpen?.(threadId);
       collapse();

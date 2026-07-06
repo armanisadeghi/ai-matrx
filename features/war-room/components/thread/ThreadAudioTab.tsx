@@ -26,7 +26,7 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mic, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import { useThreadAudioSessionSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
@@ -45,8 +45,14 @@ const CleanupPad = dynamic(
     ),
   },
 );
-import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
-import { ensureThreadAudioSession } from "@/features/war-room/redux/thunks";
+import {
+  selectActiveAudioSessionId,
+  selectContainerAssignmentsLoaded,
+} from "@/features/war-room/redux/selectors";
+import {
+  addAudioSessionToThread,
+  hydrateThreadAudio,
+} from "@/features/war-room/redux/thunks";
 import { ThreadAudioSessionList } from "./ThreadAudioSessionList";
 
 function ThreadAudioSessionChrome({
@@ -82,13 +88,16 @@ export function ThreadAudioTab({
 }) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(threadId));
+  const loaded = useAppSelector(
+    selectContainerAssignmentsLoaded("thread", threadId),
+  );
 
-  // Ensure the tile has a backing audio session so the embedded pad always has
-  // one to bind to (idempotent + coalesced inside the thunk). A fresh tile gets
-  // its first session here; recording into it persists via the pad's own writer.
+  // Hydrate assignments + the active session's segments — NEVER creates a
+  // session. A thread's session is created exactly once at provisioning; a
+  // thread genuinely without one gets the explicit "New Session" empty state.
   useEffect(() => {
-    if (!sessionId) void dispatch(ensureThreadAudioSession(threadId));
-  }, [sessionId, threadId, dispatch]);
+    void dispatch(hydrateThreadAudio(threadId));
+  }, [threadId, sessionId, dispatch]);
 
   const sessionChrome = (
     <ThreadAudioSessionChrome threadId={threadId} compact={compact} />
@@ -125,6 +134,25 @@ export function ThreadAudioTab({
               custom: false,
             }}
           />
+        ) : loaded ? (
+          <div className="grid h-full place-items-center">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <Mic className="size-5 text-muted-foreground/60" aria-hidden />
+              <span className="text-xs text-muted-foreground">
+                No recording session on this thread yet
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  void dispatch(addAudioSessionToThread(threadId))
+                }
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                <Plus className="size-3.5" />
+                New Session
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-4 animate-spin text-muted-foreground" />
