@@ -18,17 +18,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  AlertTriangle,
   CheckCircle2,
   Loader2,
   ShieldQuestion,
-  Wand2,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -40,6 +39,8 @@ import { cn } from "@/lib/utils";
 
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { GateStatusBadge } from "./StatusBadge";
+import { SchemaTableTokenFields } from "./SchemaTableTokenFields";
+import { useRegisteredTables } from "../hooks/useRegisteredTables";
 import { RLS_VARIANTS } from "../utils/queryBuilders";
 import type { CanonicalCertifyRow, VerifyCanonicalRow } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
@@ -50,7 +51,6 @@ import {
   verifyRunToAgentInput,
   verifyRunToHuman,
 } from "../utils/aiExport";
-import { DEFAULT_DATABASE_SCHEMA } from "@/app/(admin)/administration/database/config";
 
 interface VerifyResult {
   checks: VerifyCanonicalRow[];
@@ -198,6 +198,12 @@ export function VerifyCanonicalPanel() {
   const [running, setRunning] = useState(false);
   const [hasRun, setHasRun] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
+  // Registered token for the current schema.table (from audit.summary). The gate
+  // is keyed on the TOKEN, not the table name — and many tokens are singular
+  // while the table is plural (code_file ⟷ code_files). A token that isn't the
+  // registered one produces entity_registered / policy_uses_has_access /
+  // sharing_token FAILs that look like real DB drift but are pure token mismatch.
+  const { lookupToken } = useRegisteredTables();
 
   const autofillToken = useCallback(async () => {
     if (!schema || !table) {
@@ -279,6 +285,20 @@ export function VerifyCanonicalPanel() {
     searchParams.get("token"),
   ]);
 
+  const registeredToken = useMemo(
+    () => lookupToken(schema, table),
+    [lookupToken, schema, table],
+  );
+  // A registered token exists for this table AND it differs from what's entered.
+  const tokenMismatch =
+    !!registeredToken && !!token.trim() && registeredToken !== token.trim();
+
+  const applyRegisteredToken = useCallback(() => {
+    if (!registeredToken) return;
+    setToken(registeredToken);
+    void runVerify({ schema, table, token: registeredToken });
+  }, [registeredToken, schema, table, runVerify]);
+
   const failCount = useMemo(
     () =>
       result?.checks.filter((c) => c.status?.toUpperCase() === "FAIL").length ??
@@ -312,48 +332,17 @@ export function VerifyCanonicalPanel() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground">Schema</span>
-          <Input
-            value={schema}
-            onChange={(e) => setSchema(e.target.value)}
-            placeholder={DEFAULT_DATABASE_SCHEMA}
-            className="h-8 w-28 text-base"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground">Table</span>
-          <Input
-            value={table}
-            onChange={(e) => setTable(e.target.value)}
-            placeholder="notes"
-            className="h-8 w-36 text-base"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground">Token</span>
-          <Input
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="note"
-            className="h-8 w-32 text-base"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            title="Autofill token from platform.entity_types"
-            onClick={() => void autofillToken()}
-            disabled={autofilling}
-          >
-            {autofilling ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Wand2 className="h-3.5 w-3.5" />
-            )}
-          </Button>
-        </div>
+        <SchemaTableTokenFields
+          values={{ schema, table, token }}
+          onChange={(patch) => {
+            if (patch.schema !== undefined) setSchema(patch.schema);
+            if (patch.table !== undefined) setTable(patch.table);
+            if (patch.token !== undefined) setToken(patch.token);
+          }}
+          onAutofillToken={() => void autofillToken()}
+          autofilling={autofilling}
+          disabled={running}
+        />
         <Select value={variant} onValueChange={setVariant}>
           <SelectTrigger className="h-8 w-32 text-xs">
             <SelectValue />
@@ -401,6 +390,33 @@ export function VerifyCanonicalPanel() {
           />
         </div>
       </div>
+
+      {tokenMismatch ? (
+        <div className="flex shrink-0 items-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1 leading-relaxed">
+            <b>Token mismatch — not a DB problem.</b> “{token.trim()}” is not a
+            registered token for{" "}
+            <code className="font-mono">
+              {schema}.{table}
+            </code>
+            . The registered token is{" "}
+            <code className="font-mono font-semibold">{registeredToken}</code>.
+            Any <code>entity_registered</code> / <code>policy_uses_has_access</code>{" "}
+            / <code>sharing_token</code> FAILs below are caused by the wrong
+            token, not a conformance gap.
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 shrink-0 border-amber-500/40"
+            onClick={applyRegisteredToken}
+            disabled={running}
+          >
+            Use “{registeredToken}” &amp; re-run
+          </Button>
+        </div>
+      ) : null}
 
       <div className="min-h-0 flex-1 overflow-hidden p-2">
         {!hasRun ? (
