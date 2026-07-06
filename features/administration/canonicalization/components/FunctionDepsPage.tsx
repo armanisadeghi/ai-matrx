@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { useAuditDataset } from "../hooks/useAuditDataset";
+import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
 import { isFunctionDepRow, type FunctionDepRow } from "../types";
 import { FUNCTION_DEPS_TABLE_COPY } from "../utils/aiExport";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
@@ -17,6 +18,7 @@ export function FunctionDepsPage() {
     "function-deps",
     isFunctionDepRow,
   );
+  const toolbar = useCanonicalizationDatasetToolbar(reload);
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<
@@ -101,7 +103,13 @@ export function FunctionDepsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <CanonicalizationToolbar onReload={reload} reloading={loading} />
+      <CanonicalizationToolbar
+        onReload={reload}
+        reloading={loading}
+        onRefreshAudit={toolbar.onRefreshAudit}
+        refreshingAudit={toolbar.refreshingAudit}
+        lastRefreshedAt={toolbar.lastRefreshedAt}
+      />
       <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
         <AdminAuditTable
           rows={rows}

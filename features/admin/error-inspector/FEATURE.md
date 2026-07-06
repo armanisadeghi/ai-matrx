@@ -136,6 +136,13 @@ the canonical `AgentPayloadInput` consumed by `components/agent-copy` — XML
 envelope naming the source, route, call-site, operation, table/fn/endpoint, the
 tier, the full raw error, and the suggested downgrade rule.
 
+**Stack sanitization:** the agent payload (Webhook / "Copy for AI") strips
+minified `/_next/static/chunks/*.js` frames via
+`sanitizeErrorContextForAi.ts` — chunk paths in messages are shortened to
+`[chunk:…]`, anonymous minified frames are dropped, named React frames
+(`Lazy`, `Suspense`, boundaries) are kept. The plain **Copy** button and the
+in-window detail panel still show the full unsanitized stacks.
+
 ## Entry points
 
 - **Sidebar Administration section** (every route, any admin) —
@@ -221,6 +228,8 @@ adapter, or tier rule — it holds the full recipe + invariants.
   `features/window-panels/.../TrayStatusChip` primitive. Live from the module
   store; isolated re-renders. First consumer of the canonical minimized-preview
   system (see `features/window-panels/FEATURE.md`).
+- 2026-07-06 — **Copy-for-AI stack sanitization.** Agent export strips minified
+  Next.js chunk frames (`sanitizeErrorContextForAi.ts`); plain Copy keeps full stacks.
 - 2026-06-29 — **Tiering + remaining arteries.** Tool errors default **yellow**
   (normal agent operation). Added the global Redux `*/rejected` middleware
   (`redux-rejected`, orange) — the last systemic gap. Built the shared

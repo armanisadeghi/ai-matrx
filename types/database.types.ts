@@ -5107,80 +5107,6 @@ export type Database = {
           },
         ]
       }
-      code_file_versions: {
-        Row: {
-          change_note: string | null
-          change_source: string
-          change_type: string | null
-          changed_at: string
-          code_file_id: string
-          content: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          diff_metadata: Json
-          id: string
-          language: string | null
-          metadata: Json
-          name: string | null
-          organization_id: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          version_number: number
-        }
-        Insert: {
-          change_note?: string | null
-          change_source?: string
-          change_type?: string | null
-          changed_at?: string
-          code_file_id: string
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          diff_metadata?: Json
-          id?: string
-          language?: string | null
-          metadata?: Json
-          name?: string | null
-          organization_id: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          version_number: number
-        }
-        Update: {
-          change_note?: string | null
-          change_source?: string
-          change_type?: string | null
-          changed_at?: string
-          code_file_id?: string
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          diff_metadata?: Json
-          id?: string
-          language?: string | null
-          metadata?: Json
-          name?: string | null
-          organization_id?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          version_number?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "code_file_versions_code_file_id_fkey"
-            columns: ["code_file_id"]
-            isOneToOne: false
-            referencedRelation: "code_files"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       code_files: {
         Row: {
           content: string
@@ -11324,53 +11250,6 @@ export type Database = {
           },
         ]
       }
-      attachments: {
-        Row: {
-          created_at: string
-          file_name: string | null
-          file_size: number | null
-          file_type: string | null
-          file_url: string
-          height: number | null
-          id: string
-          message_id: string
-          thumbnail_url: string | null
-          width: number | null
-        }
-        Insert: {
-          created_at?: string
-          file_name?: string | null
-          file_size?: number | null
-          file_type?: string | null
-          file_url: string
-          height?: number | null
-          id?: string
-          message_id: string
-          thumbnail_url?: string | null
-          width?: number | null
-        }
-        Update: {
-          created_at?: string
-          file_name?: string | null
-          file_size?: number | null
-          file_type?: string | null
-          file_url?: string
-          height?: number | null
-          id?: string
-          message_id?: string
-          thumbnail_url?: string | null
-          width?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "attachments_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       audio_label: {
         Row: {
           created_at: string
@@ -12011,6 +11890,72 @@ export type Database = {
         }
         Relationships: []
       }
+      code_file_versions: {
+        Row: {
+          change_note: string | null
+          change_source: string
+          change_type: string | null
+          changed_at: string
+          code_file_id: string
+          content: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          diff_metadata: Json
+          id: string
+          language: string | null
+          metadata: Json
+          name: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          version_number: number
+        }
+        Insert: {
+          change_note?: string | null
+          change_source?: string
+          change_type?: string | null
+          changed_at?: string
+          code_file_id: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          diff_metadata?: Json
+          id?: string
+          language?: string | null
+          metadata?: Json
+          name?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_number: number
+        }
+        Update: {
+          change_note?: string | null
+          change_source?: string
+          change_type?: string | null
+          changed_at?: string
+          code_file_id?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          diff_metadata?: Json
+          id?: string
+          language?: string | null
+          metadata?: Json
+          name?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          version_number?: number
+        }
+        Relationships: []
+      }
       compiled_recipe: {
         Row: {
           compiled_recipe: Json
@@ -12201,84 +12146,6 @@ export type Database = {
           kind?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      conversation_participants: {
-        Row: {
-          conversation_id: string
-          id: string
-          is_muted: boolean
-          is_pinned: boolean
-          joined_at: string
-          last_read_message_id: string | null
-          role: string
-          user_id: string
-        }
-        Insert: {
-          conversation_id: string
-          id?: string
-          is_muted?: boolean
-          is_pinned?: boolean
-          joined_at?: string
-          last_read_message_id?: string | null
-          role?: string
-          user_id: string
-        }
-        Update: {
-          conversation_id?: string
-          id?: string
-          is_muted?: boolean
-          is_pinned?: boolean
-          joined_at?: string
-          last_read_message_id?: string | null
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_last_read_message"
-            columns: ["last_read_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      conversations: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          created_by: string
-          id: string
-          name: string | null
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          created_by: string
-          id?: string
-          name?: string | null
-          type?: string
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          name?: string | null
-          type?: string
-          updated_at?: string
         }
         Relationships: []
       }
@@ -12997,38 +12864,6 @@ export type Database = {
           },
         ]
       }
-      message_reactions: {
-        Row: {
-          created_at: string
-          emoji: string
-          id: string
-          message_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          emoji: string
-          id?: string
-          message_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          emoji?: string
-          id?: string
-          message_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "message_reactions_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       message_template: {
         Row: {
           content: string | null
@@ -13052,60 +12887,6 @@ export type Database = {
           type?: Database["public"]["Enums"]["message_type"]
         }
         Relationships: []
-      }
-      messages: {
-        Row: {
-          content: string | null
-          conversation_id: string
-          created_at: string
-          id: string
-          is_deleted: boolean
-          is_edited: boolean
-          reply_to_id: string | null
-          sender_id: string
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          content?: string | null
-          conversation_id: string
-          created_at?: string
-          id?: string
-          is_deleted?: boolean
-          is_edited?: boolean
-          reply_to_id?: string | null
-          sender_id: string
-          type?: string
-          updated_at?: string
-        }
-        Update: {
-          content?: string | null
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          is_deleted?: boolean
-          is_edited?: boolean
-          reply_to_id?: string | null
-          sender_id?: string
-          type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_reply_to_id_fkey"
-            columns: ["reply_to_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       node_category: {
         Row: {
@@ -22861,190 +22642,6 @@ export type Database = {
           params: Json
         }[]
       }
-      add_one_public_registered_function: {
-        Args: {
-          p_class_name?: string
-          p_description?: string
-          p_id: string
-          p_module_path: string
-          p_name: string
-          p_return_broker?: string
-        }
-        Returns: {
-          class_name: string
-          description: string
-          id: string
-          module_path: string
-          name: string
-          return_broker: string
-        }[]
-      }
-      add_one_recipe:
-        | {
-            Args: {
-              p_description?: string
-              p_id: string
-              p_is_public?: boolean
-              p_messages?: Json[]
-              p_name: string
-              p_post_result_options?: Json
-              p_sample_output?: string
-              p_status: Database["public"]["Enums"]["recipe_status"]
-              p_tags?: Json
-              p_version?: number
-            }
-            Returns: {
-              description: string
-              id: string
-              is_public: boolean
-              messages: Json[]
-              name: string
-              post_result_options: Json
-              sample_output: string
-              status: Database["public"]["Enums"]["recipe_status"]
-              tags: Json
-              version: number
-            }[]
-          }
-        | {
-            Args: {
-              p_description?: string
-              p_id: string
-              p_is_public?: boolean
-              p_messages?: Json[]
-              p_name: string
-              p_post_result_options?: Json
-              p_sample_output?: string
-              p_status: Database["public"]["Enums"]["recipe_status"]
-              p_tags?: Json
-              p_varsion: number
-            }
-            Returns: {
-              description: string
-              id: string
-              is_public: boolean
-              messages: Json[]
-              name: string
-              post_result_options: Json
-              sample_output: string
-              status: Database["public"]["Enums"]["recipe_status"]
-              tags: Json
-              varsion: number
-            }[]
-          }
-      add_one_recipe_broker: {
-        Args: {
-          p_broker: string
-          p_broker_role: Database["public"]["Enums"]["broker_role"]
-          p_id: string
-          p_recipe: string
-          p_required?: boolean
-        }
-        Returns: {
-          broker: string
-          broker_role: Database["public"]["Enums"]["broker_role"]
-          id: string
-          recipe: string
-          required: boolean
-        }[]
-      }
-      add_one_recipe_display: {
-        Args: {
-          p_display: string
-          p_display_settings?: Json
-          p_id: string
-          p_priority?: number
-          p_recipe: string
-        }
-        Returns: {
-          display: string
-          display_settings: Json
-          id: string
-          priority: number
-          recipe: string
-        }[]
-      }
-      add_one_recipe_function: {
-        Args: {
-          p_function: string
-          p_id: string
-          p_params?: Json
-          p_recipe: string
-          p_role: Database["public"]["Enums"]["function_role"]
-        }
-        Returns: {
-          function: string
-          id: string
-          params: Json
-          recipe: string
-          role: Database["public"]["Enums"]["function_role"]
-        }[]
-      }
-      add_one_recipe_model: {
-        Args: {
-          p_ai_model: string
-          p_id: string
-          p_priority?: number
-          p_recipe: string
-          p_role: Database["public"]["Enums"]["model_role"]
-        }
-        Returns: {
-          ai_model: string
-          id: string
-          priority: number
-          recipe: string
-          role: Database["public"]["Enums"]["model_role"]
-        }[]
-      }
-      add_one_recipe_processors: {
-        Args: {
-          p_id: string
-          p_params?: Json
-          p_processor: string
-          p_recipe: string
-        }
-        Returns: {
-          id: string
-          params: Json
-          processor: string
-          recipe: string
-        }[]
-      }
-      add_one_recipe_tools: {
-        Args: {
-          p_id: string
-          p_params?: Json
-          p_recipe: string
-          p_tool: string
-        }
-        Returns: {
-          id: string
-          params: Json
-          recipe: string
-          tool: string
-        }[]
-      }
-      add_one_registered_function:
-        | { Args: { input_json: Json }; Returns: Json }
-        | {
-            Args: {
-              p_class_name?: string
-              p_description?: string
-              p_id: string
-              p_module_path: string
-              p_name: string
-              p_return_broker?: string
-            }
-            Returns: {
-              class_name: string
-              description: string
-              id: string
-              module_path: string
-              name: string
-              return_broker: string
-            }[]
-          }
-        | { Args: { p_payload: Json }; Returns: Json }
       add_one_system_function: {
         Args: {
           p_description?: string
@@ -24186,10 +23783,6 @@ export type Database = {
         Returns: number
       }
       cleanup_old_guest_records: { Args: never; Returns: number }
-      cleanup_recipe_message_order: {
-        Args: { recipe_id_param: string }
-        Returns: undefined
-      }
       close_feedback_item: {
         Args: { p_admin_notes?: string; p_id: string; p_status: string }
         Returns: Database["users"]["Tables"]["user_feedback"]["Row"]
@@ -24237,62 +23830,7 @@ export type Database = {
           resource_key: string
         }[]
       }
-      convert_compiled_recipe_to_prompt: {
-        Args: {
-          p_compiled_recipe_id?: string
-          p_recipe_id?: string
-          p_user_id?: string
-          p_version?: number
-        }
-        Returns: string
-      }
-      convert_db_fields_frontend_registered_function: {
-        Args: {
-          input_rows: Database["graveyard"]["Tables"]["registered_function"]["Row"][]
-        }
-        Returns: Json
-      }
-      convert_db_fields_to_frontend_registered_function:
-        | {
-            Args: { input_json: Json }
-            Returns: {
-              p_class_name: string
-              p_description: string
-              p_id: string
-              p_module_path: string
-              p_name: string
-              p_return_broker: string
-            }[]
-          }
-        | {
-            Args: {
-              input_rows: Database["graveyard"]["Tables"]["registered_function"]["Row"][]
-            }
-            Returns: Json
-          }
-      convert_frontend_fields_to_db_registered_function: {
-        Args: { input_json: Json }
-        Returns: {
-          p_class_name: string
-          p_description: string
-          p_id: string
-          p_module_path: string
-          p_name: string
-          p_return_broker: string
-        }[]
-      }
       convert_frontend_to_db_fields: {
-        Args: { input_json: Json }
-        Returns: {
-          p_class_name: string
-          p_description: string
-          p_id: string
-          p_module_path: string
-          p_name: string
-          p_return_broker: string
-        }[]
-      }
-      convert_frontend_to_db_fields_registered_function: {
         Args: { input_json: Json }
         Returns: {
           p_class_name: string
@@ -24306,28 +23844,6 @@ export type Database = {
       convert_prompt_to_builtin: {
         Args: { p_created_by_user_id?: string; p_prompt_id: string }
         Returns: string
-      }
-      convert_public_registered_function_fields: {
-        Args: {
-          input_rows: Database["graveyard"]["Tables"]["registered_function"]["Row"][]
-        }
-        Returns: Json
-      }
-      convert_recipe_and_bind_to_applet: {
-        Args: {
-          p_applet_config_id: string
-          p_compiled_recipe_id?: string
-          p_recipe_id?: string
-          p_user_id: string
-          p_version?: number
-        }
-        Returns: Json
-      }
-      convert_registered_function_to_frontend: {
-        Args: {
-          input_row: Database["graveyard"]["Tables"]["registered_function"]["Row"]
-        }
-        Returns: Json
       }
       count_user_files: {
         Args: {
@@ -24379,17 +23895,6 @@ export type Database = {
             }
             Returns: string
           }
-      create_arg: {
-        Args: {
-          p_data_type: Database["public"]["Enums"]["data_type"]
-          p_default_value: string
-          p_name: string
-          p_ready: boolean
-          p_registered_function: string
-          p_required: boolean
-        }
-        Returns: string
-      }
       create_bundle_with_lister: {
         Args: {
           p_description?: string
@@ -24450,27 +23955,6 @@ export type Database = {
       create_project_from_json: {
         Args: { p_organization_id?: string; p_payload: Json }
         Returns: Json
-      }
-      create_registered_function: {
-        Args: {
-          p_class_name: string
-          p_description: string
-          p_module_path: string
-          p_name: string
-          p_return_broker: string
-        }
-        Returns: string
-      }
-      create_registered_function_with_args: {
-        Args: {
-          p_args: Json
-          p_class_name: string
-          p_description: string
-          p_module_path: string
-          p_name: string
-          p_return_broker: string
-        }
-        Returns: string
       }
       create_related_records: { Args: { input_data: Json }; Returns: Json }
       create_scope: {
@@ -24759,10 +24243,6 @@ export type Database = {
         Returns: Json
       }
       delete_note_version: { Args: { p_id: string }; Returns: boolean }
-      delete_registered_function: {
-        Args: { p_function_id: string }
-        Returns: undefined
-      }
       delete_scope: { Args: { p_scope_id: string }; Returns: Json }
       delete_scope_type: { Args: { p_type_id: string }; Returns: Json }
       delete_sensitive_item: { Args: { p_item_id: string }; Returns: boolean }
@@ -25196,13 +24676,6 @@ export type Database = {
           name: string
         }[]
       }
-      fetch_all_id_name_registered_function: {
-        Args: never
-        Returns: {
-          id: string
-          name: string
-        }[]
-      }
       fetch_all_processors: {
         Args: never
         Returns: {
@@ -25213,92 +24686,6 @@ export type Database = {
           params: Json
         }[]
       }
-      fetch_all_recipe: {
-        Args: never
-        Returns: {
-          description: string
-          id: string
-          is_public: boolean
-          messages: Json[]
-          name: string
-          post_result_options: Json
-          sample_output: string
-          status: Database["public"]["Enums"]["recipe_status"]
-          tags: Json
-          version: number
-        }[]
-      }
-      fetch_all_recipe_broker: {
-        Args: never
-        Returns: {
-          broker: string
-          broker_role: Database["public"]["Enums"]["broker_role"]
-          id: string
-          recipe: string
-          required: boolean
-        }[]
-      }
-      fetch_all_recipe_display: {
-        Args: never
-        Returns: {
-          display: string
-          display_settings: Json
-          id: string
-          priority: number
-          recipe: string
-        }[]
-      }
-      fetch_all_recipe_function: {
-        Args: never
-        Returns: {
-          function: string
-          id: string
-          params: Json
-          recipe: string
-          role: Database["public"]["Enums"]["function_role"]
-        }[]
-      }
-      fetch_all_recipe_model: {
-        Args: never
-        Returns: {
-          ai_model: string
-          id: string
-          priority: number
-          recipe: string
-          role: Database["public"]["Enums"]["model_role"]
-        }[]
-      }
-      fetch_all_recipe_processors: {
-        Args: never
-        Returns: {
-          id: string
-          params: Json
-          processor: string
-          recipe: string
-        }[]
-      }
-      fetch_all_recipe_tools: {
-        Args: never
-        Returns: {
-          id: string
-          params: Json
-          recipe: string
-          tool: string
-        }[]
-      }
-      fetch_all_registered_function: {
-        Args: never
-        Returns: {
-          class_name: string
-          description: string
-          id: string
-          module_path: string
-          name: string
-          return_broker: string
-        }[]
-      }
-      fetch_all_registered_function_formatted: { Args: never; Returns: Json }
-      fetch_all_registered_functions: { Args: never; Returns: Json }
       fetch_all_system_function: {
         Args: never
         Returns: {
@@ -25452,10 +24839,6 @@ export type Database = {
           output_type: Database["public"]["Enums"]["data_type"]
         }[]
       }
-      fetch_by_id_fe_registered_function: {
-        Args: { record_id: string }
-        Returns: Json
-      }
       fetch_by_id_processors: {
         Args: { record_id: string }
         Returns: {
@@ -25465,94 +24848,6 @@ export type Database = {
           name: string
           params: Json
         }[]
-      }
-      fetch_by_id_recipe: {
-        Args: { record_id: string }
-        Returns: {
-          description: string
-          id: string
-          is_public: boolean
-          messages: Json[]
-          name: string
-          post_result_options: Json
-          sample_output: string
-          status: Database["public"]["Enums"]["recipe_status"]
-          tags: Json
-          version: number
-        }[]
-      }
-      fetch_by_id_recipe_broker: {
-        Args: { record_id: string }
-        Returns: {
-          broker: string
-          broker_role: Database["public"]["Enums"]["broker_role"]
-          id: string
-          recipe: string
-          required: boolean
-        }[]
-      }
-      fetch_by_id_recipe_display: {
-        Args: { record_id: string }
-        Returns: {
-          display: string
-          display_settings: Json
-          id: string
-          priority: number
-          recipe: string
-        }[]
-      }
-      fetch_by_id_recipe_function: {
-        Args: { record_id: string }
-        Returns: {
-          function: string
-          id: string
-          params: Json
-          recipe: string
-          role: Database["public"]["Enums"]["function_role"]
-        }[]
-      }
-      fetch_by_id_recipe_model: {
-        Args: { record_id: string }
-        Returns: {
-          ai_model: string
-          id: string
-          priority: number
-          recipe: string
-          role: Database["public"]["Enums"]["model_role"]
-        }[]
-      }
-      fetch_by_id_recipe_processors: {
-        Args: { record_id: string }
-        Returns: {
-          id: string
-          params: Json
-          processor: string
-          recipe: string
-        }[]
-      }
-      fetch_by_id_recipe_tools: {
-        Args: { record_id: string }
-        Returns: {
-          id: string
-          params: Json
-          recipe: string
-          tool: string
-        }[]
-      }
-      fetch_by_id_registered_function: {
-        Args: { record_id: string }
-        Returns: {
-          class_name: string
-          description: string
-          id: string
-          module_path: string
-          name: string
-          return_broker: string
-        }[]
-      }
-      fetch_by_id_registered_function_formatted: {
-        Args: { record_id: string }
-        Returns: Json
       }
       fetch_by_id_system_function: {
         Args: { record_id: string }
@@ -25634,27 +24929,9 @@ export type Database = {
           name: string
         }[]
       }
-      fetch_id_name_public_registered_function: {
-        Args: never
-        Returns: {
-          id: string
-          name: string
-        }[]
-      }
-      fetch_id_name_registered_function: {
-        Args: never
-        Returns: {
-          id: string
-          name: string
-        }[]
-      }
       fetch_paginated: {
         Args: { p_page: number; p_page_size: number; p_table_name: string }
         Returns: Json[]
-      }
-      fetch_paginated_registered_functions: {
-        Args: { count: number; page: number }
-        Returns: Json
       }
       fetch_paginated_with_all_ids: {
         Args: {
@@ -25867,10 +25144,6 @@ export type Database = {
           source: string
         }[]
       }
-      get_applet_with_recipe: {
-        Args: { p_applet_id: string; p_compiled_recipe_id: string }
-        Returns: Json
-      }
       get_arg_by_id: {
         Args: { p_arg_id: string }
         Returns: {
@@ -25880,17 +25153,6 @@ export type Database = {
           name: string
           ready: boolean
           registered_function: string
-          required: boolean
-        }[]
-      }
-      get_args_for_function: {
-        Args: { p_function_id: string }
-        Returns: {
-          data_type: Database["public"]["Enums"]["data_type"]
-          default_value: string
-          id: string
-          name: string
-          ready: boolean
           required: boolean
         }[]
       }
@@ -26308,10 +25570,6 @@ export type Database = {
           version_number: number
         }[]
       }
-      get_or_create_direct_conversation: {
-        Args: { p_other_user_id: string }
-        Returns: string
-      }
       get_org_invitation_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -26527,18 +25785,6 @@ export type Database = {
           message_order: number
         }[]
       }
-      get_registered_function_with_args: {
-        Args: { p_function_id: string }
-        Returns: {
-          args: Json
-          class_name: string
-          description: string
-          function_id: string
-          function_name: string
-          module_path: string
-          return_broker: string
-        }[]
-      }
       get_resource_permissions: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: {
@@ -26741,7 +25987,6 @@ export type Database = {
           preferences_exists: boolean
         }[]
       }
-      get_user_stats: { Args: { p_user_id: string }; Returns: Json }
       get_user_table_complete: {
         Args: {
           p_sort_direction?: string
@@ -28180,18 +27425,6 @@ export type Database = {
       }
       update_all_bucket_tree_structures: { Args: never; Returns: Json }
       update_all_trending_scores: { Args: never; Returns: undefined }
-      update_arg: {
-        Args: {
-          p_arg_id: string
-          p_data_type: Database["public"]["Enums"]["data_type"]
-          p_default_value: string
-          p_name: string
-          p_ready: boolean
-          p_registered_function: string
-          p_required: boolean
-        }
-        Returns: undefined
-      }
       update_bucket_structure: { Args: { bucket_name: string }; Returns: Json }
       update_bucket_tree_structure: {
         Args: { bucket_name: string }
@@ -28249,31 +27482,6 @@ export type Database = {
           p_target_user_id?: string
         }
         Returns: Json
-      }
-      update_registered_function:
-        | {
-            Args: {
-              p_class_name: string
-              p_description: string
-              p_function_id: string
-              p_module_path: string
-              p_name: string
-              p_return_broker: string
-            }
-            Returns: undefined
-          }
-        | { Args: { p_payload: Json }; Returns: Json }
-      update_registered_function_with_args: {
-        Args: {
-          p_args: Json
-          p_class_name: string
-          p_description: string
-          p_function_id: string
-          p_module_path: string
-          p_name: string
-          p_return_broker: string
-        }
-        Returns: undefined
       }
       update_scope: {
         Args: {
@@ -28503,108 +27711,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      upsert_recipe:
-        | {
-            Args: {
-              p_description?: string
-              p_id: string
-              p_is_public?: boolean
-              p_messages?: Json[]
-              p_name: string
-              p_post_result_options?: Json
-              p_sample_output?: string
-              p_status: Database["public"]["Enums"]["recipe_status"]
-              p_tags?: Json
-              p_version?: number
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_description?: string
-              p_id: string
-              p_is_public?: boolean
-              p_messages?: Json[]
-              p_name: string
-              p_post_result_options?: Json
-              p_sample_output?: string
-              p_status: Database["public"]["Enums"]["recipe_status"]
-              p_tags?: Json
-              p_varsion: number
-            }
-            Returns: undefined
-          }
-      upsert_recipe_broker: {
-        Args: {
-          p_broker: string
-          p_broker_role: Database["public"]["Enums"]["broker_role"]
-          p_id: string
-          p_recipe: string
-          p_required?: boolean
-        }
-        Returns: undefined
-      }
-      upsert_recipe_display: {
-        Args: {
-          p_display: string
-          p_display_settings?: Json
-          p_id: string
-          p_priority?: number
-          p_recipe: string
-        }
-        Returns: undefined
-      }
-      upsert_recipe_function: {
-        Args: {
-          p_function: string
-          p_id: string
-          p_params?: Json
-          p_recipe: string
-          p_role: Database["public"]["Enums"]["function_role"]
-        }
-        Returns: undefined
-      }
-      upsert_recipe_model: {
-        Args: {
-          p_ai_model: string
-          p_id: string
-          p_priority?: number
-          p_recipe: string
-          p_role: Database["public"]["Enums"]["model_role"]
-        }
-        Returns: undefined
-      }
-      upsert_recipe_processors: {
-        Args: {
-          p_id: string
-          p_params?: Json
-          p_processor: string
-          p_recipe: string
-        }
-        Returns: undefined
-      }
-      upsert_recipe_tools: {
-        Args: {
-          p_id: string
-          p_params?: Json
-          p_recipe: string
-          p_tool: string
-        }
-        Returns: undefined
-      }
-      upsert_registered_function:
-        | { Args: { input_json: Json }; Returns: Json }
-        | {
-            Args: {
-              p_class_name?: string
-              p_description?: string
-              p_id: string
-              p_module_path: string
-              p_name: string
-              p_return_broker?: string
-            }
-            Returns: undefined
-          }
       upsert_system_function: {
         Args: {
           p_description?: string

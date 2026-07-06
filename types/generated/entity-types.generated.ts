@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 229 active entity tokens. A token here is FK-valid for
+// 228 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -77,7 +77,6 @@ export type EntityTypeToken =
   | "cmp_entry"
   | "cmp_feedback"
   | "code_file"
-  | "code_file_version"
   | "code_folder"
   | "code_repository"
   | "comment"
@@ -280,7 +279,6 @@ export type ComponentEntityToken =
   | "artifact"
   | "canvas_item_state"
   | "cmp_entry"
-  | "code_file_version"
   | "component_group"
   | "content_ir_kind_component"
   | "content_ir_kind_edge"
@@ -386,7 +384,6 @@ export type ScopeableEntityToken =
   | "cmp_entry"
   | "cmp_feedback"
   | "code_file"
-  | "code_file_version"
   | "code_folder"
   | "code_repository"
   | "comment"
@@ -621,7 +618,6 @@ export const ENTITY_TYPE_METADATA = {
   "cmp_entry": { token: "cmp_entry", schema: "agent", table: "cmp_comparison_entries", label: "Comparison Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "cmp_feedback": { token: "cmp_feedback", schema: "agent", table: "cmp_response_feedback", label: "Comparison Response Feedback", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "code_file": { token: "code_file", schema: "code", table: "code_files", label: "Code File", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
-  "code_file_version": { token: "code_file_version", schema: "code", table: "code_file_versions", label: "Code File Version", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "code_folder": { token: "code_folder", schema: "code", table: "code_file_folders", label: "Code Folder", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "code_repository": { token: "code_repository", schema: "code", table: "code_repositories", label: "Code Repository", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "comment": { token: "comment", schema: "platform", table: "comments", label: "Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -854,7 +850,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "cmp_entry",
   "cmp_feedback",
   "code_file",
-  "code_file_version",
   "code_folder",
   "code_repository",
   "comment",

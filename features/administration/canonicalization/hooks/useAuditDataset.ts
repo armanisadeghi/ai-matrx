@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CanonicalizationDataset } from "../types";
-import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
+import { fetchAuditDataset } from "../utils/auditStoreClient";
 
 /**
  * Fetches one `audit.*` dataset from the canonicalization API and exposes a
@@ -25,15 +25,12 @@ export function useAuditDataset<T>(
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/canonicalization?dataset=${dataset}`);
-      const data = await readJsonObject(res);
-      if (!res.ok) throw new Error(errorMessageFrom(data, res));
-      // The caller-supplied `isRow` predicate IS the runtime validation the
-      // dataset's `T` needs — rows failing it are dropped loudly, never cast.
-      const rawRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
+      const rawRows = await fetchAuditDataset(dataset);
       const validRows = rawRows.filter(isRow);
       if (validRows.length !== rawRows.length) {
-        toast.warning(`${dataset}: dropped ${rawRows.length - validRows.length} malformed row(s)`);
+        toast.warning(
+          `${dataset}: dropped ${rawRows.length - validRows.length} malformed row(s)`,
+        );
       }
       setRows(validRows);
     } catch (err) {

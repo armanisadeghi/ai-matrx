@@ -15,11 +15,11 @@ import { AlertTriangle, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { BoolBadge } from "./StatusBadge";
-import type { KnownTableRef, TableImpactRow } from "../types";
+import { SchemaTableFields } from "./SchemaTableFields";
+import type { TableImpactRow } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
@@ -27,15 +27,6 @@ import {
   tableImpactRunToAgentInput,
   tableImpactRunToHuman,
 } from "../utils/aiExport";
-
-function isKnownTableRef(v: unknown): v is KnownTableRef {
-  return (
-    typeof v === "object" &&
-    v !== null &&
-    typeof (v as Record<string, unknown>).schema_name === "string" &&
-    typeof (v as Record<string, unknown>).table_name === "string"
-  );
-}
 
 function isTableImpactRow(v: unknown): v is TableImpactRow {
   if (typeof v !== "object" || v === null) return false;
@@ -47,56 +38,35 @@ function isTableImpactRow(v: unknown): v is TableImpactRow {
   );
 }
 
-function parseSchemaTable(input: string): [string, string] | null {
-  const idx = input.indexOf(".");
-  if (idx <= 0 || idx === input.length - 1) return null;
-  return [input.slice(0, idx).trim(), input.slice(idx + 1).trim()];
-}
-
 export function TableImpactPanel() {
   const searchParams = useSearchParams();
-  const [tables, setTables] = useState<KnownTableRef[]>([]);
-  const [input, setInput] = useState(() => {
-    const s = searchParams.get("schema");
-    const t = searchParams.get("table");
-    return s && t ? `${s}.${t}` : "";
-  });
+  const [schema, setSchema] = useState(() => searchParams.get("schema") ?? "");
+  const [table, setTable] = useState(() => searchParams.get("table") ?? "");
   const [rows, setRows] = useState<TableImpactRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasRun, setHasRun] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/admin/canonicalization/table-impact")
-      .then(readJsonObject)
-      .then((data) => {
-        // Widen JsonValue[] -> unknown[] so the type-predicate filter overload
-        // applies (KnownTableRef doesn't extend JsonValue's index signature).
-        const tables: unknown[] = Array.isArray(data.tables) ? data.tables : [];
-        setTables(tables.filter(isKnownTableRef));
-      })
-      .catch(() => undefined);
-  }, []);
-
   const runImpact = useCallback(
-    async (override?: [string, string]) => {
-      const parsed = override ?? parseSchemaTable(input);
-      if (!parsed) {
-        toast.error('Enter a table as "schema.table", e.g. workbench.notes');
+    async (override?: { schema: string; table: string }) => {
+      const target = override ?? { schema: schema.trim(), table: table.trim() };
+      if (!target.schema || !target.table) {
+        toast.error("Schema and table are required");
         return;
       }
-      const [schema, table] = parsed;
+      setSchema(target.schema);
+      setTable(target.table);
       setLoading(true);
       setHasRun(true);
       try {
         const res = await fetch("/api/admin/canonicalization/table-impact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ schema, table }),
+          body: JSON.stringify(target),
         });
         const data = await readJsonObject(res);
         if (!res.ok) throw new Error(errorMessageFrom(data, res));
-        const rows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
-        setRows(rows.filter(isTableImpactRow));
+        const nextRows: unknown[] = Array.isArray(data.rows) ? data.rows : [];
+        setRows(nextRows.filter(isTableImpactRow));
       } catch (err) {
         toast.error(err instanceof Error ? err.message : String(err));
         setRows([]);
@@ -104,30 +74,29 @@ export function TableImpactPanel() {
         setLoading(false);
       }
     },
-    [input],
+    [schema, table],
   );
 
   useEffect(() => {
     const s = searchParams.get("schema");
     const t = searchParams.get("table");
-    if (s && t) void runImpact([s, t]);
+    if (s && t) void runImpact({ schema: s, table: t });
     // Only run once on mount for the deep-link case.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const brokenCount = rows.filter((r) => r.currently_broken).length;
 
-  const parsedTarget = parseSchemaTable(input);
   const impactSnapshot = useMemo(
     () =>
-      parsedTarget && hasRun
+      schema.trim() && table.trim() && hasRun
         ? {
-            schema: parsedTarget[0],
-            table: parsedTarget[1],
+            schema: schema.trim(),
+            table: table.trim(),
             rows,
           }
         : null,
-    [parsedTarget, hasRun, rows],
+    [schema, table, hasRun, rows],
   );
 
   const columns: AuditColumnDef<TableImpactRow>[] = useMemo(
@@ -180,24 +149,14 @@ export function TableImpactPanel() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 pb-3 pt-3">
-        <Input
-          list="canonicalization-known-tables"
-          placeholder="schema.table — e.g. workbench.notes"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void runImpact();
+        <SchemaTableFields
+          values={{ schema, table }}
+          onChange={(patch) => {
+            if (patch.schema !== undefined) setSchema(patch.schema);
+            if (patch.table !== undefined) setTable(patch.table);
           }}
-          className="h-9 max-w-sm text-base"
+          disabled={loading}
         />
-        <datalist id="canonicalization-known-tables">
-          {tables.map((t) => (
-            <option
-              key={`${t.schema_name}.${t.table_name}`}
-              value={`${t.schema_name}.${t.table_name}`}
-            />
-          ))}
-        </datalist>
         <Button size="sm" onClick={() => void runImpact()} disabled={loading}>
           {loading ? (
             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -234,7 +193,7 @@ export function TableImpactPanel() {
           emptyMessage={
             hasRun
               ? "No dependent functions found."
-              : "Enter a table above and run preflight."
+              : "Choose a table above and run preflight."
           }
           copyForAi={TABLE_IMPACT_TABLE_COPY}
         />

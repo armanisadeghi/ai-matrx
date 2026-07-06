@@ -13,6 +13,8 @@ import {
   runVerifyCanonical,
 } from "@/features/administration/canonicalization/service/canonicalizationService";
 
+export const dynamic = "force-dynamic";
+
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
   const status = message.startsWith("Unauthorized")
@@ -34,7 +36,10 @@ export async function GET(request: NextRequest) {
   const schema = request.nextUrl.searchParams.get("schema");
   const table = request.nextUrl.searchParams.get("table");
   if (!schema || !table) {
-    return NextResponse.json({ error: "schema and table are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "schema and table are required" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -52,19 +57,35 @@ export async function POST(request: NextRequest) {
     return errorResponse(e);
   }
 
-  let body: { schema?: string; table?: string; token?: string; variant?: string } = {};
+  let body: {
+    schema?: string;
+    table?: string;
+    token?: string;
+    variant?: string;
+  } = {};
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 },
+    );
   }
 
   if (!body.schema || !body.table || !body.token) {
-    return NextResponse.json({ error: "schema, table, and token are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "schema, table, and token are required" },
+      { status: 400 },
+    );
   }
 
   try {
-    const result = await runVerifyCanonical(body.schema, body.table, body.token, body.variant);
+    const result = await runVerifyCanonical(
+      body.schema,
+      body.table,
+      body.token,
+      body.variant,
+    );
     return NextResponse.json(result);
   } catch (e) {
     return errorResponse(e);

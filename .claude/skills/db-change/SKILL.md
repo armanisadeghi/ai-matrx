@@ -5,6 +5,26 @@ description: Entry point and shared SOP for the 2026 Matrx DB transition — any
 
 # DB Change — the transition SOP (read first)
 
+## 🛑 THE PRIME DIRECTIVE — read this before you touch anything, or you will hurt the project
+
+**This migration is past the point of no return. The app is ALREADY DOWN and stays down until the system is 100% canonical.** There is no safe partial state, nothing to protect, and no going back — the only exit is *forward, completely*. Everything below exists because agents keep half-doing the job and leaving the app in the broken middle. Do not be one of them.
+
+1. **The canonical list is the spec and the authority — not your judgment.** There is a defined target state (the roadmap: where each table starts, its new schema, its new columns, `user_id`→`created_by`, org handling, M2M→associations, where versioning goes). You do not get to decide a canonical requirement is optional, "nice to keep for now," or "better my way." You meet the requirements.
+
+2. **ONE change lands in EVERY layer, in ONE pass — SQL + generated Python + Python usages + Next.js types + Next.js usages + every repo — TOGETHER, before the lights come back on.** If a name changes *everywhere at once*, turning the app on is as if it never changed — clean. If it changes in one layer and not the others, the app is **broken**. **Touching one layer but not all of them ("the circle") is the single thing that has kept this app down for weeks. It is the cardinal sin.** Touch nothing, or touch it ALL — never in between.
+
+3. **Decide EVERYTHING before you start. Never begin a table you will not finish 100% this pass.** Sequence: (a) read the canonical list, (b) look at the ACTUAL table — schema, columns, triggers, dependents, **and the real data (row counts; is it live or just test rows?)**, (c) write a SHORT bullet checklist of every requirement to reach canonical (not a report — a checklist). Then execute the entire checklist without stopping. Starting with open decisions, or starting and silently skipping a requirement, is forbidden.
+
+4. **A canonical requirement that seems wrong for this table is a QUESTION FOR THE HUMAN, made BEFORE you start — never a call you make alone and never a thing you skip quietly.** Not every rule fits every table (versioning, for one, is not right for every table). When you think a requirement shouldn't apply, or you're tempted to keep an old structure: **STATE your opinion out loud, give the fact behind it, and ASK.** *"code_file has a bespoke `code_file_versions` table (20 rows, all test) — canonicalize it onto `history.row_versions`, or drop versioning for this table entirely? I lean X because Y."* **Yes → do it that way. No → follow the rule. No clear/blocking answer → STOP and ask again; do not start.** Your opinion is *wanted* — the human almost always has a fact you don't (that's how a weak "keep it just in case" flips to "those are throwaway rows, kill it"). Keeping the opinion to yourself and acting on the assumption is the exact move that destroys the codebase.
+
+5. **NO safety nets. NO "just in case." NO leaving the old way.** No compat views, no leftover legacy tables "for now," no old columns kept beside new ones, no dormant fallbacks, no "I'll migrate it later." The old name/column/table must VANISH so a stale reference errors loudly and gets fixed this pass. A safety net here is not safety — it silently splits data across two shapes and *is* the bug.
+
+6. **SHIP IT — committing and pushing IS the job, not a decision to agonize over.** During a scheduled outage the win condition is: fully canonical + all layers repointed + committed + pushed + lights on. Do not pause to ask "is it OK to release?" — the app is down; the *only* way to lose is to sit on finished work. Commit, push, deploy, in the same pass.
+
+**One-line test before you stop:** *If the lights came on right now, would every layer agree and the app work?* If no, you are not done — and you do not stop, hand off, or "leave it for the next pass." You finish.
+
+---
+
 Structural changes to **Matrx Main** (`txzxabzwovsujtloxrus`) during scheduled downtime. Apply DDL directly via the Supabase MCP — migration files are a convenience for the ledger, **not** a canonical system (a file changes nothing until applied + verified live). Execute end-to-end without stalling; over-chunking prolongs the outage.
 
 **Before any change, read [`TOOLKIT.md`](./TOOLKIT.md)** (verified live signatures, registry shapes, constants, gotchas) and [`docs/db_rebuild/SCHEMA_MAP.md`](../../../docs/db_rebuild/SCHEMA_MAP.md) (what each schema is FOR — where a table belongs). TOOLKIT is the source of truth; the design doc `docs/db_rebuild/db-core-standards-and-automation.md` is aspirational and has drifted in places.

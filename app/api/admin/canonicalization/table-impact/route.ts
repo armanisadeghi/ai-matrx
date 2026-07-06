@@ -12,6 +12,8 @@ import {
   runTableImpact,
 } from "@/features/administration/canonicalization/service/canonicalizationService";
 
+export const dynamic = "force-dynamic";
+
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
   const status = message.startsWith("Unauthorized")
@@ -49,11 +51,17 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 },
+    );
   }
 
   if (!body.schema || !body.table) {
-    return NextResponse.json({ error: "schema and table are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "schema and table are required" },
+      { status: 400 },
+    );
   }
 
   try {

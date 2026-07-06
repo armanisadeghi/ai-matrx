@@ -1,15 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
+import { BrokenFunctionKeywordFilterBar } from "./BrokenFunctionKeywordFilterBar";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { GateStatusBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
+import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
 import { isBrokenFunctionRow, type BrokenFunctionRow } from "../types";
 import { BROKEN_FUNCTIONS_TABLE_COPY } from "../utils/aiExport";
+import {
+  EMPTY_KEYWORD_TAG_FILTER,
+  filterBrokenFunctionsByKeywords,
+  keywordTagFilterActive,
+} from "../utils/brokenFunctionKeywordFilter";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function BrokenFunctionsPage() {
@@ -18,6 +25,8 @@ export function BrokenFunctionsPage() {
     "broken-functions",
     isBrokenFunctionRow,
   );
+  const [keywordFilter, setKeywordFilter] = useState(EMPTY_KEYWORD_TAG_FILTER);
+  const toolbar = useCanonicalizationDatasetToolbar(reload);
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<
@@ -25,6 +34,11 @@ export function BrokenFunctionsPage() {
   >(
     () => (fnParam ? { function_name: { text: fnParam } } : undefined),
     [fnParam],
+  );
+
+  const keywordFilteredRows = useMemo(
+    () => filterBrokenFunctionsByKeywords(rows, keywordFilter),
+    [rows, keywordFilter],
   );
 
   const columns: AuditColumnDef<BrokenFunctionRow>[] = useMemo(
@@ -112,16 +126,33 @@ export function BrokenFunctionsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <CanonicalizationToolbar onReload={reload} reloading={loading} />
+      <CanonicalizationToolbar
+        onReload={reload}
+        reloading={loading}
+        onRefreshAudit={toolbar.onRefreshAudit}
+        refreshingAudit={toolbar.refreshingAudit}
+        lastRefreshedAt={toolbar.lastRefreshedAt}
+      />
+      <BrokenFunctionKeywordFilterBar
+        value={keywordFilter}
+        onChange={setKeywordFilter}
+        totalCount={rows.length}
+        filteredCount={keywordFilteredRows.length}
+        onClear={() => setKeywordFilter(EMPTY_KEYWORD_TAG_FILTER)}
+      />
       <div className="min-h-0 flex-1 overflow-hidden px-4 pb-4">
         <AdminAuditTable
-          rows={rows}
+          rows={keywordFilteredRows}
           columns={columns}
           loading={loading}
           csvFilename="canonicalization-broken-functions.csv"
           defaultSort={{ key: "schema_name", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}
-          emptyMessage="No broken functions found."
+          emptyMessage={
+            keywordTagFilterActive(keywordFilter)
+              ? "No broken functions match these keyword filters."
+              : "No broken functions found."
+          }
           copyForAi={BROKEN_FUNCTIONS_TABLE_COPY}
         />
       </div>

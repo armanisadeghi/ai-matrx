@@ -9,7 +9,7 @@
  * scroll area per view while desktop still gets full vertical space per table.
  */
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { BoolBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
+import { useCanonicalizationDatasetToolbar } from "../hooks/useCanonicalizationDatasetToolbar";
 import {
   isM2mCandidateRow,
   isStaleRegistryRow,
@@ -192,11 +193,19 @@ export function CandidatesPage() {
   const active =
     view === "m2m" ? m2m : view === "unregistered" ? unregistered : stale;
 
+  const reloadAll = useCallback(async () => {
+    await Promise.all([m2m.reload(), unregistered.reload(), stale.reload()]);
+  }, [m2m, unregistered, stale]);
+  const toolbar = useCanonicalizationDatasetToolbar(reloadAll);
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <CanonicalizationToolbar
-        onReload={active.reload}
+        onReload={() => void active.reload()}
         reloading={active.loading}
+        onRefreshAudit={toolbar.onRefreshAudit}
+        refreshingAudit={toolbar.refreshingAudit}
+        lastRefreshedAt={toolbar.lastRefreshedAt}
       />
 
       <div className="flex shrink-0 flex-wrap gap-2 px-4 pb-3">

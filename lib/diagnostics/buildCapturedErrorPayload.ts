@@ -23,6 +23,11 @@ import {
   TIER_RULES_FILE,
   buildDowngradeRuleStub,
 } from "@/lib/diagnostics/errorTierRules";
+import {
+  sanitizeMessageForAi,
+  sanitizeRawForAi,
+  sanitizeStackTextForAi,
+} from "@/lib/diagnostics/sanitizeErrorContextForAi";
 
 const LOCATION = "AI Matrx — Error Inspector";
 
@@ -82,9 +87,7 @@ function downgradeHint(e: CapturedError): string {
 
 /** Human-readable block for a single captured error. */
 export function capturedErrorToHuman(e: CapturedError): string {
-  const lines: string[] = [
-    `${sourceLabel(e.source)}: ${e.message}`,
-  ];
+  const lines: string[] = [`${sourceLabel(e.source)}: ${e.message}`];
   if (e.relation || e.operation !== "unknown") {
     lines.push(
       `Where: ${e.operation !== "unknown" ? e.operation : ""}${
@@ -108,21 +111,53 @@ export function capturedErrorToHuman(e: CapturedError): string {
   return lines.join("\n");
 }
 
+function capturedErrorToAgentHuman(e: CapturedError): string {
+  const lines: string[] = [
+    `${sourceLabel(e.source)}: ${sanitizeMessageForAi(e.message)}`,
+  ];
+  if (e.relation || e.operation !== "unknown") {
+    lines.push(
+      `Where: ${e.operation !== "unknown" ? e.operation : ""}${
+        e.relation ? `${e.operation !== "unknown" ? " " : ""}${e.relation}` : ""
+      }${e.schema ? ` (schema: ${e.schema})` : ""}`.trim(),
+    );
+  }
+  if (e.code) lines.push(`Code: ${e.code}`);
+  if (typeof e.status === "number") lines.push(`HTTP status: ${e.status}`);
+  if (e.userMessage) lines.push(`User message: ${e.userMessage}`);
+  if (e.details) lines.push(`Details: ${e.details}`);
+  if (e.hint) lines.push(`Hint: ${e.hint}`);
+  if (e.requestId) lines.push(`Request id: ${e.requestId}`);
+  if (e.conversationId) lines.push(`Conversation id: ${e.conversationId}`);
+  lines.push(`Route: ${e.route || "(unknown)"}`);
+  lines.push(downgradeHint(e));
+  if (e.count > 1) lines.push(`Occurrences: ${e.count}`);
+  lines.push(`First: ${isoOrEmpty(e.firstAt)} · Last: ${isoOrEmpty(e.lastAt)}`);
+  const callSite = sanitizeStackTextForAi(e.callSite);
+  const stack = sanitizeStackTextForAi(e.stack);
+  if (callSite) lines.push(`Call site:\n${callSite}`);
+  if (stack) lines.push(`Stack:\n${stack}`);
+  return lines.join("\n");
+}
+
 /** Agent (Copy for AI) payload for a single captured error. */
 export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
   const stub = buildDowngradeRuleStub(e);
   const summary = [
-    capturedErrorToHuman(e),
+    capturedErrorToAgentHuman(e),
     "",
     `To change this error's visibility tier, add a rule to ${TIER_RULES_FILE}:`,
     stub,
   ].join("\n");
 
+  const callSite = sanitizeStackTextForAi(e.callSite);
+  const stack = sanitizeStackTextForAi(e.stack);
+
   return {
     kind: "app-error",
     location: LOCATION,
     description:
-      "A single captured runtime error from the running app (any source).",
+      "A single captured runtime error from the running app (any source). Stack traces omit minified Next.js chunk frames; use the plain Copy button for the full dump.",
     summary,
     attributes: {
       source: e.source,
@@ -141,16 +176,17 @@ export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
       "conversation-id": e.conversationId,
       "first-seen": isoOrEmpty(e.firstAt),
       "last-seen": isoOrEmpty(e.lastAt),
-      "call-site": e.callSite,
+      "call-site": callSite,
       "tier-rule": e.tierRuleId,
       "downgrade-rules-file": TIER_RULES_FILE,
+      "stacks-sanitized": "minified-chunk-frames-removed",
     },
     data: {
       source: e.source,
       tier: e.tier,
       tierRuleId: e.tierRuleId,
       tierReason: e.tierReason,
-      message: e.message,
+      message: sanitizeMessageForAi(e.message),
       userMessage: e.userMessage,
       code: e.code,
       details: e.details,
@@ -163,9 +199,9 @@ export function capturedErrorToAgentInput(e: CapturedError): AgentPayloadInput {
       relation: e.relation,
       route: e.route,
       url: e.url,
-      callSite: e.callSite,
-      stack: e.stack,
-      raw: e.raw,
+      callSite,
+      stack,
+      raw: sanitizeRawForAi(e.raw),
       downgrade: {
         rulesFile: TIER_RULES_FILE,
         suggestedRule: stub,
@@ -182,7 +218,7 @@ export function capturedErrorsToAgentInput(
     kind: "app-errors",
     location: LOCATION,
     description:
-      "Every runtime error captured in this browser session, newest first, across all sources.",
+      "Every runtime error captured in this browser session, newest first, across all sources. Stack traces omit minified Next.js chunk frames; use the plain Copy button for the full dump.",
     attributes: {
       count: list.length,
       occurrences: list.reduce((sum, e) => sum + e.count, 0),
@@ -192,6 +228,7 @@ export function capturedErrorsToAgentInput(
     },
     context: {
       "downgrade-rules-file": TIER_RULES_FILE,
+      "stacks-sanitized": "minified-chunk-frames-removed",
     },
     data: list.map((e) => ({
       source: e.source,
@@ -201,7 +238,7 @@ export function capturedErrorsToAgentInput(
       schema: e.schema,
       relation: e.relation,
       code: e.code,
-      message: e.message,
+      message: sanitizeMessageForAi(e.message),
       userMessage: e.userMessage,
       details: e.details,
       hint: e.hint,
@@ -210,12 +247,12 @@ export function capturedErrorsToAgentInput(
       conversationId: e.conversationId,
       route: e.route,
       url: e.url,
-      callSite: e.callSite,
-      stack: e.stack,
+      callSite: sanitizeStackTextForAi(e.callSite),
+      stack: sanitizeStackTextForAi(e.stack),
       occurrences: e.count,
       firstSeen: isoOrEmpty(e.firstAt),
       lastSeen: isoOrEmpty(e.lastAt),
-      raw: e.raw,
+      raw: sanitizeRawForAi(e.raw),
     })),
   };
 }

@@ -20,6 +20,20 @@ import {
   type CanonicalizationDataset,
 } from "@/features/administration/canonicalization/types";
 
+export const dynamic = "force-dynamic";
+
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  Pragma: "no-cache",
+} as const;
+
+function jsonNoCache(body: unknown, init?: ResponseInit) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: { ...NO_CACHE_HEADERS, ...init?.headers },
+  });
+}
+
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
   const status = message.startsWith("Unauthorized")
@@ -27,7 +41,7 @@ function errorResponse(error: unknown) {
     : message.startsWith("Forbidden")
       ? 403
       : 500;
-  return NextResponse.json({ error: message }, { status });
+  return jsonNoCache({ error: message }, { status });
 }
 
 export async function GET(request: NextRequest) {
@@ -41,16 +55,19 @@ export async function GET(request: NextRequest) {
     "overview") as CanonicalizationDataset;
 
   if (!CANONICALIZATION_DATASETS.includes(dataset)) {
-    return NextResponse.json({ error: `Unknown dataset: ${dataset}` }, { status: 400 });
+    return jsonNoCache(
+      { error: `Unknown dataset: ${dataset}` },
+      { status: 400 },
+    );
   }
 
   try {
     if (dataset === "overview") {
       const overview = await fetchOverview();
-      return NextResponse.json({ overview });
+      return jsonNoCache({ overview });
     }
     const rows = await fetchDatasetRows(dataset);
-    return NextResponse.json({ rows });
+    return jsonNoCache({ rows });
   } catch (e) {
     return errorResponse(e);
   }
@@ -71,13 +88,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action !== "refresh") {
-    return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
+    return jsonNoCache({ error: "Unsupported action" }, { status: 400 });
   }
 
   try {
     const start = Date.now();
     const result = await runAuditRefresh();
-    return NextResponse.json({ ...result, durationMs: Date.now() - start });
+    return jsonNoCache({ ...result, durationMs: Date.now() - start });
   } catch (e) {
     return errorResponse(e);
   }

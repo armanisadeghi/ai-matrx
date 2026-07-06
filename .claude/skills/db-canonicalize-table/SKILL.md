@@ -5,7 +5,17 @@ description: Bring a table (and its feature) into full conformance with the Matr
 
 # Canonicalize a table
 
-Make `<schema>.<table>` (token `<token>`) fully conform to the platform standard, **behavior preserved exactly**. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) (live signatures, gotchas) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `txzxabzwovsujtloxrus`. Order matters — do the steps in sequence.
+Make `<schema>.<table>` (token `<token>`) fully conform to the platform standard. Read [`../db-change/TOOLKIT.md`](../db-change/TOOLKIT.md) (live signatures, gotchas) + [`../db-change/SKILL.md`](../db-change/SKILL.md) first. Project: `txzxabzwovsujtloxrus`. Order matters — do the steps in sequence.
+
+## 🛑 Before you write one line — obey db-change's PRIME DIRECTIVE (§top of `../db-change/SKILL.md`)
+
+The app is DOWN until fully canonical; there is no safe half-state. So:
+
+- **Meet EVERY canonical requirement for this table in ONE pass across ALL layers** (SQL → `db/generate.py` → Python usages → FE types → Next.js usages → both repos → commit → push). Never start a table you won't finish this pass. Never leave one layer repointed and another not — that broken middle is the whole disaster.
+- **First, look at the real table AND its data** (row counts — live or test?). Then write a SHORT bullet checklist of what canonical requires here. Not a report.
+- **"Behavior preserved exactly" is NOT a license to skip a canonical requirement.** If preserving today's behavior would keep a non-canonical structure, that is a conflict you RAISE, not resolve on your own.
+- **🔴 NO bespoke `*_versions` table survives, and you do NOT get to keep one silently.** Canonical versioning = `history.row_versions` via the `_history` trigger + the generic `version_*` RPCs. A per-entity `*_versions` table (`code_file_versions`, `note_versions`, …) is legacy drift to RETIRE — migrate its rows into `history.row_versions`, repoint `promote_version`→`version_restore` + every reader, then graveyard it. **BUT versioning is not right for every table** — so if you think this table should keep its table, or shouldn't be versioned at all, that is a QUESTION you ask the human BEFORE starting (state your view + the fact, e.g. row count), get an explicit yes/no, and only then proceed. Leaving the old version table because *you* decided it was safer — with no ask — is the exact failure that has cost this project weeks. (Setting `is_versioned=false` to silence the gate while the bespoke table lives on is that same failure in disguise.)
+- **Any other requirement you want to deviate from** (skip a drop, keep an old column, defer a repoint) → same rule: ask up front, explicit yes/no, no clear answer = stop and ask again. Decisions are made BEFORE you start, then you execute 100%.
 
 ## ⚡ Field realities — read these first, they each cost a round-trip (verified 2026-07-05)
 
