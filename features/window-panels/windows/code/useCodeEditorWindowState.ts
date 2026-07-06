@@ -82,7 +82,7 @@ export function useCodeEditorWindowState({
     const out: CodeFile[] = [];
     for (const id of fileIds) {
       const rec = filesMap[id];
-      if (rec && !rec.is_deleted) out.push(recordToCodeFile(rec));
+      if (rec && !rec.deleted_at) out.push(recordToCodeFile(rec));
     }
     return out;
   }, [filesMap, fileIds, isPersisted]);

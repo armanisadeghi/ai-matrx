@@ -436,6 +436,35 @@ export function tryGetEntityInfo(token: string): EntityInfo | null {
   return isEntityTypeToken(token) ? getEntityInfo(token) : null;
 }
 
+// Reverse index: "schema.table" → canonical token (first registered token wins
+// when several tokens share a physical table, e.g. context_item/context_value).
+// Built once from the generated metadata — the ONE place a live (schema, table)
+// pair resolves back to its entity, so surfaces that only know a raw table name
+// (FK-reference panels, drift reports) render through the SAME canonical
+// icon/label/role as everything else instead of a hand-maintained table map.
+const TABLE_TO_TOKEN: Record<string, EntityTypeToken> = (() => {
+  const m: Record<string, EntityTypeToken> = {};
+  for (const token of Object.keys(ENTITY_TYPE_METADATA) as EntityTypeToken[]) {
+    const meta = ENTITY_TYPE_METADATA[token];
+    const key = `${meta.schema}.${meta.table}`;
+    if (!(key in m)) m[key] = token;
+  }
+  return m;
+})();
+
+/**
+ * Resolve an entity descriptor from a live `(schema, table)` pair, or null when
+ * that table backs no registered entity. Use this for surfaces keyed by raw
+ * table name; token-keyed callers should use `getEntityInfo` directly.
+ */
+export function tryGetEntityInfoByTable(
+  schema: string,
+  table: string,
+): EntityInfo | null {
+  const token = TABLE_TO_TOKEN[`${schema}.${table}`];
+  return token ? getEntityInfo(token) : null;
+}
+
 /** Tokens that currently have a picker-ready overlay (candidates listable). */
 export function listableTokens(): EntityTypeToken[] {
   return (Object.keys(ENTITY_OVERLAY) as EntityTypeToken[]).filter((t) => {

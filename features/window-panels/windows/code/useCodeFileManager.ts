@@ -74,7 +74,7 @@ function buildFolderTree(
   // Count files per folder (null = root/"unfiled").
   const fileCounts = new Map<string | null, number>();
   for (const file of files) {
-    if (file.is_deleted) continue;
+    if (file.deleted_at) continue;
     const key = file.folder_id ?? null;
     fileCounts.set(key, (fileCounts.get(key) ?? 0) + 1);
   }
@@ -214,7 +214,7 @@ export function useCodeFileManager(): UseCodeFileManagerResult {
 
   const visibleFiles = useMemo(() => {
     const filtered = files.filter((f) => {
-      if (f.is_deleted) return false;
+      if (f.deleted_at) return false;
       if (selectedFolderId === null) {
         // Root view — show everything unfiled OR show all if searching
         if (searchQuery) return matchesSearch(f.name, searchQuery);
@@ -256,7 +256,7 @@ export function useCodeFileManager(): UseCodeFileManagerResult {
     // Pick a default filename that doesn't collide with existing ones in the
     // same folder. Language defaults to plaintext; user can rename / change.
     const inFolder = files.filter(
-      (f) => (f.folder_id ?? null) === folder_id && !f.is_deleted,
+      (f) => (f.folder_id ?? null) === folder_id && !f.deleted_at,
     );
     let n = inFolder.length + 1;
     let name = `untitled-${n}.txt`;
@@ -377,7 +377,7 @@ export function useCodeFileManager(): UseCodeFileManagerResult {
     folders,
     selectedFolderId,
     visibleFiles,
-    allFilesCount: files.filter((f) => !f.is_deleted).length,
+    allFilesCount: files.filter((f) => !f.deleted_at).length,
 
     isLoadingList: listStatus === "loading",
     isLoadingFolders: !foldersLoaded,

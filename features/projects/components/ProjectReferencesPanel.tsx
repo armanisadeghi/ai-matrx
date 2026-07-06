@@ -2,288 +2,96 @@
 
 import React, { useMemo, useState } from "react";
 import {
-  Compass,
-  Zap,
-  Activity,
-  MessageSquare,
-  FileText,
-  Layers,
-  Code,
-  FolderOpen,
-  GitBranch,
-  File,
-  AppWindow,
-  ScrollText,
-  Database,
-  BookOpen,
-  HelpCircle,
-  Globe,
-  Mic,
-  CheckSquare,
-  Workflow,
-  Box,
+  Boxes,
   RefreshCw,
   ChevronDown,
   ChevronUp,
-  type LucideIcon
+  type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
+import {
+  tryGetEntityInfoByTable,
+  getContentRoleMeta,
+  CONTENT_ROLES,
+  type ContentRole,
+} from "@/features/scopes/registry/entityRegistry";
 import { useProjectReferences } from "../hooks";
 import type { ProjectReference } from "../types";
 
 // ============================================================================
-// Table metadata — maps DB table names to display info
+// Display resolution — driven ENTIRELY by the canonical entity registry
+// (`platform.entity_types` → getEntityInfo). No hand-maintained table map:
+// every referencing table resolves its icon / label / grouping through the
+// same registry every other association surface uses. A table that backs no
+// registered entity (legacy / uncanonicalized) falls to the "Other" bucket
+// with a generated label — which is itself the signal that it needs a token.
 // ============================================================================
 
-interface TableMeta {
+// Grouping axis = the registry's ContentRole (utility/source/destination/
+// hybrid/container), plus a terminal "other" bucket for unregistered tables.
+type GroupId = ContentRole | "other";
+
+const GROUP_ORDER: GroupId[] = [
+  ...CONTENT_ROLES.map((r) => r.id),
+  "other",
+];
+
+interface ResolvedRef {
+  ref: ProjectReference;
+  Icon: LucideIcon;
   label: string;
-  icon: LucideIcon;
-  category: string;
-  categoryColor: string;
+  colorClass: string;
+  group: GroupId;
 }
 
-const CATEGORY_ORDER = [
-  "Work",
-  "AI",
-  "Chat",
-  "Content",
-  "Code",
-  "Data",
-  "Research",
-  "Learning",
-  "Project",
-] as const;
+function resolveRef(r: ProjectReference): ResolvedRef {
+  const info = tryGetEntityInfoByTable(r.schemaName, r.tableName);
+  if (info) {
+    return {
+      ref: r,
+      Icon: info.Icon,
+      label: info.labelPlural,
+      colorClass: getContentRoleMeta(info.contentRole).accentText,
+      group: info.contentRole,
+    };
+  }
+  // Unregistered table — generated label so it's still legible, but binned into
+  // "Other" so the gap is visible rather than papered over.
+  return {
+    ref: r,
+    Icon: Boxes,
+    label: r.tableName
+      .replace(/^(ctx_|agx_|cx_|rs_|udt_|wc_|pc_|kg_|wf_)/, "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
+    colorClass: "text-muted-foreground",
+    group: "other",
+  };
+}
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Work: "text-indigo-600 dark:text-indigo-400",
-  AI: "text-violet-600 dark:text-violet-400",
-  Chat: "text-sky-600 dark:text-sky-400",
-  Content: "text-emerald-600 dark:text-emerald-400",
-  Code: "text-orange-600 dark:text-orange-400",
-  Data: "text-amber-600 dark:text-amber-400",
-  Research: "text-teal-600 dark:text-teal-400",
-  Learning: "text-rose-600 dark:text-rose-400",
-  Project: "text-slate-600 dark:text-slate-400",
-};
+function groupTitle(group: GroupId): string {
+  return group === "other" ? "Other" : getContentRoleMeta(group).title;
+}
 
-const CATEGORY_BG_COLORS: Record<string, string> = {
-  Work: "bg-indigo-50 dark:bg-indigo-950/30",
-  AI: "bg-violet-50 dark:bg-violet-950/30",
-  Chat: "bg-sky-50 dark:bg-sky-950/30",
-  Content: "bg-emerald-50 dark:bg-emerald-950/30",
-  Code: "bg-orange-50 dark:bg-orange-950/30",
-  Data: "bg-amber-50 dark:bg-amber-950/30",
-  Research: "bg-teal-50 dark:bg-teal-950/30",
-  Learning: "bg-rose-50 dark:bg-rose-950/30",
-  Project: "bg-slate-50 dark:bg-slate-900/30",
-};
+function groupBgClass(group: GroupId): string {
+  return group === "other" ? "bg-muted/20" : getContentRoleMeta(group).accentBg;
+}
 
-const TABLE_META: Record<string, TableMeta> = {
-  task: {
-    label: "Tasks",
-    icon: CheckSquare,
-    category: "Work",
-    categoryColor: CATEGORY_COLORS.Work,
-  },
-  workflow: {
-    label: "Workflows",
-    icon: Workflow,
-    category: "Work",
-    categoryColor: CATEGORY_COLORS.Work,
-  },
-  sandbox_instances: {
-    label: "Sandboxes",
-    icon: Box,
-    category: "Work",
-    categoryColor: CATEGORY_COLORS.Work,
-  },
-  app_instances: {
-    label: "App Instances",
-    icon: AppWindow,
-    category: "Work",
-    categoryColor: CATEGORY_COLORS.Work,
-  },
-  wc_claim: {
-    label: "Claims",
-    icon: File,
-    category: "Work",
-    categoryColor: CATEGORY_COLORS.Work,
-  },
-  agx_agent: {
-    label: "Agents",
-    icon: Compass,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  agx_agent_templates: {
-    label: "Agent Templates",
-    icon: Compass,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  agx_shortcut: {
-    label: "Agent Shortcuts",
-    icon: Zap,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  ai_tasks: {
-    label: "AI Tasks",
-    icon: Activity,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  prompts: {
-    label: "Prompts",
-    icon: ScrollText,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  prompt_actions: {
-    label: "Prompt Actions",
-    icon: Zap,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  prompt_apps: {
-    label: "Prompt Apps",
-    icon: AppWindow,
-    category: "AI",
-    categoryColor: CATEGORY_COLORS.AI,
-  },
-  cx_conversation: {
-    label: "Conversations",
-    icon: MessageSquare,
-    category: "Chat",
-    categoryColor: CATEGORY_COLORS.Chat,
-  },
-  notes: {
-    label: "Notes",
-    icon: FileText,
-    category: "Content",
-    categoryColor: CATEGORY_COLORS.Content,
-  },
-  canvas_items: {
-    label: "Canvas Items",
-    icon: Layers,
-    category: "Content",
-    categoryColor: CATEGORY_COLORS.Content,
-  },
-  content_template: {
-    label: "Content Templates",
-    icon: ScrollText,
-    category: "Content",
-    categoryColor: CATEGORY_COLORS.Content,
-  },
-  cld_files: {
-    label: "Files",
-    icon: File,
-    category: "Content",
-    categoryColor: CATEGORY_COLORS.Content,
-  },
-  code_files: {
-    label: "Code Files",
-    icon: Code,
-    category: "Code",
-    categoryColor: CATEGORY_COLORS.Code,
-  },
-  code_file_folders: {
-    label: "Code Folders",
-    icon: FolderOpen,
-    category: "Code",
-    categoryColor: CATEGORY_COLORS.Code,
-  },
-  code_repositories: {
-    label: "Repositories",
-    icon: GitBranch,
-    category: "Code",
-    categoryColor: CATEGORY_COLORS.Code,
-  },
-  broker_values: {
-    label: "Broker Values",
-    icon: Database,
-    category: "Data",
-    categoryColor: CATEGORY_COLORS.Data,
-  },
-  udt_datasets: {
-    label: "Datasets",
-    icon: Database,
-    category: "Data",
-    categoryColor: CATEGORY_COLORS.Data,
-  },
-  rs_topic: {
-    label: "Research Topics",
-    icon: Globe,
-    category: "Research",
-    categoryColor: CATEGORY_COLORS.Research,
-  },
-  page_extraction_jobs: {
-    label: "Extraction Jobs",
-    icon: Globe,
-    category: "Research",
-    categoryColor: CATEGORY_COLORS.Research,
-  },
-  transcripts: {
-    label: "Transcripts",
-    icon: Mic,
-    category: "Research",
-    categoryColor: CATEGORY_COLORS.Research,
-  },
-  flashcard_data: {
-    label: "Flashcard Data",
-    icon: BookOpen,
-    category: "Learning",
-    categoryColor: CATEGORY_COLORS.Learning,
-  },
-  flashcard_sets: {
-    label: "Flashcard Sets",
-    icon: BookOpen,
-    category: "Learning",
-    categoryColor: CATEGORY_COLORS.Learning,
-  },
-  quiz_sessions: {
-    label: "Quiz Sessions",
-    icon: HelpCircle,
-    category: "Learning",
-    categoryColor: CATEGORY_COLORS.Learning,
-  },
-  // Project membership + invitations moved to the canonical iam.memberships /
-  // iam.invitations stores (2026 DB cutover). The legacy project-member /
-  // project-invitation tables no longer hold project data, so they are no
-  // longer surfaced here; any residual FK row falls through to the generated
-  // label in getTableMeta.
-  ctx_user_active_context: {
-    label: "Active Context",
-    icon: Activity,
-    category: "Project",
-    categoryColor: CATEGORY_COLORS.Project,
-  },
-};
-
-function getTableMeta(tableName: string): TableMeta {
-  return (
-    TABLE_META[tableName] ?? {
-      label: tableName
-        .replace(/^(ctx_|agx_|cx_|rs_|udt_|wc_)/, "")
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase()),
-      icon: Database,
-      category: "Other",
-      categoryColor: "text-muted-foreground",
-    }
-  );
+function groupColorClass(group: GroupId): string {
+  return group === "other"
+    ? "text-muted-foreground"
+    : getContentRoleMeta(group).accentText;
 }
 
 // ============================================================================
 // Sub-components
 // ============================================================================
 
-function ReferenceRow({ reference: r }: { reference: ProjectReference }) {
-  const meta = getTableMeta(r.tableName);
-  const Icon = meta.icon;
+function ReferenceRow({ resolved }: { resolved: ResolvedRef }) {
+  const { ref: r, Icon, label, colorClass } = resolved;
   const isEmpty = r.rowCount === 0;
 
   return (
@@ -292,8 +100,8 @@ function ReferenceRow({ reference: r }: { reference: ProjectReference }) {
         isEmpty ? "opacity-40" : "hover:bg-muted/40"
       }`}
     >
-      <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${meta.categoryColor}`} />
-      <span className="text-sm flex-1 min-w-0 truncate">{meta.label}</span>
+      <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${colorClass}`} />
+      <span className="text-sm flex-1 min-w-0 truncate">{label}</span>
       <span
         className={cn(
           "text-xs font-mono tabular-nums min-w-[2rem] text-right",
@@ -307,8 +115,8 @@ function ReferenceRow({ reference: r }: { reference: ProjectReference }) {
 }
 
 interface CategoryGroup {
-  category: string;
-  refs: ProjectReference[];
+  group: GroupId;
+  refs: ResolvedRef[];
   totalCount: number;
 }
 
@@ -321,27 +129,29 @@ function CategorySection({
 }) {
   const visibleRefs = showEmpty
     ? group.refs
-    : group.refs.filter((r) => r.rowCount > 0);
+    : group.refs.filter((r) => r.ref.rowCount > 0);
 
   if (visibleRefs.length === 0) return null;
 
-  const bg = CATEGORY_BG_COLORS[group.category] ?? "bg-muted/20";
-  const color = CATEGORY_COLORS[group.category] ?? "text-muted-foreground";
-
   return (
     <div className="space-y-0.5">
-      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-sm ${bg}`}>
+      <div
+        className={`flex items-center gap-1.5 px-2 py-1 rounded-sm ${groupBgClass(group.group)}`}
+      >
         <span
-          className={`text-xs font-semibold uppercase tracking-wide ${color}`}
+          className={`text-xs font-semibold uppercase tracking-wide ${groupColorClass(group.group)}`}
         >
-          {group.category}
+          {groupTitle(group.group)}
         </span>
         <span className="text-xs text-muted-foreground ml-auto">
           {group.totalCount > 0 && group.totalCount.toLocaleString()}
         </span>
       </div>
-      {visibleRefs.map((r) => (
-        <ReferenceRow key={`${r.schemaName}.${r.tableName}`} reference={r} />
+      {visibleRefs.map((resolved) => (
+        <ReferenceRow
+          key={`${resolved.ref.schemaName}.${resolved.ref.tableName}`}
+          resolved={resolved}
+        />
       ))}
     </div>
   );
@@ -388,41 +198,24 @@ export function ProjectReferencesPanel({
   const [showEmpty, setShowEmpty] = useState(false);
 
   const { groups, totalItems, populatedCount, emptyCount } = useMemo(() => {
-    const categoryMap = new Map<string, ProjectReference[]>();
+    const byGroup = new Map<GroupId, ResolvedRef[]>();
 
     for (const r of references) {
-      const meta = getTableMeta(r.tableName);
-      const cat = meta.category;
-      if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-      categoryMap.get(cat)!.push(r);
+      const resolved = resolveRef(r);
+      if (!byGroup.has(resolved.group)) byGroup.set(resolved.group, []);
+      byGroup.get(resolved.group)!.push(resolved);
     }
 
     const orderedGroups: CategoryGroup[] = [];
-    const seen = new Set<string>();
-
-    for (const cat of CATEGORY_ORDER) {
-      if (categoryMap.has(cat)) {
-        const refs = categoryMap
-          .get(cat)!
-          .sort((a, b) => b.rowCount - a.rowCount);
-        orderedGroups.push({
-          category: cat,
-          refs,
-          totalCount: refs.reduce((s, r) => s + r.rowCount, 0),
-        });
-        seen.add(cat);
-      }
-    }
-
-    // Any categories not in CATEGORY_ORDER
-    for (const [cat, refs] of categoryMap.entries()) {
-      if (!seen.has(cat)) {
-        orderedGroups.push({
-          category: cat,
-          refs: refs.sort((a, b) => b.rowCount - a.rowCount),
-          totalCount: refs.reduce((s, r) => s + r.rowCount, 0),
-        });
-      }
+    for (const group of GROUP_ORDER) {
+      const refs = byGroup.get(group);
+      if (!refs) continue;
+      refs.sort((a, b) => b.ref.rowCount - a.ref.rowCount);
+      orderedGroups.push({
+        group,
+        refs,
+        totalCount: refs.reduce((s, r) => s + r.ref.rowCount, 0),
+      });
     }
 
     const totalItems = references.reduce((s, r) => s + r.rowCount, 0);
@@ -480,7 +273,7 @@ export function ProjectReferencesPanel({
         <div className="space-y-3">
           {groups.map((group) => (
             <CategorySection
-              key={group.category}
+              key={group.group}
               group={group}
               showEmpty={showEmpty}
             />
