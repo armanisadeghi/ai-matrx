@@ -4,6 +4,7 @@ import type {
   FilesystemStat,
   FilesystemWatchEvent,
 } from "../types";
+import type { FilesystemSizeSummary } from "../utils/filesystem-properties";
 
 /**
  * Adapter interface for all filesystem sources.
@@ -36,6 +37,14 @@ export interface FilesystemAdapter {
 
   /** Optional — single-file stat. */
   stat?(path: string): Promise<FilesystemStat>;
+  /**
+   * Optional — recursive disk usage for a directory. Sandboxes prefer `du`;
+   * simpler adapters may walk `listChildren`.
+   */
+  computeSize?(
+    path: string,
+    opts?: { signal?: AbortSignal },
+  ): Promise<FilesystemSizeSummary>;
   /** Optional — read a binary file as base64. */
   readFileBinary?(path: string): Promise<string>;
   /** Optional — write base64-encoded binary content. */

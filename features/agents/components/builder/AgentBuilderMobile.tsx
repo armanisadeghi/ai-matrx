@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AgentBuilderLeftPanel } from "./AgentBuilderLeftPanel";
 import { AgentBuilderRightPanel } from "./AgentBuilderRightPanel";
+import { AgentBuilderReadOnlyFrame } from "./AgentBuilderReadOnlyFrame";
 import { cn } from "@/lib/utils";
 
 interface AgentBuilderMobileProps {
@@ -38,7 +39,9 @@ export function AgentBuilderMobile({ agentId }: AgentBuilderMobileProps) {
       <div className="flex-1 overflow-hidden">
         {activeTab === "build" ? (
           <div className="h-full overflow-y-auto p-4">
-            <AgentBuilderLeftPanel agentId={agentId} />
+            <AgentBuilderReadOnlyFrame agentId={agentId} className="min-h-full">
+              <AgentBuilderLeftPanel agentId={agentId} />
+            </AgentBuilderReadOnlyFrame>
           </div>
         ) : (
           <AgentBuilderRightPanel agentId={agentId} />

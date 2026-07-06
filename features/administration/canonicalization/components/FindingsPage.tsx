@@ -8,13 +8,16 @@ import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { GateStatusBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { isCanonicalFindingRow, type CanonicalFindingRow } from "../types";
+import { FINDINGS_TABLE_COPY } from "../utils/aiExport";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function FindingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { rows, loading, reload } =
-    useAuditDataset<CanonicalFindingRow>("findings", isCanonicalFindingRow);
+  const { rows, loading, reload } = useAuditDataset<CanonicalFindingRow>(
+    "findings",
+    isCanonicalFindingRow,
+  );
 
   const statusParam = searchParams.get("status");
   const initialColumnFilters = useMemo<
@@ -100,6 +103,7 @@ export function FindingsPage() {
           defaultSort={{ key: "schema_name", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}
           emptyMessage="No findings — the gate is clean."
+          copyForAi={FINDINGS_TABLE_COPY}
           onRowClick={(row) => {
             if (!row.schema_name || !row.table_name || !row.token) return;
             router.push(

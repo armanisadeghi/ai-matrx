@@ -21,6 +21,12 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { BoolBadge } from "./StatusBadge";
 import type { KnownTableRef, TableImpactRow } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  TABLE_IMPACT_TABLE_COPY,
+  tableImpactRunToAgentInput,
+  tableImpactRunToHuman,
+} from "../utils/aiExport";
 
 function isKnownTableRef(v: unknown): v is KnownTableRef {
   return (
@@ -111,6 +117,19 @@ export function TableImpactPanel() {
 
   const brokenCount = rows.filter((r) => r.currently_broken).length;
 
+  const parsedTarget = parseSchemaTable(input);
+  const impactSnapshot = useMemo(
+    () =>
+      parsedTarget && hasRun
+        ? {
+            schema: parsedTarget[0],
+            table: parsedTarget[1],
+            rows,
+          }
+        : null,
+    [parsedTarget, hasRun, rows],
+  );
+
   const columns: AuditColumnDef<TableImpactRow>[] = useMemo(
     () => [
       {
@@ -187,6 +206,14 @@ export function TableImpactPanel() {
           )}
           Run preflight
         </Button>
+        {impactSnapshot && impactSnapshot.rows.length > 0 ? (
+          <CopyButtons
+            size="sm"
+            label={`Table impact · ${impactSnapshot.schema}.${impactSnapshot.table}`}
+            human={() => tableImpactRunToHuman(impactSnapshot)}
+            agent={() => tableImpactRunToAgentInput(impactSnapshot)}
+          />
+        ) : null}
       </div>
 
       {hasRun && brokenCount > 0 ? (
@@ -209,6 +236,7 @@ export function TableImpactPanel() {
               ? "No dependent functions found."
               : "Enter a table above and run preflight."
           }
+          copyForAi={TABLE_IMPACT_TABLE_COPY}
         />
       </div>
     </div>

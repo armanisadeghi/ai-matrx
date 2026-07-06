@@ -100,6 +100,8 @@ interface RailItem {
   tone?: RailTone;
   /** Tiny spinner instead of a static state (e.g. saving). */
   busy?: boolean;
+  /** Pill's detail surface is currently open. */
+  active?: boolean;
   onOpen: () => void;
 }
 
@@ -187,9 +189,40 @@ export function ConversationContextRail({
   const [listsOpen, setListsOpen] = useState(false);
   const layerDrawer = useContextItemDrawer();
 
-  const openEntry = (key: string, snapshotValue?: unknown) => {
+  const closeOtherSurfaces = () => {
+    setListsOpen(false);
+    layerDrawer.setOpen(false);
+  };
+
+  /** Same pill again → close; different pill → switch. */
+  const toggleEntry = (key: string, snapshotValue?: unknown) => {
+    if (detailOpen && activeEntry?.key === key) {
+      setDetailOpen(false);
+      return;
+    }
+    closeOtherSurfaces();
     setActiveEntry({ key, snapshotValue });
     setDetailOpen(true);
+  };
+
+  const toggleLists = () => {
+    if (listsOpen) {
+      setListsOpen(false);
+      return;
+    }
+    setDetailOpen(false);
+    layerDrawer.setOpen(false);
+    setListsOpen(true);
+  };
+
+  const toggleLayers = () => {
+    if (layerDrawer.open) {
+      layerDrawer.setOpen(false);
+      return;
+    }
+    setDetailOpen(false);
+    setListsOpen(false);
+    layerDrawer.openAt(layers.items, 0);
   };
 
   // ── Assemble the rail in priority order ────────────────────────────────────
@@ -205,7 +238,8 @@ export function ConversationContextRail({
         tone: "primary",
         busy: workingDocSaving,
         detail: workingDocSaving ? undefined : "Live",
-        onOpen: () => openEntry(WORKING_DOCUMENT_CONTEXT_KEY),
+        active: detailOpen && activeEntry?.key === WORKING_DOCUMENT_CONTEXT_KEY,
+        onOpen: () => toggleEntry(WORKING_DOCUMENT_CONTEXT_KEY),
       });
     }
     if (showScratchPill) {
@@ -218,7 +252,8 @@ export function ConversationContextRail({
           attachedScratchIds.length > 0
             ? `+${attachedScratchIds.length}`
             : undefined,
-        onOpen: () => openEntry(USER_SCRATCHPAD_CONTEXT_KEY),
+        active: detailOpen && activeEntry?.key === USER_SCRATCHPAD_CONTEXT_KEY,
+        onOpen: () => toggleEntry(USER_SCRATCHPAD_CONTEXT_KEY),
       });
     }
 
@@ -234,7 +269,8 @@ export function ConversationContextRail({
             : open > 0
               ? `${open} todo${open === 1 ? "" : "s"}`
               : undefined,
-        onOpen: () => setListsOpen(true),
+        active: listsOpen,
+        onOpen: toggleLists,
       });
     }
 
@@ -244,7 +280,8 @@ export function ConversationContextRail({
         icon: Layers,
         label: layers.summary,
         detail: layers.count > 1 ? String(layers.count) : undefined,
-        onOpen: () => layerDrawer.openAt(layers.items, 0),
+        active: layerDrawer.open,
+        onOpen: toggleLayers,
       });
     }
 
@@ -258,12 +295,12 @@ export function ConversationContextRail({
         id: `ctx:${e.key}`,
         icon: Icon,
         label: e.label?.trim() || e.key,
-        onOpen: () => openEntry(e.key, e.value),
+        active: detailOpen && activeEntry?.key === e.key,
+        onOpen: () => toggleEntry(e.key, e.value),
       });
     }
 
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     entries,
     hasLists,
@@ -279,6 +316,10 @@ export function ConversationContextRail({
     scratchTitle,
     scratchSaving,
     attachedScratchIds.length,
+    detailOpen,
+    activeEntry?.key,
+    listsOpen,
+    layerDrawer.open,
   ]);
 
   // ── Inline vs overflow split. Keep the highest-priority pills visible; fold
@@ -409,9 +450,13 @@ function RailPill({ item }: { item: RailItem }) {
       className={cn(
         "group inline-flex h-7 min-w-0 max-w-[10rem] items-center gap-1.5 rounded-full border px-2.5",
         "text-xs font-medium transition-colors",
-        item.tone === "primary"
-          ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-          : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        item.active
+          ? item.tone === "primary"
+            ? "border-primary bg-primary/15 text-primary ring-1 ring-inset ring-primary/30"
+            : "border-foreground/20 bg-muted text-foreground ring-1 ring-inset ring-foreground/10"
+          : item.tone === "primary"
+            ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+            : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground",
       )}
     >
       {item.busy ? (

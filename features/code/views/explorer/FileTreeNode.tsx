@@ -10,6 +10,7 @@ import {
   RefreshCw,
   FilePlus,
   FolderPlus,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -17,9 +18,14 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu/context-menu";
+import { formatFileSize } from "@/features/files/utils/format";
+import { formatRelativeTime } from "@/utils/datetime";
+import { FilesystemPropertiesDialog } from "./FilesystemPropertiesDialog";
+import { fetchFilesystemProperties } from "../../utils/filesystem-properties";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { FilesystemAdapter } from "../../adapters/FilesystemAdapter";
 import type { FilesystemNode } from "../../types";
@@ -87,6 +93,8 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   const [createValue, setCreateValue] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
+  const [menuSummary, setMenuSummary] = useState<string[]>([]);
 
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const createInputRef = useRef<HTMLInputElement | null>(null);
@@ -291,14 +299,54 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
     invalidate(node.path);
   }, [invalidate, node.path]);
 
+  const handleContextMenuOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        setMenuSummary([]);
+        return;
+      }
+
+      const lines: string[] = [];
+      if (!isDir && node.size != null) {
+        lines.push(formatFileSize(node.size));
+      }
+      if (node.modifiedAt) {
+        lines.push(formatRelativeTime(node.modifiedAt));
+      }
+      setMenuSummary(lines);
+
+      void fetchFilesystemProperties(adapter, node)
+        .then((props) => {
+          const next: string[] = [];
+          if (props.kind === "file" && props.sizeBytes != null) {
+            next.push(formatFileSize(props.sizeBytes));
+          } else if (props.kind === "directory" && props.childCount != null) {
+            next.push(
+              `${props.childCount} ${props.childCount === 1 ? "item" : "items"}`,
+            );
+          }
+          if (props.modifiedAt) {
+            next.push(formatRelativeTime(props.modifiedAt));
+          }
+          if (props.permissions) {
+            next.push(props.permissions);
+          }
+          setMenuSummary(next);
+        })
+        .catch(() => {
+          // Keep list-derived summary lines when stat/list fails.
+        });
+    },
+    [adapter, isDir, node],
+  );
+
   const startCreate = useCallback(
     (kind: CreateKind) => {
       // Only directories accept new children. Auto-expand so the user sees
       // the input field immediately.
       if (!isDir) return;
       if (!expanded) onToggle(node.path);
-      const initialName =
-        kind === "file" ? "untitled.txt" : "new-folder";
+      const initialName = kind === "file" ? "untitled.txt" : "new-folder";
       setPendingCreate({ kind, initialName });
       setCreateValue(initialName);
     },
@@ -333,9 +381,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
       }
       invalidate(node.path);
     } catch (err) {
-      toast.error(
-        `Create failed: ${extractErrorMessage(err)}`,
-      );
+      toast.error(`Create failed: ${extractErrorMessage(err)}`);
     } finally {
       setBusy(false);
       setPendingCreate(null);
@@ -356,7 +402,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
 
   return (
     <div className="select-none">
-      <ContextMenu>
+      <ContextMenu onOpenChange={handleContextMenuOpenChange}>
         <ContextMenuTrigger asChild>
           <div
             role="treeitem"
@@ -377,7 +423,8 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               dragOver &&
                 "bg-blue-100 outline outline-1 outline-blue-400 dark:bg-blue-950/60",
               !renaming && "cursor-pointer rounded-sm",
-              renaming && "rounded-sm bg-card outline outline-1 outline-blue-400",
+              renaming &&
+                "rounded-sm bg-card outline outline-1 outline-blue-400",
             )}
             style={indentStyle}
           >
@@ -419,7 +466,24 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
             )}
           </div>
         </ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
+        <ContextMenuContent className="w-52">
+          {menuSummary.length > 0 && (
+            <>
+              {menuSummary.map((line) => (
+                <ContextMenuLabel
+                  key={line}
+                  className="py-0.5 text-[11px] font-normal text-muted-foreground"
+                >
+                  {line}
+                </ContextMenuLabel>
+              ))}
+              <ContextMenuSeparator />
+            </>
+          )}
+          <ContextMenuItem onSelect={() => setPropertiesOpen(true)}>
+            <Info className="mr-2 h-3.5 w-3.5" /> Properties…
+          </ContextMenuItem>
+          <ContextMenuSeparator />
           {isDir && (
             <>
               <ContextMenuItem onSelect={() => startCreate("file")}>
@@ -433,7 +497,9 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
           )}
           <ContextMenuItem onSelect={startRename}>
             <Pencil className="mr-2 h-3.5 w-3.5" /> Rename
-            <span className="ml-auto text-[10px] text-muted-foreground">F2</span>
+            <span className="ml-auto text-[10px] text-muted-foreground">
+              F2
+            </span>
           </ContextMenuItem>
           <ContextMenuItem
             onSelect={() => setConfirmingDelete(true)}
@@ -527,6 +593,13 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         </div>
       )}
 
+      <FilesystemPropertiesDialog
+        node={node}
+        adapter={adapter}
+        open={propertiesOpen}
+        onOpenChange={setPropertiesOpen}
+      />
+
       <ConfirmDialog
         open={confirmingDelete}
         onOpenChange={(open) => {
@@ -535,7 +608,8 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         title={`Delete ${isDir ? "folder" : "file"}`}
         description={
           <>
-            Permanently delete <strong className="font-mono">{node.name}</strong>
+            Permanently delete{" "}
+            <strong className="font-mono">{node.name}</strong>
             {isDir ? " and everything inside it" : ""}? This cannot be undone.
           </>
         }

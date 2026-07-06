@@ -585,6 +585,23 @@ export const selectAgentIsEditable = createSelector(
   },
 );
 
+/** True once access metadata is resolved enough to gate edit UI. */
+export const selectAgentAccessResolved = createSelector(
+  [selectAgentById],
+  (record): boolean => record?.accessLevel != null || record?.isOwner === true,
+);
+
+/** True when the user has read-only access (viewer/public/none) — not while loading. */
+export const selectAgentIsReadOnly = createSelector(
+  [selectAgentById],
+  (record): boolean => {
+    if (record?.isOwner === true) return false;
+    const level = record?.accessLevel;
+    if (level == null) return false;
+    return level === "viewer" || level === "public" || level === "none";
+  },
+);
+
 /** True when we know the user is at least a viewer (any known access). */
 export const selectAgentIsAccessible = createSelector(
   [selectAgentById],

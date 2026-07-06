@@ -184,6 +184,8 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
         {agentId ? (
           <AgentRunnerPage
             agentId={agentId}
+            sourceFeature="code-editor"
+            surfaceKey={`agent-runner:${agentId}`}
             basePath={basePath}
             backHref={basePath}
             buildConversationUrl={buildConversationUrl}

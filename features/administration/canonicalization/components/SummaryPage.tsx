@@ -8,22 +8,35 @@ import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { BoolBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { isAuditSummaryRow, type AuditSummaryRow } from "../types";
+import { SUMMARY_TABLE_COPY } from "../utils/aiExport";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function SummaryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { rows, loading, reload } = useAuditDataset<AuditSummaryRow>("summary", isAuditSummaryRow);
+  const { rows, loading, reload } = useAuditDataset<AuditSummaryRow>(
+    "summary",
+    isAuditSummaryRow,
+  );
 
   const onlyUncertified = searchParams.get("onlyUncertified") === "1";
-  const initialColumnFilters = useMemo<Record<string, ColumnFilter> | undefined>(
-    () => (onlyUncertified ? { certified: { enumValues: ["false"] } } : undefined),
+  const initialColumnFilters = useMemo<
+    Record<string, ColumnFilter> | undefined
+  >(
+    () =>
+      onlyUncertified ? { certified: { enumValues: ["false"] } } : undefined,
     [onlyUncertified],
   );
 
   const columns: AuditColumnDef<AuditSummaryRow>[] = useMemo(
     () => [
-      { key: "schema_name", label: "Schema", type: "text", getValue: (r) => r.schema_name, width: "140px" },
+      {
+        key: "schema_name",
+        label: "Schema",
+        type: "text",
+        getValue: (r) => r.schema_name,
+        width: "140px",
+      },
       {
         key: "table_name",
         label: "Table",
@@ -41,15 +54,35 @@ export function SummaryPage() {
         monospace: true,
         copyable: true,
       },
-      { key: "fails", label: "Fails", type: "number", getValue: (r) => r.fails, width: "90px", align: "right" },
-      { key: "warns", label: "Warns", type: "number", getValue: (r) => r.warns, width: "90px", align: "right" },
+      {
+        key: "fails",
+        label: "Fails",
+        type: "number",
+        getValue: (r) => r.fails,
+        width: "90px",
+        align: "right",
+      },
+      {
+        key: "warns",
+        label: "Warns",
+        type: "number",
+        getValue: (r) => r.warns,
+        width: "90px",
+        align: "right",
+      },
       {
         key: "certified",
         label: "Certified",
         type: "enum",
         getValue: (r) => String(r.certified),
         width: "130px",
-        render: (r) => <BoolBadge value={r.certified} trueLabel="Certified" falseLabel="Not certified" />,
+        render: (r) => (
+          <BoolBadge
+            value={r.certified}
+            trueLabel="Certified"
+            falseLabel="Not certified"
+          />
+        ),
       },
     ],
     [],
@@ -67,6 +100,7 @@ export function SummaryPage() {
           defaultSort={{ key: "fails", dir: "desc" }}
           initialColumnFilters={initialColumnFilters}
           emptyMessage="No registered tables found."
+          copyForAi={SUMMARY_TABLE_COPY}
           onRowClick={(row) =>
             router.push(
               `/administration/canonicalization/verify?schema=${encodeURIComponent(row.schema_name)}&table=${encodeURIComponent(row.table_name)}&token=${encodeURIComponent(row.token)}`,

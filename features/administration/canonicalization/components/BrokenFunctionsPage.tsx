@@ -9,12 +9,15 @@ import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { GateStatusBadge } from "./StatusBadge";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { isBrokenFunctionRow, type BrokenFunctionRow } from "../types";
+import { BROKEN_FUNCTIONS_TABLE_COPY } from "../utils/aiExport";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function BrokenFunctionsPage() {
   const searchParams = useSearchParams();
-  const { rows, loading, reload } =
-    useAuditDataset<BrokenFunctionRow>("broken-functions", isBrokenFunctionRow);
+  const { rows, loading, reload } = useAuditDataset<BrokenFunctionRow>(
+    "broken-functions",
+    isBrokenFunctionRow,
+  );
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<
@@ -119,6 +122,7 @@ export function BrokenFunctionsPage() {
           defaultSort={{ key: "schema_name", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}
           emptyMessage="No broken functions found."
+          copyForAi={BROKEN_FUNCTIONS_TABLE_COPY}
         />
       </div>
     </div>

@@ -64,7 +64,14 @@ interface SettingsReviewTarget {
 }
 
 type SortField =
-  "model" | "provider" | "model_class" | "prompts" | "builtins" | "total";
+  | "model"
+  | "provider"
+  | "model_class"
+  | "prompts"
+  | "builtins"
+  | "agents"
+  | "templates"
+  | "total";
 type SortDir = "asc" | "desc";
 
 function SortIcon({
@@ -188,7 +195,9 @@ export default function DeprecatedModelsAudit({
 
   const totalUsage = (entry: DeprecatedEntry) =>
     (entry.usage?.prompts.length ?? 0) +
-    (entry.usage?.promptBuiltins.length ?? 0);
+    (entry.usage?.promptBuiltins.length ?? 0) +
+    (entry.usage?.agents.length ?? 0) +
+    (entry.usage?.agentTemplates.length ?? 0);
 
   const updateEntry = (modelId: string, patch: Partial<DeprecatedEntry>) => {
     setEntries((prev) =>
@@ -262,6 +271,14 @@ export default function DeprecatedModelsAudit({
             (a.usage?.promptBuiltins.length ?? 0) -
             (b.usage?.promptBuiltins.length ?? 0);
           break;
+        case "agents":
+          cmp = (a.usage?.agents.length ?? 0) - (b.usage?.agents.length ?? 0);
+          break;
+        case "templates":
+          cmp =
+            (a.usage?.agentTemplates.length ?? 0) -
+            (b.usage?.agentTemplates.length ?? 0);
+          break;
         case "total":
           cmp = totalUsage(a) - totalUsage(b);
           break;
@@ -307,7 +324,11 @@ export default function DeprecatedModelsAudit({
     } else {
       setSortBy(field);
       setSortDir(
-        field === "total" || field === "prompts" || field === "builtins"
+        field === "total" ||
+          field === "prompts" ||
+          field === "builtins" ||
+          field === "agents" ||
+          field === "templates"
           ? "desc"
           : "asc",
       );
@@ -327,16 +348,10 @@ export default function DeprecatedModelsAudit({
     if (!entry.replacementId) return;
     updateEntry(entry.model.id, { replacing: true, error: null });
     try {
-      await Promise.all([
-        aiModelService.replaceModelInPrompts(
-          entry.model.id,
-          entry.replacementId,
-        ),
-        aiModelService.replaceModelInBuiltins(
-          entry.model.id,
-          entry.replacementId,
-        ),
-      ]);
+      await aiModelService.replaceModelReferences(
+        entry.model.id,
+        entry.replacementId,
+      );
       updateEntry(entry.model.id, { replacing: false, replaced: true });
       onModelsChanged();
     } catch (err) {
@@ -357,18 +372,11 @@ export default function DeprecatedModelsAudit({
     updateEntry(entry.model.id, { replacing: true, error: null });
     setSettingsTarget(null);
     try {
-      await Promise.all([
-        aiModelService.replaceModelInPrompts(
-          entry.model.id,
-          entry.replacementId,
-          settings,
-        ),
-        aiModelService.replaceModelInBuiltins(
-          entry.model.id,
-          entry.replacementId,
-          settings,
-        ),
-      ]);
+      await aiModelService.replaceModelReferences(
+        entry.model.id,
+        entry.replacementId,
+        settings,
+      );
       updateEntry(entry.model.id, { replacing: false, replaced: true });
       onModelsChanged();
     } catch (err) {
@@ -386,18 +394,11 @@ export default function DeprecatedModelsAudit({
     try {
       await Promise.all(
         entriesReadyForBulk.map((entry) =>
-          Promise.all([
-            aiModelService.replaceModelInPrompts(
-              entry.model.id,
-              entry.replacementId,
-            ),
-            aiModelService.replaceModelInBuiltins(
-              entry.model.id,
-              entry.replacementId,
-            ),
-          ]).then(() => {
-            updateEntry(entry.model.id, { replaced: true });
-          }),
+          aiModelService
+            .replaceModelReferences(entry.model.id, entry.replacementId!)
+            .then(() => {
+              updateEntry(entry.model.id, { replaced: true });
+            }),
         ),
       );
       onModelsChanged();
@@ -642,6 +643,16 @@ export default function DeprecatedModelsAudit({
                   label="Builtins"
                   className="w-20 text-center"
                 />
+                <Th
+                  field="agents"
+                  label="Agents"
+                  className="w-20 text-center"
+                />
+                <Th
+                  field="templates"
+                  label="Templates"
+                  className="w-20 text-center"
+                />
                 <Th field="total" label="Total" className="w-16 text-center" />
                 <th className="px-3 py-2 text-left font-semibold text-muted-foreground">
                   Replace With
@@ -660,6 +671,8 @@ export default function DeprecatedModelsAudit({
                 );
                 const promptCount = entry.usage?.prompts.length ?? 0;
                 const builtinCount = entry.usage?.promptBuiltins.length ?? 0;
+                const agentCount = entry.usage?.agents.length ?? 0;
+                const templateCount = entry.usage?.agentTemplates.length ?? 0;
 
                 return (
                   <tr
@@ -723,6 +736,42 @@ export default function DeprecatedModelsAudit({
                           }
                         >
                           {builtinCount}
+                        </Badge>
+                      )}
+                    </td>
+
+                    {/* Agents count */}
+                    <td className="px-3 py-1.5 text-center">
+                      {entry.loading ? (
+                        <RefreshCcw className="h-3 w-3 animate-spin mx-auto text-muted-foreground" />
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className={
+                            agentCount > 0
+                              ? "text-amber-700 dark:text-amber-300 border-amber-300"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {agentCount}
+                        </Badge>
+                      )}
+                    </td>
+
+                    {/* Templates count */}
+                    <td className="px-3 py-1.5 text-center">
+                      {entry.loading ? (
+                        <RefreshCcw className="h-3 w-3 animate-spin mx-auto text-muted-foreground" />
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className={
+                            templateCount > 0
+                              ? "text-amber-700 dark:text-amber-300 border-amber-300"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {templateCount}
                         </Badge>
                       )}
                     </td>

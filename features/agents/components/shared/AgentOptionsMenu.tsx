@@ -67,6 +67,10 @@ import {
   type DuplicateOutcomeState,
 } from "./AgentDuplicateOutcomeDialog";
 import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
+import {
+  ADMIN_SYSTEM_AGENTS_BASE_PATH,
+  isAdminSystemAgentsContext,
+} from "@/features/agents/components/shared/agent-route-context";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -167,11 +171,6 @@ function comingSoon() {
  *  - opt the duplicate RPC into `asSystem` mode (preserves builtin lineage)
  *  - keep navigation that bounces off this menu inside the admin shell
  */
-const ADMIN_SYSTEM_AGENTS_BASE_PATH = "/administration/system-agents/agents";
-
-function isAdminSystemAgentsContext(basePath: string): boolean {
-  return basePath === ADMIN_SYSTEM_AGENTS_BASE_PATH;
-}
 
 function SoonBadge() {
   return (

@@ -33,9 +33,13 @@ export function AgentSaveStatus({
     isNewRoute,
     isEditMode,
     canSave,
+    isReadOnly,
+    isReadOnlySave,
     handleSave,
     showModelWarning,
     setShowModelWarning,
+    readOnlySavePrompt,
+    duplicateDialog,
   } = useAgentSaveAction(agentId, { editModeOverride });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -52,6 +56,12 @@ export function AgentSaveStatus({
         {version != null && (
           <span className="text-[10px] font-medium text-muted-foreground tabular-nums px-1.5 py-0.5 rounded bg-muted/60">
             v{version}
+          </span>
+        )}
+
+        {isEditMode && isReadOnly && (
+          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
+            View only
           </span>
         )}
 
@@ -83,11 +93,13 @@ export function AgentSaveStatus({
                 : "text-muted-foreground/40 cursor-not-allowed",
             )}
             title={
-              isNewRoute
-                ? "Save new agent"
-                : isDirty
-                  ? "Save changes"
-                  : "No unsaved changes"
+              isReadOnlySave
+                ? "View only — create your copy to save changes"
+                : isNewRoute
+                  ? "Save new agent"
+                  : isDirty
+                    ? "Save changes"
+                    : "No unsaved changes"
             }
           >
             {isLoading ? (
@@ -137,6 +149,9 @@ export function AgentSaveStatus({
       >
         {showDiff && <UnsavedChangesDiff agentId={agentId} />}
       </MatrxDynamicPanelHost>
+
+      {readOnlySavePrompt}
+      {duplicateDialog}
     </>
   );
 }

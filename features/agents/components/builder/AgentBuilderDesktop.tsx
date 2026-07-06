@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { AgentBuilderLeftPanel } from "./AgentBuilderLeftPanel";
 import { AgentBuilderRightPanel } from "./AgentBuilderRightPanel";
+import { AgentBuilderReadOnlyFrame } from "./AgentBuilderReadOnlyFrame";
 import { RightPanelSkeleton } from "./AgentBuilderSkeletons";
 
 interface AgentBuilderDesktopProps {
@@ -14,7 +15,9 @@ export function AgentBuilderDesktop({ agentId }: AgentBuilderDesktopProps) {
         className="flex-1 min-w-0 h-full overflow-hidden max-w-[640px] px-2"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
-        <AgentBuilderLeftPanel agentId={agentId} />
+        <AgentBuilderReadOnlyFrame agentId={agentId} className="h-full">
+          <AgentBuilderLeftPanel agentId={agentId} />
+        </AgentBuilderReadOnlyFrame>
       </div>
       <div className="flex-1 min-w-0 h-full overflow-hidden flex justify-center">
         <div className="w-full max-w-3xl h-full pt-12">

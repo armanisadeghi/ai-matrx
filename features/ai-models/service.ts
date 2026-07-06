@@ -24,6 +24,41 @@ import type {
 } from "./types";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
+type ReplaceModelReferencesResult = {
+  agents: number;
+  builtins: number;
+  templates: number;
+};
+
+async function replaceModelReferencesViaAdmin(
+  oldId: string,
+  newId: string,
+  newSettings?: LLMParams,
+): Promise<ReplaceModelReferencesResult> {
+  const response = await fetch("/api/admin/ai-models/replace-references", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      oldModelId: oldId,
+      newModelId: newId,
+      newSettings,
+    }),
+  });
+
+  const payload = (await response.json()) as ReplaceModelReferencesResult & {
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? "Failed to replace model references.");
+  }
+
+  return payload;
+}
+
 // Minimal row shapes for the agent.definition / agent.template usage queries.
 // Pinned via `.returns<>()` because the large cross-schema FK graph (added in the
 // 2026 reorg) pushes the inferred `.select().or()` result past TS's recursion
@@ -121,7 +156,10 @@ export const aiModelService = {
     return data as unknown as AiProvider;
   },
 
-  async updateProvider(id: string, payload: AiProviderUpdate): Promise<AiProvider> {
+  async updateProvider(
+    id: string,
+    payload: AiProviderUpdate,
+  ): Promise<AiProvider> {
     const { data, error } = await supabase
       .schema("ai")
       .from("provider")
@@ -166,7 +204,10 @@ export const aiModelService = {
     return data as unknown as AiService;
   },
 
-  async updateService(id: string, payload: AiServiceUpdate): Promise<AiService> {
+  async updateService(
+    id: string,
+    payload: AiServiceUpdate,
+  ): Promise<AiService> {
     const { data, error } = await supabase
       .schema("ai")
       .from("service")
@@ -211,7 +252,10 @@ export const aiModelService = {
     return data as unknown as AiOffering;
   },
 
-  async updateOffering(id: string, payload: AiOfferingUpdate): Promise<AiOffering> {
+  async updateOffering(
+    id: string,
+    payload: AiOfferingUpdate,
+  ): Promise<AiOffering> {
     const { data, error } = await supabase
       .schema("ai")
       .from("offering")
@@ -268,7 +312,10 @@ export const aiModelService = {
     return data as unknown as AiSetting;
   },
 
-  async updateSetting(id: string, payload: AiSettingUpdate): Promise<AiSetting> {
+  async updateSetting(
+    id: string,
+    payload: AiSettingUpdate,
+  ): Promise<AiSetting> {
     const { data, error } = await supabase
       .schema("ai")
       .from("setting")
@@ -339,7 +386,7 @@ export const aiModelService = {
           .from("definition")
           .select("id, name, model_id")
           .or(
-            `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>primary_model_id.eq.${modelId}`,
+            `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>default.eq.${modelId}`,
           )
           .returns<AgentUsageRow[]>(),
         supabase
@@ -347,7 +394,7 @@ export const aiModelService = {
           .from("template")
           .select("id, name, model_id")
           .or(
-            `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>primary_model_id.eq.${modelId}`,
+            `model_id.eq.${modelId},settings->>model_id.eq.${modelId},model_tiers->>default.eq.${modelId}`,
           )
           .returns<AgentUsageRow[]>(),
       ]);
@@ -381,6 +428,14 @@ export const aiModelService = {
     return { prompts, promptBuiltins, agents, agentTemplates };
   },
 
+  async replaceModelReferences(
+    oldId: string,
+    newId: string,
+    newSettings?: LLMParams,
+  ): Promise<ReplaceModelReferencesResult> {
+    return replaceModelReferencesViaAdmin(oldId, newId, newSettings);
+  },
+
   async replaceModelInPrompts(
     _oldId: string,
     _newId: string,
@@ -399,42 +454,12 @@ export const aiModelService = {
     newId: string,
     newSettings?: LLMParams,
   ): Promise<number> {
-    // prompt_builtins migrated 1:1 to agent.definition (agent_type='builtin'), same UUIDs
-    const { data: rows, error: fetchErr } = await supabase
-      .schema("agent")
-      .from("definition")
-      .select("id, model_id, settings")
-      .eq("agent_type", "builtin")
-      .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`)
-      .returns<AgentBuiltinSettingsRow[]>();
-    if (fetchErr) throw fetchErr;
-    if (!rows || rows.length === 0) return 0;
-
-    const updates = rows.map((row) => {
-      const hasColumn = row.model_id === oldId;
-      // When newSettings provided, replace entire settings object (strip old model's stale keys).
-      // Otherwise patch only model_id into existing settings.
-      const settings = newSettings
-        ? { ...newSettings, model_id: newId }
-        : typeof row.settings === "object" && row.settings !== null
-          ? { ...(row.settings as Record<string, unknown>), model_id: newId }
-          : { model_id: newId };
-      const payload: Database["agent"]["Tables"]["definition"]["Update"] = {
-        settings,
-      };
-      if (hasColumn) payload.model_id = newId;
-      return supabase
-        .schema("agent")
-        .from("definition")
-        .update(payload)
-        .eq("id", row.id);
-    });
-
-    const results = await Promise.all(updates);
-    const firstError = results.find((r) => r.error);
-    if (firstError?.error) throw firstError.error;
-
-    return rows.length;
+    const result = await replaceModelReferencesViaAdmin(
+      oldId,
+      newId,
+      newSettings,
+    );
+    return result.builtins;
   },
 
   async replaceModelInAgents(
@@ -442,37 +467,12 @@ export const aiModelService = {
     newId: string,
     newSettings?: LLMParams,
   ): Promise<number> {
-    const { data: rows, error: fetchErr } = await supabase
-      .schema("agent")
-      .from("definition")
-      .select("id, model_id, settings, model_tiers")
-      .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`);
-    if (fetchErr) throw fetchErr;
-    if (!rows || rows.length === 0) return 0;
-
-    const updates = rows.map((row) => {
-      const hasColumn = row.model_id === oldId;
-      const settings = newSettings
-        ? { ...newSettings, model_id: newId }
-        : typeof row.settings === "object" && row.settings !== null
-          ? { ...(row.settings as Record<string, unknown>), model_id: newId }
-          : { model_id: newId };
-      const payload: Database["agent"]["Tables"]["definition"]["Update"] = {
-        settings,
-      };
-      if (hasColumn) payload.model_id = newId;
-      return supabase
-        .schema("agent")
-        .from("definition")
-        .update(payload)
-        .eq("id", row.id);
-    });
-
-    const results = await Promise.all(updates);
-    const firstError = results.find((r) => r.error);
-    if (firstError?.error) throw firstError.error;
-
-    return rows.length;
+    const result = await replaceModelReferencesViaAdmin(
+      oldId,
+      newId,
+      newSettings,
+    );
+    return result.agents;
   },
 
   async replaceModelInAgentTemplates(
@@ -480,37 +480,12 @@ export const aiModelService = {
     newId: string,
     newSettings?: LLMParams,
   ): Promise<number> {
-    const { data: rows, error: fetchErr } = await supabase
-      .schema("agent")
-      .from("template")
-      .select("id, model_id, settings, model_tiers")
-      .or(`model_id.eq.${oldId},settings->>model_id.eq.${oldId}`);
-    if (fetchErr) throw fetchErr;
-    if (!rows || rows.length === 0) return 0;
-
-    const updates = rows.map((row) => {
-      const hasColumn = row.model_id === oldId;
-      const settings = newSettings
-        ? { ...newSettings, model_id: newId }
-        : typeof row.settings === "object" && row.settings !== null
-          ? { ...(row.settings as Record<string, unknown>), model_id: newId }
-          : { model_id: newId };
-      const payload: Database["agent"]["Tables"]["template"]["Update"] = {
-        settings,
-      };
-      if (hasColumn) payload.model_id = newId;
-      return supabase
-        .schema("agent")
-        .from("template")
-        .update(payload)
-        .eq("id", row.id);
-    });
-
-    const results = await Promise.all(updates);
-    const firstError = results.find((r) => r.error);
-    if (firstError?.error) throw firstError.error;
-
-    return rows.length;
+    const result = await replaceModelReferencesViaAdmin(
+      oldId,
+      newId,
+      newSettings,
+    );
+    return result.templates;
   },
 
   /** Bulk-patch a single field on multiple models in parallel */

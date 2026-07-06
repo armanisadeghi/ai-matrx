@@ -9,12 +9,25 @@ import {
   selectAgentVersion,
   selectAgentModelMissing,
   selectAgentById,
+  selectAgentIsReadOnly,
+  selectAgentAccessResolved,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   saveAgent,
   createAgent,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { toast } from "@/lib/toast-service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAgentDuplicateFlow } from "@/features/agents/hooks/useAgentDuplicateFlow";
 
 /**
  * Shared save behaviour for an agent record.
@@ -45,8 +58,20 @@ export function useAgentSaveAction(
   const agentRecord = useAppSelector((state) =>
     selectAgentById(state, agentId),
   );
+  const accessResolved = useAppSelector((state) =>
+    selectAgentAccessResolved(state, agentId),
+  );
+  const isReadOnly = useAppSelector((state) =>
+    selectAgentIsReadOnly(state, agentId),
+  );
 
   const [showModelWarning, setShowModelWarning] = useState(false);
+  const [readOnlySavePromptOpen, setReadOnlySavePromptOpen] = useState(false);
+  const {
+    startDuplicate,
+    dialog: duplicateDialog,
+    isDuplicating,
+  } = useAgentDuplicateFlow(agentId);
 
   const isNewRoute = pathname === "/agents/new";
   const isEditMode =
@@ -54,14 +79,18 @@ export function useAgentSaveAction(
     isNewRoute ||
     !!pathname?.includes(`/agents/${agentId}/build`);
   const canSave = (isDirty || isNewRoute) && !isLoading;
+  const isReadOnlySave = accessResolved && isReadOnly && !isNewRoute;
 
   const handleSave = async () => {
-    if (isLoading) return;
+    if (isLoading || isDuplicating) return;
+
+    if (isReadOnlySave) {
+      setReadOnlySavePromptOpen(true);
+      return;
+    }
 
     try {
       if (isNewRoute) {
-        // First-time save: INSERT into the DB using the in-state data, then
-        // redirect to the real agent route so the URL reflects the persisted id.
         if (!agentRecord) return;
         const newId = await dispatch(
           createAgent({
@@ -101,6 +130,39 @@ export function useAgentSaveAction(
     }
   };
 
+  const handleReadOnlyDuplicate = async () => {
+    setReadOnlySavePromptOpen(false);
+    await startDuplicate();
+  };
+
+  const readOnlySavePrompt = (
+    <AlertDialog
+      open={readOnlySavePromptOpen}
+      onOpenChange={setReadOnlySavePromptOpen}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>View-only agent</AlertDialogTitle>
+          <AlertDialogDescription>
+            This agent is shared with you as view-only, so changes cannot be
+            saved here. Create your own copy to edit it. Unsaved edits in this
+            session will not carry over — the copy starts from the last saved
+            version.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep browsing</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isDuplicating}
+            onClick={() => void handleReadOnlyDuplicate()}
+          >
+            Create my copy
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   return {
     isDirty,
     isLoading,
@@ -108,8 +170,12 @@ export function useAgentSaveAction(
     isNewRoute,
     isEditMode,
     canSave,
+    isReadOnly: accessResolved && isReadOnly,
+    isReadOnlySave,
     handleSave,
     showModelWarning,
     setShowModelWarning,
+    readOnlySavePrompt,
+    duplicateDialog,
   } as const;
 }

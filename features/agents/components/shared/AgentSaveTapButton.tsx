@@ -41,20 +41,26 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
     isNewRoute,
     isEditMode,
     canSave,
+    isReadOnly,
+    isReadOnlySave,
     handleSave,
     showModelWarning,
     setShowModelWarning,
+    readOnlySavePrompt,
+    duplicateDialog,
   } = useAgentSaveAction(agentId);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (!isEditMode) return null;
 
-  const ariaLabel = isNewRoute
-    ? "Save new agent"
-    : isDirty
-      ? "Save changes"
-      : "No unsaved changes";
+  const ariaLabel = isReadOnlySave
+    ? "View only — create your copy to save changes"
+    : isNewRoute
+      ? "Save new agent"
+      : isDirty
+        ? "Save changes"
+        : "No unsaved changes";
 
   const icon = isLoading ? (
     <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
@@ -122,6 +128,9 @@ export function AgentSaveTapButton({ agentId }: AgentSaveTapButtonProps) {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
       />
+
+      {readOnlySavePrompt}
+      {duplicateDialog}
     </>
   );
 }

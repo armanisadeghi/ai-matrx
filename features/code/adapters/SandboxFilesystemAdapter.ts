@@ -5,6 +5,11 @@ import type {
   FilesystemStat,
   FilesystemWatchEvent,
 } from "../types";
+import {
+  computeDirectorySizeViaDu,
+  computeDirectorySizeViaList,
+  type FilesystemSizeSummary,
+} from "../utils/filesystem-properties";
 
 interface DaemonEntry {
   name: string;
@@ -101,6 +106,15 @@ export class SandboxFilesystemAdapter implements FilesystemAdapter {
       return a.name.localeCompare(b.name);
     });
     return nodes;
+  }
+
+  async computeSize(
+    path: string,
+    opts?: { signal?: AbortSignal },
+  ): Promise<FilesystemSizeSummary> {
+    const viaDu = await computeDirectorySizeViaDu(this.instanceId, path, opts);
+    if (viaDu) return viaDu;
+    return computeDirectorySizeViaList(this, path, opts);
   }
 
   async stat(path: string): Promise<FilesystemStat> {

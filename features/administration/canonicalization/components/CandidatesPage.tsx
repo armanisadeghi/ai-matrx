@@ -25,18 +25,29 @@ import {
   type StaleRegistryRow,
   type UnregisteredCandidateRow,
 } from "../types";
+import {
+  M2M_CANDIDATES_TABLE_COPY,
+  STALE_REGISTRY_TABLE_COPY,
+  UNREGISTERED_CANDIDATES_TABLE_COPY,
+} from "../utils/aiExport";
 
 type CandidateView = "m2m" | "unregistered" | "stale";
 
 export function CandidatesPage() {
   const [view, setView] = useState<CandidateView>("m2m");
 
-  const m2m = useAuditDataset<M2mCandidateRow>("m2m-candidates", isM2mCandidateRow);
+  const m2m = useAuditDataset<M2mCandidateRow>(
+    "m2m-candidates",
+    isM2mCandidateRow,
+  );
   const unregistered = useAuditDataset<UnregisteredCandidateRow>(
     "unregistered-candidates",
     isUnregisteredCandidateRow,
   );
-  const stale = useAuditDataset<StaleRegistryRow>("stale-registry", isStaleRegistryRow);
+  const stale = useAuditDataset<StaleRegistryRow>(
+    "stale-registry",
+    isStaleRegistryRow,
+  );
 
   const m2mColumns: AuditColumnDef<M2mCandidateRow>[] = useMemo(
     () => [
@@ -183,7 +194,10 @@ export function CandidatesPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <CanonicalizationToolbar onReload={active.reload} reloading={active.loading} />
+      <CanonicalizationToolbar
+        onReload={active.reload}
+        reloading={active.loading}
+      />
 
       <div className="flex shrink-0 flex-wrap gap-2 px-4 pb-3">
         {views.map((v) => (
@@ -209,6 +223,7 @@ export function CandidatesPage() {
             csvFilename="canonicalization-m2m-candidates.csv"
             defaultSort={{ key: "payload_cols", dir: "asc" }}
             emptyMessage="No M2M candidates found."
+            copyForAi={M2M_CANDIDATES_TABLE_COPY}
           />
         ) : view === "unregistered" ? (
           <AdminAuditTable
@@ -218,6 +233,7 @@ export function CandidatesPage() {
             csvFilename="canonicalization-unregistered-candidates.csv"
             defaultSort={{ key: "base_col_score", dir: "desc" }}
             emptyMessage="No unregistered candidates found."
+            copyForAi={UNREGISTERED_CANDIDATES_TABLE_COPY}
           />
         ) : (
           <AdminAuditTable
@@ -227,6 +243,7 @@ export function CandidatesPage() {
             csvFilename="canonicalization-stale-registry.csv"
             defaultSort={{ key: "token", dir: "asc" }}
             emptyMessage="No stale registry rows found."
+            copyForAi={STALE_REGISTRY_TABLE_COPY}
           />
         )}
       </div>

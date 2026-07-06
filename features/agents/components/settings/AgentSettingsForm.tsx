@@ -9,6 +9,7 @@ import { AGENT_PUBLIC_TAB_LABEL } from "@/features/agents/constants/agent-list-l
 import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { Input } from "@/components/ui/input";
+import { AgentCategoryPicker } from "@/features/agents/components/settings/AgentCategoryPicker";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -111,9 +112,7 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
       .filter(Boolean);
     const currentTags = agent.tags || [];
     if (JSON.stringify(draftTags) !== JSON.stringify(currentTags)) {
-      dispatch(
-        saveAgentField({ agentId, field: "tags", value: draftTags }),
-      );
+      dispatch(saveAgentField({ agentId, field: "tags", value: draftTags }));
     }
   };
 
@@ -197,18 +196,12 @@ export function AgentSettingsForm({ agentId }: AgentSettingsFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2 flex flex-col">
               <Label className="text-sm font-semibold">Category</Label>
-              <Input
-                list={`categories-${agentId}`}
+              <AgentCategoryPicker
                 value={draft.category || ""}
-                onChange={(e) => handleUpdate("category", e.target.value)}
+                onChange={(next) => handleUpdate("category", next)}
+                options={uniqueCategories}
                 placeholder="e.g. Utilities"
-                className="bg-background/50 focus-visible:ring-primary/20"
               />
-              <datalist id={`categories-${agentId}`}>
-                {uniqueCategories.map((cat) => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
             </div>
 
             <div className="space-y-2 flex flex-col">

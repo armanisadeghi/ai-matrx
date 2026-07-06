@@ -19,6 +19,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Copy, Download, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +41,13 @@ import {
   type SortDirection,
 } from "@/features/administration/kg-inspector/utils/tableFilters";
 import { exportRowsAsCsv } from "../utils/exportCsv";
+import {
+  auditRowToAgentInput,
+  auditRowsToAgentInput,
+  type AuditTableCopyForAi,
+} from "../utils/aiExport";
+
+export type { AuditTableCopyForAi };
 
 /** Value-list dropdowns render every option in the DOM — cap how many a text column may offer. */
 const MAX_TEXT_FILTER_OPTIONS = 300;
@@ -232,6 +240,8 @@ export interface AdminAuditTableProps<T> {
   initialColumnFilters?: Record<string, ColumnFilter>;
   /** Seeds the global search box on mount. */
   initialSearch?: string;
+  /** Copy + Copy for AI — toolbar (all visible rows) + per-row icon pair. */
+  copyForAi?: AuditTableCopyForAi<T>;
 }
 
 const DEFAULT_ROW_HEIGHT = 34;
@@ -248,6 +258,7 @@ export function AdminAuditTable<T>({
   rowHeight = DEFAULT_ROW_HEIGHT,
   initialColumnFilters,
   initialSearch,
+  copyForAi,
 }: AdminAuditTableProps<T>) {
   const [search, setSearch] = useState(initialSearch ?? "");
   const [columnFilters, setColumnFilters] = useState<
@@ -358,7 +369,12 @@ export function AdminAuditTable<T>({
     setColumnFilters({});
   };
 
-  const gridTemplateColumns = columns.map((c) => c.width ?? "160px").join(" ");
+  const gridTemplateColumns = [
+    ...columns.map((c) => c.width ?? "160px"),
+    copyForAi ? "52px" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const virtualizer = useVirtualizer({
     count: processed.length,
@@ -409,6 +425,21 @@ export function AdminAuditTable<T>({
             <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
           </Button>
         ) : null}
+        {copyForAi && processed.length > 0 ? (
+          <CopyButtons
+            size="sm"
+            label={copyForAi.listLabel}
+            human={() =>
+              processed.map((row) => copyForAi.humanRow(row)).join("\n\n")
+            }
+            agent={() =>
+              auditRowsToAgentInput(copyForAi, processed, rows, {
+                search: search.trim() || undefined,
+                filtered: hasActiveFilters ? "yes" : "no",
+              })
+            }
+          />
+        ) : null}
       </div>
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
@@ -437,6 +468,11 @@ export function AdminAuditTable<T>({
                 />
               </div>
             ))}
+            {copyForAi ? (
+              <div className="flex items-center justify-center border-r border-border/60 px-1 py-1.5 text-xs font-semibold last:border-r-0">
+                Copy
+              </div>
+            ) : null}
           </div>
 
           {loading ? (
@@ -483,6 +519,19 @@ export function AdminAuditTable<T>({
                         <Cell col={col} row={row} />
                       </div>
                     ))}
+                    {copyForAi ? (
+                      <div
+                        className="flex items-center justify-center border-r border-border/40 px-1 py-1.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <CopyButtons
+                          size="icon"
+                          label={copyForAi.label}
+                          human={() => copyForAi.humanRow(row)}
+                          agent={() => auditRowToAgentInput(copyForAi, row)}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}

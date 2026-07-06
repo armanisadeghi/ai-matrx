@@ -1,6 +1,6 @@
 ---
 name: db-canonicalize-table
-description: Bring a table (and its feature) into full conformance with the Matrx platform standard during the 2026 DB transition — base columns, canonical RLS, entity_types registration, sharing registry, the polymorphic satellites (associations/comments/categories/activity/favorites), and versioning — preserving existing behavior exactly. Use whenever the task is "canonicalize <table/feature>", "bring <X> onto the platform base entity / standard", "make <X> use the platform comments/associations/permissions instead of its own", or "fully conform <table> to platform". Encodes the exact ordered pipeline (columns → register → edges → sharing → apply_rls → versioning → satellites → verify), the real function calls, and the gotchas. Read db-change/SKILL.md + db-change/TOOLKIT.md first. NOT for a partial Wave-3 base-retrofit only (use db-table-retrofit) or a schema move/retire.
+description: Bring a table (and its feature) into full conformance with the Matrx platform standard during the 2026 DB transition — base columns + base FK constraints, canonical RLS, entity_types registration, sharing registry, the polymorphic satellites (associations/comments/categories/activity/favorites), and versioning — preserving existing behavior exactly. This is the ONE recipe for getting any table onto the base standard, whether you take it all the way to certified or stop at the transition-state floor (zero FAIL + legacy WARNs). Use whenever the task is "canonicalize <table/feature>", "retrofit <table>", "base retrofit", "Wave 3", "bring <X> onto the platform base entity / standard", "apply_rls / org backfill on <table>", "make <X> use the platform comments/associations/permissions instead of its own", or "fully conform <table> to platform". Encodes the exact ordered pipeline (columns → base FKs → register → edges → sharing → apply_rls → versioning → satellites → verify+certify), the real function calls, and the gotchas. Read db-change/SKILL.md + db-change/TOOLKIT.md first. NOT for a schema move (db-move-table-schema) or a retire (db-graveyard-table).
 ---
 
 # Canonicalize a table
@@ -38,8 +38,8 @@ update <schema>.<table> set visibility = 'public' where <is_public_col> is true 
 update <schema>.<table> set deleted_at = <deleted_ts_or_now> where <is_deleted_col> is true and deleted_at is null;
 -- backfill org: personal → owner's personal org else system org (39c38960-…); or copy from parent
 update <schema>.<table> t set organization_id = coalesce(
-   (select o.id from public.organizations o where o.is_personal and o.created_by=t.created_by order by o.created_at limit 1),
-   '39c38960-d30c-4840-b0c1-c9960de95582') where organization_id is null;          -- (or join the parent)
+   (select o.id from iam.organizations o where o.is_personal and o.created_by=t.created_by order by o.created_at limit 1),
+   '39c38960-d30c-4840-b0c1-c9960de95582') where organization_id is null;          -- iam.organizations (NOT public); or join the parent
 -- drop legacy updated_at trigger, attach the shared triggers
 drop trigger if exists <legacy_updated_at_trigger> on <schema>.<table>;
 drop trigger if exists _touch_row on <schema>.<table>;
@@ -48,6 +48,25 @@ create trigger _touch_row  before insert or update on <schema>.<table> for each 
 create trigger _stamp_actor before insert or update on <schema>.<table> for each row execute function platform._stamp_actor();
 ```
 Verify **0 null org** and **0 null created_by** (where an owner existed) before continuing. Backend-written tables: ensure the engine writes `created_by` (service role doesn't stamp it — TOOLKIT.md §5).
+
+## Step 1.5 — Base FK constraints + `organization_id NOT NULL` (REQUIRED — nothing else adds these)
+**`retrofit_entity` adds the *columns* but NOT the FK constraints or the NOT-NULL, and the gate checks all four.** Skip this and `verify_canonical` returns four hard FAILs — `base_org_fk`, `base_created_by_fk`, `base_updated_by_fk`, `base_org_not_null` (verified live 2026-07-05). Run **after** org is backfilled to 0 nulls:
+```sql
+alter table <schema>.<table> alter column organization_id set not null;
+alter table <schema>.<table> add constraint <table>_org_fk foreign key (organization_id) references iam.organizations(id);
+alter table <schema>.<table> add constraint <table>_created_by_fk foreign key (created_by) references auth.users(id);
+alter table <schema>.<table> add constraint <table>_updated_by_fk foreign key (updated_by) references auth.users(id);
+```
+Idempotent guard for re-runs: wrap each in `do $$ begin if not exists (select 1 from pg_constraint where conname='<table>_org_fk') then … end if; end $$;` or check `information_schema.table_constraints` first. `SET NOT NULL` fails if ANY org is null — fix Step 1's backfill, never weaken this. (FK targets: `organization_id → iam.organizations(id)`, `created_by`/`updated_by → auth.users(id)` — these exact targets are what the gate matches.)
+
+**Safety assert (put it at the end of the Steps 1–1.5 migration so the whole thing rolls back on any miss):**
+```sql
+do $$ begin
+  if exists (select 1 from <schema>.<table> where organization_id is null) then raise exception 'null organization_id remains'; end if;
+  if not exists (select 1 from pg_trigger where tgrelid='<schema>.<table>'::regclass and tgname='_touch_row') then raise exception '_touch_row not attached'; end if;
+  if not exists (select 1 from pg_trigger where tgrelid='<schema>.<table>'::regclass and tgname='_stamp_actor') then raise exception '_stamp_actor not attached'; end if;
+end $$;
+```
 
 ## Step 2 — Register the entity (idempotent)
 ```sql
@@ -64,8 +83,9 @@ where not exists (select 1 from platform.entity_relationships where child_type='
 (Optional `kind='containment'` edges add read-cascade for `visibility>=internal` — additive.)
 
 ## Step 3 — Sharing registry (entity is user-shareable)
+The registry lives in **`platform.shareable_resource_registry`** — it moved out of `public` in the 2026 reorg (verified live 2026-07-05; a `public.` insert errors with table-not-found).
 ```sql
-insert into public.shareable_resource_registry
+insert into platform.shareable_resource_registry
   (resource_type, schema_name, table_name, id_column, owner_column, is_public_column, display_label, url_path_template, rls_uses_has_permission)
 values ('<token>','<schema>','<table>','id','created_by','visibility','<Label>','/<path>/{id}',true);
 ```
@@ -76,7 +96,7 @@ Inventory existing policies first (`apply_rls` **drops them all**); fold anythin
 ```sql
 select iam.apply_rls('<schema>','<table>','<token>','<entity|component|ledger>');
 ```
-(`entity` requires created_by + organization_id present; `component` requires the composition edge. There is **no `join` variant** — TOOLKIT.md §2.)
+(`entity` requires created_by + organization_id present; `component` requires the composition edge. There is **no `join` variant** — TOOLKIT.md §2. A pure M2M **join table** (`a_id`+`b_id`, no lifecycle) is best collapsed into `platform.associations` (db-rules §7); if it must stay a table, policy it as `component` (composition edge) or hand-write org-gated policies like `platform.associations` — never invent a `join` variant.)
 
 ## Step 5 — Versioning
 - **Table already versions** (history/audit today) → put it on the central system: attach the capture trigger.
@@ -89,22 +109,32 @@ for each row execute function platform._version_capture('<token>');
 Confirm the current month's `history.row_versions` partition exists (capture starts only when `_history` is attached — pre-existing rows are NOT auto-backfilled). **Backfilling old versions** (retiring a per-feature `*_versions` table): `history.row_versions` is **monthly RANGE-partitioned**, so first pre-create a partition for EVERY month in the source's date range (`min(created_at)..max`) or the INSERT fails with a no-partition error (verified — `note_versions` spanned 7 months, only 2 partitions existed). Map `row_id`/`version`/`occurred_at`/`actor_id`; stash extra fields under reserved `_*` keys in `row_data`; verify `count(history)=count(source)`. (Optional `_gc` → `platform._gc_entity_associations('<token>')` cleans association edges on delete.)
 
 ## Step 6 — Replace the feature's bespoke subsystems with the platform satellites
-If the feature has its OWN comments / associations-relationships / categories / activity-log / favorites-pins, **migrate the rows into the platform tables keyed by `(entity_type='<token>', entity_id)`** and graveyard the old tables (use `db-graveyard-table`). Behavior must be identical afterward — verify the UI shows the same comments/tags/relationships. (`platform.comments`, `platform.associations`, `platform.categories`, `platform.activity_log`, `platform.user_entity_state` — shapes in TOOLKIT.md §1.) Permissions/shares → migrate into `public.permissions` (TOOLKIT.md §3).
+If the feature has its OWN comments / associations-relationships / categories / activity-log / favorites-pins, **migrate the rows into the platform tables keyed by `(entity_type='<token>', entity_id)`** and graveyard the old tables (use `db-graveyard-table`). Behavior must be identical afterward — verify the UI shows the same comments/tags/relationships. (`platform.comments`, `platform.associations`, `platform.categories`, `platform.activity_log`, `platform.user_entity_state` — shapes in TOOLKIT.md §1.) Permissions/shares → migrate into `iam.permissions` (moved from `public` in the reorg; TOOLKIT.md §3).
 
 ## Step 6.5 — Drop the legacy columns (reach zero-WARN)
 In downtime, once consumers are repointed, drop `user_id`/`owner_id`, `is_public`, `is_deleted`, `shared_with` to clear the legacy WARNs. **Each drop has couplings — check first (all bit us on `notes`):**
 - **Backfill with triggers OFF:** wrap the `is_deleted→deleted_at` / `is_public→visibility` UPDATE in `alter table … disable trigger user; … ; enable trigger user;`, else `_touch_row` churns `version`/`updated_at` and the version/sync/ingest triggers fire on every touched row.
-- **Functions/triggers that read the column (the silent killers):** scan ALL functions (`prokind in ('f','p')` to skip aggregates) for BOTH `(from|join|update)\s+<table>` AND `new\.<col>`/`old\.<col>` — a `FROM/JOIN` scan MISSES trigger functions that read `NEW.<col>` (notify/ingest/sync/version triggers), and **SECURITY DEFINER functions aren't caught by `tsc`**. Verified casualties of skipping this: `_notify_auto_ingest_note` (`NEW.is_deleted` → every note write failed silently) and `get_user_dashboard_metrics` (`is_deleted` → dashboard broke). Patch each to the canonical column **before** dropping.
+- **Functions/triggers that read the column (the silent killers) — use `audit.table_impact` first, then a text scan:** `select * from audit.table_impact('<schema>','<table>');` returns every dependent function with `dependency` (precise|text), `currently_broken`, and the exact `referenced_columns[]` it touches — the blast radius, purpose-built for this. THEN belt-and-suspenders with a raw scan of ALL functions (`prokind in ('f','p')` to skip aggregates) for BOTH `(from|join|update)\s+<table>` AND `new\.<col>`/`old\.<col>`, because a `FROM/JOIN` scan MISSES trigger functions that read `NEW.<col>` (notify/ingest/sync/version triggers) and **SECURITY DEFINER functions aren't caught by `tsc`**. Verified casualties of skipping this: `_notify_auto_ingest_note` (`NEW.is_deleted` → every note write failed silently) and `get_user_dashboard_metrics` (`is_deleted` → dashboard broke). Patch each to the canonical column **before** dropping.
 - **RLS on OTHER tables:** a child policy may reference this column via subquery (`… WHERE notes.user_id = auth.uid()`). `DROP COLUMN` fails `2BP01` and lists them — repoint each to `created_by`; **never blind-`CASCADE`** (it silently drops the policy).
 - **Indexes:** `DROP COLUMN` auto-drops indexes that include it. Recreate the useful composites on `created_by` (owner/sync/folder lookups) first.
 - **Prove safe first:** `count(*) filter (where created_by is distinct from <owner_col>)=0`, `is_public`/`shared_with` empty — then the drop loses nothing.
 
-## Step 7 — Verify (the acceptance gate)
+## Step 7 — Verify (the two-gate acceptance)
+There are **two** gates and you must clear BOTH. `verify_canonical` checks the table's own structure; `canonical_certify` also checks that no dependent function is broken — **it is the "done" gate per db-rules.md §8 (nothing is done until `canonical_certify_ok` is `true`).**
 ```sql
-select * from iam.verify_canonical('<schema>','<table>','<token>');   -- read EVERY row
-select iam.verify_canonical_ok('<schema>','<table>','<token>');        -- floor: no FAIL
+select * from iam.verify_canonical('<schema>','<table>','<token>');    -- read EVERY row
+select iam.verify_canonical_ok('<schema>','<table>','<token>');         -- gate 1: no structural FAIL
+select * from iam.canonical_certify('<schema>','<table>','<token>');    -- blocking rows = FAIL/WARN + any broken dependent fn
+select iam.canonical_certify_ok('<schema>','<table>','<token>');        -- gate 2 (THE done gate): true = done
 ```
-**Bar (verified live):** `col_visibility`, `soft_delete`, `timestamps` must reach PASS (add the columns — never leave them WARN). The three legacy WARNs — **`legacy_owner_col`** (`user_id`/`owner_id`), **`legacy_is_public`**, **`legacy_is_deleted`** (added to `verify_canonical` 2026-06-27) — clear only when those columns are dropped (Step 6.5). **Full canonical = zero FAIL + zero WARN**, achievable in one pass when you do the drops (proven on `notes`+`note_folders`); if the drops must wait, the transition-state floor is zero FAIL + only those legacy WARNs. Don't report "canonical" with a `col_visibility`/`soft_delete` WARN showing. Then impersonate a normal user and confirm they still read their own rows (RLS didn't hide data):
+**Bar (verified live 2026-07-05):** these must all reach PASS — `base_org_not_null`, `base_org_fk`, `base_created_by_fk`, `base_updated_by_fk` (Step 1.5), `col_visibility`, `soft_delete`, `timestamps`, plus the registration/RLS/policy checks. **Skip Step 1.5 and you get four `base_*_fk`/`not_null` FAILs.** The three legacy WARNs — **`legacy_owner_col`** (`user_id`/`owner_id`), **`legacy_is_public`**, **`legacy_is_deleted`** — clear only when those columns are dropped (Step 6.5). **Full canonical = both gates `true` with zero FAIL + zero WARN**, achievable in one pass when you do the drops (proven live on a probe + on `notes`+`note_folders`); if the drops must wait, the transition-state floor is zero FAIL + only those legacy WARNs. Don't report "canonical" with any FAIL or a `col_visibility`/`soft_delete` WARN showing, or with `canonical_certify_ok=false`.
+
+Refresh the audit store so the table shows up certified in the platform-wide hit list (drives `audit.summary`; loud + non-blocking in `release.sh`):
+```sql
+select audit.refresh();                                                 -- rebuilds all snapshots (heavy; runs plpgsql_check over every fn)
+select fails, warns, certified from audit.summary where token='<token>';
+```
+Then impersonate a normal user and confirm they still read their own rows (RLS didn't hide data):
 ```sql
 select set_config('request.jwt.claims', json_build_object('sub','<a real user uuid>')::text, true);
 select count(*) from <schema>.<table>;   -- expect their visible rows, not 0
@@ -115,7 +145,9 @@ db-change SOP: `pnpm db-types` → update all usages (new columns, `.schema()` i
 
 ## NEVER
 - `apply_rls` before org is backfilled (0 nulls) or before `entity_types` (+ composition edge for components) exists.
-- Trust `verify_canonical_ok` alone — WARNs are unfinished canonicalization.
+- Skip Step 1.5 — `retrofit_entity` adds the base *columns* but NOT the FK constraints or `organization_id NOT NULL`; without them the table carries four permanent `base_*` FAILs no matter how clean it looks.
+- Trust `verify_canonical_ok` alone — WARNs are unfinished canonicalization, and it does NOT check dependent functions. `iam.canonical_certify_ok=true` is the only "done" signal (db-rules.md §8).
 - Assume `is_versioned=true` captures history — it doesn't without the `_history` trigger.
 - Leave the feature reading its old comments/associations table after migrating the rows — repoint the code, then graveyard the table.
 - Change behavior. Canonicalization preserves what the user sees; if anything differs, it's a bug.
+- Touch **out-of-scope litter** as if it were legacy tagging: `sch_*` (scheduler), `wf_*`/`workflow`, `code_*`, `wc_*` — their `project_id`/`task_id` columns are real FKs, NOT association litter to migrate. Leave them.

@@ -23,7 +23,7 @@ select schemaname, viewname from pg_views where definition ilike '%<table>%';
 
 -- is it registered as a platform entity / shareable / in associations?
 select * from platform.entity_types where table_name='<table>';
-select * from public.shareable_resource_registry where table_name='<table>';
+select * from platform.shareable_resource_registry where table_name='<table>';
 
 -- is anything still actually reading it? (needs pg_stat_statements)
 select calls, query from pg_stat_statements where query ~* '\m<table>\M' order by calls desc limit 20;
@@ -53,7 +53,7 @@ Remove the platform footprint so nothing resolves to it:
 ```sql
 delete from platform.entity_relationships where child_type='<token>' or parent_type='<token>';
 update platform.entity_types set is_active=false where token='<token>';   -- or delete the row
-delete from public.shareable_resource_registry where table_name='<table>';
+delete from platform.shareable_resource_registry where table_name='<table>';
 ```
 Leave satellite rows (`associations`/`comments`/…) keyed by the token in place unless they're now orphaned — sweep separately; they're harmless and reversible.
 

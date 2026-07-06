@@ -13,7 +13,7 @@ The table's columns, PK, indexes, CHECK/UNIQUE/FK constraints (its own **and** i
 **What does NOT follow:** schema-level **`USAGE`** and the schema's default privileges — these belong to the *schema*, not the table. The moved table's grants come along but are **dead without schema USAGE**: every `authenticated`/`anon` access throws `permission denied for schema <new>`, which wrapper RPCs swallow into a **silent null** (the `cx_canvas_upsert returned null` class). Step 2 grants it; Step 3 verifies it.
 
 ## What you MUST update by hand
-1. **Registry rows** — `platform.entity_types.schema_name` and `public.shareable_resource_registry.schema_name` for this token.
+1. **Registry rows** — `platform.entity_types.schema_name` and `platform.shareable_resource_registry.schema_name` for this token.
 2. **Hardcoded `public.<table>` references** in functions/RPCs and views (unqualified refs follow `search_path`; schema-qualified ones break). Find them, `CREATE OR REPLACE` repointed.
 3. **FE access = TWO separate doors.** (a) **PostgREST exposure + FE types** — the target schema must be exposed to PostgREST and added to the `pnpm db-types` `--schema` list (TOOLKIT.md §0 trap), else the FE loses types and 404s. (b) **Schema `USAGE` grant** (Step 2) — `SET SCHEMA` does not grant it. A schema can be **exposed yet USAGE-denied**, which surfaces as a *silent null*, not a 404. Both are required. supabase-js calls change from `.from('<table>')` to `.schema('<new>').from('<table>')`.
 4. **aidream ORM** — the target schema must be in `db/matrx_orm.yaml` `additional_schemas` with a generate block; the model regenerates into that schema's `models_<schema>.py`. If a sub-package consumes the table, update `aidream/package_integration.py`.

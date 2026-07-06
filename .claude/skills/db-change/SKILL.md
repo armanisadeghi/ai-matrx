@@ -34,7 +34,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 |---|---|
 | Take a table offline / retire it (no longer used) | **`db-graveyard-table`** |
 | Relocate a table to another schema, references intact | **`db-move-table-schema`** |
-| Bring a table/feature fully onto the platform standard (base cols, RLS, registry, satellites, versioning) | **`db-canonicalize-table`** |
+| Bring a table/feature onto the platform standard — base cols + FKs, RLS, registry, satellites, versioning (a.k.a. "retrofit" / "base retrofit" / "Wave 3"; take it to certified or stop at the transition floor) | **`db-canonicalize-table`** |
 | Drop / merge / modify-logic | inline below |
 
 ## Constants (full table in TOOLKIT.md §0)

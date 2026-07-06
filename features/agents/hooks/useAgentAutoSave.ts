@@ -13,7 +13,11 @@
 
 import { useEffect, useRef } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import {
+  selectAgentById,
+  selectAgentIsReadOnly,
+  selectAgentAccessResolved,
+} from "@/features/agents/redux/agent-definition/selectors";
 import { mergePartialAgent } from "@/features/agents/redux/agent-definition/slice";
 import { readField } from "@/features/agents/redux/shared/field-flags";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
@@ -24,7 +28,14 @@ const DEBOUNCE_MS = 2_000;
 export function useAgentAutoSave(agentId: string) {
   const dispatch = useAppDispatch();
   const record = useAppSelector((state) => selectAgentById(state, agentId));
+  const accessResolved = useAppSelector((state) =>
+    selectAgentAccessResolved(state, agentId),
+  );
+  const isReadOnly = useAppSelector((state) =>
+    selectAgentIsReadOnly(state, agentId),
+  );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipPersistence = accessResolved && isReadOnly;
 
   // Recovery on mount
   useEffect(() => {
@@ -52,9 +63,9 @@ export function useAgentAutoSave(agentId: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
-  // Debounced backup when dirty
+  // Debounced backup when dirty (skip for view-only shared agents)
   useEffect(() => {
-    if (!record?._dirty) return undefined;
+    if (skipPersistence || !record?._dirty) return undefined;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       const storageKey = `${STORAGE_PREFIX}${agentId}`;
@@ -75,7 +86,7 @@ export function useAgentAutoSave(agentId: string) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [agentId, record]);
+  }, [agentId, record, skipPersistence]);
 
   // Clear on successful save (clean state)
   useEffect(() => {

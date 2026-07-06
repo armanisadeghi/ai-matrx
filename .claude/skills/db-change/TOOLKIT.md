@@ -71,7 +71,7 @@ SECURITY DEFINER, **hardcoded to `public` schema** (`format('public.%I', p_table
   - `keep` — no org backfill, tolerates null org.
 - Drops `p_legacy_trigger` (if given) + any `_touch_row`/`_stamp_actor`, then attaches fresh `_touch_row` + `_stamp_actor`.
 - RAISES if `created_by` exists but isn't uuid ("rename to created_by_kind first"), or if a non-`keep` strategy leaves null-org rows.
-- **Does NOT:** add `deleted_at` / `metadata` / `visibility`; register `entity_types`; attach `_history`; apply RLS. Those are separate steps.
+- **Does NOT:** add `deleted_at` / `metadata` / `visibility`; add the **base FK constraints** (`organization_id→iam.organizations`, `created_by`/`updated_by→auth.users`) or `organization_id NOT NULL`; register `entity_types`; attach `_history`; apply RLS. Those are separate steps — and the FKs/NOT-NULL are REQUIRED (the gate checks `base_org_fk`/`base_created_by_fk`/`base_updated_by_fk`/`base_org_not_null`; verified live 2026-07-05). See `db-canonicalize-table` Step 1.5.
 - **Only works for `public.*`.** For a table already homed in a schema (`workflow.definition`, `chat.message`…), retrofit_entity is unusable — **hand-roll the column adds** (see canonicalize skill).
 
 Real calls:
@@ -89,7 +89,7 @@ select platform.retrofit_entity('skl_render_components','render_component','pare
 
 Real call: `select iam.apply_rls('public','wr_sessions','war_room','entity');`
 
-> ⚠️ **Drift:** the older `db-table-retrofit` skill says variants are `entity|join|ledger`. **`'join'` is NOT a real variant** — the live function has no branch for it, so `apply_rls(...,'join')` falls into the standard-entity branch and RAISEs if the table lacks created_by/org. Use `component` or `ledger`. (Base-2 association tables are policied by hand or treated as `ledger`-like; there is no `join` generator.)
+> ⚠️ **Drift:** older changeover notes listed variants as `entity|join|ledger`. **`'join'` is NOT a real variant** — the live function has no branch for it, so `apply_rls(...,'join')` falls into the standard-entity branch and RAISEs if the table lacks created_by/org. Use `component` or `ledger`. (Base-2 association tables are policied by hand or treated as `ledger`-like; there is no `join` generator.)
 
 ### `iam.verify_canonical(p_schema, p_table, p_token, p_variant=NULL) → TABLE(check_name, status, detail)` — the machine-checkable acceptance spec
 Auto-detects variant from `entity_types.is_component` when `p_variant` is NULL. Returns one row per check with status `PASS|FAIL|WARN|SKIP`. Checks: `entity_registered`, `rls_enabled`, `policies_canonical` (exact set match — extra legacy policies FAIL it), and for `entity`: `col_created_by`, `col_organization_id`, `col_visibility` (WARN if absent), `soft_delete` (WARN if absent), `timestamps`, `legacy_owner_col`/`legacy_is_public` (WARN if present), `policy_owner_shortcircuit`, `policy_uses_has_access`, `pub_read_anon`, `sharing_token` (registry `resource_type` must equal the token).
@@ -100,6 +100,17 @@ Auto-detects variant from `entity_types.is_component` when `p_variant` is NULL. 
 select * from iam.verify_canonical('public','notes','note');   -- inspect every PASS/WARN/FAIL
 select iam.verify_canonical_ok('public','notes','note');        -- floor gate
 ```
+
+### `iam.canonical_certify(p_schema, p_table, p_token) → TABLE(category, status, detail)` + `iam.canonical_certify_ok(...) → boolean` — THE done gate
+`verify_canonical` checks only the table's own structure. `canonical_certify` returns the conformance FAIL/WARN rows **plus any currently-broken dependent function** — empty = perfect. **Per db-rules.md §8, nothing is "done" until `iam.canonical_certify_ok(schema,table,token)` is `true`.** Always clear BOTH gates; a table that passes `verify_canonical_ok` but breaks a dependent function is not done.
+
+### The `audit.*` store — platform-wide conformance snapshot + blast-radius
+`select audit.refresh();` rebuilds every snapshot (drives the gate over all registered live tables + runs `plpgsql_check` over every plpgsql function) — heavy; it's what `release.sh` runs. Then:
+- `audit.summary` (view, cols `schema_name, table_name, token, fails, warns, certified`) — `WHERE NOT certified ORDER BY fails DESC` = the canonicalization hit list.
+- `audit.canonical_findings` — every FAIL/WARN with `check_name`+`detail`.
+- `audit.broken_functions` — `plpgsql_check` errors (catches dangling column/table refs after renames; SQL-language fns are NOT covered — check them by hand).
+- `audit.table_impact('<schema>','<table>') → (function_sig, dependency, currently_broken, referenced_columns[])` — **run before any rename/drop** to see the exact blast radius.
+- `audit.m2m_candidates` · `audit.unregistered_candidates` · `audit.stale_registry` — the reorg backlogs.
 
 ---
 
@@ -126,17 +137,17 @@ SELECT 'workflow_definition_version','workflow','definition_id','composition'
 WHERE NOT EXISTS (SELECT 1 FROM platform.entity_relationships r WHERE r.child_type='workflow_definition_version' AND r.kind='composition');
 ```
 
-### `public.shareable_resource_registry` — register iff the entity is user-shareable
-Columns include `resource_type` (**must == the entity token**), `schema_name`, `table_name`, `id_column` ('id'), `owner_column` (canonical 'created_by'), `is_public_column`, `display_label`, `url_path_template`, `rls_uses_has_permission`, `is_active`, `content_role`, `is_scopeable`.
+### `platform.shareable_resource_registry` — register iff the entity is user-shareable
+Lives in **`platform`** (moved out of `public` in the 2026 reorg; verified live 2026-07-05 — a `public.` reference errors). Columns include `resource_type` (**must == the entity token**), `schema_name`, `table_name`, `id_column` ('id'), `owner_column` (canonical 'created_by'), `is_public_column`, `display_label`, `url_path_template`, `rls_uses_has_permission`, `is_active`, `content_role`, `is_scopeable`.
 ```sql
-INSERT INTO public.shareable_resource_registry
+INSERT INTO platform.shareable_resource_registry
   (resource_type, schema_name, table_name, id_column, owner_column, is_public_column, display_label, url_path_template, rls_uses_has_permission)
 VALUES ('note','public','notes','id','created_by','visibility','Note','/notes/{id}',true);
 ```
 Mismatch between registry `resource_type` and the entity token → `has_access` silently ignores grants (and `verify_canonical` FAILs `sharing_token`).
 
-### `public.permissions` — grants are ROWS, not a per-feature table
-`resource_type` (=token), `resource_id`, `granted_to_user_id` / `granted_to_organization_id`, `permission_level`, `status`, `expires_at`, …. Any per-feature `<x>_permissions`/`_shares`/`_collaborators`/`_acl` table → migrate rows here, then graveyard the old table.
+### `iam.permissions` — grants are ROWS, not a per-feature table
+Lives in **`iam`** (moved from `public` in the reorg; verified live 2026-07-05). `resource_type` (=token), `resource_id`, `granted_to_user_id` / `granted_to_organization_id`, `permission_level`, `status`, `expires_at`, …. Any per-feature `<x>_permissions`/`_shares`/`_collaborators`/`_acl` table → migrate rows here, then graveyard the old table. (`public.has_permission(...)` — the resolver function — is still in `public`.)
 
 ---
 

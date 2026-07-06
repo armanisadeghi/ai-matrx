@@ -94,12 +94,13 @@ export default function ModelUsageAudit({
     setReplacing(true);
     setReplaceError(null);
     try {
-      await Promise.all([
-        aiModelService.replaceModelInPrompts(model.id, replacementId),
-        aiModelService.replaceModelInBuiltins(model.id, replacementId),
-        aiModelService.replaceModelInAgents(model.id, replacementId),
-        aiModelService.replaceModelInAgentTemplates(model.id, replacementId),
-      ]);
+      const result = await aiModelService.replaceModelReferences(
+        model.id,
+        replacementId,
+      );
+      if (result.agents + result.builtins + result.templates === 0) {
+        setReplaceError("No references were updated.");
+      }
       setStep("idle");
       await load();
       onReplaceDone();
@@ -115,28 +116,14 @@ export default function ModelUsageAudit({
     setReplacing(true);
     setReplaceError(null);
     try {
-      await Promise.all([
-        aiModelService.replaceModelInPrompts(
-          model.id,
-          replacementId,
-          pendingSettings,
-        ),
-        aiModelService.replaceModelInBuiltins(
-          model.id,
-          replacementId,
-          pendingSettings,
-        ),
-        aiModelService.replaceModelInAgents(
-          model.id,
-          replacementId,
-          pendingSettings,
-        ),
-        aiModelService.replaceModelInAgentTemplates(
-          model.id,
-          replacementId,
-          pendingSettings,
-        ),
-      ]);
+      const result = await aiModelService.replaceModelReferences(
+        model.id,
+        replacementId,
+        pendingSettings,
+      );
+      if (result.agents + result.builtins + result.templates === 0) {
+        setReplaceError("No references were updated.");
+      }
       setStep("idle");
       await load();
       onReplaceDone();
@@ -337,16 +324,39 @@ export default function ModelUsageAudit({
       {step === "review-settings" && replacementId && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-card rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
-            <p className="text-sm font-medium">Apply replacement without settings review?</p>
-            <p className="text-xs text-muted-foreground">
-              {model.common_name || model.name} → {selectedReplacement?.common_name || selectedReplacement?.name}
-              <br />Settings editor is temporarily unavailable. Click Apply to replace model IDs only.
+            <p className="text-sm font-medium">
+              Apply replacement without settings review?
             </p>
-            {replaceError && <p className="text-xs text-destructive">{replaceError}</p>}
+            <p className="text-xs text-muted-foreground">
+              {model.common_name || model.name} →{" "}
+              {selectedReplacement?.common_name || selectedReplacement?.name}
+              <br />
+              Settings editor is temporarily unavailable. Click Apply to replace
+              model IDs only.
+            </p>
+            {replaceError && (
+              <p className="text-xs text-destructive">{replaceError}</p>
+            )}
             <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleCancel}>Cancel</Button>
-              <Button size="sm" className="h-7 text-xs gap-1" disabled={replacing} onClick={handleApplyWithSettings}>
-                {replacing ? <RefreshCcw className="h-3 w-3 animate-spin" /> : <ArrowRightLeft className="h-3 w-3" />}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1"
+                disabled={replacing}
+                onClick={handleApplyWithSettings}
+              >
+                {replacing ? (
+                  <RefreshCcw className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ArrowRightLeft className="h-3 w-3" />
+                )}
                 Apply Replacement
               </Button>
             </div>

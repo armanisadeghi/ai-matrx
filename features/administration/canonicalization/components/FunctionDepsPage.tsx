@@ -8,12 +8,15 @@ import { AdminAuditTable, type AuditColumnDef } from "./AdminAuditTable";
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { useAuditDataset } from "../hooks/useAuditDataset";
 import { isFunctionDepRow, type FunctionDepRow } from "../types";
+import { FUNCTION_DEPS_TABLE_COPY } from "../utils/aiExport";
 import type { ColumnFilter } from "@/features/administration/kg-inspector/utils/tableFilters";
 
 export function FunctionDepsPage() {
   const searchParams = useSearchParams();
-  const { rows, loading, reload } =
-    useAuditDataset<FunctionDepRow>("function-deps", isFunctionDepRow);
+  const { rows, loading, reload } = useAuditDataset<FunctionDepRow>(
+    "function-deps",
+    isFunctionDepRow,
+  );
 
   const fnParam = searchParams.get("fn");
   const initialColumnFilters = useMemo<
@@ -108,6 +111,7 @@ export function FunctionDepsPage() {
           defaultSort={{ key: "function_schema", dir: "asc" }}
           initialColumnFilters={initialColumnFilters}
           emptyMessage="No dependency edges found."
+          copyForAi={FUNCTION_DEPS_TABLE_COPY}
         />
       </div>
     </div>

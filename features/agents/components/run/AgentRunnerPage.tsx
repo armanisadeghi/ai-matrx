@@ -35,9 +35,24 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 interface AgentRunnerPageProps {
   agentId: string;
+  /**
+   * Trace + sandbox-binding scope for conversations created here. Defaults to
+   * `"agent-runner"` for standalone `/agents/.../run` routes. The `/code`
+   * workspace passes `"code-editor"` so `resolveAgentSandboxRef` attaches the
+   * connected sandbox to chat turns (see `lib/sandbox/active-binding.ts`).
+   */
+  sourceFeature?: SourceFeature;
+  /**
+   * Focus-registry key for this surface. Defaults to
+   * `${sourceFeature ?? "agent-runner"}:${agentId}`. The code workspace keeps
+   * the legacy `agent-runner:${agentId}` key so editor bridges and history
+   * slots stay aligned while `sourceFeature` is `"code-editor"`.
+   */
+  surfaceKey?: string;
   /** Back-link target shown in the run header. Defaults to `/agents`. */
   backHref?: string;
   /** Base path used by the mode switcher inside the header. Defaults to
@@ -55,6 +70,8 @@ interface AgentRunnerPageProps {
 
 export function AgentRunnerPage({
   agentId,
+  sourceFeature = "agent-runner",
+  surfaceKey: surfaceKeyProp,
   backHref = "/agents/all",
   basePath = "/agents",
   buildConversationUrl,
@@ -103,8 +120,7 @@ export function AgentRunnerPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId, initAttempt]);
 
-  const sourceFeature = "agent-runner";
-  const surfaceKey = `${sourceFeature}:${agentId}`;
+  const surfaceKey = surfaceKeyProp ?? `${sourceFeature}:${agentId}`;
 
   // Register this page as a `page` surface so action bars and shared
   // components can route fork/retry navigation outcomes correctly. The
@@ -180,6 +196,8 @@ export function AgentRunnerPage({
               agentId,
               conversationId: conversationIdFromUrl,
               apiEndpointMode: "agent",
+              sourceFeature,
+              surfaceKey,
             }),
           ).unwrap();
         } catch (err) {

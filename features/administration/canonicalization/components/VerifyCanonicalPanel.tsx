@@ -43,6 +43,13 @@ import { GateStatusBadge } from "./StatusBadge";
 import { RLS_VARIANTS } from "../utils/queryBuilders";
 import type { CanonicalCertifyRow, VerifyCanonicalRow } from "../types";
 import { errorMessageFrom, readJsonObject } from "../utils/apiClient";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import {
+  VERIFY_BLOCKING_TABLE_COPY,
+  VERIFY_CHECKLIST_TABLE_COPY,
+  verifyRunToAgentInput,
+  verifyRunToHuman,
+} from "../utils/aiExport";
 import { DEFAULT_DATABASE_SCHEMA } from "@/app/(admin)/administration/database/config";
 
 interface VerifyResult {
@@ -285,6 +292,23 @@ export function VerifyCanonicalPanel() {
     [result],
   );
 
+  const verifySnapshot = useMemo(
+    () =>
+      result && schema && table && token
+        ? {
+            schema,
+            table,
+            token,
+            variant,
+            verifyOk: result.verifyOk,
+            certifyOk: result.certifyOk,
+            checks: result.checks,
+            certifyBlocking: result.certifyBlocking,
+          }
+        : null,
+    [result, schema, table, token, variant],
+  );
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -355,6 +379,15 @@ export function VerifyCanonicalPanel() {
           Run
         </Button>
 
+        {verifySnapshot ? (
+          <CopyButtons
+            size="sm"
+            label={`Verify · ${verifySnapshot.schema}.${verifySnapshot.table}`}
+            human={() => verifyRunToHuman(verifySnapshot)}
+            agent={() => verifyRunToAgentInput(verifySnapshot)}
+          />
+        ) : null}
+
         <div className="ml-auto flex items-center gap-2">
           <GateChip
             ok={hasRun ? (result?.verifyOk ?? null) : null}
@@ -384,6 +417,7 @@ export function VerifyCanonicalPanel() {
                 csvFilename="canonicalization-verify-checklist.csv"
                 defaultSort={{ key: "status", dir: "asc" }}
                 emptyMessage="No checks returned."
+                copyForAi={VERIFY_CHECKLIST_TABLE_COPY}
                 toolbarExtra={
                   <Badge
                     variant="outline"
@@ -401,6 +435,7 @@ export function VerifyCanonicalPanel() {
                 loading={running}
                 csvFilename="canonicalization-verify-blocking.csv"
                 emptyMessage="Empty — perfect. Nothing is blocking certification."
+                copyForAi={VERIFY_BLOCKING_TABLE_COPY}
                 toolbarExtra={
                   <Badge
                     variant="outline"
