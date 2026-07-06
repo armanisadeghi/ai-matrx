@@ -21,7 +21,29 @@ description: Entry point and shared SOP for the 2026 Matrx DB transition — any
 
 6. **SHIP IT — committing and pushing IS the job, not a decision to agonize over.** During a scheduled outage the win condition is: fully canonical + all layers repointed + committed + pushed + lights on. Do not pause to ask "is it OK to release?" — the app is down; the *only* way to lose is to sit on finished work. Commit, push, deploy, in the same pass.
 
-**One-line test before you stop:** *If the lights came on right now, would every layer agree and the app work?* If no, you are not done — and you do not stop, hand off, or "leave it for the next pass." You finish.
+7. **DISCOVERING MORE THAN YOU EXPECTED IS NORMAL — FINISH, NEVER REVERT.** Halfway through you WILL find consumers you didn't know about: a second parallel feature module, a generated wiring hub, a raw-SQL string, a lazy import buried in a function. That is not a signal that "this was a mistake, undo it." It is the migration working — you found a consumer, now repoint it. **Re-adding a dropped table / un-graveyarding / reverting a rename to escape a bigger-than-expected blast radius is THE cardinal panic-failure** (it happened on skill.project/skill.resource: the drop was correct, the revert was cowardice, and it cost hours). The moment you're tempted to revert, do the opposite: run the discovery protocol below, list every remaining consumer, and grind through them. The ONLY thing that ever stops you is a genuine human decision (rule 4) — and that is a loud flag with the drop still in place, never a silent revert. "Broken for five minutes while every layer changes" is the migration; a revert is the failure.
+
+**One-line test before you stop:** *If the lights came on right now, would every layer agree and the app work?* If no, you are not done — and you do not stop, hand off, revert, or "leave it for the next pass." You finish.
+
+---
+
+## 🔎 Consumer discovery — find EVERY usage BEFORE you cut (this is where agents keep failing)
+
+A dropped/renamed table or field breaks silently in the places the compiler can't see. **`type-check` / `tsc` / `db/generate.py` are a backstop, NOT the search** — they miss raw-SQL strings, `getattr(row,"field",default)` (returns the default forever — a *silent* wrong value), dynamic `.from("<str>")`, and anything in a generated file that only errors at runtime. Before you drop or rename ANYTHING, enumerate consumers yourself. The recurring misses and how to not repeat them:
+
+1. **Search the SYMBOL in EVERY name format, and inspect each hit — do not trust an import scan.** A field/table/model appears as `foo_bar` · `FooBar` · `fooBar` · `foo_bars`/`FooBars` (plural) · the manager instance (`foo_bars_manager_instance`) · the wire/label alias. Import-graph tools only see top-of-file `import` lines and **completely miss mid-file / lazy / inside-a-function imports** (this is the #1 leak). So grep the raw text across the whole tree and open every hit:
+   ```
+   rg -n 'foo_bar|FooBar|fooBar|foo_bars|FooBars|foo_bars_manager|"is_public"|\bis_public\b|isPublic'
+   ```
+   For each hit ask: *is this the same table/field, and does it read/write a column I'm changing?* A wrong-format miss (e.g. `SklResource` when you searched `skill_resource`) is exactly how consumers slip through.
+2. **OPEN the auto-generated consumer hubs — they are NOT boilerplate to skip.** These list tables by name and break generation or wiring when stale: aidream `aidream/_generated/package_db_wiring.py`, `db/helpers/auto_config*.py`, every `packages/*/db/db_requirements.py` **manifest** (a dropped table left in a manifest hard-fails `db/generate.py` — this bit skill.resource). FE `types/database.types.ts`, `types/generated/entity-types.generated.ts`. Grep them for the name; fix the manifest, then regenerate.
+3. **Grep raw-SQL strings for the table AND field names** — `FROM <table>`, `.from("<table>")`, `.eq("<field>"`, `filter_items(<field>=`, `getattr(row,"<field>"`, raw `UPDATE/INSERT/SELECT` literals. The ORM/type system never sees these. `getattr(row,"is_public",False)` is the worst: it silently returns the default when the column is gone — grep `getattr(` for every changed field.
+4. **Run the repo discovery tools — they help but DON'T replace the multi-format grep above:**
+   - **aidream:** `python db/table_refs.py <table> [token]` (git-grep report, buckets hits incl. `package_integration.py`) · `python db/schema_analysis/check_schema.py --refresh` (live DB vs yaml/models/managers/**raw-SQL string literals**/imports — the import check *does* see lazy/mid-file imports; the raw-SQL check uses an allow-list of roots so it can miss excluded dirs) · `python docs/database/generate_handwritten_sql_inventory.py` (every runtime raw-SQL site) · `python scripts/audit_orm_getattr.py` (the `getattr` silent-column trap) · `python scripts/check_package_wiring.py` (manifest↔generated drift).
+   - **matrx-frontend:** `node scripts/db-table-refs.mjs <table> [token]` · `pnpm tsx scripts/schema-check/check-schema.ts` (live DB vs generated types + consumers) · `pnpm check:dead-relations` (bare `.from("<old>")` / `public.<old>` / `Database[...]["<old>"]`) · `pnpm type-check` (typed refs only — the backstop, run LAST).
+5. **The workflow:** grep every name-variant → open every hit + every generated hub → fix raw-SQL strings → repoint typed refs → THEN `type-check` / `generate.py` / `check:dead-relations` to confirm you missed nothing. Tools last, not first. "The compiler will catch it" is how the silent misses ship.
+
+**Add the retired relation to `scripts/dead-relations.json` + `db/check_dead_relations.py` BEFORE repointing** — the guard then becomes your live checklist of what's still pointing at the old name.
 
 ---
 

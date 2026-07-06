@@ -98,6 +98,8 @@ The container page shows one card per attachable entity kind, fully registry-dri
 
 The candidate reader (`associationCandidates.ts`) lists the user's own attachable rows (`created_by = me`) with loud RLS-only fallback on a missing-column error — extend it only via the registry.
 
+**The third face — the name dropdown.** `AssociationEntitySelect` (`features/scopes/components/associations/`) is the canonical compact control for "which entity of token X is this panel bound to": name display + inline rename + always-visible switcher + unlink + "+ New" create-and-attach, adapter-driven (default `useAssociationEntitySelectAdapter`; bespoke reference = war-room `useThreadEntitySelect.ts`). Generic row create/rename lives in `service/entityRows.ts` (registry titleColumn + conventions). **Invoke the `association-entity-select` skill** before building any switcher/rename/add-new control for a container's entities.
+
 ---
 
 ## Recipe C — Canonicalize a table reference (kills PGRST205 / 42703)
