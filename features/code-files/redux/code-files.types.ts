@@ -11,9 +11,12 @@
 
 // ── DB row shapes ───────────────────────────────────────────────────────────
 
+/** Access driver — mirrors the `platform.visibility` enum. */
+export type CodeVisibility = "private" | "internal" | "link" | "public";
+
 export interface CodeFile {
   id: string;
-  user_id: string;
+  created_by: string | null;
   folder_id: string | null;
   repository_id: string | null;
   organization_id: string | null;
@@ -30,8 +33,9 @@ export interface CodeFile {
   s3_key: string | null;
   /** S3 bucket name (only set when content is stored in S3). */
   s3_bucket: string | null;
-  is_public: boolean;
-  is_deleted: boolean;
+  visibility: CodeVisibility;
+  /** Soft-delete marker; NULL = live. */
+  deleted_at: string | null;
   is_readonly: boolean;
   tags: string[] | null;
   metadata: Record<string, unknown> | null;
@@ -42,7 +46,7 @@ export interface CodeFile {
 
 export interface CodeFolder {
   id: string;
-  user_id: string;
+  created_by: string | null;
   parent_folder_id: string | null;
   organization_id: string | null;
   project_id: string | null;
@@ -52,7 +56,9 @@ export interface CodeFolder {
   icon_name: string | null;
   color: string | null;
   sort_order: number;
-  is_public: boolean;
+  visibility: CodeVisibility;
+  /** Soft-delete marker; NULL = live. */
+  deleted_at: string | null;
   is_active: boolean;
   metadata: Record<string, unknown> | null;
   created_at: string;

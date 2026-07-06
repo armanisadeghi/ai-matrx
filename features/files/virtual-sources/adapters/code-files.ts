@@ -41,7 +41,7 @@ type CodeFileRow = Pick<
   | "language"
   | "folder_id"
   | "updated_at"
-  | "is_deleted"
+  | "deleted_at"
   | "s3_key"
   | "s3_bucket"
   | "content"
@@ -53,7 +53,7 @@ type CodeFolderRow = Pick<
 >;
 
 const FILE_LIST_COLUMNS =
-  "id,name,language,folder_id,updated_at,is_deleted,s3_key,s3_bucket";
+  "id,name,language,folder_id,updated_at,deleted_at,s3_key,s3_bucket";
 const FOLDER_LIST_COLUMNS = "id,name,parent_folder_id,updated_at";
 
 function languageToExtension(lang: string): string {
@@ -159,13 +159,13 @@ const codeFilesAdapter: VirtualSourceAdapter = {
         ? supabase
             .schema("code").from("code_files")
             .select(FILE_LIST_COLUMNS)
-            .eq("is_deleted", false)
+            .is("deleted_at", null)
             .is("folder_id", null)
             .order("updated_at", { ascending: false })
         : supabase
             .schema("code").from("code_files")
             .select(FILE_LIST_COLUMNS)
-            .eq("is_deleted", false)
+            .is("deleted_at", null)
             .eq("folder_id", args.parentId)
             .order("updated_at", { ascending: false }),
     ]);
@@ -320,17 +320,18 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     }
     const { error } = await supabase
       .schema("code").from("code_files")
-      .update({ is_deleted: true, updated_at: new Date().toISOString() })
+      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("id", id);
     if (error) throw error;
   },
 
-  async create(supabase, userId, args: CreateArgs) {
+  async create(supabase, _userId, args: CreateArgs) {
+    // `created_by` (owner) and `organization_id` are stamped by the
+    // `_stamp_actor` / `_stamp_org_default` triggers from `auth.uid()`.
     if (args.kind === "folder") {
       const { data, error } = await supabase
         .schema("code").from("code_file_folders")
         .insert({
-          user_id: userId,
           name: args.name,
           parent_folder_id: args.parentId,
         })
@@ -351,7 +352,6 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     const { data, error } = await supabase
       .schema("code").from("code_files")
       .insert({
-        user_id: userId,
         name: args.name,
         content: args.content ?? "",
         folder_id: args.parentId,

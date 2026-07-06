@@ -38,10 +38,13 @@ import {
   Boxes,
   Building2,
   Database,
+  FileCode2,
   FilePen,
   FileText,
   Folder,
+  FolderGit2,
   FolderKanban,
+  GitBranch,
   Layers,
   Layers3,
   LayoutTemplate,
@@ -270,6 +273,26 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Audio Sessions",
     titleColumn: "title",
     contentRole: "source",
+  },
+  // ─── Code (canonical `code.*` entities — attachable to orgs, war rooms, etc.) ─
+  code_file: {
+    Icon: FileCode2,
+    labelPlural: "Code Files",
+    titleColumn: "name",
+    contentRole: "source",
+    hrefFor: (id) => `/code?tab=${encodeURIComponent(`code-file:${id}`)}`,
+  },
+  code_folder: {
+    Icon: FolderGit2,
+    labelPlural: "Code Folders",
+    titleColumn: "name",
+    contentRole: "container",
+  },
+  code_repository: {
+    Icon: GitBranch,
+    labelPlural: "Code Repositories",
+    titleColumn: "name",
+    contentRole: "container",
   },
 
   // ─── Outputs ────────────────────────────────────────────────────────────--

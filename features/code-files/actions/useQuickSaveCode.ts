@@ -126,7 +126,7 @@ export function useQuickSaveCode({
   }, [folderId, mode]);
 
   const filesInFolder = useMemo(
-    () => allFiles.filter((f) => !f.is_deleted && f.folder_id === folderId),
+    () => allFiles.filter((f) => !f.deleted_at && f.folder_id === folderId),
     [allFiles, folderId],
   );
 

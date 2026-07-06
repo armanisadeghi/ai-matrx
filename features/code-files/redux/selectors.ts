@@ -83,7 +83,7 @@ export function makeSelectChildFolders(parentId: string | null) {
 /** Files inside a given folder (null = loose/unfiled). */
 export function makeSelectFilesInFolder(folderId: string | null) {
   return createSelector(selectAllCodeFiles, (files) =>
-    files.filter((f) => !f.is_deleted && f.folder_id === folderId),
+    files.filter((f) => !f.deleted_at && f.folder_id === folderId),
   );
 }
 

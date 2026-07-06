@@ -5043,7 +5043,6 @@ export type Database = {
           icon_name: string
           id: string
           is_active: boolean
-          is_public: boolean
           metadata: Json
           name: string
           organization_id: string
@@ -5052,7 +5051,6 @@ export type Database = {
           sort_order: number | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
           workspace_id: string | null
@@ -5066,7 +5064,6 @@ export type Database = {
           icon_name?: string
           id?: string
           is_active?: boolean
-          is_public?: boolean
           metadata?: Json
           name: string
           organization_id: string
@@ -5075,7 +5072,6 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workspace_id?: string | null
@@ -5089,7 +5085,6 @@ export type Database = {
           icon_name?: string
           id?: string
           is_active?: boolean
-          is_public?: boolean
           metadata?: Json
           name?: string
           organization_id?: string
@@ -5098,7 +5093,6 @@ export type Database = {
           sort_order?: number | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workspace_id?: string | null
@@ -5123,14 +5117,16 @@ export type Database = {
           content: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           diff_metadata: Json
           id: string
           language: string | null
           metadata: Json
           name: string | null
+          organization_id: string
           updated_at: string
           updated_by: string | null
-          user_id: string
+          version: number
           version_number: number
         }
         Insert: {
@@ -5142,14 +5138,16 @@ export type Database = {
           content?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           diff_metadata?: Json
           id?: string
           language?: string | null
           metadata?: Json
           name?: string | null
+          organization_id: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
+          version?: number
           version_number: number
         }
         Update: {
@@ -5161,14 +5159,16 @@ export type Database = {
           content?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           diff_metadata?: Json
           id?: string
           language?: string | null
           metadata?: Json
           name?: string | null
+          organization_id?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
+          version?: number
           version_number?: number
         }
         Relationships: [
@@ -5190,8 +5190,6 @@ export type Database = {
           deleted_at: string | null
           folder_id: string | null
           id: string
-          is_deleted: boolean
-          is_public: boolean
           is_readonly: boolean
           language: string
           metadata: Json
@@ -5206,7 +5204,6 @@ export type Database = {
           task_id: string | null
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
           workspace_id: string | null
@@ -5219,8 +5216,6 @@ export type Database = {
           deleted_at?: string | null
           folder_id?: string | null
           id?: string
-          is_deleted?: boolean
-          is_public?: boolean
           is_readonly?: boolean
           language?: string
           metadata?: Json
@@ -5235,7 +5230,6 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workspace_id?: string | null
@@ -5248,8 +5242,6 @@ export type Database = {
           deleted_at?: string | null
           folder_id?: string | null
           id?: string
-          is_deleted?: boolean
-          is_public?: boolean
           is_readonly?: boolean
           language?: string
           metadata?: Json
@@ -5264,7 +5256,6 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workspace_id?: string | null
@@ -5298,7 +5289,6 @@ export type Database = {
           git_url: string | null
           id: string
           is_active: boolean
-          is_public: boolean
           last_synced_at: string | null
           metadata: Json
           name: string
@@ -5311,7 +5301,6 @@ export type Database = {
           sync_status: string
           updated_at: string
           updated_by: string | null
-          user_id: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
           workspace_id: string | null
@@ -5327,7 +5316,6 @@ export type Database = {
           git_url?: string | null
           id?: string
           is_active?: boolean
-          is_public?: boolean
           last_synced_at?: string | null
           metadata?: Json
           name: string
@@ -5340,7 +5328,6 @@ export type Database = {
           sync_status?: string
           updated_at?: string
           updated_by?: string | null
-          user_id: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workspace_id?: string | null
@@ -5356,7 +5343,6 @@ export type Database = {
           git_url?: string | null
           id?: string
           is_active?: boolean
-          is_public?: boolean
           last_synced_at?: string | null
           metadata?: Json
           name?: string
@@ -5369,7 +5355,6 @@ export type Database = {
           sync_status?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           workspace_id?: string | null

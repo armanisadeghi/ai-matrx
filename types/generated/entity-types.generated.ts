@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 226 active entity tokens. A token here is FK-valid for
+// 229 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -86,7 +86,10 @@ export type EntityTypeToken =
   | "contact_submission"
   | "content_block"
   | "content_ir_kind"
+  | "content_ir_kind_component"
   | "content_ir_kind_edge"
+  | "content_ir_kind_example"
+  | "content_ir_kind_surface"
   | "content_template"
   | "context_item"
   | "context_item_suggestion"
@@ -279,7 +282,10 @@ export type ComponentEntityToken =
   | "cmp_entry"
   | "code_file_version"
   | "component_group"
+  | "content_ir_kind_component"
   | "content_ir_kind_edge"
+  | "content_ir_kind_example"
+  | "content_ir_kind_surface"
   | "conversation_value"
   | "cx_agent_plan"
   | "cx_agent_task"
@@ -389,7 +395,10 @@ export type ScopeableEntityToken =
   | "contact_submission"
   | "content_block"
   | "content_ir_kind"
+  | "content_ir_kind_component"
   | "content_ir_kind_edge"
+  | "content_ir_kind_example"
+  | "content_ir_kind_surface"
   | "content_template"
   | "context_item"
   | "context_item_suggestion"
@@ -621,7 +630,10 @@ export const ENTITY_TYPE_METADATA = {
   "contact_submission": { token: "contact_submission", schema: "public", table: "contact_submissions", label: "Contact Submission", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "content_block": { token: "content_block", schema: "public", table: "content_blocks", label: "Content Block", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "content_ir_kind": { token: "content_ir_kind", schema: "content_ir", table: "kind_definition", label: "Content-IR Kind", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
+  "content_ir_kind_component": { token: "content_ir_kind_component", schema: "content_ir", table: "kind_component", label: "Kind Component", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "content_ir_kind_edge": { token: "content_ir_kind_edge", schema: "content_ir", table: "kind_edge", label: "Content-IR Kind Edge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "content_ir_kind_example": { token: "content_ir_kind_example", schema: "content_ir", table: "kind_example", label: "Kind Example", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "content_ir_kind_surface": { token: "content_ir_kind_surface", schema: "content_ir", table: "kind_surface", label: "Kind Surface", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "content_template": { token: "content_template", schema: "public", table: "content_template", label: "Content Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "context_item": { token: "context_item", schema: "context", table: "context_items", label: "Context Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "context_item_suggestion": { token: "context_item_suggestion", schema: "reg", table: "context_item_suggestions", label: "Context Item Suggestion", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -851,7 +863,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "contact_submission",
   "content_block",
   "content_ir_kind",
+  "content_ir_kind_component",
   "content_ir_kind_edge",
+  "content_ir_kind_example",
+  "content_ir_kind_surface",
   "content_template",
   "context_item",
   "context_item_suggestion",
