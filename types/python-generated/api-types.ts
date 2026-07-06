@@ -24068,13 +24068,17 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "input_schema" | "effective_output_schema";
+            source: "input_schema" | "effective_output_schema" | "kind";
             /** Json Schema */
             json_schema?: {
                 [key: string]: unknown;
             };
             /** Required */
             required?: string[];
+            /** Input Kind */
+            input_kind?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -24216,6 +24220,10 @@ export interface components {
             emits_stream?: boolean | null;
             /** Can Interrupt */
             can_interrupt?: boolean | null;
+            /** Input Kind */
+            input_kind?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
             /** Input Schema */
             input_schema?: {
                 [key: string]: unknown;
@@ -27352,6 +27360,10 @@ export interface components {
              * @default false
              */
             required: boolean;
+            /** Input Kind */
+            input_kind?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
         } & {
             [key: string]: unknown;
         };

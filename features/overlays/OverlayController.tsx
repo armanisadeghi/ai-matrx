@@ -3205,6 +3205,11 @@ export default function OverlayController() {
                 ? data.showCopyButton
                 : undefined
             }
+            primaryActions={
+              (Array.isArray(data?.primaryActions)
+                ? data.primaryActions
+                : undefined) as never
+            }
           />
         );
       })}

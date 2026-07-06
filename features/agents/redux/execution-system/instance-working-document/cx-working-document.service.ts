@@ -487,3 +487,91 @@ export async function listDocumentConversations(
   }
   return res.data.edges.map((e) => e.targetId);
 }
+
+// =============================================================================
+// Durable version history (history.row_versions via the CANONICAL versioning
+// RPCs — never a raw client read; `history` is audit-locked). The working
+// document registers in `platform.entity_types` under token 'working_document',
+// so `version_list` / `version_snapshot` / `version_restore` (each gated by
+// `iam.has_access`) serve its full version history. Every agent ctx_patch and
+// user commit is captured here by the `_history` trigger, so this is the true,
+// durable "full version history" — surfaced in the drawer's history panel and
+// used as the reload-safe fallback for the agent-diff view.
+// =============================================================================
+
+/** The entity token the working document registers under. */
+export const WORKING_DOCUMENT_TOKEN = "working_document";
+
+export interface WorkingDocumentVersion {
+  version: number;
+  /** DB operation that produced this version (INSERT / UPDATE / DELETE). */
+  operation: string;
+  /** Who made the edit — the agent (service actor) or the user. Null when unknown. */
+  actorId: string | null;
+  occurredAt: string;
+  /** True when this is the document's current live version. */
+  isCurrent: boolean;
+}
+
+/** List a working document's durable versions, newest first. */
+export async function listWorkingDocumentVersions(
+  documentId: string,
+  limit = 50,
+): Promise<WorkingDocumentVersion[]> {
+  const { data, error } = await supabase.rpc("version_list", {
+    p_token: WORKING_DOCUMENT_TOKEN,
+    p_id: documentId,
+    p_limit: limit,
+  });
+  if (error) {
+    throw new Error(`[working-document] version_list failed: ${error.message}`);
+  }
+  return (data ?? []).map((r) => ({
+    version: r.version,
+    operation: r.operation,
+    actorId: r.actor_id ?? null,
+    occurredAt: r.occurred_at,
+    isCurrent: r.is_current,
+  }));
+}
+
+/** The full text content captured at a given version (from the row snapshot). */
+export async function getWorkingDocumentVersionContent(
+  documentId: string,
+  version: number,
+): Promise<string | null> {
+  const { data, error } = await supabase.rpc("version_snapshot", {
+    p_token: WORKING_DOCUMENT_TOKEN,
+    p_id: documentId,
+    p_version: version,
+  });
+  if (error) {
+    throw new Error(
+      `[working-document] version_snapshot failed: ${error.message}`,
+    );
+  }
+  const content = (data as { content?: unknown } | null)?.content;
+  return typeof content === "string" ? content : null;
+}
+
+/**
+ * Restore a working document to a prior version (content columns only — never
+ * identity/ownership). Returns the NEW version number (restore itself captures a
+ * fresh version, so history is preserved). Editor access required.
+ */
+export async function restoreWorkingDocumentVersion(
+  documentId: string,
+  version: number,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("version_restore", {
+    p_token: WORKING_DOCUMENT_TOKEN,
+    p_id: documentId,
+    p_version: version,
+  });
+  if (error) {
+    throw new Error(
+      `[working-document] version_restore failed: ${error.message}`,
+    );
+  }
+  return data as number;
+}

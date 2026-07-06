@@ -27,6 +27,25 @@
     "title": "ReasoningChunkPayload",
     "type": "object"
   },
+  "ReasoningPayload": {
+    "additionalProperties": false,
+    "description": "Content-LESS reasoning lifecycle signal. Fires when a provider opens or\ncloses a thinking/reasoning block, INDEPENDENT of whether reasoning text is\nstreamed. Every provider signals a reasoning block start even when the\nreasoning text is suppressed (Anthropic display=\"omitted\", OpenAI\nreasoning_summary=\"never\", Gemini include_thoughts=False) — this event\ncarries that signal so the UI can show a 'thinking' state during the long\nsilent gap that would otherwise look like nothing but heartbeats. The\nreasoning TEXT, when requested, still flows on the `reasoning_chunk`\nchannel; this event is purely the on/off lifecycle.",
+    "properties": {
+      "state": {
+        "enum": [
+          "started",
+          "stopped"
+        ],
+        "title": "State",
+        "type": "string"
+      }
+    },
+    "required": [
+      "state"
+    ],
+    "title": "ReasoningPayload",
+    "type": "object"
+  },
   "PhasePayload": {
     "additionalProperties": false,
     "properties": {
@@ -4605,6 +4624,7 @@
         "enum": [
           "chunk",
           "reasoning_chunk",
+          "reasoning",
           "phase",
           "warning",
           "info",
@@ -4653,6 +4673,7 @@
     "enum": [
       "chunk",
       "reasoning_chunk",
+      "reasoning",
       "phase",
       "warning",
       "info",

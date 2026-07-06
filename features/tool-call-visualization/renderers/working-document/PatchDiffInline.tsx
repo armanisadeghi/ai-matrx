@@ -50,10 +50,11 @@ import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDoc
 import type { ToolRendererProps } from "../../types";
 import { getArg, isTerminal } from "../_shared";
 import { humanizeKey } from "../../result-fields/shape";
+import type { WorkingDocPatchArgs } from "./applyWorkingDocPatch";
 import {
-  applyWorkingDocPatch,
-  type WorkingDocPatchArgs,
-} from "./applyWorkingDocPatch";
+  deriveWorkingDocDiffFrame,
+  STRUCTURAL_PATCH_COMMANDS,
+} from "@/features/agents/redux/execution-system/instance-working-document/workingDocPatchDiff";
 
 function readPatchArgs(
   args: ToolRendererProps["entry"]["arguments"],
@@ -72,9 +73,6 @@ function readPatchArgs(
 }
 
 const SCROLL = "max-h-96 overflow-auto rounded-md border border-border bg-background px-3 py-2.5";
-
-/** Commands that produce no text diff → a clean compact summary, not a spinner. */
-const STRUCTURAL = new Set(["json_patch", "json_merge"]);
 
 export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   const { entry, isPersisted, conversationId, requestId } = props;
@@ -114,13 +112,17 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
   let before: string | null = null;
   let after: string | null = null;
   if (live) {
-    before = frozenBefore;
-    const applied = applyWorkingDocPatch(before, readPatchArgs(entry.arguments));
-    // RECONCILE: once the tool completes and the server re-read has changed the
-    // doc, render the server's authoritative content (so a slightly-off
-    // optimistic apply is corrected). Until then, the optimistic result.
-    const serverChanged = isTerminal(entry) && liveCurrent !== before;
-    after = serverChanged ? liveCurrent : applied.ok ? applied.next : null;
+    // Shared derivation — the SAME `before → after` the drawer's live diff uses,
+    // so the inline message and the drawer can never disagree. Single-patch here
+    // (one entry per inline renderer); the drawer folds the whole turn.
+    const frame = deriveWorkingDocDiffFrame({
+      frozenBefore,
+      patches: [readPatchArgs(entry.arguments)],
+      serverContent: liveCurrent,
+      reconcile: isTerminal(entry),
+    });
+    before = frame.before;
+    after = frame.after;
   } else if (typeof newStr === "string") {
     // Persisted / general — accurate from args, which survive reload.
     after = newStr;
@@ -142,7 +144,7 @@ export const PatchDiffInline: React.FC<ToolRendererProps> = (props) => {
       : "Context";
 
   // Structural (json_*) or text-less patch → compact summary, never a spinner.
-  const isStructural = command !== null && STRUCTURAL.has(command);
+  const isStructural = command !== null && STRUCTURAL_PATCH_COMMANDS.has(command);
   const hasText = after !== null && before !== null;
 
   let body: React.ReactNode;

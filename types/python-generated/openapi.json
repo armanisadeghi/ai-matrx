@@ -67385,7 +67385,8 @@
             "type": "string",
             "enum": [
               "input_schema",
-              "effective_output_schema"
+              "effective_output_schema",
+              "kind"
             ],
             "title": "Source"
           },
@@ -67400,6 +67401,28 @@
             },
             "type": "array",
             "title": "Required"
+          },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
           }
         },
         "additionalProperties": true,
@@ -67736,6 +67759,28 @@
               }
             ],
             "title": "Can Interrupt"
+          },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
           },
           "input_schema": {
             "anyOf": [
@@ -75889,6 +75934,28 @@
             "type": "boolean",
             "title": "Required",
             "default": false
+          },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
           }
         },
         "additionalProperties": true,

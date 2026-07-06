@@ -7,6 +7,7 @@
 export const EventType = {
   CHUNK: "chunk",
   REASONING_CHUNK: "reasoning_chunk",
+  REASONING: "reasoning",
   PHASE: "phase",
   WARNING: "warning",
   INFO: "info",
@@ -78,6 +79,10 @@ export interface ChunkPayload {
 
 export interface ReasoningChunkPayload {
   text: string;
+}
+
+export interface ReasoningPayload {
+  state: "started" | "stopped";
 }
 
 export interface PhasePayload {
@@ -2533,6 +2538,11 @@ export interface ReasoningChunkEvent {
   data: ReasoningChunkPayload;
 }
 
+export interface ReasoningEvent {
+  event: "reasoning";
+  data: ReasoningPayload;
+}
+
 export interface PhaseEvent {
   event: "phase";
   data: PhasePayload;
@@ -2642,6 +2652,7 @@ export interface ProviderRetryEvent {
 export type TypedStreamEvent =
   | ChunkEvent
   | ReasoningChunkEvent
+  | ReasoningEvent
   | PhaseEvent
   | WarningEvent
   | InfoEvent
@@ -2704,6 +2715,10 @@ export function isChunkEvent(e: TypedStreamEvent): e is { event: "chunk"; data: 
 
 export function isReasoningChunkEvent(e: TypedStreamEvent): e is { event: "reasoning_chunk"; data: ReasoningChunkPayload } {
   return e.event === "reasoning_chunk";
+}
+
+export function isReasoningEvent(e: TypedStreamEvent): e is { event: "reasoning"; data: ReasoningPayload } {
+  return e.event === "reasoning";
 }
 
 export function isPhaseEvent(e: TypedStreamEvent): e is { event: "phase"; data: PhasePayload } {

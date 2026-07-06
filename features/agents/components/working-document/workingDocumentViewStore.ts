@@ -11,6 +11,13 @@ export interface WorkingDocViewState {
   historyOpen: boolean;
   hasUnseenChange: boolean;
   saving: boolean;
+  /**
+   * The callId of the latest agent patch the user has acknowledged. Dismisses
+   * the "Agent edited" notification (pill + dot) WITHOUT clearing the diff
+   * itself — the diff stays viewable in the agent-diff view. `null` = nothing
+   * acknowledged yet.
+   */
+  seenPatchCallId: string | null;
 }
 
 const DEFAULT_STATE: WorkingDocViewState = {
@@ -19,6 +26,7 @@ const DEFAULT_STATE: WorkingDocViewState = {
   historyOpen: false,
   hasUnseenChange: false,
   saving: false,
+  seenPatchCallId: null,
 };
 
 const store = new Map<string, WorkingDocViewState>();
@@ -45,7 +53,8 @@ export function patchWorkingDocViewState(
     merged.editorMode === cur.editorMode &&
     merged.historyOpen === cur.historyOpen &&
     merged.hasUnseenChange === cur.hasUnseenChange &&
-    merged.saving === cur.saving
+    merged.saving === cur.saving &&
+    merged.seenPatchCallId === cur.seenPatchCallId
   ) {
     return;
   }
@@ -72,6 +81,14 @@ export function setWorkingDocHistoryOpen(
   historyOpen: boolean,
 ): void {
   patchWorkingDocViewState(conversationId, { historyOpen });
+}
+
+/** Acknowledge the latest agent patch — clears the notification, keeps the diff. */
+export function setWorkingDocSeenPatch(
+  conversationId: string,
+  callId: string | null,
+): void {
+  patchWorkingDocViewState(conversationId, { seenPatchCallId: callId });
 }
 
 export function useWorkingDocViewState(

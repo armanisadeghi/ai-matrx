@@ -38,11 +38,14 @@ import {
 import { WorkingDocumentViewControls } from "./WorkingDocumentViewControls";
 import { WorkingDocumentVersionHistory } from "./WorkingDocumentVersionHistory";
 import { DiffViewer } from "@/components/diff/DiffViewer";
-import { useWorkingDocChanges } from "@/features/transcript-studio/hooks/useWorkingDocChanges";
+import { useLiveWorkingDocPatch } from "@/features/agents/redux/execution-system/instance-working-document/useLiveWorkingDocPatch";
+import { WorkingDocumentAgentDiff } from "./WorkingDocumentAgentDiff";
+import { WorkingDocumentLatestVersionDiff } from "./WorkingDocumentLatestVersionDiff";
 import {
   patchWorkingDocViewState,
   setWorkingDocHistoryOpen,
   setWorkingDocMainView,
+  setWorkingDocSeenPatch,
   useWorkingDocViewState,
 } from "./workingDocumentViewStore";
 
@@ -123,11 +126,19 @@ export function WorkingDocumentPanel({
   // already has content). Null = no pending decision.
   const [pendingNoteId, setPendingNoteId] = useState<string | null>(null);
 
-  const { before, after, hasUnseenChange, markSeen } = useWorkingDocChanges(
-    content,
-    draft,
-  );
-  const { mainView, historyOpen } = useWorkingDocViewState(conversationId);
+  // The agent's live edit to the working document — the SAME source the inline
+  // tool-call message animates. Drives the agent-diff view and the "Agent
+  // edited" notification.
+  const livePatch = useLiveWorkingDocPatch(conversationId);
+  const { mainView, historyOpen, seenPatchCallId } =
+    useWorkingDocViewState(conversationId);
+
+  // A patch is "unseen" until the user opens the diff view (or a fresh one lands
+  // with a new callId). Acknowledging it clears the notification but NOT the diff.
+  const hasUnseenChange =
+    livePatch.hasPatch &&
+    !!livePatch.latestCallId &&
+    livePatch.latestCallId !== seenPatchCallId;
 
   const isScratch = kind === "scratch";
   const docNoun = isScratch ? "scratchpad" : "working document";
@@ -137,9 +148,13 @@ export function WorkingDocumentPanel({
     patchWorkingDocViewState(conversationId, { hasUnseenChange, saving });
   }, [conversationId, hasUnseenChange, saving]);
 
+  // Opening the diff view acknowledges the current patch — clears the pill/dot
+  // while keeping the diff itself on screen (the old markSeen wiped the diff).
   useEffect(() => {
-    if (mainView === "agent-diff") markSeen();
-  }, [mainView, markSeen]);
+    if (mainView === "agent-diff" && livePatch.latestCallId) {
+      setWorkingDocSeenPatch(conversationId, livePatch.latestCallId);
+    }
+  }, [mainView, livePatch.latestCallId, conversationId]);
 
   const isBound = binding.kind === "note" && !!binding.id;
 
@@ -393,16 +408,16 @@ export function WorkingDocumentPanel({
                 className="h-full min-h-0"
               />
             ) : kind === "working" && mainView === "agent-diff" ? (
-              <DiffViewer
-                original={before}
-                modified={after}
-                engine="light"
-                language="markdown"
-                originalLabel="Before"
-                modifiedLabel="After (agent's edit)"
-                defaultView="highlight"
-                showToolbar
-                className="h-full min-h-0"
+              <WorkingDocumentAgentDiff
+                livePatch={livePatch}
+                fallback={
+                  <WorkingDocumentLatestVersionDiff
+                    documentId={
+                      binding.kind === "cx_working_document" ? binding.id : null
+                    }
+                    currentContent={content}
+                  />
+                }
               />
             ) : (
               <WorkingDocumentEditor

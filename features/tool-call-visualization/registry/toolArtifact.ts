@@ -29,7 +29,10 @@ export interface ToolArtifact {
   id?: string;
 }
 
-const PATCH_TOOLS = new Set(["ctx_patch", "context_patch"]);
+/** The `ctx_patch` tool and its live production alias — the canonical set of
+ *  tool names that carry a working-document (or any ctx key) patch. Shared so
+ *  the drawer's live-diff hook matches patch entries the same way. */
+export const PATCH_TOOLS = new Set(["ctx_patch", "context_patch"]);
 const NOTE_TOOLS = new Set(["note", "war_room_update_note"]);
 const WORKING_DOC_KEY = "working_document";
 
