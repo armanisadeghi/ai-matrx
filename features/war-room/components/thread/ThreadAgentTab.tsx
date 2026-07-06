@@ -17,12 +17,16 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
-import { ensureThreadAudioSession } from "@/features/war-room/redux/thunks";
-import { useThreadAudioSessionSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
+import {
+  ensureThreadAudioSession,
+  startThreadConversation,
+} from "@/features/war-room/redux/thunks";
+import { useThreadConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // Code-split: ThreadAgentPanel pulls the Scribe Agent+ graph (agents execution +
@@ -46,6 +50,58 @@ const ThreadAgentPanel = dynamic(
   },
 );
 
+/**
+ * The Chat tab's toolbar row — identical chrome to Notes/Audio: blue chat
+ * icon, then the canonical AssociationEntitySelect over the thread's
+ * `conversation → thread` edges. The label is the conversation's real title
+ * (the server auto-labels seconds after the first turn); a chat that hasn't
+ * been submitted yet shows its AGENT's name instead. "+" doesn't name a chat —
+ * it opens the canonical AgentListDropdown (the /chat route picker): picking
+ * an agent mints a fresh conversation, attaches it to the thread, and binds
+ * the panel to it.
+ */
+function ThreadChatChrome({
+  threadId,
+  sessionId,
+}: {
+  threadId: string;
+  sessionId: string | null;
+}) {
+  const dispatch = useAppDispatch();
+  const adapter = useThreadConversationSelectAdapter(threadId, sessionId);
+
+  return (
+    <AssociationEntitySelect
+      token="conversation"
+      adapter={adapter}
+      align="start"
+      emptyLabel="Chat"
+      iconClassName="text-primary"
+      className="min-w-0 flex-1"
+      createSlot={(close) => (
+        <AgentListDropdown
+          onSelect={(agentId) => {
+            if (!sessionId) return;
+            void dispatch(
+              startThreadConversation(threadId, sessionId, agentId),
+            );
+            close();
+          }}
+          triggerSlot={
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Plus className="size-3.5" />
+              New Chat
+            </button>
+          }
+        />
+      )}
+    />
+  );
+}
+
 export function ThreadAgentTab({
   threadId,
   compact,
@@ -55,10 +111,6 @@ export function ThreadAgentTab({
 }) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(threadId));
-  // Same session set as the Audio tab (the agent's transcript context) — the
-  // canonical name dropdown lets the user see, rename, and switch which
-  // session (and therefore which conversation) this agent panel is bound to.
-  const sessionAdapter = useThreadAudioSessionSelectAdapter(threadId);
 
   // Ensure the tile has a backing studio session so the agent panel always has
   // one to bind to (idempotent + coalesced inside the thunk). Shared with the
@@ -99,14 +151,8 @@ export function ThreadAgentTab({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {!compact ? (
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1">
-          <AssociationEntitySelect
-            token="studio_session"
-            adapter={sessionAdapter}
-            align="start"
-            emptyLabel="Session"
-            className="min-w-0 flex-1"
-          />
+        <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
+          <ThreadChatChrome threadId={threadId} sessionId={sessionId} />
         </div>
       ) : null}
       <div className="min-h-0 flex-1">

@@ -8,9 +8,9 @@
 // invisible to the Studio list) linked via a platform.associations edge.
 //
 // The TILE owns session lifecycle through the canonical AssociationEntitySelect
-// (real session titles, inline rename, switch, unlink, "+ New" with a name;
-// adapter = useThreadAudioSessionSelectAdapter) plus a one-click "New Session"
-// button. CleanupPad is bound to the active session via `sessionId`
+// (real session titles, inline rename, switch, unlink, "+ New Session" with a
+// name; adapter = useThreadAudioSessionSelectAdapter) — identical toolbar
+// chrome to the Notes tab. CleanupPad is bound to the active session via `sessionId`
 // (variant="embedded", urlSync=false), and the FULL pipeline stays one click
 // away IN PLACE — never stripped: the pad's own reveal bar opens the clean
 // agent, context items, dictionary + clean-up (the "Controls" drawer), the

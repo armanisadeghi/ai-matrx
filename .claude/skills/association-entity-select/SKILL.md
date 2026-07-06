@@ -41,7 +41,7 @@ When the surface has its own active semantics or create pipeline, implement the 
 **Reference implementation:** `features/war-room/hooks/useThreadEntitySelect.ts` — `useThreadNoteSelectAdapter` (is_active edge metadata, notes autosave rename via `notesApi.update` + `upsertNoteFromServer`) and `useThreadAudioSessionSelectAdapter` (`studio_sessions` titles + `updateSessionThunk` rename). Consumers: `ThreadNotesTab` / `ThreadAudioTab` / `ThreadAgentTab`.
 
 Adapter contract details:
-- `createAndAttach(title)` must create the row, write the association, AND make it active; return the new id or null.
+- `createAndAttach(title)` must create the row, write the association, AND make it active; return the new id or null. **Optional** — omit it when creation isn't name-driven and pass the component's **`createSlot`** instead: a custom footer (ReactNode or `(close) => ReactNode`) replacing the name-input creator. Reference: the war-room Chat tab passes the canonical `AgentListDropdown` — "+ New Chat" = pick an AGENT, which mints a conversation (`startThreadConversation`); the label shows the agent's name until the server auto-labels the conversation after its first turn (`useThreadConversationSelectAdapter`'s label chain).
 - `rename(id, title)` returns false on failure (the component toasts + keeps the editor open). Call `primeEntityTitle(token, id, title)` on success.
 - Items carry real titles — positional fallbacks (`Note 2`, `Recording 3`) only for unhydrated rows.
 

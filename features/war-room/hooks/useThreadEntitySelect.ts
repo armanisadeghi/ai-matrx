@@ -8,23 +8,36 @@
 // useAssociationEntitySelectAdapter.
 //
 //   useThreadNoteSelectAdapter          — the Notes tab's notes
-//   useThreadAudioSessionSelectAdapter  — the Audio/Agent tabs' studio sessions
+//   useThreadAudioSessionSelectAdapter  — the Audio tab's studio sessions
+//   useThreadConversationSelectAdapter  — the Chat (agent) tab's conversations
 
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { AssociationEntitySelectAdapter } from "@/features/scopes/components/associations/AssociationEntitySelect";
-import { primeEntityTitle } from "@/features/scopes/service/entityTitles";
+import {
+  getCachedEntityTitle,
+  primeEntityTitle,
+} from "@/features/scopes/service/entityTitles";
+import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { selectNotesMap } from "@/features/notes/redux/selectors";
 import { update as updateNoteApi } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
-import { selectSessionsById } from "@/features/transcript-studio/redux/selectors";
+import {
+  selectAssistantConversationId,
+  selectAssistantConversations,
+  selectSessionsById,
+} from "@/features/transcript-studio/redux/selectors";
 import { updateSessionThunk } from "@/features/transcript-studio/redux/thunks";
+import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import {
   selectActiveAudioSessionId,
+  selectActiveConversationId,
   selectActiveNoteId,
   selectAudioSessionIdsForThread,
   selectContainerAssignmentsLoaded,
+  selectConversationIdsForThread,
   selectNoteIdsForThread,
 } from "@/features/war-room/redux/selectors";
 import {
@@ -32,6 +45,7 @@ import {
   addNoteToThread,
   removeEntityFromThread,
   setThreadActiveAudioSession,
+  setThreadActiveConversation,
   setThreadActiveNote,
 } from "@/features/war-room/redux/thunks";
 
@@ -116,5 +130,86 @@ export function useThreadAudioSessionSelectAdapter(
     },
     detach: (id) =>
       dispatch(removeEntityFromThread(threadId, "studio_session", id)),
+  };
+}
+
+/**
+ * The Chat tab's conversations — `conversation → thread` edges. The ACTIVE
+ * chat is what the session's assistant pointer binds the embedded panel to
+ * (edge is_active mirrors it). Labels resolve: live conversation-list title
+ * (updates seconds after the first turn, on the server's `conversation_labeled`
+ * event) → fetched cx_conversation title (reloads) → the chat's AGENT name
+ * (a fresh chat has no row/label yet) → positional "Chat N".
+ *
+ * No `createAndAttach`: a chat is created by PICKING AN AGENT — the Chat tab
+ * passes the canonical AgentListDropdown via the component's `createSlot` and
+ * dispatches `startThreadConversation`.
+ */
+export function useThreadConversationSelectAdapter(
+  threadId: string,
+  sessionId: string | null,
+): AssociationEntitySelectAdapter {
+  const dispatch = useAppDispatch();
+  const loaded = useAppSelector(
+    selectContainerAssignmentsLoaded("thread", threadId),
+  );
+  const edgeIds = useAppSelector(selectConversationIdsForThread(threadId));
+  const edgeActiveId = useAppSelector(selectActiveConversationId(threadId));
+  // What the panel is actually bound to right now — wins over the edge flag.
+  const boundId = useAppSelector(selectAssistantConversationId(sessionId));
+  const listById = useAppSelector((s) => s.conversationList.byConversationId);
+  const roster = useAppSelector(selectAssistantConversations(sessionId));
+  const agentsById = useAppSelector(selectAllAgents);
+
+  // A just-minted chat's edge write is in flight for a moment — surface the
+  // bound conversation immediately so the label never blanks.
+  const ids =
+    boundId && !edgeIds.includes(boundId) ? [...edgeIds, boundId] : edgeIds;
+
+  // Kick the batched DB-title fetch for edges whose list entry isn't loaded
+  // (e.g. after a reload, before any conversation list hydrates).
+  useEntityTitles(
+    ids.map((id) => ({
+      token: "conversation",
+      id,
+      label: listById[id]?.title ?? null,
+    })),
+  );
+
+  const items = ids.map((id, i) => {
+    const agentId = roster.find((r) => r.conversationId === id)?.agentId;
+    const agentName = agentId ? agentsById[agentId]?.name : undefined;
+    return {
+      id,
+      title:
+        listById[id]?.title?.trim() ||
+        getCachedEntityTitle("conversation", id) ||
+        agentName?.trim() ||
+        `Chat ${i + 1}`,
+    };
+  });
+
+  return {
+    loading: !loaded,
+    items,
+    activeId: boundId ?? edgeActiveId,
+    setActive: (id) => {
+      if (!sessionId) return;
+      return dispatch(setThreadActiveConversation(threadId, sessionId, id));
+    },
+    rename: async (id, title) => {
+      try {
+        await dispatch(renameConversation({ conversationId: id, title })).unwrap();
+        primeEntityTitle("conversation", id, title);
+        return true;
+      } catch (err) {
+        console.error("[useThreadConversationSelectAdapter] rename failed", {
+          id,
+          err,
+        });
+        return false;
+      }
+    },
+    detach: (id) => dispatch(removeEntityFromThread(threadId, "conversation", id)),
   };
 }

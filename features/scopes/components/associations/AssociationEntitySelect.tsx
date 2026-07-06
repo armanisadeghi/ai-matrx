@@ -142,7 +142,10 @@ export function AssociationEntitySelect({
     <div className={cn("flex min-w-0 items-center gap-0.5", className)}>
       {showIcon ? (
         <info.Icon
-          className={cn("size-3.5 shrink-0", iconClassName ?? "text-muted-foreground")}
+          className={cn(
+            "size-3.5 shrink-0",
+            iconClassName ?? "text-muted-foreground",
+          )}
           aria-hidden
         />
       ) : null}
@@ -212,7 +215,8 @@ export function AssociationEntitySelect({
                       key={item.id}
                       value={`${item.title} ${item.id}`}
                       onSelect={() => {
-                        if (item.id !== activeId) void adapter.setActive(item.id);
+                        if (item.id !== activeId)
+                          void adapter.setActive(item.id);
                         close();
                       }}
                       className="group gap-2"
@@ -223,7 +227,9 @@ export function AssociationEntitySelect({
                           item.id === activeId ? "opacity-100" : "opacity-0",
                         )}
                       />
-                      <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.title}
+                      </span>
                       {adapter.detach && item.id !== activeId ? (
                         <button
                           type="button"
@@ -251,66 +257,72 @@ export function AssociationEntitySelect({
             {/* Create footer — outside CommandList so search never hides it. */}
             {createSlot !== undefined ? (
               <div className="border-t border-border p-1">
-                {typeof createSlot === "function" ? createSlot(close) : createSlot}
+                {typeof createSlot === "function"
+                  ? createSlot(close)
+                  : createSlot}
               </div>
             ) : null}
             {createSlot === undefined && adapter.createAndAttach ? (
-            <div className="border-t border-border p-1">
-              {creating ? (
-                <div className="flex items-center gap-1 px-1 py-0.5">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={draftName}
-                    disabled={busy}
-                    placeholder={`New ${entityLabel} name…`}
-                    onChange={(e) => setDraftName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void create(draftName);
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setCreating(false);
-                        setDraftName("");
-                      }
-                    }}
-                    className="h-6 w-full min-w-0 rounded-sm bg-transparent px-1 text-base outline-none focus:bg-background focus:ring-1 focus:ring-ring md:text-xs"
-                    aria-label={`New ${entityLabel} name`}
-                  />
+              <div className="border-t border-border p-1">
+                {creating ? (
+                  <div className="flex items-center gap-1 px-1 py-0.5">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={draftName}
+                      disabled={busy}
+                      placeholder={`New ${entityLabel} name…`}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void create(draftName);
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCreating(false);
+                          setDraftName("");
+                        }
+                      }}
+                      className="h-6 w-full min-w-0 rounded-sm bg-transparent px-1 text-base outline-none focus:bg-background focus:ring-1 focus:ring-ring md:text-xs"
+                      aria-label={`New ${entityLabel} name`}
+                    />
+                    <button
+                      type="button"
+                      disabled={busy || !draftName.trim()}
+                      onClick={() => void create(draftName)}
+                      className="inline-flex h-6 shrink-0 items-center rounded-md px-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-accent disabled:opacity-50"
+                    >
+                      {busy ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        "Create"
+                      )}
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    disabled={busy || !draftName.trim()}
-                    onClick={() => void create(draftName)}
-                    className="inline-flex h-6 shrink-0 items-center rounded-md px-1.5 text-[10px] font-medium text-primary transition-colors hover:bg-accent disabled:opacity-50"
+                    disabled={busy}
+                    onClick={() => {
+                      // A typed search that matched nothing doubles as the new
+                      // name — one click instead of retyping it.
+                      if (query.trim()) void create(query);
+                      else setCreating(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    {busy ? <Loader2 className="size-3 animate-spin" /> : "Create"}
+                    {busy ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Plus className="size-3.5" />
+                    )}
+                    {query.trim()
+                      ? `Create "${query.trim()}"`
+                      : `New ${info.label}`}
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    // A typed search that matched nothing doubles as the new
-                    // name — one click instead of retyping it.
-                    if (query.trim()) void create(query);
-                    else setCreating(true);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                >
-                  {busy ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Plus className="size-3.5" />
-                  )}
-                  {query.trim()
-                    ? `Create "${query.trim()}"`
-                    : `New ${info.label}`}
-                </button>
-              )}
-            </div>
+                )}
+              </div>
             ) : null}
           </Command>
         </PopoverContent>
