@@ -217,7 +217,12 @@ async function fetchProcessedDocument(
     }
   })()
     .then((doc) => {
-      fetchDocCache.set(key, { resolvedAt: Date.now(), doc });
+      // Only cache a HIT. Caching a `null` (row not yet visible right after
+      // the server created it, a transient RLS/replication race, or userId
+      // not hydrated) would pin that miss for the full TTL — so the studio's
+      // just-uploaded doc would 404 in the reader for 30s even though the
+      // row exists. A miss must be allowed to self-heal on the next read.
+      if (doc) fetchDocCache.set(key, { resolvedAt: Date.now(), doc });
       return doc;
     })
     .finally(() => {
@@ -386,11 +391,26 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   // ── Batch extraction ───────────────────────────────────────────────────────
 
-  const extractFiles = useCallback(async () => {
-    if (selectedFiles.length === 0) return;
+  interface ExtractFilesOptions {
+    /**
+     * Fired the instant the FIRST file finishes and the server hands back a
+     * `doc_id` — BEFORE (and independent of) the `processed_documents` detail
+     * fetch. The studio uses this to route straight to the new doc so the
+     * reader opens the moment the id exists. Decoupled from the detail fetch
+     * on purpose: routing must never hinge on a read that can transiently
+     * return null right after the row is created.
+     */
+    onFirstDocId?: (docId: string) => void;
+  }
+
+  const extractFiles = useCallback(
+    async (opts: ExtractFilesOptions = {}): Promise<string[]> => {
+    if (selectedFiles.length === 0) return [];
 
     setBatchStatus("extracting");
     firstCompletedTabRef.current = null;
+    const completedDocIds: string[] = [];
+    let firstDocIdFired = false;
 
     // Create placeholder tabs for each file
     const placeholderTabs: ExtractionTab[] = selectedFiles.map((file, i) => ({
@@ -485,7 +505,19 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           if (!targetPlaceholder) continue;
 
           if (status === "done" && docId) {
-            // Fetch the full document
+            // Hand the id off IMMEDIATELY — before the detail fetch — so the
+            // studio can route to the new doc the moment it exists. The
+            // reader loads the row itself; blocking navigation on the fetch
+            // below (which can momentarily miss) is what stranded the user
+            // on the upload screen after a successful extraction.
+            completedDocIds.push(docId);
+            if (!firstDocIdFired) {
+              firstDocIdFired = true;
+              opts.onFirstDocId?.(docId);
+            }
+
+            // Fetch the full document (hydrates the open tab; the route's own
+            // fetch shares this via the in-flight dedup).
             const doc = await fetchDocument(docId);
             const newTabId = docId;
 
@@ -574,7 +606,10 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         setActiveTabId(firstCompletedTabRef.current);
       }
     }
-  }, [
+
+    return completedDocIds;
+  },
+  [
     selectedFiles,
     backendUrl,
     getAuthHeaders,

@@ -61,9 +61,11 @@ export function PdfStudioUpload({
 
   // Track the placeholder ids belonging to THIS upload session, so the
   // progress list shows only files the user just added — not stray tabs
-  // from elsewhere in the studio.
+  // from elsewhere in the studio. Populated while extracting: a placeholder
+  // keeps its id in the `extracting`/`error` states (only `done` tabs morph
+  // their id to the doc id), so watching for `extracting` tabs captures the
+  // session accurately without the stale-closure races the old code had.
   const sessionTabIdsRef = useRef<Set<string>>(new Set());
-  const firstReadyFiredRef = useRef(false);
 
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,76 +88,42 @@ export function PdfStudioUpload({
   const handleExtract = useCallback(async () => {
     if (extractor.selectedFiles.length === 0) return;
 
-    // Snapshot the *next* batch's placeholder ids by watching the tab list
-    // before/after extractFiles() begins. Easier path: grab the current
-    // ids before, run extractFiles, and treat anything new as ours.
-    const beforeIds = new Set(extractor.tabs.map((t) => t.id));
-    firstReadyFiredRef.current = false;
     sessionTabIdsRef.current = new Set();
 
-    // Kick off — extractFiles streams. We don't await yet; we want the
-    // `tabs` effect below to begin firing first-ready notifications as
-    // soon as a placeholder transitions to `done`.
-    const runP = extractor.extractFiles();
-
-    // After tabs update on the first synchronous mutation, capture the
-    // freshly-added placeholder ids. We poll one microtask later to let
-    // React commit the placeholder rows.
-    queueMicrotask(() => {
-      for (const t of extractor.tabs) {
-        if (!beforeIds.has(t.id)) sessionTabIdsRef.current.add(t.id);
-      }
+    // Route the moment the FIRST file's `doc_id` lands — the hook fires this
+    // from inside the stream, before/independent of the detail fetch, so the
+    // hand-off can't be blocked by a read that momentarily returns null.
+    // `extractFiles` resolves with the ids of every file that completed.
+    const newIds = await extractor.extractFiles({
+      onFirstDocId: (docId) => onFirstDocReady?.(docId),
     });
 
-    await runP;
-
-    // After extraction completes, the tabs that started as placeholders
-    // have been promoted to their `doc.id`s. Collect successful new docs.
-    const newIds: string[] = [];
-    for (const t of extractor.tabs) {
-      if (
-        t.status === "done" &&
-        t.document &&
-        !beforeIds.has(t.id) // brand-new tab id
-      ) {
-        newIds.push(t.id);
-      }
-    }
     onUploadComplete?.(newIds);
-  }, [extractor, onUploadComplete]);
+  }, [extractor, onUploadComplete, onFirstDocReady]);
 
-  // Watch tabs for the first session tab to flip to `done`. Fires once
-  // per `handleExtract` invocation.
+  // Capture this session's placeholder ids while the batch runs. Placeholder
+  // tabs hold their id in the `extracting`/`error` states, so this scopes the
+  // progress list to the current upload without matching on the morphing
+  // done-id.
   useEffect(() => {
-    if (firstReadyFiredRef.current) return;
-    if (!isExtracting && sessionTabIdsRef.current.size === 0) return;
+    if (!isExtracting) return;
     for (const t of extractor.tabs) {
-      // After a placeholder completes the tab id MORPHS to the doc id.
-      // We can't match on the original placeholder id reliably, so we
-      // accept any "newly observed done tab" while the session is active.
-      if (
-        t.status === "done" &&
-        t.document &&
-        !firstReadyFiredRef.current
-      ) {
-        firstReadyFiredRef.current = true;
-        onFirstDocReady?.(t.id);
-        break;
-      }
+      if (t.status === "extracting") sessionTabIdsRef.current.add(t.id);
     }
-  }, [extractor.tabs, isExtracting, onFirstDocReady]);
-
-  // Visible progress rows — placeholders + the just-finished tabs from
-  // this session.
-  const progressRows = useMemo(() => {
-    if (!isExtracting && sessionTabIdsRef.current.size === 0) return [];
-    return extractor.tabs.filter(
-      (t) =>
-        t.status === "extracting" ||
-        t.status === "error" ||
-        (t.status === "done" && firstReadyFiredRef.current),
-    );
   }, [extractor.tabs, isExtracting]);
+
+  // Visible progress rows — the in-flight / failed files from this session.
+  // Done files vanish from here because the studio routes to (or auto-selects)
+  // the new doc the instant it's ready.
+  const progressRows = useMemo(
+    () =>
+      extractor.tabs.filter(
+        (t) =>
+          sessionTabIdsRef.current.has(t.id) &&
+          (t.status === "extracting" || t.status === "error"),
+      ),
+    [extractor.tabs],
+  );
 
   return (
     <div
