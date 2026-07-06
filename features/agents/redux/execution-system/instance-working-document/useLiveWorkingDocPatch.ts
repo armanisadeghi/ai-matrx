@@ -22,7 +22,7 @@
  * for a long-lived (always-mounted) drawer.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -110,23 +110,20 @@ export function useLiveWorkingDocPatch(
   const latestCallId = latestEntry?.callId ?? null;
 
   // Freeze BEFORE the instant this request's first patch appears; re-freeze on a
-  // new request. Captured in an effect (not a render-time ref) so the later
-  // post-write re-read that mutates `serverContent` can't move it. The updater
-  // is a no-op once frozen for the current request, so `serverContent` in the
-  // deps never re-captures mid-turn — it only lets the FIRST capture read the
-  // live pre-patch value.
+  // new request. Captured by adjusting state DURING render (React's supported
+  // "storing information from previous renders" pattern — not an effect, not a
+  // ref) so the later post-write re-read that mutates `serverContent` can't move
+  // it. Guarded so it captures exactly once per request.
   const [frozen, setFrozen] = useState<{
     requestId: string;
     before: string;
   } | null>(null);
-  useEffect(() => {
-    if (patchEntries.length === 0) return;
-    setFrozen((prev) =>
-      prev && prev.requestId === requestId
-        ? prev
-        : { requestId, before: serverContent },
-    );
-  }, [requestId, patchEntries.length, serverContent]);
+  if (
+    patchEntries.length > 0 &&
+    (!frozen || frozen.requestId !== requestId)
+  ) {
+    setFrozen({ requestId, before: serverContent });
+  }
   const frozenBefore =
     frozen && frozen.requestId === requestId ? frozen.before : serverContent;
 

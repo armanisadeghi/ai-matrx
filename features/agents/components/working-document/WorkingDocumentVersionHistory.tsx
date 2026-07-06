@@ -78,47 +78,62 @@ function DbVersionPanel({
     useWorkingDocumentVersions(documentId);
 
   // Indices into the newest-first `versions` array. Default: current (0) diffed
-  // against the previous (1).
+  // against the previous (1). Reset via the render-time adjust pattern (not an
+  // effect) when the document or version count changes.
   const [index, setIndex] = useState(0);
   const [compareIndex, setCompareIndex] = useState<number | null>(null);
-
-  useEffect(() => {
+  const [selKey, setSelKey] = useState("");
+  const resetKey = `${documentId}:${versions.length}`;
+  if (resetKey !== selKey) {
+    setSelKey(resetKey);
     setIndex(0);
     setCompareIndex(versions.length > 1 ? 1 : null);
-  }, [versions.length, documentId]);
+  }
 
   const selected = versions[index] ?? null;
   const compare =
     compareIndex != null ? (versions[compareIndex] ?? null) : null;
 
-  // Resolve the on-screen versions' content. The current (live) version prefers
-  // the `currentContent` prop; older versions come from the snapshot RPC.
-  const [selectedContent, setSelectedContent] = useState<string | null>(null);
-  const [compareContent, setCompareContent] = useState<string | null>(null);
-  const [resolving, setResolving] = useState(false);
+  // Lazily fetched content for the OLDER (non-current) versions on screen. The
+  // current version's text is the live `currentContent`, so it needs no fetch.
+  // setState happens only in the async callback (never synchronously in the
+  // effect), and `resolving` is derived — the sanctioned data-fetch pattern.
+  const [fetched, setFetched] = useState<Record<number, string | null>>({});
 
   useEffect(() => {
     let cancelled = false;
-    setResolving(true);
-    const resolve = (v: (typeof versions)[number] | null) =>
-      v == null
-        ? Promise.resolve(null)
-        : v.isCurrent
-          ? Promise.resolve(currentContent)
-          : getContent(v.version);
-    Promise.all([resolve(selected), resolve(compare)])
-      .then(([sel, cmp]) => {
-        if (cancelled) return;
-        setSelectedContent(sel);
-        setCompareContent(cmp);
-      })
-      .finally(() => {
-        if (!cancelled) setResolving(false);
-      });
+    const targets = [selected, compare].filter(
+      (v): v is (typeof versions)[number] =>
+        !!v && !v.isCurrent && !(v.version in fetched),
+    );
+    if (targets.length === 0) return;
+    Promise.all(
+      targets.map((v) =>
+        getContent(v.version).then((c) => [v.version, c] as const),
+      ),
+    ).then((pairs) => {
+      if (!cancelled) {
+        setFetched((prev) => ({ ...prev, ...Object.fromEntries(pairs) }));
+      }
+    });
     return () => {
       cancelled = true;
     };
-  }, [selected, compare, currentContent, getContent]);
+  }, [selected, compare, getContent, fetched]);
+
+  const contentFor = (v: (typeof versions)[number] | null): string | null =>
+    v == null
+      ? null
+      : v.isCurrent
+        ? currentContent
+        : v.version in fetched
+          ? fetched[v.version]
+          : null;
+  const selectedContent = contentFor(selected);
+  const compareContent = contentFor(compare);
+  const resolving =
+    (!!selected && !selected.isCurrent && !(selected.version in fetched)) ||
+    (!!compare && !compare.isCurrent && !(compare.version in fetched));
 
   if (loading) {
     return (

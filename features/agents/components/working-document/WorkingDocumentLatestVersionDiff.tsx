@@ -30,34 +30,37 @@ export function WorkingDocumentLatestVersionDiff({
   const { versions, loading, error, getContent } =
     useWorkingDocumentVersions(documentId);
 
-  const [before, setBefore] = useState<string | null>(null);
-  const [resolving, setResolving] = useState(false);
-
   // Versions are newest-first (index 0 = current), so the previous version is
   // index 1. Diff it against the live content.
   const previousVersion = versions.length >= 2 ? versions[1].version : null;
 
+  // Resolve the previous version's content. setState only in the async callback;
+  // `resolving` is derived from whether the resolved version matches the target.
+  const [resolved, setResolved] = useState<{
+    version: number | null;
+    content: string | null;
+  }>({ version: null, content: null });
+
   useEffect(() => {
-    if (previousVersion == null) {
-      setBefore(null);
-      return;
-    }
+    if (previousVersion == null) return;
     let cancelled = false;
-    setResolving(true);
     getContent(previousVersion)
       .then((content) => {
-        if (!cancelled) setBefore(content ?? "");
+        if (!cancelled)
+          setResolved({ version: previousVersion, content: content ?? "" });
       })
       .catch(() => {
-        if (!cancelled) setBefore(null);
-      })
-      .finally(() => {
-        if (!cancelled) setResolving(false);
+        if (!cancelled) setResolved({ version: previousVersion, content: null });
       });
     return () => {
       cancelled = true;
     };
   }, [previousVersion, getContent]);
+
+  const isResolved =
+    previousVersion != null && resolved.version === previousVersion;
+  const before = isResolved ? resolved.content : null;
+  const resolving = previousVersion != null && !isResolved;
 
   if (loading || resolving) {
     return (
