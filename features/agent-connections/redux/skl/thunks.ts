@@ -7,7 +7,6 @@ import {
   rowToShortcutCategory,
   rowToSklRenderComponent,
   rowToSklRenderDefinition,
-  rowToSklResource,
   sklRenderDefinitionToInsert,
   sklRenderDefinitionToUpdate,
 } from "./converters";
@@ -255,37 +254,7 @@ export const fetchRenderBlockCategories = createAsyncThunk(
 );
 
 // ─── Resources ──────────────────────────────────────────────────────────────
-
-export const fetchResources = createAsyncThunk(
-  "skl/fetchResources",
-  async (args: { skillId?: string }, { dispatch }) => {
-    dispatch(sklActions.resourcesLoading());
-    try {
-      let query = supabase.schema("skill").from("resource").select("*");
-      if (args.skillId) query = query.eq("skill_id", args.skillId);
-      const { data, error } = await query;
-      if (error) throw error;
-      const rows = (data ?? []).map(rowToSklResource);
-      dispatch(sklActions.resourcesReceived(rows));
-      return rows;
-    } catch (err) {
-      const msg = extractErrorMessage(err);
-      dispatch(sklActions.resourcesError(msg));
-      throw err;
-    }
-  },
-);
-
-export const deleteResource = createAsyncThunk(
-  "skl/deleteResource",
-  async (args: { id: string }, { dispatch }) => {
-    const { error } = await supabase
-      .schema("skill")
-      .from("resource")
-      .delete()
-      .eq("id", args.id);
-    if (error) throw error;
-    dispatch(sklActions.resourceRemoved(args.id));
-    return args.id;
-  },
-);
+// Retired 2026-07-06: the bespoke skill.resource table is gone. A skill's
+// resources are now code_files/notes attached via platform.associations —
+// managed in features/skills/redux/skillsThunks.ts (createSkillResourceThunk
+// et al.). No thunks here read skill.resource anymore.

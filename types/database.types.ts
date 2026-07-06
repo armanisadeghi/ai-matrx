@@ -16354,6 +16354,24 @@ export type Database = {
           },
         ]
       }
+      membership_grant: {
+        Row: {
+          confers: Database["public"]["Enums"]["permission_level"]
+          container_type: string
+          member_role: string
+        }
+        Insert: {
+          confers: Database["public"]["Enums"]["permission_level"]
+          container_type: string
+          member_role: string
+        }
+        Update: {
+          confers?: Database["public"]["Enums"]["permission_level"]
+          container_type?: string
+          member_role?: string
+        }
+        Relationships: []
+      }
       memberships: {
         Row: {
           container_id: string
@@ -23614,13 +23632,6 @@ export type Database = {
       auth_is_project_owner: {
         Args: { p_project_id: string }
         Returns: boolean
-      }
-      build_category_hierarchy: {
-        Args: { p_placement_types: string[] }
-        Returns: {
-          menu_structure: Json
-          placement_type: string
-        }[]
       }
       bulk_upsert_broker_values: {
         Args: {
@@ -33960,14 +33971,15 @@ export type Database = {
           icon_name: string | null
           id: string
           is_active: boolean
-          is_public: boolean
           is_system: boolean
           label: string
+          metadata: Json
           model_preference: string | null
           organization_id: string
           parent_skill_id: string | null
           platform_targets: Json | null
           project_id: string | null
+          semver: string | null
           skill_id: string
           skill_type: Database["public"]["Enums"]["skl_skill_type"]
           sort_order: number
@@ -33975,8 +33987,7 @@ export type Database = {
           trigger_patterns: Json | null
           updated_at: string
           updated_by: string | null
-          user_id: string | null
-          version: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
@@ -33992,14 +34003,15 @@ export type Database = {
           icon_name?: string | null
           id?: string
           is_active?: boolean
-          is_public?: boolean
           is_system?: boolean
           label: string
+          metadata?: Json
           model_preference?: string | null
           organization_id: string
           parent_skill_id?: string | null
           platform_targets?: Json | null
           project_id?: string | null
+          semver?: string | null
           skill_id: string
           skill_type?: Database["public"]["Enums"]["skl_skill_type"]
           sort_order?: number
@@ -34007,8 +34019,7 @@ export type Database = {
           trigger_patterns?: Json | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
-          version?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
@@ -34024,14 +34035,15 @@ export type Database = {
           icon_name?: string | null
           id?: string
           is_active?: boolean
-          is_public?: boolean
           is_system?: boolean
           label?: string
+          metadata?: Json
           model_preference?: string | null
           organization_id?: string
           parent_skill_id?: string | null
           platform_targets?: Json | null
           project_id?: string | null
+          semver?: string | null
           skill_id?: string
           skill_type?: Database["public"]["Enums"]["skl_skill_type"]
           sort_order?: number
@@ -34039,8 +34051,7 @@ export type Database = {
           trigger_patterns?: Json | null
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
-          version?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
@@ -34053,43 +34064,16 @@ export type Database = {
           },
         ]
       }
-      project: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          project_id: string
-          skill_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          project_id: string
-          skill_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          project_id?: string
-          skill_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "skl_skill_projects_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       render_component: {
         Row: {
           component_key: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           import_path: string | null
           is_active: boolean
+          metadata: Json
           organization_id: string
           parser_config: Json | null
           parser_key: string | null
@@ -34105,9 +34089,11 @@ export type Database = {
           component_key: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           import_path?: string | null
           is_active?: boolean
+          metadata?: Json
           organization_id: string
           parser_config?: Json | null
           parser_key?: string | null
@@ -34123,9 +34109,11 @@ export type Database = {
           component_key?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           import_path?: string | null
           is_active?: boolean
+          metadata?: Json
           organization_id?: string
           parser_config?: Json | null
           parser_key?: string | null
@@ -34158,8 +34146,8 @@ export type Database = {
           icon_name: string
           id: string
           is_active: boolean
-          is_public: boolean
           label: string
+          metadata: Json
           organization_id: string
           project_id: string | null
           skill_id: string | null
@@ -34168,7 +34156,6 @@ export type Database = {
           template: string
           updated_at: string
           updated_by: string | null
-          user_id: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -34182,8 +34169,8 @@ export type Database = {
           icon_name: string
           id?: string
           is_active?: boolean
-          is_public?: boolean
           label: string
+          metadata?: Json
           organization_id: string
           project_id?: string | null
           skill_id?: string | null
@@ -34192,7 +34179,6 @@ export type Database = {
           template: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -34206,8 +34192,8 @@ export type Database = {
           icon_name?: string
           id?: string
           is_active?: boolean
-          is_public?: boolean
           label?: string
+          metadata?: Json
           organization_id?: string
           project_id?: string | null
           skill_id?: string | null
@@ -34216,75 +34202,12 @@ export type Database = {
           template?: string
           updated_at?: string
           updated_by?: string | null
-          user_id?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
             foreignKeyName: "skl_render_definitions_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      resource: {
-        Row: {
-          content: string | null
-          created_at: string
-          created_by: string | null
-          filename: string
-          id: string
-          is_active: boolean
-          mime_type: string | null
-          organization_id: string
-          resource_type: string
-          skill_id: string
-          sort_order: number
-          storage_path: string | null
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          filename: string
-          id?: string
-          is_active?: boolean
-          mime_type?: string | null
-          organization_id: string
-          resource_type?: string
-          skill_id: string
-          sort_order?: number
-          storage_path?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          created_by?: string | null
-          filename?: string
-          id?: string
-          is_active?: boolean
-          mime_type?: string | null
-          organization_id?: string
-          resource_type?: string
-          skill_id?: string
-          sort_order?: number
-          storage_path?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "skl_resources_skill_id_fkey"
             columns: ["skill_id"]
             isOneToOne: false
             referencedRelation: "definition"
@@ -39097,10 +39020,12 @@ export type Database = {
     Tables: {
       projects: {
         Row: {
-          created_at: string | null
+          created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
+          metadata: Json
           name: string
           organization_id: string
           priority: Database["public"]["Enums"]["task_priority"] | null
@@ -39109,13 +39034,18 @@ export type Database = {
           start_date: string | null
           status: string
           target_date: string | null
-          updated_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
           name: string
           organization_id: string
           priority?: Database["public"]["Enums"]["task_priority"] | null
@@ -39124,13 +39054,18 @@ export type Database = {
           start_date?: string | null
           status?: string
           target_date?: string | null
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
+          metadata?: Json
           name?: string
           organization_id?: string
           priority?: Database["public"]["Enums"]["task_priority"] | null
@@ -39139,19 +39074,23 @@ export type Database = {
           start_date?: string | null
           status?: string
           target_date?: string | null
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
       tasks: {
         Row: {
           assignee_id: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           deleted_at: string | null
           description: string | null
           due_date: string | null
           id: string
+          metadata: Json
           organization_id: string
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"] | null
@@ -39159,18 +39098,20 @@ export type Database = {
           settings: Json
           status: string
           title: string
-          updated_at: string | null
+          updated_at: string
+          updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           assignee_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
@@ -39178,18 +39119,20 @@ export type Database = {
           settings?: Json
           status?: string
           title: string
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           assignee_id?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
@@ -39197,7 +39140,8 @@ export type Database = {
           settings?: Json
           status?: string
           title?: string
-          updated_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -39227,6 +39171,7 @@ export type Database = {
           created_by: string
           deleted_at: string | null
           id: string
+          metadata: Json
           organization_id: string
           position: number
           title: string | null
@@ -39243,6 +39188,7 @@ export type Database = {
           created_by: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           organization_id: string
           position?: number
           title?: string | null
@@ -39259,6 +39205,7 @@ export type Database = {
           created_by?: string
           deleted_at?: string | null
           id?: string
+          metadata?: Json
           organization_id?: string
           position?: number
           title?: string | null
@@ -39282,6 +39229,7 @@ export type Database = {
           icon: string | null
           id: string
           last_opened_at: string | null
+          metadata: Json
           organization_id: string
           title: string
           updated_at: string
@@ -39301,6 +39249,7 @@ export type Database = {
           icon?: string | null
           id?: string
           last_opened_at?: string | null
+          metadata?: Json
           organization_id: string
           title?: string
           updated_at?: string
@@ -39320,6 +39269,7 @@ export type Database = {
           icon?: string | null
           id?: string
           last_opened_at?: string | null
+          metadata?: Json
           organization_id?: string
           title?: string
           updated_at?: string

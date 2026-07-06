@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useMemo } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllResources,
   selectResourcesForSkill,
   selectResourcesStatus,
 } from "../redux/skl/selectors";
-import { fetchResources, deleteResource } from "../redux/skl/thunks";
 import type { SklResource } from "../redux/skl/types";
+
+// Retired 2026-07-06: the bespoke skill.resource table is gone. A skill's
+// resources are now code_files/notes attached via platform.associations —
+// managed by features/skills (SkillResourcesPanel + createSkillResourceThunk).
+// This legacy agent-connections hook is inert (its slice is never populated);
+// callers should migrate to the features/skills resource system.
 
 export interface UseResourcesArgs {
   skillId?: string;
@@ -25,29 +30,19 @@ export interface UseResourcesResult {
 export function useResources({
   skillId,
 }: UseResourcesArgs = {}): UseResourcesResult {
-  const dispatch = useAppDispatch();
   const status = useAppSelector(selectResourcesStatus);
   const error = useAppSelector((s) => s.skl.resources.error);
-
   const all = useAppSelector(selectAllResources);
   const forSkill = useAppSelector(selectResourcesForSkill(skillId ?? null));
-
-  useEffect(() => {
-    void dispatch(fetchResources(skillId ? { skillId } : {}));
-  }, [dispatch, skillId]);
 
   return useMemo(
     () => ({
       resources: skillId ? forSkill : all,
       loading: status === "loading",
       error,
-      reload: () => {
-        void dispatch(fetchResources(skillId ? { skillId } : {}));
-      },
-      remove: (id: string) => {
-        void dispatch(deleteResource({ id }));
-      },
+      reload: () => {},
+      remove: () => {},
     }),
-    [all, forSkill, skillId, status, error, dispatch],
+    [all, forSkill, skillId, status, error],
   );
 }

@@ -11,7 +11,6 @@ import type {
   CategoryRowWire,
   IngestReport,
   IngestReportWire,
-  ResourceRow,
   SkillCreateWire,
   SkillDraft,
   SkillPatchWire,
@@ -48,18 +47,12 @@ export type SklCategoryRow = {
   metadata: Json | null;
 };
 
-/** Supabase-generated Row shape for skill.resource — reads + writes go
- * direct (no backend endpoint today). */
-type SklResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
-
 /** Supabase-generated Row shape for skill.definition — reads go direct via
  * the Supabase client (RLS gates visibility to public + system + own +
- * org/project/task membership). The optional embedded `project`
- * comes from the `*, project(project_id)` select. */
+ * org/project/task membership). Project associations no longer live on the
+ * row (the skill.project junction was retired into platform.associations);
+ * `projectIds` is loaded separately via `loadSkillProjectIds`. */
 type SklDefinitionRow = Database["skill"]["Tables"]["definition"]["Row"];
-export type SklDefinitionRowWithProjects = SklDefinitionRow & {
-  project?: { project_id: string }[] | null;
-};
 
 /** Coerce a `Json` column known to hold a string[] into a real string[]. */
 function jsonToStringArray(value: Json | null | undefined): string[] {
@@ -111,9 +104,7 @@ export function wireToSkillRow(wire: SkillRowWire): SkillRow {
 /** Adapter for rows read straight off `skill.definition` via Supabase
  * (`.schema('skill').from('definition').select('*, project(project_id)')`).
  * The canonical read path — replaces the legacy Python `/api/skills` GET. */
-export function supabaseRowToSkillRow(
-  row: SklDefinitionRowWithProjects,
-): SkillRow {
+export function supabaseRowToSkillRow(row: SklDefinitionRow): SkillRow {
   return {
     id: row.id,
     skillId: row.skill_id,
@@ -127,18 +118,21 @@ export function supabaseRowToSkillRow(
     triggerPatterns: jsonToStringArray(row.trigger_patterns),
     disableAutoInvocation: Boolean(row.disable_auto_invocation),
     platformTargets: jsonToStringArray(row.platform_targets),
-    version: row.version ?? null,
+    // Canonical: product semver lives in `semver`; `version` is now the base
+    // int row-counter and is not the skill's displayed version.
+    version: row.semver ?? null,
     config: jsonToConfig(row.config),
     categoryId: row.category_id ?? null,
     parentSkillId: row.parent_skill_id ?? null,
     isActive: Boolean(row.is_active),
     isSystem: Boolean(row.is_system),
-    isPublic: Boolean(row.is_public),
+    isPublic: row.visibility === "public",
     sortOrder: row.sort_order ?? 0,
-    userId: row.user_id ?? null,
+    userId: row.created_by ?? null,
     organizationId: row.organization_id ?? null,
     projectId: row.project_id ?? null,
-    projectIds: (row.project ?? []).map((p) => p.project_id),
+    // Loaded separately from platform.associations (see loadSkillProjectIds).
+    projectIds: [],
   };
 }
 
@@ -155,34 +149,6 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
     isActive: Boolean(wire.is_active),
     // user_id may be absent on Python wire shape; preserve when present.
     userId: wire.user_id === undefined ? undefined : (wire.user_id ?? null),
-  };
-}
-
-/** Adapter for rows read straight off `skill.resource` via Supabase. */
-export function supabaseRowToResourceRow(
-  row: Pick<
-    SklResourceRow,
-    | "id"
-    | "skill_id"
-    | "resource_type"
-    | "filename"
-    | "content"
-    | "storage_path"
-    | "mime_type"
-    | "sort_order"
-    | "is_active"
-  >,
-): ResourceRow {
-  return {
-    id: row.id,
-    skillId: row.skill_id,
-    resourceType: row.resource_type ?? "reference",
-    filename: row.filename,
-    content: row.content ?? null,
-    storagePath: row.storage_path ?? null,
-    mimeType: row.mime_type ?? null,
-    sortOrder: row.sort_order ?? 0,
-    isActive: Boolean(row.is_active),
   };
 }
 

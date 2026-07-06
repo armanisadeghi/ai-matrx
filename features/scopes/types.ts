@@ -133,6 +133,7 @@ export const ASSOCIATION_TARGET_TYPES = [
   "quiz_session", //         a quiz a card is used in
   "agent", //                an orchestrator agent — the container an Agent Set's member agents attach into (role 'member'); a 'matrx_set' self-edge marks the orchestrator
   "research_tag", //         a research tag a source is filed under (rs_source_tag M2M collapsed into associations, worklog §4.1)
+  "skill", //                a skill — projects link to it (skill→project, role 'member'); code_files attach as resources (code_file→skill, role 'resource')
 ] as const satisfies readonly EntityTypeToken[];
 
 export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];

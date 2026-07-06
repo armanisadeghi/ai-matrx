@@ -2,18 +2,17 @@ import type { Database } from "@/types/database.types";
 import type {
   SklRenderComponent,
   SklRenderDefinition,
-  SklResource,
   ShortcutCategoryRow,
 } from "./types";
 
 // NOTE — May 2026: skill-definition + category converters moved to
-// `features/skills/redux/skillsConverters.ts`. Render-blocks +
-// resources continue here.
+// `features/skills/redux/skillsConverters.ts`. Render-blocks continue here.
+// Resources retired 2026-07-06 → attach code_files/notes to a skill via
+// platform.associations (features/skills/redux/skillsThunks.ts).
 
 type RenderDefRow = Database["skill"]["Tables"]["render_definition"]["Row"];
 type RenderComponentRow =
   Database["skill"]["Tables"]["render_component"]["Row"];
-type ResourceRow = Database["skill"]["Tables"]["resource"]["Row"];
 
 /**
  * Row shape returned by fetchRenderBlockCategories after the May 2026 migration
@@ -46,9 +45,9 @@ export function rowToSklRenderDefinition(
     categoryId: row.category_id,
     skillId: row.skill_id,
     isActive: row.is_active,
-    isPublic: row.is_public,
+    isPublic: row.visibility === "public",
     sortOrder: row.sort_order,
-    userId: row.user_id,
+    userId: row.created_by,
     organizationId: row.organization_id,
     projectId: row.project_id,
     taskId: row.task_id,
@@ -69,7 +68,8 @@ export function sklRenderDefinitionToUpdate(
   if (patch.categoryId !== undefined) u.category_id = patch.categoryId;
   if (patch.skillId !== undefined) u.skill_id = patch.skillId;
   if (patch.isActive !== undefined) u.is_active = patch.isActive;
-  if (patch.isPublic !== undefined) u.is_public = patch.isPublic;
+  if (patch.isPublic !== undefined)
+    u.visibility = patch.isPublic ? "public" : "private";
   if (patch.sortOrder !== undefined) u.sort_order = patch.sortOrder;
   return u;
 }
@@ -87,9 +87,9 @@ export function sklRenderDefinitionToInsert(
     category_id: def.categoryId ?? null,
     skill_id: def.skillId ?? null,
     is_active: def.isActive ?? true,
-    is_public: def.isPublic ?? false,
+    visibility: def.isPublic ? "public" : "private",
     sort_order: def.sortOrder ?? 0,
-    user_id: def.userId ?? null,
+    created_by: def.userId ?? null,
     ...(def.organizationId != null
       ? { organization_id: def.organizationId }
       : {}),
@@ -110,22 +110,6 @@ export function rowToSklRenderComponent(
     parserConfig: row.parser_config,
     propsSchema: row.props_schema,
     importPath: row.import_path,
-    isActive: row.is_active,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-export function rowToSklResource(row: ResourceRow): SklResource {
-  return {
-    id: row.id,
-    skillId: row.skill_id,
-    resourceType: row.resource_type,
-    filename: row.filename,
-    content: row.content,
-    storagePath: row.storage_path,
-    mimeType: row.mime_type,
     isActive: row.is_active,
     sortOrder: row.sort_order,
     createdAt: row.created_at,

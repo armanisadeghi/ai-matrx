@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 228 active entity tokens. A token here is FK-valid for
+// 227 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -196,7 +196,6 @@ export type EntityTypeToken =
   | "skill_category"
   | "skill_render_component"
   | "skill_render_definition"
-  | "skill_resource"
   | "sms_consent"
   | "sms_conversation"
   | "sms_message"
@@ -321,7 +320,6 @@ export type ComponentEntityToken =
   | "sch_run"
   | "sch_trigger"
   | "skill_render_component"
-  | "skill_resource"
   | "sms_message"
   | "sms_message_media"
   | "tool_call"
@@ -485,7 +483,6 @@ export type ScopeableEntityToken =
   | "skill_category"
   | "skill_render_component"
   | "skill_render_definition"
-  | "skill_resource"
   | "sms_consent"
   | "sms_conversation"
   | "sms_message"
@@ -737,7 +734,6 @@ export const ENTITY_TYPE_METADATA = {
   "skill_category": { token: "skill_category", schema: "graveyard", table: "skill_category_legacy", label: "Skill Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills" },
   "skill_render_component": { token: "skill_render_component", schema: "skill", table: "render_component", label: "Skill Render Component", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Skills" },
   "skill_render_definition": { token: "skill_render_definition", schema: "skill", table: "render_definition", label: "Skill Render Definition", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills" },
-  "skill_resource": { token: "skill_resource", schema: "skill", table: "resource", label: "Skill Resource", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Skills" },
   "sms_consent": { token: "sms_consent", schema: "communication", table: "sms_consent", label: "SMS Consent", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "sms_conversation": { token: "sms_conversation", schema: "communication", table: "sms_conversations", label: "SMS Conversation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "sms_message": { token: "sms_message", schema: "communication", table: "sms_messages", label: "SMS Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
@@ -969,7 +965,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "skill_category",
   "skill_render_component",
   "skill_render_definition",
-  "skill_resource",
   "sms_consent",
   "sms_conversation",
   "sms_message",

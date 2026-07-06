@@ -24,6 +24,12 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { callApi } from "@/lib/api/call-api";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import {
+  createCodeFile,
+  updateCodeFile,
+  fetchCodeFileById,
+} from "@/features/code-files/service/codeFilesService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import type { components } from "@/types/python-generated/api-types";
@@ -45,7 +51,6 @@ import {
   platformCategoryToSklRow,
   PLATFORM_SKILL_CATEGORY_SELECT,
   supabaseRowToCategoryRow,
-  supabaseRowToResourceRow,
   supabaseRowToSkillRow,
   wireToCategoryRow,
   wireToIngestReport,
@@ -53,7 +58,9 @@ import {
 } from "./skillsConverters";
 /** Columns selected for every skill read, plus the project-membership join.
  * Used by `fetchSkills` + `fetchSkillById` so both return identical shapes. */
-const SKILL_SELECT = "*, project(project_id)";
+// skill.project junction retired → project associations load from
+// platform.associations (see loadSkillProjectIds). No embedded join.
+const SKILL_SELECT = "*";
 
 /** True when the value looks like a UUID (vs. a `skill_id` business key). */
 function isUuid(value: string): boolean {
@@ -104,22 +111,21 @@ export const fetchSkills = createAsyncThunk<
     .eq("is_active", true);
 
   if (args?.categoryId) query = query.eq("category_id", args.categoryId);
-  if (args?.isPublicOnly) query = query.eq("is_public", true);
+  if (args?.isPublicOnly) query = query.eq("visibility", "public");
 
-  // Project filter: resolve the skill ids associated with the project via
-  // the join table first, then restrict the main query. Keeps the embedded
-  // `project` list complete (full membership, not just this one).
+  // Project filter: skills associated with the project via platform.associations
+  // (edge skill → project, role "member"). The bespoke skill.project junction retired.
   if (args?.projectId) {
-    const { data: assoc, error: assocError } = await supabase
-      .schema("skill")
-      .from("project")
-      .select("skill_id")
-      .eq("project_id", args.projectId);
-    if (assocError) {
-      dispatch(skillsActions.skillsError(assocError.message));
-      throw new Error(assocError.message);
+    const assocRes = await associationsService.listForTargets("project", [
+      args.projectId,
+    ]);
+    if (!assocRes.ok) {
+      dispatch(skillsActions.skillsError(assocRes.error.message));
+      throw new Error(assocRes.error.message);
     }
-    const ids = (assoc ?? []).map((r) => r.skill_id);
+    const ids = assocRes.data.edges
+      .filter((e) => e.sourceType === "skill" && e.role === "member")
+      .map((e) => e.sourceId);
     if (ids.length === 0) {
       dispatch(skillsActions.skillsReceived([]));
       return [];
@@ -137,6 +143,9 @@ export const fetchSkills = createAsyncThunk<
   }
 
   const rows = (data ?? []).map(supabaseRowToSkillRow);
+  // Fill project associations from platform.associations (batched, one round-trip).
+  const projectIdsBySkill = await loadSkillProjectIds(rows.map((r) => r.id));
+  for (const r of rows) r.projectIds = projectIdsBySkill[r.id] ?? [];
   dispatch(skillsActions.skillsReceived(rows));
   return rows;
 });
@@ -252,12 +261,16 @@ export const createSkill = createAsyncThunk<
     trigger_patterns: wire.trigger_patterns ?? [],
     disable_auto_invocation: wire.disable_auto_invocation,
     platform_targets: wire.platform_targets ?? [],
-    version: wire.version ?? null,
+    // Canonical columns: product semver → `semver`; public flag → `visibility`;
+    // owner → `created_by`. (`version` is now the base int row-counter.)
+    semver: wire.version ?? null,
     config: wire.config ?? {},
     category_id: wire.category_id ?? null,
     parent_skill_id: wire.parent_skill_id ?? null,
-    is_public: wire.is_public,
-    user_id: userId,
+    visibility: (wire.is_public
+      ? "public"
+      : "private") as Database["platform"]["Enums"]["visibility"],
+    created_by: userId,
     // Personal skill → the user's org (skill.definition org is NOT NULL with no
     // inherit trigger). Never insert a null org.
     organization_id: await ensureOrgId(undefined),
@@ -302,12 +315,20 @@ export const patchSkill = createAsyncThunk<
     return row;
   }
 
-  // Supabase direct — `patch` is already snake_case (SkillPatchWire), which
-  // matches the column names on skill.definition one-for-one.
+  // Supabase direct. `patch` is snake_case (SkillPatchWire); most keys match
+  // skill.definition columns one-for-one, except the canonicalized ones:
+  // is_public → visibility (enum), version → semver.
+  const { is_public, version, ...rest } = patch;
+  const dbPatch = {
+    ...rest,
+  } as Database["skill"]["Tables"]["definition"]["Update"];
+  if (is_public !== undefined)
+    dbPatch.visibility = is_public ? "public" : "private";
+  if (version !== undefined) dbPatch.semver = version;
   const { data, error } = await supabase
     .schema("skill")
     .from("definition")
-    .update(patch as Database["skill"]["Tables"]["definition"]["Update"])
+    .update(dbPatch)
     .eq("id", skillId)
     .select(SKILL_SELECT)
     .single();
@@ -414,18 +435,16 @@ export const addSkillProject = createAsyncThunk<
 >(
   "skills/addSkillProject",
   async ({ skillId, projectId }, { dispatch, getState }) => {
-    // Supabase direct — RLS gates the join by skill or project ownership.
-    const userId = selectUserId(getState());
-    const { error } = await supabase
-      .schema("skill")
-      .from("project")
-      .upsert(
-        { skill_id: skillId, project_id: projectId, created_by: userId },
-        { onConflict: "skill_id,project_id", ignoreDuplicates: true },
-      );
-    if (error) {
-      throw new Error(error.message);
-    }
+    // Canonical association edge: skill → project (role "member"). Idempotent.
+    // The bespoke skill.project junction was retired into platform.associations.
+    const res = await associationsService.add({
+      sourceType: "skill",
+      sourceId: skillId,
+      targetType: "project",
+      targetId: projectId,
+      role: "member",
+    });
+    if (!res.ok) throw new Error(res.error.message);
     // Optimistically merge into the row's projectIds.
     const row = getState().skills.skills.byId[skillId];
     if (row && !row.projectIds.includes(projectId)) {
@@ -447,16 +466,14 @@ export const removeSkillProject = createAsyncThunk<
 >(
   "skills/removeSkillProject",
   async ({ skillId, projectId }, { dispatch, getState }) => {
-    // Supabase direct — RLS gates the join by skill or project ownership.
-    const { error } = await supabase
-      .schema("skill")
-      .from("project")
-      .delete()
-      .eq("skill_id", skillId)
-      .eq("project_id", projectId);
-    if (error) {
-      throw new Error(error.message);
-    }
+    const res = await associationsService.remove({
+      sourceType: "skill",
+      sourceId: skillId,
+      targetType: "project",
+      targetId: projectId,
+      role: "member",
+    });
+    if (!res.ok) throw new Error(res.error.message);
     const row = getState().skills.skills.byId[skillId];
     if (row) {
       dispatch(
@@ -469,6 +486,25 @@ export const removeSkillProject = createAsyncThunk<
     return { skillId, projectId };
   },
 );
+
+/**
+ * Load the project-association ids for a set of skills from platform.associations
+ * (edge skill → project, role "member"). Batched, one round-trip. Returns a
+ * map skillId → projectId[]. Replaces the retired skill.project embedded join.
+ */
+export async function loadSkillProjectIds(
+  skillIds: string[],
+): Promise<Record<string, string[]>> {
+  const out: Record<string, string[]> = {};
+  if (skillIds.length === 0) return out;
+  const res = await associationsService.listForSources("skill", skillIds, "project");
+  if (!res.ok) return out;
+  for (const edge of res.data.edges) {
+    if (edge.role !== "member") continue;
+    (out[edge.sourceId] ??= []).push(edge.targetId);
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Category CRUD (smart-dispatch: Supabase direct for owned rows, Python
@@ -799,15 +835,37 @@ export const reparentCategoryThunk = createAsyncThunk<
 );
 
 // ---------------------------------------------------------------------------
-// Resources (Supabase direct — RLS gates by parent-skill ownership)
+// Resources — canonical associations (the bespoke skill.resource table retired)
 // ---------------------------------------------------------------------------
 //
-// Doctrine: `skill.resource` has no user_id; RLS subqueries on
-// `skill.definition` to determine if the caller owns the parent skill.
-// All writes go Supabase direct — the Python backend has no resource
-// endpoint today. For admin curation of system-skill resources we'd
-// need a server admin endpoint; deferred per the plan (Phase I §I4).
+// A skill "resource" is a real content entity — a `code_file` (markdown / code /
+// text) — LINKED to the skill through platform.associations (edge
+// code_file → skill, role "resource"). Content lives in the code_file (the
+// canonical text store, visible in Code Snippets); the association carries the
+// relationship (label = resourceType, position = sortOrder). This kills the old
+// "content stuffed in a junction table" antipattern. ResourceRow.id == the
+// code_file id.
 // ---------------------------------------------------------------------------
+
+/** Build a ResourceRow view model from a code_file + its skill-resource edge. */
+function resourceRowFromFile(
+  skillId: string,
+  file: { id: string; name: string; content: string | null },
+  resourceType: string,
+  sortOrder: number,
+): ResourceRow {
+  return {
+    id: file.id,
+    skillId,
+    resourceType: resourceType || "reference",
+    filename: file.name,
+    content: file.content ?? null,
+    storagePath: null,
+    mimeType: null,
+    sortOrder,
+    isActive: true,
+  };
+}
 
 export const fetchSkillResourcesThunk = createAsyncThunk<
   ResourceRow[],
@@ -816,22 +874,33 @@ export const fetchSkillResourcesThunk = createAsyncThunk<
 >("skills/fetchResources", async ({ skillId }, { dispatch }) => {
   dispatch(skillsActions.resourcesLoading({ skillId }));
 
-  const { data, error } = await supabase
-    .schema("skill")
-    .from("resource")
-    .select(
-      "id, skill_id, resource_type, filename, content, storage_path, mime_type, sort_order, is_active",
-    )
-    .eq("skill_id", skillId)
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    dispatch(skillsActions.resourcesError({ skillId, error: error.message }));
-    throw new Error(error.message);
+  const res = await associationsService.listForEntity("skill", skillId);
+  if (!res.ok) {
+    dispatch(skillsActions.resourcesError({ skillId, error: res.error.message }));
+    throw new Error(res.error.message);
   }
+  const edges = res.data.edges
+    .filter(
+      (e) =>
+        e.direction === "incoming" &&
+        e.role === "resource" &&
+        e.otherType === "code_file",
+    )
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
-  const rows = (data ?? []).map((row) => supabaseRowToResourceRow(row));
+  const rows: ResourceRow[] = [];
+  for (const e of edges) {
+    const file = await fetchCodeFileById(e.otherId);
+    if (!file) continue; // edge to a deleted file — skip (self-heals on next attach)
+    rows.push(
+      resourceRowFromFile(
+        skillId,
+        file,
+        e.label ?? "reference",
+        e.position ?? 0,
+      ),
+    );
+  }
   dispatch(skillsActions.resourcesReceived({ skillId, rows }));
   return rows;
 });
@@ -841,7 +910,6 @@ export const createSkillResourceThunk = createAsyncThunk<
   { draft: ResourceDraft },
   { state: RootState }
 >("skills/createResource", async ({ draft }, { dispatch, getState }) => {
-  // Pick a sort_order at the end of the current list if not specified.
   const existing = getState().skills.resources.bySkillId[draft.skillId] ?? [];
   const nextSort =
     draft.sortOrder ??
@@ -849,26 +917,29 @@ export const createSkillResourceThunk = createAsyncThunk<
       ? 0
       : Math.max(...existing.map((r) => r.sortOrder ?? 0)) + 1);
 
-  const insertPayload = {
-    skill_id: draft.skillId,
-    resource_type: draft.resourceType || "reference",
-    filename: draft.filename,
-    content: draft.content || null,
-    mime_type: draft.mimeType || null,
-    sort_order: nextSort,
-    // skill.resource org is NOT NULL with no inherit trigger — user's org.
-    organization_id: await ensureOrgId(undefined),
-  };
+  // Content becomes a real code_file; the relationship is an association edge.
+  const file = await createCodeFile({
+    name: draft.filename,
+    content: draft.content || "",
+    language: "markdown",
+  });
+  const link = await associationsService.add({
+    sourceType: "code_file",
+    sourceId: file.id,
+    targetType: "skill",
+    targetId: draft.skillId,
+    role: "resource",
+    label: draft.resourceType || "reference",
+    position: nextSort,
+  });
+  if (!link.ok) throw new Error(link.error.message);
 
-  const { data, error } = await supabase
-    .schema("skill")
-    .from("resource")
-    .insert(insertPayload)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-
-  const row = supabaseRowToResourceRow(data);
+  const row = resourceRowFromFile(
+    draft.skillId,
+    file,
+    draft.resourceType || "reference",
+    nextSort,
+  );
   dispatch(skillsActions.resourceUpserted(row));
   return row;
 });
@@ -886,47 +957,71 @@ export const updateSkillResourceThunk = createAsyncThunk<
   ResourceRow,
   { resourceId: string; patch: ResourcePatchInput },
   { state: RootState }
->("skills/updateResource", async ({ resourceId, patch }, { dispatch }) => {
-  const updateBody: Database["skill"]["Tables"]["resource"]["Update"] = {};
-  if (patch.resourceType !== undefined)
-    updateBody.resource_type = patch.resourceType;
-  if (patch.filename !== undefined) updateBody.filename = patch.filename;
-  if (patch.content !== undefined) updateBody.content = patch.content;
-  if (patch.mimeType !== undefined) updateBody.mime_type = patch.mimeType;
-  if (patch.sortOrder !== undefined) updateBody.sort_order = patch.sortOrder;
-  if (patch.isActive !== undefined) updateBody.is_active = patch.isActive;
+>(
+  "skills/updateResource",
+  async ({ resourceId, patch }, { dispatch, getState }) => {
+    // resourceId == the code_file id. Find the parent skill from state.
+    const bySkill = getState().skills.resources.bySkillId;
+    let skillId: string | undefined;
+    let current: ResourceRow | undefined;
+    for (const [sid, list] of Object.entries(bySkill)) {
+      const found = list.find((r) => r.id === resourceId);
+      if (found) {
+        skillId = sid;
+        current = found;
+        break;
+      }
+    }
+    if (!skillId || !current) throw new Error("resource not found in state");
 
-  if (Object.keys(updateBody).length === 0) {
-    throw new Error("Empty resource patch.");
-  }
+    // filename / content live on the code_file.
+    let file = { id: resourceId, name: current.filename, content: current.content };
+    if (patch.filename !== undefined || patch.content !== undefined) {
+      const updated = await updateCodeFile(resourceId, {
+        ...(patch.filename !== undefined ? { name: patch.filename } : {}),
+        ...(patch.content !== undefined ? { content: patch.content ?? "" } : {}),
+      });
+      file = { id: updated.id, name: updated.name, content: updated.content };
+    }
 
-  const { data, error } = await supabase
-    .schema("skill")
-    .from("resource")
-    .update(updateBody)
-    .eq("id", resourceId)
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
+    const resourceType = patch.resourceType ?? current.resourceType;
+    const sortOrder = patch.sortOrder ?? current.sortOrder;
+    // resourceType (label) / sortOrder (position) live on the edge — re-add is idempotent.
+    if (patch.resourceType !== undefined || patch.sortOrder !== undefined) {
+      const link = await associationsService.add({
+        sourceType: "code_file",
+        sourceId: resourceId,
+        targetType: "skill",
+        targetId: skillId,
+        role: "resource",
+        label: resourceType,
+        position: sortOrder,
+      });
+      if (!link.ok) throw new Error(link.error.message);
+    }
 
-  const row = supabaseRowToResourceRow(data);
-  dispatch(skillsActions.resourceUpserted(row));
-  return row;
-});
+    const row = resourceRowFromFile(skillId, file, resourceType, sortOrder);
+    dispatch(skillsActions.resourceUpserted(row));
+    return row;
+  },
+);
 
 export const deleteSkillResourceThunk = createAsyncThunk<
   string,
   { resourceId: string; skillId: string },
   { state: RootState }
 >("skills/deleteResource", async ({ resourceId, skillId }, { dispatch }) => {
-  // Soft-delete (mirrors skill delete semantics — admins can re-activate
-  // by setting is_active=true via patch).
-  const { error } = await supabase
-    .schema("skill")
-    .from("resource")
-    .update({ is_active: false })
-    .eq("id", resourceId);
-  if (error) throw new Error(error.message);
+  // Detach the resource: remove the code_file → skill edge. The code_file
+  // itself stays in the user's Code Snippets library (deleting content is a
+  // separate, explicit action).
+  const res = await associationsService.remove({
+    sourceType: "code_file",
+    sourceId: resourceId,
+    targetType: "skill",
+    targetId: skillId,
+    role: "resource",
+  });
+  if (!res.ok) throw new Error(res.error.message);
   dispatch(skillsActions.resourceRemoved({ skillId, resourceId }));
   return resourceId;
 });
