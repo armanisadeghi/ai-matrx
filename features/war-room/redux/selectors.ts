@@ -387,6 +387,17 @@ export const selectActiveNoteId =
   (state: RootState): string | null =>
     threadId ? activeEntityId(bucket(state, "thread", threadId), "note") : null;
 
+/** The thread's attached chat conversations (conversation → thread edges). */
+export const selectConversationIdsForThread = (threadId: string | null) =>
+  threadId ? selectThreadEntityIds(threadId, "conversation") : () => EMPTY_IDS;
+
+export const selectActiveConversationId =
+  (threadId: string | null) =>
+  (state: RootState): string | null =>
+    threadId
+      ? activeEntityId(bucket(state, "thread", threadId), "conversation")
+      : null;
+
 const attachmentsCache = new Map<
   string,
   (state: RootState) => WarRoomAssignment[]

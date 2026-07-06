@@ -21,6 +21,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import {
   Upload,
   Loader2,
@@ -29,6 +30,7 @@ import {
   Trash2,
   CheckCircle2,
   AlertCircle,
+  ScanLine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -278,6 +280,17 @@ export function PdfStudioUpload({
             </p>
           </div>
         </button>
+      )}
+
+      {/* Phone-scanner on-ramp — camera capture + crop + combine into one PDF */}
+      {extractor.selectedFiles.length === 0 && (
+        <Link
+          href="/tools/pdf-extractor/scan"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <ScanLine className="h-3.5 w-3.5" />
+          Scan with your camera
+        </Link>
       )}
 
       {/* Per-file progress (shown only during/after a session) */}

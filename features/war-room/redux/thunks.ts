@@ -24,6 +24,10 @@ import {
   createSessionThunk,
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
+import {
+  setActiveAssistantConversationThunk,
+  switchAssistantAgentThunk,
+} from "@/features/transcript-studio/redux/assistantAgent.thunk";
 import { selectRawSegmentsLoaded } from "@/features/transcript-studio/redux/selectors";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
@@ -993,12 +997,79 @@ export const ensureThreadNote =
   };
 
 /**
- * Unlink an entity (note / studio_session / …) from a thread — removes the
- * association edge only, never the entity's own row. If the removed entity was
- * the thread's active one of its type, focus flips to the first remaining.
+ * Bind the thread's Chat tab to one of its attached conversations: flips the
+ * `conversation → thread` edge's is_active AND switches the backing session's
+ * assistant conversation (instance + history rehydrate ride along), so the
+ * embedded Agent+ panel re-binds automatically.
+ */
+export const setThreadActiveConversation =
+  (threadId: string, sessionId: string, conversationId: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(
+      assignmentActiveSet({
+        key: containerKey("thread", threadId),
+        entityType: "conversation",
+        entityId: conversationId,
+      }),
+    );
+    try {
+      await dispatch(
+        setActiveAssistantConversationThunk({ sessionId, conversationId }),
+      ).unwrap();
+      await assoc.setActiveAssignment(
+        threadRef(threadId),
+        "conversation",
+        conversationId,
+      );
+    } catch (err) {
+      reportWarRoomError("setThreadActiveConversation", err, {
+        toast: "Couldn't switch the chat",
+      });
+    }
+  };
+
+/**
+ * Start a NEW chat on a thread with a picked agent: mints a fresh conversation
+ * for the thread's session (durable only after its first turn streams — see
+ * persistAssistantConversationThunk), attaches it to the thread, and makes it
+ * the active one. Until the server auto-labels it, surfaces show the agent's
+ * name in place of the chat label.
+ */
+export const startThreadConversation =
+  (threadId: string, sessionId: string, agentId: string) =>
+  async (dispatch: AppDispatch): Promise<string | null> => {
+    try {
+      const conversationId = await dispatch(
+        switchAssistantAgentThunk({ sessionId, agentId, mode: "fresh" }),
+      ).unwrap();
+      if (!conversationId) return null;
+      await dispatch(
+        attachEntityToThread(threadId, "conversation", conversationId, {
+          metadata: { role: "agent" },
+        }),
+      );
+      return conversationId;
+    } catch (err) {
+      reportWarRoomError("startThreadConversation", err, {
+        toast: "Couldn't start the chat",
+      });
+      return null;
+    }
+  };
+
+/**
+ * Unlink an entity (note / studio_session / conversation / …) from a thread —
+ * removes the association edge only, never the entity's own row. If the
+ * removed entity was the thread's active one of its type, focus flips to the
+ * first remaining (conversation re-binding is the caller's job — it needs the
+ * session).
  */
 export const removeEntityFromThread =
-  (threadId: string, entityType: "note" | "studio_session", entityId: string) =>
+  (
+    threadId: string,
+    entityType: "note" | "studio_session" | "conversation",
+    entityId: string,
+  ) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -1035,10 +1106,31 @@ export const removeEntityFromThread =
       if (remaining) {
         if (entityType === "note") {
           void dispatch(setThreadActiveNote(threadId, remaining.entity_id));
-        } else {
+        } else if (entityType === "studio_session") {
           void dispatch(
             setThreadActiveAudioSession(threadId, remaining.entity_id),
           );
+        } else {
+          // Conversation: flip the edge pointer; the session re-bind (which
+          // needs the sessionId) is done by the calling adapter.
+          dispatch(
+            assignmentActiveSet({
+              key,
+              entityType,
+              entityId: remaining.entity_id,
+            }),
+          );
+          void assoc
+            .setActiveAssignment(
+              threadRef(threadId),
+              entityType,
+              remaining.entity_id,
+            )
+            .catch((err) =>
+              reportWarRoomError("removeEntityFromThread:reactivate", err, {
+                toast: false,
+              }),
+            );
         }
       }
     }

@@ -65,8 +65,10 @@ export interface AssociationEntitySelectAdapter {
    * Create a new entity named `title`, associate it to the container, and
    * make it active. Resolves to the new id, or null on failure (the adapter
    * reports its own error detail; the component toasts generically).
+   * Omit when creation isn't name-driven — pass `createSlot` on the component
+   * instead (e.g. a conversation is created by PICKING AN AGENT, not naming).
    */
-  createAndAttach: (title: string) => Promise<string | null>;
+  createAndAttach?: (title: string) => Promise<string | null>;
   /** Rename the entity (its real title column). Resolves false on failure. */
   rename: (id: string, title: string) => Promise<boolean>;
   /** Optional: unlink an entity from the container (never deletes the row). */
@@ -87,6 +89,12 @@ export interface AssociationEntitySelectProps {
   emptyLabel?: string;
   /** Icon color accent (e.g. "text-yellow-500" for notes). */
   iconClassName?: string;
+  /**
+   * Replaces the default "+ New <Entity>" name-input footer with a custom
+   * creator (e.g. an agent picker that starts a new chat). Function form
+   * receives `close` so the creator can dismiss the dropdown when done.
+   */
+  createSlot?: React.ReactNode | ((close: () => void) => React.ReactNode);
 }
 
 export function AssociationEntitySelect({
@@ -99,6 +107,7 @@ export function AssociationEntitySelect({
   renameActivation = "click",
   emptyLabel,
   iconClassName,
+  createSlot,
 }: AssociationEntitySelectProps) {
   const info = getEntityInfo(token);
   const { items, activeId } = adapter;
@@ -121,7 +130,7 @@ export function AssociationEntitySelect({
 
   const create = async (title: string) => {
     const name = title.trim();
-    if (!name || busy) return;
+    if (!name || busy || !adapter.createAndAttach) return;
     setBusy(true);
     const id = await adapter.createAndAttach(name);
     setBusy(false);
@@ -240,6 +249,12 @@ export function AssociationEntitySelect({
             </CommandList>
 
             {/* Create footer — outside CommandList so search never hides it. */}
+            {createSlot !== undefined ? (
+              <div className="border-t border-border p-1">
+                {typeof createSlot === "function" ? createSlot(close) : createSlot}
+              </div>
+            ) : null}
+            {createSlot === undefined && adapter.createAndAttach ? (
             <div className="border-t border-border p-1">
               {creating ? (
                 <div className="flex items-center gap-1 px-1 py-0.5">
@@ -296,6 +311,7 @@ export function AssociationEntitySelect({
                 </button>
               )}
             </div>
+            ) : null}
           </Command>
         </PopoverContent>
       </Popover>

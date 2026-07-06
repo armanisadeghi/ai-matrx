@@ -199,6 +199,13 @@ export const ENDPOINTS = {
     extractText: "/utilities/pdf/extract-text" as const,
     /** POST — Batch extraction with NDJSON streaming (saves to DB + storage). */
     batchExtract: "/utilities/pdf/batch-extract" as const,
+    /**
+     * POST — Phone-scanner assembly (NDJSON streaming): ordered photos
+     * (optional quad + rotation) + PDFs → ONE user-visible PDF, extracted
+     * + handed to the content pipeline. Terminal `data` event carries
+     * `{ file_id, doc_id, page_count }`.
+     */
+    fromImages: "/utilities/pdf/from-images" as const,
 
     // ── New `MediaRef`-based JSON endpoints (matrx-utils) ─────────────────
     /** POST — Text extraction from a remote source (MediaRef / url / cld_id). Returns `PdfResult`. */

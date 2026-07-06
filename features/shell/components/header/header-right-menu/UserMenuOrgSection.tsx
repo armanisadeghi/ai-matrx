@@ -8,6 +8,7 @@
 // reminder popover (useActiveOrganizationPicker + DefaultOrgSwitch).
 
 import { Check, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { DefaultOrgSwitch } from "@/features/organizations/components/DefaultOrgSwitch";
 import { MenuGroup } from "./MenuGroup";
@@ -16,7 +17,6 @@ import { MENU_ITEM_CLASS } from "./menuItemClass";
 export default function UserMenuOrgSection() {
   const {
     activeOrgId,
-    activeOrgName,
     promptForOrg,
     organizations,
     loading,
@@ -25,19 +25,12 @@ export default function UserMenuOrgSection() {
     selectOrganization,
   } = useActiveOrganizationPicker();
 
-  const orgTrailing = activeOrgName
-    ? activeOrgName
-    : promptForOrg
-      ? "Choose one"
-      : null;
-
   return (
     <MenuGroup
       id="organization"
       icon="Building2"
       label="Organization"
-      trailing={orgTrailing}
-      defaultOpen={promptForOrg || !activeOrgId}
+      defaultOpen
       iconClassName={promptForOrg ? "[&_svg]:text-red-500" : undefined}
     >
       {loading ? (
@@ -65,7 +58,11 @@ export default function UserMenuOrgSection() {
                   e.stopPropagation();
                   selectOrganization(org.id, org.name);
                 }}
-                className={MENU_ITEM_CLASS}
+                className={cn(
+                  MENU_ITEM_CLASS,
+                  isActive &&
+                    "bg-primary/10 font-medium text-primary [&>svg:last-child]:text-primary",
+                )}
               >
                 <span className="min-w-0 flex-1 truncate text-left">
                   {org.name}

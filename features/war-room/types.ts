@@ -96,6 +96,8 @@ export const SINGLE_ACTIVE_ENTITY_TYPES: ReadonlySet<string> = new Set([
   "project",
   "note",
   "studio_session",
+  // The Chat tab binds to ONE conversation at a time; a thread can hold many.
+  "conversation",
 ]);
 
 /** Quick-add picker vocabulary (maps to thread anchor_type). */
@@ -120,8 +122,8 @@ export const THREAD_CORE_TABS: readonly ThreadCoreTab[] = [
   "task",
   "notes",
   "audio",
-  "files",
   "agent",
+  "files",
   "combined",
 ];
 

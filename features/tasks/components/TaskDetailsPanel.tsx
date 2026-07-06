@@ -59,15 +59,25 @@ import type { Comment } from "@/features/comments/types";
 import { TaskContextPicker } from "./TaskContextSection";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import type { TaskWithProject } from "@/features/tasks/types";
+import { buildTaskTitleLabel } from "@/features/tasks/utils/taskTitleLabel";
+import { cn } from "@/lib/utils";
+
+export type TaskDetailsTitleLayout = "default" | "stacked";
 
 interface TaskDetailsPanelProps {
   task: TaskWithProject;
   onClose: () => void;
+  /**
+   * `stacked` — toolbar row (back, checkbox, truncated label, actions) then
+   * full title on its own row below. For narrow Quick Tasks panes.
+   */
+  titleLayout?: TaskDetailsTitleLayout;
 }
 
 export default function TaskDetailsPanel({
   task,
   onClose,
+  titleLayout = "default",
 }: TaskDetailsPanelProps) {
   const dispatch = useAppDispatch();
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
@@ -301,160 +311,229 @@ export default function TaskDetailsPanel({
   const subtasks = task.subtasks || [];
   const completedSubtasks = subtasks.filter((st) => st.completed).length;
   const totalSubtasks = subtasks.length;
+  const { label: titleLabel, isTruncated: isTitleTruncated } =
+    buildTaskTitleLabel(title);
+  const useStackedTitle = titleLayout === "stacked";
+
+  const headerActions = (
+    <div className="flex items-center gap-1 shrink-0">
+      <Link
+        href={`/tasks/${task.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Open task in full page"
+        className="inline-flex items-center justify-center h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+      >
+        <ExternalLink size={14} />
+      </Link>
+
+      {isDirty && (
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          size="sm"
+          className="h-8 px-3"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 size={14} className="animate-spin mr-1" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={14} className="mr-1" />
+              Save
+            </>
+          )}
+        </Button>
+      )}
+
+      <ReferenceCopyButton
+        referenceType="task"
+        id={task.id}
+        label={task.title}
+        toastLabel={task.title}
+      />
+
+      <ShareButton
+        resourceType="task"
+        resourceId={task.id}
+        resourceName={task.title}
+        isOwner={task.userId === currentUserId}
+        size="icon"
+        variant="ghost"
+      />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full">
+            <MoreVertical size={14} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={handleToggleComplete}
+            className="flex items-center gap-2"
+          >
+            <Check size={14} />
+            {task.completed ? "Mark Incomplete" : "Mark Complete"}
+          </DropdownMenuItem>
+          {task.userId === currentUserId && (
+            <DropdownMenuItem
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Share2 size={14} />
+              Share Task
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center gap-2 text-destructive focus:text-destructive"
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 size={14} />
+                Delete Task
+              </>
+            )}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 p-4 border-b border-border">
-        <div className="flex items-start gap-3 mb-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="flex-shrink-0 h-7 w-7 rounded-full"
-          >
-            <ChevronLeft size={18} />
-          </Button>
+        {useStackedTitle ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="shrink-0 h-7 w-7 rounded-full"
+              >
+                <ChevronLeft size={18} />
+              </Button>
 
-          {/* Complete/Incomplete Checkbox */}
-          <Checkbox
-            checked={task.completed}
-            onCheckedChange={handleToggleComplete}
-            className="mt-1.5 flex-shrink-0"
-          />
+              <Checkbox
+                checked={task.completed}
+                onCheckedChange={handleToggleComplete}
+                className="shrink-0"
+              />
 
-          {/* Title - Editable */}
-          <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0">
+                {isEditingTitle ? (
+                  <span className="block text-sm font-semibold text-muted-foreground truncate">
+                    Edit title
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className={cn(
+                      "w-full text-left text-sm font-semibold truncate transition-colors hover:text-primary",
+                      task.completed
+                        ? "line-through text-muted-foreground"
+                        : "text-foreground",
+                    )}
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    {titleLabel}
+                  </button>
+                )}
+              </div>
+
+              {headerActions}
+            </div>
+
             {isEditingTitle ? (
               <Input
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 onBlur={() => setIsEditingTitle(false)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    setIsEditingTitle(false);
-                  }
+                  if (e.key === "Enter") setIsEditingTitle(false);
                   if (e.key === "Escape") {
                     setTitle(task.title);
                     setIsEditingTitle(false);
                   }
                 }}
                 autoFocus
-                className="text-lg font-semibold"
+                className="text-xs leading-relaxed"
               />
-            ) : (
-              <h2
-                className={`text-lg font-semibold cursor-pointer hover:text-primary transition-colors ${
-                  task.completed
-                    ? "line-through text-muted-foreground"
-                    : "text-foreground"
-                }`}
-                onClick={() => setIsEditingTitle(true)}
-              >
-                {task.title}
-              </h2>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Open full page */}
-            <Link
-              href={`/tasks/${task.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open task in full page"
-              className="inline-flex items-center justify-center h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            >
-              <ExternalLink size={14} />
-            </Link>
-
-            {isDirty && (
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                size="sm"
-                className="h-8 px-3"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin mr-1" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={14} className="mr-1" />
-                    Save
-                  </>
+            ) : isTitleTruncated || title.includes("\n") ? (
+              <p
+                className={cn(
+                  "text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap break-words",
+                  task.completed && "line-through",
                 )}
-              </Button>
-            )}
-
-            <ReferenceCopyButton
-              referenceType="task"
-              id={task.id}
-              label={task.title}
-              toastLabel={task.title}
-            />
-
-            <ShareButton
-              resourceType="task"
-              resourceId={task.id}
-              resourceName={task.title}
-              isOwner={task.userId === currentUserId}
-              size="icon"
+              >
+                {title}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="flex items-start gap-3 mb-3">
+            <Button
               variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="flex-shrink-0 h-7 w-7 rounded-full"
+            >
+              <ChevronLeft size={18} />
+            </Button>
+
+            <Checkbox
+              checked={task.completed}
+              onCheckedChange={handleToggleComplete}
+              className="mt-1.5 flex-shrink-0"
             />
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
+            <div className="flex-1 min-w-0">
+              {isEditingTitle ? (
+                <Input
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  onBlur={() => setIsEditingTitle(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      setIsEditingTitle(false);
+                    }
+                    if (e.key === "Escape") {
+                      setTitle(task.title);
+                      setIsEditingTitle(false);
+                    }
+                  }}
+                  autoFocus
+                  className="text-lg font-semibold"
+                />
+              ) : (
+                <h2
+                  className={`text-lg font-semibold cursor-pointer hover:text-primary transition-colors ${
+                    task.completed
+                      ? "line-through text-muted-foreground"
+                      : "text-foreground"
+                  }`}
+                  onClick={() => setIsEditingTitle(true)}
                 >
-                  <MoreVertical size={14} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={handleToggleComplete}
-                  className="flex items-center gap-2"
-                >
-                  <Check size={14} />
-                  {task.completed ? "Mark Incomplete" : "Mark Complete"}
-                </DropdownMenuItem>
-                {task.userId === currentUserId && (
-                  <DropdownMenuItem
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Share2 size={14} />
-                    Share Task
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="flex items-center gap-2 text-destructive focus:text-destructive"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 size={14} />
-                      Delete Task
-                    </>
-                  )}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {task.title}
+                </h2>
+              )}
+            </div>
+
+            {headerActions}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Scrollable Content */}

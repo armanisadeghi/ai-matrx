@@ -37,25 +37,31 @@ import {
 } from "@/features/transcripts/utils/hubReferenceGroups";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 
-type HubViewMode = "cards" | "table";
+type HubViewMode = "grid" | "list" | "nested";
 const HUB_VIEW_STORAGE_KEY = "transcripts-hub-view";
-const HUB_GROUP_STORAGE_KEY = "transcripts-hub-group";
+/** @deprecated Migrated into `transcripts-hub-view` as `"nested"`. */
+const LEGACY_HUB_GROUP_STORAGE_KEY = "transcripts-hub-group";
+
+function readPersistedHubView(): HubViewMode {
+  const saved = window.localStorage.getItem(HUB_VIEW_STORAGE_KEY);
+  if (saved === "grid" || saved === "list" || saved === "nested") return saved;
+
+  const legacyGroup = window.localStorage.getItem(LEGACY_HUB_GROUP_STORAGE_KEY);
+  if (legacyGroup === "1") return "nested";
+  if (saved === "cards") return "grid";
+  if (saved === "table") return "list";
+
+  return "grid";
+}
 
 export function TranscriptsListPage() {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<TranscriptSortKey>("updated");
-  const [view, setView] = useState<HubViewMode>("cards");
-  const [groupByParent, setGroupByParent] = useState(false);
+  const [view, setView] = useState<HubViewMode>("grid");
   const { sections, loadMore } = useTranscriptsHub();
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(HUB_VIEW_STORAGE_KEY);
-    if (saved === "cards" || saved === "table") setView(saved);
-    const savedGroup = window.localStorage.getItem(HUB_GROUP_STORAGE_KEY);
-    if (savedGroup === "1") {
-      setGroupByParent(true);
-      setView("table");
-    }
+    setView(readPersistedHubView());
   }, []);
 
   const setViewPersist = (mode: HubViewMode) => {
@@ -63,11 +69,7 @@ export function TranscriptsListPage() {
     window.localStorage.setItem(HUB_VIEW_STORAGE_KEY, mode);
   };
 
-  const setGroupPersist = (grouped: boolean) => {
-    setGroupByParent(grouped);
-    window.localStorage.setItem(HUB_GROUP_STORAGE_KEY, grouped ? "1" : "0");
-    if (grouped) setViewPersist("table");
-  };
+  const groupByParent = view === "nested";
 
   const allLoadedItems = useMemo(
     () => HUB_SECTIONS.flatMap((s) => sections[s.id].items),
@@ -156,59 +158,49 @@ export function TranscriptsListPage() {
               className="min-w-0 flex-1 border-0 bg-transparent py-0 text-sm text-foreground outline-none placeholder:text-muted-foreground"
               aria-label="Search transcripts hub"
             />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="flex-shrink-0 rounded-md p-1 transition-colors hover:bg-muted/50"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              disabled={!query}
+              className="flex-shrink-0 rounded-md p-1 transition-colors enabled:hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
             <div className="mr-1 flex items-center gap-0.5 rounded-md border border-border/60 bg-muted/30 p-0.5 shrink-0">
               <HubToolbarToggle
-                active={groupByParent}
-                title={
-                  groupByParent
-                    ? "Ungroup (table only)"
-                    : "Group by parent in table"
-                }
-                onClick={() => setGroupPersist(!groupByParent)}
+                active={view === "list"}
+                title="List"
+                onClick={() => setViewPersist("list")}
               >
-                <ListTree className="h-3.5 w-3.5" />
+                <List className="h-3.5 w-3.5" />
               </HubToolbarToggle>
               <HubToolbarToggle
-                active={view === "cards"}
-                title="Card view"
-                onClick={() => {
-                  setViewPersist("cards");
-                  if (groupByParent) setGroupPersist(false);
-                }}
+                active={view === "grid"}
+                title="Grid"
+                onClick={() => setViewPersist("grid")}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
               </HubToolbarToggle>
               <HubToolbarToggle
-                active={view === "table"}
-                title="Table view"
-                onClick={() => setViewPersist("table")}
+                active={view === "nested"}
+                title="Nested list"
+                onClick={() => setViewPersist("nested")}
               >
-                <List className="h-3.5 w-3.5" />
+                <ListTree className="h-3.5 w-3.5" />
               </HubToolbarToggle>
             </div>
-            {view === "cards" ? (
+            <div className="mr-1 flex shrink-0 items-center gap-1">
               <TranscriptsSortMenu
                 sortKey={sortKey}
                 onSortChange={setSortKey}
               />
-            ) : null}
-            {hubReferenceCount > 0 ? (
               <ReferencesBulkCopyButton
                 groups={hubReferenceGroups}
                 toastLabel={`${hubReferenceCount} transcript hub item${hubReferenceCount === 1 ? "" : "s"}`}
-                className="mr-1 shrink-0"
+                className="shrink-0"
               />
-            ) : null}
+            </div>
           </div>
 
           {isSearching ? (
@@ -232,15 +224,15 @@ export function TranscriptsListPage() {
               <Search className="mb-3 h-8 w-8 opacity-40" />
               <p className="text-sm">Nothing matches your search.</p>
             </div>
-          ) : groupByParent && loadingRecordings && !groupedTree?.length ? (
+          ) : view === "nested" && loadingRecordings && !groupedTree?.length ? (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : view === "table" ? (
+          ) : view === "list" || view === "nested" ? (
             <>
               <TranscriptsHubTable
                 items={flatTableItems}
-                tree={groupByParent ? groupedTree : null}
+                tree={view === "nested" ? groupedTree : null}
               />
               {sectionsWithMore.length > 0 ? (
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">

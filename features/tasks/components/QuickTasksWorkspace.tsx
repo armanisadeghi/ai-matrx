@@ -295,6 +295,7 @@ export function QuickTasksMain() {
       </div>
       <TaskDetailsPanel
         task={selectedTask}
+        titleLayout="stacked"
         onClose={() => dispatch(setQuickTasksSelectedTaskId(null))}
       />
     </div>

@@ -26,7 +26,7 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Plus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import { useThreadAudioSessionSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
@@ -46,10 +46,7 @@ const CleanupPad = dynamic(
   },
 );
 import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
-import {
-  addAudioSessionToThread,
-  ensureThreadAudioSession,
-} from "@/features/war-room/redux/thunks";
+import { ensureThreadAudioSession } from "@/features/war-room/redux/thunks";
 import { ThreadAudioSessionList } from "./ThreadAudioSessionList";
 
 function ThreadAudioSessionChrome({
@@ -59,55 +56,20 @@ function ThreadAudioSessionChrome({
   threadId: string;
   compact?: boolean;
 }) {
-  const dispatch = useAppDispatch();
-  // The canonical name dropdown: real session titles, inline rename, switch,
-  // unlink, "+ New" with a name. The plus button stays as the one-click
-  // "start recording now" path (default-named session).
+  // The canonical name dropdown owns the WHOLE session lifecycle: real titles,
+  // inline rename, switch, unlink, and "+ New Session" (named) — one control,
+  // identical chrome to the Notes tab (no duplicate new-session button).
   const adapter = useThreadAudioSessionSelectAdapter(threadId);
 
-  if (compact) {
-    return (
-      <>
-        <AssociationEntitySelect
-          token="studio_session"
-          adapter={adapter}
-          align="start"
-          emptyLabel="Audio"
-          className="min-w-0"
-        />
-        <button
-          type="button"
-          onClick={() => void dispatch(addAudioSessionToThread(threadId))}
-          className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Start a new recording session in this tile"
-          aria-label="New recording session"
-        >
-          <Plus className="size-3.5" />
-        </button>
-      </>
-    );
-  }
-
   return (
-    <>
-      <AssociationEntitySelect
-        token="studio_session"
-        adapter={adapter}
-        align="start"
-        emptyLabel="Audio"
-        className="min-w-0 flex-1"
-      />
-
-      <button
-        type="button"
-        onClick={() => void dispatch(addAudioSessionToThread(threadId))}
-        className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        title="Start a new recording session in this tile"
-      >
-        <Plus className="size-3.5" />
-        New Session
-      </button>
-    </>
+    <AssociationEntitySelect
+      token="studio_session"
+      adapter={adapter}
+      align="start"
+      emptyLabel="Audio"
+      iconClassName="text-secondary"
+      className={compact ? "min-w-0" : "min-w-0 flex-1"}
+    />
   );
 }
 
@@ -135,7 +97,7 @@ export function ThreadAudioTab({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {!compact ? (
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1.5">
+        <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
           {sessionChrome}
         </div>
       ) : null}

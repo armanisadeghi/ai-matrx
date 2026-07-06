@@ -8,6 +8,7 @@
 // the preference. Active org = Check; default org = Star badge.
 
 import { Building2, Check, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { DefaultOrgSwitch } from "./DefaultOrgSwitch";
 
@@ -49,12 +50,18 @@ export function OrganizationPickerPanel() {
                 <button
                   type="button"
                   onClick={() => selectOrganization(org.id, org.name)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent"
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent",
+                    isActive && "bg-primary/10 font-medium text-primary",
+                  )}
                 >
                   <Building2
                     size={15}
                     strokeWidth={1.75}
-                    className="shrink-0 text-muted-foreground"
+                    className={cn(
+                      "shrink-0",
+                      isActive ? "text-primary" : "text-muted-foreground",
+                    )}
                   />
                   <span className="min-w-0 flex-1 truncate">{org.name}</span>
                   {org.is_personal && (

@@ -6,6 +6,16 @@ import { defaultErrorMessages } from "@/components/matrx/camera/camera-types";
 
 interface CameraProviderProps {
     children: React.ReactNode;
+    /**
+     * Merged over the default video constraints (1080p ideal). The
+     * scanner passes `{ facingMode: { ideal: "environment" }, width:
+     * { ideal: 3840 }, height: { ideal: 2160 } }` so document shots
+     * capture at the sensor's best resolution — browsers clamp to the
+     * device maximum, so over-asking is safe.
+     */
+    videoConstraints?: MediaTrackConstraints;
+    /** JPEG quality for takePhoto() (0..1). Default: browser default (~0.92). */
+    photoQuality?: number;
 }
 
 interface CameraContextType {
@@ -33,7 +43,7 @@ interface CameraContextType {
 
 const CameraContext = createContext<CameraContextType | undefined>(undefined);
 
-export const CameraProvider = ({ children }: CameraProviderProps) => {
+export const CameraProvider = ({ children, videoConstraints, photoQuality }: CameraProviderProps) => {
     const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(
         undefined,
     );
@@ -65,6 +75,7 @@ export const CameraProvider = ({ children }: CameraProviderProps) => {
                         width: { min: 640, ideal: 1920 },
                         height: { min: 400, ideal: 1080 },
                         aspectRatio: { ideal: 1.7777777778 },
+                        ...videoConstraints,
                     },
                 })
                 .then((stream: MediaStream) => {
@@ -147,7 +158,7 @@ export const CameraProvider = ({ children }: CameraProviderProps) => {
             context.drawImage(playerRef.current, sX, sY, sW, sH, 0, 0, sW, sH);
         }
 
-        const imgData = canvasRef.current.toDataURL("image/jpeg");
+        const imgData = canvasRef.current.toDataURL("image/jpeg", photoQuality);
 
         return imgData;
     };

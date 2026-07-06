@@ -5,8 +5,6 @@ interface MenuGroupProps {
   id: string;
   icon: MenuIconKey;
   label: string;
-  /** Optional right-side hint (e.g. active org name) — visible even when collapsed. */
-  trailing?: ReactNode;
   defaultOpen?: boolean;
   iconClassName?: string;
   children: ReactNode;
@@ -25,7 +23,6 @@ export function MenuGroup({
   id,
   icon,
   label,
-  trailing,
   defaultOpen = true,
   iconClassName,
   children,
@@ -50,11 +47,6 @@ export function MenuGroup({
           <Icon className="w-3.5 h-3.5 shrink-0" />
         </span>
         <span className="flex-1 text-left">{label}</span>
-        {trailing ? (
-          <span className="min-w-0 max-w-[45%] truncate normal-case tracking-normal text-[10px] font-medium text-foreground">
-            {trailing}
-          </span>
-        ) : null}
         <svg
           className="mg-chevron w-3 h-3 shrink-0 transition-transform duration-200"
           viewBox="0 0 24 24"

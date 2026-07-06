@@ -8,7 +8,8 @@
 //
 // Mapping: task → success (green), notes → warning (yellow), audio → secondary
 // (purple), files → info (light blue), project task section → primary (dark blue),
-// agent → secondary, all → neutral in combined stack. Used by the tile accent
+// agent/chat → primary (blue, matching the /chat route), all → neutral in
+// combined stack. Used by the tile accent
 // rail, the segmented tab switcher's active pip, the combined-view section
 // rails, and the room-header instrument projector.
 
@@ -16,10 +17,10 @@ import {
   FolderKanban,
   LayoutGrid,
   ListChecks,
+  MessageCircle,
   NotebookPen,
   Mic,
   Paperclip,
-  Sparkles,
   Layers,
 } from "lucide-react";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
@@ -87,14 +88,15 @@ export const THREAD_KINDS: Record<ThreadCoreTab, ThreadKind> = {
   },
   agent: {
     id: "agent",
-    label: "Agent",
-    Icon: Sparkles,
-    // Secondary accent — used by no other thread kind here, and it matches the
-    // Scribe Agent+ send affordance, so the agent thread reads as its own thing.
-    text: "text-secondary",
-    bg: "bg-secondary/10",
-    rail: "bg-secondary",
-    sectionBorder: "border-l-secondary",
+    // The tab id stays `agent` (persisted free text), but the surface IS the
+    // thread's CHAT — conversations associated to the thread — so it reads as
+    // chat: blue MessageCircle, matching the /chat route identity.
+    label: "Chat",
+    Icon: MessageCircle,
+    text: "text-primary",
+    bg: "bg-primary/10",
+    rail: "bg-primary",
+    sectionBorder: "border-l-primary",
   },
   combined: {
     id: "combined",
@@ -111,8 +113,8 @@ export const THREAD_KIND_ORDER: ThreadCoreTab[] = [
   "task",
   "notes",
   "audio",
-  "files",
   "agent",
+  "files",
   "combined",
 ];
 

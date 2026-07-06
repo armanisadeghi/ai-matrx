@@ -640,6 +640,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
             <div className="h-full bg-muted/30">
               <TaskDetailsPanel
                 task={selectedTask}
+                titleLayout="stacked"
                 onClose={() => setSelectedTaskId(null)}
               />
             </div>
