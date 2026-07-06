@@ -12,7 +12,7 @@
 //
 // This module answers ONE question: given an arbitrary URL string, is it ours,
 // and if so what's the STRONGEST `FileSource` we can hand the handler? Identity
-// (`file_id` / `file_uri` / share `token`) beats an opaque URL, because the
+// (`file_id` / share `token`) beats an opaque URL, because the
 // handler can re-mint a durable URL from identity but not from an expiring one.
 //
 // ── Extending the list ──────────────────────────────────────────────────────

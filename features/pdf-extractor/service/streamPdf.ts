@@ -189,12 +189,12 @@ export async function streamPdfClean(opts: {
 
 export interface PdfFullPipelineBody {
   /**
-   * Canonical MediaRef source — exactly one of `file_id` / `url` / `file_uri`
-   * inside `media`. Build it with `buildPdfSource` from
+   * Canonical MediaRef source — exactly one of `file_id` / `url` inside
+   * `media`. Build it with `buildPdfSource` from
    * `@/features/pdf/utils/source`; never hand-roll (the old `{ cld_id }`
    * shape was silently dropped by the backend and 422'd every cloud doc).
    */
-  media?: { file_id: string } | { url: string } | { file_uri: string };
+  media?: { file_id: string } | { url: string };
   /** Legacy top-level URL — still accepted, prefer `media`. */
   url?: string;
   /** Mirrors `PdfPipelineOptions` on the Python side. */

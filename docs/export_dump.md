@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 <overlay-render-error module="@/features/window-panels/windows/projects/CreateProjectWindow" errorName="ChunkLoadError" chunkLoadError="true" adminDump="true">
 <context>
 <location>AI Matrx — Overlay Controller (render failure)</location>

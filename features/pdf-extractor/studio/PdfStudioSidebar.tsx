@@ -37,11 +37,16 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
+import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
+import { FileRowContextMenu } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import {
   usePdfStudioDocs,
   type StudioDocSummary,
 } from "./hooks/usePdfStudioDocs";
 import { buildPdfDocMenu } from "./pdfDocMenu";
+import { PdfStudioFileMenuExtras } from "./PdfStudioFileMenuExtras";
+import { StudioDocRenameDialog } from "./StudioDocRenameDialog";
 import { FileContextDialog } from "@/features/files/components/FileContextSection";
 import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
 import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
@@ -57,6 +62,8 @@ interface PdfStudioSidebarProps {
   onSelectDoc: (doc: StudioDocSummary) => void;
   /** Archive (soft-delete) a doc. Owns optimistic update + active cleanup. */
   onDeleteDoc: (id: string) => Promise<void>;
+  /** Rename a doc (processed_documents + backing cloud file when linked). */
+  onRenameDoc: (docId: string, newName: string) => Promise<void>;
   /** Opens the upload drawer. When omitted the `+ Add` button is hidden. */
   onAddDocs?: () => void;
   /** Which view to render: files list or pages list. */
@@ -77,6 +84,7 @@ export function PdfStudioSidebar({
   activeDocId,
   onSelectDoc,
   onDeleteDoc,
+  onRenameDoc,
   onAddDocs,
   view,
   onChangeView,
@@ -238,6 +246,7 @@ export function PdfStudioSidebar({
                   active={activeDocId === d.id}
                   onClick={() => onSelectDoc(d)}
                   onDeleteDoc={onDeleteDoc}
+                  onRenameDoc={onRenameDoc}
                 />
               ))
             )}
@@ -274,27 +283,33 @@ function DocRow({
   active,
   onClick,
   onDeleteDoc,
+  onRenameDoc,
 }: {
   doc: StudioDocSummary;
   active: boolean;
   onClick: () => void;
   onDeleteDoc: (id: string) => Promise<void>;
+  onRenameDoc: (docId: string, newName: string) => Promise<void>;
 }) {
   const isMobile = useIsMobile();
   const isDerivative = !!doc.parentProcessedId;
+  const [renameOpen, setRenameOpen] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const cloudFileId =
     doc.sourceKind === "cld_file" && doc.sourceId ? doc.sourceId : null;
-  // Lazy form — the menu config is only built when the kebab / context menu
-  // opens, so a long list doesn't construct N configs per render.
-  const menu = () =>
+  useEnsureCloudFile(cloudFileId);
+
+  const openRename = () => setRenameOpen(true);
+
+  const legacyMenu = () =>
     buildPdfDocMenu({
       doc,
       onDelete: onDeleteDoc,
       onSetContext: cloudFileId ? () => setContextOpen(true) : undefined,
+      onRename: openRename,
     });
 
-  const row = (
+  const rowInner = (
     <div
       data-doc-id={doc.id}
       className={cn(
@@ -358,34 +373,71 @@ function DocRow({
         )}
       </button>
 
-      {/* Kebab — revealed on hover/focus, always visible on touch. */}
-      <ItemMenu config={menu} align="end">
-        <button
-          type="button"
-          aria-label={`Options for ${doc.name}`}
-          aria-haspopup="menu"
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            "absolute right-1 top-1.5 flex h-5 w-5 items-center justify-center rounded-md",
-            "text-muted-foreground hover:bg-background hover:text-foreground",
-            "opacity-0 transition-opacity",
-            "group-hover/item:opacity-100 group-focus-within/item:opacity-100",
-            "data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100",
-          )}
+      {cloudFileId ? (
+        <FileContextMenu
+          fileId={cloudFileId}
+          onRename={openRename}
+          onDeleted={() => onDeleteDoc(doc.id)}
+          extraMenuItems={
+            <PdfStudioFileMenuExtras
+              doc={doc}
+              onRemoveFromExtractor={onDeleteDoc}
+            />
+          }
         >
-          <MoreHorizontal className="w-3.5 h-3.5" />
-        </button>
-      </ItemMenu>
+          <button
+            type="button"
+            aria-label={`Options for ${doc.name}`}
+            aria-haspopup="menu"
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "absolute right-1 top-1.5 flex h-5 w-5 items-center justify-center rounded-md",
+              "text-muted-foreground hover:bg-background hover:text-foreground",
+              "opacity-0 transition-opacity",
+              "group-hover/item:opacity-100 group-focus-within/item:opacity-100",
+              "data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100",
+            )}
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+          </button>
+        </FileContextMenu>
+      ) : (
+        <ItemMenu config={legacyMenu} align="end">
+          <button
+            type="button"
+            aria-label={`Options for ${doc.name}`}
+            aria-haspopup="menu"
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "absolute right-1 top-1.5 flex h-5 w-5 items-center justify-center rounded-md",
+              "text-muted-foreground hover:bg-background hover:text-foreground",
+              "opacity-0 transition-opacity",
+              "group-hover/item:opacity-100 group-focus-within/item:opacity-100",
+              "data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100",
+            )}
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" />
+          </button>
+        </ItemMenu>
+      )}
     </div>
   );
 
-  // Right-click opens the same menu (disabled on touch, where the kebab is
-  // always visible).
   return (
     <>
-      <ItemContextMenu config={menu} enabled={!isMobile}>
-        {row}
-      </ItemContextMenu>
+      {cloudFileId ? (
+        <FileRowContextMenu fileId={cloudFileId}>{rowInner}</FileRowContextMenu>
+      ) : (
+        <ItemContextMenu config={legacyMenu} enabled={!isMobile}>
+          {rowInner}
+        </ItemContextMenu>
+      )}
+      <StudioDocRenameDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        currentName={doc.name}
+        onCommit={(name) => onRenameDoc(doc.id, name)}
+      />
       {cloudFileId ? (
         <FileContextDialog
           fileId={cloudFileId}

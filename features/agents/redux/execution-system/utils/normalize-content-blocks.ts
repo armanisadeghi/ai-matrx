@@ -335,7 +335,6 @@ function coerceWireMediaPart(
     kind: wireType as NonNullable<ImageMediaPart["kind"]>,
     file_id: typeof raw.file_id === "string" ? raw.file_id : null,
     url: typeof raw.url === "string" ? raw.url : null,
-    file_uri: typeof raw.file_uri === "string" ? raw.file_uri : null,
     mime_type: typeof raw.mime_type === "string" ? raw.mime_type : null,
     metadata:
       raw.metadata && typeof raw.metadata === "object" && !Array.isArray(raw.metadata)
@@ -381,7 +380,6 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
         data: {
           type: "audio_output",
           url: raw.url ?? null,
-          file_uri: raw.file_uri ?? null,
           mime_type: raw.mime_type ?? null,
           transcription_result: raw.transcription_result ?? null,
         },
@@ -399,7 +397,6 @@ function normalizeMedia(raw: AnyMediaPart, index: number): RenderBlockPayload {
         data: {
           type: "video_output",
           url: raw.url ?? null,
-          file_uri: raw.file_uri ?? null,
           mime_type: raw.mime_type ?? null,
         },
         metadata: raw.metadata,

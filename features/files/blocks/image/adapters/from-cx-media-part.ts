@@ -5,7 +5,7 @@
  * a UnifiedImageBlock.
  *
  * Today's storage shape (CxMediaContent → ImageMediaPart):
- *   { type: "media", kind: "image", url?, file_uri?, mime_type?, base64_data?,
+ *   { type: "media", kind: "image", url?, mime_type?, base64_data?,
  *     metadata? }
  *
  * Everything else (file_id, cdn_url, signed_url, visibility, thumbnails,
@@ -55,13 +55,10 @@ export function fromCxMediaPart(part: ImageMediaPart): UnifiedImageBlock {
       download_url: downloadFromMeta,
     },
     {
-      // Pass through all metadata so the extension fields (file_uri,
-      // visibility, thumbnail, dimensions, etc.) get lifted by the rich
-      // adapter.
+      // Pass through all metadata so the extension fields (visibility,
+      // thumbnail, dimensions, etc.) get lifted by the rich adapter.
+      // Stored parts from before the storage-location eradication may
       ...(metadata ?? {}),
-      // Native `file_uri` lives at top-level on the media part — copy it
-      // into metadata for the adapter to find.
-      ...(part.file_uri ? { file_uri: part.file_uri } : {}),
     },
   );
 

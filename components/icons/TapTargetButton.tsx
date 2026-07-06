@@ -45,6 +45,12 @@ interface TapTargetButtonProps {
   tooltipSide?: "top" | "right" | "bottom" | "left";
   /** Tooltip alignment along its side. Defaults to "center". */
   tooltipAlign?: "start" | "center" | "end";
+  /**
+   * Visible caption rendered inline after the icon (`[icon Label]`).
+   * Widens the pill automatically. Tooltip defaults to off when set — the
+   * label is self-describing. Visible text becomes the accessible name.
+   */
+  label?: string;
 }
 
 interface TapTargetButtonSolidProps extends TapTargetButtonProps {
@@ -60,6 +66,12 @@ interface TapTargetButtonSolidProps extends TapTargetButtonProps {
 }
 
 const EXTERNAL_RE = /^(https?:|mailto:|tel:)/i;
+
+// Geometry + press feedback + tap hygiene are the SINGLE SOURCE OF TRUTH in
+// app/globals.css (the `.matrx-tap-*` family). This component only picks the
+// right class and layers each variant's decoration on top.
+const TAP_OUTER_CLASS = "matrx-tap-target group";
+const TAP_GROUP_OUTER_CLASS = "matrx-tap-target matrx-tap-target-sm group";
 
 function IconContent({
   icon,
@@ -82,6 +94,159 @@ function IconContent({
       {children}
     </svg>
   );
+}
+
+type TapTargetSize = "default" | "sm";
+
+function resolveTapGeometry(label: string | undefined, size: TapTargetSize) {
+  const inline = Boolean(label);
+  if (size === "sm") {
+    return {
+      outerClassName: inline
+        ? "matrx-tap-target matrx-tap-target-sm matrx-tap-target-inline-sm group"
+        : TAP_GROUP_OUTER_CLASS,
+      inlineModifier: "matrx-tap-pill-inline-sm",
+    };
+  }
+  return {
+    outerClassName: inline
+      ? `${TAP_OUTER_CLASS} matrx-tap-target-inline`
+      : TAP_OUTER_CLASS,
+    inlineModifier: "matrx-tap-pill-inline",
+  };
+}
+
+function buildTapInner({
+  label,
+  pillClassName,
+  iconClassName,
+  labelClassName,
+  inlineModifier,
+  icon,
+  children,
+  strokeWidth = 2,
+}: {
+  label?: string;
+  pillClassName: string;
+  iconClassName: string;
+  labelClassName?: string;
+  inlineModifier: string;
+  icon?: React.ReactNode;
+  children?: React.ReactNode;
+  strokeWidth?: number;
+}) {
+  const iconEl = (
+    <IconContent
+      icon={icon}
+      strokeWidth={strokeWidth}
+      className={iconClassName}
+    >
+      {children}
+    </IconContent>
+  );
+  const pillClasses = label
+    ? `${pillClassName} ${inlineModifier}`.trim()
+    : pillClassName;
+
+  if (!label) {
+    return <div className={pillClasses}>{iconEl}</div>;
+  }
+
+  return (
+    <div className={pillClasses}>
+      {iconEl}
+      <span className={labelClassName ?? "matrx-tap-label"}>{label}</span>
+    </div>
+  );
+}
+
+interface RenderTapTargetArgs extends Pick<
+  TapTargetButtonProps,
+  | "icon"
+  | "children"
+  | "strokeWidth"
+  | "label"
+  | "onClick"
+  | "as"
+  | "htmlFor"
+  | "ariaLabel"
+  | "disabled"
+  | "href"
+  | "target"
+  | "rel"
+  | "prefetch"
+  | "tooltip"
+  | "tooltipSide"
+  | "tooltipAlign"
+> {
+  size?: TapTargetSize;
+  pillClassName: string;
+  iconClassName: string;
+  labelClassName?: string;
+  rest?: ButtonHTMLAttributes<HTMLButtonElement>;
+  buttonRef?: Ref<HTMLButtonElement>;
+}
+
+function renderTapTarget({
+  size = "default",
+  pillClassName,
+  iconClassName,
+  labelClassName,
+  icon,
+  children,
+  strokeWidth,
+  label,
+  onClick,
+  as,
+  htmlFor,
+  ariaLabel,
+  disabled,
+  href,
+  target,
+  rel,
+  prefetch,
+  tooltip,
+  tooltipSide,
+  tooltipAlign,
+  rest,
+  buttonRef,
+}: RenderTapTargetArgs): ReactElement {
+  const { outerClassName, inlineModifier } = resolveTapGeometry(label, size);
+  const inner = buildTapInner({
+    label,
+    pillClassName,
+    iconClassName,
+    labelClassName,
+    inlineModifier: label ? inlineModifier : "",
+    icon,
+    children,
+    strokeWidth,
+  });
+  const resolvedTooltip =
+    tooltip !== undefined ? tooltip : label ? false : undefined;
+  const triggerAriaLabel = label ? undefined : ariaLabel;
+  const trigger = renderTrigger({
+    href,
+    target,
+    rel,
+    prefetch,
+    as,
+    htmlFor,
+    onClick,
+    ariaLabel: triggerAriaLabel,
+    disabled,
+    outerClassName,
+    children: inner,
+    rest,
+    buttonRef,
+  });
+  return withTooltip(trigger, {
+    tooltip: resolvedTooltip,
+    ariaLabel: triggerAriaLabel,
+    disabled,
+    tooltipSide,
+    tooltipAlign,
+  });
 }
 
 interface RenderTriggerArgs {
@@ -233,14 +398,7 @@ function withTooltip(
   );
 }
 
-// Geometry + press feedback + tap hygiene are the SINGLE SOURCE OF TRUTH in
-// app/globals.css (the `.matrx-tap-*` family). This component only picks the
-// right class and layers each variant's decoration on top.
-// - `.matrx-tap-target` (outer 44pt): the interactive element; owns tap hygiene
-//   (touch-action + tap-highlight) so it works for buttons AND link variants.
-// - `.matrx-tap-pill` (inner 32px): geometry + `active:scale(0.92)` press feel.
 // To resize/retune every tap button in the app, edit globals.css — not here.
-const TAP_OUTER_CLASS = "matrx-tap-target group";
 
 export const TapTargetButton = forwardRef<
   HTMLButtonElement,
@@ -263,46 +421,33 @@ export const TapTargetButton = forwardRef<
     tooltip,
     tooltipSide,
     tooltipAlign,
+    label,
     ...rest
   },
   ref,
 ) {
   const color = className ?? "text-foreground";
-  // Geometry + press scale come from `.matrx-tap-pill`. This variant only adds
-  // its glass decoration; the background-flash on press comes from
-  // `.matrx-glass-thin-border:active`.
-  const inner = (
-    <div className="matrx-tap-pill matrx-glass-thin-border">
-      <IconContent
-        icon={icon}
-        strokeWidth={strokeWidth}
-        className={`matrx-tap-icon ${color}`}
-      >
-        {children}
-      </IconContent>
-    </div>
-  );
-  const trigger = renderTrigger({
+  return renderTapTarget({
+    icon,
+    children,
+    strokeWidth,
+    onClick,
+    as,
+    htmlFor,
+    ariaLabel,
+    disabled,
     href,
     target,
     rel,
     prefetch,
-    as,
-    htmlFor,
-    onClick,
-    ariaLabel,
-    disabled,
-    outerClassName: TAP_OUTER_CLASS,
-    children: inner,
-    rest,
-    buttonRef: ref,
-  });
-  return withTooltip(trigger, {
     tooltip,
-    ariaLabel,
-    disabled,
     tooltipSide,
     tooltipAlign,
+    label,
+    pillClassName: "matrx-tap-pill matrx-glass-thin-border",
+    iconClassName: `matrx-tap-icon ${color}`,
+    rest,
+    buttonRef: ref,
   });
 });
 
@@ -327,46 +472,34 @@ export const TapTargetButtonTransparent = forwardRef<
     tooltip,
     tooltipSide,
     tooltipAlign,
+    label,
     ...rest
   },
   ref,
 ) {
   const color = className ?? "text-foreground";
-  // Geometry + press scale come from `.matrx-tap-pill`. This variant adds only
-  // its hover/active background (`active:bg-muted-foreground/15` gives the
-  // press-bg-flash parity with glass/group).
-  const inner = (
-    <div className="matrx-tap-pill hover:bg-muted active:bg-muted-foreground/15">
-      <IconContent
-        icon={icon}
-        strokeWidth={strokeWidth}
-        className={`matrx-tap-icon ${color}`}
-      >
-        {children}
-      </IconContent>
-    </div>
-  );
-  const trigger = renderTrigger({
+  return renderTapTarget({
+    icon,
+    children,
+    strokeWidth,
+    onClick,
+    as,
+    htmlFor,
+    ariaLabel,
+    disabled,
     href,
     target,
     rel,
     prefetch,
-    as,
-    htmlFor,
-    onClick,
-    ariaLabel,
-    disabled,
-    outerClassName: TAP_OUTER_CLASS,
-    children: inner,
-    rest,
-    buttonRef: ref,
-  });
-  return withTooltip(trigger, {
     tooltip,
-    ariaLabel,
-    disabled,
     tooltipSide,
     tooltipAlign,
+    label,
+    pillClassName:
+      "matrx-tap-pill hover:bg-muted active:bg-muted-foreground/15",
+    iconClassName: `matrx-tap-icon ${color}`,
+    rest,
+    buttonRef: ref,
   });
 });
 
@@ -394,52 +527,35 @@ export const TapTargetButtonSolid = forwardRef<
     tooltip,
     tooltipSide,
     tooltipAlign,
+    label,
     ...rest
   },
   ref,
 ) {
-  // Geometry + press scale come from `.matrx-tap-pill`. This variant adds only
-  // its solid fill. `activeBgColor` (defaults to `active:brightness-90`) gives
-  // press-bg-flash parity with glass/group. Override per-call when using a
-  // custom bgColor that should darken to a specific shade (e.g. `active:bg-primary/60`).
-  const inner = (
-    <div
-      className={`matrx-tap-pill ${bgColor} ${hoverBgColor} ${activeBgColor}`}
-    >
-      <IconContent
-        icon={icon}
-        strokeWidth={strokeWidth}
-        className={`matrx-tap-icon ${iconColor}`}
-      >
-        {children}
-      </IconContent>
-    </div>
-  );
-  const trigger = renderTrigger({
+  return renderTapTarget({
+    icon,
+    children,
+    strokeWidth,
+    onClick,
+    as,
+    htmlFor,
+    ariaLabel,
+    disabled,
     href,
     target,
     rel,
     prefetch,
-    as,
-    htmlFor,
-    onClick,
-    ariaLabel,
-    disabled,
-    outerClassName: TAP_OUTER_CLASS,
-    children: inner,
+    tooltip,
+    tooltipSide,
+    tooltipAlign,
+    label,
+    pillClassName: `matrx-tap-pill ${bgColor} ${hoverBgColor} ${activeBgColor}`,
+    iconClassName: `matrx-tap-icon ${iconColor}`,
+    labelClassName: `matrx-tap-label ${iconColor}`,
     rest,
     buttonRef: ref,
   });
-  return withTooltip(trigger, {
-    tooltip,
-    ariaLabel,
-    disabled,
-    tooltipSide,
-    tooltipAlign,
-  });
 });
-
-const TAP_GROUP_OUTER_CLASS = "matrx-tap-target matrx-tap-target-sm group";
 
 export const TapTargetButtonForGroup = forwardRef<
   HTMLButtonElement,
@@ -462,46 +578,35 @@ export const TapTargetButtonForGroup = forwardRef<
     tooltip,
     tooltipSide,
     tooltipAlign,
+    label,
     ...rest
   },
   ref,
 ) {
   const color = className ?? "text-foreground";
-  // Slimmer 24px pill (`matrx-tap-pill-sm`) with the same timing curve + press
-  // scale as glass/transparent/solid. Background flash on press comes from
-  // `.matrx-glass-interactive:active`.
-  const inner = (
-    <div className="matrx-tap-pill matrx-tap-pill-sm matrx-glass-interactive">
-      <IconContent
-        icon={icon}
-        strokeWidth={strokeWidth}
-        className={`matrx-tap-icon ${color}`}
-      >
-        {children}
-      </IconContent>
-    </div>
-  );
-  const trigger = renderTrigger({
+  return renderTapTarget({
+    size: "sm",
+    icon,
+    children,
+    strokeWidth,
+    onClick,
+    as,
+    htmlFor,
+    ariaLabel,
+    disabled,
     href,
     target,
     rel,
     prefetch,
-    as,
-    htmlFor,
-    onClick,
-    ariaLabel,
-    disabled,
-    outerClassName: TAP_GROUP_OUTER_CLASS,
-    children: inner,
-    rest,
-    buttonRef: ref,
-  });
-  return withTooltip(trigger, {
     tooltip,
-    ariaLabel,
-    disabled,
     tooltipSide,
     tooltipAlign,
+    label,
+    pillClassName: "matrx-tap-pill matrx-tap-pill-sm matrx-glass-interactive",
+    iconClassName: `matrx-tap-icon ${color}`,
+    labelClassName: `matrx-tap-label ${color}`,
+    rest,
+    buttonRef: ref,
   });
 });
 

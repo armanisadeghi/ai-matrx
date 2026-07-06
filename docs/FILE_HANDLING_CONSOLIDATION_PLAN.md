@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # File Handling Consolidation Plan — v2 (integrated)
 
 **Status:** proposed — integrated with backend team's `prancy-meandering-canyon` plan

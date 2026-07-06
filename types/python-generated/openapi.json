@@ -5586,7 +5586,7 @@
           "skills"
         ],
         "summary": "List Skills",
-        "description": "List skills visible to the caller (user-owned + system + public).\n\nFilters:\n  - category_id: only skills in that category\n  - is_public_only: skip system + own; only is_public=true\n  - project_id: only skills associated with that ctx_project via\n    skill.project (the many-to-many join)",
+        "description": "List skills visible to the caller (user-owned + system + public).\n\nFilters:\n  - category_id: only skills in that category\n  - is_public_only: skip system + own; only is_public=true\n  - project_id: only skills whose skill.definition.project_id matches",
         "operationId": "list_skills_skills_get",
         "parameters": [
           {
@@ -6022,107 +6022,6 @@
                 }
               }
             }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/skills/{skill_id}/projects/{project_id}": {
-      "post": {
-        "tags": [
-          "Skills",
-          "skills"
-        ],
-        "summary": "Associate Skill With Project",
-        "description": "Associate a skill with a ctx_project. Requires skill ownership\n(or admin) OR project owner/admin role; RLS enforces the same check\nserver-side.\n\nIdempotent: existing rows are returned as-is.",
-        "operationId": "associate_skill_with_project_skills__skill_id__projects__project_id__post",
-        "parameters": [
-          {
-            "name": "skill_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Skill Id"
-            }
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Project Id"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectAssociation"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Skills",
-          "skills"
-        ],
-        "summary": "Disassociate Skill From Project",
-        "description": "Remove a skill ↔ project association. RLS enforces who can delete.",
-        "operationId": "disassociate_skill_from_project_skills__skill_id__projects__project_id__delete",
-        "parameters": [
-          {
-            "name": "skill_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Skill Id"
-            }
-          },
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Project Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -24578,6 +24477,79 @@
         }
       }
     },
+    "/runs/{run_id}/stream/debug": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Stream Run Debug",
+        "description": "SSE feed of raw matrx-connect stream events captured during a workflow run.\n\nPowers the workflow-studio StreamDebugPanel — individual chunks, phases,\ntool events, structured_output, etc. Unlike ``metadata._heartbeat._streaming``\n(a throttled ~4KB tail), this is the full in-memory capture for debugging.\n\nOptional ``node_id`` filters to events emitted while that node was executing.\n``Last-Event-ID`` is the monotonic ``idx`` for gap-free reconnect replay.",
+        "operationId": "stream_run_debug_runs__run_id__stream_debug_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "Last-Event-ID",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last-Event-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/runs/{run_id}/events": {
       "get": {
         "tags": [
@@ -29495,8 +29467,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/FileVersionRecord"
                   },
                   "title": "Response List Versions Files  File Id  Versions Get"
                 }
@@ -29549,9 +29520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Get Version Files  File Id  Versions  Version Number  Get"
+                  "$ref": "#/components/schemas/FileVersionRecord"
                 }
               }
             }
@@ -29651,9 +29620,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Restore Version Files  File Id  Versions  Version Number  Restore Post"
+                  "$ref": "#/components/schemas/FileRecord"
                 }
               }
             }
@@ -43204,18 +43171,6 @@
             "type": "string",
             "title": "File Path"
           },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Uri",
-            "description": "Native cloud storage URI (s3://bucket/key). Same value as the underlying cld_files row's storage_uri — surfaced here so the FE wire contract carries the canonical native URI alongside the logical file_path."
-          },
           "width": {
             "anyOf": [
               {
@@ -44747,10 +44702,9 @@
             "title": "Checksum"
           }
         },
-        "additionalProperties": true,
         "type": "object",
         "title": "BridgeFileEntry",
-        "description": "Sandbox-facing projection of a ``cld_files`` row."
+        "description": "Sandbox-facing projection of a ``cld_files`` row.\n\n``extra=\"ignore\"`` deliberate: never passthrough an undeclared column\n(that's how the server-only ``storage_uri`` would leak to a sandbox).\nDeclare any new field explicitly."
       },
       "BridgeIntegrationAuth": {
         "properties": {
@@ -54331,17 +54285,6 @@
             "type": "string",
             "title": "Derivation Kind"
           },
-          "storage_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Storage Uri"
-          },
           "created_at": {
             "type": "string",
             "title": "Created At"
@@ -58840,10 +58783,6 @@
             "type": "string",
             "title": "File Path"
           },
-          "storage_uri": {
-            "type": "string",
-            "title": "Storage Uri"
-          },
           "file_name": {
             "type": "string",
             "title": "File Name"
@@ -59014,7 +58953,6 @@
           "id",
           "owner_id",
           "file_path",
-          "storage_uri",
           "file_name"
         ],
         "title": "FileRecord"
@@ -59041,10 +58979,6 @@
           "file_path": {
             "type": "string",
             "title": "File Path"
-          },
-          "storage_uri": {
-            "type": "string",
-            "title": "Storage Uri"
           },
           "version_number": {
             "type": "integer",
@@ -59103,7 +59037,6 @@
         "required": [
           "file_id",
           "file_path",
-          "storage_uri",
           "version_number",
           "size_bytes",
           "checksum",
@@ -59111,6 +59044,85 @@
           "is_new"
         ],
         "title": "FileUploadResponse"
+      },
+      "FileVersionRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "version_number": {
+            "type": "integer",
+            "title": "Version Number"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "change_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "version_number"
+        ],
+        "title": "FileVersionRecord",
+        "description": "Client-safe projection of a ``files.file_versions`` row.\n\nThe versions endpoints used to return the raw row via ``select(\"*\")``,\nwhich leaked the version's ``storage_uri`` (server-only S3 location). This\nmodel is the explicit projection: everything a client needs to render the\nversion history, and NOT the storage location. To fetch a version's bytes,\nuse ``GET /files/{id}/versions/{n}/download`` (never the raw location)."
       },
       "FilterRequest": {
         "properties": {
@@ -64642,17 +64654,6 @@
             "type": "boolean",
             "title": "Has Structured Json"
           },
-          "storage_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Storage Uri"
-          },
           "derivation_kind": {
             "type": "string",
             "title": "Derivation Kind"
@@ -64715,7 +64716,6 @@
           "embeddings_oai",
           "embeddings_voyage",
           "has_structured_json",
-          "storage_uri",
           "derivation_kind",
           "parent_processed_id",
           "status",
@@ -64822,17 +64822,6 @@
             ],
             "title": "Source Url"
           },
-          "storage_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Storage Uri"
-          },
           "created_at": {
             "type": "string",
             "title": "Created At"
@@ -64855,7 +64844,6 @@
           "effective_to",
           "chunks",
           "source_url",
-          "storage_uri",
           "created_at",
           "updated_at"
         ],
@@ -71275,10 +71263,6 @@
           "file_path": {
             "type": "string",
             "title": "File Path"
-          },
-          "storage_uri": {
-            "type": "string",
-            "title": "Storage Uri"
           }
         },
         "type": "object",
@@ -71287,8 +71271,7 @@
           "url",
           "headers",
           "expires_in",
-          "file_path",
-          "storage_uri"
+          "file_path"
         ],
         "title": "PresignedUploadResponse"
       },
@@ -71634,27 +71617,6 @@
           "variants"
         ],
         "title": "ProcessResponse"
-      },
-      "ProjectAssociation": {
-        "properties": {
-          "skill_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Skill Id"
-          },
-          "project_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Project Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "skill_id",
-          "project_id"
-        ],
-        "title": "ProjectAssociation"
       },
       "ProjectionResponse": {
         "properties": {
@@ -74588,17 +74550,6 @@
           "file_id": {
             "type": "string",
             "title": "File Id"
-          },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Uri"
           },
           "cdn_url": {
             "anyOf": [
@@ -78931,15 +78882,6 @@
               }
             ],
             "title": "Project Id"
-          },
-          "project_ids": {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "title": "Project Ids",
-            "description": "ctx_projects that this skill is associated with via skill.project (many-to-many)."
           }
         },
         "type": "object",
@@ -84136,10 +84078,9 @@
             "title": "Updated At"
           }
         },
-        "additionalProperties": true,
         "type": "object",
         "title": "TrashFileEntry",
-        "description": "Soft-deleted file as projected by the ``list_trash`` RPC.\n\nThe RPC returns ``cld_files`` rows with their canonical column set;\nextra keys are tolerated because new columns can land before this\nmodel is bumped."
+        "description": "Soft-deleted file as projected by the ``list_trash`` RPC.\n\n``extra=\"ignore\"`` (the default) is DELIBERATE: a new RPC column must\nnever silently passthrough to the client — that's exactly how the\nserver-only ``storage_uri`` would leak. Undeclared columns are dropped;\nto surface a new field, declare it here. (Validation still tolerates the\nextra key — it just isn't serialized out.)"
       },
       "TrashFolderEntry": {
         "properties": {
@@ -84232,10 +84173,9 @@
             "title": "Updated At"
           }
         },
-        "additionalProperties": true,
         "type": "object",
         "title": "TrashFolderEntry",
-        "description": "Soft-deleted folder as projected by the ``list_trash`` RPC."
+        "description": "Soft-deleted folder as projected by the ``list_trash`` RPC.\n\n``extra=\"ignore\"`` deliberate — see TrashFileEntry (no column passthrough)."
       },
       "TrashListResponse": {
         "properties": {
@@ -86906,10 +86846,6 @@
             "title": "File Id",
             "description": "cld_files UUID for the master image"
           },
-          "storage_uri": {
-            "type": "string",
-            "title": "Storage Uri"
-          },
           "file_path": {
             "type": "string",
             "title": "File Path"
@@ -86976,7 +86912,6 @@
         "type": "object",
         "required": [
           "file_id",
-          "storage_uri",
           "file_path",
           "mime_type",
           "size_bytes"

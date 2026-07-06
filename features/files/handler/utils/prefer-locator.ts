@@ -3,7 +3,7 @@
  *
  * "Pick the best identifier" helpers used by every output adapter. The
  * priority order is FIXED by the Python backend's MediaRef resolution
- * rules: file_id > file_uri > url > base64.
+ * rules: file_id > url > base64.
  */
 
 import type { NormalizedFile } from "../types";
@@ -14,9 +14,8 @@ import {
 
 export function preferIdentityLocator(
   file: NormalizedFile,
-): { file_id?: string; file_uri?: string; url?: string; base64_data?: string } {
+): { file_id?: string; url?: string; base64_data?: string } {
   if (file.fileId) return { file_id: file.fileId };
-  if (file.fileUri) return { file_uri: file.fileUri };
   if (file.url) return { url: file.url };
   if (file.base64) return { base64_data: file.base64 };
   return {};

@@ -8,25 +8,18 @@
 // the preference. Active org = Check; default org = Star badge.
 
 import { Building2, Check, Star } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
-import { useUserOrganizations } from "@/features/organizations/hooks";
-import { useDefaultOrganization } from "@/features/organizations/hooks/useDefaultOrganization";
+import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useActiveOrganizationPicker";
 import { DefaultOrgSwitch } from "./DefaultOrgSwitch";
 
 export function OrganizationPickerPanel() {
-  const dispatch = useAppDispatch();
-  const activeOrgId = useAppSelector(selectOrganizationId);
-  const { organizations, loading } = useUserOrganizations();
-  const { isDefault } = useDefaultOrganization();
-
-  // Selecting does NOT close the container — the user may still toggle "Set as
-  // default" (the switch enables only once an org is active). Containers close
-  // on outside-click / Esc.
-  const select = (id: string, name: string | null) => {
-    dispatch(chooseActiveOrganization({ id, name }));
-  };
+  const {
+    activeOrgId,
+    organizations,
+    loading,
+    loadFailed,
+    isDefault,
+    selectOrganization,
+  } = useActiveOrganizationPicker();
 
   return (
     <div className="flex flex-col">
@@ -39,6 +32,10 @@ export function OrganizationPickerPanel() {
           <div className="h-7 animate-pulse rounded-md bg-muted" />
           <div className="h-7 animate-pulse rounded-md bg-muted" />
         </div>
+      ) : loadFailed ? (
+        <p className="px-2 py-2 text-xs text-destructive">
+          Could not load organizations.
+        </p>
       ) : organizations.length === 0 ? (
         <p className="px-2 py-2 text-xs text-muted-foreground">
           No organizations found.
@@ -51,7 +48,7 @@ export function OrganizationPickerPanel() {
               <li key={org.id}>
                 <button
                   type="button"
-                  onClick={() => select(org.id, org.name)}
+                  onClick={() => selectOrganization(org.id, org.name)}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent"
                 >
                   <Building2
@@ -60,7 +57,7 @@ export function OrganizationPickerPanel() {
                     className="shrink-0 text-muted-foreground"
                   />
                   <span className="min-w-0 flex-1 truncate">{org.name}</span>
-                  {org.isPersonal && (
+                  {org.is_personal && (
                     <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                       Personal
                     </span>

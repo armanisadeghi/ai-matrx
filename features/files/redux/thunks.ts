@@ -23,7 +23,11 @@ import type { CloudFilesState } from "@/features/files/types";
 type StateWithCloudFiles = { cloudFiles: CloudFilesState };
 type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
-import { filesDb } from "@/features/files/filesDb";
+import {
+  filesDb,
+  FILES_TABLE_COLUMNS,
+  FILE_VERSIONS_TABLE_COLUMNS,
+} from "@/features/files/filesDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 import * as Files from "@/features/files/api/files";
@@ -275,7 +279,6 @@ export const loadUserFileTree = createAsyncThunk<
           id: f.id,
           ownerId: f.ownerId,
           filePath: f.filePath,
-          storageUri: "",
           fileName: f.fileName,
           mimeType: f.mimeType ?? null,
           fileSize: f.fileSize ?? null,
@@ -371,7 +374,7 @@ export const loadFolderContents = createAsyncThunk<
   const [filesRes, foldersRes] = await Promise.all([
     filesDb(supabase)
       .from("files")
-      .select("*")
+      .select(FILES_TABLE_COLUMNS)
       .eq("parent_folder_id", folderId)
       .is("deleted_at", null),
     filesDb(supabase)
@@ -437,7 +440,7 @@ export const loadFileVersions = createAsyncThunk<
   if (isVirtualResourceId(fileId)) return;
   const { data, error } = await filesDb(supabase)
     .from("file_versions")
-    .select("*")
+    .select(FILE_VERSIONS_TABLE_COLUMNS)
     .eq("file_id", fileId)
     .order("version_number", { ascending: false });
   if (error) throw pgErrorToError(error);
@@ -999,7 +1002,6 @@ export const uploadFiles = createAsyncThunk<
               id: data.file_id,
               owner_id: "",
               file_path: data.file_path,
-              storage_uri: data.storage_uri,
               file_name: data.file_path.split("/").pop() ?? targetName,
               mime_type: file.type || null,
               // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.
@@ -1110,7 +1112,7 @@ export const renameFile = createAsyncThunk<void, RenameFileArg, ThunkApi>(
     try {
       // Use the dedicated rename endpoint — it accepts a full new path,
       // auto-creates parent folders if any segment is missing, and lets
-      // the backend handle the file_path / storage_uri update atomically.
+      // the backend handle the file_path / storage-location update atomically.
       const { data } = await Files.renameFile(
         fileId,
         { new_path: newPath },

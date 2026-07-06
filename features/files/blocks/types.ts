@@ -81,21 +81,15 @@ interface MediaBlockBase {
 
 /**
  * Fields present on every matrx-owned (cld_files-backed) media block.
- * Always carries `fileId` + `fileUri` so the URL resolver can re-mint
- * signed URLs on expiry without a server round-trip beyond fileHandler.
+ * `fileId` is the permanent identity the URL resolver re-mints from on
+ * expiry (via fileHandler). Native storage locations are server-only and
+ * never appear on the client.
  */
 interface MatrxOriginFields {
   origin: "matrx";
 
   /** cld_files.id — the permanent identity. */
   fileId: string;
-  /** cld_files.storage_uri — `s3://bucket/key`. Immutable; survives URL churn. */
-  fileUri: string;
-  /**
-   * cld_files.canonical_storage_uri — the editable canonical version when
-   * different from `fileUri`. null when no separate canonical exists.
-   */
-  canonicalFileUri: string | null;
   /**
    * cld_files.visibility — drives URL resolution:
    *   "public"  — prefer cdnUrl; permanent URL, never re-minted
@@ -257,7 +251,7 @@ export type YouTubeBlock = MediaBlockBase &
  * Narrowing recipe:
  *   if (block.kind === "image") {
  *     if (block.origin === "matrx") {
- *       // block.fileId, block.fileUri, block.visibility, block.cdnUrl, ...
+ *       // block.fileId, block.visibility, block.cdnUrl, ...
  *     } else {
  *       // block.externalUrl, block.sourceLabel
  *     }

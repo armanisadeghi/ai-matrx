@@ -19,10 +19,9 @@
  * new place to view PDFs (admin tools, share preview, etc.) is one
  * thin wrapper, not another 300-line copy of the toolbar.
  *
- * The cld_files-backed `PdfPreview` and the pdf-extractor `PdfStudioUrlViewer`
- * are now both ~30-line wrappers that fetch bytes their own way and
- * delegate rendering to this component. Bugs fixed here propagate to
- * both surfaces automatically.
+ * The cld_files-backed `PdfPreview` is a ~30-line wrapper that fetches
+ * bytes its own way and delegates rendering to this component. Bugs
+ * fixed here propagate to every surface automatically.
  */
 
 "use client";

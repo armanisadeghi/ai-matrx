@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, type Ref } from "react";
 import {
   TapTargetButton,
   TapTargetButtonTransparent,
@@ -13,6 +13,8 @@ import {
 type Variant = "glass" | "transparent" | "solid" | "group";
 
 export interface TapButtonProps {
+  /** Forwarded to the underlying button (Radix `asChild`, focus chains, etc.). */
+  ref?: Ref<HTMLButtonElement>;
   variant?: Variant;
   onClick?: () => void;
   as?: "button" | "label";
@@ -38,6 +40,8 @@ export interface TapButtonProps {
   tooltip?: string | false;
   tooltipSide?: "top" | "right" | "bottom" | "left";
   tooltipAlign?: "start" | "center" | "end";
+  /** Inline caption after the icon — see TapTargetButton `label`. */
+  label?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Impact inventory — routes, providers, types, build, deps
 
 Companion to [`docs/FILE_HANDLING_CONSOLIDATION_PLAN.md`](./FILE_HANDLING_CONSOLIDATION_PLAN.md). Covers infrastructure, build, deps, types, ESLint, providers, route mounts, and CI — explicitly excluding component-level / Redux-slice / cache-internal work owned by other agents.

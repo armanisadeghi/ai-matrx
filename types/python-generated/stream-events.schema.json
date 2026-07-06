@@ -2035,18 +2035,6 @@
             "default": null,
             "title": "File Id"
           },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "File Uri"
-          },
           "visibility": {
             "anyOf": [
               {
@@ -2309,18 +2297,6 @@
             "default": null,
             "title": "File Id"
           },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "File Uri"
-          },
           "visibility": {
             "anyOf": [
               {
@@ -2582,18 +2558,6 @@
             ],
             "default": null,
             "title": "File Id"
-          },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "File Uri"
           },
           "visibility": {
             "anyOf": [
@@ -2869,18 +2833,6 @@
             ],
             "default": null,
             "title": "File Id"
-          },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "File Uri"
           },
           "visibility": {
             "anyOf": [
@@ -3165,18 +3117,6 @@
             ],
             "default": null,
             "title": "File Id"
-          },
-          "file_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "File Uri"
           },
           "visibility": {
             "anyOf": [

@@ -49,8 +49,6 @@ export function normalize(source: FileSource): NormalizedFile {
       return fromCloudFile(source.cloudFile, source);
     case "file_id":
       return fromFileId(source);
-    case "file_uri":
-      return fromFileUri(source);
     case "signed_url":
       return fromSignedUrl(source);
     case "share_link":
@@ -240,7 +238,6 @@ export function fromCloudFile(
     !!(isPublic && (cloudFile.cdnUrl ?? cloudFile.url)) || !!cloudFile.publicUrl;
   return {
     fileId: cloudFile.id,
-    fileUri: cloudFile.storageUri,
     url: bestUrl,
     origin: cloudFile.visibility === "public" ? "public" : "owned",
     capabilities: {
@@ -285,27 +282,6 @@ function fromFileId(
     },
     meta: classify({ mime: source.mime }),
     lifecycle: { refreshable: true, persisted: true },
-    scope: {},
-    __source: source,
-  };
-}
-
-function fromFileUri(
-  source: Extract<FileSource, { kind: "file_uri" }>,
-): NormalizedFile {
-  return {
-    fileUri: source.fileUri,
-    origin: "owned",
-    capabilities: {
-      canRead: true,
-      canEdit: false,
-      canShare: false,
-      canDelete: false,
-      requiresAuth: true,
-      transportSafeForFetch: false,
-    },
-    meta: classify({ mime: source.mime }),
-    lifecycle: { refreshable: false, persisted: true },
     scope: {},
     __source: source,
   };

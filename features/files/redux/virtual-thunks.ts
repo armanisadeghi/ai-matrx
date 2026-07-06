@@ -121,7 +121,6 @@ function nodeToFilePartial(
     id: makeSyntheticId(adapterId, node.id),
     fileName: node.name,
     filePath: node.name, // used only for display; virtual paths aren't S3 keys
-    storageUri: "",
     mimeType: node.mimeType ?? null,
     fileSize: node.size ?? null,
     parentFolderId: parentSyntheticId,

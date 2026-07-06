@@ -26,8 +26,8 @@ export default function QuickTasksWindow({
         width={850}
         height={650}
         sidebar={<QuickTasksSidebar />}
-        sidebarDefaultSize={200}
-        sidebarMinSize={150}
+        sidebarDefaultSize={300}
+        sidebarMinSize={225}
         sidebarClassName="bg-muted/10 border-r"
         urlSyncKey="quick_tasks"
         onClose={onClose}

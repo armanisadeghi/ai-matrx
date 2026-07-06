@@ -56,14 +56,13 @@ export type GranteeType = "user" | "group" | "public";
 //     class MediaRef(BaseModel):
 //       file_id:   str | None = None   # cld_files UUID — preferred
 //       url:       str | None = None   # any URL we issued OR external https://
-//       file_uri:  str | None = None   # native cloud URI: s3://, gs://, supabase://
 //       mime_type: str | None = None
 //       metadata:  dict[str, Any] = Field(default_factory=dict)
 //
-// Exactly ONE of `file_id` / `url` / `file_uri` SHOULD be set, in that
-// preference order. Sending more than one is allowed but the backend
-// resolves them in the same priority — `file_id` wins, then `file_uri`,
-// then `url`.
+// Exactly ONE of `file_id` / `url` SHOULD be set, in that preference order.
+// Sending both is allowed but the backend resolves them in the same
+// priority — `file_id` wins, then `url`. Native storage locations
+// (`s3://...`) are server-only and never appear on the client.
 //
 // Use the builders in [redux/converters.ts](./redux/converters.ts):
 //   - `cloudFileToMediaRef(file)`  — for an in-store CloudFile
@@ -77,8 +76,6 @@ export interface MediaRef {
   file_id?: string;
   /** Any URL we issued (signed S3, share link) OR external https://. */
   url?: string;
-  /** Native cloud URI: `s3://`, `gs://`, `supabase://...`. */
-  file_uri?: string;
   /** Optional client hint; backend overrides with `cld_files.mime_type` for owned files. */
   mime_type?: string;
   /** Free-form per-call metadata. Keep small — this rides on every request. */
@@ -104,6 +101,21 @@ type IamTables = Database["iam"]["Tables"];
 export type CloudFileRow = FilesTables["files"]["Row"];
 export type CloudFileInsert = FilesTables["files"]["Insert"];
 export type CloudFileUpdate = FilesTables["files"]["Update"];
+
+/**
+ * What the client is actually ALLOWED to read from `files.files`.
+ * `storage_uri` is server-only (column grant REVOKEd from `authenticated` —
+ * selecting it, or `select("*")`, errors). Every client read uses
+ * `FILES_TABLE_COLUMNS` from [filesDb.ts](./filesDb.ts) and lands on this
+ * shape. Same deal for `file_versions` via `FILE_VERSIONS_TABLE_COLUMNS`.
+ */
+// eslint-disable-next-line no-restricted-syntax -- the ONE sanctioned mention: subtracting the server-only column from the generated Row type
+export type CloudFileReadRow = Omit<CloudFileRow, "storage_uri">;
+export type CloudFileVersionReadRow = Omit<
+  FilesTables["file_versions"]["Row"],
+  // eslint-disable-next-line no-restricted-syntax -- same sanctioned subtraction for file_versions
+  "storage_uri"
+>;
 
 export type CloudFolderRow = FilesTables["folders"]["Row"];
 export type CloudFolderInsert = FilesTables["folders"]["Insert"];
@@ -164,7 +176,6 @@ export interface CloudFile {
   id: string;
   ownerId: string;
   filePath: string;
-  storageUri: string;
   fileName: string;
   mimeType: string | null;
   fileSize: number | null;
@@ -187,7 +198,7 @@ export interface CloudFile {
    * Populated by the API converter (``apiFileRecordToCloudFile``);
    * always ``null`` for rows that came in via the direct DB read path
    * because the DB has no ``public_url`` column — it's computed
-   * server-side from visibility + storage_uri + checksum. For DB-sourced
+   * server-side from visibility + storage location + checksum. For DB-sourced
    * rows, fall back to ``useFileSrc({ kind: "file_id", fileId })`` to fetch the canonical
    * URL (which the server returns as a CDN URL when applicable).
    */
@@ -293,7 +304,6 @@ export interface CloudFileVersion {
   id: string;
   fileId: string;
   versionNumber: number;
-  storageUri: string;
   fileSize: number | null;
   checksum: string | null;
   createdBy: string | null;
@@ -1241,12 +1251,6 @@ export interface AssetVariant {
   key: string;
   file_id: string;
   file_path: string;
-  /**
-   * Native cloud URI (`s3://bucket/owner/file_id`). Useful for fallback
-   * re-hydration paths where storage-URI access is the only path. Added
-   * in Phase 0 (see docs/PYTHON_UPDATES.md §4).
-   */
-  file_uri: string | null;
   width: number | null;
   height: number | null;
   mime_type: string | null;

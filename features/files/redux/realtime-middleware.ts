@@ -334,9 +334,13 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // See `isSystemPath` + from_python/UPDATES.md §9 (2026-05-16 entry).
     if (isHiddenFromUserTree(newRow.file_path)) return;
     const file = dbRowToCloudFile(newRow);
+    // `files.files` is REPLICA IDENTITY DEFAULT — `payload.old` carries ONLY
+    // the PK on UPDATE/DELETE, so the previous parent must come from OUR
+    // store, never from diffing old-vs-new payload rows.
     const oldParent =
-      (payload.old as { parent_folder_id?: string | null } | undefined)
-        ?.parent_folder_id ?? null;
+      (
+        store.getState() as StateWithCloudFiles
+      ).cloudFiles.filesById[file.id]?.parentFolderId ?? null;
 
     dispatch(upsertFile(file));
 
@@ -403,9 +407,12 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
     // creates per-source-file folders under `system-files/variants/<id>/`.
     if (isHiddenFromUserTree(newRow.folder_path)) return;
     const folder = dbRowToCloudFolder(newRow);
+    // REPLICA IDENTITY DEFAULT: `payload.old` is PK-only — read the previous
+    // parent from our store (see the file handler above).
     const oldParent =
-      (payload.old as { parent_id?: string | null } | undefined)?.parent_id ??
-      null;
+      (
+        store.getState() as StateWithCloudFiles
+      ).cloudFiles.foldersById[folder.id]?.parentId ?? null;
 
     dispatch(upsertFolder(folder));
 

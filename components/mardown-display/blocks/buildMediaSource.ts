@@ -29,10 +29,9 @@ export function pickStr(v: unknown): string | undefined {
 }
 
 /**
- * Best-effort recovery of a cld_files `file_id` from any URL/URI shape so the
- * handler can re-mint a durable URL instead of echoing a raw S3 link:
+ * Best-effort recovery of a `file_id` from any URL shape so the handler can
+ * re-mint a durable URL instead of echoing a raw S3 link:
  *   - our user-files signed S3 URL (`…/{user_id}/{file_id}?…`)
- *   - an `s3://bucket/{user_id}/{file_id}/…` canonical URI
  *   - any path that ends in a `{uuid}.{ext}` segment
  */
 export function fileIdFromAnyUri(uri: string): string | null {
@@ -48,8 +47,9 @@ export function fileIdFromAnyUri(uri: string): string | null {
 
 /**
  * Build the strongest `FileSource` from a media block's `serverData`.
- * Identity (`file_id` / `file_uri`) beats opaque URLs so the handler always
- * picks the durable lane when possible. Returns null when nothing resolvable.
+ * Identity (`file_id`) beats opaque URLs so the handler always picks the
+ * durable lane when possible. Returns null when nothing resolvable — a part
+ * carrying no `file_id` and no usable URL has no client-renderable source.
  */
 export function buildMediaSource(
   sd: Record<string, unknown>,
@@ -65,30 +65,20 @@ export function buildMediaSource(
     pickStr(sd.signedUrl) ?? pickStr(sd.signed_url),
     pickStr(sd.downloadUrl) ?? pickStr(sd.download_url),
     pickStr(sd.url) ?? pickStr(sd.file_url),
-    pickStr(sd.fileUri) ?? pickStr(sd.file_uri),
-    pickStr(sd.canonicalFileUri) ?? pickStr(sd.canonical_file_uri),
     pickStr(sd.externalUrl) ?? pickStr(sd.external_url),
   ].filter((u): u is string => !!u);
 
-  // 1. Recover a file_id from any URL/URI → handler mints durable.
+  // 1. Recover a file_id from any URL → handler mints durable.
   for (const cand of urlish) {
     const id = fileIdFromAnyUri(cand);
     if (id) return { kind: "file_id", fileId: id, mime };
   }
 
-  // 2. Canonical file_uri → handler resolves to a durable URL.
-  const fileUri =
-    pickStr(sd.fileUri) ??
-    pickStr(sd.file_uri) ??
-    pickStr(sd.canonicalFileUri) ??
-    pickStr(sd.canonical_file_uri);
-  if (fileUri) return { kind: "file_uri", fileUri, mime };
-
-  // 3. A durable (non-expiring) public/CDN/external URL → safe to use as-is.
+  // 2. A durable (non-expiring) public/CDN/external URL → safe to use as-is.
   const durable = urlish.find((u) => isDurableMediaUrl(u));
   if (durable) return { kind: "external_url", url: durable, mime };
 
-  // 4. Last resort: an expiring URL with no recoverable identity. Still try to
+  // 3. Last resort: an expiring URL with no recoverable identity. Still try to
   //    play it (the durability gap is a tracked known defect).
   const last = urlish[0];
   if (last) return { kind: "external_url", url: last, mime };

@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Impact inventory — read path
 
 Scope: every component, page, route, or hook that **renders or displays file bytes / URLs / thumbnails** in matrx-frontend, mapped onto the v2 consolidation plan in [`docs/FILE_HANDLING_CONSOLIDATION_PLAN.md`](./FILE_HANDLING_CONSOLIDATION_PLAN.md). Upload/mutate paths are explicitly out of scope (separate inventory).

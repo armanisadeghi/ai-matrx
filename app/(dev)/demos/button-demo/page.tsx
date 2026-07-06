@@ -91,6 +91,87 @@ export default function ButtonDemoPage() {
       </div>
 
       <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Inline Label (icon + text)</h2>
+        <p className="text-sm text-muted-foreground w-2/3">
+          Pass <code className="text-xs">label=&quot;…&quot;</code> for a
+          horizontal <code className="text-xs">[icon Label]</code> layout inside
+          the pill. Tooltip is off by default when the label is visible — pass{" "}
+          <code className="text-xs">tooltip=&quot;…&quot;</code> to override.
+        </p>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Variants
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <PlusTapButton label="Create" />
+            <SearchTapButton label="Search" variant="transparent" />
+            <SendTapButton label="Send" variant="solid" />
+            <TrashTapButton
+              label="Delete"
+              variant="solid"
+              bgColor="bg-destructive"
+              hoverBgColor="hover:bg-destructive/90"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Tooltip override + link
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <BugTapButton
+              label="Feedback"
+              tooltip="Submit feedback about this page"
+            />
+            <PlusTapButton
+              label="New task"
+              href="/tasks"
+              variant="transparent"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Disabled + danger tint
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <SaveTapButton label="Save" disabled />
+            <TrashTapButton
+              label="Remove"
+              variant="transparent"
+              className="text-rose-500"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Compare: stacked caption (TapTargetLabeled)
+          </h3>
+          <div className="flex flex-wrap items-end gap-4">
+            <PlusTapButton label="Create" />
+            <Labeled label="Create">
+              <PlusTapButton />
+            </Labeled>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Inline inside a group
+          </h3>
+          <TapTargetButtonGroup>
+            <PlusTapButton variant="group" label="Add" />
+            <SearchTapButton variant="group" label="Find" />
+            <SettingsTapButton variant="group" />
+          </TapTargetButtonGroup>
+        </div>
+      </section>
+
+      <section className="space-y-4">
         <h2 className="text-xl font-semibold">
           Model Provider Selector (Brand Colors)
         </h2>

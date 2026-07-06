@@ -93,10 +93,7 @@ export function PdfStudioToolbar({
     );
   }
 
-  const hasSource =
-    (doc.sourceKind === "cld_file" && !!doc.sourceId) ||
-    !!doc.source?.startsWith("http://") ||
-    !!doc.source?.startsWith("https://");
+  const hasSource = doc.sourceKind === "cld_file" && !!doc.sourceId;
 
   const actionsBusy = pipelineRunning || aiCleanRunning || refreshing;
 

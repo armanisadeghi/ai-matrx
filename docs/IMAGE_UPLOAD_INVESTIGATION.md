@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Image Upload System — Investigation & Proposal
 
 > ## ✅ Resolved (2026-05-12)

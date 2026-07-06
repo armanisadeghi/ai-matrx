@@ -128,18 +128,22 @@ export function ProTextFieldStatsPanel({
 export interface ProTextFieldStatsBarProps {
   text: string;
   className?: string;
+  /** Reserve space on the right so stats never collide with floating controls. */
+  reserveRightSpace?: number;
 }
 
 /** Compact pinned footer bar — non-disruptive live stats while editing. */
 export function ProTextFieldStatsBar({
   text,
   className,
+  reserveRightSpace,
 }: ProTextFieldStatsBarProps) {
   return (
     <PlainTextMetricsBar
       text={text}
       compact
       metrics={TEXTAREA_METRICS}
+      reserveRightSpace={reserveRightSpace}
       className={cn("rounded-b-md border-x border-b border-input", className)}
     />
   );

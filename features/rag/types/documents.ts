@@ -62,7 +62,6 @@ export interface DocumentDetail {
   source_kind: DocumentSourceKind;
   source_id: string;
   derivation_kind: DocumentDerivationKind;
-  storage_uri: string | null;
   created_at: string;
   updated_at: string;
   has_structured_json: boolean;

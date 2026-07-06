@@ -41,7 +41,7 @@ export function isMatrxMediaBlock(
 ): value is Extract<UnifiedMediaBlock, { origin: "matrx" }> {
   if (!hasMediaShape(value)) return false;
   if (value.origin !== "matrx") return false;
-  return typeof value.fileId === "string" && typeof value.fileUri === "string";
+  return typeof value.fileId === "string";
 }
 
 export function isExternalMediaBlock(

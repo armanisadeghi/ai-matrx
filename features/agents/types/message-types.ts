@@ -61,15 +61,14 @@ export interface TextBlock {
 }
 
 /**
- * Image — by `file_id` (preferred), public URL, native cloud URI, or raw base64.
+ * Image — by `file_id` (preferred), public URL, or raw base64.
  *
  * Identifier preference (the backend resolves in this order):
  *   1. `file_id`  — cld_files UUID. Use this for any file we own.
- *   2. `file_uri` — native cloud URI (`s3://`, `gs://`, `supabase://`).
- *   3. `url`      — any public or signed URL.
- *   4. `base64_data` — inline bytes.
+ *   2. `url`      — any public or signed URL.
+ *   3. `base64_data` — inline bytes.
  *
- * At least one of `file_id` / `file_uri` / `url` / `base64_data` is required.
+ * At least one of `file_id` / `url` / `base64_data` is required.
  *
  * See `MediaRef` in [features/files/types.ts](../../files/types.ts) for the
  * canonical reference shape; build via the helpers in
@@ -83,8 +82,6 @@ export interface ImageBlock {
   file_id?: string;
   /** Public URL pointing to the image. */
   url?: string;
-  /** Native cloud URI (`s3://`, `gs://`, `supabase://`). */
-  file_uri?: string;
   /** Base64-encoded image bytes. Include mime_type when using this field. */
   base64_data?: string;
   /** MIME type e.g. "image/jpeg". Auto-detected from the URL or data if omitted. */
@@ -119,8 +116,6 @@ export interface AudioBlock {
   file_id?: string;
   /** Public URL pointing to the audio file. */
   url?: string;
-  /** Native cloud URI (`s3://`, `gs://`, `supabase://`). */
-  file_uri?: string;
   /** Base64-encoded audio bytes. */
   base64_data?: string;
   /** MIME type e.g. "audio/mp3", "audio/wav". Auto-detected if omitted. */
@@ -142,7 +137,7 @@ export interface AudioBlock {
 /**
  * Video file — Google Gemini only.
  * Silently skipped by OpenAI and Anthropic.
- * At least one of url, base64_data, or file_uri is required.
+ * At least one of file_id, url, or base64_data is required.
  */
 export interface VideoBlock {
   type: "video";
@@ -152,12 +147,6 @@ export interface VideoBlock {
   url?: string;
   /** Base64-encoded video bytes. */
   base64_data?: string;
-  /**
-   * Native cloud URI (`s3://`, `gs://`, `supabase://`) OR the Google File
-   * API URI for pre-uploaded files (avoids re-uploading on every request
-   * for large files).
-   */
-  file_uri?: string;
   /** MIME type e.g. "video/mp4". Auto-detected if omitted. */
   mime_type?: string;
   /** Free-form per-block metadata. Mirrors `MediaRef.metadata`. */
@@ -188,8 +177,6 @@ export interface DocumentBlock {
   file_id?: string;
   /** Public URL pointing to the document. */
   url?: string;
-  /** Native cloud URI (`s3://`, `gs://`, `supabase://`). */
-  file_uri?: string;
   /** Base64-encoded document bytes. Include mime_type when using this field. */
   base64_data?: string;
   /** MIME type e.g. "application/pdf". Auto-detected if omitted. */

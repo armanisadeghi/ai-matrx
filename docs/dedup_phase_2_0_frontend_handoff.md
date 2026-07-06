@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Phase 1 + Phase 2.0 — Frontend handoff
 
 **Status:** Both phases shipped to aidream. **No existing endpoint behavior changed.** The frontend does not need any immediate updates — these are purely additive backend changes that the FE can opt into when ready.

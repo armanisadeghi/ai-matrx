@@ -421,7 +421,6 @@ function mediaPartToSegment(
         data: {
           type: "audio_output",
           url: raw.url ?? null,
-          file_uri: raw.file_uri ?? null,
           mime_type: raw.mime_type ?? null,
           transcription_result: raw.transcription_result ?? null,
         },
@@ -435,7 +434,6 @@ function mediaPartToSegment(
         data: {
           type: "video_output",
           url: raw.url ?? null,
-          file_uri: raw.file_uri ?? null,
           mime_type: raw.mime_type ?? null,
         },
         metadata: raw.metadata as Record<string, unknown> | undefined,

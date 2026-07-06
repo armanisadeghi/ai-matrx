@@ -5,11 +5,11 @@
  * (`CxMediaContent` with kind: "image").
  *
  * On-disk shape today (`CxMediaContent`):
- *   { type: "media", kind: "image", url?, mime_type?, file_uri?,
+ *   { type: "media", kind: "image", url?, mime_type?,
  *     base64_data?, metadata? }
  *
  * Strategy:
- *   - Keep the visible fields (`url`, `mime_type`, `file_uri`) populated so
+ *   - Keep the visible fields (`url`, `mime_type`) populated so
  *     legacy readers that haven't migrated keep working.
  *   - Pack EVERY canonical field (origin, fileId, cdnUrl, signedUrl,
  *     downloadUrl, visibility, thumbnails, dimensions, etc.) into
@@ -56,8 +56,6 @@ export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
     packed.download_url = block.downloadUrl;
     packed.signed_url_expires_at = block.signedUrlExpiresAt;
     packed.file_id = block.fileId;
-    packed.file_uri = block.fileUri;
-    packed.canonical_file_uri = block.canonicalFileUri;
     packed.visibility = block.visibility;
     // Phase 1b: `thumbnail_url` / `thumbnail_uri` removed from the block
     // shape; thumbnails are now sourced from `Asset.variants["thumbnail_url"]`.
@@ -79,7 +77,6 @@ export function toCxMediaPart(block: UnifiedImageBlock): CxMediaContent {
     kind: "image",
     url: visibleUrl,
     mime_type: block.mimeType ?? undefined,
-    file_uri: block.origin === "matrx" ? block.fileUri : undefined,
     base64_data: block.base64 ?? undefined,
     metadata: packed,
   };

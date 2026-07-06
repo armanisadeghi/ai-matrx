@@ -6,6 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import {
   Organization,
   OrganizationWithRole,
@@ -46,6 +48,7 @@ import {
  * Hook to get all organizations for current user
  */
 export function useUserOrganizations() {
+  const authReady = useAppSelector(selectAuthReady);
   const [organizations, setOrganizations] = useState<OrganizationWithRole[]>(
     [],
   );
@@ -60,7 +63,8 @@ export function useUserOrganizations() {
       const data = await getUserOrganizations();
       setOrganizations(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch organizations";
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch organizations";
       console.error("Error fetching organizations:", err);
       setError(message);
     } finally {
@@ -69,8 +73,12 @@ export function useUserOrganizations() {
   }, []);
 
   useEffect(() => {
+    if (!authReady) {
+      setLoading(true);
+      return;
+    }
     fetchOrganizations();
-  }, [fetchOrganizations]);
+  }, [fetchOrganizations, authReady]);
 
   return {
     organizations,
@@ -102,7 +110,8 @@ export function useOrganization(orgId: string | undefined) {
       const data = await getOrganization(orgId);
       setOrganization(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch organization";
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch organization";
       console.error("Error fetching organization:", err);
       setError(message);
     } finally {
@@ -146,7 +155,8 @@ export function useOrganizationOperations() {
 
       return result;
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to create organization";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create organization";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -168,7 +178,8 @@ export function useOrganizationOperations() {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to update organization";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update organization";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -191,7 +202,8 @@ export function useOrganizationOperations() {
 
       return result;
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to delete organization";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete organization";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -234,7 +246,8 @@ export function useOrganizationMembers(orgId: string | undefined) {
       const data = await getOrganizationMembers(orgId);
       setMembers(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch members";
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch members";
       console.error("Error fetching members:", err);
       setError(message);
     } finally {
@@ -278,7 +291,8 @@ export function useMemberOperations(orgId: string) {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to update member role";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update member role";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -304,7 +318,8 @@ export function useMemberOperations(orgId: string) {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to remove member";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to remove member";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -327,7 +342,8 @@ export function useMemberOperations(orgId: string) {
 
       return result;
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to leave organization";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to leave organization";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -405,7 +421,8 @@ export function useOrganizationInvitations(orgId: string | undefined) {
       const data = await getOrganizationInvitations(orgId);
       setInvitations(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch invitations";
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch invitations";
       console.error("Error fetching invitations:", err);
       setError(message);
     } finally {
@@ -452,7 +469,8 @@ export function useInvitationOperations(orgId: string) {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to send invitation";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to send invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -478,7 +496,8 @@ export function useInvitationOperations(orgId: string) {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to cancel invitation";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to cancel invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -504,7 +523,8 @@ export function useInvitationOperations(orgId: string) {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to resend invitation";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to resend invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {
@@ -541,7 +561,8 @@ export function useUserInvitations() {
       const data = await getUserInvitations();
       setInvitations(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch invitations";
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch invitations";
       console.error("Error fetching user invitations:", err);
       setError(message);
     } finally {
@@ -569,7 +590,8 @@ export function useUserInvitations() {
 
         return result;
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to accept invitation";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to accept invitation";
         setError(errorMessage);
         return { success: false, error: errorMessage };
       } finally {

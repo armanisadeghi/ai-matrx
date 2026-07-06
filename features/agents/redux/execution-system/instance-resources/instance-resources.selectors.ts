@@ -207,9 +207,8 @@ export const selectResourcePayloads = (conversationId: string) =>
               //
               // Resolution order matches the backend's `MediaRef` contract:
               //   1. file_id  — preferred, skip the redirect
-              //   2. file_uri — native cloud URI
-              //   3. url      — public or signed URL
-              //   4. base64_data — only if a callsite hand-rolls one
+              //   2. url      — public or signed URL
+              //   3. base64_data — only if a callsite hand-rolls one
               //
               // We extract the recognized fields explicitly instead of
               // spreading the whole source — this drops the legacy
@@ -226,7 +225,6 @@ export const selectResourcePayloads = (conversationId: string) =>
                   base64_data?: string;
                 };
                 if (ref.file_id) payload.file_id = ref.file_id;
-                if (ref.file_uri) payload.file_uri = ref.file_uri;
                 if (ref.url) payload.url = ref.url;
                 if (ref.base64_data) payload.base64_data = ref.base64_data;
                 if (ref.mime_type) payload.mime_type = ref.mime_type;

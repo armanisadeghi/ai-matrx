@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { ReferenceCopyMenuItem } from "@/features/matrx-envelope/components/ReferenceCopyMenuItem";
 import { FilePageReferenceMenuSub } from "./FilePageReferenceMenuSub";
 import { useRouter } from "next/navigation";
@@ -97,6 +97,11 @@ export interface FileContextMenuProps {
    * drops it from its sidebar. Receives the deleted file's id.
    */
   onDeleted?: (fileId: string) => void | Promise<void>;
+  /**
+   * Optional host-injected items (e.g. PDF Extractor sidebar). Rendered after
+   * the standard file actions and before Delete.
+   */
+  extraMenuItems?: ReactNode;
 }
 
 export function FileContextMenu({
@@ -107,6 +112,7 @@ export function FileContextMenu({
   onMove,
   disabled,
   onDeleted,
+  extraMenuItems,
 }: FileContextMenuProps) {
   const dispatch = useAppDispatch();
   const actions = useFileActions(fileId);
@@ -666,6 +672,8 @@ export function FileContextMenu({
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
               ) : null}
+
+              {extraMenuItems}
 
               <DropdownMenuSeparator />
 

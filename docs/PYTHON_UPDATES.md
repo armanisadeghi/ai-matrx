@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # FE Media Block Contract — Phase 0 Changes
 
 > **Audience:** Frontend team and any other downstream consumer of the AIDream API or stream events.

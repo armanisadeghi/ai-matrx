@@ -128,9 +128,25 @@ export async function updateSession(
   id: string,
   patch: WarRoomSessionUpdate,
 ): Promise<WarRoomSession> {
+  // Strip `undefined` keys: an all-undefined patch produces an empty UPDATE
+  // that matches 0 rows → PostgREST's "Cannot coerce the result to a single
+  // JSON object". Never let that reach the DB — a no-op patch reads back the
+  // current row instead of issuing a meaningless write.
+  const clean = Object.fromEntries(
+    Object.entries(patch).filter(([, v]) => v !== undefined),
+  ) as WarRoomSessionUpdate;
+
+  if (Object.keys(clean).length === 0) {
+    const current = await getSession(id);
+    if (!current) {
+      throw new Error(`[war-room] updateSession: room ${id} not found`);
+    }
+    return current;
+  }
+
   const { data, error } = await wsDb
     .from(SESSIONS)
-    .update(patch)
+    .update(clean)
     .eq("id", id)
     .select("*")
     .single();
@@ -147,7 +163,11 @@ export async function touchSessionOpened(id: string): Promise<void> {
     .from(SESSIONS)
     .update({ last_opened_at: new Date().toISOString() })
     .eq("id", id);
-  if (error) console.error("[war-room] touchSessionOpened failed:", error?.message ?? error);
+  if (error)
+    console.error(
+      "[war-room] touchSessionOpened failed:",
+      error?.message ?? error,
+    );
 }
 
 export async function softDeleteSession(id: string): Promise<void> {
@@ -156,7 +176,10 @@ export async function softDeleteSession(id: string): Promise<void> {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    console.error("[war-room] softDeleteSession failed:", error?.message ?? error);
+    console.error(
+      "[war-room] softDeleteSession failed:",
+      error?.message ?? error,
+    );
     throw error;
   }
 }
@@ -172,7 +195,10 @@ export async function listAllUserThreads(): Promise<WarRoomThread[]> {
     .order("updated_at", { ascending: false });
 
   if (error) {
-    console.error("[war-room] listAllUserThreads failed:", error?.message ?? error);
+    console.error(
+      "[war-room] listAllUserThreads failed:",
+      error?.message ?? error,
+    );
     throw error;
   }
   return data ?? [];
@@ -192,7 +218,10 @@ export async function listThreadsForRoom(
     .is("deleted_at", null);
 
   if (error) {
-    console.error("[war-room] listThreadsForRoom failed:", error?.message ?? error);
+    console.error(
+      "[war-room] listThreadsForRoom failed:",
+      error?.message ?? error,
+    );
     throw error;
   }
 
@@ -284,7 +313,10 @@ export async function softDeleteThread(id: string): Promise<void> {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) {
-    console.error("[war-room] softDeleteThread failed:", error?.message ?? error);
+    console.error(
+      "[war-room] softDeleteThread failed:",
+      error?.message ?? error,
+    );
     throw error;
   }
 }

@@ -10,7 +10,7 @@
  * exactly two things:
  *   1. Rename fields snake_case → camelCase.
  *   2. Enforce invariants:
- *        - matrx → fileId + fileUri non-null
+ *        - matrx → fileId non-null
  *        - external → externalUrl non-null
  *      Anything that doesn't satisfy these falls through to an external
  *      "broken" block; the renderer shows an error state.
@@ -62,8 +62,6 @@ interface WireMediaBlockBase {
 
   // Matrx-only
   file_id?: string | null;
-  file_uri?: string | null;
-  canonical_file_uri?: string | null;
   visibility?: MediaVisibility | null;
   cdn_url?: string | null;
   signed_url?: string | null;
@@ -160,13 +158,11 @@ function commonFields(wire: WireMediaBlockBase) {
 
 /**
  * Pull every matrx-origin field. Returns null when the wire block isn't
- * a complete matrx record (fileId / fileUri missing).
+ * a complete matrx record (fileId missing).
  */
 function matrxFields(wire: WireMediaBlockBase): {
   origin: "matrx";
   fileId: string;
-  fileUri: string;
-  canonicalFileUri: string | null;
   visibility: MediaVisibility;
   cdnUrl: string | null;
   signedUrl: string | null;
@@ -176,12 +172,10 @@ function matrxFields(wire: WireMediaBlockBase): {
   derivationKind: string | null;
 } | null {
   if (wire.origin !== "matrx") return null;
-  if (!wire.file_id || !wire.file_uri) return null;
+  if (!wire.file_id) return null;
   return {
     origin: "matrx",
     fileId: wire.file_id,
-    fileUri: wire.file_uri,
-    canonicalFileUri: wire.canonical_file_uri ?? null,
     visibility: pickVisibility(wire.visibility),
     cdnUrl: wire.cdn_url ?? null,
     signedUrl: wire.signed_url ?? null,

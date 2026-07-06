@@ -9,8 +9,11 @@
  * Use this helper instead of inlining `.schema('files')` everywhere:
  *
  *   const db = filesDb(supabase);
- *   const { data } = await db.from('files').select('*');   // files.files
+ *   const { data } = await db.from('files').select(FILES_TABLE_COLUMNS);
  *   await db.from('folders').upsert(...);                  // files.folders
+ *
+ * NEVER `select('*')` on `files.files` / `files.file_versions` — the
+ * server-only `storage_uri` column grant is REVOKEd and `*` errors.
  *
  * Works with the browser client, the SSR server client, and the admin client —
  * they all expose `.schema()`.
@@ -26,3 +29,23 @@ import type { Database } from "@/types/database.types";
 export function filesDb<C extends SupabaseClient<Database>>(client: C) {
   return client.schema("files");
 }
+
+/**
+ * The ONLY legal column list for reading `files.files` from the client.
+ *
+ * `storage_uri` (the native S3 location) is server-only: the column grant is
+ * REVOKEd from `authenticated`, so `select("*")` on `files.files` ERRORS with
+ * "permission denied for column storage_uri". Never select `*` on this table
+ * and never add `storage_uri` here. Renderable URLs come from the server's
+ * FileRecord/FileRef URL contract (`url` / `cdn_url` / `signed_url` /
+ * `download_url`), never assembled client-side from a storage location.
+ */
+export const FILES_TABLE_COLUMNS =
+  "id, created_by, file_path, file_name, mime_type, size_bytes, checksum, visibility, current_version, parent_folder_id, metadata, created_at, updated_at, deleted_at, organization_id, parent_file_id, derivation_kind, derivation_metadata, duplicate_of_file_id, canonical_processed_document_id, width, height, duration_ms";
+
+/**
+ * Same rule for `files.file_versions` — its `storage_uri` is server-only.
+ * Version bytes download via the server (`/files/{id}/versions/{n}/download`).
+ */
+export const FILE_VERSIONS_TABLE_COLUMNS =
+  "id, file_id, version_number, size_bytes, checksum, created_by, created_at, change_summary, organization_id";

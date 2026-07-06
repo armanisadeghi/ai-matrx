@@ -35,14 +35,14 @@ import {
 import { cn } from "@/lib/utils";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/utils/supabase/client";
-import { renameFile } from "@/features/files/redux/thunks";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import {
   usePdfStudioDocs,
   type StudioDocSummary,
 } from "./hooks/usePdfStudioDocs";
+import { useSyncStudioDocNames } from "./hooks/useSyncStudioDocNames";
+import { useStudioDocRename } from "./hooks/useStudioDocRename";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfStudioToolbar } from "./PdfStudioToolbar";
 import { PdfStudioReader, type PdfPaneEditMode } from "./PdfStudioReader";
@@ -95,7 +95,6 @@ function summaryToProvisionalDoc(s: StudioDocSummary): PdfDocument {
     name: s.name,
     content: null,
     cleanContent: null,
-    source: s.source,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
     charCount: 0,
@@ -117,6 +116,7 @@ function summaryToProvisionalDoc(s: StudioDocSummary): PdfDocument {
 export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
   const router = useRouter();
   const docsState = usePdfStudioDocs();
+  useSyncStudioDocNames(docsState.docs, docsState.refresh);
   // `usePdfStudioDocs` already pulls the `processed_documents` list for the
   // sidebar — opting out of `usePdfExtractor`'s own history fetch removes
   // the duplicate Supabase round-trip that was firing on every mount.
@@ -137,6 +137,14 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   // Local state that doesn't (yet) need to be shared across features.
   const [activeDoc, setActiveDoc] = useState<PdfDocument | null>(null);
+  const { renameDocById: renameDocByIdHook, handleRenameActiveDoc } =
+    useStudioDocRename({
+      docs: docsState.docs,
+      setDocName: docsState.setDocName,
+      refresh: docsState.refresh,
+      activeDoc,
+      setActiveDoc,
+    });
   const [findQuery, setFindQuery] = useState("");
   const [findOpen, setFindOpen] = useState(false);
   const [pipelineRunning, setPipelineRunning] = useState(false);
@@ -260,41 +268,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     [docsState, activeDoc, dispatch, router],
   );
 
-  const handleRenameDoc = useCallback(
-    async (newName: string) => {
-      if (!activeDoc) return;
-      const trimmed = newName.trim();
-      if (!trimmed || trimmed === activeDoc.name) return;
-      const previousName = activeDoc.name;
-      // Optimistic — the toolbar reflects the new name instantly.
-      setActiveDoc((d) => (d ? { ...d, name: trimmed } : d));
-      try {
-        // `processed_documents.name` is the studio's source of truth for the
-        // title — persist it authoritatively.
-        const { error } = await (supabase as any)
-          .schema("docproc")
-          .from("processed_documents")
-          .update({ name: trimmed })
-          .eq("id", activeDoc.id);
-        if (error) throw new Error(error.message);
-        // Keep the backing cloud file in lock-step so the /files route and
-        // every other surface show the same name. Best-effort — a file
-        // rename failure shouldn't roll back the doc rename.
-        if (activeDoc.sourceKind === "cld_file" && activeDoc.sourceId) {
-          void dispatch(
-            renameFile({ fileId: activeDoc.sourceId, newName: trimmed }),
-          )
-            .unwrap()
-            .catch(() => undefined);
-        }
-        docsState.refresh();
-      } catch (err) {
-        setActiveDoc((d) => (d ? { ...d, name: previousName } : d));
-        toast.error(err instanceof Error ? err.message : "Rename failed");
-      }
-    },
-    [activeDoc, dispatch, docsState, toast],
-  );
+  const handleRenameDoc = handleRenameActiveDoc;
+  const handleRenameDocById = renameDocByIdHook;
 
   const handleSelectDoc = useCallback(
     (summary: StudioDocSummary) => {
@@ -517,14 +492,10 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
 
   // ── Open the source PDF ───────────────────────────────────────────────────
   //
-  // The stored `source` is `processed_documents.storage_uri` — for the common
-  // cld_file path that's an `s3://…` URI. `window.open("s3://…")` opens a tab
-  // the browser can never navigate to (blank, forever). Resolve to something
-  // the browser can actually show:
-  //   - cld_file-backed → the in-app file viewer `/files/f/{id}` (auth-safe,
-  //     progressive PDF render, no expiring URL).
-  //   - http(s) source   → open the URL directly.
-  //   - anything else (s3://, supabase://, none) is not directly openable.
+  // Documents are identified by their cld_files source id — never a raw
+  // storage location. cld_file-backed docs open in the in-app file viewer
+  // `/files/f/{id}` (auth-safe, progressive PDF render, no expiring URL);
+  // anything else has no browser-openable source.
   const handleOpenSource = useCallback(() => {
     if (!activeDoc) return;
     if (activeDoc.sourceKind === "cld_file" && activeDoc.sourceId) {
@@ -533,11 +504,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
         "_blank",
         "noopener,noreferrer",
       );
-      return;
-    }
-    const src = activeDoc.source?.trim();
-    if (src && (src.startsWith("http://") || src.startsWith("https://"))) {
-      window.open(src, "_blank", "noopener,noreferrer");
       return;
     }
     toast.error("This document's original file isn't directly viewable.");
@@ -635,6 +601,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               activeDocId={activeDoc?.id ?? null}
               onSelectDoc={handleSelectDoc}
               onDeleteDoc={handleDeleteDoc}
+              onRenameDoc={handleRenameDocById}
               onAddDocs={() => setUploadOpen(true)}
               view={sidebarView}
               onChangeView={handleChangeSidebarView}

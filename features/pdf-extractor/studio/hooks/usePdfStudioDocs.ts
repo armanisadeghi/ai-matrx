@@ -20,7 +20,6 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 export interface StudioDocSummary {
   id: string;
   name: string;
-  source: string | null;
   createdAt: string;
   updatedAt: string;
   totalPages: number | null;
@@ -64,7 +63,8 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
         return cur.filter((d) => d.id !== id);
       });
       const { error: err } = await (supabase as any)
-        .schema("docproc").from("processed_documents")
+        .schema("docproc")
+        .from("processed_documents")
         .update({ archived_at: new Date().toISOString() })
         .eq("id", id)
         .eq("owner_id", userId);
@@ -76,6 +76,10 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     [userId],
   );
 
+  const setDocName = useCallback((id: string, name: string) => {
+    setDocs((cur) => cur.map((d) => (d.id === id ? { ...d, name } : d)));
+  }, []);
+
   useEffect(() => {
     if (!userId) return undefined;
     let cancelled = false;
@@ -84,9 +88,10 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     (async () => {
       try {
         const { data, error: err } = await (supabase as any)
-          .schema("docproc").from("processed_documents")
+          .schema("docproc")
+          .from("processed_documents")
           .select(
-            "id, name, storage_uri, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
+            "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
           )
           .eq("owner_id", userId)
           // Archived docs are the canonical "removed from view" state
@@ -131,7 +136,6 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
             return {
               id: r.id as string,
               name: (r.name as string) ?? "Untitled",
-              source: (r.storage_uri as string | null) ?? null,
               createdAt: r.created_at as string,
               updatedAt: r.updated_at as string,
               totalPages: (r.total_pages as number | null) ?? null,
@@ -217,6 +221,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     error,
     refresh,
     deleteDoc,
+    setDocName,
     search,
     setSearch,
     sortBy,

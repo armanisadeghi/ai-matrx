@@ -20,8 +20,9 @@ type Schemas = components["schemas"];
 // ── Source contract (pick one of: media | file | url | local_path) ─────────
 
 /**
- * Reference to a media file. Exactly ONE identifier on the wire:
- * `file_id` (cld_files row id) | `url` (https://…) | `file_uri` (s3://…).
+ * Reference to a media file. The client sends exactly ONE identifier on
+ * the wire: `file_id` (cld_files row id) | `url` (https://…). Native
+ * storage locations (s3://…) are server-only — never read or sent by the FE.
  * There is NO `cld_id` field — the backend silently drops unknown keys,
  * which used to 422 every cloud-sourced operation. Build sources with
  * `buildPdfSource` from `@/features/pdf/utils/source`.

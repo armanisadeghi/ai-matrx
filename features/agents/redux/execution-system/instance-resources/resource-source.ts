@@ -13,7 +13,7 @@
  *
  *   2. `resourceDataToSource` — produces the value stored on the
  *      `ManagedResource.source` field. For media blocks it normalizes to
- *      a `MediaRef` (file_id > file_uri > url) using the handler's own
+ *      a `MediaRef` (file_id > url) using the handler's own
  *      `preferIdentityLocator`. Non-media block types pass through.
  *
  * No fork: every shape coercion the picker → agents path needs goes
@@ -40,8 +40,6 @@ function pickFileSource(d: Record<string, unknown>): FileSource | null {
         : null;
   const mime = readMime(d);
   if (fileId) return { kind: "file_id", fileId, mime };
-  if (typeof d.file_uri === "string")
-    return { kind: "file_uri", fileUri: d.file_uri, mime };
   if (typeof d.url === "string")
     return { kind: "external_url", url: d.url, mime };
   return null;

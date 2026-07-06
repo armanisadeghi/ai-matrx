@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Flashcards + FastFire — Status & Issues
 
 > **Single source of truth for the current state + the corrected path forward.** Written 2026-06-30

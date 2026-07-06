@@ -7,8 +7,10 @@
  * through these helpers; never hand-roll the shape at a callsite.
  *
  * Backend contract (verified against aidream `MediaRef` + `SourceMixin`):
- *   - `media` is a MediaRef accepting EXACTLY ONE identifier:
- *       `file_id` (cld_files.id) | `url` (https://…) | `file_uri` (s3://…).
+ *   - `media` is a MediaRef; the client sends EXACTLY ONE identifier:
+ *       `file_id` (cld_files.id) | `url` (https://…).
+ *     Native storage locations (`s3://…`) are SERVER-ONLY — the client never
+ *     reads, stores, or sends them. Files are identified by `file_id`.
  *   - `cld_id` is NOT a recognized field. MediaRef is declared with
  *     `extra="allow"`, so an unknown key is silently dropped — the ref ends
  *     up with no identifier, the resolver skips it, and the endpoint 422s
@@ -22,12 +24,11 @@
 /** Wire shape for a single-PDF source on any `/utilities/pdf/*` endpoint. */
 export type PdfSourceWire =
   | { media: { file_id: string } }
-  | { media: { file_uri: string } }
   | { media: { url: string } };
 
 /** Wire shape for the insert-pages second source (`InsertPagesRequest`). */
 export type PdfInsertSourceWire =
-  | { source_media: { file_id: string } | { file_uri: string } }
+  | { source_media: { file_id: string } }
   | { source_url: string };
 
 /** Structural inputs — matches `PdfDocument` fields without importing it. */
@@ -36,8 +37,6 @@ export interface PdfSourceInputs {
   sourceKind?: string | null;
   /** cld_files.id when sourceKind === "cld_file". */
   sourceId?: string | null;
-  /** Public URL or s3:// URI fallback. */
-  sourceUrl?: string | null;
 }
 
 const UUID_RE =
@@ -59,31 +58,18 @@ export function buildPdfSource(inputs: PdfSourceInputs): PdfSourceWire | null {
   if (inputs.sourceKind === "cld_file" && inputs.sourceId) {
     return buildPdfSourceFromFileId(inputs.sourceId);
   }
-  const url = inputs.sourceUrl?.trim();
-  if (!url) return null;
-  if (url.startsWith("s3://") || url.startsWith("supabase://")) {
-    // Native cloud URIs are a first-class MediaRef identifier — previously
-    // these were rejected client-side ("No source file linked").
-    return { media: { file_uri: url } };
-  }
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return { media: { url } };
-  }
   return null;
 }
 
 /**
  * Parse a raw user-typed second-source string (merge / insert inputs):
- * a cld file UUID, an http(s) URL, or an s3://-style URI.
+ * a cld file UUID or an http(s) URL.
  */
 export function parsePdfSourceInput(value: string): PdfSourceWire | null {
   const t = value.trim();
   if (!t) return null;
   if (t.startsWith("http://") || t.startsWith("https://")) {
     return { media: { url: t } };
-  }
-  if (t.startsWith("s3://") || t.startsWith("supabase://")) {
-    return { media: { file_uri: t } };
   }
   if (UUID_RE.test(t)) {
     return buildPdfSourceFromFileId(t);

@@ -1,5 +1,7 @@
 # Unified Image Block
 
+> 🚫 **`storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06).** The client never carries a native storage location: no `fileUri`/`canonicalFileUri` on any block, no `file_uri` on the wire. Identify by `fileId`; render via `cdnUrl`/`signedUrl`/`downloadUrl`. The contract sections below are amended; any remaining historical mention (change log, phase narrative) is obsolete — see [features/files/FEATURE.md](../../FEATURE.md).
+
 > **Audience:** Python team, frontend engineers, future agents working on streaming, persistence, or rendering of images.
 > **Status:** Phase 2 — frontend ingestion is **wire-shape ready and awaiting the Python deploy**. The canonical `UnifiedMediaBlock` shape, the `fromMediaBlock` adapter, and the `process-stream.ts` dispatch are all live; Python backend code landed on `main` 2026-05-16 (commit `96f7ff7b`) but isn't deployed yet at the time of writing. The legacy adapters (`image_output` / `partial_image`) currently carry traffic and become fallback once Python deploys.
 
@@ -46,9 +48,8 @@ interface ImageBlockShared {
 // Owned (cld_files row)
 interface MatrxImageBlock extends ImageBlockShared {
   origin: "matrx";
-  fileId: string;                     // REQUIRED — cld_files.id
-  fileUri: string;                    // REQUIRED — cld_files.storage_uri
-  canonicalFileUri: string | null;    // cld_files.canonical_storage_uri
+  fileId: string;                     // REQUIRED — files.files id (the permanent identity)
+  // No fileUri/canonicalFileUri — the native storage location is server-only (2026-07-06).
   visibility: "public" | "private" | "shared";
   // Phase 1b: `thumbnailUrl` / `thumbnailUri` REMOVED. The canonical
   // thumbnail source is `Asset.variants["thumbnail_url"].url` via
@@ -95,8 +96,7 @@ class ImageBlockShared(BaseModel):
 class MatrxImageBlock(ImageBlockShared):
     origin: Literal["matrx"] = "matrx"
     file_id: str
-    file_uri: str
-    canonical_file_uri: Optional[str] = None
+    # No file_uri/canonical_file_uri — server-only, never emitted (2026-07-06).
     visibility: Literal["public", "private", "shared"]
     # Phase 1b: thumbnail_url / thumbnail_uri removed. Canonical source:
     # Asset.variants["thumbnail_url"].url via GET /assets/{file_id}.
@@ -120,8 +120,8 @@ UnifiedImageBlock = Union[MatrxImageBlock, ExternalImageBlock]
 | `cld_files` column      | `MatrxImageBlock` field    | Notes |
 |-------------------------|----------------------------|-------|
 | `id`                    | `fileId`                   | Required. The permanent identity. |
-| `storage_uri`           | `fileUri`                  | Required. Immutable native URI. |
-| `canonical_storage_uri` | `canonicalFileUri`         | When present. |
+| ~~`storage_uri`~~       | —                          | Server-only; never mapped to the client (2026-07-06). |
+| ~~`canonical_storage_uri`~~ | —                      | Server-only; never mapped to the client (2026-07-06). |
 | `file_name`             | `fileName`                 | For downloads. |
 | `mime_type`             | `mimeType`                 | |
 | `size_bytes`            | `sizeBytes`                | Phase 0 rename — `file_size` is gone. |
@@ -135,7 +135,7 @@ UnifiedImageBlock = Union[MatrxImageBlock, ExternalImageBlock]
 
 **Phase 1b note:** thumbnails for matrx-owned media live on `Asset.variants["thumbnail_url"]` and are fetched per file via `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl` (lifted from the REST `FileRecord.thumbnail_url` field, which the backend now resolves from the variants store) is the cached source — see `MediaThumbnail` in `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx`.
 | `metadata`              | `metadata`                 | Pass-through. |
-| (computed: Python signs) | `cdnUrl`                  | From `storage_uri` for public files. |
+| (computed: Python signs) | `cdnUrl`                  | Server-side, for public files. |
 | (computed: Python signs) | `signedUrl`               | Pre-signed at emission time. |
 | (computed: Python signs) | `downloadUrl`             | Attachment-disposition variant. |
 | (computed: Python signs) | `signedUrlExpiresAt`      | Pre-computed `Date.now() + expires_in*1000`. |
@@ -180,7 +180,6 @@ authoritative spec). For an image, the inner `block` looks like:
     "kind": "image",
     "origin": "matrx",
     "file_id": "122a35b5-2875-4251-9c11-bb57993f6f2f",
-    "file_uri": "s3://matrx-user-files/4cf62e4e/122a35b5",
     "cdn_url": "https://cdn.matrxserver.com/.../122a35b5.png",
     "signed_url": "https://...?X-Amz-Date=...",
     "download_url": "https://...?disposition=attachment",

@@ -117,7 +117,6 @@ export function toMediaRef(file: NormalizedFile): MediaRef {
   const locator = preferIdentityLocator(file);
   const ref: MediaRef = {};
   if (locator.file_id) ref.file_id = locator.file_id;
-  if (locator.file_uri) ref.file_uri = locator.file_uri;
   if (locator.url) ref.url = locator.url;
   if (file.meta.mime) ref.mime_type = file.meta.mime;
   return ref;
@@ -215,12 +214,11 @@ function toJsonbContentPart(file: NormalizedFile): MessagePart {
     // file_id is the PREFERRED locator (preferIdentityLocator returns ONLY
     // file_id when present — never url alongside it) and the Python MediaRef
     // resolver prefers it. Omitting it here meant a file-id-only part (e.g. a
-    // private FastFire audio clip) shipped {url:null, file_uri:null} — the model
-    // received an empty media block and hallucinated from context. Carry it,
-    // like toMediaBlock/toMediaRef do, and per media-durability doctrine.
+    // private FastFire audio clip) shipped {url:null} — the model received an
+    // empty media block and hallucinated from context. Carry it, like
+    // toMediaBlock/toMediaRef do, and per media-durability doctrine.
     file_id: locator.file_id ?? null,
     url: locator.url ?? null,
-    file_uri: locator.file_uri ?? null,
     mime_type: file.meta.mime ?? null,
   };
   switch (file.meta.category) {

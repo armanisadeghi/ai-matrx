@@ -277,7 +277,6 @@ function buildSyntheticResult(
         key: "original",
         file_id: "",
         file_path: "",
-        file_uri: null,
         width: null,
         height: null,
         mime_type: null,

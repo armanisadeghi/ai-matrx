@@ -2425,8 +2425,7 @@ export interface paths {
          *     Filters:
          *       - category_id: only skills in that category
          *       - is_public_only: skip system + own; only is_public=true
-         *       - project_id: only skills associated with that ctx_project via
-         *         skill.project (the many-to-many join)
+         *       - project_id: only skills whose skill.definition.project_id matches
          */
         get: operations["list_skills_skills_get"];
         put?: never;
@@ -2537,34 +2536,6 @@ export interface paths {
          */
         post: operations["admin_ingest_filesystem_skills_ingest_post"];
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/skills/{skill_id}/projects/{project_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Associate Skill With Project
-         * @description Associate a skill with a ctx_project. Requires skill ownership
-         *     (or admin) OR project owner/admin role; RLS enforces the same check
-         *     server-side.
-         *
-         *     Idempotent: existing rows are returned as-is.
-         */
-        post: operations["associate_skill_with_project_skills__skill_id__projects__project_id__post"];
-        /**
-         * Disassociate Skill From Project
-         * @description Remove a skill ↔ project association. RLS enforces who can delete.
-         */
-        delete: operations["disassociate_skill_from_project_skills__skill_id__projects__project_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -9150,6 +9121,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/{run_id}/stream/debug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Run Debug
+         * @description SSE feed of raw matrx-connect stream events captured during a workflow run.
+         *
+         *     Powers the workflow-studio StreamDebugPanel — individual chunks, phases,
+         *     tool events, structured_output, etc. Unlike ``metadata._heartbeat._streaming``
+         *     (a throttled ~4KB tail), this is the full in-memory capture for debugging.
+         *
+         *     Optional ``node_id`` filters to events emitted while that node was executing.
+         *     ``Last-Event-ID`` is the monotonic ``idx`` for gap-free reconnect replay.
+         */
+        get: operations["stream_run_debug_runs__run_id__stream_debug_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}/events": {
         parameters: {
             query?: never;
@@ -15541,11 +15539,6 @@ export interface components {
             file_id: string;
             /** File Path */
             file_path: string;
-            /**
-             * File Uri
-             * @description Native cloud storage URI (s3://bucket/key). Same value as the underlying cld_files row's storage_uri — surfaced here so the FE wire contract carries the canonical native URI alongside the logical file_path.
-             */
-            file_uri?: string | null;
             /** Width */
             width?: number | null;
             /** Height */
@@ -16118,6 +16111,10 @@ export interface components {
         /**
          * BridgeFileEntry
          * @description Sandbox-facing projection of a ``cld_files`` row.
+         *
+         *     ``extra="ignore"`` deliberate: never passthrough an undeclared column
+         *     (that's how the server-only ``storage_uri`` would leak to a sandbox).
+         *     Declare any new field explicitly.
          */
         BridgeFileEntry: {
             /** Id */
@@ -16136,8 +16133,6 @@ export interface components {
             updated_at?: components["schemas"]["JsonValue"] | null;
             /** Checksum */
             checksum?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /** BridgeIntegrationAuth */
         BridgeIntegrationAuth: {
@@ -19425,8 +19420,6 @@ export interface components {
             source_id: string;
             /** Derivation Kind */
             derivation_kind: string;
-            /** Storage Uri */
-            storage_uri?: string | null;
             /** Created At */
             created_at: string;
             /** Updated At */
@@ -21058,8 +21051,6 @@ export interface components {
             owner_id: string;
             /** File Path */
             file_path: string;
-            /** Storage Uri */
-            storage_uri: string;
             /** File Name */
             file_name: string;
             /** Mime Type */
@@ -21120,8 +21111,6 @@ export interface components {
             file_id: string;
             /** File Path */
             file_path: string;
-            /** Storage Uri */
-            storage_uri: string;
             /** Version Number */
             version_number: number;
             /** Size Bytes */
@@ -21134,6 +21123,34 @@ export interface components {
             is_new: boolean;
             /** Cdn Url */
             cdn_url?: string | null;
+        };
+        /**
+         * FileVersionRecord
+         * @description Client-safe projection of a ``files.file_versions`` row.
+         *
+         *     The versions endpoints used to return the raw row via ``select("*")``,
+         *     which leaked the version's ``storage_uri`` (server-only S3 location). This
+         *     model is the explicit projection: everything a client needs to render the
+         *     version history, and NOT the storage location. To fetch a version's bytes,
+         *     use ``GET /files/{id}/versions/{n}/download`` (never the raw location).
+         */
+        FileVersionRecord: {
+            /** Id */
+            id: string;
+            /** File Id */
+            file_id: string;
+            /** Version Number */
+            version_number: number;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Checksum */
+            checksum?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Change Summary */
+            change_summary?: string | null;
         };
         /** FilterRequest */
         FilterRequest: {
@@ -23002,8 +23019,6 @@ export interface components {
             embeddings_voyage: number;
             /** Has Structured Json */
             has_structured_json: boolean;
-            /** Storage Uri */
-            storage_uri: string | null;
             /** Derivation Kind */
             derivation_kind: string;
             /** Parent Processed Id */
@@ -23045,8 +23060,6 @@ export interface components {
             chunks: number;
             /** Source Url */
             source_url: string | null;
-            /** Storage Uri */
-            storage_uri: string | null;
             /** Created At */
             created_at: string;
             /** Updated At */
@@ -25498,8 +25511,6 @@ export interface components {
             expires_in: number;
             /** File Path */
             file_path: string;
-            /** Storage Uri */
-            storage_uri: string;
         };
         /**
          * PreviewFiresRequest
@@ -25689,19 +25700,6 @@ export interface components {
             source: components["schemas"]["StudioSourceOut"];
             /** Variants */
             variants: components["schemas"]["StudioVariantOut"][];
-        };
-        /** ProjectAssociation */
-        ProjectAssociation: {
-            /**
-             * Skill Id
-             * Format: uuid
-             */
-            skill_id: string;
-            /**
-             * Project Id
-             * Format: uuid
-             */
-            project_id: string;
         };
         /**
          * ProjectionResponse
@@ -26858,8 +26856,6 @@ export interface components {
             url: string;
             /** File Id */
             file_id: string;
-            /** File Uri */
-            file_uri?: string | null;
             /** Cdn Url */
             cdn_url?: string | null;
             /** Width */
@@ -28526,11 +28522,6 @@ export interface components {
             organization_id?: string | null;
             /** Project Id */
             project_id?: string | null;
-            /**
-             * Project Ids
-             * @description ctx_projects that this skill is associated with via skill.project (many-to-many).
-             */
-            project_ids?: string[];
         };
         /** SkillsList */
         SkillsList: {
@@ -30351,9 +30342,11 @@ export interface components {
          * TrashFileEntry
          * @description Soft-deleted file as projected by the ``list_trash`` RPC.
          *
-         *     The RPC returns ``cld_files`` rows with their canonical column set;
-         *     extra keys are tolerated because new columns can land before this
-         *     model is bumped.
+         *     ``extra="ignore"`` (the default) is DELIBERATE: a new RPC column must
+         *     never silently passthrough to the client — that's exactly how the
+         *     server-only ``storage_uri`` would leak. Undeclared columns are dropped;
+         *     to surface a new field, declare it here. (Validation still tolerates the
+         *     extra key — it just isn't serialized out.)
          */
         TrashFileEntry: {
             /** Id */
@@ -30376,12 +30369,12 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /**
          * TrashFolderEntry
          * @description Soft-deleted folder as projected by the ``list_trash`` RPC.
+         *
+         *     ``extra="ignore"`` deliberate — see TrashFileEntry (no column passthrough).
          */
         TrashFolderEntry: {
             /** Id */
@@ -30400,8 +30393,6 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /** TrashListResponse */
         TrashListResponse: {
@@ -31380,8 +31371,6 @@ export interface components {
              * @description cld_files UUID for the master image
              */
             file_id: string;
-            /** Storage Uri */
-            storage_uri: string;
             /** File Path */
             file_path: string;
             /** Mime Type */
@@ -36204,68 +36193,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["IngestReport"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    associate_skill_with_project_skills__skill_id__projects__project_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                skill_id: string;
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectAssociation"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    disassociate_skill_from_project_skills__skill_id__projects__project_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                skill_id: string;
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -48345,6 +48272,41 @@ export interface operations {
             };
         };
     };
+    stream_run_debug_runs__run_id__stream_debug_get: {
+        parameters: {
+            query?: {
+                node_id?: string | null;
+            };
+            header?: {
+                "Last-Event-ID"?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_run_events_runs__run_id__events_get: {
         parameters: {
             query?: {
@@ -51470,9 +51432,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["FileVersionRecord"][];
                 };
             };
             /** @description Validation Error */
@@ -51504,9 +51464,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FileVersionRecord"];
                 };
             };
             /** @description Validation Error */
@@ -51570,9 +51528,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FileRecord"];
                 };
             };
             /** @description Validation Error */

@@ -166,11 +166,11 @@ export function PdfExtractorFloatingWorkspace({
 
   const handleViewOriginal = useCallback(() => {
     const doc = activeTab?.document;
-    if (!doc?.source) return;
-    // The source URL is a share URL or public S3 URL; open it in a new tab
-    // rather than reproducing the legacy floating preview window.
+    if (doc?.sourceKind !== "cld_file" || !doc.sourceId) return;
+    // Open the in-app file viewer — files are identified by id, never by
+    // a raw storage location.
     if (typeof window !== "undefined") {
-      window.open(doc.source, "_blank", "noopener,noreferrer");
+      window.open(`/files/f/${doc.sourceId}`, "_blank", "noopener,noreferrer");
     }
   }, [activeTab]);
 
@@ -210,13 +210,14 @@ export function PdfExtractorFloatingWorkspace({
       <>
         <div className="flex-1" />
         <div className="flex items-center gap-1">
-          {activeTab.document.source && (
-            <FooterButton
-              icon={<Eye className="w-2.5 h-2.5" />}
-              label="View Original"
-              onClick={handleViewOriginal}
-            />
-          )}
+          {activeTab.document.sourceKind === "cld_file" &&
+            activeTab.document.sourceId && (
+              <FooterButton
+                icon={<Eye className="w-2.5 h-2.5" />}
+                label="View Original"
+                onClick={handleViewOriginal}
+              />
+            )}
           {defaultShortcut && activeTab.document.content && (
             <FooterButton
               icon={<Zap className="w-2.5 h-2.5" />}
@@ -497,7 +498,9 @@ function NewExtractionContent({
           </div>
 
           <Button
-            onClick={extractor.extractFiles}
+            onClick={() => {
+              void extractor.extractFiles();
+            }}
             disabled={isExtracting}
             size="sm"
             className="w-full h-7 text-xs mt-1"
@@ -930,18 +933,18 @@ function MetadataView({ doc }: { doc: PdfDocument }) {
         label="Updated"
         value={new Date(doc.updatedAt).toLocaleString()}
       />
-      {doc.source && (
+      {doc.sourceKind === "cld_file" && doc.sourceId && (
         <div className="flex items-start gap-2 px-2.5 py-1.5 bg-card border border-border rounded-md">
           <span className="text-[10px] font-medium text-muted-foreground shrink-0 w-28">
             Source File
           </span>
           <a
-            href={doc.source}
+            href={`/files/f/${doc.sourceId}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] text-primary hover:underline break-all flex items-center gap-1"
           >
-            View in storage
+            Open file
             <ExternalLink className="w-2.5 h-2.5 shrink-0" />
           </a>
         </div>

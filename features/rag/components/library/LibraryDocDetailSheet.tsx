@@ -618,18 +618,6 @@ export function LibraryDocDetailSheet({
                       />
                       <KV k="MIME" v={doc.mimeType ?? "—"} />
                       <KV
-                        k="Storage URI"
-                        v={
-                          doc.storageUri ? (
-                            <code className="text-xs break-all">
-                              {doc.storageUri}
-                            </code>
-                          ) : (
-                            "—"
-                          )
-                        }
-                      />
-                      <KV
                         k="Has structured JSON"
                         v={doc.hasStructuredJson ? "yes" : "no"}
                       />

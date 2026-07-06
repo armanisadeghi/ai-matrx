@@ -95,8 +95,6 @@ function sourceKey(source: FileSource | null | undefined): string {
       return `cf:${source.cloudFile.id}`;
     case "file_id":
       return `id:${source.fileId}`;
-    case "file_uri":
-      return `uri:${source.fileUri}`;
     case "signed_url":
       return `signed:${source.fileId ?? source.url}`;
     case "share_link":

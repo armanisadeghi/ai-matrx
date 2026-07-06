@@ -32,7 +32,6 @@ import {
  * stays in `camelCase` and aliases the canonical columns:
  *
  *   processed_documents.owner_id      → ownerId
- *   processed_documents.storage_uri   → source           (kept for back-compat)
  *   processed_documents.derivation_*  → derivationKind / derivationMetadata
  *   processed_documents.parent_*      → parentProcessedId
  *   processed_documents.source_*      → sourceKind / sourceId
@@ -44,8 +43,6 @@ export interface PdfDocument {
   /** null until the document detail has been fetched. List rows always carry null. */
   content: string | null;
   cleanContent: string | null;
-  /** Storage URI (S3 / share link) — populated by the Python ingestion path. */
-  source: string | null;
   createdAt: string;
   updatedAt: string;
   charCount: number;
@@ -129,13 +126,6 @@ function docFromApi(raw: Record<string, unknown>): PdfDocument {
     name: (raw.name as string) ?? "Untitled",
     content,
     cleanContent,
-    // `processed_documents` uses `storage_uri`. Older `extracted_documents`
-    // used `source`. Tolerate both so the workspace keeps working during
-    // the deprecation window.
-    source:
-      (raw.storage_uri as string | null) ??
-      (raw.source as string | null) ??
-      null,
     createdAt: (raw.created_at as string) ?? new Date().toISOString(),
     updatedAt: (raw.updated_at as string) ?? new Date().toISOString(),
     charCount: text.length,
@@ -315,7 +305,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         // to open. Lineage + size hints come along so the sidebar can
         // surface them without a second round-trip.
         .select(
-          "id, name, storage_uri, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
+          "id, name, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
         )
         .eq("owner_id", userId)
         // Exclude archived docs (the canonical "removed from view" state —
@@ -455,7 +445,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           ),
         );
         setBatchStatus("idle");
-        return;
+        return [];
       }
 
       // Track which placeholder index we're on (results arrive in completion order)
@@ -961,7 +951,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       options?: RunFullPipelineOptions,
     ): Promise<RunFullPipelineResult> => {
       const tab = tabs.find((t) => t.id === docId);
-      const sourceUrl = tab?.document?.source ?? null;
       const sourceKind = tab?.document?.sourceKind ?? null;
       const sourceId = tab?.document?.sourceId ?? null;
 
@@ -988,7 +977,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           throw new Error("Backend URL is not configured");
         }
         const headers = await getAuthHeaders();
-        // Canonical source wire — media.file_id / media.url / media.file_uri.
+        // Canonical source wire — media.file_id / media.url.
         // The server's PdfRequest reads `options.force_ocr` (NOT top-level)
         // and has no `persist_output` field (it always persists for signed-in
         // users); both used to be sent at the top level and were silently
@@ -1002,7 +991,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             force_ocr: options?.force_ocr ?? false,
           },
         };
-        const wire = buildPdfSource({ sourceKind, sourceId, sourceUrl });
+        const wire = buildPdfSource({ sourceKind, sourceId });
         if (!wire) {
           throw new Error(
             "This document has no resolvable source — re-upload the PDF before re-processing.",

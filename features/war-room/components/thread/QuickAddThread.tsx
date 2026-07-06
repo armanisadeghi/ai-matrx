@@ -14,14 +14,7 @@
 // "Create" stays put for rapid adds; "Create & open" stages the new thread.
 
 import { useRef, useState } from "react";
-import {
-  Plus,
-  Loader2,
-  ArrowRight,
-  LayoutGrid,
-  ListChecks,
-  FolderKanban,
-} from "lucide-react";
+import { Plus, LayoutGrid, ListChecks, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -34,6 +27,13 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
 import type { ThreadPickerOption } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
+import { TapTargetButtonTransparent } from "@/components/icons/TapTargetButton";
+import {
+  ChevronRightTapButton,
+  LoadingTapButton,
+  PlusTapButton,
+  XTapButton,
+} from "@/components/icons/tap-buttons";
 import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
 import { WarRoomTaskPicker } from "../shared/WarRoomTaskPicker";
 
@@ -272,29 +272,31 @@ export function QuickAddThread({
       <div
         role="group"
         aria-label="Thread type"
-        className="flex items-center gap-1 rounded-lg bg-muted/50 p-0.5"
+        className="flex items-center gap-0.5 rounded-lg bg-muted/50 p-0.5"
       >
         {FLAVOR_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const active = flavor === opt.value;
           return (
-            <button
+            <div
               key={opt.value}
-              type="button"
-              onClick={() => onFlavorChange(opt.value)}
-              disabled={busy}
-              aria-pressed={active}
               className={cn(
-                "inline-flex flex-1 items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                active
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                "flex min-w-0 flex-1 justify-center",
+                active &&
+                  "[&_.matrx-tap-pill]:bg-card [&_.matrx-tap-pill]:shadow-sm [&_.matrx-tap-icon]:text-foreground [&_.matrx-tap-label]:text-foreground",
+                !active &&
+                  "[&_.matrx-tap-icon]:text-muted-foreground [&_.matrx-tap-label]:text-muted-foreground",
               )}
             >
-              <Icon className="size-3.5" />
-              {opt.label}
-            </button>
+              <TapTargetButtonTransparent
+                label={opt.label}
+                icon={<Icon className="matrx-tap-icon shrink-0" />}
+                onClick={() => onFlavorChange(opt.value)}
+                disabled={busy}
+                aria-pressed={active}
+                tooltip={false}
+              />
+            </div>
           );
         })}
       </div>
@@ -310,7 +312,6 @@ export function QuickAddThread({
         aria-label="New thread name"
         showCopyButton={false}
         wrapperClassName="w-full"
-        className="rounded-lg border-border bg-background font-medium shadow-none"
       />
 
       {flavor === "task" ? (
@@ -347,55 +348,40 @@ export function QuickAddThread({
         maxHeight={160}
         placeholder="Description"
         aria-label="New thread description"
+        enableTextStats={false}
         wrapperClassName="w-full"
-        className="text-sm"
       />
 
-      <div className="flex items-center justify-end gap-1.5">
-        <button
-          type="button"
+      <div className="flex min-w-0 flex-wrap items-center justify-end">
+        <XTapButton
+          variant="transparent"
+          label="Cancel"
           onClick={collapse}
           disabled={busy}
-          className={cn(
-            "inline-flex items-center rounded-lg border border-border bg-transparent px-2.5 py-1 text-[12px] font-medium text-muted-foreground transition-all",
-            "hover:border-border hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            "disabled:opacity-60 disabled:pointer-events-none",
-          )}
-        >
-          Cancel
-        </button>
-        <button
-          ref={createRef}
-          type="button"
-          onClick={() => void create("stay")}
-          disabled={busy}
-          title="Create — stay here for the next thread"
-          className={cn(
-            "inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1 text-[12px] font-semibold text-primary-foreground transition-all",
-            "hover:bg-primary/90",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-1 focus-visible:ring-offset-card",
-            "disabled:opacity-60 disabled:pointer-events-none",
-          )}
-        >
-          {busy ? <Loader2 className="size-3.5 animate-spin" /> : null}
-          Create
-        </button>
-        <button
-          type="button"
+        />
+        {busy ? (
+          <LoadingTapButton
+            ref={createRef}
+            variant="solid"
+            label="Create"
+            disabled
+          />
+        ) : (
+          <PlusTapButton
+            ref={createRef}
+            variant="transparent"
+            label="Create"
+            onClick={() => void create("stay")}
+            disabled={busy}
+          />
+        )}
+        <ChevronRightTapButton
+          variant="solid"
+          label="Create & go"
+          tooltip="Create and open this thread on the Stage"
           onClick={() => void create("open")}
           disabled={busy}
-          title="Create and open this thread on the Stage"
-          className={cn(
-            "inline-flex items-center gap-1 rounded-lg border border-border bg-transparent px-2 py-1 text-[12px] font-medium text-muted-foreground transition-all",
-            "hover:border-primary/40 hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-            "disabled:opacity-60 disabled:pointer-events-none",
-          )}
-        >
-          <ArrowRight className="size-3.5" />
-          Create &amp; open
-        </button>
+        />
       </div>
     </div>
   );

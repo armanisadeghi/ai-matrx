@@ -23,7 +23,6 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -60,20 +59,7 @@ export function SyncedPdfTextView({
     processedDocumentId: doc.id,
   });
 
-  const pdfFrameRef = useRef<HTMLIFrameElement | null>(null);
   const [activePage, setActivePage] = useState<number | null>(null);
-
-  // Drive PDF iframe to the active page. Some PDF viewers honour the hash
-  // fragment (`#page=N`) — Chrome's built-in does, react-pdf and pdf.js
-  // need explicit calls. We do the cheap thing here and rely on the hash.
-  useEffect(() => {
-    if (!activePage || !pdfFrameRef.current || !doc.source) return;
-    try {
-      pdfFrameRef.current.src = `${doc.source}#page=${activePage}`;
-    } catch {
-      // ignore — cross-origin frames will throw, which is fine
-    }
-  }, [activePage, doc.source]);
 
   const hasPages = pages.length > 0;
 
@@ -133,18 +119,10 @@ export function SyncedPdfTextView({
               </span>
             </div>
             <div className="flex-1 min-h-0 p-2">
-              {doc.source ? (
-                <iframe
-                  ref={pdfFrameRef}
-                  src={doc.source}
-                  title={doc.name}
-                  className="w-full h-full border border-border rounded bg-background"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-[10px] text-muted-foreground">
-                  No source URL on this document.
-                </div>
-              )}
+              <div className="flex items-center justify-center h-full text-[10px] text-muted-foreground text-center px-3">
+                Open this document in the PDF Studio to view the source PDF
+                alongside the text.
+              </div>
             </div>
           </div>
 
@@ -398,17 +376,9 @@ function LegacyEmptyState({ doc }: { doc: PdfDocument }) {
               Source PDF
             </span>
           </div>
-          {doc.source ? (
-            <iframe
-              src={doc.source}
-              title={doc.name}
-              className="w-full h-[420px] border border-border rounded bg-background"
-            />
-          ) : (
-            <p className="text-[10px] text-muted-foreground italic">
-              No source URL on this document.
-            </p>
-          )}
+          <p className="text-[10px] text-muted-foreground italic">
+            Open this document in the PDF Studio to view the source PDF.
+          </p>
         </div>
       </div>
     </div>

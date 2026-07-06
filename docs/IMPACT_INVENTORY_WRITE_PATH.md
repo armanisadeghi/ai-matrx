@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Impact inventory — write path
 
 Scope: every component, page, route, hook, service, or utility in `matrx-frontend` that **uploads, mutates, renames, moves, deletes, restores, shares, or sets permissions** on cloud files. Render-only sites are out of scope.

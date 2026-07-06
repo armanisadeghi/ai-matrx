@@ -48,6 +48,8 @@ import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { PdfAiContent } from "../components/PdfAiContent";
 import { usePdfStudioDocs } from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
+import { useSyncStudioDocNames } from "./hooks/useSyncStudioDocNames";
+import { useStudioDocRename } from "./hooks/useStudioDocRename";
 import { PdfCldFileViewer } from "./PdfStudioReader";
 import { PdfStudioInspector } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
@@ -64,11 +66,19 @@ type MobileTab = "pdf" | "raw" | "clean";
 export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
   const router = useRouter();
   const docsState = usePdfStudioDocs();
+  useSyncStudioDocNames(docsState.docs, docsState.refresh);
   const extractor = usePdfExtractor();
   const triggerShortcut = useShortcutTrigger();
   const toast = useToastManager("pdf-extractor");
 
   const [activeDoc, setActiveDoc] = useState<PdfDocument | null>(null);
+  const { renameDocById } = useStudioDocRename({
+    docs: docsState.docs,
+    setDocName: docsState.setDocName,
+    refresh: docsState.refresh,
+    activeDoc,
+    setActiveDoc,
+  });
   const [tab, setTab] = useState<MobileTab>("clean");
   const [activePage, setActivePage] = useState<number | null>(null);
   const [drawer, setDrawer] = useState<"none" | "docs" | "inspector">(
@@ -371,22 +381,14 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           </div>
         ) : tab === "pdf" ? (
           activeDoc.sourceKind === "cld_file" && activeDoc.sourceId ? (
-            // cld_file sources are `s3://` URIs the browser can't fetch —
-            // render via pdfjs + the authenticated inline endpoint, the same
-            // path the desktop reader uses.
+            // Render via pdfjs + the authenticated inline endpoint, the same
+            // path the desktop reader uses — files are identified by id,
+            // never by a raw storage location.
             <PdfCldFileViewer
               fileId={activeDoc.sourceId}
               fileName={activeDoc.name}
               pageNumber={activePage ?? 1}
               onPageChange={(n) => setActivePage(n)}
-            />
-          ) : activeDoc.source &&
-            (activeDoc.source.startsWith("http://") ||
-              activeDoc.source.startsWith("https://")) ? (
-            <iframe
-              src={`${activeDoc.source}#page=${activePage ?? 1}`}
-              title={activeDoc.name}
-              className="w-full h-full bg-background"
             />
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
@@ -462,6 +464,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                 activeDocId={activeDoc?.id ?? null}
                 onSelectDoc={onSelectDoc}
                 onDeleteDoc={handleDeleteDoc}
+                onRenameDoc={renameDocById}
                 onAddDocs={() => {
                   setDrawer("none");
                   setUploadOpen(true);

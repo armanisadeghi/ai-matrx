@@ -509,7 +509,6 @@ export interface ImageOutputData {
 export interface AudioBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  file_uri?: string | null;
   visibility?: "public" | "private" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
@@ -535,7 +534,6 @@ export interface AudioBlock {
 export interface DocumentBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  file_uri?: string | null;
   visibility?: "public" | "private" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
@@ -561,7 +559,6 @@ export interface DocumentBlock {
 export interface ImageBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  file_uri?: string | null;
   visibility?: "public" | "private" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
@@ -591,7 +588,6 @@ export interface JsonValue {
 export interface VideoBlock {
   origin: "matrx" | "external";
   file_id?: string | null;
-  file_uri?: string | null;
   visibility?: "public" | "private" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
@@ -619,7 +615,6 @@ export interface VideoBlock {
 export interface YouTubeBlock {
   origin?: "external";
   file_id?: string | null;
-  file_uri?: string | null;
   visibility?: "public" | "private" | "shared" | null;
   cdn_url?: string | null;
   signed_url?: string | null;
@@ -2274,7 +2269,6 @@ export interface ImageMediaPart {
   origin?: "matrx" | "external" | null;
   file_id?: string | null;
   url?: string | null;
-  file_uri?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
   type?: "media";
@@ -2288,7 +2282,6 @@ export interface AudioMediaPart {
   origin?: "matrx" | "external" | null;
   file_id?: string | null;
   url?: string | null;
-  file_uri?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
   type?: "media";
@@ -2302,7 +2295,6 @@ export interface VideoMediaPart {
   origin?: "matrx" | "external" | null;
   file_id?: string | null;
   url?: string | null;
-  file_uri?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
   type?: "media";
@@ -2317,7 +2309,6 @@ export interface DocumentMediaPart {
   origin?: "matrx" | "external" | null;
   file_id?: string | null;
   url?: string | null;
-  file_uri?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
   type?: "media";
@@ -2332,7 +2323,6 @@ export interface YouTubeMediaPart {
   origin?: "external";
   file_id?: string | null;
   url: string;
-  file_uri?: string | null;
   mime_type?: string | null;
   size_bytes?: number | null;
   type?: "media";

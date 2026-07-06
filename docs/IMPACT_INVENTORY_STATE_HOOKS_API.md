@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Impact inventory — state, hooks, API client (the internal core)
 
 **Scope:** the internal core of the file-handling consolidation. Inputs:

@@ -20,10 +20,10 @@
  * `GET /assets/{file_id}`. See docs/PYTHON_UPDATES.md "Phase 1b".
  */
 
-import type { CloudFileRow } from "@/features/files/types";
+import type { CloudFileReadRow } from "@/features/files/types";
 import type { MatrxImageBlock } from "../types";
 
-export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
+export function fromCldFilesRow(row: CloudFileReadRow): MatrxImageBlock {
   const metadata = (row.metadata ?? null) as Record<string, unknown> | null;
 
   // Phase 1d.1: `cld_files.width` / `cld_files.height` are first-class
@@ -53,13 +53,6 @@ export function fromCldFilesRow(row: CloudFileRow): MatrxImageBlock {
     kind: "image",
     origin: "matrx",
     fileId: row.id,
-    fileUri: row.storage_uri,
-    // `cld_files.canonical_storage_uri` was dropped; canonical processed doc id
-    // is a separate dedup column. Legacy rows may still carry the URI in metadata.
-    canonicalFileUri:
-      typeof metadata?.canonical_file_uri === "string"
-        ? metadata.canonical_file_uri
-        : null,
     // `files.files.visibility` is the canonical `platform.visibility` enum now
     // (`private < internal < link < public`); the old free-text `'shared'` is
     // `'link'`. The image-block domain speaks `public | private | shared`, so

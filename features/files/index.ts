@@ -272,13 +272,12 @@ export {
 // 5. MediaRef construction — the only sanctioned path
 // ---------------------------------------------------------------------------
 //
-// ESLint will ban manual `{ file_id, url, file_uri }` literals outside
+// ESLint will ban manual `{ file_id, url }` literals outside
 // `features/files/redux/converters.ts` in Phase 1. Use these builders.
 export {
   cloudFileToMediaRef,
   fileIdToMediaRef,
   urlToMediaRef,
-  fileUriToMediaRef,
 } from "@/features/files/redux/converters";
 
 // ---------------------------------------------------------------------------

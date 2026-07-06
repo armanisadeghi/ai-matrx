@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # PDF System — Handoff & Honest Failure Report (2026-06-13)
 
 **Audience:** the engineer who picks this up to finish it properly.

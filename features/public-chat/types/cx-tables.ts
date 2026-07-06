@@ -92,7 +92,6 @@ export interface CxMediaContent {
   kind: "image" | "audio" | "video" | "document" | "youtube";
   url?: string;
   mime_type?: string;
-  file_uri?: string;
   base64_data?: string;
   metadata?: Record<string, unknown>;
 }
@@ -187,7 +186,6 @@ export interface CxMedia {
   user_id: string; // uuid NOT NULL
   kind: CxMediaKind; // text NOT NULL
   url: string; // text NOT NULL
-  file_uri: string | null; // text
   mime_type: string | null; // text
   file_size_bytes: number | null; // bigint
   created_at: string; // timestamptz NOT NULL
@@ -209,7 +207,6 @@ export interface CxMediaInsert {
   user_id: string;
   kind: CxMediaKind;
   url: string;
-  file_uri?: string | null;
   mime_type?: string | null;
   file_size_bytes?: number | null;
   metadata?: Record<string, unknown>;

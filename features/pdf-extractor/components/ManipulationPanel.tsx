@@ -3,8 +3,8 @@
 /**
  * ManipulationPanel — fully wired PDF operation panel for the Studio inspector.
  *
- * Every operation targets the currently active doc via `doc.sourceId` (cld_file)
- * or `doc.source` (public URL). No external links to demo pages.
+ * Every operation targets the currently active doc via `doc.sourceId`
+ * (cld_file). No external links to demo pages.
  *
  * After a binary result is produced the user can:
  *   1. Download it directly to disk.
@@ -440,11 +440,10 @@ export function ManipulationPanel({
   const api = usePdfDemoApi();
   const userId = useAppSelector(selectUserId) ?? "";
 
-  // ── Source payload (canonical wire — media.file_id / url / file_uri) ──────
+  // ── Source payload (canonical wire — media.file_id / url) ─────────────────
   const src: PdfSourceWire | null = buildPdfSource({
     sourceKind: doc.sourceKind,
     sourceId: doc.sourceId,
-    sourceUrl: doc.source,
   });
 
   // ── Per-op state ───────────────────────────────────────────────────────────

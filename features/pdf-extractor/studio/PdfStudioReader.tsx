@@ -38,7 +38,6 @@ import {
   FileText,
   MousePointerClick,
   Loader2,
-  Eye,
   EyeOff,
   AlertTriangle,
   Zap,
@@ -61,7 +60,7 @@ import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client"
 import { buildPdfSource } from "@/features/pdf/utils/source";
 import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { PdfAiContent } from "../components/PdfAiContent";
-import { fileHandler } from "@/features/files";
+import { saveDerivative } from "@/features/pdf/services/saveDerivative";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -70,13 +69,8 @@ import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSl
 import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
 import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
 
-// react-pdf + pdfjs-dist is ~400KB; defer both viewers until they mount.
-const PdfStudioUrlViewer = dynamic(() => import("./PdfStudioUrlViewer"), {
-  ssr: false,
-  loading: () => <PdfPaneLoading />,
-});
-
 // Shared renderer used by PdfCldFileViewer below.
+// react-pdf + pdfjs-dist is ~400KB; defer until the viewer mounts.
 const PdfDocumentRenderer = dynamic(
   () =>
     import("@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"),
@@ -98,9 +92,8 @@ function PdfPaneLoading() {
 /**
  * Viewer for docs whose source is a `cld_files` row.
  *
- * `processed_documents.storage_uri` is stored as an `s3://` protocol URI
- * that the Python backend uses internally — it can't be fetched from a
- * browser directly. When `source_kind = 'cld_file'` the correct path is
+ * The native storage location of a document is server-only — the browser
+ * never sees it. When `source_kind = 'cld_file'` the correct path is
  * the Python `/files/{id}/download` endpoint with the user's
  * Authorization header. We hand pdfjs the URL + headers directly and
  * let it do progressive Range fetches (the blob-cache Service Worker
@@ -396,14 +389,6 @@ function PdfPane({
         pageNumber={activePage ?? 1}
         onPageChange={onViewerPageChange}
       />
-    ) : doc.source && !doc.source.startsWith("s3://") ? (
-      <PdfStudioUrlViewer
-        url={doc.source}
-        fileName={doc.name}
-        pageNumber={activePage ?? 1}
-        onPageChange={onViewerPageChange}
-        className="border-0"
-      />
     ) : (
       <PdfPaneEmptyState doc={doc} onOpenUpload={onOpenUpload} />
     );
@@ -435,8 +420,6 @@ function PdfPane({
           )
         }
         onTogglePane={editMode ? undefined : onTogglePane}
-        onCopyAll={!editMode && doc.source ? () => doc.source! : undefined}
-        copyAllLabel="Copy PDF source URL"
       />
 
       {editMode === "reorder" ? (
@@ -457,7 +440,8 @@ function PdfPane({
   );
 }
 
-// ── Shared save helper (mirrors ManipulationPanel's saveDerivative) ───────────
+// ── Shared save helpers — thin adapters over the canonical
+// features/pdf saveDerivative service (ONE persist path for every surface).
 
 async function saveAsCropDerivative(params: {
   doc: PdfDocument;
@@ -467,52 +451,18 @@ async function saveAsCropDerivative(params: {
   pages?: number[];
 }): Promise<{ docId: string | null; error: string | null }> {
   const { doc, userId, result, cropBox, pages } = params;
-  const file = new File([result.blob], result.filename, {
-    type: "application/pdf",
+  return saveDerivative({
+    parent: { id: doc.id, name: doc.name, totalPages: doc.totalPages },
+    userId,
+    result,
+    derivationKind: "crop_pages",
+    derivationMetadata: {
+      crop_box: cropBox,
+      pages_cropped: pages ?? "all",
+      content_note:
+        "Cropped region — re-extract content for updated text index",
+    },
   });
-  let fileId: string, storageUri: string;
-  try {
-    const normalized = await fileHandler.upload(
-      { kind: "file", file },
-      { folderPath: `derivatives/${doc.id}` },
-    );
-    if (!normalized.fileId || !normalized.fileUri) {
-      throw new Error("Upload returned no fileId/fileUri");
-    }
-    fileId = normalized.fileId;
-    storageUri = normalized.fileUri;
-  } catch (err) {
-    return {
-      docId: null,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
-  const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc")
-    .from("processed_documents")
-    .insert({
-      name: result.filename.replace(/\.pdf$/i, ""),
-      storage_uri: storageUri,
-      source_kind: "cld_file",
-      source_id: fileId,
-      source_hash: "",
-      owner_id: userId,
-      parent_processed_id: doc.id,
-      derivation_kind: "crop_pages",
-      derivation_metadata: {
-        crop_box: cropBox,
-        pages_cropped: pages ?? "all",
-        original_name: doc.name,
-        original_total_pages: doc.totalPages,
-        content_note:
-          "Cropped region — re-extract content for updated text index",
-      },
-      mime_type: "application/pdf",
-    })
-    .select("id")
-    .single();
-  if (insertError) return { docId: null, error: insertError.message };
-  return { docId: (newDoc as { id: string }).id, error: null };
 }
 
 async function saveAsReorderDerivative(params: {
@@ -522,45 +472,13 @@ async function saveAsReorderDerivative(params: {
   newOrder: number[];
 }): Promise<{ docId: string | null; error: string | null }> {
   const { doc, userId, result, newOrder } = params;
-  const file = new File([result.blob], result.filename, {
-    type: "application/pdf",
+  return saveDerivative({
+    parent: { id: doc.id, name: doc.name, totalPages: doc.totalPages },
+    userId,
+    result,
+    derivationKind: "reorder_pages",
+    derivationMetadata: { new_order: newOrder },
   });
-  let fileId: string, storageUri: string;
-  try {
-    const normalized = await fileHandler.upload(
-      { kind: "file", file },
-      { folderPath: `derivatives/${doc.id}` },
-    );
-    if (!normalized.fileId || !normalized.fileUri) {
-      throw new Error("Upload returned no fileId/fileUri");
-    }
-    fileId = normalized.fileId;
-    storageUri = normalized.fileUri;
-  } catch (err) {
-    return {
-      docId: null,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
-  const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc")
-    .from("processed_documents")
-    .insert({
-      name: result.filename.replace(/\.pdf$/i, ""),
-      storage_uri: storageUri,
-      source_kind: "cld_file",
-      source_id: fileId,
-      source_hash: "",
-      owner_id: userId,
-      parent_processed_id: doc.id,
-      derivation_kind: "reorder_pages",
-      derivation_metadata: { new_order: newOrder, original_name: doc.name },
-      mime_type: "application/pdf",
-    })
-    .select("id")
-    .single();
-  if (insertError) return { docId: null, error: insertError.message };
-  return { docId: (newDoc as { id: string }).id, error: null };
 }
 
 // ── Crop overlay ──────────────────────────────────────────────────────────────
@@ -671,7 +589,6 @@ function CropOverlay({
     const src = buildPdfSource({
       sourceKind: doc.sourceKind,
       sourceId: doc.sourceId,
-      sourceUrl: doc.source,
     });
     if (!src) {
       setError("No source file linked.");
@@ -871,7 +788,6 @@ function PageReorderView({
   const src = buildPdfSource({
     sourceKind: doc.sourceKind,
     sourceId: doc.sourceId,
-    sourceUrl: doc.source,
   });
 
   function onDragStart(idx: number) {
@@ -1077,8 +993,8 @@ function PdfPaneEmptyState({
   doc: PdfDocument;
   onOpenUpload: () => void;
 }) {
-  // No `storage_uri` on this row — most likely a legacy doc that was
-  // backfilled into `processed_documents` without its source URL. The user
+  // No cld_files source on this row — most likely a legacy doc that was
+  // backfilled into `processed_documents` without a linked file. The user
   // needs a real action, not just an error message.
   return (
     <div className="flex items-center justify-center h-full p-6">
@@ -1973,8 +1889,6 @@ function LegacyReaderFallback({ doc }: { doc: PdfDocument }) {
         <div className="flex-1 min-h-0 overflow-hidden">
           {doc.sourceKind === "cld_file" && doc.sourceId ? (
             <PdfCldFileViewer fileId={doc.sourceId} fileName={doc.name} />
-          ) : doc.source && !doc.source.startsWith("s3://") ? (
-            <PdfStudioUrlViewer url={doc.source} fileName={doc.name} />
           ) : (
             <div className="flex h-full items-center justify-center p-6 text-center">
               <p className="text-[11px] text-muted-foreground">

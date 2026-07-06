@@ -73,7 +73,7 @@ editor pills.
 | `type` | Payload field | Notes |
 |---|---|---|
 | `text` | `text: string` | inline text |
-| `image` / `audio` / `video` / `document` | `file_id` \| `file_uri` \| `url` \| `base64_data` (+ `mime_type`, `metadata`) | MediaRef contract |
+| `image` / `audio` / `video` / `document` | `file_id` \| `url` \| `base64_data` (+ `mime_type`, `metadata`) | MediaRef contract — `file_uri` (native storage URI) was eradicated from the client 2026-07-06; identify by `file_id` first, then `url` (see `features/files/FEATURE.md`) |
 | `youtube_video` | `url: string` | |
 | `input_webpage` | `urls: string[]` | |
 | `input_notes` | `note_ids: string[]` | |

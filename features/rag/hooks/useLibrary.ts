@@ -109,7 +109,6 @@ interface ApiDocDetail {
   embeddings_oai: number;
   embeddings_voyage: number;
   has_structured_json: boolean;
-  storage_uri: string | null;
   derivation_kind: string;
   parent_processed_id: string | null;
   status: DocStatus;
@@ -167,7 +166,6 @@ function mapDetail(d: ApiDocDetail): LibraryDocDetail {
     embeddingsOai: d.embeddings_oai,
     embeddingsVoyage: d.embeddings_voyage,
     hasStructuredJson: d.has_structured_json,
-    storageUri: d.storage_uri,
     derivationKind: d.derivation_kind,
     parentProcessedId: d.parent_processed_id,
     status: d.status,

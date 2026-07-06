@@ -26,12 +26,6 @@
  *
  * `status` is always "complete" — these refs point at finished media. For
  * streaming partials, use the streaming adapters in `from-media-block.ts`.
- *
- * NOTE on `fileUri`: a matrx block's type requires `fileUri`, but a bare
- * `file_id` doesn't carry one. We set it to `file_id://<id>` as a stable
- * non-null sentinel — the URL resolvers never read `fileUri` (they resolve
- * via the handler from `fileId`), so this satisfies the type contract
- * without affecting resolution.
  */
 
 import type { MediaRef } from "@/features/files/types";
@@ -64,9 +58,6 @@ function matrxBase(fileId: string) {
   return {
     origin: "matrx" as const,
     fileId,
-    // Non-null sentinel — resolvers never read this; they go via `fileId`.
-    fileUri: `file_id://${fileId}`,
-    canonicalFileUri: null,
     visibility: "private" as const,
     cdnUrl: null,
     signedUrl: null,

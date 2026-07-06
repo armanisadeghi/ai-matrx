@@ -112,14 +112,14 @@ function convertThinkingContent(block: CxThinkingContent): ThinkingBlock {
 }
 
 function convertMediaContent(block: CxMediaContent): MediaBlock | null {
-    // Use url OR fall back to file_uri (Google Gemini File API)
-    const url = block.url ?? block.file_uri ?? null;
+    // Resolution keys off `url`; a part with no url has no client-usable
+    // source and is skipped (never an error).
+    const url = block.url ?? null;
     if (!url) return null;
     return {
         type: 'media',
         kind: block.kind as MediaBlock['kind'], // youtube support added via cast
         url,
-        ...(block.file_uri ? { fileUri: block.file_uri } : {}),
         ...(block.mime_type ? { mimeType: block.mime_type } : {}),
     };
 }

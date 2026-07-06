@@ -153,7 +153,6 @@ export type CxMedia = {
   user_id: string;
   kind: string;
   url: string;
-  file_uri: string | null;
   mime_type: string | null;
   file_size_bytes: number | null;
   created_at: string;

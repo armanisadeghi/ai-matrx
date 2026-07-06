@@ -15,8 +15,7 @@
  *     query params on `signed_url` (or `url` if it looks signed).
  *   - Promotes additional fields from `metadata` if Python included them
  *     there as a transitional shim:
- *       file_uri, visibility, thumbnail_url, thumbnail_uri,
- *       canonical_file_uri, parent_file_id, derivation_kind,
+ *       visibility, thumbnail_url, parent_file_id, derivation_kind,
  *       file_name, width, height, size_bytes, signed_url_expires_at.
  *   - When no `file_id` is recoverable, falls back to an external block
  *     using whichever URL is most likely permanent.
@@ -116,8 +115,6 @@ export function fromImageOutputData(
     extractFileIdFromUrl(fallbackUrl) ??
     null;
 
-  const fileUri = metaString(metadata, "file_uri");
-
   // ── Common fields (every variant, regardless of origin) ────────────────
   const common = {
     kind: "image" as const,
@@ -150,19 +147,13 @@ export function fromImageOutputData(
   };
 
   // ── Variant selection ──────────────────────────────────────────────────
-  // We can build a matrx block only if we have BOTH a fileId AND a fileUri.
-  // If we only have fileId, we synthesize a minimal s3:// uri from the cdn
-  // url path (canonical scheme `/<owner>/<file_id>`). Anything weirder
-  // collapses to external.
+  // A fileId proves matrx identity; anything without one collapses to
+  // external.
   if (inferredFileId) {
-    const inferredFileUri =
-      fileUri ?? synthesizeFileUri(finalCdnUrl, finalSignedUrl, inferredFileId);
     const matrx: MatrxImageBlock = {
       ...common,
       origin: "matrx",
       fileId: inferredFileId,
-      fileUri: inferredFileUri,
-      canonicalFileUri: metaString(metadata, "canonical_file_uri"),
       visibility: metaVisibility(metadata),
       cdnUrl: finalCdnUrl,
       signedUrl: finalSignedUrl,
@@ -199,26 +190,4 @@ export function fromImageOutputData(
     sourceLabel: metaString(metadata, "source_label"),
   };
   return external;
-}
-
-/**
- * Build a synthetic `s3://` uri from a CDN or signed URL when Python didn't
- * include `file_uri`. The canonical key scheme is `/{owner}/{file_id}` so the
- * resulting URI is `s3://{host}/{owner}/{file_id}` — enough to satisfy the
- * fileUri invariant on `MatrxImageBlock`. The handler never reads this for
- * resolution (it uses fileId), so an approximation is safe.
- */
-function synthesizeFileUri(
-  cdnUrl: string | null,
-  signedUrl: string | null,
-  fileId: string,
-): string {
-  const src = cdnUrl ?? signedUrl;
-  if (!src) return `s3://unknown/${fileId}`;
-  try {
-    const parsed = new URL(src);
-    return `s3://${parsed.host}${parsed.pathname}`;
-  } catch {
-    return `s3://unknown/${fileId}`;
-  }
 }

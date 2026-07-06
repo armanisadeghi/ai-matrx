@@ -60,7 +60,6 @@ function resourceTypeToBlockType(type: Resource["type"]): ResourceBlockType {
 // A short display label for a MediaRef chip.
 function mediaRefLabel(ref: MediaRef): string {
   if (ref.file_id) return `file:${ref.file_id.slice(0, 8)}…`;
-  if (ref.file_uri) return ref.file_uri.split("/").pop() ?? ref.file_uri;
   if (ref.url) {
     try {
       const u = new URL(ref.url);
@@ -112,16 +111,11 @@ function coerceToRef(v: unknown): MediaRef | null {
   if (typeof v === "string") return v.length > 0 ? { url: v } : null;
   if (typeof v !== "object") return null;
   const o = v as Record<string, unknown>;
-  if (
-    typeof o.file_id !== "string" &&
-    typeof o.file_uri !== "string" &&
-    typeof o.url !== "string"
-  ) {
+  if (typeof o.file_id !== "string" && typeof o.url !== "string") {
     return null;
   }
   const ref: MediaRef = {};
   if (typeof o.file_id === "string") ref.file_id = o.file_id;
-  if (typeof o.file_uri === "string") ref.file_uri = o.file_uri;
   if (typeof o.url === "string") ref.url = o.url;
   if (typeof o.mime_type === "string") ref.mime_type = o.mime_type;
   return ref;
@@ -213,9 +207,9 @@ export function AgentSettingMediaPicker({
       {/* Selected refs as chips */}
       {refs.map((ref, idx) => (
         <span
-          key={`${ref.file_id ?? ref.file_uri ?? ref.url ?? idx}-${idx}`}
+          key={`${ref.file_id ?? ref.url ?? idx}-${idx}`}
           className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-muted/40 text-[11px] max-w-[200px]"
-          title={ref.url ?? ref.file_uri ?? ref.file_id ?? "media"}
+          title={ref.url ?? ref.file_id ?? "media"}
         >
           {mediaRefIcon(ref)}
           <span className="truncate">{mediaRefLabel(ref)}</span>

@@ -198,14 +198,14 @@ function EmptyStage({
 }) {
   return (
     <div className="h-full grid place-items-center rounded-2xl border border-dashed border-border bg-card/30">
-      <div className="text-center max-w-xs px-6">
+      <div className="w-full max-w-sm px-6 text-center">
         <p className="text-sm font-semibold text-foreground">
           No thread staged
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Start your first thread — it will open right here, ready to work.
         </p>
-        <div className="mt-3 inline-flex">
+        <div className="mt-3 w-full">
           <NewThread
             sessionId={sessionId}
             nextPosition={nextPosition}

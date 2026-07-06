@@ -65,7 +65,6 @@ export type FileSource =
   // Owned identifiers — preferred
   | CloudFileSource
   | FileIdSource
-  | FileUriSource
 
   // Server-issued, time-bounded
   | SignedUrlSource
@@ -138,12 +137,6 @@ export interface FileIdSource {
   mime?: string;
 }
 
-export interface FileUriSource {
-  kind: "file_uri";
-  fileUri: string;
-  mime?: string;
-}
-
 export interface SignedUrlSource {
   kind: "signed_url";
   url: string;
@@ -200,8 +193,6 @@ export interface StreamEventSource {
 export interface NormalizedFile {
   /** cld_files UUID — set whenever known. */
   fileId?: string;
-  /** Native cloud URI — `s3://`, `gs://`, `supabase://`. */
-  fileUri?: string;
   /** Any URL safe to hand to the browser. */
   url?: string;
   /** Inline base64. Last resort. Always include `meta.mime`. */

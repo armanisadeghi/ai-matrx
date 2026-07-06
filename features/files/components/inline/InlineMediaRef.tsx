@@ -63,12 +63,12 @@ export type InlineMediaRefFit = "cover" | "contain" | "fill";
 export interface InlineMediaRefProps {
   /**
    * Reference to the media. Accepts:
-   *   - {@link MediaRef} — the canonical shape (`{file_id?, url?, file_uri?}`)
+   *   - {@link MediaRef} — the canonical shape (`{file_id?, url?}`)
    *   - a plain URL string — convenience for external URLs
    *   - a bare cld_files UUID — convenience for owned files
    *   - `null` / `undefined` — renders the fallback
    *
-   * Construct MediaRefs via the four builders in
+   * Construct MediaRefs via the builders in
    * `features/files/redux/converters` (never as object literals).
    */
   ref?: MediaRef | string | null;

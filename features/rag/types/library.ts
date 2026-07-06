@@ -87,7 +87,6 @@ export interface LibraryDocDetail {
   embeddingsOai: number;
   embeddingsVoyage: number;
   hasStructuredJson: boolean;
-  storageUri: string | null;
   derivationKind: string;
   parentProcessedId: string | null;
   status: DocStatus;

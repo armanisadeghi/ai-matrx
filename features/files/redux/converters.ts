@@ -9,11 +9,11 @@
 
 import type {
   CloudFile,
-  CloudFileRow,
   CloudFilePermission,
   CloudFilePermissionRow,
+  CloudFileReadRow,
   CloudFileVersion,
-  CloudFileVersionRow,
+  CloudFileVersionReadRow,
   CloudFolder,
   CloudFolderRow,
   CloudShareLink,
@@ -80,14 +80,13 @@ function toMetadataObject(raw: unknown): Record<string, unknown> {
 // Files
 // ---------------------------------------------------------------------------
 
-export function dbRowToCloudFile(row: CloudFileRow): CloudFile {
+export function dbRowToCloudFile(row: CloudFileReadRow): CloudFile {
   return {
     id: row.id,
     // `files.files` is canonical now: owner lives in `created_by` (trigger-
     // stamped), not the old `owner_id`. Domain keeps the `ownerId` field name.
     ownerId: row.created_by,
     filePath: row.file_path,
-    storageUri: row.storage_uri,
     fileName: row.file_name,
     mimeType: row.mime_type,
     // Phase 0 rename: `cld_files.file_size` → `cld_files.size_bytes`.
@@ -154,7 +153,6 @@ export function apiFileRecordToCloudFile(row: FileRecordApi): CloudFile {
     id: row.id,
     ownerId: row.owner_id,
     filePath: row.file_path,
-    storageUri: row.storage_uri,
     fileName: row.file_name,
     mimeType: row.mime_type ?? null,
     // Phase 0 rename: `FileRecord.file_size` → `FileRecord.size_bytes`.
@@ -221,13 +219,12 @@ export function dbRowToCloudFolder(row: CloudFolderRow): CloudFolder {
 // ---------------------------------------------------------------------------
 
 export function dbRowToCloudFileVersion(
-  row: CloudFileVersionRow,
+  row: CloudFileVersionReadRow,
 ): CloudFileVersion {
   return {
     id: row.id,
     fileId: row.file_id,
     versionNumber: row.version_number,
-    storageUri: row.storage_uri,
     // Phase 0 rename — see `dbRowToCloudFile` above.
     fileSize: row.size_bytes,
     checksum: row.checksum,
@@ -504,16 +501,3 @@ export function urlToMediaRef(url: string, mimeType?: string | null): MediaRef {
   return ref;
 }
 
-/**
- * Build a MediaRef from a native cloud URI (`s3://`, `gs://`,
- * `supabase://...`). Rare on the FE — usually only for backend-issued
- * file URIs we want to pass through unchanged.
- */
-export function fileUriToMediaRef(
-  fileUri: string,
-  mimeType?: string | null,
-): MediaRef {
-  const ref: MediaRef = { file_uri: fileUri };
-  if (mimeType) ref.mime_type = mimeType;
-  return ref;
-}

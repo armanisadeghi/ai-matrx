@@ -369,7 +369,6 @@ export async function cloudUpload(
           id: upload.data.file_id,
           owner_id: "",
           file_path: upload.data.file_path,
-          storage_uri: upload.data.storage_uri,
           file_name: upload.data.file_path.split("/").pop() ?? file.name,
           mime_type: file.type || null,
           // Phase 0 rename — see docs/PYTHON_UPDATES.md §3.

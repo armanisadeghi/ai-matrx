@@ -46,17 +46,15 @@ export async function saveDerivative({
     type: result.contentType || "application/pdf",
   });
   let fileId: string;
-  let storageUri: string;
   try {
     const normalized = await fileHandler.upload(
       { kind: "file", file },
       { folderPath: `derivatives/${parent.id}` },
     );
-    if (!normalized.fileId || !normalized.fileUri) {
-      throw new Error("Upload returned no fileId/fileUri");
+    if (!normalized.fileId) {
+      throw new Error("Upload returned no fileId");
     }
     fileId = normalized.fileId;
-    storageUri = normalized.fileUri;
   } catch (err) {
     return {
       docId: null,
@@ -69,7 +67,6 @@ export async function saveDerivative({
     .schema("docproc").from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
-      storage_uri: storageUri,
       source_kind: "cld_file",
       source_id: fileId,
       source_hash: "",

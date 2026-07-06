@@ -92,7 +92,6 @@ export interface MediaBlock {
   readonly type: "media";
   readonly kind: "image" | "audio" | "video" | "document" | "youtube";
   readonly url: string;
-  readonly fileUri?: string;
   readonly mimeType?: string;
 }
 

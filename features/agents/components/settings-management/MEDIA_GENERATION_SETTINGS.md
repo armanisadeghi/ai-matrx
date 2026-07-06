@@ -59,7 +59,7 @@ When the agent has a value for a key that the current model's `controls` don't d
 
 ## 5. Media-ref widget — IMPLEMENTED
 
-Several control values are MediaRef-shaped: `{file_id?, url?, file_uri?, mime_type?}`. Every model that accepts an image input declares it under whatever key name the provider uses — `image_input`, `input_images`, `image`, `start_image`, `end_image`, `prompt_image`, `first_frame_image`, `start_image_url`, `last_frame`, `last_frame_image`, `mask`, `video_input`, `frame_images`, `reference_images`.
+Several control values are MediaRef-shaped: `{file_id?, url?, mime_type?}` (`file_uri` was eradicated 2026-07-06 — the client never carries a storage URI; identify by `file_id`, render via `url`; see `features/files/FEATURE.md`). Every model that accepts an image input declares it under whatever key name the provider uses — `image_input`, `input_images`, `image`, `start_image`, `end_image`, `prompt_image`, `first_frame_image`, `start_image_url`, `last_frame`, `last_frame_image`, `mask`, `video_input`, `frame_images`, `reference_images`.
 
 **Wired today** in `AgentSettingMediaPicker.tsx`:
 

@@ -60,7 +60,6 @@ function emptyFileRecord(id: string): CloudFileRecord {
     id,
     ownerId: "",
     filePath: "",
-    storageUri: "",
     fileName: "",
     mimeType: null,
     fileSize: null,

@@ -1242,6 +1242,8 @@
                            border / solid fill / hover bg) — the size is identical
                            across glass / transparent / solid, guaranteed here.
        .matrx-tap-icon   — 16px icon.
+       .matrx-tap-*-inline — wider auto-width geometry when `label` is set on
+                              TapTargetButton (icon + caption on one row).
      The `-sm` classes (36 / 24px) are the slimmer geometry used inside groups.
      ========================================================================= */
   .matrx-tap-target {
@@ -1285,6 +1287,39 @@
   .matrx-tap-icon {
     height: 0.875rem; /* 14px */
     width: 0.875rem;
+    flex-shrink: 0;
+  }
+
+  /* Inline label — icon + text on one row inside the pill */
+  .matrx-tap-target-inline {
+    width: auto;
+    min-width: 2.5rem;
+    padding-inline: 0.25rem;
+  }
+  .matrx-tap-pill-inline {
+    width: auto;
+    gap: 0.375rem;
+    padding-inline: 0.625rem;
+  }
+  .matrx-tap-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .matrx-tap-target-inline-sm {
+    width: auto;
+    min-width: 2rem;
+    padding-inline: 0.125rem;
+  }
+  .matrx-tap-pill-inline-sm {
+    width: auto;
+    gap: 0.25rem;
+    padding-inline: 0.5rem;
+  }
+  .matrx-tap-pill-inline-sm .matrx-tap-label {
+    font-size: 0.625rem;
   }
 }
 

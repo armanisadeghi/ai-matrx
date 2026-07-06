@@ -53,7 +53,6 @@ Two new fields, both optional. Existing `url` is still authoritative:
 {
   "file_id": "...",
   "file_path": "uploads/foo.png",
-  "storage_uri": "s3://cdn.matrxserver.com/<owner>/uploads/foo.png",
   "checksum": "abc123...",
   "url":     "https://cdn.matrxserver.com/<owner>/uploads/foo.png?v=abc12345",
   "cdn_url": "https://cdn.matrxserver.com/<owner>/uploads/foo.png?v=abc12345",
@@ -64,7 +63,6 @@ Two new fields, both optional. Existing `url` is still authoritative:
 {
   "file_id": "...",
   "file_path": "uploads/foo.png",
-  "storage_uri": "s3://matrx-user-files/<owner>/uploads/foo.png",
   "checksum": "abc123...",
   "url":     "https://matrx-user-files.s3.amazonaws.com/...?X-Amz-Signature=...",
   "cdn_url": null,
@@ -156,8 +154,9 @@ visibility settings:
 const result = await dispatch(
   patchFile({ fileId, body: { visibility: "public" } }),
 ).unwrap();
-// `result` is the updated CloudFileRecord with the new publicUrl,
-// updated storageUri (different bucket now), and updated visibility.
+// `result` is the updated CloudFileRecord with the new publicUrl
+// and updated visibility. (The client never sees a storage location —
+// `storage_uri` is server-only; see features/files/FEATURE.md.)
 // The thunk already calls upsertFile() so Redux state is fresh.
 // Just make sure your component re-reads from the store — don't hold
 // the OLD URL in local component state across the toggle.

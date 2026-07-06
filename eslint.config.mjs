@@ -608,6 +608,35 @@ const legacySupabaseKeyBan = [
     },
 ];
 
+// ─── storage_uri eradication (2026-07-06) ────────────────────────────────────
+// The native S3 location (`storage_uri` = s3://bucket/owner/key, historically
+// also `file_uri` / `fileUri` / `storageUri` / `canonicalFileUri`) is
+// SERVER-ONLY. The backend returns it on NO response, and the DB REVOKEs the
+// column grant on files.files — `select("*")` on that table ERRORS for
+// `authenticated`. This identifier family re-infected the codebase twice via
+// leftover references that coding agents copied; this ban makes reintroduction
+// structurally impossible. Identify files by `id`/`file_id`; render/download
+// via the URL contract (url / cdn_url / signed_url / download_url /
+// thumbnail_url). Read files.files ONLY through FILES_TABLE_COLUMNS
+// (features/files/filesDb.ts). The SOLE sanctioned exceptions are the
+// `Omit<..., "storage_uri">` read-row types in features/files/types.ts, which
+// carry inline eslint-disables with justification. See
+// features/files/FEATURE.md "storage_uri is BANNED".
+const storageUriEradicationBan = [
+    {
+        selector:
+            'Identifier[name=/^(storageUri|storage_uri|fileUri|file_uri|canonicalFileUri|canonical_file_uri)$/]',
+        message:
+            'storage_uri / file_uri (the native S3 location) is SERVER-ONLY and has been ERADICATED from the FE (2026-07-06). It exists on no backend response and its files.files column grant is REVOKEd. Identify by id/file_id; use the URL contract (url/cdn_url/signed_url/download_url). See features/files/FEATURE.md.',
+    },
+    {
+        selector:
+            'Literal[value=/\\b(storage_uri|file_uri|canonical_file_uri)\\b/]',
+        message:
+            'String contains storage_uri/file_uri — the server-only S3 location, ERADICATED from the FE (2026-07-06). Never select it (use FILES_TABLE_COLUMNS from features/files/filesDb.ts), never read/write it as a key. See features/files/FEATURE.md.',
+    },
+];
+
 // Bundle-splitting fence for the canonical agent context menu. The menu
 // (UnifiedAgentContextMenu) is heavy — MenuBody + the fetch hook + Radix +
 // every icon — and by design its data fetch is deferred to menu-open. A
@@ -781,6 +810,7 @@ export default [
                 'error',
                 // Legacy Supabase API key env vars are hard-banned — no exceptions.
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 // File-handler rules retain their original "warn-like" intent by
                 // virtue of having actionable messages; eslint severity is shared
                 // across the array, so we keep them in the same rule slot.
@@ -827,6 +857,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
@@ -855,6 +886,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...appContextWriteSyntaxRestrictions,
             ],
         },
@@ -877,6 +909,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
@@ -994,6 +1027,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...fileHandlerSyntaxRestrictions,
                 // scopesChokepointSyntaxRestrictions intentionally omitted.
                 ...toolResultsChokepointSyntaxRestrictions,
@@ -1019,6 +1053,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
@@ -1127,6 +1162,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...toolResultsChokepointSyntaxRestrictions,
@@ -1189,6 +1225,7 @@ export default [
             'no-restricted-syntax': [
                 'error',
                 ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
                 ...fileHandlerSyntaxRestrictions,
                 ...scopesChokepointSyntaxRestrictions,
                 ...appContextWriteSyntaxRestrictions,
@@ -1225,6 +1262,18 @@ export default [
                     ],
                 },
             ],
+        },
+    },
+    {
+        // Generated type files mirror the DB / OpenAPI verbatim — the live
+        // files.files table still HAS a storage_uri column (server-only), so
+        // the generated Database type legitimately declares it. The
+        // storage_uri eradication ban applies to hand-written code only;
+        // never edit these files by hand (regenerate via pnpm db-types /
+        // sync-types).
+        files: ['types/database.types.ts', 'types/python-generated/**/*'],
+        rules: {
+            'no-restricted-syntax': 'off',
         },
     },
 ];

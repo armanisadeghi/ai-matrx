@@ -18846,6 +18846,22 @@ export type Database = {
         }
         Returns: string
       }
+      sweep_orphaned_associations: {
+        Args: { p_dry_run?: boolean }
+        Returns: {
+          orphan_count: number
+          side: string
+          token: string
+        }[]
+      }
+      sync_association_gc_triggers: {
+        Args: { p_token?: string }
+        Returns: {
+          action: string
+          detail: string
+          token: string
+        }[]
+      }
     }
     Enums: {
       visibility: "private" | "internal" | "link" | "public"

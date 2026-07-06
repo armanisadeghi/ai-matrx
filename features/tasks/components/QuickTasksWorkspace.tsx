@@ -1,20 +1,28 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { idMatchesQuery } from "@/utils/search-scoring";
-import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
+import {
+  useEnsureHierarchyLoaded,
+  useNavTree,
+} from "@/features/agent-context/hooks/useNavTree";
+import { selectAllTasks } from "@/features/agent-context/redux/tasksSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
 import { Button } from "@/components/ui/button";
-import { Search, Inbox, Plus, Folder, FolderKanban } from "lucide-react";
+import { Search, Inbox, FolderKanban, Loader2 } from "lucide-react";
 import CompactTaskItem from "@/features/tasks/components/CompactTaskItem";
 import TaskDetailsPanel from "@/features/tasks/components/TaskDetailsPanel";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
-import { selectFilteredTasks } from "@/features/tasks/redux/selectors";
+import {
+  selectFilteredTasks,
+  UNASSIGNED_PROJECT_ID,
+} from "@/features/tasks/redux/selectors";
 import {
   selectActiveProject,
+  selectShowAllProjects,
   selectNewTaskTitle,
   selectIsCreatingTask,
   setActiveProject,
@@ -39,9 +47,43 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 
+function normalizeProjectIdForCreate(projectId: string | null): string | null {
+  if (!projectId || projectId === UNASSIGNED_PROJECT_ID) return null;
+  return projectId;
+}
+
+/** Tasks visible in the Quick Tasks window — org-scoped, hierarchy-hydrated. */
+function useQuickTasksList() {
+  const { isLoading, isSuccess, isError } = useEnsureHierarchyLoaded();
+  const selectedOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
+  const showAllProjects = useAppSelector(selectShowAllProjects);
+  const activeProject = useAppSelector(selectActiveProject);
+  const filtered = useAppSelector(selectFilteredTasks);
+  const allTaskRecords = useAppSelector(selectAllTasks);
+
+  const tasks = useMemo(() => {
+    if (!selectedOrgId) return filtered;
+    const byId = new Map(allTaskRecords.map((r) => [r.id, r] as const));
+    return filtered.filter((t) => {
+      const rec = byId.get(t.id);
+      return rec ? rec.organization_id === selectedOrgId : true;
+    });
+  }, [filtered, selectedOrgId, allTaskRecords]);
+
+  return {
+    tasks,
+    isLoading,
+    isSuccess,
+    isError,
+    showAllProjects,
+    activeProject,
+  };
+}
+
 /**
- * Thin Provider-less wrapper: seeds the Quick Tasks window's org/project
- * selection from the hierarchy on first mount and when the user switches orgs.
+ * Thin Provider-less wrapper: seeds the Quick Tasks window's org selection from
+ * the hierarchy on first mount, ensures tasks are fetched, and scopes the list
+ * to "all tasks" while the window is open (restores /tasks view state on close).
  * All state lives in Redux (quickTasksWindow + tasksUi slices).
  */
 export function QuickTasksWorkspaceProvider({
@@ -50,27 +92,36 @@ export function QuickTasksWorkspaceProvider({
   children: React.ReactNode;
 }) {
   const dispatch = useAppDispatch();
-  const { orgs, flatProjects, isSuccess } = useNavTree();
+  const { orgs, isSuccess } = useNavTree();
   const selectedOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
+  const appOrgId = useAppSelector(selectOrganizationId);
+  const showAllProjects = useAppSelector(selectShowAllProjects);
   const activeProject = useAppSelector(selectActiveProject);
+  const savedViewRef = useRef<{
+    showAllProjects: boolean;
+    activeProject: string | null;
+  } | null>(null);
 
   useEffect(() => {
-    if (isSuccess && !selectedOrgId && orgs.length > 0) {
-      dispatch(setQuickTasksSelectedOrgId(orgs[0].id));
-    }
-  }, [dispatch, isSuccess, orgs, selectedOrgId]);
+    savedViewRef.current = { showAllProjects, activeProject };
+    dispatch(setShowAllProjects(true));
+    dispatch(setActiveProject(null));
+    return () => {
+      const saved = savedViewRef.current;
+      if (!saved) return;
+      dispatch(setShowAllProjects(saved.showAllProjects));
+      dispatch(setActiveProject(saved.activeProject));
+    };
+    // Capture /tasks view mode once on open; restore on close only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
 
   useEffect(() => {
-    if (!selectedOrgId) return;
-    const projs = flatProjects.filter((p) => p.org_id === selectedOrgId);
-    if (
-      projs.length > 0 &&
-      (!activeProject || !projs.find((p) => p.id === activeProject))
-    ) {
-      dispatch(setActiveProject(projs[0].id));
-      dispatch(setShowAllProjects(false));
+    if (isSuccess && !selectedOrgId) {
+      const initialOrgId = appOrgId ?? orgs[0]?.id ?? null;
+      if (initialOrgId) dispatch(setQuickTasksSelectedOrgId(initialOrgId));
     }
-  }, [dispatch, selectedOrgId, flatProjects, activeProject]);
+  }, [dispatch, isSuccess, orgs, selectedOrgId, appOrgId]);
 
   return <>{children}</>;
 }
@@ -81,15 +132,15 @@ export function QuickTasksSidebar() {
   const selectedProjectId = useAppSelector(selectActiveProject);
   const selectedTaskId = useAppSelector(selectQuickTasksSelectedTaskId);
   const searchQuery = useAppSelector(selectQuickTasksSearchQuery);
-  const filtered = useAppSelector(selectFilteredTasks);
+  const { tasks, isLoading, showAllProjects } = useQuickTasksList();
 
   const tasksToDisplay = useMemo(() => {
-    if (!searchQuery) return filtered;
+    if (!searchQuery) return tasks;
     const q = searchQuery.toLowerCase();
-    return filtered.filter(
+    return tasks.filter(
       (t) => t.title.toLowerCase().includes(q) || idMatchesQuery(t, q),
     );
-  }, [filtered, searchQuery]);
+  }, [tasks, searchQuery]);
 
   return (
     <div className="flex flex-col min-h-0 h-full bg-card">
@@ -107,7 +158,7 @@ export function QuickTasksSidebar() {
               dispatch(setQuickTasksSelectedOrgId(sel.organizationId));
             if (sel.projectId !== selectedProjectId) {
               dispatch(setActiveProject(sel.projectId));
-              if (sel.projectId) dispatch(setShowAllProjects(false));
+              dispatch(setShowAllProjects(!sel.projectId));
             }
             if (sel.taskId !== selectedTaskId)
               dispatch(setQuickTasksSelectedTaskId(sel.taskId));
@@ -129,10 +180,10 @@ export function QuickTasksSidebar() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
-        {!selectedProjectId ? (
+        {isLoading ? (
           <div className="p-4 text-center text-xs text-muted-foreground flex flex-col items-center gap-2 mt-4">
-            <Folder className="h-6 w-6 opacity-20" />
-            <p>Select a project to view tasks.</p>
+            <Loader2 className="h-5 w-5 animate-spin opacity-50" />
+            <p>Loading tasks...</p>
           </div>
         ) : tasksToDisplay.length === 0 ? (
           <div className="p-4 text-center text-xs text-muted-foreground flex flex-col items-center gap-2 mt-4">
@@ -145,12 +196,13 @@ export function QuickTasksSidebar() {
               <CompactTaskItem
                 key={task.id}
                 task={task}
+                layout="stacked"
                 isSelected={selectedTaskId === task.id}
                 onSelect={() => dispatch(setQuickTasksSelectedTaskId(task.id))}
                 onToggleComplete={() =>
                   dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
                 }
-                hideProjectName={true}
+                hideProjectName={!showAllProjects}
               />
             ))}
           </div>
@@ -164,31 +216,33 @@ export function QuickTasksMain() {
   const dispatch = useAppDispatch();
   const selectedTaskId = useAppSelector(selectQuickTasksSelectedTaskId);
   const selectedProjectId = useAppSelector(selectActiveProject);
+  const quickTasksOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
   const {
     inputRef: quickAddInputRef,
     scheduleRefocus: scheduleQuickAddRefocus,
   } = useRefocusInputAfterAsync(isCreatingTask);
-  const filtered = useAppSelector(selectFilteredTasks);
-  const orgId = useAppSelector(selectOrganizationId);
+  const { tasks } = useQuickTasksList();
+  const appOrgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
+  const organizationId = quickTasksOrgId ?? appOrgId;
 
   const selectedTask = useMemo(() => {
     if (!selectedTaskId) return null;
-    return filtered.find((t) => t.id === selectedTaskId) || null;
-  }, [selectedTaskId, filtered]);
+    return tasks.find((t) => t.id === selectedTaskId) || null;
+  }, [selectedTaskId, tasks]);
 
   const handleAddTask = async () => {
-    if (!newTaskTitle.trim() || !selectedProjectId) return;
+    if (!newTaskTitle.trim()) return;
     const defaultScopeIds = Object.values(scopeSelections).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
     const newId = await dispatch(
       createTaskThunk({
         title: newTaskTitle,
-        projectId: selectedProjectId,
-        organizationId: orgId,
+        projectId: normalizeProjectIdForCreate(selectedProjectId),
+        organizationId,
         priority: "medium",
         scopeIds: defaultScopeIds,
       }),
@@ -215,22 +269,14 @@ export function QuickTasksMain() {
           onSubmit={() => void handleAddTask()}
           submitOnEnter
           submitLabel="Add task"
-          submitDisabled={
-            isCreatingTask || !newTaskTitle.trim() || !selectedProjectId
-          }
+          submitDisabled={isCreatingTask || !newTaskTitle.trim()}
           isSubmitting={isCreatingTask}
           showCopyButton={false}
           placeholder="Enter new task title..."
-          disabled={isCreatingTask || !selectedProjectId}
+          disabled={isCreatingTask}
           className="h-8 text-[13px] flex-1"
           wrapperClassName="w-full max-w-sm"
         />
-
-        {!selectedProjectId && (
-          <p className="text-[10px] text-destructive mt-2">
-            Please select a project in the sidebar first.
-          </p>
-        )}
       </div>
     );
   }

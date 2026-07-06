@@ -16,7 +16,6 @@ function file(
   return {
     ownerId: "user-1",
     filePath: patch.fileName,
-    storageUri: "",
     mimeType: null,
     fileSize: null,
     checksum: null,

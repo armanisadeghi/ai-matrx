@@ -10,7 +10,13 @@
  * which owns the optimistic list update + any active-doc cleanup.
  */
 
-import { ExternalLink, Link as LinkIcon, FileText, Trash2 } from "lucide-react";
+import {
+  ExternalLink,
+  Link as LinkIcon,
+  FileText,
+  Trash2,
+  Edit2,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import {
@@ -30,10 +36,6 @@ export function docSourceHref(doc: StudioDocSummary): string | null {
   if (doc.sourceKind === "cld_file" && doc.sourceId) {
     return `/files/f/${doc.sourceId}`;
   }
-  const src = doc.source?.trim();
-  if (src && (src.startsWith("http://") || src.startsWith("https://"))) {
-    return src;
-  }
   return null;
 }
 
@@ -43,6 +45,8 @@ export interface PdfDocMenuContext {
   onDelete: (id: string) => Promise<void>;
   /** Opens the canonical file context picker (cloud-file-backed docs only). */
   onSetContext?: () => void;
+  /** Opens the studio rename dialog. */
+  onRename?: () => void;
 }
 
 export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
@@ -77,19 +81,47 @@ export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
           },
           {
             id: "copy-link",
-            label: "Copy link",
+            label: "Copy extractor link",
             icon: LinkIcon,
             onSelect: async () => {
               try {
                 await navigator.clipboard.writeText(
                   resolveAbsoluteHref(studioHref),
                 );
-                toast.success("Link copied");
+                toast.success("Extractor link copied");
               } catch {
                 toast.error(
                   "Couldn't copy — your browser blocked clipboard access",
                 );
               }
+            },
+          },
+          {
+            id: "copy-file-link",
+            label: "Copy file link",
+            icon: LinkIcon,
+            hidden: !sourceHref,
+            onSelect: async () => {
+              if (!sourceHref) return;
+              try {
+                await navigator.clipboard.writeText(
+                  resolveAbsoluteHref(sourceHref),
+                );
+                toast.success("File link copied");
+              } catch {
+                toast.error(
+                  "Couldn't copy — your browser blocked clipboard access",
+                );
+              }
+            },
+          },
+          {
+            id: "rename",
+            label: "Rename",
+            icon: Edit2,
+            hidden: !ctx.onRename,
+            onSelect: () => {
+              ctx.onRename?.();
             },
           },
           {
@@ -108,7 +140,7 @@ export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
         items: [
           {
             id: "delete",
-            label: "Delete",
+            label: "Remove from extractor",
             icon: Trash2,
             tone: "destructive",
             onSelect: async () => {

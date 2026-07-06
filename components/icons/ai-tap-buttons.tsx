@@ -30,6 +30,8 @@ export interface AITapButtonProps {
   target?: "_blank" | "_self" | "_parent" | "_top";
   rel?: string;
   prefetch?: boolean | null;
+  /** Inline caption after the icon — see TapTargetButton `label`. */
+  label?: string;
 }
 
 function Wrap({

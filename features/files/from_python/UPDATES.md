@@ -1,3 +1,5 @@
+> 🚫 HISTORICAL — `storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06). Any instruction below referencing them is obsolete; see features/files/FEATURE.md.
+
 # Cloud Files — Updates from the Python team
 
 > **Owned by the Python team. The frontend reads this; we do not edit it.**

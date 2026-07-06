@@ -93,7 +93,8 @@ Legend — **DIRECT-NOW** = convert FE to a direct supabase-js call (safe today)
   - ⏳ `grant`/`revokePermission`, `createShareLink` → direct `public.permissions` / `files.share_links` writes.
   - **Verify all D conversions in-browser once the app is back up** (realtime + optimistic interaction).
 - **Phase E — admin prune page** for `prune_old_versions` (DB prune direct; the S3 byte purge of returned
-  `storage_uris` needs a server endpoint).
+  `storage_uris` needs a server endpoint — server-only; `storage_uri` never reaches the client,
+  see `features/files/FEATURE.md` Invariants).
 - **Phase F — collapse the dead path:** once D–E land, delete FE REST wrappers without callers; drop dead
   RPCs (`count_user_files`, anything superseded).
 

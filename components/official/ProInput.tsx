@@ -74,8 +74,6 @@ import { Label } from "@/components/ui/label";
 import {
   CheckTapButton,
   LoadingTapButton,
-  MicOffTapButton,
-  MicTapButton,
   MoreHorizontalTapButton,
   SendTapButton,
   XTapButton,
@@ -85,7 +83,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
+import { MicWithDeviceMenu } from "@/components/audio/MicWithDeviceMenu";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
   AlertDialog,
@@ -440,56 +438,13 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             )}
           >
             {showMic && (
-              <div className="relative">
-                {isRecording && (
-                  <>
-                    <span
-                      className="pointer-events-none absolute inset-0 m-auto h-6 w-6 rounded-full bg-primary/20 animate-ping"
-                      style={{ animationDuration: "1.5s" }}
-                    />
-                    <span
-                      className="pointer-events-none absolute inset-0 m-auto h-6 w-6 rounded-full bg-primary/15"
-                      style={{
-                        transform: `scale(${1 + audioLevel / 200})`,
-                        transition: "transform 75ms",
-                      }}
-                    />
-                  </>
-                )}
-                {isTranscribing && !isRecording ? (
-                  <LoadingTapButton
-                    variant="transparent"
-                    ariaLabel="Transcribing"
-                    tooltip="Transcribing"
-                    className="text-blue-600 dark:text-blue-400"
-                  />
-                ) : isRecording ? (
-                  <MicOffTapButton
-                    variant="transparent"
-                    onClick={handleVoiceClick}
-                    disabled={isVoiceDisabled}
-                    ariaLabel="Stop recording"
-                    tooltip="Stop recording"
-                    className="text-primary"
-                  />
-                ) : (
-                  <MicTapButton
-                    variant="transparent"
-                    onClick={handleVoiceClick}
-                    disabled={isVoiceDisabled}
-                    ariaLabel="Start voice input"
-                    tooltip="Voice input"
-                    className="text-muted-foreground"
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Device-picker caret (Anthropic-style) — choose mic / open audio
-                settings, hidden while recording so it never crowds the stop
-                affordance. */}
-            {showMic && !isRecording && !isTranscribing && (
-              <MicDeviceMenu disabled={isVoiceDisabled} />
+              <MicWithDeviceMenu
+                onMicClick={handleVoiceClick}
+                disabled={isVoiceDisabled}
+                isRecording={isRecording}
+                isTranscribing={isTranscribing}
+                audioLevel={audioLevel}
+              />
             )}
 
             {showMenu && (
