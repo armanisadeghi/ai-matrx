@@ -106,7 +106,7 @@ const windowPanelsImportRestriction = {
                 '@/features/files/redux/*',
             ],
             message:
-                'Do not import slice/selectors/thunks/converters directly. Use the public hooks (useFile, useFileNode, useFolderNode, useCloudTree, useFolderContents) and converters (fileIdToMediaRef, cloudFileToMediaRef, urlToMediaRef, fileUriToMediaRef) re-exported from @/features/files. Store wiring (cloudFilesReducer, cloudFilesRealtimeMiddleware) and the narrow explorer-state contract (setActiveFileId, setActiveFolderId, selectTreeStatus) are public named exports.',
+                'Do not import slice/selectors/thunks/converters directly. Use the public hooks (useFile, useFileNode, useFolderNode, useCloudTree, useFolderContents) and converters (fileIdToMediaRef, cloudFileToMediaRef, urlToMediaRef) re-exported from @/features/files. Store wiring (cloudFilesReducer, cloudFilesRealtimeMiddleware) and the narrow explorer-state contract (setActiveFileId, setActiveFolderId, selectTreeStatus) are public named exports.',
         },
         // Tier 3 of the file-handling ring-fence (per
         // docs/SWEEP_INTERNAL_IMPORTS.md): the four largest internal
