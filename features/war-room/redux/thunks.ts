@@ -34,6 +34,8 @@ import { reportWarRoomError } from "../utils/reportWarRoomError";
 import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
+  selectAssignmentsForContainer,
+  selectContainerAssignmentsLoaded,
   selectEffectiveThreadProjectId,
   selectNoteIdsForThread,
   selectRoomProjectId,
@@ -439,11 +441,19 @@ export interface ContextSelectionInput {
 
 export const setSessionContextThunk =
   (sessionId: string, ctx: ContextSelectionInput) =>
-  async (dispatch: AppDispatch) => {
+  async (dispatch: AppDispatch, getState: () => RootState) => {
     try {
-      if (ctx.organizationId !== undefined) {
+      // `organization_id` is NOT NULL on `workspace.war_rooms` — never write
+      // null/undefined (an empty UPDATE returns 0 rows → "Cannot coerce the
+      // result to a single JSON object"). Only persist a real, changed org.
+      const prior = getState().warRoom.sessionsById[sessionId];
+      if (
+        ctx.organizationId &&
+        prior &&
+        ctx.organizationId !== prior.organization_id
+      ) {
         const updated = await service.updateSession(sessionId, {
-          organization_id: ctx.organizationId ?? undefined,
+          organization_id: ctx.organizationId,
         });
         dispatch(sessionUpserted(updated));
       }
@@ -660,8 +670,6 @@ function deriveThreadNoteLabel(
   roomId: string | null,
 ): string {
   const thread = state.warRoom.threadsById[threadId];
-  const roomName =
-    (roomId && state.warRoom.sessionsById[roomId]?.title?.trim()) || "War Room";
   const taskId = selectThreadTaskId(threadId)(state);
   const taskTitle = taskId
     ? selectTaskById(state, taskId)?.title?.trim()
@@ -669,54 +677,17 @@ function deriveThreadNoteLabel(
   const ordinal = roomId
     ? (state.warRoom.threadIdsByRoom[roomId]?.indexOf(threadId) ?? -1)
     : -1;
-  const threadLabel =
+  // Note label references the THREAD only — never the room it happens to
+  // live in (a thread can move between rooms; the room name was also just
+  // noise once you already know which thread the note tab belongs to).
+  const base =
     thread?.title?.trim() ||
     taskTitle ||
     (ordinal >= 0 ? `Thread ${ordinal + 1}` : "Thread");
-  const base =
-    threadLabel === roomName ? roomName : `${roomName} — ${threadLabel}`;
   const existing = selectNoteIdsForThread(threadId)(state).length;
   const n = existing + 1;
   return n > 1 ? `${base} (${n})` : base;
 }
-
-export const createThreadNote =
-  (threadId: string, roomId: string) =>
-  async (dispatch: AppDispatch, getState: () => RootState) => {
-    const key = `note:${threadId}`;
-    const thread = getState().warRoom.threadsById[threadId];
-    const existingNote = selectActiveNoteId(threadId)(getState());
-    if (!thread || existingNote) return existingNote;
-    if (inFlightThreadOps.has(key)) return null;
-    inFlightThreadOps.add(key);
-    try {
-      const note = await createNote({
-        content: "",
-        label: deriveThreadNoteLabel(getState(), threadId, roomId),
-        task_id: selectThreadTaskId(threadId)(getState()) ?? undefined,
-      });
-      dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
-      const assignment = await assoc.createAssignment({
-        ref: threadRef(threadId),
-        entityType: "note",
-        entityId: note.id,
-      });
-      dispatch(
-        assignmentUpserted({
-          key: containerKey("thread", threadId),
-          assignment,
-        }),
-      );
-      return note.id;
-    } catch (err) {
-      reportWarRoomError("createThreadNote", err, {
-        toast: "Couldn't create the note",
-      });
-      return null;
-    } finally {
-      inFlightThreadOps.delete(key);
-    }
-  };
 
 function toTaskRecord(
   t: NonNullable<Awaited<ReturnType<typeof taskService.getTaskById>>>,
@@ -830,7 +801,7 @@ export const hydrateThreadTasks =
   };
 
 export const addAudioSessionToThread =
-  (threadId: string) =>
+  (threadId: string, title?: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -846,7 +817,7 @@ export const addAudioSessionToThread =
         createSessionThunk({
           userId,
           source: WAR_ROOM_AUDIO_SOURCE,
-          title: "Recording",
+          title: title?.trim() || "Recording",
           organizationId: ctx.organizationId,
         }),
       ).unwrap();
@@ -903,23 +874,39 @@ export const ensureThreadAudioSession =
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const active = selectActiveAudioSessionId(threadId)(getState());
-    if (active) {
-      // Only pull raw segments if this session has never been fetched. In
-      // gallery mode every tile mounts its audio tab and calls this; without
-      // the guard a single "switch all tiles to audio" broadcast fired N
-      // parallel fetchRawSegments. Gate on "loaded?" (key present) rather than
-      // "count === 0" so a legitimately-empty session isn't re-fetched forever.
-      if (!selectRawSegmentsLoaded(active)(getState())) {
-        dispatch(fetchRawSegmentsThunk({ sessionId: active }));
+    // Coalesce concurrent ensures SYNCHRONOUSLY — the same thread's audio tab
+    // mounts twice (own tab + combined "All" view), and both instances used to
+    // pass the empty-check during the shared hydration await below, each then
+    // creating a session. The guard must be taken before the first await.
+    const key = `ensure-audio:${threadId}`;
+    if (inFlightThreadOps.has(key)) return null;
+    inFlightThreadOps.add(key);
+    try {
+      // Never decide "nothing exists yet" from an unhydrated bucket — that
+      // race is what caused ghost creations. Wait for the real data first.
+      if (!selectContainerAssignmentsLoaded("thread", threadId)(getState())) {
+        await dispatch(loadThreadAttachments(threadId));
       }
-      return active;
+      const active = selectActiveAudioSessionId(threadId)(getState());
+      if (active) {
+        // Only pull raw segments if this session has never been fetched. In
+        // gallery mode every tile mounts its audio tab and calls this; without
+        // the guard a single "switch all tiles to audio" broadcast fired N
+        // parallel fetchRawSegments. Gate on "loaded?" (key present) rather than
+        // "count === 0" so a legitimately-empty session isn't re-fetched forever.
+        if (!selectRawSegmentsLoaded(active)(getState())) {
+          dispatch(fetchRawSegmentsThunk({ sessionId: active }));
+        }
+        return active;
+      }
+      return await dispatch(addAudioSessionToThread(threadId));
+    } finally {
+      inFlightThreadOps.delete(key);
     }
-    return dispatch(addAudioSessionToThread(threadId));
   };
 
 export const addNoteToThread =
-  (threadId: string, roomId: string) =>
+  (threadId: string, roomId: string, label?: string) =>
   async (
     dispatch: AppDispatch,
     getState: () => RootState,
@@ -930,7 +917,8 @@ export const addNoteToThread =
     try {
       const note = await createNote({
         content: "",
-        label: deriveThreadNoteLabel(getState(), threadId, roomId),
+        label:
+          label?.trim() || deriveThreadNoteLabel(getState(), threadId, roomId),
         task_id: selectThreadTaskId(threadId)(getState()) ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
@@ -980,10 +968,81 @@ export const ensureThreadNote =
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const active = selectActiveNoteId(threadId)(getState());
-    if (active) return active;
-    const roomId = findRoomForThread(getState(), threadId);
-    return dispatch(addNoteToThread(threadId, roomId ?? ""));
+    // Coalesce concurrent ensures SYNCHRONOUSLY (see ensureThreadAudioSession):
+    // the notes tab mounts twice (own tab + combined "All" view), and both
+    // instances used to pass the empty-check during the shared hydration await
+    // below, each then creating a note — the "duplicate auto-created notes"
+    // bug. The guard must be taken before the first await.
+    const key = `ensure-note:${threadId}`;
+    if (inFlightThreadOps.has(key)) return null;
+    inFlightThreadOps.add(key);
+    try {
+      // Same class of bug: an unhydrated bucket reads identically to "no note
+      // yet", so a fresh page load (assignments still in flight) would create
+      // a brand-new note on every mount. Wait for the real answer first.
+      if (!selectContainerAssignmentsLoaded("thread", threadId)(getState())) {
+        await dispatch(loadThreadAttachments(threadId));
+      }
+      const active = selectActiveNoteId(threadId)(getState());
+      if (active) return active;
+      const roomId = findRoomForThread(getState(), threadId);
+      return await dispatch(addNoteToThread(threadId, roomId ?? ""));
+    } finally {
+      inFlightThreadOps.delete(key);
+    }
+  };
+
+/**
+ * Unlink an entity (note / studio_session / …) from a thread — removes the
+ * association edge only, never the entity's own row. If the removed entity was
+ * the thread's active one of its type, focus flips to the first remaining.
+ */
+export const removeEntityFromThread =
+  (threadId: string, entityType: "note" | "studio_session", entityId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<boolean> => {
+    const key = containerKey("thread", threadId);
+    const bucketRows = selectAssignmentsForContainer(
+      "thread",
+      threadId,
+    )(getState());
+    const row = bucketRows.find(
+      (a) => a.entity_type === entityType && a.entity_id === entityId,
+    );
+    if (!row) return false;
+    dispatch(assignmentRemoved({ key, id: row.id }));
+    try {
+      await assoc.removeAssignmentByEntity(
+        threadRef(threadId),
+        entityType,
+        entityId,
+      );
+    } catch (err) {
+      // Put the row back — the server still has the edge.
+      dispatch(assignmentUpserted({ key, assignment: row }));
+      reportWarRoomError("removeEntityFromThread", err, {
+        toast: "Couldn't remove it from this thread",
+      });
+      return false;
+    }
+    if (row.is_active) {
+      const remaining = selectAssignmentsForContainer(
+        "thread",
+        threadId,
+      )(getState()).find((a) => a.entity_type === entityType);
+      if (remaining) {
+        if (entityType === "note") {
+          void dispatch(setThreadActiveNote(threadId, remaining.entity_id));
+        } else {
+          void dispatch(
+            setThreadActiveAudioSession(threadId, remaining.entity_id),
+          );
+        }
+      }
+    }
+    return true;
   };
 
 export const deleteThread =

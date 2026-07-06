@@ -270,6 +270,19 @@ function selectThreadEntityIds(threadId: string, entityType: string) {
   return sel;
 }
 
+/**
+ * Has this container's assignment bucket actually been hydrated from the
+ * server at least once? Distinguishes "not loaded yet" from "loaded, but
+ * empty" — the ambiguity that `bucket()` collapses. Ensure-thunks (create
+ * a note/audio session if one doesn't exist yet) MUST gate on this before
+ * treating an empty bucket as "nothing exists yet", or a fresh page load
+ * races the hydration fetch and creates a duplicate.
+ */
+export const selectContainerAssignmentsLoaded =
+  (type: WarRoomContainerType, id: string | null) =>
+  (state: RootState): boolean =>
+    id ? !!state.warRoom.assignmentsLoadedKeys[containerKey(type, id)] : false;
+
 function activeEntityId(
   rows: WarRoomAssignment[],
   entityType: string,

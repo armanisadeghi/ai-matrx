@@ -28,6 +28,15 @@ export function getCachedEntityTitle(token: string, id: string): string | null {
   return titleCache.get(entityTitleCacheKey(token, id)) ?? null;
 }
 
+/**
+ * Push a known-fresh title into the cache (after a rename or a create), so
+ * surfaces that resolve through this service never show a stale name.
+ */
+export function primeEntityTitle(token: string, id: string, title: string): void {
+  const trimmed = title.trim();
+  if (trimmed) titleCache.set(entityTitleCacheKey(token, id), trimmed);
+}
+
 /** Display fallback when no label and no fetched title exist. */
 export function entityTitleFallback(token: string): string {
   const info = tryGetEntityInfo(token);

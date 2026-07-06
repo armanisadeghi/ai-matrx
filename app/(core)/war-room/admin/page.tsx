@@ -108,7 +108,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "Thread tabs (Task / Notes / Audio / Resources / Agent + derived entity tabs)",
       filePath: "features/war-room/components/thread/ThreadTaskTab.tsx",
       description:
-        "ThreadTaskTab (name/subtasks/attachments/comments; canvas-anchored threads route to Resources), ThreadNotesTab (NoteEditorCore + autosave), ThreadAudioTab (embedded CleanupPad over transcript-studio), ThreadResourcesTab (the canonical AssociationList over useThreadResourcesAdapter — every attached entity type, role-grouped, universal search-attach, pin, detach; upload/pick/new-file/new-doc toolbar) — all platform.associations edges. The tab set is DERIVED (useThreadTabs): one entity:<token> tab per attached type the core tabs don't cover, rendered as a token-scoped AssociationList.",
+        "ThreadTaskTab (name/subtasks/attachments/comments; canvas-anchored threads route to Resources), ThreadNotesTab (NoteEditorCore + autosave), ThreadAudioTab (embedded CleanupPad over transcript-studio), ThreadResourcesTab (the canonical AssociationList over useThreadResourcesAdapter — every attached entity type, role-grouped, universal search-attach, pin, detach; upload/pick/new-file/new-doc toolbar) — all platform.associations edges. Notes/Audio/Agent entity lifecycle (name display + inline rename + switch + unlink + '+ New') = the canonical AssociationEntitySelect (features/scopes/components/associations/) over the adapters in features/war-room/hooks/useThreadEntitySelect.ts. The tab set is DERIVED (useThreadTabs): one entity:<token> tab per attached type the core tabs don't cover, rendered as a token-scoped AssociationList.",
       tier: "internal",
     },
     {

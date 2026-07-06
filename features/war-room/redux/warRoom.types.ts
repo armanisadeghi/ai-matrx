@@ -32,6 +32,15 @@ export interface WarRoomState {
   threadUserStateById: Record<string, ThreadUserState>;
 
   assignmentsByContainer: Record<string, WarRoomAssignment[]>;
+  /**
+   * Which `containerKey()` buckets have actually been hydrated from the
+   * server at least once. `assignmentsByContainer[key]` being `undefined`
+   * is indistinguishable from "loaded, but empty" without this — and that
+   * ambiguity is exactly what caused ensure-thunks (e.g. `ensureThreadNote`)
+   * to see "no active note yet" on a not-yet-loaded thread and create a
+   * duplicate. Never infer "loaded" from bucket presence — always check here.
+   */
+  assignmentsLoadedKeys: Record<string, true>;
 
   /**
    * The thread agent's conversation id per thread
@@ -56,6 +65,7 @@ export const initialWarRoomState: WarRoomState = {
   threadsStatusByRoom: {},
   threadUserStateById: {},
   assignmentsByContainer: {},
+  assignmentsLoadedKeys: {},
   agentConversationByThread: {},
   autoApproveByThread: {},
 };

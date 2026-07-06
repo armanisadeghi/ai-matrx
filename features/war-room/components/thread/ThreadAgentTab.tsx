@@ -19,8 +19,10 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
 import { ensureThreadAudioSession } from "@/features/war-room/redux/thunks";
+import { useThreadAudioSessionSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // Code-split: ThreadAgentPanel pulls the Scribe Agent+ graph (agents execution +
@@ -53,6 +55,10 @@ export function ThreadAgentTab({
 }) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(threadId));
+  // Same session set as the Audio tab (the agent's transcript context) — the
+  // canonical name dropdown lets the user see, rename, and switch which
+  // session (and therefore which conversation) this agent panel is bound to.
+  const sessionAdapter = useThreadAudioSessionSelectAdapter(threadId);
 
   // Ensure the tile has a backing studio session so the agent panel always has
   // one to bind to (idempotent + coalesced inside the thunk). Shared with the
@@ -91,6 +97,25 @@ export function ThreadAgentTab({
   // to a changed `sessionId` prop via their own effects, so a remount is both
   // unnecessary and harmful. See providers/AudioOutputHost.
   return (
-    <ThreadAgentPanel sessionId={sessionId} threadId={threadId} compact={compact} />
+    <div className="flex h-full min-h-0 flex-col">
+      {!compact ? (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1">
+          <AssociationEntitySelect
+            token="studio_session"
+            adapter={sessionAdapter}
+            align="start"
+            emptyLabel="Session"
+            className="min-w-0 flex-1"
+          />
+        </div>
+      ) : null}
+      <div className="min-h-0 flex-1">
+        <ThreadAgentPanel
+          sessionId={sessionId}
+          threadId={threadId}
+          compact={compact}
+        />
+      </div>
+    </div>
   );
 }

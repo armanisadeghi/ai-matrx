@@ -141,6 +141,7 @@ const warRoomSlice = createSlice({
       }
       state.orphanThreadIds = removeId(state.orphanThreadIds, id);
       delete state.assignmentsByContainer[containerKey("thread", id)];
+      delete state.assignmentsLoadedKeys[containerKey("thread", id)];
       delete state.threadUserStateById[id];
       delete state.autoApproveByThread[id];
     },
@@ -181,6 +182,7 @@ const warRoomSlice = createSlice({
     ) {
       for (const [key, rows] of Object.entries(action.payload.byContainer)) {
         state.assignmentsByContainer[key] = rows;
+        state.assignmentsLoadedKeys[key] = true;
       }
     },
     assignmentsLoadedForContainer(
@@ -189,6 +191,7 @@ const warRoomSlice = createSlice({
     ) {
       state.assignmentsByContainer[action.payload.key] =
         action.payload.assignments;
+      state.assignmentsLoadedKeys[action.payload.key] = true;
     },
     assignmentUpserted(
       state,
@@ -282,8 +285,10 @@ const warRoomSlice = createSlice({
       const ids = state.threadIdsByRoom[roomId] ?? [];
       for (const id of ids) {
         delete state.assignmentsByContainer[containerKey("thread", id)];
+        delete state.assignmentsLoadedKeys[containerKey("thread", id)];
       }
       delete state.assignmentsByContainer[containerKey("room", roomId)];
+      delete state.assignmentsLoadedKeys[containerKey("room", roomId)];
       delete state.threadIdsByRoom[roomId];
       delete state.threadsStatusByRoom[roomId];
     },
