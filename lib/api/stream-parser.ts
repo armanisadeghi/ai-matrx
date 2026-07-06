@@ -6,6 +6,7 @@ import type {
   TypedStreamEvent,
   ChunkPayload,
   ReasoningChunkPayload,
+  ReasoningPayload,
   PhasePayload,
   InitPayload,
   CompletionPayload,
@@ -23,6 +24,7 @@ import type {
 import {
   isChunkEvent,
   isReasoningChunkEvent,
+  isReasoningEvent,
   isPhaseEvent,
   isInitEvent,
   isTypedDataEvent,
@@ -290,6 +292,11 @@ export interface StreamCallbacks {
   onEvent?: (event: TypedStreamEvent) => void;
   onChunk?: (data: ChunkPayload) => void;
   onReasoningChunk?: (data: ReasoningChunkPayload) => void;
+  /** Reasoning STATUS (started/stopped) — the server brackets the thinking
+   *  phase for models with no reasoning tokens, so a consumer can show
+   *  "Reasoning…" instead of a generic loading label. Distinct from
+   *  `onReasoningChunk` (actual reasoning tokens). */
+  onReasoning?: (data: ReasoningPayload) => void;
   onPhase?: (data: PhasePayload) => void;
   onInit?: (data: InitPayload) => void;
   onCompletion?: (data: CompletionPayload) => void;
@@ -340,6 +347,8 @@ export async function consumeStream(
       callbacks.onChunk?.(event.data);
     } else if (isReasoningChunkEvent(event)) {
       callbacks.onReasoningChunk?.(event.data);
+    } else if (isReasoningEvent(event)) {
+      callbacks.onReasoning?.(event.data);
     } else if (isPhaseEvent(event)) {
       callbacks.onPhase?.(event.data);
     } else if (isInitEvent(event)) {

@@ -23,6 +23,7 @@ import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
 import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
 import {
   selectAccumulatedText,
+  selectIsReasoningStreaming,
   selectUnifiedSlots,
   selectAllRenderBlocks,
   SPECIAL_RENDER_BLOCK_TYPES,
@@ -90,6 +91,7 @@ const MEDIA_RENDER_BLOCK_TYPES = new Set([
 const _EMPTY_SEGMENTS: ContentSegment[] = [];
 const _EMPTY_SLOTS: UnifiedSlot[] = [];
 const _selectEmptyString = () => "";
+const _selectFalse = () => false;
 const _selectEmptySegments = () => _EMPTY_SEGMENTS;
 const _selectEmptySlots = () => _EMPTY_SLOTS;
 const _selectEmptyRenderBlocks = () =>
@@ -192,6 +194,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
     [requestId],
   );
   const requestText = useAppSelector(requestTextSelector);
+
+  // Whether the model is in its reasoning phase — true both for token-streaming
+  // reasoning and for the server's explicit reasoning STATUS event (models with
+  // no reasoning tokens). Drives the pre-token loader label so a thinking model
+  // reads "Reasoning…" instead of the generic "Processing…".
+  const isReasoningActive = useAppSelector(
+    requestId ? selectIsReasoningStreaming(requestId) : _selectFalse,
+  );
 
   const unifiedSlotsSelector = useMemo(
     () => (requestId ? selectUnifiedSlots(requestId) : _selectEmptySlots),
@@ -612,7 +622,10 @@ export const EnhancedChatMarkdownInternal: React.FC<
         <div className="mb-1 w-full min-w-0 text-left overflow-x-hidden">
           <div className={containerStyles}>
             <div className="flex items-center justify-start py-1">
-              <ShimmerText text="Processing…" className="text-sm" />
+              <ShimmerText
+                text={isReasoningActive ? "Reasoning…" : "Processing…"}
+                className="text-sm"
+              />
             </div>
           </div>
         </div>

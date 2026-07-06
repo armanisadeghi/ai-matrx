@@ -32,6 +32,7 @@ The contract is formalized because:
 |---|---|
 | `chunk` | Token-by-token LLM text |
 | `reasoning_chunk` | Token-by-token thinking/reasoning |
+| `reasoning` | Reasoning **status** (`{ state: "started" \| "stopped" }`) — brackets the thinking phase for models that expose NO reasoning tokens, so the UI shows "Reasoning…" instead of a generic loader. Distinct from `reasoning_chunk` (tokens). Canonical path (`process-stream.ts`) sets `isReasoningStreaming` → `selectStreamPhase` returns `"reasoning"` → `EnhancedChatMarkdown` shows "Reasoning…". Non-Redux consumers use the `onReasoning` callback on `consumeStream`. **Any surface with a phase allow-list (`isActive`) MUST include `"reasoning"`** or its live indicator vanishes during a token-less thinking phase. |
 | `phase` | State machine transition (`connected → processing → generating → using_tools → persisting → complete`) |
 | `init` / `completion` | Identified operation bracket (user_request, llm_request, tool_execution, sub_agent, persistence) |
 | `data` | Typed discriminated payload — switch on `data.type` |

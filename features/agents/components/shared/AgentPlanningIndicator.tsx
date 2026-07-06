@@ -12,14 +12,18 @@ import { ShimmerText } from "@/components/loaders/ShimmerText";
 
 interface AgentPlanningIndicatorProps {
   compact?: boolean;
+  /** Override the label. Defaults to "Planning..."; pass "Reasoning..." while
+   *  the model is in its reasoning phase (server `reasoning` status event). */
+  label?: string;
 }
 
 export function AgentPlanningIndicator({
   compact = false,
+  label = "Planning...",
 }: AgentPlanningIndicatorProps) {
   return (
     <ShimmerText
-      text="Planning..."
+      text={label}
       className={compact ? "text-[11px]" : "text-sm"}
     />
   );

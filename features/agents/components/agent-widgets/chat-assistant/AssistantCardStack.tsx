@@ -100,6 +100,7 @@ export function AssistantCardStack({
   const isActive =
     phase === "connecting" ||
     phase === "pre_token" ||
+    phase === "reasoning" ||
     phase === "text_streaming" ||
     phase === "interstitial" ||
     phase === "error";
@@ -136,9 +137,12 @@ export function AssistantCardStack({
   }, [messages, isActive, latestRequestId]);
 
   // The "thinking…" indicator is a transient pre-token signal — distinct
-  // from the streaming bubble. Render it as a separate trailing element.
+  // from the streaming bubble. Render it as a separate trailing element. The
+  // reasoning phase (server `reasoning` status event, for token-less models)
+  // shows it too, labeled "Reasoning..." instead of "Planning...".
   const showPlanningIndicator =
-    isActive && (phase === "connecting" || phase === "pre_token");
+    isActive &&
+    (phase === "connecting" || phase === "pre_token" || phase === "reasoning");
 
   // ── Auto-scroll on new messages ─────────────────────────────────────────────
   useEffect(() => {
@@ -202,7 +206,10 @@ export function AssistantCardStack({
 
           {showPlanningIndicator && (
             <div className="px-1 py-1">
-              <AgentPlanningIndicator compact />
+              <AgentPlanningIndicator
+                compact
+                label={phase === "reasoning" ? "Reasoning..." : undefined}
+              />
             </div>
           )}
 

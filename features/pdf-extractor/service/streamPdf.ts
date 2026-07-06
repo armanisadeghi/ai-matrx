@@ -138,6 +138,11 @@ export async function streamPdfClean(opts: {
           callbacks.onTextDelta?.(chunkAccumulator);
         }
       },
+      // Reasoning status — surface "Reasoning…" so a thinking model doesn't look
+      // stuck on the generic progress label the whole time.
+      onReasoning: (data) => {
+        if (data.state === "started") callbacks.onProgress?.("Reasoning…");
+      },
       onInfo: (data) => {
         const msg = extractProgressMessage(data);
         if (msg) callbacks.onProgress?.(msg);
@@ -252,6 +257,9 @@ export async function streamPdfFullPipeline(opts: {
           chunkAccumulator += data.text;
           callbacks.onTextDelta?.(chunkAccumulator);
         }
+      },
+      onReasoning: (data) => {
+        if (data.state === "started") callbacks.onProgress?.("Reasoning…");
       },
       onInfo: (data) => {
         const msg = extractProgressMessage(data);

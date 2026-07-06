@@ -22,6 +22,7 @@ import { monitorStream } from "@/lib/net/stream-monitor";
 import {
   isChunkEvent,
   isReasoningChunkEvent,
+  isReasoningEvent,
   isPhaseEvent,
   isInitEvent,
   isCompletionEvent,
@@ -519,6 +520,35 @@ export async function processStream({
 
         reasoningBuffer += text;
         scheduleBatchEvent();
+        continue;
+      }
+
+      // Reasoning STATUS event (distinct from reasoning_chunk TOKENS): the server
+      // brackets the thinking phase with started/stopped for models that expose
+      // no reasoning tokens, so the UI can show "Reasoning…" instead of the
+      // default "Planning…". Drives the SAME `isReasoningStreaming` flag the token
+      // path uses (→ `selectStreamPhase` returns "reasoning" everywhere). Handled
+      // here, BEFORE the generic non-chunk block below, because that block
+      // auto-closes any open reasoning run on the next event — which would end
+      // the phase prematurely for a token-less run that must persist until the
+      // explicit "stopped".
+      if (isReasoningEvent(event)) {
+        if (event.data.state === "started") {
+          if (isInTextRun) {
+            dispatchBatch();
+            isInTextRun = false;
+          }
+          if (!isInReasoningRun) {
+            isInReasoningRun = true;
+            dispatch(markReasoningStreamStart({ requestId, timestamp: now }));
+          }
+        } else {
+          // "stopped" — close the run so the phase flips off "Reasoning…".
+          if (isInReasoningRun) {
+            isInReasoningRun = false;
+            dispatch(closeReasoningRun({ requestId, timestamp: now }));
+          }
+        }
         continue;
       }
 

@@ -466,6 +466,10 @@ async function consumeScrapeStream(
         onStatus(msg);
       },
 
+      onReasoning: (data) => {
+        if (data.state === "started") onStatus("Reasoning...");
+      },
+
       onInfo: (data: InfoPayload) => {
         const msg = data.user_message ?? data.system_message;
         if (msg) onStatus(msg);

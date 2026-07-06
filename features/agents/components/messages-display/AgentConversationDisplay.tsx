@@ -146,6 +146,7 @@ export function AgentConversationDisplay({
   const isActive =
     phase === "connecting" ||
     phase === "pre_token" ||
+    phase === "reasoning" ||
     phase === "text_streaming" ||
     phase === "interstitial" ||
     phase === "error";
