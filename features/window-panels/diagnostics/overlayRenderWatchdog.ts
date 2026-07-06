@@ -11,11 +11,25 @@
  *     suppressed by the global hide-all is brought back into view. Re-opening a
  *     window must never be a silent no-op.
  *
- *  2. DETECT — a short time after the open, inspect actual Redux + viewport
- *     state and confirm a *visible* panel is on screen. If not, SCREAM
- *     (console.error) and surface a self-healing toast. This is the loud
- *     recovery layer mandated by CLAUDE.md: a recovery firing means a real
- *     bug got past the proactive layer.
+ *  2. DETECT — after the open, inspect actual Redux + viewport state and
+ *     confirm a *visible* panel is on screen. If not, SCREAM (console.error)
+ *     and surface a self-healing toast. This is the loud recovery layer
+ *     mandated by CLAUDE.md: a recovery firing means a real bug got past the
+ *     proactive layer.
+ *
+ * The one state a fixed timer cannot distinguish is "lazy chunk still loading"
+ * vs "never mounted" — every window component enters through `next/dynamic`,
+ * and a cold dev compile (or a slow network fetch in prod) can take far longer
+ * than any polite delay. The watchdog therefore treats the WindowPanel mount
+ * acknowledgement (`ackOverlayRender`, called from WindowPanel's mount effect,
+ * i.e. strictly after the dynamic import settled) as the chunk-settle signal:
+ * while no ack exists it WAITS for one (bounded by a hard no-mount deadline)
+ * instead of screaming, and diagnoses geometry only once the ack arrives. A
+ * false scream trains people to ignore the real ones.
+ *
+ * If a scream does fire and the panel becomes visible afterwards anyway, the
+ * toast is auto-dismissed and a recovery note is logged — the loud layer never
+ * lingers past the failure it reported.
  *
  * The detector is intentionally scoped to SINGLETON window-kind overlays — the
  * surfaces that render through `WindowPanel` and join the window manager. Non-
@@ -51,23 +65,42 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** How long after an open we wait before declaring the panel a no-show. Must
- *  exceed worst-case lazy-chunk load for a first-time open. */
+/** First look after an open. If the panel already acked (warm chunk), this is
+ *  the whole geometry check; if not, we switch to waiting for the ack. */
 const CHECK_DELAY_MS = 2500;
-/** For the "no window registered yet" case only, allow one extra grace period
- *  before screaming — covers an unusually slow cold chunk load. */
-const NO_MOUNT_RETRY_MS = 2000;
+/** After the mount ack arrives, how long to let `registerWindow` geometry land
+ *  in Redux before diagnosing (registration runs in an earlier effect than the
+ *  ack, so this is belt-and-braces, not load-bearing). */
+const ACK_SETTLE_MS = 300;
+/** One extra look if geometry is somehow still absent right after the ack. */
+const ACK_SETTLE_RETRY_MS = 700;
+/** Hard ceiling on waiting for a lazy chunk: no WindowPanel ack by this long
+ *  after open means the panel genuinely never mounted. Dev chunk compiles are
+ *  the slow case; prod chunk fetches are network-bound but far quicker. */
+const NO_MOUNT_DEADLINE_MS =
+  process.env.NODE_ENV === "production" ? 12_000 : 45_000;
+/** How long the failure toast stays up, and how often the post-scream watcher
+ *  re-checks so it can auto-dismiss if the panel shows up after the fact. */
+const TOAST_DURATION_MS = 8000;
+const RECOVERY_POLL_MS = 500;
 
 // ── Render acknowledgement registry ─────────────────────────────────────────
 // WindowPanel reports the real window-manager id it rendered under, keyed by
-// overlayId. This lets the watchdog resolve the geometry entry even when a
-// window's `id` prop differs from its registry slug, eliminating false
-// "no-window-registered" reports.
+// overlayId, from a mount effect — which only runs once the dynamic import has
+// settled. The watchdog uses it two ways: to resolve the geometry entry even
+// when a window's `id` prop differs from its registry slug, and as the
+// chunk-settle signal that gates the "no window registered" verdict.
 
 const renderAcks = new Map<string, string>();
+const ackWaiters = new Map<string, () => void>();
 
 export function ackOverlayRender(overlayId: string, windowId: string): void {
   renderAcks.set(overlayId, windowId);
+  const notify = ackWaiters.get(overlayId);
+  if (notify) {
+    ackWaiters.delete(overlayId);
+    notify();
+  }
 }
 
 export function clearOverlayRender(overlayId: string, windowId: string): void {
@@ -144,72 +177,187 @@ const REASON_HINT: Record<RenderFailureReason, string> = {
 // ── Watchdog scheduling ─────────────────────────────────────────────────────
 
 // Minimal slice of app state this watchdog reads. Used to type the middleware
-// (and `scheduleCheck`) without casting the store.
+// (and the check helpers) without casting the store.
 type WMState = { overlays: OverlayState; windowManager: WindowManagerState };
 type WMApi = MiddlewareAPI<Dispatch, WMState>;
 
-// Dedupe in-flight checks per overlayId so rapid re-opens don't stack timers
+type Watch = {
+  overlayId: string;
+  slug: string;
+  label: string;
+  timer: number | null;
+  deadlineTimer: number | null;
+};
+
+// Dedupe in-flight watches per overlayId so rapid re-opens don't stack timers
 // (and can't double-scream).
-const pending = new Set<string>();
+const watches = new Map<string, Watch>();
 
-function scheduleCheck(
-  store: WMApi,
-  overlayId: string,
-  slug: string,
-  label: string,
-  delay: number,
-  isRetry: boolean,
-): void {
-  if (pending.has(overlayId)) return;
-  pending.add(overlayId);
-  window.setTimeout(() => {
-    pending.delete(overlayId);
-    const state = store.getState();
-    // Closed in the meantime — nothing to verify.
-    if (!selectIsOverlayOpen(state, overlayId, DEFAULT_INSTANCE_ID)) return;
+function endWatch(watch: Watch): void {
+  if (watch.timer !== null) window.clearTimeout(watch.timer);
+  if (watch.deadlineTimer !== null) window.clearTimeout(watch.deadlineTimer);
+  ackWaiters.delete(watch.overlayId);
+  watches.delete(watch.overlayId);
+}
 
-    const windowId = renderAcks.get(overlayId) ?? slug;
-    const entry = state.windowManager.windows[windowId];
-    const diag = diagnoseOverlayRender({
+type Evaluation = {
+  diag: RenderDiagnosis;
+  windowId: string;
+  entry: WindowEntry | undefined;
+  windowsHidden: boolean;
+};
+
+/** Snapshot state and diagnose. Returns null when the overlay has been closed
+ *  in the meantime — nothing to verify. */
+function evaluate(store: WMApi, watch: Watch): Evaluation | null {
+  const state = store.getState();
+  if (!selectIsOverlayOpen(state, watch.overlayId, DEFAULT_INSTANCE_ID)) {
+    return null;
+  }
+  const windowId = renderAcks.get(watch.overlayId) ?? watch.slug;
+  const entry = state.windowManager.windows[windowId];
+  return {
+    diag: diagnoseOverlayRender({
       entry,
       windowsHidden: state.windowManager.windowsHidden,
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
-    });
-    if (diag.ok) return;
+    }),
+    windowId,
+    entry,
+    windowsHidden: state.windowManager.windowsHidden,
+  };
+}
 
-    // A still-loading lazy chunk looks identical to a genuine no-mount. Give
-    // the slow-cold-load case exactly one more grace window before screaming.
-    if (diag.reason === "no-window-registered" && !isRetry) {
-      scheduleCheck(store, overlayId, slug, label, NO_MOUNT_RETRY_MS, true);
+function startWatch(
+  store: WMApi,
+  overlayId: string,
+  slug: string,
+  label: string,
+): void {
+  if (watches.has(overlayId)) return;
+  const watch: Watch = { overlayId, slug, label, timer: null, deadlineTimer: null };
+  watches.set(overlayId, watch);
+
+  watch.timer = window.setTimeout(() => {
+    watch.timer = null;
+    const res = evaluate(store, watch);
+    if (!res) return endWatch(watch); // closed meanwhile
+    if (res.diag.ok) return endWatch(watch);
+
+    if (res.diag.reason === "no-window-registered" && !renderAcks.has(overlayId)) {
+      // No WindowPanel has mounted yet — indistinguishable from a lazy chunk
+      // still loading (dev compile / slow fetch). Don't scream on a guess:
+      // wait for the mount ack, bounded by the hard no-mount deadline.
+      waitForMount(store, watch);
       return;
     }
 
-    // LOUD recovery — screams in prod and dev (cheap, and makes the failure
-    // auditable from any user's DevTools), with a one-click self-heal.
-    console.error(
-      `[window-panels] SILENT RENDER FAILURE — overlay "${overlayId}" was ` +
-        `opened but no visible panel is on screen after ${delay}ms ` +
-        `(reason: ${diag.reason}). ${REASON_HINT[diag.reason]}.`,
-      { overlayId, windowId, entry, windowsHidden: state.windowManager.windowsHidden },
-    );
+    // Geometry exists (or an acked panel has bad geometry) — a real failure.
+    scream(store, watch, res);
+    endWatch(watch);
+  }, CHECK_DELAY_MS);
+}
 
-    toast.error(`"${label}" didn't appear`, {
-      description: "The panel was opened but isn't visible. Click to show it.",
-      duration: 8000,
-      action: {
-        label: "Show it",
-        onClick: () =>
-          store.dispatch(
-            revealWindow({
-              id: windowId,
-              viewportWidth: window.innerWidth,
-              viewportHeight: window.innerHeight,
-            }),
-          ),
-      },
-    });
-  }, delay);
+/** The chunk-settle wait: resolve on `ackOverlayRender` (dynamic import done,
+ *  WindowPanel mounted), or scream when the no-mount deadline expires. */
+function waitForMount(store: WMApi, watch: Watch): void {
+  const checkAfterAck = (delay: number, isRetry: boolean) => {
+    watch.timer = window.setTimeout(() => {
+      watch.timer = null;
+      const res = evaluate(store, watch);
+      if (!res) return endWatch(watch);
+      if (res.diag.ok) return endWatch(watch);
+      if (res.diag.reason === "no-window-registered" && !isRetry) {
+        // Ack landed but registration hasn't committed yet — one short retry.
+        checkAfterAck(ACK_SETTLE_RETRY_MS, true);
+        return;
+      }
+      scream(store, watch, res);
+      endWatch(watch);
+    }, delay);
+  };
+
+  ackWaiters.set(watch.overlayId, () => {
+    if (watch.deadlineTimer !== null) {
+      window.clearTimeout(watch.deadlineTimer);
+      watch.deadlineTimer = null;
+    }
+    checkAfterAck(ACK_SETTLE_MS, false);
+  });
+
+  watch.deadlineTimer = window.setTimeout(() => {
+    watch.deadlineTimer = null;
+    ackWaiters.delete(watch.overlayId);
+    const res = evaluate(store, watch);
+    if (!res) return endWatch(watch);
+    if (res.diag.ok) return endWatch(watch);
+    scream(store, watch, res);
+    endWatch(watch);
+  }, NO_MOUNT_DEADLINE_MS);
+}
+
+// LOUD recovery — screams in prod and dev (cheap, and makes the failure
+// auditable from any user's DevTools), with a one-click self-heal. If the
+// panel turns visible while the toast is still up (e.g. a chunk that beat the
+// deadline by seconds), the toast is withdrawn automatically — the scream must
+// only outlive a failure that is still real.
+function scream(store: WMApi, watch: Watch, res: Evaluation): void {
+  const { overlayId, label } = watch;
+  const reason = res.diag.ok ? null : res.diag.reason;
+  if (reason === null) return;
+
+  console.error(
+    `[window-panels] SILENT RENDER FAILURE — overlay "${overlayId}" was ` +
+      `opened but no visible panel is on screen ` +
+      `(reason: ${reason}). ${REASON_HINT[reason]}.`,
+    {
+      overlayId,
+      windowId: res.windowId,
+      entry: res.entry,
+      windowsHidden: res.windowsHidden,
+    },
+  );
+
+  const toastId = `window-watchdog-${overlayId}`;
+  toast.error(`"${label}" didn't appear`, {
+    id: toastId,
+    description: "The panel was opened but isn't visible. Click to show it.",
+    duration: TOAST_DURATION_MS,
+    action: {
+      label: "Show it",
+      onClick: () =>
+        store.dispatch(
+          revealWindow({
+            id: renderAcks.get(overlayId) ?? watch.slug,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+          }),
+        ),
+    },
+  });
+
+  // Post-scream watcher: for the toast's lifetime, re-check visibility and
+  // withdraw the toast the moment the panel is actually on screen (or the
+  // overlay was closed — nothing left to heal either way).
+  let elapsed = 0;
+  const interval = window.setInterval(() => {
+    elapsed += RECOVERY_POLL_MS;
+    const check = evaluate(store, watch);
+    if (check === null || check.diag.ok) {
+      window.clearInterval(interval);
+      toast.dismiss(toastId);
+      if (check?.diag.ok) {
+        console.info(
+          `[window-panels] overlay "${overlayId}" became visible after the ` +
+            `recovery scream — toast withdrawn. If this recurs, the pre-scream ` +
+            `wait is ending too early for this panel.`,
+        );
+      }
+      return;
+    }
+    if (elapsed >= TOAST_DURATION_MS) window.clearInterval(interval);
+  }, RECOVERY_POLL_MS);
 }
 
 // ── Middleware ──────────────────────────────────────────────────────────────
@@ -262,14 +410,7 @@ export const overlayRenderWatchdogMiddleware: Middleware<object, WMState> =
     );
 
     // 2) Detect: verify a visible panel actually appears.
-    scheduleCheck(
-      store,
-      overlayId,
-      meta.slug,
-      meta.label ?? overlayId,
-      CHECK_DELAY_MS,
-      false,
-    );
+    startWatch(store, overlayId, meta.slug, meta.label ?? overlayId);
 
     return result;
   };

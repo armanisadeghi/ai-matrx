@@ -14,6 +14,18 @@
       }
     },
     {
+      "name": "next-dev-qa2",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 3011,
+      "autoPort": true,
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3011",
+        "NEXT_DISTDIR": ".next-preview-qa2"
+      }
+    },
+    {
       "name": "next-dev-cutover-qa",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
