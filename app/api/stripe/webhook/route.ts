@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.trial_will_end":
-        await syncSubscription(event.data.object as Stripe.Subscription);
+        await syncSubscription(event.data.object as Stripe.Subscription, event.created);
         break;
       case "customer.subscription.deleted":
-        await markSubscriptionCanceled(event.data.object as Stripe.Subscription);
+        await markSubscriptionCanceled(event.data.object as Stripe.Subscription, event.created);
         break;
       case "checkout.session.completed": {
         // The subscription.* events carry the full object; re-sync from the
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
               ? session.subscription
               : session.subscription.id;
           const sub = await getStripe().subscriptions.retrieve(subId);
-          await syncSubscription(sub);
+          await syncSubscription(sub, event.created);
         }
         break;
       }
@@ -76,10 +76,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true });
   } catch (err) {
     console.error(`[stripe/webhook] handler error for ${event.type}`, err);
-    // 500 => Stripe retries; the event was recorded but we let it re-fire so a
-    // transient DB error self-heals. (claimStripeEvent already inserted the id,
-    // so a retry would dedupe — acceptable: we prefer no double-charge risk over
-    // a missed sync, and subscription.* events are also re-emitted by Stripe.)
+    // 500 => Stripe retries. The event id is recorded only AFTER a successful
+    // handler (record-after), so a failed event is NOT marked processed and the
+    // retry re-runs it. Handlers are idempotent upserts, so the retry is safe.
     return NextResponse.json({ error: "Handler failed" }, { status: 500 });
   }
 }

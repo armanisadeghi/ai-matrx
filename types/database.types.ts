@@ -2510,6 +2510,7 @@ export type Database = {
           current_period_end: string | null
           current_period_start: string | null
           id: string
+          last_stripe_event_at: string | null
           metadata: Json
           org_id: string | null
           price_id: string | null
@@ -2528,6 +2529,7 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          last_stripe_event_at?: string | null
           metadata?: Json
           org_id?: string | null
           price_id?: string | null
@@ -2546,6 +2548,7 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           id?: string
+          last_stripe_event_at?: string | null
           metadata?: Json
           org_id?: string | null
           price_id?: string | null

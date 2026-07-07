@@ -13,6 +13,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { useEntitlement, type UseEntitlementResult } from "../hooks";
 import type { Capability } from "../registry";
 import type { EntitlementCheckResult } from "../types";
@@ -44,6 +45,12 @@ export function useEntitlementGuard(
       try {
         const v = await ent.check();
         if (!v.allowed) {
+          // A transient resolver error is NOT a cap — never present a server
+          // blip as an upgrade prompt. Fail closed (don't run) but ask to retry.
+          if (v.reason === "resolver_error") {
+            toast.error("Couldn't verify your plan just now. Please try again.");
+            return v;
+          }
           setVerdict(v);
           setOpen(true);
           return v;

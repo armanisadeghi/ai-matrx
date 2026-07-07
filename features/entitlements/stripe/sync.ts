@@ -88,18 +88,57 @@ async function tierForStripePrice(
 }
 
 /**
+ * Has an event NEWER than `eventCreatedUnix` already been applied to this
+ * subscription? Stripe does not guarantee delivery order and retries freely, so
+ * a retried OLD event must not overwrite newer state (e.g. an old `active`
+ * clobbering a newer `canceled`). Returns true when the incoming event is stale.
+ */
+async function isStaleSubscriptionEvent(
+  stripeSubscriptionId: string,
+  eventCreatedUnix: number | null | undefined,
+): Promise<boolean> {
+  if (!eventCreatedUnix) return false;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .schema("billing")
+    .from("subscription")
+    .select("last_stripe_event_at")
+    .eq("stripe_subscription_id", stripeSubscriptionId)
+    .maybeSingle();
+  const last = data?.last_stripe_event_at;
+  return Boolean(last && new Date(last).getTime() > eventCreatedUnix * 1000);
+}
+
+/**
  * Upsert a billing.subscription row from a Stripe subscription. Idempotent on
  * stripe_subscription_id. `trialing` status resolves the user to the `trial`
- * tier; the resolver reads status, so tier here is the plan's product tier.
+ * tier. Pass the event's `created` timestamp so out-of-order retries are ignored.
  */
 export async function syncSubscription(
   sub: Stripe.Subscription,
+  eventCreatedUnix?: number,
 ): Promise<void> {
+  if (await isStaleSubscriptionEvent(sub.id, eventCreatedUnix)) return;
+
   const admin = createAdminClient();
   const customerId =
     typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-  const userId = await userIdForCustomer(customerId);
-  const priceId = sub.items.data[0]?.price?.id ?? null;
+
+  // Resolve the app user; fall back to metadata, then scream (a paid customer
+  // with no owner grants premium to nobody — a defect, per the loud-recovery rule).
+  let userId = await userIdForCustomer(customerId);
+  if (!userId) userId = (sub.metadata?.user_id as string | undefined) ?? null;
+  if (!userId) {
+    console.error(
+      `[stripe/sync] LOUD: subscription ${sub.id} (customer ${customerId}) has no ` +
+        `resolvable app user — premium will grant to nobody. Check billing.customer mapping.`,
+    );
+  }
+
+  // Period fields live on the subscription ITEM in Stripe SDK v22, not the
+  // subscription itself (reading sub.current_period_* yields undefined -> null).
+  const item = sub.items.data[0];
+  const priceId = item?.price?.id ?? null;
   const { priceId: localPriceId, tier } = await tierForStripePrice(priceId);
 
   await admin
@@ -112,22 +151,27 @@ export async function syncSubscription(
         price_id: localPriceId,
         status: mapStatus(sub.status),
         tier: sub.status === "trialing" ? "trial" : tier,
-        current_period_start: iso(sub.current_period_start),
-        current_period_end: iso(sub.current_period_end),
+        current_period_start: iso(item?.current_period_start),
+        current_period_end: iso(item?.current_period_end),
         cancel_at_period_end: sub.cancel_at_period_end,
         canceled_at: iso(sub.canceled_at),
         trial_start: iso(sub.trial_start),
         trial_end: iso(sub.trial_end),
+        last_stripe_event_at: eventCreatedUnix
+          ? new Date(eventCreatedUnix * 1000).toISOString()
+          : new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "stripe_subscription_id" },
     );
 }
 
-/** Mark a subscription canceled (subscription.deleted). Idempotent. */
+/** Mark a subscription canceled (subscription.deleted). Idempotent + order-safe. */
 export async function markSubscriptionCanceled(
   sub: Stripe.Subscription,
+  eventCreatedUnix?: number,
 ): Promise<void> {
+  if (await isStaleSubscriptionEvent(sub.id, eventCreatedUnix)) return;
   const admin = createAdminClient();
   await admin
     .schema("billing")
@@ -135,6 +179,9 @@ export async function markSubscriptionCanceled(
     .update({
       status: "canceled",
       canceled_at: iso(sub.canceled_at) ?? new Date().toISOString(),
+      last_stripe_event_at: eventCreatedUnix
+        ? new Date(eventCreatedUnix * 1000).toISOString()
+        : new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("stripe_subscription_id", sub.id);

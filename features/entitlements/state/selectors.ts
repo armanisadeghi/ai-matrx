@@ -42,10 +42,16 @@ export const selectEntitlementsError = createSelector(
   (e) => e.error,
 );
 
-/** The most-restrictive (binding) window from a set — least remaining wins. */
+/**
+ * The most-restrictive (binding) window. Compares raw `limit - used` (which can
+ * go negative when over-cap) to match the server resolver's ordering exactly, so
+ * the reactive meter and the `check()` verdict never disagree on the binding
+ * window at a tie.
+ */
 function bindingWindow(windows: EntitlementWindow[]): EntitlementWindow | null {
   if (windows.length === 0) return null;
-  return windows.reduce((a, b) => (b.remaining < a.remaining ? b : a));
+  const slack = (w: EntitlementWindow) => w.limit - w.used;
+  return windows.reduce((a, b) => (slack(b) < slack(a) ? b : a));
 }
 
 /**
