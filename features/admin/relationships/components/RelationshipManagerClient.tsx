@@ -325,17 +325,19 @@ export default function RelationshipManagerClient({
           container (a task points to its project). Container side{" "}
           <span className="font-mono">target</span> is the norm —{" "}
           <span className="font-mono">source</span> means the edge is stored
-          big→little and is a deliberate, documented exception. Wrong-way
-          writes are auto-flipped to the registered direction at the DB
-          (loudly), and rows below flag any reversed edges in the data.
+          big→little and is a deliberate, documented exception. A write in the
+          wrong direction of a registered pair is REJECTED at the DB with an
+          error naming the canonical direction — direction changes happen
+          here, in the registry, not in code. Rows below flag any reversed
+          edges already in the data.
         </span>
       </div>
 
       {reversedRuleCount > 0 ? (
         <div className="rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {reversedRuleCount} rule(s) have wrong-way edges in the data
-          (flagged below). Find the writer and fix it — the auto-orient
-          trigger only protects writes made after 2026-07-06.
+          (flagged below). Find the writer and fix it — the direction guard
+          only rejects writes made after 2026-07-06.
         </div>
       ) : null}
 

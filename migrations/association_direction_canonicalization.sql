@@ -1,3 +1,6 @@
+-- migrate: skip: SUPERSEDED by association_direction_project_to_war_room.sql — this file's
+-- war_room->project flip was WRONG (a war room is bigger than a project); re-applying it
+-- would undo the correction. Kept as applied history only.
 -- ============================================================
 -- Direction doctrine: little points to big — content/child = SOURCE, container = TARGET.
 -- container_side='target' is the norm; 'source' is a deliberate documented exception.
