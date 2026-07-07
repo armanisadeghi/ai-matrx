@@ -80,7 +80,7 @@ Parallel sessions aggressively commit + push `main` — sometimes sweeping your 
 - **Live owner verification in real chats** (the flaky dev server blocked some visual confirms this session).
 
 ### Read next
-`OVERHAUL_STATUS.md` (task tracker) · `FEATURE.md` (architecture + change log) · `RENDERER_STATUS.md` (per-tool stage) · the plan `~/.claude/plans/here-is-some-basic-giggly-penguin.md` (⚡ ACTIVE = search / research / scrape) · the `create-tool-renderer` skill · memory `project_tool_viz_overhaul.md` + the `feedback_*` memories (work on main, commit without asking, no fake verification, no AskUserQuestion, give wave routes to test).
+`OVERHAUL_STATUS.md` (task tracker) · `FEATURE.md` (architecture + change log) · `RENDERER_STATUS.md` (per-tool stage) · the plan `~/.claude/plans/here-is-some-basic-giggly-penguin.md` (⚡ ACTIVE = search / research / scrape) · the `create-tool-renderer` skill · memory `project_tool_viz_overhaul.md` + the `feedback_*` memories (work on main, commit without asking, no fake verification, give wave routes to test; AskUserQuestion is fine to use — the old ban was a since-fixed bug).
 
 **You've got a clean foundation, proven patterns, a simulator, and an agent that writes renderers. Now go make Google nervous.**
 

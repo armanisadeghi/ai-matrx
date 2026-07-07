@@ -33,7 +33,7 @@
 7. **Integrity/positioning copy pass** — set-creation and study surfaces adopt the
    grounded-in-your-material framing (with P0/P8's brand voice).
 
-## Hand-offs OUT of the flashcards queue (confirmed by this plan)
+## Hand-offs OUT of the flashcards queue (APPROVED by Arman 2026-07-07 — final, effective now)
 
 - **View/edit gate + duplicate-to-edit → P7** (flashcards is P7's reference implementation — the
   work happens on your surface, P7 drives; stay in the loop).

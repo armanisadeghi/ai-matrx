@@ -54,10 +54,11 @@ production-grade); mind-maps is the lighter, weaker-reuse half. Ship audio to do
   most expensive metered capabilities — wrap it first).
 
 **IN — competitive mandates (added 2026-07-07 from the market research)**
-- **NotebookLM-grade naturalness is the floor, not the target.** Audio Overview went viral on
-  SoundStorm-level naturalness (17M MAU, 43% students) — evaluate our generated output against it
-  honestly at kickoff; if the gap is material, that's an aidream escalation (voice/model config),
-  not something to ship under.
+- **NotebookLM-grade naturalness is the floor — and we already meet it (Arman, 2026-07-07):**
+  our pipeline uses Google's best TTS model, the same or better than what NotebookLM runs, so no
+  escalation is needed. Do still listen critically to real output at kickoff — the bar is that a
+  debate/panel *feels* like a produced show (pacing, interplay), which is prompt/script quality
+  on our side, not model quality.
 - **Adaptive audio — the thing NotebookLM structurally can't do:** debates/panels that *target
   the listener's weak areas* (read `item_mastery` when composing the brief for the generation
   agent) and audio review sessions scheduled from the FSRS due queue. Their audio is a one-shot

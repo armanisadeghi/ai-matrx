@@ -54,10 +54,12 @@ incumbents' paywall resentment.
   exposed for nudges.
 
 **IN — the integrity product (the reframe)**
-- **Free-tier design as a deliverable:** propose the free/trial/premium capability matrix to
-  Arman (generosity calibrated Knowt-over-StudyFetch; the aha-moment comes BEFORE any cap;
-  discovery/learn/exam-hub content stays free + crawlable). This is a product decision surfaced
-  for approval, not silently coded.
+- **Free-tier design (generosity APPROVED — Arman, 2026-07-07: "we need to be competitive and a
+  generous free tier is fine"):** design the free/trial/premium capability matrix on that
+  mandate — calibrated Knowt-over-StudyFetch, the aha-moment comes BEFORE any cap,
+  discovery/learn/exam-hub content stays free + crawlable. Present the finished matrix to Arman
+  as an FYI-with-veto before enforcement flips (the generosity direction is decided; the exact
+  numbers get one look).
 - **No-dark-patterns mechanics:** one-click cancel (portal-based, no retention maze), pre-charge
   reminder email before every renewal (trial→paid especially), visible limits ("X of Y this
   month" in-product before the cap, never a surprise), honest proration/refund policy page.

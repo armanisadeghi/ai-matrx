@@ -102,8 +102,9 @@ context already loaded.
   P0's second reference retrofit, coordinate directly), P7 `useAccess` (shared conversations
   later; wire the signature), P8 `useEntitlement` (tutor messages are a metered capability —
   wrap the send path day 1).
-- **Coordination flag:** `microCoach` is listed among the flashcards agent's in-flight items but
-  is tutor-domain; this brief claims it. Confirm with Arman/the flashcards agent at kickoff.
+- **Hand-off CONFIRMED (Arman, 2026-07-07):** `microCoach` is yours — author it and set the id
+  in `features/flashcards/data/agents.ts`; the flashcards agent keeps the (already-built) no-op
+  wiring and does not author it.
 
 ## Build guidance
 

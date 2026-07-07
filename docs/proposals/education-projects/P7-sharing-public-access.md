@@ -15,14 +15,20 @@ must work like Google Docs/Quizlet: a view-sharee gets a great read-only experie
 button, not an RLS error. This was the #1 gap in the flashcards audit and it blocks the entire
 share/collaborate vision.
 
-> **⚠️ KICKOFF ADDENDUM (2026-07-07, late):** a concurrent session landed a **canonical
-> share-links system** in commit `3d02a42ad` — `migrations/share_links_canonical_system.sql`,
-> `utils/permissions/shareLinks.ts`, `features/sharing/components/ShareLinkPanel.tsx`, and a
-> generic public viewer at `app/(public)/s/[token]/**` (it also deleted the bespoke
-> `app/(core)/notes/share/[id]` page). **Audit this FIRST** — it likely closes the
-> `link`-visibility public-viewer case generically. Reconcile before building anything in the
-> public-viewer scope below; the remaining gaps are then the view/edit gate, duplicate-to-edit,
-> and the `visibility='public'` (no-token) browse case.
+> **⚠️ KICKOFF ADDENDUM (2026-07-07, late — route shape DECIDED by Arman):** a concurrent
+> session landed a **canonical share-links system** in commit `3d02a42ad` —
+> `migrations/share_links_canonical_system.sql`, `utils/permissions/shareLinks.ts`,
+> `features/sharing/components/ShareLinkPanel.tsx`, and a generic anonymous token viewer at
+> `app/(public)/s/[token]/**` (registry-driven `resolve_share_token` RPC, any resource type,
+> `robots: noindex`; it also deleted the bespoke notes share page). **Audit it first, then build
+> the two-lane model:**
+> - **`/s/[token]`** (exists) — token-authorized link sharing, not indexable. Keep + adopt.
+> - **`/p/e/[resourceType]/[id]`** (build — Arman confirmed this shape) — id-addressed,
+>   **indexable** viewer for `visibility='public'` resources (no token; anon RLS `pub_read` is
+>   the authorization). This is the SEO/community-library lane P6-C browses into.
+>
+> Remaining product gaps after the audit: the view/edit gate, duplicate-to-edit, and the
+> `/p/e` public lane.
 
 ## Current state (verified 2026-07-07 — significantly moved since the roadmap)
 
@@ -62,10 +68,10 @@ share/collaborate vision.
 - **Duplicate-to-edit:** a generic "Make a copy" flow for view-sharees — a registry-driven deep
   copy (RPC per resource family where needed), surfaced automatically where `useAccess` returns
   `view` on an editable surface.
-- **Unauthenticated public viewer:** a generic registry-driven route (recommend
-  `/p/e/[resourceType]/[id]` under `(public)`) serving `visibility in ('link','public')`
-  resources signed-out via anon-safe reads, with per-kind renderers (flashcard set first). Keep
-  the existing bespoke routes; document when each applies.
+- **Unauthenticated public viewer:** the `/p/e/[resourceType]/[id]` route (CONFIRMED shape, see
+  addendum) serving `visibility='public'` resources signed-out and indexable, with per-kind
+  renderers (flashcard set first); `link` visibility stays on the just-built `/s/[token]` lane.
+  Keep the existing bespoke routes; document when each applies.
 - **Per-user / per-org grant sharing UI** where the visibility enum is insufficient — the
   existing share modal machinery generalized, not a new dialog per feature.
 - **Flashcards as the reference implementation:** wire the gate + duplicate + public viewer into

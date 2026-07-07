@@ -7,8 +7,8 @@
 > competitive research
 > ([`COMPETITIVE_INSIGHTS_AND_REPRIORITIZATION.md`](../COMPETITIVE_INSIGHTS_AND_REPRIORITIZATION.md))
 > into one prioritized, fully-assignable project set. Every brief in this folder is standalone —
-> hand it to one agent blind. Every factual claim was re-verified against live code + live DB on
-> 2026-07-07.
+> hand it to one agent blind using the copy-paste prompt in [`ASSIGN.md`](./ASSIGN.md). Every
+> factual claim was re-verified against live code + live DB on 2026-07-07.
 
 ---
 
@@ -125,23 +125,23 @@ library at scale (P6-C), live classroom mode (P10 fan-out).
 class/group social rooms, study songs/mnemonics, talk-to-the-hosts audio, offline mode + browser
 extension clipper, native mobile parity, standards alignment, grade-adaptive theming (K-5).
 
-## 8. Open flags for Arman
+## 8. Flags — DECISIONS RECORDED (Arman, 2026-07-07)
 
-1. **Vision additions approval** (competitive doc §4): anti-burnout, depth-on-demand,
-   never-lose-work/ownership, integrity positioning, healthy-gamification, Certified/community
-   tier, per-class hub. The briefs ASSUME approval of the first six (they're baked in); per-class
-   hub is deferred to Wave 2 pending your call. Say the word and the vision doc gets amended.
-2. **Free-tier capability matrix** (P8): proposed for your approval before enforcement flips —
-   generosity is a product decision.
-3. **Public viewer route shape** (P7): recommend one generic `/p/e/[resourceType]/[id]`. Confirm.
-4. **microCoach + import/export + view-edit-gate hand-offs** (F1): three items formally move off
-   the flashcards agent's queue to P2/P9/P7 respectively — confirm with that agent.
-5. **Uncommitted `utils/permissions/` diff**: P7 owns landing it. If another session owns it,
-   resolve before P7 starts.
-6. **Game route name** (P10) and **mind-maps timing** (P3 phases audio first) — kickoff calls.
-7. **Stripe test keys** (P8) needed before checkout testing.
-8. **Audio naturalness bar** (P3): if our TTS is materially below NotebookLM's, that's an
-   aidream escalation — expect it early from the P3 agent.
+1. **Vision additions**: pending Arman's direct answer (asked in-session 2026-07-07); the six
+   competitive additions are baked into the briefs regardless — the open question is only
+   whether `VISION-education-hub.md` gets amended and whether per-class hub enters this wave.
+2. **Free-tier generosity: APPROVED** ("we need to be competitive and a generous free tier is
+   fine"). P8 designs the matrix on that mandate; exact numbers get one FYI-with-veto look.
+3. **Public viewer: DECIDED — two lanes.** The just-built `/s/[token]` (token links, noindex)
+   stays; P7 builds `/p/e/[resourceType]/[id]` for indexable `visibility='public'` resources.
+4. **F1 hand-offs: APPROVED, effective now** (nothing had been passed yet) — view/edit gate →
+   P7, `microCoach` → P2, import/export → P9. Briefs updated; the flashcards agent reads F1.
+5. **Uncommitted `utils/permissions/` diff: CONFIRMED** — P7 owns landing it.
+6. **Game route name + mind-maps timing: proceed** — P10 picks the route at kickoff; P3 phases
+   audio first, mind-maps in-wave.
+7. **Stripe: proceed** — P8 starts; request test keys when checkout testing begins.
+8. **Audio naturalness: RESOLVED** — we use Google's best TTS (same or better than NotebookLM);
+   no escalation. P3's bar is script/pacing quality, not model quality.
 
 ## Change log
 - **2026-07-07 v2** — Competitive research merged: added P0/P9/P10, expanded P6 (exam hub +
