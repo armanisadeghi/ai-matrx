@@ -35,8 +35,10 @@ tabs made true, not just mapped in a comment.
 - **C1 day 1:** add `thumbnailUrl: string | null` to `RecentScanRow` + null-tolerant card
   rendering (keep the placeholder as the null state) and document the storage contract:
   `files.files.metadata.thumbnail_url` = **durable public/CDN URL — never a signed URL**
-  (media-durability doctrine; if any anonymous/public page will read it, register
-  `(table,column)` in `mtx_public_url_guard`). Commit before anything else.
+  (media-durability doctrine). NOTE: `mtx_public_url_guard`'s trigger checks top-level columns
+  only (`migrations/mtx_public_media_url_guard.sql`) — if any anonymous/public page will read
+  the thumbnail, extending the trigger for JSONB paths OR promoting `thumbnail_url` to a real
+  column is part of C1; owner-only surfaces need no registration. Commit before anything else.
 - **Thumbnail generation (aidream):** page-1 thumbnail rendered at `from-images` time (and for
   existing scans via backfill), persisted through the canonical file pipeline, URL written to
   the contract location. Decide render size once (~480px wide is plenty for cards).
@@ -55,6 +57,9 @@ tabs made true, not just mapped in a comment.
   Convergence A).
 - Reader virtualization / huge docs — **P3**. You must not rewrite the page-render layer
   (C2: additive registry entries only).
+- aidream clean/chunk pipeline internals — **P3** (they're rebuilding it as resumable jobs in
+  the same wave). Your Ask-loop fixes stop at doc targeting + panel wiring; if a fix genuinely
+  needs chunk-pipeline surgery, coordinate with P3 first, never land it unilaterally.
 - Figure extraction, searchable PDFs — **P4**.
 
 ## Deliverables / Definition of done
@@ -87,8 +92,9 @@ tabs made true, not just mapped in a comment.
 
 - Skills: `type-safety` (any Supabase typing), `db-change` family (if DDL), `verify`,
   `finalize-and-ship`; `rich-document-actions` if you add actions to extractor content.
-- Render thumbnails via the platform file pipeline — uploads only through `fileHandler`; no
-  `supabase.storage` outside the handler (ESLint enforces).
+- Thumbnail generation + persistence happen server-side through aidream's canonical file
+  persistence (`fileHandler` is an FE primitive — its uploads-only rule applies only if you
+  add any FE-side upload path, which you shouldn't need).
 - Media durability is the trap: a signed URL in `thumbnail_url` works for days then breaks
   forever. Public/CDN URL or nothing.
 - Recents reads stay direct supabase-js (data-flow doctrine) — do not add a Python "list scans"

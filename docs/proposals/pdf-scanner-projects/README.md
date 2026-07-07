@@ -72,9 +72,9 @@ Tiers are staffing order, NOT sequencing — all Wave-1 projects run in parallel
 
 | Contract | Owner | Consumers | Interface |
 |---|---|---|---|
-| **C1 — Thumbnail** | P2 | P1 (verify pass), files grid, education ingest | `files.files.metadata.thumbnail_url: string` — **durable public/CDN URL, never a signed URL** (media-durability doctrine; register the column path in `mtx_public_url_guard` if a public page reads it) + `RecentScanRow.thumbnailUrl: string \| null` in `features/pdf/scanner/processing.ts`. Publish the typed field + null-tolerant rendering day 1; backfill later. |
+| **C1 — Thumbnail** | P2 | P1 (verify pass), files grid, education ingest | `files.files.metadata.thumbnail_url: string` — **durable public/CDN URL, never a signed URL** (media-durability doctrine; NOTE: `mtx_public_url_guard` checks top-level columns only — if a public page reads the thumbnail, extending the guard trigger for JSONB paths OR promoting `thumbnail_url` to a real column is part of C1) + `RecentScanRow.thumbnailUrl: string \| null` in `features/pdf/scanner/processing.ts`. Publish the typed field + null-tolerant rendering day 1; backfill later. |
 | **C2 — Extractor surface registry** | P3 (reader internals) / P2 (Ask + preview wiring) | each other | Additive-only: new panes/tabs enter via `features/pdf/surfaces/registry.ts` + `PdfSurfaceSwitcher`; NEITHER project rewrites a shared pane the other owns. P3 owns the page-render/virtualization layer; P2 owns Ask-panel + preview composition. Conflicts → this table. |
-| **C3 — Resumable job envelope** | P3 (aidream) | P4 (new ops adopt it) | NDJSON event schema for per-page resumable jobs (`job_started` / `job_page_done` / `job_resumable_checkpoint` / terminal). Day-1: publish event names + payload shapes as a stub doc in `features/pdf/docs/`; P4 codes against the doc, wires real types after `pnpm sync-types`. |
+| **C3 — Resumable job envelope** | P3 (aidream) | P4 (new ops adopt it) | NDJSON event schema for per-page resumable jobs (`job_started` / `job_page_done` / `job_checkpoint` / terminal + error). Day-1: publish event names + payload shapes as a stub doc in `features/pdf/docs/`; P4 codes against the doc, wires real types after `pnpm sync-types`. |
 
 ## 6. Cross-cutting mandates (audited at Convergence A)
 
@@ -88,6 +88,10 @@ Tiers are staffing order, NOT sequencing — all Wave-1 projects run in parallel
   never forked per skin.
 - **Direct UI↔DB** — status polling and lists stay supabase-js direct; Python only for bytes /
   compute (data-flow doctrine).
+- **Shared-doc discipline** — all four projects touch `features/pdf/FEATURE.md`: change-log
+  entries are append-only one-liners; pull/rebase immediately before every commit that edits
+  it; parts-table edits announced in the commit message. (Parallel sessions clobbering shared
+  registry/doc files is a documented failure class here.)
 
 ## 7. Waves, convergences, fan-out
 

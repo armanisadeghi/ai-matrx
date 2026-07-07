@@ -21,10 +21,11 @@ The client already holds the AES key at redaction time; the only new motion is
 ## Draft scope
 
 - FE: wrap-and-escrow call inside the existing redaction save path (single mutation path);
-  org-admin recovery UI (list escrowed docs → recover spans), super-admin-gated per the
-  `protected-resources` skill.
+  org-admin recovery UI (list escrowed docs → recover spans). **Gate = org admin** (iam role
+  checks inside the RPC), NOT platform super-admin — recovery is an org capability. The
+  single-mutation-path + audit discipline still follows the `protected-resources` pattern.
 - DB: RLS + `SECURITY DEFINER` RPC family for escrow reads/writes (one mutation path per
-  protected table); audit-log trigger.
+  protected table, org-admin-checked inside the RPC); audit-log trigger.
 - aidream: nothing expected unless the KMS lives server-side.
 
 ## Draft DoD

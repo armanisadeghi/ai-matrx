@@ -42,8 +42,10 @@ test program attached, not a QA checklist.
 - Fix everything the matrix finds, in the engine or skins (both repos — a needed aidream fix is
   part of this project, not a ticket).
 - **Abandoned-session cleanup (aidream):** scheduled job deleting `system-files/scanner/**`
-  older than N days with no manifest reference and no `from-images` consumption; loud log line
-  per deletion batch. Idempotent; never touches a session younger than the resume window.
+  sessions older than the resume window (default 7 days) that were never consumed by a
+  `from-images` save — both criteria server-checkable (the resume manifest is browser
+  localStorage; the server can NOT see it, so age + consumption are the whole test). Loud log
+  line per deletion batch; idempotent.
 - **Error capture:** wire scanner failure classes (upload error, detect error, save-stream
   error, poll timeout, clean-content-never-ready) into the Error Inspector via `captureError`
   with sensible tiers (invoke the `error-capture` skill).
