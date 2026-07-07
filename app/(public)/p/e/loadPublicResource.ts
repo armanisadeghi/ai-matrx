@@ -62,12 +62,21 @@ function firstString(row: Record<string, unknown>, keys: string[]): string | und
   return undefined;
 }
 
+/**
+ * The types the indexable public lane serves. An allowlist, not "any public
+ * registered type": a resource being public shouldn't auto-publish it to an
+ * SEO-indexed page (e.g. a public `wc_claim`, `dm_conversation`, `file`, or
+ * `conversation` is not community-library content). Add a type here only when it
+ * has a public renderer and is genuinely meant for the SEO/community lane.
+ */
+const PUBLIC_LANE_TYPES = new Set<string>(["fc_set", "note", "content_template"]);
+
 export async function loadPublicResource(
   resourceType: string,
   id: string,
 ): Promise<PublicResource | null> {
   const entry = getShareableResource(resourceType);
-  if (!entry) return null;
+  if (!entry || !PUBLIC_LANE_TYPES.has(entry.resourceType)) return null;
 
   const supabase = await createClient();
 

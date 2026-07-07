@@ -60,7 +60,11 @@ BEGIN
   LIMIT 1;
   v_is_entity := COALESCE(v_is_entity, false);
 
-  -- Read owner + public flag from the resource row via the registry columns.
+  -- Read owner (always present) + resolve the public flag per type category.
+  -- Owner MUST resolve for EVERY registered type, so it never depends on a
+  -- `visibility` column that a non-canonical table (file_*, analysis_recipes,
+  -- sandbox_instances, …) doesn't have — otherwise the read throws, gets swallowed,
+  -- and the OWNER is reported exists:false (locked out of their own resource).
   BEGIN
     IF v_reg.is_public_column IS NOT NULL THEN
       EXECUTE format(
@@ -68,14 +72,23 @@ BEGIN
         v_reg.owner_column, v_reg.is_public_column,
         COALESCE(v_reg.schema_name, 'public'), v_reg.table_name, v_reg.id_column
       ) INTO v_owner, v_public USING p_resource_id;
-    ELSE
-      -- Canonical: public lives on the platform.visibility enum.
+    ELSIF v_is_entity THEN
+      -- Canonical entity: public lives on the platform.visibility enum.
       EXECUTE format(
         'SELECT %I, visibility FROM %I.%I WHERE %I = $1',
         v_reg.owner_column,
         COALESCE(v_reg.schema_name, 'public'), v_reg.table_name, v_reg.id_column
       ) INTO v_owner, v_vis USING p_resource_id;
       v_public := (v_vis = 'public');
+    ELSE
+      -- Non-canonical with no is_public column: no public concept. Read owner
+      -- ONLY so ownership still resolves for these types.
+      EXECUTE format(
+        'SELECT %I FROM %I.%I WHERE %I = $1',
+        v_reg.owner_column,
+        COALESCE(v_reg.schema_name, 'public'), v_reg.table_name, v_reg.id_column
+      ) INTO v_owner USING p_resource_id;
+      v_public := false;
     END IF;
   EXCEPTION WHEN others THEN
     RETURN jsonb_build_object('level', 'none', 'is_owner', false, 'exists', false);
@@ -90,11 +103,12 @@ BEGIN
     RETURN jsonb_build_object('level', 'admin', 'is_owner', true, 'exists', true);
   END IF;
 
-  -- Anon: only a public row is viewable (the indexable /p/e lane).
+  -- Anon: only a public row is viewable (the indexable /p/e lane). A private row
+  -- reports exists:false too — never leak a private resource's existence to anon.
   IF v_uid IS NULL THEN
     RETURN jsonb_build_object(
       'level', CASE WHEN v_public THEN 'view' ELSE 'none' END,
-      'is_owner', false, 'exists', true
+      'is_owner', false, 'exists', v_public
     );
   END IF;
 

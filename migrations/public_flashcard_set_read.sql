@@ -51,6 +51,11 @@ BEGIN
     FROM platform.associations a
     JOIN education.fc_card c
       ON c.id = a.source_id AND c.deleted_at IS NULL
+      -- Scope to the SET OWNER's own cards. The associations INSERT policy does
+      -- not verify the caller owns source_id, so without this a caller could link
+      -- a victim's private fc_card UUID to their own public set and exfiltrate it
+      -- through this SECURITY DEFINER read. A set's real members are its owner's.
+      AND c.created_by = v_set.created_by
     WHERE a.target_type = 'fc_set'
       AND a.target_id = p_set_id
       AND a.source_type = 'fc_card'
