@@ -8683,6 +8683,250 @@ export type Database = {
         }
         Relationships: []
       }
+      study_plan: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          daily_item_cap: number | null
+          daily_minutes: number
+          deleted_at: string | null
+          end_date: string | null
+          generated_by: string
+          generator_agent_id: string | null
+          goal_id: string | null
+          id: string
+          last_planned_at: string | null
+          metadata: Json
+          organization_id: string
+          rationale: string | null
+          rest_days: number[]
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          daily_item_cap?: number | null
+          daily_minutes?: number
+          deleted_at?: string | null
+          end_date?: string | null
+          generated_by?: string
+          generator_agent_id?: string | null
+          goal_id?: string | null
+          id?: string
+          last_planned_at?: string | null
+          metadata?: Json
+          organization_id: string
+          rationale?: string | null
+          rest_days?: number[]
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          daily_item_cap?: number | null
+          daily_minutes?: number
+          deleted_at?: string | null
+          end_date?: string | null
+          generated_by?: string
+          generator_agent_id?: string | null
+          goal_id?: string | null
+          id?: string
+          last_planned_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          rationale?: string | null
+          rest_days?: number[]
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_plan_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "study_goal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_plan_block: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day_date: string
+          day_id: string | null
+          deleted_at: string | null
+          estimated_items: number | null
+          estimated_minutes: number
+          id: string
+          item_type: string | null
+          label: string
+          metadata: Json
+          method: string | null
+          ordering: number
+          organization_id: string
+          plan_id: string
+          rationale: string | null
+          status: string
+          target_kind: string
+          target_ref: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day_date: string
+          day_id?: string | null
+          deleted_at?: string | null
+          estimated_items?: number | null
+          estimated_minutes?: number
+          id?: string
+          item_type?: string | null
+          label: string
+          metadata?: Json
+          method?: string | null
+          ordering?: number
+          organization_id: string
+          plan_id: string
+          rationale?: string | null
+          status?: string
+          target_kind?: string
+          target_ref?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day_date?: string
+          day_id?: string | null
+          deleted_at?: string | null
+          estimated_items?: number | null
+          estimated_minutes?: number
+          id?: string
+          item_type?: string | null
+          label?: string
+          metadata?: Json
+          method?: string | null
+          ordering?: number
+          organization_id?: string
+          plan_id?: string
+          rationale?: string | null
+          status?: string
+          target_kind?: string
+          target_ref?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_plan_block_day_id_fkey"
+            columns: ["day_id"]
+            isOneToOne: false
+            referencedRelation: "study_plan_day"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_plan_block_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_plan_day: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day_date: string
+          deleted_at: string | null
+          id: string
+          is_rest_day: boolean
+          metadata: Json
+          organization_id: string
+          plan_id: string
+          rationale: string | null
+          status: string
+          target_minutes: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day_date: string
+          deleted_at?: string | null
+          id?: string
+          is_rest_day?: boolean
+          metadata?: Json
+          organization_id: string
+          plan_id: string
+          rationale?: string | null
+          status?: string
+          target_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day_date?: string
+          deleted_at?: string | null
+          id?: string
+          is_rest_day?: boolean
+          metadata?: Json
+          organization_id?: string
+          plan_id?: string
+          rationale?: string | null
+          status?: string
+          target_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_plan_day_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "study_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       study_session: {
         Row: {
           aggregate_score: Json | null
