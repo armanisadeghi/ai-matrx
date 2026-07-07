@@ -715,6 +715,49 @@ export const studyService = {
     }
   },
 
+  /**
+   * P5 (cross-mode analytics) — ALL of the current user's mastery rows across
+   * EVERY item_type (RLS-scoped), for the unified analytics dashboard. Each row
+   * carries its own `item_type`, so callers group client-side. Capped like
+   * `listMastery`; moves to an RPC/materialized view once this outgrows a page.
+   */
+  async listAllMastery(limit = 3000): Promise<StudyResult<ItemMasteryRow[]>> {
+    try {
+      const { data, error } = await EDU()
+        .from("item_mastery")
+        .select("*")
+        .is("deleted_at", null)
+        .order("last_attempt_at", { ascending: false })
+        .limit(limit);
+      if (error) return fail("listAllMastery", error);
+      return { data: (data ?? []) as ItemMasteryRow[], error: null };
+    } catch (e) {
+      return fail("listAllMastery", e);
+    }
+  },
+
+  /**
+   * P5 (cross-mode analytics) — the current user's BROAD attempt ledger across
+   * EVERY item_type, oldest-first, optionally since a cutoff. Powers the unified
+   * accuracy-over-time / time-studied trends without pinning to one mode.
+   */
+  async listAllAttempts(
+    filter: ListAttemptsFilter = {},
+  ): Promise<StudyResult<StudyAttemptRow[]>> {
+    try {
+      let q = EDU().from("study_attempt").select("*").is("deleted_at", null);
+      if (filter.since) q = q.gte("created_at", filter.since);
+      q = q
+        .order("created_at", { ascending: true })
+        .limit(filter.limit ?? 8000);
+      const { data, error } = await q;
+      if (error) return fail("listAllAttempts", error);
+      return { data: (data ?? []) as StudyAttemptRow[], error: null };
+    } catch (e) {
+      return fail("listAllAttempts", e);
+    }
+  },
+
   // ─── GOALS (Phase 6 planner — real CRUD on study_goal) ───────────────────
   /**
    * Create a study goal. `study_goal` has no topic/item_type/set columns —

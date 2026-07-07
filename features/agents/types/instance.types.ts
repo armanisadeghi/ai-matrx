@@ -205,7 +205,13 @@ export type SourceFeature =
    *  above, these are REAL user chats (NOT system-marked) — grounded in the
    *  learner's own material via RAG, with cross-session memory. See
    *  features/education/tutor/. */
-  | "education-tutor";
+  | "education-tutor"
+  /** Study Intelligence (P5) AI planner — generates/re-plans the day-by-day
+   *  study schedule (`/education/planner`). See features/education/study/planner/. */
+  | "education-planner"
+  /** Study Intelligence (P5) analytics narrator — the narrative layer over the
+   *  progress dashboard numbers (`/education/progress`). */
+  | "education-analytics";
 
 // Anti-patterns — never add these. Name the actual surface instead.
 // | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).

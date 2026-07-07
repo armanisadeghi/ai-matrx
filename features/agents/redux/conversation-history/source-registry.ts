@@ -166,6 +166,19 @@ export const FEATURE_META: Record<string, SourceMeta> = {
     icon: GraduationCap,
   },
 
+  // Study Intelligence (P5) one-shot generation runs — automation, NOT user
+  // chats — system-marked so they group away from real conversations.
+  "education-planner": {
+    label: "Study Planner",
+    icon: CalendarClock,
+    system: true,
+  },
+  "education-analytics": {
+    label: "Study Analytics",
+    icon: GraduationCap,
+    system: true,
+  },
+
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
   research: { label: "Research", icon: Globe },
