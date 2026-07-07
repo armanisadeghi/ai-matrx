@@ -50,11 +50,11 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/tools/pdf-extractor/scan",
+      url: "/tools/scanner",
       label: "Phone scanner",
       description:
         "Camera / library / file picks → immediate durable uploads → QuadEditor crop → one PDF via POST /utilities/pdf/from-images → extraction pipeline.",
-      filePath: "app/(core)/tools/pdf-extractor/scan/page.tsx",
+      filePath: "app/(core)/tools/scanner/page.tsx",
       status: "Live",
       notes: [
         "Every add uploads immediately to system-files/scanner/{sessionId}",

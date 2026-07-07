@@ -652,6 +652,15 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Scanner",
+        href: "/tools/scanner",
+        iconName: "ScanLine",
+        description: "Use your phone as a scanner — photos to one searchable PDF",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Webscraper",
         href: "/scraper",
         guestHref: "/features",

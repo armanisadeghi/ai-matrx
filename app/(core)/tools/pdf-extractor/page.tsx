@@ -18,7 +18,7 @@ export default async function PdfExtractorStudioPage() {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return <PdfExtractorLanding />;
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden bg-background">
       <Suspense fallback={null}>
         <PdfStudioRouteClient />
       </Suspense>

@@ -285,7 +285,7 @@ export function PdfStudioUpload({
       {/* Phone-scanner on-ramp — camera capture + crop + combine into one PDF */}
       {extractor.selectedFiles.length === 0 && (
         <Link
-          href="/tools/pdf-extractor/scan"
+          href="/tools/scanner"
           className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <ScanLine className="h-3.5 w-3.5" />

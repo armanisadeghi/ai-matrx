@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Client boundary for /tools/pdf-extractor/scan.
+ * Client boundary for /tools/scanner.
  *
  * The scanner is camera-driven and browser-only, so the whole surface is
  * code-split with `ssr: false` — it never enters a server chunk (see the
