@@ -311,7 +311,7 @@ describe("progress_tracker — legacy bridge (toLegacyServerData)", () => {
     // The component family's own validation contract.
     expect(
       validateProgressTracker(
-        serverData as Parameters<typeof validateProgressTracker>[0],
+        serverData as unknown as Parameters<typeof validateProgressTracker>[0],
       ),
     ).toBe(true);
 
@@ -340,7 +340,7 @@ describe("progress_tracker — legacy bridge (toLegacyServerData)", () => {
 
     expect(
       validateProgressTracker(
-        serverData as Parameters<typeof validateProgressTracker>[0],
+        serverData as unknown as Parameters<typeof validateProgressTracker>[0],
       ),
     ).toBe(true);
     expect(serverData.description).toBe(

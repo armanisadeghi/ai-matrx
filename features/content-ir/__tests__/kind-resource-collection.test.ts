@@ -293,7 +293,7 @@ describe("resource_collection — render leg (bridge serverData accepted by the 
     // The REAL validator from the component's own parser module.
     expect(
       validateResourceCollection(
-        serverData as Parameters<typeof validateResourceCollection>[0],
+        serverData as unknown as Parameters<typeof validateResourceCollection>[0],
       ),
     ).toBe(true);
 
@@ -501,7 +501,7 @@ describe("resource_collection — resources_legacy_text strategy (REAL <resource
     if (!serverData) throw new Error("unreachable");
     expect(
       validateResourceCollection(
-        serverData as Parameters<typeof validateResourceCollection>[0],
+        serverData as unknown as Parameters<typeof validateResourceCollection>[0],
       ),
     ).toBe(true);
   });

@@ -56,18 +56,17 @@ export interface CompleteEnvelopeBridgeOptions {
  * complete payloads. `build` receives the reconstructed, kind-stripped value
  * and returns the component's serverData (or undefined to decline).
  */
-export function makeCompleteEnvelopeBridge(
+export function makeCompleteEnvelopeBridge<
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(
   kind: string,
   build: (
     value: Record<string, unknown>,
     envelope: CanonicalBlockIR,
-  ) => Record<string, unknown> | undefined,
+  ) => T | undefined,
   options?: CompleteEnvelopeBridgeOptions,
-): (envelope: CanonicalBlockIR) => Record<string, unknown> | undefined {
-  const memo = new WeakMap<
-    CanonicalBlockIR,
-    Record<string, unknown> | undefined
-  >();
+): (envelope: CanonicalBlockIR) => T | undefined {
+  const memo = new WeakMap<CanonicalBlockIR, T | undefined>();
 
   return (envelope) => {
     if (envelope.root.kind !== kind) return undefined;
@@ -75,7 +74,7 @@ export function makeCompleteEnvelopeBridge(
 
     if (memo.has(envelope)) return memo.get(envelope);
 
-    let out: Record<string, unknown> | undefined;
+    let out: T | undefined;
     try {
       const reconstructed = reconstructRegionValue(envelope);
       const value =
