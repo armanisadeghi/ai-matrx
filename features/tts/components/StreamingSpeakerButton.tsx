@@ -70,6 +70,10 @@ export function StreamingSpeakerButton({
     processMarkdown,
     label,
     dictionarySurfaceKey,
+    // Re-adopt this text's still-playing queue item after a remount (tab switch
+    // / navigation), so the button keeps reflecting + controlling audio that
+    // survived in the persistent queue instead of resetting to "Play".
+    adoptText: text,
   });
 
   // `status` is THIS surface's own utterance status (null once done / never
@@ -89,10 +93,13 @@ export function StreamingSpeakerButton({
       resume();
       return;
     }
-    if (disabled || !hasText) return;
+    // Busy-guard: while this utterance is loading/queued, ignore clicks so a
+    // second click can't enqueue a DUPLICATE copy (which would read the message
+    // twice). Mirrors SpeakerButtonCore.
+    if (disabled || !hasText || isBusy) return;
     const override = getTextOverride?.()?.trim() || null;
     speak(override ?? text);
-  }, [isPlaying, isPaused, disabled, hasText, pause, resume, speak, text, getTextOverride]);
+  }, [isPlaying, isPaused, disabled, hasText, isBusy, pause, resume, speak, text, getTextOverride]);
 
   const button = isPlaying ? (
     <PauseTapButton
@@ -106,7 +113,7 @@ export function StreamingSpeakerButton({
     <Volume2TapButton
       variant={variant}
       onClick={handleClick}
-      disabled={disabled || !hasText}
+      disabled={disabled || !hasText || isBusy}
       ariaLabel={
         isBusy
           ? status === 'queued'

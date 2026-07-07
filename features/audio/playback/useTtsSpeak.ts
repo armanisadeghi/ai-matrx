@@ -21,6 +21,14 @@ export interface TtsSpeakOptions {
   purpose?: VoicePurpose;
   dictionarySurfaceKey?: string;
   label?: string;
+  /**
+   * When set, on (re)mount this hook re-adopts the queue's currently-active item
+   * if that item's text equals `adoptText` — so a Speak button that unmounted
+   * (tab switch / navigation) while its audio kept playing in the persistent
+   * queue re-attaches to it (reflects status + can pause/resume) instead of
+   * resetting to idle and enqueuing a duplicate.
+   */
+  adoptText?: string;
 }
 
 export function useTtsSpeak({
@@ -28,11 +36,29 @@ export function useTtsSpeak({
   purpose = "assistant",
   dictionarySurfaceKey,
   label,
+  adoptText,
 }: TtsSpeakOptions = {}) {
   const { enqueue, items, pause, resume, skip, remove, playItem, currentId } =
     useAudioPlayback();
   const prefs = useAppSelector(selectVoicePreferences);
   const [itemId, setItemId] = useState<string | null>(null);
+
+  // Effective utterance = our own spoken item, OR (derived — no state/effect)
+  // the queue's currently-active item when its text matches `adoptText`. That
+  // makes a button remounted after a tab switch / navigation re-adopt audio
+  // still playing in the persistent queue instead of resetting to idle.
+  const adoptedId =
+    !itemId && adoptText && currentId
+      ? (items.find(
+          (i) =>
+            i.id === currentId &&
+            i.text === adoptText &&
+            (i.status === "playing" ||
+              i.status === "paused" ||
+              i.status === "loading"),
+        )?.id ?? null)
+      : null;
+  const effectiveId = itemId ?? adoptedId;
 
   const speak = useCallback(
     (text: string) => {
@@ -64,11 +90,11 @@ export function useTtsSpeak({
     ],
   );
 
-  const status: PlaybackItemStatus | null = itemId
-    ? (items.find((i) => i.id === itemId)?.status ?? null)
+  const status: PlaybackItemStatus | null = effectiveId
+    ? (items.find((i) => i.id === effectiveId)?.status ?? null)
     : null;
 
-  const isMine = itemId !== null && itemId === currentId;
+  const isMine = effectiveId !== null && effectiveId === currentId;
 
   return {
     speak,
