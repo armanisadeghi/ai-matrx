@@ -158,6 +158,14 @@ export const FEATURE_META: Record<string, SourceMeta> = {
     system: true,
   },
 
+  // The persistent, memory-carrying AI Tutor (`/education/tutor`). NOT
+  // system-marked — these are real user chats (grounded in the learner's own
+  // material, cross-session memory), so they surface + filter like any chat.
+  "education-tutor": {
+    label: "AI Tutor",
+    icon: GraduationCap,
+  },
+
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
   research: { label: "Research", icon: Globe },
@@ -288,6 +296,8 @@ export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
   chat: { includeFeatures: ["chat-route", "chat-interface", "quick-chat"] },
   // The /code workspace: code conversations + the agent runs it spawns.
   code: { includeFeatures: ["code-editor", "agent-runner"] },
+  // The /education/tutor surface: only the learner's tutor conversations.
+  "education-tutor": { includeFeatures: ["education-tutor"] },
   // The cross-agent "AI Results" window is the browse-everything surface —
   // no default filter.
   "history-window": { includeFeatures: [] },
@@ -385,6 +395,12 @@ export const FILTERABLE_SURFACES: FilterableSurfaceMeta[] = [
     id: "code",
     label: "Code workspace",
     description: "The /code conversation history.",
+  },
+  {
+    id: "education-tutor",
+    label: "AI Tutor",
+    description:
+      "The /education/tutor conversation history. Defaults to your tutor chats only.",
   },
   {
     id: "history-window",

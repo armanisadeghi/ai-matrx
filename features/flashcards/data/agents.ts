@@ -33,14 +33,24 @@ export const FC_AGENTS = {
   /** front, back, which → { spoken_text } */
   spokenQuestion: "d07d40bb-3cac-478d-ab33-859de3cd8d02",
   /**
-   * front, back, result, prior_attempts → { tip } — cheap/fast-model per-card
-   * micro-coaching (Phase 4 stretch), surfaced right after grading. NOT YET
-   * AUTHORED: no live agent exists for this lane. Register one via
-   * agent_author (spec: features/education/docs/AGENT_SPECS.md §11) and set
-   * this id to light the lane up — until then it's a clean no-op, same as
-   * every other optional tutor lane before its agent existed.
+   * P0 Trust — front, back, source_excerpt → { status: verified|drifted|
+   * unverifiable, explanation, suggested_fix } — re-checks a card against its
+   * cited source passage and flags drift ("Verify against source").
    */
-  microCoach: null as string | null,
+  verifyAgainstSource: "90b49ead-0b82-4773-a961-234688197e0a",
+  /**
+   * P0 Trust — question, expected_answer, learner_answer → GradeVerdict
+   * { correct, partial, misconception, explanation } — grade-on-meaning for
+   * typed/short answers (P1's one grading path; paraphrase-tolerant).
+   */
+  gradeTypedAnswer: "b39183d1-3d66-467a-ab5b-36f5cf508c45",
+  /**
+   * front, back, result, prior_attempts → { tip } — cheap/fast-model per-card
+   * micro-coaching (Phase 4 stretch), surfaced right after grading. Authored
+   * 2026-07-07 (P2 AI Tutor) on gemini-flash-lite; setting this id lights up
+   * the (already-wired) no-op lane in StudyDeck.tsx. Spec: AGENT_SPECS.md §11.
+   */
+  microCoach: "0d6c715b-b861-4769-b0de-5d33f29f64a8" as string | null,
 } as const;
 
 export type FcAgentKey = keyof typeof FC_AGENTS;

@@ -199,7 +199,13 @@ export type SourceFeature =
    *  drill). See features/flashcards/data/tutor/. */
   | "education-flashcards-help"
   | "education-flashcards-review"
-  | "education-flashcards-coach";
+  | "education-flashcards-coach"
+  /** The persistent, memory-carrying AI Tutor conversation surface
+   *  (`/education/tutor`). Unlike the fastfire/flashcards background lanes
+   *  above, these are REAL user chats (NOT system-marked) — grounded in the
+   *  learner's own material via RAG, with cross-session memory. See
+   *  features/education/tutor/. */
+  | "education-tutor";
 
 // Anti-patterns — never add these. Name the actual surface instead.
 // | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).
