@@ -9277,11 +9277,14 @@ export interface paths {
         };
         /**
          * Get Run Cost
-         * @description Per-run cost summary. Joins cx_request on the run's conversation_id.
+         * @description Per-run cost summary — the real spend, including per-node conversations.
          *
-         *     Returns zeros if the run has no associated LLM calls (e.g. a pure-
-         *     deterministic workflow). The cost field on cx_request is already in
-         *     USD; total_cost_usd is the straight sum. Computation lives in
+         *     Aggregates chat.request rows across EVERY conversation the run touched
+         *     (the run's own conversation_id plus each AI node's — every
+         *     ai.agent.start opens its OWN conversation), falling back to the run's
+         *     durable node_cost events when the join finds nothing. Returns zeros
+         *     only for a genuinely LLM-free run. Costs are already USD; straight
+         *     sums, never re-priced. Computation lives in
          *     ``aidream/api/workflow_cost.py`` — shared with the terminal
          *     run-completion callback so both surfaces report identical numbers.
          */
@@ -9305,8 +9308,12 @@ export interface paths {
          * Get Workflow Cost Rollup
          * @description Time-windowed cost rollup for one workflow definition.
          *
-         *     Aggregates cx_request rows across every run of the definition in the
-         *     last ``range`` days. Returns a per-day breakdown the UI can chart.
+         *     Aggregates cost across every run of the definition in the last
+         *     ``range`` days. Per run: chat.request rows joined on the run's
+         *     conversation_id when any exist, otherwise the run's durable node_cost
+         *     events (AI nodes open their OWN conversations, so the conversation
+         *     join alone under-reports agent workflows — same truth model as
+         *     ``compute_run_cost``). Returns a per-day breakdown the UI can chart.
          */
         get: operations["get_workflow_cost_rollup_workflows__definition_id__cost_rollup_get"];
         put?: never;
@@ -26956,9 +26963,10 @@ export interface components {
          * RunCostSummary
          * @description Aggregated cost for one workflow run.
          *
-         *     Computed by joining cx_request on the run's conversation_id. Total
-         *     dollars are derived client-side: `total_cost_dollars = total_cost_usd`
-         *     (cx_request.cost is already in USD).
+         *     Computed by ``aidream/api/workflow_cost.py::compute_run_cost`` — sums
+         *     chat.request rows across every conversation the run touched (the run's
+         *     own plus each AI node's), falling back to the run's durable node_cost
+         *     events. `total_cost_usd` is already USD (straight sum, no re-pricing).
          */
         RunCostSummary: {
             /** Run Id */
