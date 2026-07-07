@@ -4,17 +4,21 @@
  * CaptureView — full-screen rapid-capture camera overlay.
  *
  * Built on the canonical camera primitives (`CameraProvider` +
- * `CameraView` from components/matrx/camera) with scanner constraints:
- * rear camera preferred, 4K ideal (browsers clamp to the sensor max).
- * Every shutter tap hands the shot up immediately — the session hook
- * uploads it in the background while the user keeps shooting.
+ * `CameraView` from components/matrx/camera) with scanner behavior:
+ * rear camera preferred, 4K ideal (browsers clamp to the sensor max),
+ * and strict WYSIWYG — the `fill` view shows the ENTIRE sensor frame
+ * (letterboxed) and `fullFrameCapture` photographs exactly that frame,
+ * so nothing hidden under the controls sneaks into the photo.
+ *
+ * Filmstrip thumbs open a full-screen preview (stay in capture mode) so
+ * blurry shots can be re-taken immediately.
  *
  * When getUserMedia is unavailable (permission denied, in-app webview),
  * the fallback button opens the OS camera via `<input capture>`.
  */
 
 import React, { useCallback, useRef, useState } from "react";
-import { Camera as CameraIcon, Check, SwitchCamera } from "lucide-react";
+import { Camera as CameraIcon, Check, SwitchCamera, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,11 +29,17 @@ import { CameraView } from "@/components/matrx/camera/camera-view";
 import type { CameraType } from "@/components/matrx/camera/camera-types";
 import { cn } from "@/lib/utils";
 
+export interface CaptureShot {
+  itemId: string;
+  previewUrl: string;
+}
+
 interface CaptureViewProps {
   /** Fired per shot with the JPEG data URL — upload starts immediately. */
   onCapture: (dataUrl: string) => void;
-  /** Recent shot previews for the filmstrip (newest last). */
-  recentPreviews: string[];
+  /** Session shots for the filmstrip (newest last). */
+  shots: CaptureShot[];
+  onRemoveShot: (itemId: string) => void;
   uploadingCount: number;
   onDone: () => void;
 }
@@ -44,6 +54,7 @@ export function CaptureView(props: CaptureViewProps) {
         aspectRatio: undefined,
       }}
       photoQuality={0.92}
+      fullFrameCapture
     >
       <CaptureViewInner {...props} />
     </CameraProvider>
@@ -52,7 +63,8 @@ export function CaptureView(props: CaptureViewProps) {
 
 function CaptureViewInner({
   onCapture,
-  recentPreviews,
+  shots,
+  onRemoveShot,
   uploadingCount,
   onDone,
 }: CaptureViewProps) {
@@ -60,6 +72,7 @@ function CaptureViewInner({
   const { numberOfCameras, switchCamera, stopStream, notSupported, permissionDenied } =
     useCamera();
   const [flash, setFlash] = useState(false);
+  const [previewShot, setPreviewShot] = useState<CaptureShot | null>(null);
   const fallbackInputRef = useRef<HTMLInputElement>(null);
 
   const cameraBlocked = notSupported || permissionDenied;
@@ -96,6 +109,7 @@ function CaptureViewInner({
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <CameraView
           ref={cameraRef}
+          variant="fill"
           errorMessages={undefined}
           videoReadyCallback={() => null}
         />
@@ -106,10 +120,7 @@ function CaptureViewInner({
               The in-page camera isn&apos;t available here. Use your device
               camera instead — each photo is added the moment you take it.
             </p>
-            <Button
-              size="sm"
-              onClick={() => fallbackInputRef.current?.click()}
-            >
+            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
               <CameraIcon className="mr-1.5 h-4 w-4" />
               Open system camera
             </Button>
@@ -126,23 +137,34 @@ function CaptureViewInner({
         className="hidden"
       />
 
-      {/* Bottom bar: filmstrip + shutter + done */}
-      <div className="z-30 shrink-0 bg-black/90 px-4 pb-safe">
-        {recentPreviews.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto py-2">
-            {recentPreviews.slice(-8).map((src, i) => (
-              
-              <img
-                key={`${i}-${src.slice(-24)}`}
-                src={src}
-                alt=""
-                className="h-12 w-9 shrink-0 rounded object-cover"
-              />
+      {/* Bottom bar: filmstrip + shutter + done. Sits BELOW the contained
+          video — never covers the frame being photographed. */}
+      <div className="z-30 shrink-0 bg-black px-4 pb-safe">
+        {shots.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto py-2">
+            {shots.slice(-10).map((shot, i, arr) => (
+              <button
+                key={shot.itemId}
+                type="button"
+                onClick={() => setPreviewShot(shot)}
+                aria-label={`View photo ${shots.length - arr.length + i + 1}`}
+                className="shrink-0"
+              >
+                { }
+                <img
+                  src={shot.previewUrl}
+                  alt=""
+                  className="h-12 w-9 rounded object-cover"
+                />
+              </button>
             ))}
+            <span className="shrink-0 pl-1 text-[11px] tabular-nums text-white/60">
+              {shots.length} page{shots.length === 1 ? "" : "s"}
+            </span>
           </div>
         )}
         <div className="flex items-center justify-between py-3">
-          <div className="w-20">
+          <div className="w-16">
             {numberOfCameras > 1 && !cameraBlocked && (
               <Button
                 variant="ghost"
@@ -167,19 +189,14 @@ function CaptureViewInner({
           >
             <span className="block h-14 w-14 rounded-full bg-white" />
           </button>
-          <div className="flex w-20 justify-end">
+          <div className="flex w-16 justify-end">
             <Button
               size="sm"
-              className="h-11 rounded-full px-4"
+              className="h-11 whitespace-nowrap rounded-full px-5"
               onClick={handleDone}
             >
               <Check className="mr-1 h-4 w-4" />
               Done
-              {recentPreviews.length > 0 && (
-                <span className="ml-1 tabular-nums">
-                  ({recentPreviews.length})
-                </span>
-              )}
             </Button>
           </div>
         </div>
@@ -190,6 +207,41 @@ function CaptureViewInner({
           </p>
         )}
       </div>
+
+      {/* Full-screen shot preview — stays in capture mode */}
+      {previewShot && (
+        <div className="absolute inset-0 z-40 flex flex-col bg-black">
+          <div className="relative min-h-0 flex-1">
+            { }
+            <img
+              src={previewShot.previewUrl}
+              alt="Captured photo"
+              className="absolute inset-0 h-full w-full object-contain"
+            />
+          </div>
+          <div className="flex shrink-0 items-center justify-center gap-3 bg-black px-4 py-3 pb-safe">
+            <Button
+              variant="destructive"
+              className="h-11 px-5"
+              onClick={() => {
+                onRemoveShot(previewShot.itemId);
+                setPreviewShot(null);
+              }}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" />
+              Delete & retake
+            </Button>
+            <Button
+              variant="secondary"
+              className="h-11 px-5"
+              onClick={() => setPreviewShot(null)}
+            >
+              <X className="mr-1.5 h-4 w-4" />
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

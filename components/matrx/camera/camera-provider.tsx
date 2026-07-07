@@ -16,6 +16,13 @@ interface CameraProviderProps {
     videoConstraints?: MediaTrackConstraints;
     /** JPEG quality for takePhoto() (0..1). Default: browser default (~0.92). */
     photoQuality?: number;
+    /**
+     * When true, takePhoto() captures the ENTIRE video frame instead of
+     * cropping to the container's aspect ratio. Pair with an
+     * `object-contain` video so what the user sees is exactly what the
+     * photo contains (the scanner's WYSIWYG requirement).
+     */
+    fullFrameCapture?: boolean;
 }
 
 interface CameraContextType {
@@ -43,7 +50,7 @@ interface CameraContextType {
 
 const CameraContext = createContext<CameraContextType | undefined>(undefined);
 
-export const CameraProvider = ({ children, videoConstraints, photoQuality }: CameraProviderProps) => {
+export const CameraProvider = ({ children, videoConstraints, photoQuality, fullFrameCapture }: CameraProviderProps) => {
     const [activeDeviceId, setActiveDeviceId] = useState<string | undefined>(
         undefined,
     );
@@ -57,8 +64,15 @@ export const CameraProvider = ({ children, videoConstraints, photoQuality }: Cam
     const [notSupported, setNotSupported] = useState<boolean>(false);
     const [permissionDenied, setPermissionDenied] = useState<boolean>(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
+    // Device the live stream is actually on — guards against the re-init
+    // loop that used to flip phones to the front camera (activeDeviceId was
+    // defaulted to devices[0], re-running init with `exact` on it).
+    const currentDeviceIdRef = useRef<string | undefined>(undefined);
 
     const initCameraStream = async () => {
+        if (activeDeviceId && activeDeviceId === currentDeviceIdRef.current) {
+            return; // already streaming from this device — don't re-prompt/flash
+        }
         stopStream();
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             console.error("Camera API not available");
@@ -79,7 +93,15 @@ export const CameraProvider = ({ children, videoConstraints, photoQuality }: Cam
                     },
                 })
                 .then((stream: MediaStream) => {
+                    // Record the granted device and adopt it as active so the
+                    // constraint-chosen camera (e.g. facingMode environment)
+                    // wins — never devices[0] (typically the front camera).
+                    const settings = stream.getVideoTracks()[0]?.getSettings();
+                    currentDeviceIdRef.current = settings?.deviceId;
                     setStream(handleSuccess(stream));
+                    if (!activeDeviceId && settings?.deviceId) {
+                        setActiveDeviceId(settings.deviceId);
+                    }
                     if (playerRef.current) {
                         playerRef.current.srcObject = stream;
                     }
@@ -108,9 +130,6 @@ export const CameraProvider = ({ children, videoConstraints, photoQuality }: Cam
             const devices = mediaDevice.filter((i) => i.kind === "videoinput");
             setNumberOfCameras(devices.length);
             setDevices(devices);
-            if (!activeDeviceId) {
-                setActiveDeviceId(devices[0]?.deviceId);
-            }
         });
 
         return stream;
@@ -122,10 +141,22 @@ export const CameraProvider = ({ children, videoConstraints, photoQuality }: Cam
             !canvasRef.current ||
             !playerRef.current?.videoWidth ||
             !playerRef.current?.videoHeight ||
-            !canvasRef.current?.getContext("2d") ||
-            !containerRef.current?.offsetWidth ||
-            !containerRef.current?.offsetHeight
+            !canvasRef.current?.getContext("2d")
         )
+            return undefined;
+
+        if (fullFrameCapture) {
+            // WYSIWYG: capture the entire sensor frame — no container crop.
+            const vw = playerRef.current.videoWidth;
+            const vh = playerRef.current.videoHeight;
+            canvasRef.current.width = vw;
+            canvasRef.current.height = vh;
+            const ctx = canvasRef.current.getContext("2d");
+            if (ctx) ctx.drawImage(playerRef.current, 0, 0, vw, vh);
+            return canvasRef.current.toDataURL("image/jpeg", photoQuality);
+        }
+
+        if (!containerRef.current?.offsetWidth || !containerRef.current?.offsetHeight)
             return undefined;
 
         const playerWidth = playerRef.current.videoWidth ?? 1280;
@@ -176,6 +207,7 @@ export const CameraProvider = ({ children, videoConstraints, photoQuality }: Cam
     };
 
     const stopStream = () => {
+        currentDeviceIdRef.current = undefined;
         if (stream) {
             stream.getTracks().forEach((track) => {
                 track.stop();
@@ -184,7 +216,6 @@ export const CameraProvider = ({ children, videoConstraints, photoQuality }: Cam
             if (playerRef.current) {
                 playerRef.current.srcObject = null;
             }
-            console.log("Camera stream stopped");
         }
     };
 

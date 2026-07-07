@@ -4,9 +4,9 @@ import { useCamera } from "@/components/matrx/camera/camera-provider"; // Adjust
 import { CameraProps, defaultErrorMessages } from "./camera-types";
 import { TriangleAlert, X } from "lucide-react";
 
-export const CameraView = React.forwardRef<unknown, CameraProps>(
+export const CameraView = React.forwardRef<unknown, CameraProps & { variant?: "fullscreen" | "fill" }>(
     (
-        { errorMessages = defaultErrorMessages, videoReadyCallback = () => null },
+        { errorMessages = defaultErrorMessages, videoReadyCallback = () => null, variant = "fullscreen" },
         ref,
     ) => {
         const {
@@ -32,6 +32,34 @@ export const CameraView = React.forwardRef<unknown, CameraProps>(
             }
             init();
         }, [activeDeviceId]);
+
+        if (variant === "fill") {
+            // Container-bounded, letterboxed view: the video shows the ENTIRE
+            // sensor frame (object-contain), never spilling under overlays —
+            // what the user sees is exactly what fullFrameCapture photographs.
+            return (
+                <div ref={containerRef} className="relative h-full w-full bg-black">
+                    <WarningMessage
+                        message={errorMessages.noCameraAccessible ?? defaultErrorMessages.noCameraAccessible ?? ""}
+                        show={notSupported}
+                    />
+                    <WarningMessage
+                        message={errorMessages.permissionDenied ?? defaultErrorMessages.permissionDenied ?? ""}
+                        show={permissionDenied}
+                    />
+                    <video
+                        className="absolute inset-0 z-0 h-full w-full object-contain"
+                        ref={playerRef}
+                        id="video"
+                        muted={true}
+                        autoPlay={true}
+                        playsInline={true}
+                        onLoadedData={videoReadyCallback}
+                    ></video>
+                    <canvas className="hidden" ref={canvasRef} />
+                </div>
+            );
+        }
 
         return (
             <div

@@ -13,6 +13,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useRef,
   useState,
   useTransition,
@@ -35,7 +36,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderBack from "@/features/shell/components/header/variants/shared/HeaderBack";
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
-import { createScanPdf } from "../api";
+import { createScanPdf, detectDocument } from "../api";
 import type { Quad, ScanItem, ScanPdfResult, ScanRotation } from "../types";
 import { useScanSession } from "../useScanSession";
 import { CaptureView } from "./CaptureView";
@@ -79,9 +80,34 @@ export default function ScannerSurface() {
   const libraryInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const imagePreviews = session.items
+  const imageShots = session.items
     .filter((i) => i.kind === "image" && i.previewUrl)
-    .map((i) => i.previewUrl as string);
+    .map((i) => ({ itemId: i.itemId, previewUrl: i.previewUrl as string }));
+
+  // Background boundary detection: the moment a photo's upload lands, run
+  // detect so the crop sheet opens pre-populated (and Save can apply crops
+  // the user never had to open). One attempt per item; the crop sheet's
+  // own detect (with Try-again) remains the interactive fallback.
+  const detectAttemptedRef = useRef(new Set<string>());
+  useEffect(() => {
+    for (const item of session.items) {
+      if (item.kind !== "image" || item.status !== "uploaded" || !item.fileId)
+        continue;
+      if (item.quad !== undefined) continue; // user already decided
+      if (detectAttemptedRef.current.has(item.itemId)) continue;
+      detectAttemptedRef.current.add(item.itemId);
+      const { itemId, fileId } = item;
+      detectDocument(fileId)
+        .then((res) => {
+          if (res.found && res.quad) session.setQuad(itemId, res.quad);
+          // Not found: leave undefined so the crop sheet still auto-tries
+          // (including the relaxed pass) when opened.
+        })
+        .catch(() => {
+          // Silent — purely an accelerator; the crop sheet retries.
+        });
+    }
+  }, [session.items, session.setQuad]);  
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -360,7 +386,8 @@ export default function ScannerSurface() {
       {capturing && (
         <CaptureView
           onCapture={session.addCapture}
-          recentPreviews={imagePreviews}
+          shots={imageShots}
+          onRemoveShot={session.removeItem}
           uploadingCount={session.uploadingCount}
           onDone={() => setCapturing(false)}
         />
