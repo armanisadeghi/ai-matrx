@@ -686,7 +686,10 @@ export function useStudioRun(runId: string): UseStudioRun {
         is_manual: !!opts?.customPrompt,
       });
       try {
-        const asset = await regenerateAssetApi(api, rid, {
+        // NDJSON stream under the hood; the wrapper resolves from the terminal
+        // podcast_asset_result event (a "failed" generation resolves normally
+        // with status "failed" — only infra errors throw).
+        const asset = await regenerateAssetApi(rid, {
           asset_kind: kind,
           slot,
           model_alias: opts?.modelAlias,
@@ -719,7 +722,7 @@ export function useStudioRun(runId: string): UseStudioRun {
         });
       }
     },
-    [api, applyAssetToState],
+    [applyAssetToState],
   );
 
   const addAsset = useCallback<UseStudioRun["addAsset"]>(
@@ -732,7 +735,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       const key = `${kind}:new`;
       setAssetBusy((b) => ({ ...b, [key]: true }));
       try {
-        const asset = await addAssetApi(api, rid, {
+        const asset = await addAssetApi(rid, {
           asset_kind: kind,
           description,
           model_alias: opts?.modelAlias,
@@ -751,7 +754,7 @@ export function useStudioRun(runId: string): UseStudioRun {
         });
       }
     },
-    [api, applyAssetToState],
+    [applyAssetToState],
   );
 
   const selectCover = useCallback(

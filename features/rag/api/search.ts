@@ -8,7 +8,7 @@
  * stages, document) and is consumed by both the dedicated RAG search
  * page and embedded surfaces (file context menu, omnibox, embed-in-chat).
  */
-import { postJson } from "@/lib/python-client";
+import { postNdjson } from "@/lib/python-client";
 
 export interface RagSearchHit {
   chunk_id: string;
@@ -95,17 +95,62 @@ export interface RagSearchRequest {
   admin_bypass_acl?: boolean;
 }
 
-/** Run a single RAG search. Throws on non-OK responses. */
+/**
+ * A `rag.citation` stream event — one hit, emitted the moment retrieval
+ * fuses it (before rerank finishes). Partial view of `RagSearchHit`.
+ */
+export interface RagSearchCitationEvent {
+  rank: number;
+  chunk_id: string;
+  source_kind: string;
+  source_id: string;
+  snippet: string;
+  score?: number;
+}
+
+/**
+ * Run a single RAG search. `POST /rag/search` STREAMS NDJSON since the
+ * 2026-07-06 stream-everything conversion (identical to the retained
+ * `/rag/search/stream` alias): `rag.citation` data events per hit as
+ * retrieval fuses, `rag.citation.summary`, then the terminal
+ * `rag.search.result` carrying the old `SearchResponseOut` body — this
+ * function resolves with that terminal payload, so callers are unchanged.
+ * Pass `onCitation` to render hits live while rerank finishes.
+ *
+ * Like the ingest family, RAG events are namespaced in `data.kind`
+ * (dotted), not the typed `data.type` registry.
+ *
+ * Throws on pre-stream HTTP failures, in-stream `error` events, and a
+ * stream that closes without the terminal event.
+ */
 export async function ragSearch(
   body: RagSearchRequest,
-  opts: { signal?: AbortSignal } = {},
+  opts: {
+    signal?: AbortSignal;
+    onCitation?: (citation: RagSearchCitationEvent) => void;
+  } = {},
 ): Promise<RagSearchResponse> {
-  const { data } = await postJson<RagSearchResponse, RagSearchRequest>(
-    `/rag/search`,
-    body,
-    { signal: opts.signal },
-  );
-  return data;
+  let result: RagSearchResponse | null = null;
+  for await (const evt of postNdjson<RagSearchRequest>(`/rag/search`, body, {
+    signal: opts.signal,
+  })) {
+    if (evt.event === "error") {
+      throw new Error(
+        evt.data.user_message ?? evt.data.message ?? "RAG search failed",
+      );
+    }
+    if (evt.event !== "data") continue;
+    const d = evt.data as { kind?: string } & Record<string, unknown>;
+    if (d.kind === "rag.citation" && opts.onCitation) {
+      opts.onCitation(d as unknown as RagSearchCitationEvent);
+    } else if (d.kind === "rag.search.result") {
+      result = d as unknown as RagSearchResponse;
+    }
+  }
+  if (!result) {
+    throw new Error("RAG search stream closed without a result");
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

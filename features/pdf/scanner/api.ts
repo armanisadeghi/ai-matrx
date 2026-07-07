@@ -10,10 +10,13 @@
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseHttpError } from "@/lib/api/errors";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { buildHeaders, postNdjson, resolveBaseUrl } from "@/lib/python-client";
+import type { ImageDocumentDetectedData } from "@/types/python-generated/stream-events";
 
 import type {
   DetectDocumentResponse,
+  Quad,
+  QuadPoint,
   ScanPdfRequest,
   ScanPdfResult,
 } from "./types";
@@ -22,16 +25,71 @@ import type {
  * Boundary detection for one uploaded photo. Pure read — nothing persisted.
  * `mode: "relaxed"` is the user-triggered "try again" pass (brightness
  * region + rect fallback) for shots the conservative pass gives up on.
+ *
+ * 2026-07 stream conversion: the endpoint now speaks NDJSON. We drain the
+ * stream and resolve on the `image_document_detected` terminal event,
+ * rebuilding the legacy nested-`quad` response shape so callers
+ * (useScanSession) stay untouched. The server flattened the four corners
+ * onto the event; we fold them back into a `Quad`.
  */
 export async function detectDocument(
   fileId: string,
   mode: "standard" | "relaxed" = "standard",
 ): Promise<DetectDocumentResponse> {
-  const { data } = await postJson<
-    DetectDocumentResponse,
-    { source_id: string; mode: "standard" | "relaxed" }
-  >("/images/detect-document", { source_id: fileId, mode });
-  return data;
+  let result: DetectDocumentResponse | null = null;
+  for await (const evt of postNdjson("/images/detect-document", {
+    source_id: fileId,
+    mode,
+  })) {
+    if (evt.event === "error") {
+      throw new Error(
+        evt.data.user_message ?? evt.data.message ?? "Document detection failed.",
+      );
+    }
+    if (evt.event !== "data") continue;
+    const d = evt.data;
+    if (!d || typeof d !== "object" || !("type" in d)) continue;
+    // The generated data union includes UntypedDataPayload (indexed), so
+    // literal narrowing alone can't pin the member — assert to the
+    // generated per-event interface after checking the discriminant.
+    if (d.type === "image_document_detected") {
+      const p = d as ImageDocumentDetectedData;
+      result = {
+        found: p.found,
+        quad: quadFromCorners(p),
+        confidence: p.confidence ?? 0,
+        image_width: p.image_width ?? 0,
+        image_height: p.image_height ?? 0,
+      };
+    }
+  }
+  if (!result) {
+    throw new Error(
+      "The document-detection stream ended without a result event.",
+    );
+  }
+  return result;
+}
+
+/**
+ * Fold the flattened corner fields of `image_document_detected` back into
+ * the nested `Quad` the scanner's coordinate contract uses. Returns null
+ * when nothing was found or any corner is missing (found=false sends nulls).
+ */
+function quadFromCorners(p: ImageDocumentDetectedData): Quad | null {
+  if (!p.found) return null;
+  const corners = [p.top_left, p.top_right, p.bottom_right, p.bottom_left];
+  if (corners.some((c) => !Array.isArray(c) || c.length < 2)) return null;
+  const point = (c: unknown[] | null | undefined): QuadPoint => {
+    const [x, y] = c as [number, number];
+    return [x, y];
+  };
+  return {
+    top_left: point(p.top_left),
+    top_right: point(p.top_right),
+    bottom_right: point(p.bottom_right),
+    bottom_left: point(p.bottom_left),
+  };
 }
 
 export interface CreateScanPdfCallbacks {

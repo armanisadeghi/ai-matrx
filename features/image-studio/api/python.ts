@@ -15,7 +15,8 @@
  * `applyEdit` + typed sugar for the common families.
  */
 
-import { getJson, postJson } from "@/lib/python-client";
+import { getJson, postJson, postNdjson } from "@/lib/python-client";
+import type { ImageEditCompleteData } from "@/types/python-generated/stream-events";
 
 // ---------------------------------------------------------------------------
 // Output options — shared across every op
@@ -77,6 +78,46 @@ export interface ImageResult {
  * `primary_url` / `variants` directly off the returned AssetEnvelope.
  */
 export type EditResponse = AssetEnvelope;
+
+/**
+ * 2026-07 stream conversion: /images/edit, /images/bg-remove and
+ * /images/inpaint now speak NDJSON. Pre-stream HTTP failures (400
+ * unknown_op, 503 backend_unavailable, auth) still throw BackendApiError
+ * from postNdjson; everything else arrives in-band. This helper drains the
+ * stream and resolves with the terminal `image_edit_complete.asset` —
+ * per the backend contract that field is the verbatim legacy Asset
+ * envelope, byte-identical to the old blocking response body.
+ */
+async function drainEditStream<B>(
+  path: string,
+  body: B,
+): Promise<EditResponse> {
+  let asset: EditResponse | null = null;
+  for await (const evt of postNdjson(path, body)) {
+    if (evt.event === "error") {
+      throw new Error(
+        evt.data.user_message ?? evt.data.message ?? "Image edit failed.",
+      );
+    }
+    if (evt.event !== "data") continue;
+    const d = evt.data;
+    if (!d || typeof d !== "object" || !("type" in d)) continue;
+    // The generated data union includes UntypedDataPayload (indexed), so
+    // literal narrowing alone can't pin the member — assert to the
+    // generated per-event interface after checking the discriminant.
+    if (d.type === "image_edit_complete") {
+      const p = d as ImageEditCompleteData;
+      // Server guarantee: `asset` is the unmodified legacy Asset envelope.
+      asset = p.asset as unknown as EditResponse;
+    }
+  }
+  if (!asset) {
+    throw new Error(
+      `The image-edit stream (${path}) ended without a result event.`,
+    );
+  }
+  return asset;
+}
 
 // ---------------------------------------------------------------------------
 // Prompt-based AI edit — stub for the natural-language image edit feature
@@ -154,11 +195,7 @@ export interface EditBody<P = Record<string, unknown>> {
 export async function applyEdit<P = Record<string, unknown>>(
   body: EditBody<P>,
 ): Promise<EditResponse> {
-  const { data } = await postJson<EditResponse, EditBody<P>>(
-    "/images/edit",
-    body,
-  );
-  return data;
+  return drainEditStream("/images/edit", body);
 }
 
 // ---------------------------------------------------------------------------
@@ -240,11 +277,7 @@ export interface BgRemoveBody {
 export async function removeBackground(
   body: BgRemoveBody,
 ): Promise<EditResponse> {
-  const { data } = await postJson<EditResponse, BgRemoveBody>(
-    "/images/bg-remove",
-    body,
-  );
-  return data;
+  return drainEditStream("/images/bg-remove", body);
 }
 
 // ---------------------------------------------------------------------------
@@ -266,11 +299,7 @@ export interface InpaintBody {
 }
 
 export async function inpaint(body: InpaintBody): Promise<EditResponse> {
-  const { data } = await postJson<EditResponse, InpaintBody>(
-    "/images/inpaint",
-    body,
-  );
-  return data;
+  return drainEditStream("/images/inpaint", body);
 }
 
 // ---------------------------------------------------------------------------

@@ -34,6 +34,12 @@ export interface StageProgress {
   total: number;
 }
 
+/** Durable per-asset DTO (GET /podcast/runs/{id} rows). The per-asset
+ *  regenerate/add endpoints stream NDJSON and deliver this same shape as the
+ *  terminal `podcast_asset_result` event — the generated wire type is
+ *  `PodcastAssetResultEvent` (types/python-generated/stream-events.ts), a
+ *  superset of this (adds run_id/asset_id/error, optional fields). runsApi.ts
+ *  normalizes that event into this DTO so consumers keep strict nullability. */
 export interface RunAsset {
   asset_kind: RunAssetKind;
   slot: number;
