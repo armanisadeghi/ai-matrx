@@ -1,5 +1,5 @@
 {
-  "generated_for": "68-kinds+bac4b3d1d313",
+  "generated_for": "68-kinds+333908a20d97",
   "columns": [
     "definition",
     "example",
@@ -77,7 +77,7 @@
     },
     {
       "kind": "cooking_recipe",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -298,7 +298,7 @@
     },
     {
       "kind": "mermaid_diagram",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -324,11 +324,11 @@
     },
     {
       "kind": "presentation_deck",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "warn",
         "skill": "ok",
         "content_block": "ok",
@@ -376,7 +376,7 @@
     },
     {
       "kind": "progress_tracker",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -506,7 +506,7 @@
     },
     {
       "kind": "research_report",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -558,7 +558,7 @@
     },
     {
       "kind": "resource_collection",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -649,7 +649,7 @@
     },
     {
       "kind": "structured_info",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -714,7 +714,7 @@
     },
     {
       "kind": "task_list",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -753,7 +753,7 @@
     },
     {
       "kind": "timeline",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -792,7 +792,7 @@
     },
     {
       "kind": "transcript",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -818,7 +818,7 @@
     },
     {
       "kind": "troubleshooting_guide",
-      "is_active": false,
+      "is_active": true,
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -1161,12 +1161,6 @@
     {
       "severity": "yellow",
       "code": "no-example",
-      "kind": "presentation_deck",
-      "message": "kind \"presentation_deck\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
       "kind": "presentation_slide",
       "message": "kind \"presentation_slide\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -1427,6 +1421,66 @@
       "code": "no-skill",
       "kind": "workflow_run_result",
       "message": "kind \"workflow_run_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "cooking_recipe",
+      "message": "kind \"cooking_recipe\" example is older than the kind definition (example 2026-07-07T06:19:10.874532+00:00 < kind 2026-07-07T07:18:49.933596+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "mermaid_diagram",
+      "message": "kind \"mermaid_diagram\" example is older than the kind definition (example 2026-07-07T06:10:47.284589+00:00 < kind 2026-07-07T07:18:49.196706+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "progress_tracker",
+      "message": "kind \"progress_tracker\" example is older than the kind definition (example 2026-07-07T06:16:13.027068+00:00 < kind 2026-07-07T07:18:49.455126+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "research_report",
+      "message": "kind \"research_report\" example is older than the kind definition (example 2026-07-07T06:19:34.378521+00:00 < kind 2026-07-07T07:18:50.018022+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "resource_collection",
+      "message": "kind \"resource_collection\" example is older than the kind definition (example 2026-07-07T06:12:18.489185+00:00 < kind 2026-07-07T07:18:49.397134+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "structured_info",
+      "message": "kind \"structured_info\" example is older than the kind definition (example 2026-07-07T06:15:40.531727+00:00 < kind 2026-07-07T07:18:49.555949+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "task_list",
+      "message": "kind \"task_list\" example is older than the kind definition (example 2026-07-07T06:15:22.711441+00:00 < kind 2026-07-07T07:18:49.345103+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "timeline",
+      "message": "kind \"timeline\" example is older than the kind definition (example 2026-07-07T06:10:25.822427+00:00 < kind 2026-07-07T07:18:49.502056+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "transcript",
+      "message": "kind \"transcript\" example is older than the kind definition (example 2026-07-07T06:15:17.920823+00:00 < kind 2026-07-07T07:18:49.613097+00:00) — revalidate/recapture"
+    },
+    {
+      "severity": "yellow",
+      "code": "stale-example",
+      "kind": "troubleshooting_guide",
+      "message": "kind \"troubleshooting_guide\" example is older than the kind definition (example 2026-07-07T06:15:33.977305+00:00 < kind 2026-07-07T07:18:49.682038+00:00) — revalidate/recapture"
     }
   ]
 }
