@@ -19,11 +19,13 @@ import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import { useSidebarExpanded } from "../../hooks/useSidebarExpanded";
 import {
+  NAV_WINDOW_PANEL_ICON,
   partitionNavChildren,
   type ShellNavChild,
   type ShellNavItem,
 } from "../../constants/nav-data";
 import { useNavActions } from "../../navigation/navActions";
+import { useNavPanelActions } from "../../navigation/navPanelActions";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
@@ -50,6 +52,7 @@ export default function NavFlyoutGroup({
   const expanded = useSidebarExpanded();
   const pathname = usePathname() ?? "";
   const navActions = useNavActions();
+  const navPanelActions = useNavPanelActions();
 
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -71,13 +74,41 @@ export default function NavFlyoutGroup({
     !suppressActive && (Boolean(activeHref) || isOnRoute(pathname, item.href));
 
   // Destinations up top (grouped), create actions collected at the bottom.
-  const { sections, actions } = partitionNavChildren(children);
+  const { sections, panels, actions } = partitionNavChildren(children);
 
   // One renderer for both destinations and actions so they're pixel-identical.
   // Action entries trigger an overlay/window in place instead of navigating —
   // render a button, run the handler, and close the flyout. (Falls back to a
   // plain Link for navigation entries and action entries without a handler.)
   const renderChild = (child: ShellNavChild) => {
+    const panelHandler = child.panelAction
+      ? navPanelActions[child.panelAction]
+      : undefined;
+    if (panelHandler) {
+      return (
+        <button
+          key={child.panelAction}
+          type="button"
+          role="menuitem"
+          className="shell-nav-flyout-item"
+          onClick={() => {
+            panelHandler();
+            setPinned(false);
+            setOpen(false);
+          }}
+        >
+          <span className="shell-nav-icon">
+            <ShellIcon
+              name={NAV_WINDOW_PANEL_ICON}
+              size={16}
+              strokeWidth={1.75}
+            />
+          </span>
+          <span>{child.label}</span>
+        </button>
+      );
+    }
+
     const actionHandler = child.action ? navActions[child.action] : undefined;
     if (actionHandler) {
       return (
@@ -276,9 +307,21 @@ export default function NavFlyoutGroup({
                 {section.items.map(renderChild)}
               </div>
             ))}
-            {actions.length > 0 && (
+            {panels.length > 0 && (
               <>
                 {sections.length > 0 && (
+                  <div
+                    className="shell-nav-flyout-divider"
+                    role="separator"
+                    aria-orientation="horizontal"
+                  />
+                )}
+                {panels.map(renderChild)}
+              </>
+            )}
+            {actions.length > 0 && (
+              <>
+                {(sections.length > 0 || panels.length > 0) && (
                   <div
                     className="shell-nav-flyout-divider"
                     role="separator"

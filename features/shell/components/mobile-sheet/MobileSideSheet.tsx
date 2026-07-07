@@ -11,6 +11,7 @@
 // NavActiveSync keeps .shell-root[data-pathname] live after client navigation.
 
 import {
+  NAV_WINDOW_PANEL_ICON,
   navItemsForViewer,
   partitionNavChildren,
   primaryNavItems,
@@ -75,7 +76,9 @@ export default function MobileSideSheet({
               // Same standard as desktop: destinations up top, create actions
               // collected at the bottom below a divider. Mobile has no overlay
               // surface, so actions navigate to their graceful `href` fallback.
-              const { sections, actions } = partitionNavChildren(item.children);
+              const { sections, panels, actions } = partitionNavChildren(
+                item.children,
+              );
               return (
                 <div
                   key={item.label}
@@ -106,9 +109,25 @@ export default function MobileSideSheet({
                         ))}
                       </div>
                     ))}
-                    {actions.length > 0 ? (
+                    {panels.length > 0 ? (
                       <>
                         {sections.length > 0 ? (
+                          <div className="shell-mobile-section-divider" />
+                        ) : null}
+                        {panels.map((child) => (
+                          <MobileSheetNavLink
+                            key={child.panelAction ?? child.href}
+                            href={child.href}
+                            iconName={NAV_WINDOW_PANEL_ICON}
+                            label={child.label}
+                            isChild
+                          />
+                        ))}
+                      </>
+                    ) : null}
+                    {actions.length > 0 ? (
+                      <>
+                        {sections.length > 0 || panels.length > 0 ? (
                           <div className="shell-mobile-section-divider" />
                         ) : null}
                         {actions.map((child) => (

@@ -20,6 +20,12 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * an action therefore never breaks a surface — it only upgrades the ones that
  * opt in. Add the next action's id to this union and register its handler.
  */
+import type { ShellNavPanelActionId } from "./nav-window-panels";
+import { NAV_WINDOW_PANEL_ICON } from "./nav-window-panels";
+
+export type { ShellNavPanelActionId };
+export { NAV_WINDOW_PANEL_ICON };
+
 export type ShellNavActionId =
   | "create-project"
   | "create-task"
@@ -87,6 +93,11 @@ export interface ShellNavChild {
    * stays as the fallback for surfaces that don't yet understand actions.
    */
   action?: ShellNavActionId;
+  /**
+   * Opens a registered window panel in place (middle flyout section — divider +
+   * `NAV_WINDOW_PANEL_ICON`, above create actions). See `nav-window-panels.ts`.
+   */
+  panelAction?: ShellNavPanelActionId;
   /**
    * Marks this child as an **action** (a create/add affordance) rather than a
    * navigation destination. Action children always render together in a
@@ -176,6 +187,27 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: false,
     description: "Interact with our reimagined chat interface",
     color: "indigo",
+    children: [
+      {
+        label: "Chat",
+        href: "/chat/new",
+        iconName: "MessageCircle",
+        exact: true,
+        profileMenu: true,
+      },
+      {
+        label: "Chat Window",
+        href: "/chat/new",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-chat-panel",
+      },
+      {
+        label: "Chat History Window",
+        href: "/chat/new",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-chat-history-panel",
+      },
+    ],
   },
   {
     // Sidebar points at the gallery (`/agents/all`) for authed users; for
@@ -218,11 +250,35 @@ export const primaryNavItems: ShellNavItem[] = [
           "Tools, skills, MCP servers, and plugins your agents can reach",
       },
       {
+        label: "Agent Connections Window",
+        href: "/agent-connections",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-agent-connections-panel",
+      },
+      {
         label: "Agent Battle",
         href: "/agents/battle",
         iconName: "Swords",
         description:
           "Compare agents side by side — models, prompts, and outputs",
+      },
+      {
+        label: "Agent Settings Window",
+        href: "/agents/all",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-agent-settings-panel",
+      },
+      {
+        label: "Agent Advanced Editor Window",
+        href: "/agents/all",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-agent-advanced-editor-panel",
+      },
+      {
+        label: "Run History Window",
+        href: "/agents/all",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-run-history-panel",
       },
       // Actions — collected at the bottom below a divider.
       {
@@ -263,6 +319,12 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
+      {
+        label: "Notes Window",
+        href: "/notes",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-notes-panel",
+      },
       // Actions — collected at the bottom below a divider.
       {
         // Creates a blank draft note in place, then opens it.
@@ -300,6 +362,12 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "cyan",
         profileMenu: true,
         dashboard: true,
+      },
+      {
+        label: "Data Tables Window",
+        href: "/data",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-data-tables-panel",
       },
       {
         label: "Workbooks",
@@ -377,6 +445,12 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "emerald",
         profileMenu: true,
         dashboard: true,
+      },
+      {
+        label: "Context Switcher Window",
+        href: "/scopes",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-context-switcher-panel",
       },
       // Actions — collected at the bottom below a divider. `?create=1` opens
       // the canonical Create Organization modal on the launcher page.
@@ -584,6 +658,12 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Tasks Window",
+        href: "/tasks",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-tasks-panel",
+      },
+      {
         label: "War Room",
         href: "/war-room",
         iconName: "Radar",
@@ -625,10 +705,28 @@ export const primaryNavItems: ShellNavItem[] = [
     iconName: "FolderOpen",
     section: "primary",
     dockOrder: 8,
-    profileMenu: true,
-    dashboard: true,
+    profileMenu: false,
+    dashboard: false,
     description: "Browse and manage your files and documents",
     color: "blue",
+    children: [
+      {
+        label: "Files",
+        href: "/files/all",
+        guestHref: "/files",
+        iconName: "FolderOpen",
+        description: "Browse and manage your files and documents",
+        color: "blue",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Files Window",
+        href: "/files/all",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-files-panel",
+      },
+    ],
   },
   {
     // Group parent — Utilities. Real destinations live on the children so
@@ -652,10 +750,17 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "PDF Extractor Window",
+        href: "/tools/pdf-extractor",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-pdf-extractor-panel",
+      },
+      {
         label: "Scanner",
         href: "/tools/scanner",
         iconName: "ScanLine",
-        description: "Use your phone as a scanner — photos to one searchable PDF",
+        description:
+          "Use your phone as a scanner — photos to one searchable PDF",
         color: "orange",
         profileMenu: true,
         dashboard: true,
@@ -669,6 +774,12 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "orange",
         profileMenu: true,
         dashboard: true,
+      },
+      {
+        label: "Web Scraper Window",
+        href: "/scraper",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-web-scraper-panel",
       },
       {
         label: "Markdown Studio",
@@ -728,6 +839,18 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
+      {
+        label: "Gallery Window",
+        href: "/images",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-gallery-panel",
+      },
+      {
+        label: "Crop Studio Window",
+        href: "/images",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-crop-studio-panel",
+      },
     ],
   },
   {
@@ -758,8 +881,26 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "FileText",
       },
       { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
+      {
+        label: "Transcript Studio Window",
+        href: "/transcripts/studio",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-transcript-studio-panel",
+      },
       { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
       { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },
+      {
+        label: "Voice Pad Window",
+        href: "/transcripts",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-voice-pad-panel",
+      },
+      {
+        label: "Advanced Voice Pad Window",
+        href: "/transcripts",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-advanced-voice-pad-panel",
+      },
       // Actions — collected at the bottom below a divider.
       {
         label: "New Transcript",
@@ -797,6 +938,24 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "orange",
         profileMenu: true,
         dashboard: true,
+      },
+      {
+        label: "Code Editor Window",
+        href: "/code",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-code-editor-panel",
+      },
+      {
+        label: "Smart Code Editor Window",
+        href: "/code",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-smart-code-editor-panel",
+      },
+      {
+        label: "Code Files Window",
+        href: "/code",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-code-files-panel",
       },
       // Actions — collected at the bottom below a divider. `?create=1` opens
       // the canonical Create Sandbox modal on the sandbox list page.
@@ -1111,9 +1270,16 @@ export function isNavActionChild(child: ShellNavChild): boolean {
   return child.actionItem === true || child.action != null;
 }
 
+/** Window-panel affordance — rendered between destinations and create actions. */
+export function isNavPanelChild(child: ShellNavChild): boolean {
+  return child.panelAction != null;
+}
+
 export interface PartitionedNavChildren {
   /** Navigation destinations, grouped into labelled sections (top of the menu). */
   sections: ShellNavChildSection[];
+  /** Window panels (middle section — divider + panel icon, above create actions). */
+  panels: ShellNavChild[];
   /** Create/add affordances, in source order (bottom of the menu, below a divider). */
   actions: ShellNavChild[];
 }
@@ -1131,9 +1297,16 @@ export interface PartitionedNavChildren {
 export function partitionNavChildren(
   children: ShellNavChild[],
 ): PartitionedNavChildren {
-  const navChildren = children.filter((c) => !isNavActionChild(c));
+  const navChildren = children.filter(
+    (c) => !isNavActionChild(c) && !isNavPanelChild(c),
+  );
+  const panelChildren = children.filter(isNavPanelChild);
   const actions = children.filter(isNavActionChild);
-  return { sections: groupNavChildren(navChildren), actions };
+  return {
+    sections: groupNavChildren(navChildren),
+    panels: panelChildren,
+    actions,
+  };
 }
 
 /**

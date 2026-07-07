@@ -3,6 +3,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  AppWindow,
   Aperture,
   ArrowLeftRight,
   ArrowUpRight,
@@ -83,6 +84,7 @@ import {
 } from "lucide-react";
 
 export const shellIconComponents: Record<string, LucideIcon> = {
+  AppWindow,
   Aperture,
   ArrowLeftRight,
   ArrowUpRight,

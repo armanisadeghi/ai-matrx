@@ -70,7 +70,7 @@ export default function SidebarWindowToggle() {
 
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "visibility" | "layout" | "tools" | "admin" | "creator"
+    "visibility" | "layout" | "tools" | "admin" | "creator" | "dupes"
   >("tools");
   const [layoutDirX, setLayoutDirX] = useState<"ltr" | "rtl">("rtl");
   const [layoutDirY, setLayoutDirY] = useState<"ttb" | "btt">("ttb");
@@ -233,6 +233,21 @@ export default function SidebarWindowToggle() {
               >
                 Layout
               </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  className={cn(
+                    "px-2 py-1 text-[11px] font-medium uppercase tracking-wider rounded-md transition-colors flex items-center gap-1",
+                    activeTab === "dupes"
+                      ? "bg-amber-500/15 text-amber-500"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/40",
+                  )}
+                  onClick={() => setActiveTab("dupes")}
+                >
+                  <AppWindow className="w-3 h-3" />
+                  Dupes
+                </button>
+              )}
               {isAdmin && (
                 <button
                   type="button"
@@ -645,6 +660,10 @@ export default function SidebarWindowToggle() {
             {/* ── Tab Content: Admin ───────────────────────────────────────── */}
             {activeTab === "admin" && isAdmin && (
               <ToolsGrid section="admin" onAfterActivate={closePopover} />
+            )}
+
+            {activeTab === "dupes" && isAdmin && (
+              <ToolsGrid section="dupes" onAfterActivate={closePopover} />
             )}
 
             {/* ── Tab Content: Creator ─────────────────────────────────────── */}

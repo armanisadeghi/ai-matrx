@@ -17,10 +17,10 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsCreator } from "@/lib/redux/selectors/userSelectors";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { getStaticEntryByOverlayId } from "@/features/window-panels/registry/windowRegistryMetadata";
-import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
+import { MIGRATED_NAV_PANEL_TILE_IDS } from "@/features/shell/constants/nav-window-panels";
 import { MenuDivider, MenuGridItem, MenuSection } from "./menuPrimitives";
+import { activateToolsGridTile } from "./activateToolsGridTile";
 import {
   TOOLS_CATEGORIES,
   TOOLS_GRID_TILES,
@@ -41,7 +41,7 @@ interface ToolsGridProps {
    * category only; "creator" = creator category only. Lets SidebarWindowToggle
    * render one ToolsGrid per tab.
    */
-  section: "tools" | "admin" | "creator";
+  section: "tools" | "admin" | "creator" | "dupes";
 }
 
 export default function ToolsGrid({
@@ -68,37 +68,7 @@ export default function ToolsGrid({
         if (tile.onActivate) {
           tile.onActivate(ctx);
         } else if (tile.overlayId) {
-          const entry = getStaticEntryByOverlayId(tile.overlayId);
-          if (!entry) {
-            // eslint-disable-next-line no-console
-            console.warn(
-              `[ToolsGrid] tile "${tile.id}" points at overlayId "${tile.overlayId}" which is not registered`,
-            );
-            return;
-          }
-          const strategy =
-            tile.instanceStrategy ??
-            (entry.instanceMode === "multi"
-              ? "fresh-per-click"
-              : "singleton-default");
-
-          const data = tile.seedData?.(ctx);
-          const instanceId =
-            strategy === "fresh-per-click"
-              ? `${entry.slug}-${Date.now()}`
-              : undefined;
-
-          dispatch(
-            openOverlay({
-              // entry comes from the registry; cast is safe because
-              // check-registry verifies every entry's overlayId is in
-              // OVERLAY_IDS. The metadata field is `string` only to avoid
-              // a circular import with overlay-ids.ts.
-              overlayId: entry.overlayId as OverlayId,
-              ...(instanceId ? { instanceId } : {}),
-              ...(data ? { data } : {}),
-            }),
-          );
+          activateToolsGridTile(tile.id, ctx);
         }
       } finally {
         onAfterActivate?.();
@@ -109,11 +79,11 @@ export default function ToolsGrid({
 
   // Filter categories by section + admin gate.
   const visibleCategories = TOOLS_CATEGORIES.filter((cat) => {
-    // Each gated section renders only its own category.
+    if (section === "dupes") return cat.id === "dupes" && isAdmin;
     if (section === "admin") return cat.id === "admin" && isAdmin;
     if (section === "creator") return cat.id === "creator" && isCreator;
-    // "tools" — everyday categories only; admin/creator live in their own tabs.
-    if (cat.id === "admin" || cat.id === "creator") return false;
+    if (cat.id === "admin" || cat.id === "creator" || cat.id === "dupes")
+      return false;
     if (cat.gate === "admin" && !isAdmin) return false;
     if (cat.gate === "creator" && !isCreator) return false;
     return true;
@@ -124,11 +94,15 @@ export default function ToolsGrid({
   for (const tile of TOOLS_GRID_TILES) {
     if (tile.gate === "admin" && !isAdmin) continue;
     if (tile.gate === "creator" && !isCreator) continue;
+    if (section === "dupes" && tile.category !== "dupes") continue;
     if (section === "admin" && tile.category !== "admin") continue;
     if (section === "creator" && tile.category !== "creator") continue;
     if (
       section === "tools" &&
-      (tile.category === "admin" || tile.category === "creator")
+      (tile.category === "admin" ||
+        tile.category === "creator" ||
+        tile.category === "dupes" ||
+        MIGRATED_NAV_PANEL_TILE_IDS.has(tile.id))
     )
       continue;
     const bucket = tilesByCategory.get(tile.category) ?? [];
@@ -149,7 +123,9 @@ export default function ToolsGrid({
             {section === "tools" && <MenuSection label={cat.label} />}
             <div
               className={
-                section === "admin" || section === "creator"
+                section === "admin" ||
+                section === "creator" ||
+                section === "dupes"
                   ? "grid grid-cols-2 gap-1.5 px-2 pb-2 mt-1"
                   : "grid grid-cols-2 gap-1.5 px-2 pb-2"
               }

@@ -100,7 +100,8 @@ export type ToolsCategory =
   | "files-web"
   | "general"
   | "creator"
-  | "admin";
+  | "admin"
+  | "dupes";
 
 export const TOOLS_CATEGORIES: ReadonlyArray<{
   id: ToolsCategory;
@@ -115,6 +116,7 @@ export const TOOLS_CATEGORIES: ReadonlyArray<{
   { id: "general", label: "General" },
   { id: "creator", label: "Creator", gate: "creator" },
   { id: "admin", label: "Admin", gate: "admin" },
+  { id: "dupes", label: "Dupes", gate: "admin" },
 ];
 
 /**
@@ -248,21 +250,24 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.voice-pad-advanced",
     label: "Advanced Voice Pad",
     icon: AudioLines,
-    category: "voice",
+    category: "dupes",
+    gate: "admin",
     overlayId: "voicePadAdvanced",
   },
   {
     id: "tile.voice-pad",
     label: "Voice Pad",
     icon: AudioLines,
-    category: "voice",
+    category: "dupes",
+    gate: "admin",
     overlayId: "voicePad",
   },
   {
     id: "tile.transcript-studio",
     label: "Transcript Studio",
     icon: Captions,
-    category: "voice",
+    category: "dupes",
+    gate: "admin",
     overlayId: "transcriptStudioWindow",
   },
 
@@ -273,7 +278,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.notes-pinned",
     label: "Notes",
     icon: StickyNote,
-    category: "notes",
+    category: "dupes",
+    gate: "admin",
     overlayId: "notesWindow",
     instanceStrategy: "singleton-default",
     seedData: () => ({ title: "Notes" }),
@@ -284,7 +290,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.code-editor",
     label: "Code Editor",
     icon: FileCode2,
-    category: "content",
+    category: "dupes",
+    gate: "admin",
     overlayId: "codeEditorWindow",
     instanceStrategy: "fresh-per-click",
     seedData: () => ({
@@ -296,7 +303,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.smart-code-editor",
     label: "Smart Code Editor",
     icon: CircleDot,
-    category: "content",
+    category: "dupes",
+    gate: "admin",
     overlayId: "smartCodeEditorWindow",
     instanceStrategy: "fresh-per-click",
     seedData: () => ({
@@ -324,7 +332,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.code-files",
     label: "Code Files",
     icon: FolderSearch,
-    category: "content",
+    category: "dupes",
+    gate: "admin",
     overlayId: "codeFileManagerWindow",
     instanceStrategy: "fresh-per-click",
   },
@@ -373,7 +382,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.agent-run",
     label: "Chat",
     icon: MessageSquare,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "agentRunWindow",
     seedData: () => seedDefaultChatWindowAgent(),
   },
@@ -381,7 +391,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.agent-advanced-editor",
     label: "Agent Advanced Editor",
     icon: Brackets,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "agentAdvancedEditorWindow",
     seedData: (ctx) => seedInitialAgentId(ctx),
   },
@@ -389,14 +400,16 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.agent-settings",
     label: "Agent Settings",
     icon: SlidersHorizontal,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "agentSettingsWindow",
   },
   {
     id: "tile.agent-run-history",
     label: "Run History",
     icon: History,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "agentRunHistoryWindow",
   },
   {
@@ -410,14 +423,16 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.agent-connections",
     label: "Agent Connections",
     icon: Network,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "agentConnectionsWindow",
   },
   {
     id: "tile.ai-results",
     label: "Chat History",
     icon: Zap,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "quickChatHistory",
   },
   {
@@ -484,21 +499,24 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.quick-files",
     label: "Files",
     icon: FolderSearch,
-    category: "files-web",
+    category: "dupes",
+    gate: "admin",
     overlayId: "cloudFilesWindow",
   },
   {
     id: "tile.gallery",
     label: "Gallery",
     icon: GalleryHorizontalEnd,
-    category: "files-web",
+    category: "dupes",
+    gate: "admin",
     overlayId: "galleryWindow",
   },
   {
     id: "tile.pdf-extractor",
     label: "PDF Extractor",
     icon: FileScan,
-    category: "files-web",
+    category: "dupes",
+    gate: "admin",
     overlayId: "pdfExtractorWindow",
   },
   {
@@ -541,14 +559,16 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.crop-studio",
     label: "Crop Studio",
     icon: Crop,
-    category: "files-web",
+    category: "dupes",
+    gate: "admin",
     overlayId: "cropStudioWindow",
   },
   {
     id: "tile.scraper",
     label: "Web Scraper",
     icon: Globe,
-    category: "files-web",
+    category: "dupes",
+    gate: "admin",
     overlayId: "scraperWindow",
   },
 
@@ -564,14 +584,16 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.context-switcher",
     label: "Context Switcher",
     icon: Layers,
-    category: "general",
+    category: "dupes",
+    gate: "admin",
     overlayId: "contextSwitcherWindow",
   },
   {
     id: "tile.quick-data",
     label: "Data Tables",
     icon: Database,
-    category: "general",
+    category: "dupes",
+    gate: "admin",
     overlayId: "quickDataWindow",
   },
   {
@@ -643,7 +665,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.quick-tasks",
     label: "Tasks",
     icon: CheckSquare,
-    category: "general",
+    category: "dupes",
+    gate: "admin",
     overlayId: "quickTasksWindow",
   },
 
