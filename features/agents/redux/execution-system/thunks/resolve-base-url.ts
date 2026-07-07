@@ -152,10 +152,26 @@ export function resolveBackendForConversation(
   }
 
   if (overrideUrl) {
-    const baseUrl = overrideUrl.endsWith("/")
-      ? overrideUrl.slice(0, -1)
-      : overrideUrl;
-    return { baseUrl, channel: "override", headers };
+    // The override URL and the sandbox BINDING (resolveAgentSandboxRef) are
+    // written by two independent decision trees (see module comment) and can
+    // fall out of sync — e.g. the /code editor arms serverOverrideUrl for
+    // sandbox mode while the binding resolver separately decides no box is
+    // actually attached (wrong sourceFeature, dead/tombstoned box, ephemeral
+    // conversation, chat-incognito). Blindly honoring the override in that
+    // case POSTs the whole turn to a sandbox container's own in-box aidream
+    // process, which has never heard of this conversation → hard 404
+    // "Conversation not found". Only take the override channel when a live
+    // binding confirms this conversation is genuinely attached to that box.
+    const ref = resolveAgentSandboxRef(state, conversationId);
+    if (ref) {
+      const baseUrl = overrideUrl.endsWith("/")
+        ? overrideUrl.slice(0, -1)
+        : overrideUrl;
+      return { baseUrl, channel: "override", headers };
+    }
+    console.warn(
+      `[sandbox-routing] conversation ${conversationId} has serverOverrideUrl=${overrideUrl} but no live sandbox binding resolved for it — ignoring the override and falling back to the default backend instead of POSTing to a disconnected sandbox.`,
+    );
   }
 
   // EC2 (slim) sandbox conversations run the loop on the nearby dedicated
