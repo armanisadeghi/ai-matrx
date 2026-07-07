@@ -113,6 +113,31 @@ Scope: inline **Action Bar** + **⋯ Message options** menu on committed, non-fa
 
 **Create-task specifics fixed:** title from conversation label; conversation edge labeled with the real conversation title (was message-preview); hierarchy ensure-fetch on mount (`useEnsureHierarchyLoaded`) so Project dropdown is never empty; window resized 720×560 → `90vw × 85dvh`; description gets the full refine toolkit. Still to verify live: post-save "Window" panel behavior (wiring looks correct — seeds `quickTasksWindowSlice` then opens `quickTasksWindow`).
 
+### Menu reorg (2026-07-05, wave 2) — SUPERSEDES the section column in the table above
+
+The ⋯ menu now has this structure (same for assistant + user messages, modulo role gates):
+
+- **Edit** — unchanged (Edit content / Edit history / Fork / Delete).
+- **Save as** (all destinations, route-badge icons via `RouteFaviconIcon`):
+  1. **Note** (`save-as-note`, /notes badge) — refine window, Chat Saves folder.
+  2. **Document** (`add-docs`, /documents badge) — Univer doc; name = conversation title via `deriveMessageTitle`.
+  3. **Markdown** (`save-file`) — .md download; filename from conversation title (was `message-{ts}`).
+  4. **Code** (`save-to-code`, /code badge) — saveToCode overlay.
+  5. **File** (`save-as-file`, /files badge) — **NEW**: uploads `{title}.md` into the user's cloud files ("Chat Saves" folder) via `fileHandler.upload`; toast with Open → `/files/f/{id}`.
+  6. **Scratch Code** (`save-code-scratch`, /code badge) — instant code-block save.
+  7. **Scratch Note** (`save-scratch`, /notes badge) — instant save to Scratch; title now derived from conversation label (was hardcoded "New Note").
+  8. **PDF Document** (`save-as-pdf`) — browser print→Save-as-PDF; same wiring as Print for now, presented as a destination.
+- **Creator** — unchanged.
+- **Copy** — plain / Google Docs / Word / **Copy HTML page** (moved from Export) / with thinking (assistant only).
+- **Actions** — **Create Task** (/tasks badge, renamed), **Publish HTML** (renamed HTML preview), **Share as webpage** (NEW — same opener as Publish HTML, one `openHtmlPublish` so they can't drift), **Email to me**, **Print**, **Full Print (all blocks)**.
+- **Server API (test)** / **App** — unchanged.
+- **DELETED:** Convert to broker (stub). Dead `save-notes` auth-resume branch removed; `save-as-file` resume branch added.
+- The old "Export" category no longer exists; `getUserMessageActions` also gained the full Save as section.
+
+**Task window footer pattern (replicate on other save windows):** `TaskQuickCreateCore` takes `footerHost?: HTMLElement | null`; when the WindowPanel passes a `footerRight={<div ref={setFooterHost}/>}` slot, the Cancel / Create & attach / post-save buttons portal into the window footer (h-7 compact). Falls back inline when no host.
+
+**Selection-aware TTS (NEW):** `StreamingSpeakerButton` accepts `getTextOverride?: () => string | null`, snapshotted at click (mousedown is prevented so the selection survives). `AssistantActionBar` passes a reader that returns the current selection ONLY if it sits inside this turn's `data-message-id` wrappers — select part of a response, hit Speak, hear just that part.
+
 ### Related (not in bar/menu)
 
 | Name | Where | Notes |

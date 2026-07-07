@@ -17,17 +17,13 @@
  */
 
 import {
-  BookText,
-  Briefcase,
   Copy,
-  FileCode,
   FileText,
   Eye,
   Globe,
   Brain,
   Edit,
   Send,
-  CheckSquare,
   Mail,
   Printer,
   ScanLine,
@@ -47,16 +43,19 @@ import {
   History,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { NotesRouteIcon } from "@/components/branding/RouteFaviconIcon";
+import {
+  NotesRouteIcon,
+  TasksRouteIcon,
+  DocumentsRouteIcon,
+  FilesRouteIcon,
+  CodeRouteIcon,
+} from "@/components/branding/RouteFaviconIcon";
+import { fileHandler } from "@/features/files";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
-import { createTaskWithAssociation } from "@/features/tasks/redux/taskAssociationsSlice";
-import {
-  setSelectedTaskId,
-  setPendingSource,
-} from "@/features/tasks/redux/taskUiSlice";
+import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "sonner";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
@@ -208,6 +207,28 @@ function wrapTextAsContent(text: string): Json {
 }
 
 /**
+ * Canonical title for anything created from this message —
+ * "{conversation title} Message {n}" via the shared builder. `undefined`
+ * when the conversation is unlabeled; callers fall back per destination.
+ */
+function deriveMessageTitle(ctx: MessageActionContext): string | undefined {
+  const state = ctx.getState();
+  const conversationTitle = ctx.conversationId
+    ? selectConversationTitle(ctx.conversationId)(state)
+    : null;
+  const messagePosition =
+    ctx.conversationId && ctx.messageId
+      ? selectMessagePosition(ctx.conversationId, ctx.messageId)(state)
+      : undefined;
+  return buildConversationMessageTitle(conversationTitle, messagePosition);
+}
+
+/** Filesystem-safe filename fragment from a derived title. */
+function toSafeFileName(title: string): string {
+  return title.replace(/[\\/:*?"<>|]+/g, "-").trim();
+}
+
+/**
  * Extract the first fenced code block from a markdown string (```lang\n…\n```).
  * Returns the raw code and, if present, the detected language. When the
  * content is already plain (no fence), falls back to the full content.
@@ -290,7 +311,7 @@ function copyItems(ctx: MessageActionContext): MenuItem[] {
   ];
 }
 
-function exportItems(ctx: MessageActionContext): MenuItem[] {
+function actionsItems(ctx: MessageActionContext): MenuItem[] {
   const {
     content,
     conversationId,
@@ -303,39 +324,91 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
     onFullPrint,
     isCapturing,
   } = ctx;
-  // Exports consume the whole turn; `content` stays single-message for the
-  // HTML preview because its Save writes back to this one cx_message row.
+  // Actions consume the whole turn; `content` stays single-message for the
+  // HTML publish flow because its Save writes back to this one cx_message row.
   const turnText = ctx.turnContent ?? content;
 
+  // Publish HTML and Share as webpage are the SAME flow presented two ways —
+  // one opener so they can never drift.
+  const openHtmlPublish = () => {
+    // No `onSave` in data — a function can't survive Redux. The
+    // HtmlPreviewBridge self-handles the markdown save via `editMessage`
+    // from the conversationId + messageId we pass here.
+    dispatch(
+      openOverlay({
+        overlayId: "htmlPreview",
+        instanceId: `html-preview-${messageId ?? "default"}`,
+        data: {
+          content,
+          messageId: messageId ?? undefined,
+          conversationId: conversationId ?? undefined,
+          title: "HTML Preview & Publishing",
+          description: "Edit markdown, preview HTML, and publish your content",
+          showSaveButton: Boolean(conversationId && messageId),
+          isAgentSystem: true,
+        },
+      }),
+    );
+    onClose();
+  };
+
   const items: MenuItem[] = [
+    {
+      key: "add-to-tasks",
+      icon: TasksRouteIcon,
+      label: "Create Task",
+      action: () => {
+        if (
+          !requireAuth(
+            ctx,
+            "add-to-tasks",
+            "Create task",
+            "Sign in to create and track tasks from your messages.",
+          )
+        )
+          return;
+        const state = ctx.getState();
+        const conversationTitle = ctx.conversationId
+          ? selectConversationTitle(ctx.conversationId)(state)
+          : null;
+        const messagePosition =
+          ctx.conversationId && ctx.messageId
+            ? selectMessagePosition(ctx.conversationId, ctx.messageId)(state)
+            : undefined;
+
+        dispatch(
+          setPendingSource(
+            buildTaskSeedFromMessage({
+              content: turnText,
+              messageId: ctx.messageId,
+              conversationId: ctx.conversationId,
+              conversationTitle,
+              messagePosition,
+              metadata: ctx.metadata,
+            }),
+          ),
+        );
+        onClose();
+      },
+      category: "Actions",
+      showToast: false,
+    },
     {
       key: "html-preview",
       icon: Eye,
       iconColor: "text-indigo-500 dark:text-indigo-400",
-      label: "HTML preview",
-      action: () => {
-        // No `onSave` in data — a function can't survive Redux. The
-        // HtmlPreviewBridge self-handles the markdown save via `editMessage`
-        // from the conversationId + messageId we pass here.
-        dispatch(
-          openOverlay({
-            overlayId: "htmlPreview",
-            instanceId: `html-preview-${messageId ?? "default"}`,
-            data: {
-              content,
-              messageId: messageId ?? undefined,
-              conversationId: conversationId ?? undefined,
-              title: "HTML Preview & Publishing",
-              description:
-                "Edit markdown, preview HTML, and publish your content",
-              showSaveButton: Boolean(conversationId && messageId),
-              isAgentSystem: true,
-            },
-          }),
-        );
-        onClose();
-      },
-      category: "Export",
+      label: "Publish HTML",
+      action: openHtmlPublish,
+      category: "Actions",
+      showToast: false,
+    },
+    {
+      key: "share-webpage",
+      icon: Globe,
+      iconColor: "text-teal-500 dark:text-teal-400",
+      label: "Share as webpage",
+      action: openHtmlPublish,
+      category: "Actions",
       showToast: false,
     },
     {
@@ -362,7 +435,8 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
           },
         });
       },
-      category: "Export",
+      // Grouped with the other clipboard actions.
+      category: "Copy",
       successMessage: "HTML page copied",
       errorMessage: "Failed to copy HTML",
     },
@@ -396,7 +470,7 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
         if (!data.success) throw new Error(data.msg || "Failed to send email");
         onClose();
       },
-      category: "Export",
+      category: "Actions",
       successMessage: "Email sent!",
       errorMessage: "Failed to send email",
     },
@@ -404,12 +478,12 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
       key: "print",
       icon: Printer,
       iconColor: "text-slate-500 dark:text-slate-400",
-      label: "Print / Save PDF",
+      label: "Print",
       action: () => {
         printMarkdownContent(turnText, "Message");
         onClose();
       },
-      category: "Export",
+      category: "Actions",
       showToast: false,
     },
   ];
@@ -427,7 +501,7 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
         }
       },
       disabled: isCapturing,
-      category: "Export",
+      category: "Actions",
       showToast: false,
     });
   }
@@ -437,9 +511,12 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
 
 function saveAsItems(ctx: MessageActionContext): MenuItem[] {
   const { conversationId, messageId, dispatch, onClose } = ctx;
-  // Save destinations open a refine editor — seed the whole turn and let the
-  // user trim, rather than silently dropping earlier iterations.
+  // Save destinations open a refine editor (or save verbatim) — seed the whole
+  // turn rather than silently dropping earlier iterations.
   const content = ctx.turnContent ?? ctx.content;
+  const saveCodeInstanceId = messageId
+    ? `save-code-${messageId}`
+    : `save-code-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   return [
     {
@@ -457,27 +534,13 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         )
           return;
 
-        const state = ctx.getState();
-        const conversationTitle =
-          conversationId != null
-            ? selectConversationTitle(conversationId)(state)
-            : null;
-        const messagePosition =
-          conversationId != null && messageId != null
-            ? selectMessagePosition(conversationId, messageId)(state)
-            : undefined;
-        const defaultNoteName = buildConversationMessageTitle(
-          conversationTitle,
-          messagePosition,
-        );
-
         dispatch(
           openOverlay({
             overlayId: "quickNoteSaveWindow",
             data: {
               initialContent: content,
               defaultFolder: CHAT_SAVES_FOLDER,
-              defaultNoteName,
+              defaultNoteName: deriveMessageTitle(ctx),
               initialEditorMode: undefined,
             },
           }),
@@ -488,56 +551,156 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
       showToast: false,
       hidden: !conversationId || !messageId,
     },
-  ];
-}
-
-function saveItems(ctx: MessageActionContext): MenuItem[] {
-  const { dispatch, onClose, messageId } = ctx;
-  // Saves + task creation consume the whole turn (matches what the user
-  // reads); code extraction also scans the whole turn so a block from an
-  // earlier iteration isn't invisible.
-  const content = ctx.turnContent ?? ctx.content;
-  const saveCodeInstanceId = messageId
-    ? `save-code-${messageId}`
-    : `save-code-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  return [
     {
-      key: "save-scratch",
-      icon: FileText,
-      iconColor: "text-cyan-500 dark:text-cyan-400",
-      label: "Save to Scratch",
+      key: "add-docs",
+      icon: DocumentsRouteIcon,
+      label: "Document",
       action: async () => {
         if (
           !requireAuth(
             ctx,
-            "save-scratch",
-            "Save to Scratch",
-            "Sign in to save notes to your Scratch folder.",
+            "add-docs",
+            "Save as Document",
+            "Sign in to save this response as a document.",
           )
         )
           return;
-        await NotesAPI.create({
-          label: "New Note",
-          content,
-          folder_name: "Scratch",
-          tags: [],
+        // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
+        const { pushMarkdownToDocument } =
+          await import("@/features/data-tables/export-targets");
+        const res = await pushMarkdownToDocument(content, deriveMessageTitle(ctx));
+        if (!res.ok || !res.href) {
+          // showToast is false on this item, so AdvancedMenu won't surface a
+          // thrown error — toast it ourselves.
+          toast.error("Failed to create document", { description: res.error });
+          return;
+        }
+        const href = res.href;
+        toast.success("Saved as Document", {
+          description: "Your content is ready as a normal document.",
+          action: {
+            label: "Open",
+            onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
+          },
         });
+        onClose();
       },
-      category: "Actions",
-      successMessage: "Saved to Scratch!",
-      errorMessage: "Failed to save",
+      category: "Save as",
+      showToast: false,
+      errorMessage: "Failed to create document",
+    },
+    {
+      key: "save-file",
+      icon: FileText,
+      iconColor: "text-slate-500 dark:text-slate-400",
+      label: "Markdown",
+      action: () => {
+        const title = deriveMessageTitle(ctx);
+        const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const name = title ? toSafeFileName(title) : `message-${ts}`;
+        const blob = new Blob([content], {
+          type: "text/markdown;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${name}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        onClose();
+      },
+      category: "Save as",
+      successMessage: "Markdown downloaded!",
+      errorMessage: "Failed to save file",
+    },
+    {
+      key: "save-to-code",
+      icon: CodeRouteIcon,
+      label: "Code",
+      action: () => {
+        if (
+          !requireAuth(
+            ctx,
+            "save-to-code",
+            "Save as Code",
+            "Sign in to save and organize your code snippets.",
+          )
+        )
+          return;
+        const { code, language } = extractFirstCodeBlock(content);
+        dispatch(
+          openOverlay({
+            overlayId: "saveToCode",
+            instanceId: saveCodeInstanceId,
+            data: {
+              initialContent: code.trim() ? code : content,
+              initialLanguage: language ?? "plaintext",
+              suggestedName: undefined,
+              defaultFolderId: null,
+            },
+          }),
+        );
+      },
+      category: "Save as",
+      showToast: false,
+    },
+    {
+      key: "save-as-file",
+      icon: FilesRouteIcon,
+      label: "File",
+      action: async () => {
+        if (
+          !requireAuth(
+            ctx,
+            "save-as-file",
+            "Save as File",
+            "Sign in to save this response into your files.",
+          )
+        )
+          return;
+        const title = deriveMessageTitle(ctx);
+        const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const name = title ? toSafeFileName(title) : `message-${ts}`;
+        const file = new File([content], `${name}.md`, {
+          type: "text/markdown",
+        });
+        const uploaded = await fileHandler.upload(
+          { kind: "file", file },
+          { folderPath: "Chat Saves" },
+        );
+        const fileId = uploaded.fileId;
+        toast.success("Saved to Files", {
+          description: `${name}.md in Chat Saves`,
+          action: fileId
+            ? {
+                label: "Open",
+                onClick: () =>
+                  window.open(
+                    `/files/f/${fileId}`,
+                    "_blank",
+                    "noopener,noreferrer",
+                  ),
+              }
+            : undefined,
+        });
+        onClose();
+      },
+      category: "Save as",
+      showToast: false,
+      errorMessage: "Failed to save file",
     },
     {
       key: "save-code-scratch",
-      icon: FileCode,
-      iconColor: "text-amber-500 dark:text-amber-400",
-      label: "Save code to Scratch",
+      icon: CodeRouteIcon,
+      label: "Scratch Code",
       action: async () => {
         if (
           !requireAuth(
             ctx,
             "save-code-scratch",
-            "Save code to Scratch",
+            "Save as Scratch Code",
             "Sign in to save code snippets to your code files.",
           )
         )
@@ -559,105 +722,49 @@ function saveItems(ctx: MessageActionContext): MenuItem[] {
           tags: [],
         });
       },
-      category: "Actions",
+      category: "Save as",
       successMessage: "Saved code to Scratch!",
       errorMessage: "Failed to save code",
     },
     {
-      key: "save-to-code",
-      icon: FileCode,
-      iconColor: "text-rose-500 dark:text-rose-400",
-      label: "Save to Code",
-      action: () => {
+      key: "save-scratch",
+      icon: NotesRouteIcon,
+      label: "Scratch Note",
+      action: async () => {
         if (
           !requireAuth(
             ctx,
-            "save-to-code",
-            "Save to Code",
-            "Sign in to save and organize your code snippets.",
+            "save-scratch",
+            "Save as Scratch Note",
+            "Sign in to save notes to your Scratch folder.",
           )
         )
           return;
-        const { code, language } = extractFirstCodeBlock(content);
-        dispatch(
-          openOverlay({
-            overlayId: "saveToCode",
-            instanceId: saveCodeInstanceId,
-            data: {
-              initialContent: code.trim() ? code : content,
-              initialLanguage: language ?? "plaintext",
-              suggestedName: undefined,
-              defaultFolderId: null,
-            },
-          }),
-        );
-      },
-      category: "Actions",
-      showToast: false,
-    },
-    {
-      key: "save-file",
-      icon: FileCode,
-      iconColor: "text-rose-500 dark:text-rose-400",
-      label: "Save as file",
-      action: () => {
-        const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        const blob = new Blob([content], {
-          type: "text/markdown;charset=utf-8",
+        // Identical to Save as Note, minus the questions: folder is Scratch,
+        // title auto-derived, saved immediately.
+        await NotesAPI.create({
+          label: deriveMessageTitle(ctx) ?? "New Note",
+          content,
+          folder_name: "Scratch",
+          tags: [],
         });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `message-${ts}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        onClose();
       },
-      category: "Actions",
-      successMessage: "File saved!",
-      errorMessage: "Failed to save file",
+      category: "Save as",
+      successMessage: "Saved to Scratch!",
+      errorMessage: "Failed to save",
     },
     {
-      key: "add-to-tasks",
-      icon: CheckSquare,
-      iconColor: "text-blue-500 dark:text-blue-400",
-      label: "Create task from message",
+      key: "save-as-pdf",
+      icon: Printer,
+      iconColor: "text-red-500 dark:text-red-400",
+      label: "PDF Document",
       action: () => {
-        if (
-          !requireAuth(
-            ctx,
-            "add-to-tasks",
-            "Create task",
-            "Sign in to create and track tasks from your messages.",
-          )
-        )
-          return;
-        const state = ctx.getState();
-        const conversationTitle = ctx.conversationId
-          ? selectConversationTitle(ctx.conversationId)(state)
-          : null;
-        const messagePosition =
-          ctx.conversationId && ctx.messageId
-            ? selectMessagePosition(ctx.conversationId, ctx.messageId)(state)
-            : undefined;
-
-        dispatch(
-          setPendingSource(
-            buildTaskSeedFromMessage({
-              content,
-              messageId: ctx.messageId,
-              conversationId: ctx.conversationId,
-              conversationTitle,
-              messagePosition,
-              metadata: ctx.metadata,
-            }),
-          ),
-        );
+        // Browser print dialog → "Save as PDF". Same wiring as Print for now;
+        // presented as a save destination.
+        printMarkdownContent(content, deriveMessageTitle(ctx) ?? "Message");
         onClose();
       },
-      category: "Actions",
+      category: "Save as",
       showToast: false,
     },
   ];
@@ -1090,61 +1197,6 @@ function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
       successMessage: "Copied with thinking",
       errorMessage: "Failed to copy",
     },
-    {
-      key: "convert-broker",
-      icon: Briefcase,
-      iconColor: "text-amber-500 dark:text-amber-400",
-      label: "Convert to broker",
-      action: () => {
-        toast.info("Coming soon", {
-          description: "Convert to broker will be available shortly.",
-        });
-        ctx.onClose();
-      },
-      category: "Actions",
-      showToast: false,
-    },
-    {
-      key: "add-docs",
-      icon: BookText,
-      iconColor: "text-emerald-500 dark:text-emerald-400",
-      label: "Save to Document",
-      action: async () => {
-        if (
-          !requireAuth(
-            ctx,
-            "add-docs",
-            "Save to Document",
-            "Sign in to save this response as a document.",
-          )
-        )
-          return;
-        // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
-        const { pushMarkdownToDocument } =
-          await import("@/features/data-tables/export-targets");
-        const res = await pushMarkdownToDocument(ctx.turnContent ?? ctx.content);
-        if (!res.ok || !res.href) {
-          // showToast is false on this item, so AdvancedMenu won't surface a
-          // thrown error — toast it ourselves.
-          toast.error("Failed to create document", {
-            description: res.error,
-          });
-          return;
-        }
-        const href = res.href;
-        toast.success("Saved to Document", {
-          description: "Your content is ready as a normal document.",
-          action: {
-            label: "Open",
-            onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
-          },
-        });
-        ctx.onClose();
-      },
-      category: "Actions",
-      showToast: false,
-      errorMessage: "Failed to create document",
-    },
   ];
 }
 
@@ -1506,8 +1558,7 @@ export function getAssistantMessageActions(
     ...creatorItems(ctx),
     ...copyItems(ctx),
     ...assistantOnlyItems(ctx),
-    ...exportItems(ctx),
-    ...saveItems(ctx),
+    ...actionsItems(ctx),
     ...serverApiTestItems(ctx),
     ...appItems(ctx),
   ];
@@ -1516,9 +1567,11 @@ export function getAssistantMessageActions(
 /**
  * Menu items for a user-authored message. Shape:
  *   Edit → Edit & resubmit, Edit history, Fork & regenerate, Delete
- *   Copy → plain / Docs / Word
- *   Export → HTML preview, Copy HTML page, Email, Print, (Full print)
- *   Actions → Save to Scratch/Notes/File, Add to Tasks
+ *   Save as → Note / Document / Markdown / Code / File / Scratch Code /
+ *             Scratch Note / PDF Document
+ *   Copy → plain / Docs / Word / HTML page
+ *   Actions → Create Task, Publish HTML, Share as webpage, Email, Print,
+ *             (Full print)
  *   App → Feedback, Announcements, Preferences
  *
  * Audio playback lives on the inline UserActionBar (SpeakerButton —
@@ -1536,10 +1589,10 @@ export function getUserMessageActions(ctx: MessageActionContext): MenuItem[] {
     editHistoryItem(ctx),
     forkUserMessageItem(ctx),
     deleteMessageItem(ctx),
+    ...saveAsItems(ctx),
     ...creatorItems(ctx),
     ...copyItems(ctx),
-    ...exportItems(ctx),
-    ...saveItems(ctx),
+    ...actionsItems(ctx),
     ...serverApiTestItems(ctx),
     ...appItems(ctx),
   ];
@@ -1589,18 +1642,15 @@ export function resumePendingAuthAction(
           },
         }),
       );
-    } else if (action === "save-notes") {
-      dispatch(
-        openOverlay({
-          overlayId: "saveToNotes",
-          instanceId: `save-notes-resume-${Date.now()}`,
-          data: {
-            initialContent: savedContent,
-            defaultFolder: undefined,
-            initialEditorMode: undefined,
-          },
-        }),
-      );
+    } else if (action === "save-as-file") {
+      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const file = new File([savedContent], `message-${ts}.md`, {
+        type: "text/markdown",
+      });
+      fileHandler
+        .upload({ kind: "file", file }, { folderPath: "Chat Saves" })
+        .then(() => toast.success("Saved to Files"))
+        .catch(() => toast.error("Failed to save file"));
     } else if (action === "save-to-code") {
       const { code, language } = extractFirstCodeBlock(savedContent);
       dispatch(

@@ -202,6 +202,25 @@ export function AssistantActionBar({
   // match what the user reads on screen).
   const copySpeakContent = aggregatedContent ?? content;
 
+  // Selection-aware Speak: when the user has highlighted a part of THIS
+  // message (or any message in this turn group), Speak reads just the
+  // selection. Scoped via the `data-message-id` wrapper each rendered
+  // message carries, so a selection elsewhere on the page never hijacks it.
+  const getSpeakSelection = useCallback((): string | null => {
+    if (typeof window === "undefined") return null;
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return null;
+    const selectedText = sel.toString().trim();
+    if (!selectedText) return null;
+    const node = sel.anchorNode;
+    const el = node instanceof Element ? node : (node?.parentElement ?? null);
+    const container = el?.closest?.("[data-message-id]");
+    const mid = container?.getAttribute("data-message-id");
+    if (!mid) return null;
+    const turnIds = groupMessageIds?.length ? groupMessageIds : [messageId];
+    return turnIds.includes(mid) ? selectedText : null;
+  }, [messageId, groupMessageIds]);
+
   // In compact (agentic) density, hide the action bar by default for any
   // assistant turn that has another assistant turn after it. The latest
   // assistant always stays visible — that's the active answer the user
@@ -367,7 +386,11 @@ export function AssistantActionBar({
             />
           )}
 
-          <StreamingSpeakerButton text={copySpeakContent} variant="group" />
+          <StreamingSpeakerButton
+            text={copySpeakContent}
+            getTextOverride={getSpeakSelection}
+            variant="group"
+          />
 
           <PencilTapButton
             variant="group"

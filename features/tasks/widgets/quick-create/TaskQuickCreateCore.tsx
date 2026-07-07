@@ -176,11 +176,9 @@ export function TaskQuickCreateCore({
   const [savedTaskId, setSavedTaskId] = useState<string | null>(null);
   const [scopesTouched, setScopesTouched] = useState(false);
 
-  // Keep scope defaults in sync if user changes app context AFTER opening
-  useEffect(() => {
-    if (scopesTouched) return;
-    setScopeIds(initialScopeIds);
-  }, [initialScopeIds, scopesTouched]);
+  // Until the user touches the scope picker, selections FOLLOW the live app
+  // context (derived, not synced via effect). First touch snapshots them.
+  const effectiveScopeIds = scopesTouched ? scopeIds : initialScopeIds;
 
   // Flat scope structure — mirrors the sidebar. All data is already hydrated
   // in Redux via useNavTree / fetchFullContext. No per-org fetch required.
@@ -200,24 +198,27 @@ export function TaskQuickCreateCore({
       .filter((g) => g.scopes.length > 0);
   }, [allScopes, allScopeTypes]);
 
-  const selectedSet = useMemo(() => new Set(scopeIds), [scopeIds]);
+  const selectedSet = useMemo(
+    () => new Set(effectiveScopeIds),
+    [effectiveScopeIds],
+  );
 
   const toggleScope = (scopeId: string, typeId: string, max: number | null) => {
+    // Start from the EFFECTIVE selection (which may still be following the
+    // app context) so the first touch snapshots what the user sees.
     setScopesTouched(true);
-    setScopeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(scopeId)) {
-        next.delete(scopeId);
-      } else {
-        if (max === 1) {
-          for (const s of allScopes) {
-            if (s.scope_type_id === typeId && next.has(s.id)) next.delete(s.id);
-          }
+    const next = new Set(effectiveScopeIds);
+    if (next.has(scopeId)) {
+      next.delete(scopeId);
+    } else {
+      if (max === 1) {
+        for (const s of allScopes) {
+          if (s.scope_type_id === typeId && next.has(s.id)) next.delete(s.id);
         }
-        next.add(scopeId);
       }
-      return Array.from(next);
-    });
+      next.add(scopeId);
+    }
+    setScopeIds(Array.from(next));
   };
 
   const canSave = !!title.trim() && !isBusy && !savedTaskId;
@@ -263,7 +264,7 @@ export function TaskQuickCreateCore({
       due_date: dueDate || null,
       project_id: projectId || null,
       organization_id: orgId ?? null,
-      scope_ids: scopeIds,
+      scope_ids: effectiveScopeIds,
       source: primary
         ? {
             entity_type: primary.entity_type,
@@ -305,7 +306,7 @@ export function TaskQuickCreateCore({
     dueDate,
     projectId,
     orgId,
-    scopeIds,
+    effectiveScopeIds,
     effectiveSources,
   ]);
 
@@ -400,12 +401,12 @@ export function TaskQuickCreateCore({
             <Label className="text-xs shrink-0 flex items-center gap-1.5">
               <Tag className="w-3 h-3" />
               Scopes
-              {scopeIds.length > 0 && (
+              {effectiveScopeIds.length > 0 && (
                 <Badge
                   variant="outline"
                   className="h-4 px-1 text-[9px] font-medium"
                 >
-                  {scopeIds.length}
+                  {effectiveScopeIds.length}
                 </Badge>
               )}
             </Label>

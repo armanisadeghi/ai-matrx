@@ -55,6 +55,14 @@ import type { StreamingSpeakerLiveProps } from './StreamingSpeakerLive';
 
 export interface StreamingSpeakerButtonProps {
   text: string;
+  /**
+   * Consulted at click time, BEFORE `text` is used. Return a non-empty string
+   * to speak that instead — the host passes a reader of the user's live text
+   * selection so "select a part, press Speak" reads just the selection.
+   * Return null/empty to fall through to `text`. The button suppresses
+   * selection-clearing on mousedown so the selection survives the click.
+   */
+  getTextOverride?: () => string | null;
   processMarkdown?: boolean;
   variant?: SpeakerVariant;
   className?: string;
@@ -81,12 +89,16 @@ function loadLiveModule(): Promise<LiveModule> {
 
 export function StreamingSpeakerButton({
   text,
+  getTextOverride,
   processMarkdown = true,
   variant,
   className,
   disabled = false,
 }: StreamingSpeakerButtonProps) {
   const [engaged, setEngaged] = useState(false);
+  // Captured once at engage-time — the selection is gone by the time the
+  // Live component mounts, so it must be snapshotted on click.
+  const [overrideText, setOverrideText] = useState<string | null>(null);
   const [Live, setLive] = useState<
     React.ComponentType<StreamingSpeakerLiveProps> | null
   >(() => cachedModule?.StreamingSpeakerLive ?? null);
@@ -103,19 +115,30 @@ export function StreamingSpeakerButton({
   }, [engaged, Live]);
 
   const handleEngage = useCallback(() => {
-    if (!disabled && text.trim()) setEngaged(true);
-  }, [disabled, text]);
+    if (disabled || !text.trim()) return;
+    const override = getTextOverride?.()?.trim() || null;
+    setOverrideText(override);
+    setEngaged(true);
+  }, [disabled, text, getTextOverride]);
 
-  // Pre-click: clickable idle icon.
+  // Pre-click: clickable idle icon. The mousedown guard keeps any live text
+  // selection intact so `getTextOverride` can still read it on click.
   if (!engaged) {
     return (
-      <Volume2TapButton
-        variant={variant}
-        onClick={handleEngage}
-        disabled={disabled || !text.trim()}
-        ariaLabel="Play audio"
-        className={className}
-      />
+      <span
+        onMouseDown={
+          getTextOverride ? (e) => e.preventDefault() : undefined
+        }
+        className="contents"
+      >
+        <Volume2TapButton
+          variant={variant}
+          onClick={handleEngage}
+          disabled={disabled || !text.trim()}
+          ariaLabel="Play audio (reads your selection when text is selected)"
+          className={className}
+        />
+      </span>
     );
   }
 
@@ -135,7 +158,7 @@ export function StreamingSpeakerButton({
 
   return (
     <Live
-      text={text}
+      text={overrideText ?? text}
       processMarkdown={processMarkdown}
       variant={variant}
       className={className}

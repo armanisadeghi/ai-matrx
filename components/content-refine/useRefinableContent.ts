@@ -9,7 +9,7 @@
 // toolbar + trim sliders + editor UI, and keep save/target state in the
 // consuming feature's own hook (see useQuickNoteSave for the reference).
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   stripThinking,
   hasThinkingTags,
@@ -58,7 +58,18 @@ export function useRefinableContent({
   const [stripThinkingEnabled, setStripThinkingEnabled] = useState(false);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [editedContent, setEditedContent] = useState<string | null>(null);
+
+  // A user edit is stored WITH the transform snapshot it was made against.
+  // When any transform (or the source) changes, the stored edit no longer
+  // matches and is ignored — invalidation happens by derivation, not by a
+  // setState-in-effect reset.
+  const [edited, setEdited] = useState<{
+    value: string;
+    src: string;
+    strip: boolean;
+    ts: number;
+    te: number;
+  } | null>(null);
 
   // Trim applies to the raw input first; strip-thinking then operates on the
   // trimmed slice.
@@ -67,19 +78,34 @@ export function useRefinableContent({
     return stripThinkingEnabled ? stripThinking(trimmed) : trimmed;
   }, [initialContent, stripThinkingEnabled, trimStart, trimEnd]);
 
-  const workingContent = editedContent ?? basePostTransform;
+  const editActive =
+    edited !== null &&
+    edited.src === initialContent &&
+    edited.strip === stripThinkingEnabled &&
+    edited.ts === trimStart &&
+    edited.te === trimEnd;
 
-  // A transform change invalidates any user edit (the edit was made against
-  // the previous derivation).
-  useEffect(() => {
-    setEditedContent(null);
-  }, [initialContent, stripThinkingEnabled, trimStart, trimEnd]);
+  const workingContent = editActive ? edited.value : basePostTransform;
+
+  const setEditedContent = (value: string | null) => {
+    setEdited(
+      value == null
+        ? null
+        : {
+            value,
+            src: initialContent,
+            strip: stripThinkingEnabled,
+            ts: trimStart,
+            te: trimEnd,
+          },
+    );
+  };
 
   const resetTransforms = () => {
     setStripThinkingEnabled(false);
     setTrimStart(0);
     setTrimEnd(0);
-    setEditedContent(null);
+    setEdited(null);
   };
 
   return {
