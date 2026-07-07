@@ -11,10 +11,9 @@
  * (useScanSession + useScanSaveFlow).
  */
 
+import { useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const loading = () => (
   <div className="flex h-full items-center justify-center">
@@ -32,7 +31,26 @@ const ScannerDesktop = dynamic(
   { ssr: false, loading },
 );
 
+// The skin is chosen ONCE per page load, never on resize/rotate: each skin
+// owns live session + save-flow state, so a reactive width swap would
+// unmount a mid-upload or mid-save surface (in-flight uploads have no
+// manifest entry yet — swapping loses them). Device-shaped heuristic so a
+// landscape phone (844px wide) still gets the capture-first skin.
+type ScannerSkin = "mobile" | "desktop";
+let lockedSkin: ScannerSkin | null = null;
+const subscribeNever = () => () => {};
+const getSkin = (): ScannerSkin => {
+  if (lockedSkin === null) {
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const width = window.innerWidth;
+    lockedSkin = width < 768 || (coarse && width < 1024) ? "mobile" : "desktop";
+  }
+  return lockedSkin;
+};
+const getServerSkin = (): ScannerSkin | null => null;
+
 export default function ScannerRouteClient() {
-  const isMobile = useIsMobile();
-  return isMobile ? <ScannerSurface /> : <ScannerDesktop />;
+  const skin = useSyncExternalStore(subscribeNever, getSkin, getServerSkin);
+  if (skin === null) return loading();
+  return skin === "mobile" ? <ScannerSurface /> : <ScannerDesktop />;
 }

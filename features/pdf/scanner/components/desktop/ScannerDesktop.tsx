@@ -121,6 +121,25 @@ export default function ScannerDesktop() {
     [handleFiles],
   );
 
+  // Window-level drop guard: after the first add the user is flipped to
+  // Review (no dropzone), and a drop that misses the Home dropzone would
+  // otherwise trigger the browser default — opening the file and unloading
+  // the app mid-session. Any drop on the surface adds files instead.
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => e.preventDefault();
+    const onDrop = (e: DragEvent) => {
+      if (e.defaultPrevented) return; // the Home dropzone already took it
+      e.preventDefault();
+      handleFiles(Array.from(e.dataTransfer?.files ?? []));
+    };
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [handleFiles]);
+
   const handleCropApply = useCallback(
     (itemId: string, quad: Quad | null, rotation: ScanRotation) => {
       session.setQuad(itemId, quad);

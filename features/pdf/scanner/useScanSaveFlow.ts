@@ -101,9 +101,27 @@ export function useScanSaveFlow(
     }
   }, [session.items, session.setQuad]);
 
+  // ── Lifecycle guard ─────────────────────────────────────────────────────
+  // If the user navigates away mid-save, the save promise still resolves —
+  // without this guard it would start a 4-minute orphan poll and then
+  // router.push the user to the extractor from whatever page they're on.
+  const pollTimerRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (pollTimerRef.current !== null) {
+        window.clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, []);
+
   // ── Navigation ──────────────────────────────────────────────────────────
   const navigateToDoc = useCallback(
     (docId: string) => {
+      if (!mountedRef.current) return;
       setNavigating(true);
       startTransition(() => {
         router.push(`/tools/pdf-extractor/${docId}`);
@@ -120,7 +138,6 @@ export function useScanSaveFlow(
   }, [navigateToDoc]);
 
   // ── Post-save processing orchestration ──────────────────────────────────
-  const pollTimerRef = useRef<number | null>(null);
   const pollStartedAtRef = useRef(0);
   const finalizeStartedRef = useRef(false);
 
@@ -130,7 +147,6 @@ export function useScanSaveFlow(
       pollTimerRef.current = null;
     }
   }, []);
-  useEffect(() => stopPolling, [stopPolling]);
 
   /** Completion gate: verified fetch (3×2s, loud misses) → navigate. */
   const finalize = useCallback(
@@ -149,6 +165,7 @@ export function useScanSaveFlow(
 
   const startPolling = useCallback(
     (docId: string) => {
+      if (!mountedRef.current) return;
       stopPolling();
       pollStartedAtRef.current = Date.now();
       pollTimerRef.current = window.setInterval(() => {

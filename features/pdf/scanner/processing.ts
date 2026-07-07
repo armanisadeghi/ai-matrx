@@ -119,15 +119,26 @@ export interface RecentScanRow {
 }
 
 export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
-  const { data } = await docprocDb(supabase)
+  // "Recent scans" means MY scans — the org-member RLS policy would
+  // otherwise surface teammates' org-stamped scans in the personal list.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const uid = sessionData.session?.user.id;
+  if (!uid) return [];
+
+  const { data, error } = await docprocDb(supabase)
     .from("processed_documents")
     // clean_content_completed_at is the cheap presence marker — never pull
     // the (potentially huge) clean_content body for a list view.
     .select("id, name, created_at, metadata, clean_content_completed_at")
     .is("deleted_at", null)
+    .eq("owner_id", uid)
     .eq("metadata->>via", "/pdf/from-images")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (error) {
+    console.error("[scanner] recent-scans read failed", error);
+    throw error;
+  }
   return (data ?? []).map((row) => {
     const meta = (row.metadata ?? {}) as { item_count?: number };
     return {
