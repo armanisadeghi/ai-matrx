@@ -48,6 +48,8 @@ export interface ConversationRoutePromotionArgs {
   basePath: string;
   /** Build the deep-link URL for a conversation id, e.g. `/education/tutor/${id}`. */
   buildHref: (conversationId: string) => string;
+  /** When false, the hook is inert (embedded/panel mounts that never route). */
+  enabled?: boolean;
 }
 
 export function useConversationRoutePromotion({
@@ -58,6 +60,7 @@ export function useConversationRoutePromotion({
   freshSessionKey = 0,
   basePath,
   buildHref,
+  enabled = true,
 }: ConversationRoutePromotionArgs): void {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -65,19 +68,20 @@ export function useConversationRoutePromotion({
 
   // 1. Register this client as a `page` surface.
   useEffect(() => {
+    if (!enabled) return undefined;
     dispatch(registerSurface({ surfaceKey, kind: "page", basePath }));
     return () => {
       dispatch(unregisterSurface(surfaceKey));
     };
-  }, [dispatch, surfaceKey, basePath]);
+  }, [dispatch, surfaceKey, basePath, enabled]);
 
   // 2. pendingNavigation (fork / retry / delete) → router.replace.
   const pendingNavigation = useAppSelector(selectPendingNavigation(surfaceKey));
   useEffect(() => {
-    if (!pendingNavigation) return;
+    if (!enabled || !pendingNavigation) return;
     router.replace(buildHref(pendingNavigation.conversationId));
     dispatch(clearPendingNavigation({ surfaceKey }));
-  }, [pendingNavigation, router, dispatch, surfaceKey, buildHref]);
+  }, [enabled, pendingNavigation, router, dispatch, surfaceKey, buildHref]);
 
   // 3. Post-submit URL promotion (fresh route only).
   const messageCount = useAppSelector((state) =>
@@ -92,7 +96,7 @@ export function useConversationRoutePromotion({
     promotionWaitRef.current = null;
   }, [freshSessionKey, agentId]);
   useEffect(() => {
-    if (!readyToPromote || !liveConversationId) return undefined;
+    if (!enabled || !readyToPromote || !liveConversationId) return undefined;
     const target = liveConversationId;
     if (promotedRef.current === target) return undefined;
     if (promotionWaitRef.current === target) return undefined;
@@ -123,6 +127,7 @@ export function useConversationRoutePromotion({
       if (promotionWaitRef.current === target) promotionWaitRef.current = null;
     };
   }, [
+    enabled,
     readyToPromote,
     liveConversationId,
     router,

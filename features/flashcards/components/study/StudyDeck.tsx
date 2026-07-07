@@ -59,6 +59,7 @@ import {
   buildReviewAggregate,
   buildReviewAttempts,
 } from "../../data/tutor/learnerContext";
+import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 /** Below this many graded cards, an end-of-session AI review is more noise
@@ -529,16 +530,33 @@ export function StudyDeck(props: StudyDeckProps) {
           />
 
           {enableTutor && (
-            <AskAiPanel
-              open={askOpen}
-              question={question}
-              onQuestionChange={setQuestion}
-              onToggle={() => setAskOpen((o) => !o)}
-              onAsk={() => void askAi()}
-              loading={helpLoading}
-              result={help}
-              unavailable={helpAsked && !helpLoading && !help}
-            />
+            <div className="flex flex-col gap-2">
+              <AskAiPanel
+                open={askOpen}
+                question={question}
+                onQuestionChange={setQuestion}
+                onToggle={() => setAskOpen((o) => !o)}
+                onAsk={() => void askAi()}
+                loading={helpLoading}
+                result={help}
+                unavailable={helpAsked && !helpLoading && !help}
+              />
+              {/* P2 AskTutor — escalate from the one-shot nudge above into the
+                  full memory-carrying tutor, pre-loaded with THIS card. */}
+              {current && (
+                <AskTutorButton
+                  seed={{
+                    title: "This flashcard the learner is studying",
+                    material: `Front: "${current.front}"\nBack: "${current.back}"${
+                      current.topic ? `\nTopic: ${current.topic}` : ""
+                    }`,
+                  }}
+                  label="Open full tutor"
+                  variant="ghost"
+                  className="w-full"
+                />
+              )}
+            </div>
           )}
         </div>
 

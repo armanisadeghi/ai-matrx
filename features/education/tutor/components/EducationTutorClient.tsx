@@ -48,6 +48,13 @@ export interface EducationTutorClientProps {
   buildHref?: (id: string) => string;
   /** Hide the empty-state landing (e.g. when embedded in a side panel). */
   hideLanding?: boolean;
+  /**
+   * Embedded mode (AskTutor side panel): use a distinct surface scope and skip
+   * URL promotion entirely, so mounting the tutor inside a study page never
+   * changes that page's route. Conversations still persist under the
+   * education-tutor source_feature, so they show up in /education/tutor later.
+   */
+  embedded?: boolean;
 }
 
 const defaultHref = (id: string) => `/education/tutor/${id}`;
@@ -57,11 +64,16 @@ export function EducationTutorClient({
   seed,
   buildHref = defaultHref,
   hideLanding,
+  embedded = false,
 }: EducationTutorClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const agentId = DEFAULT_TUTOR_AGENT_ID;
-  const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
+  // Embedded (panel) mounts get their own focus scope so they never collide
+  // with the standalone /education/tutor route's live conversation.
+  const surfaceKey = embedded
+    ? `${SOURCE_FEATURE}-embed:${agentId}`
+    : `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
   const isFreshRoute = !conversationIdProp;
 
@@ -195,6 +207,7 @@ export function EducationTutorClient({
     liveConversationId,
     basePath: BASE_PATH,
     buildHref,
+    enabled: !embedded,
   });
 
   const conversationId = conversationIdProp ?? liveConversationId ?? null;
