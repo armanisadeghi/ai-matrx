@@ -1601,6 +1601,86 @@ export const moveThreadToRoom =
     }
   };
 
+/**
+ * Bring an EXISTING thread (orphan or member of other rooms) into a room —
+ * nothing but membership edges:
+ *   - "move": every current `thread → war_room` membership is re-pointed at
+ *     the target (single-home semantics).
+ *   - "add":  a second membership edge is written; the thread now lives in
+ *     BOTH rooms (multi-room membership is just another edge).
+ * Hydrates the thread row + its content bucket so the tile renders
+ * immediately in the target room. Idempotent when already a member.
+ */
+export const attachExistingThreadToRoom =
+  (threadId: string, targetRoomId: string, mode: "move" | "add") =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<boolean> => {
+    try {
+      let thread: WarRoomThread | null =
+        getState().warRoom.threadsById[threadId] ?? null;
+      if (!thread) {
+        thread = await service.getThread(threadId);
+        if (!thread) {
+          toast.error("That thread no longer exists");
+          return false;
+        }
+        dispatch(threadUpserted(thread));
+      }
+      if (mode === "move") {
+        // Truth from the DB, not the loaded-rooms cache — the thread may live
+        // in a room this tab never opened.
+        const currentRooms = (await assoc.listRoomIdsForThread(threadId)).filter(
+          (r) => r !== targetRoomId,
+        );
+        for (const fromRoomId of currentRooms) {
+          await assoc.moveThreadMembership(threadId, fromRoomId, targetRoomId);
+          dispatch(
+            threadMembershipChanged({
+              threadId,
+              fromRoomId,
+              toRoomId: targetRoomId,
+            }),
+          );
+        }
+        if (currentRooms.length === 0) {
+          await assoc.attachThreadToRoom(threadId, targetRoomId);
+          dispatch(
+            threadMembershipChanged({
+              threadId,
+              fromRoomId: null,
+              toRoomId: targetRoomId,
+            }),
+          );
+        }
+      } else {
+        await assoc.attachThreadToRoom(threadId, targetRoomId);
+        dispatch(
+          threadMembershipChanged({
+            threadId,
+            fromRoomId: null,
+            toRoomId: targetRoomId,
+          }),
+        );
+      }
+      // Content bucket for the tile (notes/audio/chat/files) — idempotent.
+      void dispatch(loadThreadAttachments(threadId));
+      toast.success(
+        mode === "move" ? "Thread moved to the room" : "Thread added to the room",
+      );
+      return true;
+    } catch (err) {
+      reportWarRoomError("attachExistingThreadToRoom", err, {
+        toast:
+          mode === "move"
+            ? "Couldn't move the thread"
+            : "Couldn't add the thread",
+      });
+      return false;
+    }
+  };
+
 /** Attach an orphan thread (no room edge) to an existing War Room. */
 export const attachOrphanThreadToRoom =
   (threadId: string, targetRoomId: string) =>

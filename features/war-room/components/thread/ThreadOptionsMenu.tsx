@@ -19,6 +19,7 @@ import {
   Building2,
   FolderInput,
   FolderMinus,
+  FolderPlus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -38,7 +39,7 @@ import {
   selectThreadById,
 } from "@/features/war-room/redux/selectors";
 import {
-  moveThreadToRoom,
+  attachExistingThreadToRoom,
   removeThreadFromRoom,
 } from "@/features/war-room/redux/thunks";
 import { useThreadCopyForAiTarget } from "../shared/ThreadCopyForAiButton";
@@ -154,27 +155,56 @@ export function ThreadOptionsMenu({
           Hide
         </DropdownMenuItem>
         {threadId && otherRooms.length > 0 ? (
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="gap-2">
-              <FolderInput className="size-3.5 shrink-0" />
-              Move to room
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="max-h-64 w-52 overflow-y-auto">
-              {otherRooms.map((room) => (
-                <DropdownMenuItem
-                  key={room.id}
-                  onClick={() =>
-                    void dispatch(moveThreadToRoom(threadId, room.id))
-                  }
-                  className="gap-2"
-                >
-                  <span className="truncate">
-                    {room.title?.trim() || "Untitled room"}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          <>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <FolderInput className="size-3.5 shrink-0" />
+                Move to room
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="max-h-64 w-52 overflow-y-auto">
+                {otherRooms.map((room) => (
+                  <DropdownMenuItem
+                    key={room.id}
+                    onClick={() =>
+                      void dispatch(
+                        attachExistingThreadToRoom(threadId, room.id, "move"),
+                      )
+                    }
+                    className="gap-2"
+                  >
+                    <span className="truncate">
+                      {room.title?.trim() || "Untitled room"}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            {/* Multi-room membership — a second thread → war_room edge; the
+                thread stays here AND appears in the picked room. */}
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className="gap-2">
+                <FolderPlus className="size-3.5 shrink-0" />
+                Also add to room
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="max-h-64 w-52 overflow-y-auto">
+                {otherRooms.map((room) => (
+                  <DropdownMenuItem
+                    key={room.id}
+                    onClick={() =>
+                      void dispatch(
+                        attachExistingThreadToRoom(threadId, room.id, "add"),
+                      )
+                    }
+                    className="gap-2"
+                  >
+                    <span className="truncate">
+                      {room.title?.trim() || "Untitled room"}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </>
         ) : null}
         {threadId && currentSessionId ? (
           <DropdownMenuItem

@@ -422,6 +422,30 @@ export async function listRoomIdsForThread(
     .map((e) => e.otherId);
 }
 
+/**
+ * Batch membership lookup: threadId → room ids, ONE round-trip. Backs the
+ * import-thread picker ("Unassigned" vs "In <room>" grouping).
+ */
+export async function listThreadRoomMemberships(
+  threadIds: string[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (threadIds.length === 0) return out;
+  const res = await associationsService.listForSources(
+    "thread",
+    threadIds,
+    "war_room",
+  );
+  if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+  for (const e of res.data.edges) {
+    if (!isPlainObject(e.metadata) || e.metadata.membership !== true) continue;
+    const list = out.get(e.sourceId) ?? [];
+    list.push(e.targetId);
+    out.set(e.sourceId, list);
+  }
+  return out;
+}
+
 /** Attach a thread to a room (idempotent). */
 export async function attachThreadToRoom(
   threadId: string,
