@@ -14,6 +14,19 @@
  */
 
 import type { components } from "@/types/python-generated/api-types";
+import type {
+  PdfClassifyCompleteData,
+  PdfExtractedTableItem,
+  PdfPageClassificationItem,
+  PdfReadingOrderBlockItem,
+  PdfReadingOrderCompleteData,
+  PdfReadingOrderPageItem,
+  PdfRepeatedRegionBboxItem,
+  PdfRepeatedRegionItem,
+  PdfRepeatedRegionsCompleteData,
+  PdfRepeatedRegionsStripCompleteData,
+  PdfTablesCompleteData,
+} from "@/types/python-generated/stream-events";
 
 type Schemas = components["schemas"];
 
@@ -61,9 +74,12 @@ export type PdfPipelineOptions = Schemas["PdfPipelineOptions"];
  * `streamPdfExtractText(Remote)` in `features/pdf-extractor/service/streamPdf.ts`.
  */
 
-/** Structured report returned by `extract-tables` (per-table bbox, header, rows, markdown). */
-export type PdfTablesReport = Schemas["PdfTablesReport"];
-export type PdfExtractedTable = Schemas["PdfExtractedTable"];
+/**
+ * NOTE (2026-07): `extract-tables` streams NDJSON — terminal payload is
+ * `PdfTablesCompleteData` (aliased here as `PdfTablesReport` for callers).
+ */
+export type PdfTablesReport = PdfTablesCompleteData;
+export type PdfExtractedTable = PdfExtractedTableItem;
 
 // ── Phase 2 — render & advanced page ops ────────────────────────────────────
 
@@ -90,18 +106,21 @@ export type StripRepeatedRegionsRequest =
 export type ClassifyPagesRequest = Schemas["ClassifyPagesRequest"];
 export type ExtractReadingOrderRequest = Schemas["ExtractReadingOrderRequest"];
 
-export type RepeatedRegion = Schemas["RepeatedRegion"];
-export type RepeatedRegionBbox = Schemas["RepeatedRegionBbox"];
-export type RepeatedRegionsReport = Schemas["RepeatedRegionsReport"];
+/** Terminal stream payload for `detect-repeated-regions`. */
+export type RepeatedRegion = PdfRepeatedRegionItem;
+export type RepeatedRegionBbox = PdfRepeatedRegionBboxItem;
+export type RepeatedRegionsReport = PdfRepeatedRegionsCompleteData;
 export type StripRepeatedRegionsResultSchema =
-  Schemas["StripRepeatedRegionsResultSchema"];
+  PdfRepeatedRegionsStripCompleteData;
 
-export type PageClassification = Schemas["PageClassification"];
-export type LayoutClassificationReport = Schemas["LayoutClassificationReport"];
+/** Terminal stream payload for `classify-pages`. */
+export type PageClassification = PdfPageClassificationItem;
+export type LayoutClassificationReport = PdfClassifyCompleteData;
 
-export type ReadingOrderBlock = Schemas["ReadingOrderBlock"];
-export type ReadingOrderPage = Schemas["ReadingOrderPage"];
-export type ReadingOrderReport = Schemas["ReadingOrderReport"];
+/** Terminal stream payload for `extract-reading-order`. */
+export type ReadingOrderBlock = PdfReadingOrderBlockItem;
+export type ReadingOrderPage = PdfReadingOrderPageItem;
+export type ReadingOrderReport = PdfReadingOrderCompleteData;
 
 // ── Phase 4 — redaction & privacy ───────────────────────────────────────────
 

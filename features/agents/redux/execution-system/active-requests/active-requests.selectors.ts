@@ -44,8 +44,8 @@ import type {
   FetchResultsData,
   FunctionResultData,
   ImageOutputData,
-  PodcastCompleteData,
-  PodcastStageData,
+  PodcastCompleteEvent,
+  PodcastStageEvent,
   QuestionnaireDisplayData,
   ScrapeBatchCompleteData,
   SearchErrorData,
@@ -156,7 +156,10 @@ export const NON_ANSWER_BLOCK_TYPES = new Set(["thinking", "reasoning"]);
  * chunk text. `editedText` wins, mirroring the selectors.
  */
 export function deriveAnswerText(
-  request: Pick<ActiveRequest, "renderBlockOrder" | "renderBlocks" | "editedText">,
+  request: Pick<
+    ActiveRequest,
+    "renderBlockOrder" | "renderBlocks" | "editedText"
+  >,
 ): string {
   const { renderBlockOrder: order, renderBlocks: blocks, editedText } = request;
   if (editedText !== null && editedText !== undefined) return editedText;
@@ -436,7 +439,9 @@ export const selectKindEnvelope = (requestId: string, kind?: string) =>
         if (!block) continue;
         const envelope = readEnvelope(block.metadata);
         if (!envelope) continue;
-        if (kind !== undefined ? envelope.root.kind === kind : envelope.root.kind) {
+        if (
+          kind !== undefined ? envelope.root.kind === kind : envelope.root.kind
+        ) {
           return envelope;
         }
       }
@@ -1066,8 +1071,8 @@ type DataTypeMap = {
   fetch_results: FetchResultsData;
   function_result: FunctionResultData;
   image_output: ImageOutputData;
-  podcast_complete: PodcastCompleteData;
-  podcast_stage: PodcastStageData;
+  podcast_complete: PodcastCompleteEvent;
+  podcast_stage: PodcastStageEvent;
   scrape_batch_complete: ScrapeBatchCompleteData;
   search_error: SearchErrorData;
   search_results: SearchResultsData;

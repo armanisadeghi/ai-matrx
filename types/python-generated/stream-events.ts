@@ -1255,6 +1255,17 @@ export interface VideoOutputData {
   download_url?: string | null;
 }
 
+export interface WorkflowNodeTestResultData {
+  type?: "workflow_node_test_result";
+  success: boolean;
+  duration_ms: number;
+  node_id: string;
+  spec_type: string;
+  output?: Record<string, unknown> | null;
+  error_type?: string | null;
+  error_message?: string | null;
+}
+
 export interface WorkflowStepData {
   type?: "workflow_step";
   step_name: string;
@@ -1331,6 +1342,7 @@ export type TypedDataPayload =
   | SearchResultsData
   | StructuredInputWarningData
   | VideoOutputData
+  | WorkflowNodeTestResultData
   | WorkflowStepData;
 
 /** Fallback for data events whose `type` isn't in TypedDataPayload. */

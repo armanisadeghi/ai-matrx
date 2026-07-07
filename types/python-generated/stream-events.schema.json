@@ -7595,6 +7595,79 @@
     "title": "PdfPipelineResultData",
     "type": "object"
   },
+  "WorkflowNodeTestResultData": {
+    "additionalProperties": false,
+    "description": "Terminal event for POST /workflows/{id}/nodes/{node_id}/test.\n\nCarries exactly what the old blocking TestNodeResponse JSON body carried,\nso the FE migration is \"read one event\".",
+    "properties": {
+      "type": {
+        "const": "workflow_node_test_result",
+        "default": "workflow_node_test_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "success": {
+        "title": "Success",
+        "type": "boolean"
+      },
+      "duration_ms": {
+        "title": "Duration Ms",
+        "type": "integer"
+      },
+      "node_id": {
+        "title": "Node Id",
+        "type": "string"
+      },
+      "spec_type": {
+        "title": "Spec Type",
+        "type": "string"
+      },
+      "output": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Output"
+      },
+      "error_type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Type"
+      },
+      "error_message": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error Message"
+      }
+    },
+    "required": [
+      "success",
+      "duration_ms",
+      "node_id",
+      "spec_type"
+    ],
+    "title": "WorkflowNodeTestResultData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

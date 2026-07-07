@@ -182,6 +182,8 @@ const nextConfig = {
             // so old bookmarks, share links, and external references keep working.
             { source: '/cloud-files/:path*', destination: '/files/:path*', permanent: true },
             { source: '/cloud-files', destination: '/files', permanent: true },
+            // Short alias for the phone scanner surface (canonical: /tools/scanner).
+            { source: '/scan', destination: '/tools/scanner', permanent: false },
             // /org/* (old slug-only path) and /organizations/[id]/* (old UUID-only settings path)
             // are unified under /organizations/[orgId]/* which accepts both slug and UUID.
             { source: '/org/:orgId/projects/:projectId/settings/:path*', destination: '/organizations/:orgId/projects/:projectId/settings/:path*', permanent: true },

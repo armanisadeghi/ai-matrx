@@ -1,9 +1,18 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "target": "es2018",
     "allowJs": true,
-    "types": ["node", "react", "react-dom", "jest"],
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "jest"
+    ],
     "skipLibCheck": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -12,16 +21,30 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./*"],
-      "@components/ui/*": ["./components/ui/*"],
-      "@components/*": ["./components/*"],
-      "/*": ["./public/*"],
-      "@matrx/agents": ["./packages/matrx-agents/src/index.ts"],
+      "@/*": [
+        "./*"
+      ],
+      "@components/ui/*": [
+        "./components/ui/*"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
+      "/*": [
+        "./public/*"
+      ],
+      "@matrx/agents": [
+        "./packages/matrx-agents/src/index.ts"
+      ],
       "@matrx/agents/adapters": [
         "./packages/matrx-agents/src/adapters/index.ts"
       ],
-      "@matrx/agents/config": ["./packages/matrx-agents/src/config/index.ts"],
-      "@matrx/agents/types": ["./packages/matrx-agents/src/types/index.ts"]
+      "@matrx/agents/config": [
+        "./packages/matrx-agents/src/config/index.ts"
+      ],
+      "@matrx/agents/types": [
+        "./packages/matrx-agents/src/types/index.ts"
+      ]
     },
     "incremental": true,
     "isolatedModules": true,
@@ -68,7 +91,9 @@
     ".next-preview/types/**/*.ts",
     ".next-preview/dev/types/**/*.ts",
     ".next-preview-cutoverqa/types/**/*.ts",
-    ".next-preview-cutoverqa/dev/types/**/*.ts"
+    ".next-preview-cutoverqa/dev/types/**/*.ts",
+    ".next-preview-qa2/types/**/*.ts",
+    ".next-preview-qa2/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
@@ -80,20 +105,34 @@
     "utils/schema/schemaUtils.ts"
   ],
   "ts-node": {
-    "require": ["tsconfig-paths/register"],
+    "require": [
+      "tsconfig-paths/register"
+    ],
     "transpileOnly": true,
     "compilerOptions": {
       "ignoreDeprecations": "6.0",
       "rootDir": ".",
-      "types": ["node"],
-      "lib": ["dom", "dom.iterable", "esnext"],
+      "types": [
+        "node"
+      ],
+      "lib": [
+        "dom",
+        "dom.iterable",
+        "esnext"
+      ],
       "module": "commonjs",
       "moduleResolution": "node",
       "baseUrl": ".",
       "paths": {
-        "@/*": ["./*"],
-        "@components/ui/*": ["./components/ui/*"],
-        "@components/*": ["./components/*"]
+        "@/*": [
+          "./*"
+        ],
+        "@components/ui/*": [
+          "./components/ui/*"
+        ],
+        "@components/*": [
+          "./components/*"
+        ]
       }
     }
   }

@@ -27042,10 +27042,6 @@ export type Database = {
         Args: { p_file: string }
         Returns: string
       }
-      reap_stale_sandboxes: {
-        Args: { grace_minutes?: number }
-        Returns: number
-      }
       record_guest_execution: {
         Args: {
           p_fingerprint: string
