@@ -3,15 +3,27 @@
 /**
  * Hooks for the /rag/library surface — visibility into processed documents.
  *
- * Reads go through the FastAPI HTTP endpoints at /rag/library/*. The
- * shape mirrors what the FE renders 1:1 (snake_case → camelCase mapping
- * happens here so the component layer stays clean).
+ * These are PURE DB READS (aggregate counts over docproc.* + rag.*), so they
+ * go DIRECT to Postgres via SECURITY DEFINER RPCs — never through Python.
+ * Routing React -> Python -> Supabase -> Python -> React for data the browser
+ * can read itself is the exact anti-pattern CLAUDE.md bans; Python is only for
+ * processing (LLM/OCR) or S3 file bytes/signing. The RPCs
+ * (public.rag_library_list / public.rag_library_summary_totals) replicate the
+ * old FastAPI queries 1:1, keyed on auth.uid().
+ *
+ * The doc-detail read (useLibraryDoc) still hits the HTTP endpoint — its page
+ * text / chunk previews are a heavier read left for a follow-up.
+ *
+ * The snake_case → camelCase mapping happens here so the component layer stays
+ * clean; the RPC returns the same snake_case shape the FastAPI models did.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { getJson } from "@/lib/python-client";
+import { supabase } from "@/utils/supabase/client";
 import type {
   DocStatus,
   LibraryDocDetail,
@@ -257,13 +269,6 @@ export function useLibrary(opts: UseLibraryOptions = {}) {
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const params = new URLSearchParams();
-    params.set("limit", String(limit));
-    params.set("offset", String(offset));
-    if (search) params.set("search", search);
-    if (status) params.set("status_filter", status);
-    const url = `/rag/library?${params.toString()}`;
-
     let firstFetch = true;
 
     const run = async () => {
@@ -272,11 +277,22 @@ export function useLibrary(opts: UseLibraryOptions = {}) {
       if (firstFetch) setLoading(true);
       setError(null);
       try {
-        const { data } = await getJson<ApiListResponse>(url);
+        const { data, error: rpcError } = await supabase.rpc(
+          "rag_library_list",
+          {
+            p_limit: limit,
+            p_offset: offset,
+            p_search: search ?? null,
+            p_status_filter: status ?? null,
+            p_source_kind: null,
+          },
+        );
         if (cancelled) return;
-        const list = Array.isArray(data?.documents) ? data.documents : [];
+        if (rpcError) throw new Error(rpcError.message);
+        const resp = (data ?? null) as ApiListResponse | null;
+        const list = Array.isArray(resp?.documents) ? resp.documents : [];
         setDocs(list.map(mapSummary));
-        setTotal(typeof data?.total === "number" ? data.total : list.length);
+        setTotal(typeof resp?.total === "number" ? resp.total : list.length);
       } catch (err) {
         if (cancelled) return;
         setError(
@@ -340,6 +356,7 @@ export function useLibrarySummary(
   const { refreshKey = 0, pollMs = 0 } = opts;
 
   const userId = useAppSelector(selectUserId);
+  const orgId = useAppSelector(selectEffectiveOrganizationId);
   const [summary, setSummary] = useState<LibrarySummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -354,10 +371,13 @@ export function useLibrarySummary(
       if (firstFetch) setLoading(true);
       setError(null);
       try {
-        const { data } = await getJson<ApiSummaryTotals>(
-          "/rag/library/summary/totals",
+        const { data, error: rpcError } = await supabase.rpc(
+          "rag_library_summary_totals",
+          { p_organization_id: orgId ?? null },
         );
-        if (!cancelled && data) setSummary(mapSummaryTotals(data));
+        if (rpcError) throw new Error(rpcError.message);
+        const totals = (data ?? null) as ApiSummaryTotals | null;
+        if (!cancelled && totals) setSummary(mapSummaryTotals(totals));
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -397,7 +417,7 @@ export function useLibrarySummary(
         document.removeEventListener("visibilitychange", onVis);
       }
     };
-  }, [userId, refreshKey, pollMs]);
+  }, [userId, orgId, refreshKey, pollMs]);
 
   return { summary, loading, error };
 }

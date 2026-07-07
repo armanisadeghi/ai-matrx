@@ -27033,6 +27033,20 @@ export type Database = {
         }
         Returns: number
       }
+      rag_library_list: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_source_kind?: string
+          p_status_filter?: string
+        }
+        Returns: Json
+      }
+      rag_library_summary_totals: {
+        Args: { p_organization_id?: string }
+        Returns: Json
+      }
       rag_source_has_library_grant: {
         Args: { p_org_id?: string; p_source_id: string; p_source_kind: string }
         Returns: boolean

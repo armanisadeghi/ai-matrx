@@ -33,6 +33,7 @@ import {
   type IngestStreamEvent,
 } from "@/features/rag/api/ingest";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { supabase } from "@/utils/supabase/client";
 import type {
   ProcessingFrame,
   ProcessingResultSummary,
@@ -343,18 +344,22 @@ export function useProcessingRunner(): UseProcessingRunner {
               const r = ev.data;
               let pdid: string | null = r.processed_document_id ?? null;
               if (!pdid) {
+                // Direct DB read — resolve the freshly-created processed doc by
+                // its source_id. No Python hop (and the old relative fetch hit
+                // the Next origin, not the backend, so it never worked).
                 try {
-                  const lookup = await fetch(
-                    `/rag/library?source_kind=cld_file&search=&limit=5&offset=0`,
-                    { credentials: "include" },
-                  );
-                  if (lookup.ok) {
-                    const j = await lookup.json();
-                    const match = (j?.documents ?? []).find(
-                      (d: { source_id?: string }) => d.source_id === cldFileId,
-                    );
-                    if (match?.id) pdid = match.id as string;
-                  }
+                  const { data } = await supabase.rpc("rag_library_list", {
+                    p_limit: 5,
+                    p_offset: 0,
+                    p_search: null,
+                    p_status_filter: null,
+                    p_source_kind: "cld_file",
+                  });
+                  const docs =
+                    (data as { documents?: { id?: string; source_id?: string }[] } | null)
+                      ?.documents ?? [];
+                  const match = docs.find((d) => d.source_id === cldFileId);
+                  if (match?.id) pdid = match.id;
                 } catch {
                   /* best-effort only */
                 }
