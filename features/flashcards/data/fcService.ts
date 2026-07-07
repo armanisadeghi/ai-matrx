@@ -256,7 +256,12 @@ export const fcService = {
         lesson: c.lesson ?? null,
         personal_notes: c.personal_notes ?? null,
         // Columnless extras (e.g. tags) ride the jsonb metadata — never dropped.
-        metadata: c.metadata ?? {},
+        // The P0 TrustEnvelope (citations + confidence) persists under
+        // metadata.trust so the card viewer can render <SourceCitations/>.
+        metadata: {
+          ...(c.metadata ?? {}),
+          ...(c.trust ? { trust: c.trust } : {}),
+        },
       }));
       const { data, error } = await EDU()
         .from("fc_card")

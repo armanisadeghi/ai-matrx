@@ -45,6 +45,8 @@ import { studyService } from "@/features/education/study/service/studyService";
 import type { ItemMasteryRow } from "@/features/education/study/types";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
+import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { CardTrustFooter } from "@/features/education/trust/components/CardTrustFooter";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { helpLive, type HelpLiveResult } from "../../data/tutor/helpLive";
 import {
@@ -482,6 +484,18 @@ export function StudyDeck(props: StudyDeckProps) {
           lastResult={resultsByCard[current.id] ?? null}
           voiceTest={voiceTestForCard?.(current)}
         />
+
+        {/* P0 Trust — once the answer is revealed, show where it came from:
+            citations (tap → exact passage), the confidence badge, and the
+            "Verify against source" action. Renders nothing for hand-made cards. */}
+        {isFlipped && (
+          <CardTrustFooter
+            trust={coerceTrustEnvelope(current.metadata)}
+            front={current.front}
+            back={current.back ?? ""}
+            className="mt-2"
+          />
+        )}
 
         <div className="mt-2 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">

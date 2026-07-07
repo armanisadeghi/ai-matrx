@@ -33,6 +33,7 @@ import {
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { RootState } from "@/lib/redux/store";
+import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { NewCardInput } from "./types";
 
 /**
@@ -159,6 +160,9 @@ function coerceCard(raw: unknown): NewCardInput | null {
     difficulty: optional("difficulty"),
     topic: optional("topic"),
     source,
+    // P0 TrustEnvelope — citations + confidence the agent emitted for this card
+    // (null when the agent produced no envelope; ungrounded topic-gen omits it).
+    trust: coerceTrustEnvelope(r) ?? undefined,
   };
 }
 

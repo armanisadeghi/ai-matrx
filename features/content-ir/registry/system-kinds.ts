@@ -119,6 +119,20 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
         difficulty: { type: "string" },
         topic: { type: "string" },
         tags: { type: "string[]" },
+        // P0 TrustEnvelope (features/education/trust). `confidence` + `groundedIn`
+        // are declared first-class here; the `citations[]` array rides the same
+        // zero-loss residue channel every other undeclared card field uses (the
+        // bridge already round-trips residue.extra), so it streams natively.
+        trust: {
+          type: "inline_object",
+          fields: {
+            confidence: {
+              type: "enum",
+              values: ["grounded", "inferred", "not_in_material"],
+            },
+            groundedIn: { type: "string" },
+          },
+        },
         additionalDetails: { type: "inline_object", fields: {} },
       },
     },
@@ -138,6 +152,17 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
         tags: { type: "string[]" },
         audio_explanation: { type: "string" },
         detailed_explanation: { type: "string" },
+        // P0 TrustEnvelope — see the `flashcard` kind above (citations via residue).
+        trust: {
+          type: "inline_object",
+          fields: {
+            confidence: {
+              type: "enum",
+              values: ["grounded", "inferred", "not_in_material"],
+            },
+            groundedIn: { type: "string" },
+          },
+        },
       },
     },
   },

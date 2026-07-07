@@ -42,10 +42,203 @@ import {
   FunctionSquare,
   Code2,
   Network,
+  ShieldCheck,
+  Quote,
+  Lightbulb,
+  Lock,
+  SearchCheck,
+  Ban,
 } from "lucide-react";
 import type { AxisEntry } from "../types";
 
 export const FEATURES: AxisEntry[] = [
+  {
+    slug: "how-we-stay-honest",
+    name: "How our AI stays honest",
+    tagline: "Grounded in your material, cited, and honest about what it doesn't know",
+    description:
+      "Every AI-generated card, quiz item, and tutor answer is grounded in your own material — with visible source citations you can tap to read the exact passage, an honest confidence signal, and the willingness to say 'that isn't in your material' instead of making something up. We grade what you mean, not the exact words you typed.",
+    icon: ShieldCheck,
+    letter: "Ho",
+    status: "live",
+    accessTier: "free",
+    featured: true,
+    keywords: [
+      "grounded AI",
+      "source citations",
+      "no hallucination",
+      "honest AI tutor",
+      "cited flashcards",
+      "AI you can trust",
+    ],
+    related: { tools: ["flashcards", "tutor"] },
+    sections: [
+      {
+        kind: "prose",
+        heading: "AI that shows its work",
+        body:
+          "Most study apps hand you AI answers with no way to check them — and the AI-native ones are hated for being confidently wrong on the exact STEM problems you need right. We took the opposite path. When you generate a study kit from your own notes, PDF, or reading, every card carries a citation back to the exact passage it came from. Tap it and read the source. If the AI can't ground an answer in your material, it tells you — and asks whether you want a general-knowledge answer instead of quietly inventing one.",
+      },
+      {
+        kind: "feature-grid",
+        heading: "What honesty looks like, in the product",
+        subheading:
+          "Not a marketing promise — the trust signals are on the cards themselves.",
+        columns: 3,
+        items: [
+          {
+            icon: Quote,
+            title: "Tappable source citations",
+            description:
+              "Every grounded card and answer shows the passages it came from. Tap a citation to read the exact source text — no more taking the AI's word for it.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "An honest confidence signal",
+            description:
+              "Each answer is labeled Grounded (traced to your material), Inferred (reasoned from it), or Not in your material — so you always know how solid it is.",
+          },
+          {
+            icon: Ban,
+            title: "It refuses to guess",
+            description:
+              "Ask the tutor something outside your material and it says so, then offers a general-knowledge answer as your explicit choice — never a fabricated one dressed up as fact.",
+          },
+          {
+            icon: SearchCheck,
+            title: "Verify against source",
+            description:
+              "Edited your notes? One tap re-checks a card against its cited passage and flags drift — with a corrected answer the source actually supports.",
+          },
+          {
+            icon: Lightbulb,
+            title: "Graded on meaning, not spelling",
+            description:
+              "Type an answer in your own words. A faithful paraphrase, a synonym, or a reordered statement is marked correct — we grade the idea, not the exact string.",
+          },
+          {
+            icon: Brain,
+            title: "It names your misconception",
+            description:
+              "When you're wrong, you get more than a red X: the specific wrong idea you appear to hold, so your next question is the right one.",
+          },
+        ],
+      },
+      {
+        kind: "steps",
+        heading: "How grounding works",
+        subheading: "One upload, and every study tool inherits the trust layer.",
+        steps: [
+          {
+            number: "01",
+            title: "You bring the material",
+            description:
+              "Upload a PDF, paste notes, or pick a reading. It's chunked into passages the AI can cite precisely.",
+          },
+          {
+            number: "02",
+            title: "The AI generates from it — and cites it",
+            description:
+              "Cards, quizzes, and audio are built from your passages. Each one records the exact chunk it drew on and the sentence that supports it.",
+          },
+          {
+            number: "03",
+            title: "You can always check",
+            description:
+              "Citations are tappable, confidence is labeled, and 'Verify against source' re-checks any card on demand. Nothing is a black box.",
+          },
+        ],
+      },
+      {
+        kind: "faq",
+        heading: "Straight answers",
+        items: [
+          {
+            q: "Does the AI ever just make things up?",
+            a: "When you generate from your own material, cards are built only from passages it can cite — anything it can't ground, it drops. When you ask the tutor something your material doesn't cover, it tells you plainly and asks before answering from general knowledge. Confidently-wrong answers dressed up as fact are exactly what this layer exists to prevent.",
+          },
+          {
+            q: "What does the confidence label actually mean?",
+            a: "Grounded means every claim traces to a passage we cite. Inferred means it's a reasonable synthesis of your material that isn't stated word-for-word. Not in your material means we won't pretend — you decide whether to go to general knowledge.",
+          },
+          {
+            q: "I typed the right idea but different words — will it be marked wrong?",
+            a: "No. Grading judges meaning. Paraphrases, synonyms, abbreviations, and reordered answers that convey the required idea are marked correct. Exact-string grading is a failure mode we deliberately don't have.",
+          },
+          {
+            q: "What if I edit my notes after making cards?",
+            a: "Use 'Verify against source' on a card. It re-checks the card against its cited passage and, if the source has drifted from the card, flags it and suggests a corrected answer.",
+          },
+        ],
+      },
+      {
+        kind: "cta",
+        heading: "Study on material you can trust",
+        body: "Generate a cited study kit from your own notes and see every source for yourself.",
+        primary: { label: "Create flashcards from a source", href: "/education/flashcards/new" },
+        secondary: { label: "How we handle your data", href: "/education/features/data-security" },
+      },
+    ],
+  },
+  {
+    slug: "data-security",
+    name: "Your data, handled honestly",
+    tagline: "What we do with your study material — in plain language",
+    description:
+      "A short, factual statement of how your uploads and study data are stored, who can see them, and what we never do with them. No dark patterns, no surprise data sharing.",
+    icon: Lock,
+    letter: "Ds",
+    status: "live",
+    accessTier: "free",
+    keywords: ["student data privacy", "FERPA", "data security", "no ads", "study data"],
+    sections: [
+      {
+        kind: "prose",
+        heading: "Plain-language data posture",
+        body:
+          "Your uploads and the study artifacts made from them are yours. They're stored privately under your account and are visible only to you unless you explicitly share or publish them. We don't sell your data, we don't run ads against it, and we don't train public models on your private material. When the AI grounds an answer in your material, that material stays within your account's scope.",
+      },
+      {
+        kind: "feature-grid",
+        heading: "The commitments",
+        columns: 3,
+        items: [
+          {
+            icon: Lock,
+            title: "Private by default",
+            description:
+              "Uploads and generated study kits are visible only to you until you choose to share or publish them.",
+          },
+          {
+            icon: Ban,
+            title: "No ads, ever",
+            description:
+              "We don't run advertising, and we don't monetize your attention or your study data against advertisers.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "You can export and delete",
+            description:
+              "Your material is yours to take with you or remove. Ownership of your content stays with you.",
+          },
+        ],
+      },
+      {
+        kind: "faq",
+        heading: "Common questions",
+        items: [
+          {
+            q: "Do you train models on my private uploads?",
+            a: "No. Private material stays within your account's scope and is used to generate your study artifacts — not to train public models.",
+          },
+          {
+            q: "Who can see what I upload?",
+            a: "Only you, until you explicitly share a link or publish a resource. Sharing is always an action you take, never a default.",
+          },
+        ],
+      },
+    ],
+  },
   {
     slug: "fastfire",
     name: "FastFire",

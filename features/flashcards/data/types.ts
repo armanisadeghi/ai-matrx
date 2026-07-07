@@ -10,6 +10,7 @@
 // reached through `associationsService`. See the role vocabulary in EDGE_ROLE.
 
 import type { Database } from "@/types/database.types";
+import type { TrustEnvelope } from "@/features/education/trust/types";
 
 type Edu = Database["education"]["Tables"];
 
@@ -48,6 +49,12 @@ export interface NewCardInput {
   metadata?: Record<string, unknown>;
   /** Optional lineage: the source passage this card came from (§ from-source flow). */
   source?: { file_id: string; processed_document_id?: string; chunk_id?: string; page?: number };
+  /**
+   * P0 TrustEnvelope — the citations + confidence this card is grounded in
+   * (`features/education/trust`). Persisted on `fc_card.metadata.trust`; the
+   * card viewer renders it via <SourceCitations/> + <ConfidenceBadge/>.
+   */
+  trust?: TrustEnvelope;
 }
 
 export interface NewSetInput {

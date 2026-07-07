@@ -103,6 +103,22 @@ export interface GradeVerdict {
   explanation: string;
 }
 
+// ── Verify-against-source verdict ───────────────────────────────────────────
+//
+// The "Verify against source" action re-checks a generated card/answer against
+// the passage it cited — catching drift after a source edit or a manual card
+// change. Powered by the `verifyAgainstSource` agent.
+
+export type VerifyStatus = "verified" | "drifted" | "unverifiable";
+
+export interface VerifyResult {
+  status: VerifyStatus;
+  /** One or two plain sentences explaining the verdict, in meaning terms. */
+  explanation: string;
+  /** When `drifted`, a corrected answer the source WOULD support. */
+  suggestedFix: string | null;
+}
+
 // ── Coercion helpers (never throw; narrow agent output → the contract) ───────
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -192,6 +208,22 @@ export function coerceGradeVerdict(raw: unknown): GradeVerdict | null {
     partial: partial && !correct,
     misconception: misconceptionRaw ? misconceptionRaw : null,
     explanation: asString(raw.explanation ?? raw.feedback),
+  };
+}
+
+/** Narrow an unknown agent-emitted value to a VerifyResult (never throws). */
+export function coerceVerifyResult(raw: unknown): VerifyResult | null {
+  if (!isRecord(raw)) return null;
+  const statusRaw = asString(raw.status);
+  const status: VerifyStatus =
+    statusRaw === "verified" || statusRaw === "drifted" || statusRaw === "unverifiable"
+      ? statusRaw
+      : "unverifiable";
+  const suggested = asString(raw.suggested_fix ?? raw.suggestedFix);
+  return {
+    status,
+    explanation: asString(raw.explanation),
+    suggestedFix: suggested ? suggested : null,
   };
 }
 
