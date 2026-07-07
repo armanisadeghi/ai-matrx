@@ -12,18 +12,17 @@
 
 export const EDU_TUTOR_AGENTS = {
   /**
-   * The persistent, memory-carrying, RAG-grounded conversational tutor. A
-   * streaming TEXT agent (markdown out), grounded in the learner's own material
-   * (injected at launch via the `study_material` variable), carries
-   * cross-session memory (`learner_memory`), Socratic-capable (`teaching_mode`),
-   * personality-tunable (`personality_style`), and honest about the boundary of
-   * the material (refuses rather than fabricates). Grounding + memory + citation
-   * behavior live-verified via agent_run 2026-07-07.
-   *
-   * Variables (all optional, substituted into the system prompt at launch):
+   * The persistent, memory-carrying, grounded conversational tutor. A streaming
+   * TEXT agent (markdown out) with NO user-facing variables (clean composer) —
+   * grounding rides declared CONTEXT SLOTS the FE fills silently every turn:
    *   learner_memory · study_material · teaching_mode · personality_style
+   * Each slot has a `max_inline_chars` ceiling; content is inlined into the
+   * model's view up to that limit. Also carries platform DATA TOOLS so it can
+   * query the learner's notes/flashcards/docs live. Cites the learner's material
+   * inline, honest about the boundary. Grounding is injected via
+   * `setContextEntries` in EducationTutorClient.
    */
-  tutor: "46b7b357-6d45-44cd-9c12-1b647d94d5ee",
+  tutor: "d80cc27e-63ce-49b6-a285-fdb78a66c537",
 } as const;
 
 export type EduTutorAgentKey = keyof typeof EDU_TUTOR_AGENTS;

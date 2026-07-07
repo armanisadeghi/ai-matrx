@@ -10,9 +10,9 @@
 //   • AgentConversationColumn     — the presentational transcript + composer
 // and adds the ONE thing that makes it a tutor: grounding injection. On a fresh
 // conversation we assemble the learner's cross-session memory + their own study
-// material (assembleTutorGrounding) and set them as launch variables the tutor
-// agent substitutes into its prompt — so it opens already knowing the learner
-// and can cite their material.
+// material (assembleTutorGrounding) and feed them into the tutor agent's
+// declared CONTEXT SLOTS (not user-facing variables — the composer stays clean)
+// so it opens already knowing the learner and can cite their material.
 //
 // Two mount paths mirror ChatRoomClient: fresh (no conversationId → launcher
 // mints one, injects grounding, promotes the URL after first submit) and
@@ -29,7 +29,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { setFocus, clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
@@ -120,9 +120,13 @@ export function EducationTutorClient({
   });
 
   // ── Grounding injection (fresh route) ────────────────────────────────────
-  // Assemble the learner's memory + study material and set them as the tutor's
-  // launch variables BEFORE the first send (assembleRequest reads variables
-  // fresh on turn 1). Runs once per fresh conversation.
+  // Assemble the learner's memory + study material and feed them into the
+  // tutor's declared CONTEXT SLOTS (learner_memory / study_material /
+  // teaching_mode / personality_style) — NOT user-facing variables, so nothing
+  // shows in the chat composer. `setContextEntries` auto-inits the per-
+  // conversation slot (no create-race), and `request.context` is re-sent on
+  // EVERY turn (including continuations), so grounding stays live for the whole
+  // conversation. The agent inlines each slot up to its `max_inline_chars`.
   const groundedRef = useRef<string | null>(null);
   useEffect(() => {
     if (conversationIdProp || !liveConversationId || !authReady) return;
@@ -134,38 +138,26 @@ export function EducationTutorClient({
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
-        // The launcher creates the instance's variable-values slot
-        // asynchronously (createInstanceFull). `setUserVariableValues` silently
-        // no-ops if the slot doesn't exist yet, so wait for it (bounded ~2s)
-        // before dispatching — otherwise the tutor could launch UNGROUNDED with
-        // no signal. Loud recovery: if it never appears, scream + allow a retry.
-        const hasSlot = () =>
-          !!store.getState().instanceVariableValues?.byConversationId?.[target];
-        for (let i = 0; i < 40 && !hasSlot(); i++) {
-          await new Promise((r) => setTimeout(r, 50));
-          if (cancelled) return;
-        }
-        if (cancelled) return;
-        if (!hasSlot()) {
-          console.error(
-            "[EducationTutorClient] grounding NOT applied — instance variable slot never appeared for",
-            target,
-          );
-          groundedRef.current = null; // let a later render retry
-          return;
-        }
         dispatch(
-          setUserVariableValues({ conversationId: target, values: grounding }),
+          setContextEntries({
+            conversationId: target,
+            entries: [
+              { key: "learner_memory", value: grounding.learner_memory, type: "text", label: "Learner memory" },
+              { key: "study_material", value: grounding.study_material, type: "text", label: "Study material" },
+              { key: "teaching_mode", value: grounding.teaching_mode, type: "text", label: "Teaching mode" },
+              { key: "personality_style", value: grounding.personality_style, type: "text", label: "Personality style" },
+            ],
+          }),
         );
       } catch (err) {
         console.error("[EducationTutorClient] grounding failed", err);
-        groundedRef.current = null;
+        groundedRef.current = null; // let a later render retry
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [conversationIdProp, liveConversationId, authReady, dispatch, store, seed]);
+  }, [conversationIdProp, liveConversationId, authReady, dispatch, seed]);
 
   // ── Existing-conversation load (only on /education/tutor/[id]) ────────────
   const loadAbortRef = useRef<AbortController | null>(null);
