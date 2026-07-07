@@ -2352,16 +2352,19 @@ export type Database = {
         Row: {
           capability: string
           limit_value: number | null
+          period: Database["billing"]["Enums"]["meter_period"]
           tier: Database["billing"]["Enums"]["tier"]
         }
         Insert: {
           capability: string
           limit_value?: number | null
+          period: Database["billing"]["Enums"]["meter_period"]
           tier: Database["billing"]["Enums"]["tier"]
         }
         Update: {
           capability?: string
           limit_value?: number | null
+          period?: Database["billing"]["Enums"]["meter_period"]
           tier?: Database["billing"]["Enums"]["tier"]
         }
         Relationships: [
@@ -2475,6 +2478,27 @@ export type Database = {
           stripe_product_id?: string | null
           tier?: Database["billing"]["Enums"]["tier"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      stripe_event: {
+        Row: {
+          id: string
+          payload: Json | null
+          received_at: string
+          type: string
+        }
+        Insert: {
+          id: string
+          payload?: Json | null
+          received_at?: string
+          type: string
+        }
+        Update: {
+          id?: string
+          payload?: Json | null
+          received_at?: string
+          type?: string
         }
         Relationships: []
       }
@@ -2600,9 +2624,46 @@ export type Database = {
         Args: { p_user: string }
         Returns: Database["billing"]["Enums"]["tier"]
       }
+      usage_admin_by_user: {
+        Args: {
+          p_capability?: string
+          p_from?: string
+          p_limit?: number
+          p_to?: string
+        }
+        Returns: {
+          capability: string
+          event_count: number
+          total_quantity: number
+          user_id: string
+        }[]
+      }
+      usage_admin_summary: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          active_users: number
+          capability: string
+          event_count: number
+          total_quantity: number
+        }[]
+      }
+      usage_my_summary: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: {
+          capability: string
+          event_count: number
+          total_quantity: number
+        }[]
+      }
     }
     Enums: {
-      meter_period: "day" | "week" | "month" | "lifetime"
+      meter_period:
+        | "day"
+        | "week"
+        | "month"
+        | "lifetime"
+        | "rolling_1h"
+        | "rolling_5h"
       subscription_status:
         | "trialing"
         | "active"
@@ -40502,7 +40563,14 @@ export const Constants = {
   },
   billing: {
     Enums: {
-      meter_period: ["day", "week", "month", "lifetime"],
+      meter_period: [
+        "day",
+        "week",
+        "month",
+        "lifetime",
+        "rolling_1h",
+        "rolling_5h",
+      ],
       subscription_status: [
         "trialing",
         "active",
