@@ -49,6 +49,14 @@ test program attached, not a QA checklist.
 - **Error capture:** wire scanner failure classes (upload error, detect error, save-stream
   error, poll timeout, clean-content-never-ready) into the Error Inspector via `captureError`
   with sensible tiers (invoke the `error-capture` skill).
+- **Capture-overlay design parity** (source:
+  [`design/Photo-to-PDF Desktop.dc.html`](./design/Photo-to-PDF%20Desktop.dc.html), camera
+  screen ~lines 42-99): Auto/Manual capture-mode chips and a live "Page detected" indicator in
+  the viewfinder. Detection today is post-upload background only — a live badge can ride the
+  same `detect-document` call on a throttled preview frame, or a cheap client-side heuristic;
+  pick what real devices can sustain (this is why it's yours, not P2's) and document the
+  choice. Skippable ONLY if real-device testing shows it hurts capture cadence — then record
+  that verdict here.
 - Keep the FEATURE.md scanner sections + change log truthful as you go.
 
 **OUT**

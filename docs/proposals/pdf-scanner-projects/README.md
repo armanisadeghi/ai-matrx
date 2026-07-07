@@ -4,6 +4,8 @@
 > **Vision anchor:** [`features/pdf/FEATURE.md`](../../../features/pdf/FEATURE.md) — the PDF
 > domain doc (canonical parts, invariants, roadmap). No separate VISION doc exists for this
 > domain; FEATURE.md's roadmap section + this plan are the source of truth.
+> **Design sources:** [`design/Photo-to-PDF Desktop.dc.html`](./design/) + mobile — the actual
+> Claude Design prototypes (read the HTML/CSS directly; pixel truth for every surface).
 > Every brief in this folder is standalone — hand it to one agent blind using the copy-paste
 > prompt in [`ASSIGN.md`](./ASSIGN.md). Every factual claim was re-verified against live code +
 > the live DB (project `txzxabzwovsujtloxrus`) on 2026-07-07.
@@ -113,10 +115,16 @@ Tiers are staffing order, NOT sequencing — all Wave-1 projects run in parallel
 
 ## 8. Flags → DECISIONS RECORDED
 
-- **F1 — Design-file access:** the Claude Design URL is auth-gated (403) and this environment
-  cannot run `/design-login`; the desktop build was verified against code + the ship changelog,
-  not the pixels. *Ask:* re-share via Design's "Send to Claude Code Web" (or confirm the shipped
-  Home/Review/Processing + extractor-tabs mapping covers the whole file). — **PENDING**
+- **F1 — Design-file access:** — **RESOLVED 2026-07-07.** Arman provided the handoff bundle;
+  sources now live in [`design/`](./design/) (desktop + mobile `.dc.html`). Full parity audit
+  run against the shipped build: structure matches (sidebar / Home / Review / dark capture +
+  crop / processing); shipped exceeds the design on crop (rotate/zoom/re-detect) and processing
+  (live ledger). Six deltas found and folded into the briefs: per-page rename, "View all"
+  recents, results-surface details (Ask suggested-questions, word-count/confidence stat, Copy
+  text, Download/Share header) → P2 §Design parity; enhance modes (Auto/Original/Grayscale/B&W)
+  → P2; capture-overlay parity (Auto/Manual chips, live "Page detected" badge) → P1. The
+  design's in-scanner Results screen remains deliberately mapped onto the extractor (one
+  canonical surface) — P2 must make that surface deliver everything the Results screen shows.
 - **F2 — Competitive research never ran** for this domain (Adobe Scan, Microsoft Lens,
   SwiftScan, CamScanner, Apple/Google native scan). Run the 8-pass research + visual capture
   before assigning Wave 2? — **PENDING**

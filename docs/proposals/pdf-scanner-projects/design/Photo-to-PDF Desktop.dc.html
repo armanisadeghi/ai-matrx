@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#dcdee5}
+  *{box-sizing:border-box}
+  a{color:#2B54E6;text-decoration:none}
+  a:hover{color:#1f40c4}
+  input{font-family:inherit;outline:none}
+  button{font-family:inherit;cursor:pointer}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:rgba(14,19,32,.16);border-radius:9px;border:2px solid transparent;background-clip:content-box}
+  @keyframes scanline{0%{transform:translateY(-46%)}50%{transform:translateY(46%)}100%{transform:translateY(-46%)}}
+  @keyframes flashpop{0%{opacity:0}18%{opacity:.9}100%{opacity:0}}
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulsedot{0%,100%{opacity:1}50%{opacity:.25}}
+  @keyframes toastin{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes brackets{0%,100%{opacity:.55}50%{opacity:1}}
+</style>
+</helmet>
+<div style="min-height:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 120% at 50% 0%,#eef0f4 0%,#d7d9e0 100%);padding:34px;font-family:'Hanken Grotesk',sans-serif">
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ winW }}" height="{{ winH }}" url="app.cobaltscan.co/library" dc-props="{{ chromeProps }}" hint-size="1280px,860px">
+
+<div style="height:{{ winContentH }}px;display:flex;position:relative;font-family:'Hanken Grotesk',sans-serif;background:#F2F2F7;color:#0E1320;overflow:hidden">
+
+  <!-- ══════════════════ DARK EDITING SURFACES (camera / confirm / crop) ══════════════════ -->
+  <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;position:relative;background:radial-gradient(120% 90% at 50% 40%,#1a1e28 0%,#0a0c11 100%);overflow:hidden;animation:fadein .2s ease">
+
+    <!-- CAMERA -->
+    <sc-if value="{{ isCamera }}">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+      <div style="padding:20px 26px;display:flex;align-items:center;justify-content:space-between">
+        <button onClick="{{ goHome }}" style="display:flex;align-items:center;gap:9px;height:40px;padding:0 16px 0 12px;border-radius:12px;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:14px;font-weight:600;backdrop-filter:blur(8px)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>Close
+        </button>
+        <div style="font-family:'Space Mono',monospace;font-size:12px;color:rgba(255,255,255,.7);letter-spacing:1.5px">WEBCAM CAPTURE · AUTO CROP ON</div>
+        <button style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);border:none;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L5 13h5l-1 9 8-11h-5l1-9z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center">
+        <div style="position:relative;width:330px;height:440px;transform:rotate(-2deg);box-shadow:0 40px 80px -24px rgba(0,0,0,.7)">
+          <div style="position:absolute;inset:0;background:#fbfbf7;border-radius:4px;padding:34px 30px;display:flex;flex-direction:column;gap:13px">
+            <div style="height:17px;width:58%;border-radius:2px;background:#c6c8cd"></div>
+            <div style="height:9px;width:38%;border-radius:2px;background:#dcdde2;margin-bottom:8px"></div>
+            <div style="height:8px;width:100%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:94%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:97%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:70%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:100%;border-radius:2px;background:#e7e8ec;margin-top:10px"></div>
+            <div style="height:8px;width:88%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:60%;border-radius:2px;background:#e7e8ec"></div>
+          </div>
+          <div style="position:absolute;inset:-7px;border:2px solid #2B54E6;border-radius:5px;box-shadow:0 0 0 100vmax rgba(8,10,15,.42);animation:brackets 2s ease-in-out infinite"></div>
+          <div style="position:absolute;top:-7px;left:-7px;width:26px;height:26px;border-top:3px solid #6f93ff;border-left:3px solid #6f93ff;border-radius:5px 0 0 0"></div>
+          <div style="position:absolute;top:-7px;right:-7px;width:26px;height:26px;border-top:3px solid #6f93ff;border-right:3px solid #6f93ff;border-radius:0 5px 0 0"></div>
+          <div style="position:absolute;bottom:-7px;left:-7px;width:26px;height:26px;border-bottom:3px solid #6f93ff;border-left:3px solid #6f93ff;border-radius:0 0 0 5px"></div>
+          <div style="position:absolute;bottom:-7px;right:-7px;width:26px;height:26px;border-bottom:3px solid #6f93ff;border-right:3px solid #6f93ff;border-radius:0 0 5px 0"></div>
+          <div style="position:absolute;left:-7px;right:-7px;height:2px;background:linear-gradient(90deg,transparent,#6f93ff,transparent);top:50%;animation:scanline 2.4s ease-in-out infinite"></div>
+          <div style="position:absolute;top:-42px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;background:#12A150;color:#fff;font-size:12px;font-weight:600;padding:6px 13px;border-radius:999px;white-space:nowrap">
+            <span style="width:7px;height:7px;border-radius:50%;background:#fff;animation:pulsedot 1.3s infinite"></span>Page detected
+          </div>
+        </div>
+        <div style="position:absolute;top:8px;left:0;right:0;text-align:center;color:rgba(255,255,255,.55);font-size:14px">Hold the document up to your camera — we'll auto-crop each page</div>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:10px;padding-bottom:18px">
+        <button onClick="{{ setAuto }}" style="{{ chipAuto }}">Auto</button>
+        <button onClick="{{ setManual }}" style="{{ chipManual }}">Manual</button>
+      </div>
+      <div style="padding:0 60px 40px;display:flex;align-items:center;justify-content:center;gap:46px">
+        <button onClick="{{ goReview }}" style="position:relative;width:62px;height:62px;border-radius:14px;border:2px solid rgba(255,255,255,.6);padding:0;overflow:hidden;background:#fbfbf7">
+          <div style="position:absolute;inset:0;padding:10px 9px;display:flex;flex-direction:column;gap:3px"><div style="height:3px;width:60%;background:#c6c8cd;border-radius:1px"></div><div style="height:3px;width:90%;background:#e0e1e5;border-radius:1px"></div><div style="height:3px;width:80%;background:#e0e1e5;border-radius:1px"></div><div style="height:3px;width:88%;background:#e0e1e5;border-radius:1px"></div></div>
+          <div style="position:absolute;top:-9px;right:-9px;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:#2B54E6;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #0a0c11">{{ pageCount }}</div>
+        </button>
+        <button onClick="{{ capture }}" style="width:82px;height:82px;border-radius:50%;border:4px solid rgba(255,255,255,.9);background:transparent;padding:4px;display:flex;align-items:center;justify-content:center">
+          <span style="display:block;width:100%;height:100%;border-radius:50%;background:#fff"></span>
+        </button>
+        <button onClick="{{ goReview }}" style="width:62px;height:62px;border-radius:16px;border:none;background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;backdrop-filter:blur(8px)">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 7l5-3 6 3 5-2v13l-5 2-6-3-5 3V7z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>Done
+        </button>
+      </div>
+      <sc-if value="{{ captureFlash }}">
+      <div style="position:absolute;inset:0;background:#fff;animation:flashpop .18s ease forwards;z-index:9;pointer-events:none"></div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- CONFIRM -->
+    <sc-if value="{{ isConfirm }}">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+      <div style="padding:20px 26px;display:flex;align-items:center;justify-content:space-between">
+        <button onClick="{{ retake }}" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:15px;font-weight:500">Retake</button>
+        <div style="color:#fff;font-weight:600;font-size:16px">Review crop</div>
+        <div style="width:60px"></div>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:44px;padding:0 40px">
+        <div style="position:relative;width:340px;height:454px;box-shadow:0 32px 66px -22px rgba(0,0,0,.7)">
+          <div style="position:absolute;inset:0;background:#fbfbf7;border-radius:3px;padding:34px 30px;display:flex;flex-direction:column;gap:13px">
+            <div style="height:18px;width:56%;border-radius:2px;background:#c6c8cd"></div>
+            <div style="height:9px;width:36%;border-radius:2px;background:#dcdde2;margin-bottom:8px"></div>
+            <div style="height:8px;width:100%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:92%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:97%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:64%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:100%;border-radius:2px;background:#e7e8ec;margin-top:10px"></div>
+            <div style="height:8px;width:80%;border-radius:2px;background:#e7e8ec"></div>
+          </div>
+          <div style="position:absolute;inset:0;border:2px solid #12A150;border-radius:3px"></div>
+          <div style="position:absolute;top:10px;left:10px;width:14px;height:14px;border-radius:50%;background:#12A150;border:2px solid #fff"></div>
+          <div style="position:absolute;top:10px;right:10px;width:14px;height:14px;border-radius:50%;background:#12A150;border:2px solid #fff"></div>
+          <div style="position:absolute;bottom:10px;left:10px;width:14px;height:14px;border-radius:50%;background:#12A150;border:2px solid #fff"></div>
+          <div style="position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-radius:50%;background:#12A150;border:2px solid #fff"></div>
+          <div style="position:absolute;top:-38px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:7px;background:#12A150;color:#fff;font-size:12px;font-weight:600;padding:6px 13px;border-radius:999px;white-space:nowrap">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Edges detected
+          </div>
+        </div>
+        <div style="width:230px;display:flex;flex-direction:column;gap:16px">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1.5px;color:rgba(255,255,255,.5)">ENHANCE</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="text-align:center"><div style="height:74px;border-radius:12px;background:#fbfbf7;border:2px solid #2B54E6"></div><div style="color:#fff;font-size:12px;margin-top:7px;font-weight:600">Auto</div></div>
+            <div style="text-align:center"><div style="height:74px;border-radius:12px;background:#efefe9;border:2px solid transparent"></div><div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:7px">Original</div></div>
+            <div style="text-align:center"><div style="height:74px;border-radius:12px;background:#d8d8d4;border:2px solid transparent"></div><div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:7px">Grayscale</div></div>
+            <div style="text-align:center"><div style="height:74px;border-radius:12px;background:#fff;border:2px solid transparent"></div><div style="color:rgba(255,255,255,.55);font-size:12px;margin-top:7px">B &amp; W</div></div>
+          </div>
+          <div style="height:1px;background:rgba(255,255,255,.12);margin:4px 0"></div>
+          <button onClick="{{ adjustCorners }}" style="width:100%;background:rgba(255,255,255,.1);border:none;color:#fff;font-weight:600;font-size:14px;padding:14px;border-radius:13px">Adjust corners manually</button>
+          <button onClick="{{ useConfirm }}" style="width:100%;background:#2B54E6;border:none;color:#fff;font-weight:600;font-size:15px;padding:15px;border-radius:13px;box-shadow:0 10px 24px -8px rgba(43,84,230,.6)">Use page</button>
+        </div>
+      </div>
+      <div style="height:40px"></div>
+    </div>
+    </sc-if>
+
+    <!-- CROP (manual) -->
+    <sc-if value="{{ isCrop }}">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+      <div style="padding:20px 26px;display:flex;align-items:center;justify-content:space-between">
+        <button onClick="{{ cropBack }}" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:15px">Cancel</button>
+        <div style="color:#fff;font-weight:600;font-size:16px">Adjust crop — drag the corners</div>
+        <button onClick="{{ resetCrop }}" style="background:none;border:none;color:#6f93ff;font-size:15px;font-weight:600">Reset</button>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:10px 40px">
+        <div style="position:relative;width:360px;height:480px;box-shadow:0 32px 66px -22px rgba(0,0,0,.7)">
+          <div style="position:absolute;inset:0;background:#fbfbf7;border-radius:3px;padding:34px 30px;display:flex;flex-direction:column;gap:13px">
+            <div style="height:18px;width:56%;border-radius:2px;background:#c6c8cd"></div>
+            <div style="height:9px;width:36%;border-radius:2px;background:#dcdde2;margin-bottom:8px"></div>
+            <div style="height:8px;width:100%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:92%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:97%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:64%;border-radius:2px;background:#e7e8ec"></div>
+            <div style="height:8px;width:100%;border-radius:2px;background:#e7e8ec;margin-top:10px"></div>
+            <div style="height:8px;width:80%;border-radius:2px;background:#e7e8ec"></div>
+          </div>
+          {{ cropOverlay }}
+        </div>
+      </div>
+      <div style="padding:0 0 34px;display:flex;justify-content:center;gap:14px;align-items:center">
+        <button style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.1);border:none;display:flex;align-items:center;justify-content:center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 10-2.3 5.7M20 5v6h-6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button onClick="{{ applyCrop }}" style="width:280px;background:#2B54E6;border:none;color:#fff;font-weight:600;font-size:15px;padding:15px;border-radius:14px;box-shadow:0 10px 24px -8px rgba(43,84,230,.6)">Apply crop</button>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+
+  <!-- ══════════════════ LIGHT SHELL (sidebar + workspace) ══════════════════ -->
+  <sc-if value="{{ isShell }}" hint-placeholder-val="{{ true }}">
+
+  <!-- SIDEBAR -->
+  <aside style="width:266px;flex-shrink:0;background:#fff;border-right:1px solid rgba(14,19,32,.07);display:flex;flex-direction:column;padding:22px 16px 18px">
+    <div style="display:flex;align-items:center;gap:10px;padding:0 6px;margin-bottom:22px">
+      <div style="width:30px;height:30px;border-radius:9px;background:#2B54E6;display:flex;align-items:center;justify-content:center">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="13" height="17" rx="2.2" stroke="#fff" stroke-width="1.8"/><rect x="7.5" y="6" width="12" height="16" rx="2.2" fill="#2B54E6" stroke="#fff" stroke-width="1.8"/></svg>
+      </div>
+      <div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:#0E1320;line-height:1">Cobalt Scan</div>
+        <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:1.5px;color:#8A909C;margin-top:2px">DOCUMENT WORKSPACE</div>
+      </div>
+    </div>
+
+    <button onClick="{{ goHome }}" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:#2B54E6;border:none;color:#fff;font-weight:600;font-size:14.5px;padding:13px;border-radius:13px;box-shadow:0 8px 20px -8px rgba(43,84,230,.55);margin-bottom:6px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>New scan
+    </button>
+    <button onClick="{{ goHome }}" style="{{ navHomeStyle }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7M6 10v9h12v-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Home
+    </button>
+
+    <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#8A909C;margin:20px 8px 10px">RECENT FILES</div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:3px;margin:0 -4px;padding:0 4px">
+      <sc-for list="{{ library }}" as="f" hint-placeholder-count="5">
+        <button onClick="{{ f.onOpen }}" style="{{ f.style }}">
+          <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:{{ f.iconBg }}">
+            <sc-if value="{{ f.isPdf }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9l-6-6z" stroke="#D64545" stroke-width="1.6" stroke-linejoin="round"/><path d="M13 3v6h6" stroke="#D64545" stroke-width="1.6" stroke-linejoin="round"/></svg></sc-if>
+            <sc-if value="{{ f.isImg }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="14" rx="2.5" stroke="#2B54E6" stroke-width="1.6"/><path d="M3.5 15l4-3.5 3.5 3 3-2.5L20.5 16" stroke="#2B54E6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9.5" r="1.4" fill="#2B54E6"/></svg></sc-if>
+          </div>
+          <div style="flex:1;min-width:0;text-align:left">
+            <div style="font-size:13.5px;font-weight:600;color:#0E1320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.name }}</div>
+            <div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#8A909C;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ f.meta }}</div>
+          </div>
+        </button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ showTrustNote }}">
+    <div style="display:flex;align-items:center;gap:9px;padding:12px 10px;margin-top:12px;border-top:1px solid rgba(14,19,32,.07);color:#8A909C;font-size:12px;line-height:1.35">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="#8A909C" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="#8A909C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Every page saves instantly — nothing is lost.
+    </div>
+    </sc-if>
+  </aside>
+
+  <!-- MAIN WORKSPACE -->
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+    <!-- HOME -->
+    <sc-if value="{{ isHome }}">
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:34px 44px 44px;animation:fadein .25s ease">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <div style="width:8px;height:8px;border-radius:2px;background:#2B54E6"></div>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;color:#8A909C">SCANNER</div>
+      </div>
+      <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:34px;line-height:1.05;letter-spacing:-.5px;color:#0E1320;margin:0 0 8px">Scan to PDF</h1>
+      <p style="font-size:15px;line-height:1.45;color:#5B6270;margin:0 0 26px;max-width:520px">Drop your files or capture pages from your camera. We combine them into a single PDF, extract the text, and index it for retrieval.</p>
+
+      <div onDragOver="{{ onDragOverZone }}" onDragLeave="{{ onDragLeaveZone }}" onDrop="{{ onDropZone }}" onClick="{{ addLibrary }}" style="{{ dropZoneStyle }}">
+        <div style="width:64px;height:64px;border-radius:18px;background:#EEF1FE;display:flex;align-items:center;justify-content:center;margin-bottom:18px">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke="#2B54E6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3" stroke="#2B54E6" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:21px;color:#0E1320;margin-bottom:5px">{{ dropTitle }}</div>
+        <div style="font-size:14px;color:#5B6270;margin-bottom:2px">or <span style="color:#2B54E6;font-weight:600">browse your computer</span> — drop multiple files at once</div>
+        <div style="font-family:'Space Mono',monospace;font-size:11.5px;color:#8A909C;margin-top:10px">PDF · JPG · PNG · HEIC — up to 50 MB each</div>
+      </div>
+
+      <div style="display:flex;gap:14px;margin:16px 0 34px">
+        <button onClick="{{ openCamera }}" style="flex:1;display:flex;align-items:center;gap:14px;background:#fff;border:1px solid rgba(14,19,32,.07);border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 1px 2px rgba(14,19,32,.04)">
+          <div style="width:44px;height:44px;border-radius:12px;background:#F2F2F7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 8.5a2 2 0 012-2h1.2l.9-1.6a1.5 1.5 0 011.3-.8h5.2a1.5 1.5 0 011.3.8l.9 1.6H18a2 2 0 012 2V17a2 2 0 01-2 2H6a2 2 0 01-2-2V8.5z" stroke="#0E1320" stroke-width="1.7"/><circle cx="12" cy="12.5" r="3.3" stroke="#0E1320" stroke-width="1.7"/></svg>
+          </div>
+          <div><div style="font-weight:600;font-size:15px;color:#0E1320">Capture from webcam</div><div style="font-size:12.5px;color:#8A909C;margin-top:1px">Rapid capture — auto crop each page</div></div>
+        </button>
+        <button onClick="{{ addFile }}" style="flex:1;display:flex;align-items:center;gap:14px;background:#fff;border:1px solid rgba(14,19,32,.07);border-radius:16px;padding:16px 18px;text-align:left;box-shadow:0 1px 2px rgba(14,19,32,.04)">
+          <div style="width:44px;height:44px;border-radius:12px;background:#F2F2F7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 3.5H7a2 2 0 00-2 2v13a2 2 0 002 2h10a2 2 0 002-2V9.5L13 3.5z" stroke="#0E1320" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 3.5V9h5.5" stroke="#0E1320" stroke-width="1.7" stroke-linejoin="round"/></svg>
+          </div>
+          <div><div style="font-weight:600;font-size:15px;color:#0E1320">Import a document</div><div style="font-size:12.5px;color:#8A909C;margin-top:1px">Add an existing PDF or image</div></div>
+        </button>
+      </div>
+
+      <sc-if value="{{ showRecentScans }}">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1.5px;color:#8A909C">RECENT SCANS</div>
+        <div style="font-size:13px;color:#2B54E6;font-weight:600">View all</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <sc-for list="{{ recentCards }}" as="c" hint-placeholder-count="3">
+          <button onClick="{{ c.onOpen }}" style="text-align:left;background:#fff;border:1px solid rgba(14,19,32,.07);border-radius:16px;padding:0;overflow:hidden;box-shadow:0 1px 2px rgba(14,19,32,.04)">
+            <div style="height:112px;background:#f6f6f3;border-bottom:1px solid rgba(14,19,32,.06);position:relative;display:flex;align-items:center;justify-content:center">
+              <div style="width:66px;height:86px;background:#fcfcf9;border:1px solid rgba(14,19,32,.1);border-radius:3px;box-shadow:0 6px 14px -6px rgba(14,19,32,.2);padding:11px 10px;display:flex;flex-direction:column;gap:4px">
+                <div style="height:5px;width:60%;background:#c9cbd0;border-radius:1px"></div>
+                <div style="height:3.5px;width:90%;background:#e6e7ec;border-radius:1px"></div>
+                <div style="height:3.5px;width:80%;background:#e6e7ec;border-radius:1px"></div>
+                <div style="height:3.5px;width:88%;background:#e6e7ec;border-radius:1px"></div>
+                <div style="height:3.5px;width:70%;background:#e6e7ec;border-radius:1px"></div>
+              </div>
+              <div style="position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:4px;background:#E9F7EF;color:#12A150;font-size:10px;font-weight:600;padding:3px 7px;border-radius:999px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#12A150" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Indexed</div>
+            </div>
+            <div style="padding:13px 15px 15px">
+              <div style="font-weight:600;font-size:14.5px;color:#0E1320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+              <div style="font-family:'Space Mono',monospace;font-size:11px;color:#8A909C;margin-top:3px">{{ c.meta }}</div>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- REVIEW -->
+    <sc-if value="{{ isReview }}">
+    <div style="flex-shrink:0;padding:24px 44px 18px;background:#fff;border-bottom:1px solid rgba(14,19,32,.07)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <button onClick="{{ goHome }}" style="display:flex;align-items:center;gap:7px;background:none;border:none;color:#5B6270;font-size:14px;font-weight:500;padding:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 5l-7 7 7 7" stroke="#5B6270" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Home
+        </button>
+        <div style="display:flex;align-items:center;gap:6px;background:#E9F7EF;color:#12A150;font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#12A150" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Autosaved
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:9px">
+            <input value="{{ title }}" onInput="{{ onTitle }}" placeholder="Untitled scan" style="border:none;background:none;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:28px;letter-spacing:-.4px;color:#0E1320;padding:0;max-width:420px" />
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;opacity:.35"><path d="M4 20h4l10-10-4-4L4 16v4z" stroke="#0E1320" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 6l4 4" stroke="#0E1320" stroke-width="1.8"/></svg>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:12px;color:#8A909C;margin-top:6px">{{ countLabel }} · {{ uploadedLabel }} uploaded · {{ capturedLabel }} captured</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-shrink:0">
+          <div style="display:flex;background:#F2F2F7;border-radius:12px;padding:3px;width:150px">
+            <button onClick="{{ setGrid }}" style="{{ segGrid }}">Grid</button>
+            <button onClick="{{ setList }}" style="{{ segList }}">List</button>
+          </div>
+          <button onClick="{{ startProcessing }}" style="display:flex;align-items:center;gap:9px;background:#2B54E6;border:none;color:#fff;font-weight:600;font-size:15px;padding:13px 20px;border-radius:13px;box-shadow:0 10px 24px -8px rgba(43,84,230,.55)">
+            Save PDF &amp; extract
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto;padding:26px 44px 40px">
+      <!-- GRID -->
+      <sc-if value="{{ isGrid }}">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+        <sc-for list="{{ pages }}" as="p" hint-placeholder-count="8">
+          <div style="position:relative;border-radius:15px;overflow:hidden;background:#fff;border:1px solid rgba(14,19,32,.08);box-shadow:0 2px 8px -3px rgba(14,19,32,.12)">
+            <div style="position:relative;height:190px">
+              <sc-if value="{{ p.isPhoto }}">
+                <div style="position:absolute;inset:0;padding:20px 18px;display:flex;flex-direction:column;gap:8px;background:#fcfcf9">
+                  <div style="height:10px;width:56%;border-radius:2px;background:#c9cbd0"></div>
+                  <div style="height:6px;width:34%;border-radius:2px;background:#dedfe4;margin-bottom:4px"></div>
+                  <div style="height:5px;width:100%;border-radius:2px;background:#eaebef"></div>
+                  <div style="height:5px;width:92%;border-radius:2px;background:#eaebef"></div>
+                  <div style="height:5px;width:97%;border-radius:2px;background:#eaebef"></div>
+                  <div style="height:5px;width:62%;border-radius:2px;background:#eaebef"></div>
+                  <div style="height:5px;width:88%;border-radius:2px;background:#eaebef;margin-top:5px"></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ p.isPdf }}">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;background:#f5f4f2">
+                  <svg width="46" height="46" viewBox="0 0 24 24" fill="none"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9l-6-6z" fill="#fff" stroke="#D64545" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v6h6" stroke="#D64545" stroke-width="1.5" stroke-linejoin="round"/><rect x="6.5" y="12.5" width="11" height="6" rx="1.2" fill="#D64545"/><text x="12" y="17" font-family="Space Mono, monospace" font-size="3.6" font-weight="700" fill="#fff" text-anchor="middle">PDF</text></svg>
+                  <div style="font-family:'Space Mono',monospace;font-size:11px;color:#8A909C">{{ p.meta }}</div>
+                </div>
+              </sc-if>
+              <div style="position:absolute;top:10px;left:10px;min-width:24px;height:24px;padding:0 7px;border-radius:8px;background:rgba(14,19,32,.82);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace">{{ p.num }}</div>
+              <div style="position:absolute;top:10px;right:10px;font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.5px;color:{{ p.srcColor }};background:{{ p.srcBg }};padding:3px 7px;border-radius:999px;font-weight:700">{{ p.srcLabel }}</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 13px;border-top:1px solid rgba(14,19,32,.06)">
+              <input value="{{ p.label }}" onInput="{{ p.onLabel }}" placeholder="Untitled" style="flex:1;min-width:0;border:none;background:none;font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:600;color:#0E1320;padding:0" />
+              <div style="display:flex;gap:7px;flex-shrink:0">
+                <button onClick="{{ p.onCrop }}" style="width:30px;height:30px;border-radius:8px;background:#F2F2F7;border:none;display:flex;align-items:center;justify-content:center">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 2v15a1 1 0 001 1h15M2 7h15a1 1 0 011 1v15" stroke="#0E1320" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+                <button onClick="{{ p.onDelete }}" style="width:30px;height:30px;border-radius:8px;background:#F2F2F7;border:none;display:flex;align-items:center;justify-content:center">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14" stroke="#D64545" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <button onClick="{{ openCamera }}" style="min-height:250px;border-radius:15px;border:2px dashed rgba(43,84,230,.35);background:rgba(43,84,230,.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#2B54E6">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#2B54E6" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <span style="font-size:14px;font-weight:600">Add pages</span>
+        </button>
+      </div>
+      </sc-if>
+
+      <!-- LIST -->
+      <sc-if value="{{ isList }}">
+      <div onPointerMove="{{ onReorderMove }}" style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+        <sc-for list="{{ pages }}" as="p" hint-placeholder-count="8">
+          <div ref="{{ p.setRef }}" style="{{ p.rowStyle }}">
+            <div onPointerDown="{{ p.onHandleDown }}" onPointerUp="{{ onReorderUp }}" style="width:28px;flex-shrink:0;display:flex;flex-direction:column;gap:3px;align-items:center;cursor:grab;touch-action:none;padding:10px 0">
+              <div style="width:16px;height:2px;border-radius:1px;background:#c2c5cc"></div>
+              <div style="width:16px;height:2px;border-radius:1px;background:#c2c5cc"></div>
+              <div style="width:16px;height:2px;border-radius:1px;background:#c2c5cc"></div>
+            </div>
+            <div style="width:48px;height:60px;flex-shrink:0;font-family:'Space Mono',monospace;font-size:12px;color:#8A909C;display:flex;align-items:center;justify-content:center">{{ p.numPad }}</div>
+            <div style="position:relative;width:46px;height:58px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid rgba(14,19,32,.08)">
+              <sc-if value="{{ p.isPhoto }}">
+                <div style="position:absolute;inset:0;background:#fcfcf9;padding:8px 7px;display:flex;flex-direction:column;gap:3px"><div style="height:4px;width:60%;background:#c9cbd0;border-radius:1px"></div><div style="height:3px;width:90%;background:#e6e7ec;border-radius:1px"></div><div style="height:3px;width:80%;background:#e6e7ec;border-radius:1px"></div><div style="height:3px;width:88%;background:#e6e7ec;border-radius:1px"></div></div>
+              </sc-if>
+              <sc-if value="{{ p.isPdf }}">
+                <div style="position:absolute;inset:0;background:#f5f4f2;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9l-6-6z" fill="#fff" stroke="#D64545" stroke-width="1.5" stroke-linejoin="round"/><rect x="6.5" y="12.5" width="11" height="6" rx="1" fill="#D64545"/><text x="12" y="17" font-family="monospace" font-size="3.4" font-weight="700" fill="#fff" text-anchor="middle">PDF</text></svg></div>
+              </sc-if>
+            </div>
+            <div style="flex:1;min-width:0">
+              <input value="{{ p.label }}" onInput="{{ p.onLabel }}" placeholder="Untitled" style="width:100%;border:none;background:none;font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:15px;color:#0E1320;padding:0" />
+              <div style="font-family:'Space Mono',monospace;font-size:11.5px;color:#8A909C;margin-top:3px">Page {{ p.num }} · {{ p.meta }}</div>
+            </div>
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.5px;color:{{ p.srcColor }};background:{{ p.srcBg }};padding:4px 9px;border-radius:999px;font-weight:700;flex-shrink:0">{{ p.srcLabel }}</div>
+            <button onClick="{{ p.onCrop }}" style="width:34px;height:34px;border-radius:9px;background:#F2F2F7;border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M7 2v15a1 1 0 001 1h15M2 7h15a1 1 0 011 1v15" stroke="#0E1320" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+            <button onClick="{{ p.onDelete }}" style="width:34px;height:34px;border-radius:9px;background:#F2F2F7;border:none;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M9 6V4h6v2M6 6l1 14h10l1-14" stroke="#D64545" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </sc-for>
+        <button onClick="{{ openCamera }}" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;border-radius:14px;border:2px dashed rgba(43,84,230,.35);background:rgba(43,84,230,.04);color:#2B54E6;font-size:14px;font-weight:600;margin-top:2px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#2B54E6" stroke-width="2.2" stroke-linecap="round"/></svg>Add pages
+        </button>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+    <!-- PROCESSING -->
+    <sc-if value="{{ isProcessing }}">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;animation:fadein .25s ease">
+      <div style="position:relative;width:104px;height:104px;margin-bottom:30px">
+        <div style="position:absolute;inset:0;border-radius:50%;border:5px solid rgba(43,84,230,.15)"></div>
+        <div style="position:absolute;inset:0;border-radius:50%;border:5px solid transparent;border-top-color:#2B54E6;animation:spin .9s linear infinite"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9l-6-6z" stroke="#2B54E6" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 3v6h6" stroke="#2B54E6" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;color:#0E1320;margin-bottom:5px">Processing your scan</div>
+      <div style="font-family:'Space Mono',monospace;font-size:13px;color:#8A909C;margin-bottom:32px">{{ title }}.pdf · {{ pageCount }} items</div>
+      <div style="width:100%;max-width:360px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ processSteps }}" as="st" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:14px;padding:12px 4px">
+            <div style="width:28px;height:28px;flex-shrink:0;position:relative">
+              <sc-if value="{{ st.stDone }}">
+                <div style="width:28px;height:28px;border-radius:50%;background:#12A150;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+              </sc-if>
+              <sc-if value="{{ st.stActive }}">
+                <div style="width:28px;height:28px;border-radius:50%;border:2.5px solid rgba(43,84,230,.2);border-top-color:#2B54E6;animation:spin .8s linear infinite"></div>
+              </sc-if>
+              <sc-if value="{{ st.stPending }}">
+                <div style="width:28px;height:28px;border-radius:50%;border:2px solid #d5d7dd"></div>
+              </sc-if>
+            </div>
+            <div style="font-size:15px;font-weight:500;color:{{ st.color }}">{{ st.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:34px;font-size:12.5px;color:#a3a8b2;text-align:center;max-width:320px">Running the same batch extractor pipeline used across your library.</div>
+    </div>
+    </sc-if>
+
+    <!-- RESULTS -->
+    <sc-if value="{{ isResults }}">
+    <div style="flex-shrink:0;padding:24px 44px 0;background:#fff;border-bottom:1px solid rgba(14,19,32,.07)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <button onClick="{{ goHome }}" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:#2B54E6;font-size:14px;font-weight:600;padding:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14 5l-7 7 7 7" stroke="#2B54E6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>All files
+        </button>
+        <div style="display:flex;gap:10px">
+          <button style="display:flex;align-items:center;gap:7px;background:#fff;border:1px solid rgba(14,19,32,.1);border-radius:11px;padding:9px 15px;font-size:13.5px;font-weight:600;color:#0E1320"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="#0E1320" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="#0E1320" stroke-width="1.8" stroke-linecap="round"/></svg>Download</button>
+          <button style="display:flex;align-items:center;gap:7px;background:#fff;border:1px solid rgba(14,19,32,.1);border-radius:11px;padding:9px 15px;font-size:13.5px;font-weight:600;color:#0E1320"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="18" cy="5" r="2.5" stroke="#0E1320" stroke-width="1.8"/><circle cx="6" cy="12" r="2.5" stroke="#0E1320" stroke-width="1.8"/><circle cx="18" cy="19" r="2.5" stroke="#0E1320" stroke-width="1.8"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6" stroke="#0E1320" stroke-width="1.8"/></svg>Share</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <div style="width:48px;height:48px;border-radius:12px;background:#FBEAEA;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9l-6-6z" stroke="#D64545" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 3v6h6" stroke="#D64545" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#0E1320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ title }}.pdf</div>
+          <div style="display:flex;align-items:center;gap:9px;margin-top:4px">
+            <span style="font-family:'Space Mono',monospace;font-size:11.5px;color:#8A909C">{{ pageCount }} pages · 1.2 MB</span>
+            <span style="display:flex;align-items:center;gap:4px;background:#E9F7EF;color:#12A150;font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:999px"><svg width="9" height="9" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#12A150" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Indexed for RAG</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:26px">
+        <button onClick="{{ tabPreview }}" style="{{ tabPrev }}">Preview</button>
+        <button onClick="{{ tabText }}" style="{{ tabTxt }}">Extracted text</button>
+        <button onClick="{{ tabAsk }}" style="{{ tabAsk_ }}">Ask</button>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow-y:auto">
+      <!-- PREVIEW -->
+      <sc-if value="{{ isPreview }}">
+      <div style="padding:30px 44px 44px;display:grid;grid-template-columns:repeat(4,1fr);gap:26px;justify-items:center">
+        <sc-for list="{{ pages }}" as="p" hint-placeholder-count="8">
+          <div style="position:relative;width:100%;max-width:200px;aspect-ratio:3/4;border-radius:6px;overflow:hidden;background:#fff;box-shadow:0 8px 22px -8px rgba(14,19,32,.24);border:1px solid rgba(14,19,32,.06)">
+            <sc-if value="{{ p.isPhoto }}">
+              <div style="position:absolute;inset:0;padding:22px 20px;display:flex;flex-direction:column;gap:8px;background:#fcfcf9"><div style="height:10px;width:56%;background:#c9cbd0;border-radius:2px"></div><div style="height:6px;width:34%;background:#dedfe4;border-radius:2px;margin-bottom:4px"></div><div style="height:5px;width:100%;background:#eaebef;border-radius:2px"></div><div style="height:5px;width:93%;background:#eaebef;border-radius:2px"></div><div style="height:5px;width:97%;background:#eaebef;border-radius:2px"></div><div style="height:5px;width:64%;background:#eaebef;border-radius:2px"></div><div style="height:5px;width:100%;background:#eaebef;border-radius:2px;margin-top:6px"></div><div style="height:5px;width:82%;background:#eaebef;border-radius:2px"></div></div>
+            </sc-if>
+            <sc-if value="{{ p.isPdf }}">
+              <div style="position:absolute;inset:0;background:#f5f4f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><svg width="52" height="52" viewBox="0 0 24 24" fill="none"><path d="M13 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V9l-6-6z" fill="#fff" stroke="#D64545" stroke-width="1.5" stroke-linejoin="round"/><rect x="6.5" y="12.5" width="11" height="6" rx="1.2" fill="#D64545"/><text x="12" y="17" font-family="monospace" font-size="3.6" font-weight="700" fill="#fff" text-anchor="middle">PDF</text></svg><span style="font-family:'Space Mono',monospace;font-size:11px;color:#8A909C">{{ p.meta }}</span></div>
+            </sc-if>
+            <div style="position:absolute;bottom:8px;right:8px;font-family:'Space Mono',monospace;font-size:10px;color:#fff;background:rgba(14,19,32,.7);padding:2px 7px;border-radius:6px">{{ p.num }}</div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- TEXT -->
+      <sc-if value="{{ isText }}">
+      <div style="padding:28px 44px 44px;max-width:760px;margin:0 auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <span style="font-family:'Space Mono',monospace;font-size:11.5px;color:#8A909C">486 words · 98% confidence</span>
+          <button style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid rgba(14,19,32,.1);border-radius:10px;padding:8px 13px;font-size:13px;font-weight:600;color:#0E1320"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="8" y="8" width="12" height="12" rx="2" stroke="#0E1320" stroke-width="1.8"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2" stroke="#0E1320" stroke-width="1.8"/></svg>Copy text</button>
+        </div>
+        <div style="background:#fff;border-radius:16px;padding:32px 34px;border:1px solid rgba(14,19,32,.06)">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;color:#0E1320;margin-bottom:4px">Northgate Supply Co.</div>
+          <div style="font-size:13.5px;color:#8A909C;margin-bottom:18px">Invoice #NG-4471 · Received Mar 14, 2026</div>
+          <p style="font-size:15px;line-height:1.65;color:#3a4150;margin:0 0 14px;text-wrap:pretty">Bill to: Halden Architecture Studio, 200 Rowan Street, Suite 4B. Payment terms are net 30 from the invoice date, with a 2% early settlement discount available within ten days.</p>
+          <div style="height:1px;background:rgba(14,19,32,.07);margin:18px 0"></div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:#0E1320;margin-bottom:8px">Line items</div>
+          <p style="font-size:15px;line-height:1.65;color:#3a4150;margin:0 0 14px;text-wrap:pretty">Drafting paper, A1 (5 reams) — $142.50. Archival ink cartridges (set of 4) — $89.00. On-site delivery and handling — $35.00. Subtotal $266.50, tax $21.32, total due $287.82.</p>
+          <div style="height:1px;background:rgba(14,19,32,.07);margin:18px 0"></div>
+          <p style="font-size:15px;line-height:1.65;color:#3a4150;margin:0;text-wrap:pretty">Notes: Please reference the invoice number on all remittances. Questions regarding this statement can be directed to accounts@northgatesupply.co within the billing window.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:16px;color:#8A909C;font-size:12.5px;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" stroke="#8A909C" stroke-width="1.5" stroke-linejoin="round"/></svg>Content cleaned and stored — ready for retrieval.</div>
+      </div>
+      </sc-if>
+
+      <!-- ASK -->
+      <sc-if value="{{ isAsk }}">
+      <div style="padding:28px 44px 30px;max-width:720px;margin:0 auto;min-height:100%;display:flex;flex-direction:column">
+        <div style="text-align:center;padding:16px 0 24px">
+          <div style="width:54px;height:54px;border-radius:15px;background:#EEF1FE;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="27" height="27" viewBox="0 0 24 24" fill="none"><path d="M4 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H9l-5 4V5z" stroke="#2B54E6" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 9h7M8.5 12h4" stroke="#2B54E6" stroke-width="1.7" stroke-linecap="round"/></svg></div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:#0E1320">Ask this document</div>
+          <div style="font-size:14px;color:#8A909C;margin-top:5px;max-width:380px;margin-left:auto;margin-right:auto">The scan is indexed — ask a question and get answers grounded in its text.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+          <div style="background:#fff;border:1px solid rgba(14,19,32,.08);border-radius:13px;padding:14px 16px;font-size:14px;color:#3a4150">What is the total amount due?</div>
+          <div style="background:#fff;border:1px solid rgba(14,19,32,.08);border-radius:13px;padding:14px 16px;font-size:14px;color:#3a4150">When is payment due?</div>
+          <div style="background:#fff;border:1px solid rgba(14,19,32,.08);border-radius:13px;padding:14px 16px;font-size:14px;color:#3a4150">Summarize the line items</div>
+          <div style="background:#fff;border:1px solid rgba(14,19,32,.08);border-radius:13px;padding:14px 16px;font-size:14px;color:#3a4150">Who is this invoice billed to?</div>
+        </div>
+        <div style="flex:1;min-height:24px"></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid rgba(14,19,32,.1);border-radius:15px;padding:9px 9px 9px 18px">
+          <span style="flex:1;font-size:14.5px;color:#a3a8b2">Ask about this document…</span>
+          <button style="width:42px;height:42px;border-radius:11px;background:#2B54E6;border:none;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+    </sc-if>
+
+  </main>
+  </sc-if>
+
+  <!-- TOAST -->
+  <sc-if value="{{ toast }}">
+  <div style="position:absolute;bottom:34px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;background:rgba(14,19,32,.92);color:#fff;font-size:14px;font-weight:500;padding:12px 20px;border-radius:999px;z-index:40;animation:toastin .25s ease;backdrop-filter:blur(8px);white-space:nowrap;box-shadow:0 12px 30px -10px rgba(0,0,0,.4)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#37d67a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ toast }}
+  </div>
+  </sc-if>
+
+</div>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1352,&quot;height&quot;:940},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;camera&quot;,&quot;confirm&quot;,&quot;crop&quot;,&quot;review&quot;,&quot;processing&quot;,&quot;results&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Preview&quot;},&quot;showRecentScans&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;showTrustNote&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.rowRefs = {};
+    this.dragCorner = null;
+    this.state = {
+      screen: props.startScreen || 'home',
+      title: 'Untitled scan',
+      autoCapture: props.autoCaptureDefault !== false,
+      captureFlash: false,
+      dragOver: false,
+      toast: null,
+      reviewView: 'grid',
+      resultTab: 'preview',
+      processStep: 0,
+      dragIndex: null,
+      crop: { tl:{x:9,y:8}, tr:{x:91,y:7}, br:{x:93,y:93}, bl:{x:7,y:92} },
+      pages: [
+        { id:1, kind:'photo', label:'Invoice — Northgate', meta:'JPG', src:'captured' },
+        { id:2, kind:'photo', label:'Cover letter',        meta:'PNG', src:'uploaded' },
+        { id:3, kind:'pdf',   label:'Contract.pdf',         meta:'PDF · 4pp', src:'uploaded' },
+        { id:4, kind:'photo', label:'Statement — page 1',   meta:'JPG', src:'uploaded' },
+        { id:5, kind:'photo', label:'Statement — page 2',   meta:'JPG', src:'uploaded' },
+        { id:6, kind:'pdf',   label:'Appendix.pdf',         meta:'PDF · 2pp', src:'uploaded' },
+        { id:7, kind:'photo', label:'Signed authorization', meta:'HEIC', src:'captured' },
+        { id:8, kind:'photo', label:'Delivery receipt',     meta:'PNG', src:'uploaded' },
+      ],
+      nextId: 9,
+    };
+  }
+
+  componentWillUnmount(){ clearTimeout(this._flash); clearTimeout(this._toast); clearInterval(this._proc); }
+
+  go(sc){ this.setState({ screen: sc }); }
+
+  showToast(msg){
+    this.setState({ toast: msg });
+    clearTimeout(this._toast);
+    this._toast = setTimeout(()=>this.setState({ toast: null }), 1600);
+  }
+
+  capture(){
+    const id = this.state.nextId;
+    const p = { id, kind:'photo', label:'Page '+id, meta:'JPG', src:'captured' };
+    this.setState(s => ({ pages:[...s.pages, p], nextId:s.nextId+1, captureFlash:true }));
+    this.showToast('Page '+(this.state.pages.length+1)+' captured');
+    clearTimeout(this._flash);
+    this._flash = setTimeout(()=>this.setState({ captureFlash:false }), 190);
+  }
+
+  addLibrary(){
+    const id = this.state.nextId;
+    const add = [
+      { id, kind:'photo', label:'Upload '+id, meta:'JPG', src:'uploaded' },
+      { id:id+1, kind:'photo', label:'Upload '+(id+1), meta:'PNG', src:'uploaded' },
+      { id:id+2, kind:'pdf', label:'Report.pdf', meta:'PDF · 3pp', src:'uploaded' },
+    ];
+    this.setState(s => ({ pages:[...s.pages, ...add], nextId:s.nextId+3, screen:'review', dragOver:false }));
+    this.showToast('3 files added');
+  }
+  addFile(){
+    const id = this.state.nextId;
+    this.setState(s => ({ pages:[...s.pages, { id, kind:'pdf', label:'Statement.pdf', meta:'PDF · 2pp', src:'uploaded' }], nextId:s.nextId+1, screen:'review' }));
+    this.showToast('File added');
+  }
+  deletePage(id){ this.setState(s => ({ pages: s.pages.filter(p => p.id !== id) })); }
+  renamePage(id, val){ this.setState(s => ({ pages: s.pages.map(p => p.id === id ? { ...p, label: val } : p) })); }
+
+  onTitle(e){ this.setState({ title: e.target.value }); }
+
+  openResults(name){ this.setState({ title: name, screen: 'results', resultTab: 'preview' }); }
+
+  // reorder (list view)
+  onReorderDown(e, i){ e.currentTarget.setPointerCapture && e.currentTarget.setPointerCapture(e.pointerId); this.setState({ dragIndex: i }); }
+  onReorderMove(e){
+    if (this.state.dragIndex == null) return;
+    const y = e.clientY;
+    const pages = this.state.pages;
+    let target = this.state.dragIndex;
+    for (let i=0; i<pages.length; i++){
+      const el = this.rowRefs[pages[i].id];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (y >= r.top && y <= r.bottom){ target = i; break; }
+    }
+    if (target !== this.state.dragIndex){
+      const arr = pages.slice();
+      const [m] = arr.splice(this.state.dragIndex, 1);
+      arr.splice(target, 0, m);
+      this.setState({ pages: arr, dragIndex: target });
+    }
+  }
+  onReorderUp(){ if (this.state.dragIndex != null) this.setState({ dragIndex: null }); }
+
+  // manual crop
+  onCornerDown(e, key){
+    e.stopPropagation();
+    this.dragCorner = key;
+    if (this.cropAreaEl && this.cropAreaEl.setPointerCapture) this.cropAreaEl.setPointerCapture(e.pointerId);
+  }
+  onCropMove(e){
+    if (!this.dragCorner || !this.cropAreaEl) return;
+    const r = this.cropAreaEl.getBoundingClientRect();
+    let x = (e.clientX - r.left) / r.width * 100;
+    let y = (e.clientY - r.top) / r.height * 100;
+    x = Math.max(0, Math.min(100, x));
+    y = Math.max(0, Math.min(100, y));
+    const key = this.dragCorner;
+    this.setState(s => ({ crop: { ...s.crop, [key]: { x, y } } }));
+  }
+  onCropUp(){ this.dragCorner = null; }
+  resetCrop(){ this.setState({ crop: { tl:{x:9,y:8}, tr:{x:91,y:7}, br:{x:93,y:93}, bl:{x:7,y:92} } }); }
+  applyCrop(){ this.setState({ screen:'review' }); this.showToast('Crop applied'); }
+
+  startProcessing(){
+    this.setState({ screen:'processing', processStep:0 });
+    clearInterval(this._proc);
+    this._proc = setInterval(()=>{
+      this.setState(s => {
+        if (s.processStep >= 4){ clearInterval(this._proc); return { screen:'results', resultTab:'preview' }; }
+        return { processStep: s.processStep + 1 };
+      });
+    }, 850);
+  }
+
+  buildCropOverlay(){
+    const c = this.state.crop;
+    const h = React.createElement;
+    const pts = [c.tl, c.tr, c.br, c.bl].map(p => p.x+','+p.y).join(' ');
+    const handle = (key, p) => h('div', {
+      key, onPointerDown: e => this.onCornerDown(e, key),
+      style:{ position:'absolute', left:p.x+'%', top:p.y+'%', width:34, height:34, marginLeft:-17, marginTop:-17, borderRadius:'50%', border:'2.5px solid #fff', background:'rgba(43,84,230,.45)', boxShadow:'0 0 0 1px rgba(0,0,0,.35)', touchAction:'none', cursor:'grab', zIndex:2 },
+    });
+    return h('div', {
+      onPointerMove: e => this.onCropMove(e), onPointerUp: () => this.onCropUp(),
+      ref: el => { this.cropAreaEl = el; },
+      style:{ position:'absolute', inset:0, touchAction:'none' },
+    },
+      h('svg', { viewBox:'0 0 100 100', preserveAspectRatio:'none', style:{ position:'absolute', inset:0, width:'100%', height:'100%' } },
+        h('path', { d:`M0 0H100V100H0Z M ${c.tl.x} ${c.tl.y} L ${c.bl.x} ${c.bl.y} L ${c.br.x} ${c.br.y} L ${c.tr.x} ${c.tr.y} Z`, fillRule:'evenodd', fill:'rgba(8,10,15,.55)' }),
+        h('polygon', { points:pts, fill:'none', stroke:'#2B54E6', strokeWidth:1.5, vectorEffect:'non-scaling-stroke' })
+      ),
+      handle('tl', c.tl), handle('tr', c.tr), handle('br', c.br), handle('bl', c.bl)
+    );
+  }
+
+  renderVals(){
+    const s = this.state;
+    const isDark = ['camera','confirm','crop'].includes(s.screen);
+    const isShell = !isDark;
+    const count = s.pages.length;
+    const uploaded = s.pages.filter(p => p.src === 'uploaded').length;
+    const captured = count - uploaded;
+
+    const seg = on => ({ flex:1, textAlign:'center', padding:'8px 0', borderRadius:9, fontSize:13, fontWeight:600, fontFamily:"'Hanken Grotesk',sans-serif", border:'none', color: on?'#0E1320':'#8A909C', background: on?'#fff':'transparent', boxShadow: on?'0 1px 3px rgba(14,19,32,.14)':'none' });
+    const chip = on => ({ padding:'9px 22px', borderRadius:999, fontSize:14, fontWeight:600, border: on?'1px solid rgba(255,255,255,.9)':'1px solid rgba(255,255,255,.25)', background: on?'#fff':'rgba(255,255,255,.1)', color: on?'#0E1320':'#fff', backdropFilter:'blur(8px)' });
+    const tab = on => ({ padding:'0 0 14px', fontSize:14.5, fontWeight:600, color: on?'#0E1320':'#8A909C', borderBottom: on?'2px solid #2B54E6':'2px solid transparent', borderTop:'none', borderLeft:'none', borderRight:'none', background:'none', marginBottom:-1 });
+    const navItem = on => ({ display:'flex', alignItems:'center', gap:11, width:'100%', padding:'11px 12px', borderRadius:11, border:'none', fontSize:14, fontWeight:600, textAlign:'left', color: on?'#2B54E6':'#5B6270', background: on?'#EEF1FE':'transparent' });
+
+    const srcStyle = src => src === 'uploaded'
+      ? { srcLabel:'UPLOADED', srcColor:'#2B54E6', srcBg:'#EEF1FE' }
+      : { srcLabel:'CAPTURED', srcColor:'#8A909C', srcBg:'#EEEFF2' };
+
+    const pages = s.pages.map((p, i) => ({
+      ...p,
+      num: i+1,
+      numPad: String(i+1).padStart(2,'0'),
+      isPhoto: p.kind === 'photo',
+      isPdf: p.kind === 'pdf',
+      ...srcStyle(p.src),
+      setRef: el => { if (el) this.rowRefs[p.id] = el; },
+      onHandleDown: e => this.onReorderDown(e, i),
+      onDelete: () => this.deletePage(p.id),
+      onLabel: e => this.renamePage(p.id, e.target.value),
+      onCrop: () => this.setState({ screen:'confirm', cropTargetId:p.id }),
+      rowStyle: {
+        display:'flex', alignItems:'center', gap:12, padding:'8px 14px 8px 4px', background:'#fff',
+        borderRadius:14, border:'1px solid rgba(14,19,32,.07)',
+        boxShadow: s.dragIndex===i ? '0 14px 30px -10px rgba(14,19,32,.3)' : '0 1px 2px rgba(14,19,32,.04)',
+        transform: s.dragIndex===i ? 'scale(1.01)' : 'none',
+        opacity: s.dragIndex===i ? 0.97 : 1,
+        transition:'box-shadow .15s, transform .15s',
+      },
+    }));
+
+    const stepDefs = ['Combining items into a PDF','Extracting content (OCR)','Cleaning content','Indexing for retrieval (RAG)'];
+    const processSteps = stepDefs.map((label, i) => ({
+      label, stDone: i < s.processStep, stActive: i === s.processStep, stPending: i > s.processStep,
+      color: i <= s.processStep ? '#0E1320' : '#a3a8b2',
+    }));
+
+    const library = [
+      { id:'a', name: s.title, meta: count+' items · just now', kind:'pdf', active:true },
+      { id:'b', name:'Q2 Invoices', meta:'12 pages · 2 days ago', kind:'pdf' },
+      { id:'c', name:'Lease agreement', meta:'6 pages · Apr 30', kind:'pdf' },
+      { id:'d', name:'Whiteboard export', meta:'3 pages · Apr 28', kind:'img' },
+      { id:'e', name:'Onboarding forms', meta:'9 pages · Apr 21', kind:'pdf' },
+    ].map(f => ({
+      ...f,
+      isPdf: f.kind==='pdf', isImg: f.kind==='img',
+      iconBg: f.kind==='pdf' ? '#FBEAEA' : '#EEF1FE',
+      style: { display:'flex', alignItems:'center', gap:11, width:'100%', padding:'9px 8px', borderRadius:11, border:'none', background: f.active ? '#F2F2F7' : 'transparent', cursor:'pointer' },
+      onOpen: () => this.openResults(f.active ? s.title : f.name),
+    }));
+
+    const recentCards = [
+      { name:'Q2 Invoices', meta:'12 pages · PDF · 2 days ago' },
+      { name:'Lease agreement', meta:'6 pages · PDF · Apr 30' },
+      { name:'Onboarding forms', meta:'9 pages · PDF · Apr 21' },
+    ].map(c => ({ ...c, onOpen: () => this.openResults(c.name) }));
+
+    const dropZoneStyle = {
+      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center',
+      width:'100%', padding:'46px 24px', borderRadius:20, cursor:'pointer',
+      border: s.dragOver ? '2px dashed #2B54E6' : '2px dashed rgba(43,84,230,.4)',
+      background: s.dragOver ? 'rgba(43,84,230,.09)' : 'rgba(43,84,230,.04)',
+      transition:'background .15s, border-color .15s',
+    };
+
+    return {
+      winW: 1280, winH: 860, winContentH: 776,
+      chromeProps: { tabs:[{ title:'Cobalt Scan — Library' }], activeIndex:0 },
+      isDark, isShell,
+      isHome: s.screen==='home', isCamera: s.screen==='camera', isConfirm: s.screen==='confirm',
+      isCrop: s.screen==='crop', isReview: s.screen==='review', isProcessing: s.screen==='processing', isResults: s.screen==='results',
+      isGrid: s.reviewView==='grid', isList: s.reviewView==='list',
+      isPreview: s.resultTab==='preview', isText: s.resultTab==='text', isAsk: s.resultTab==='ask',
+      pages, library, recentCards,
+      pageCount: count,
+      countLabel: count + (count===1 ? ' page' : ' pages'),
+      uploadedLabel: uploaded, capturedLabel: captured,
+      title: s.title,
+      toast: s.toast,
+      captureFlash: s.captureFlash,
+      processSteps,
+      dropZoneStyle,
+      dropTitle: s.dragOver ? 'Drop to upload' : 'Drag files here to upload',
+      showTrustNote: this.props.showTrustNote !== false,
+      showRecentScans: this.props.showRecentScans !== false,
+      cropOverlay: this.buildCropOverlay(),
+      segGrid: seg(s.reviewView==='grid'), segList: seg(s.reviewView==='list'),
+      chipAuto: chip(s.autoCapture), chipManual: chip(!s.autoCapture),
+      tabPrev: tab(s.resultTab==='preview'), tabTxt: tab(s.resultTab==='text'), tabAsk_: tab(s.resultTab==='ask'),
+      navHomeStyle: navItem(s.screen==='home'),
+      // handlers
+      goHome: () => this.go('home'),
+      openCamera: () => this.go('camera'),
+      goReview: () => this.go('review'),
+      capture: () => this.capture(),
+      addLibrary: () => this.addLibrary(),
+      addFile: () => this.addFile(),
+      onDragOverZone: e => { e.preventDefault(); if (!this.state.dragOver) this.setState({ dragOver:true }); },
+      onDragLeaveZone: e => { e.preventDefault(); this.setState({ dragOver:false }); },
+      onDropZone: e => { e.preventDefault(); this.addLibrary(); },
+      setAuto: () => this.setState({ autoCapture:true }),
+      setManual: () => this.setState({ autoCapture:false }),
+      retake: () => this.go('camera'),
+      useConfirm: () => { this.go('review'); this.showToast('Page added'); },
+      adjustCorners: () => this.go('crop'),
+      cropBack: () => this.go('confirm'),
+      applyCrop: () => this.applyCrop(),
+      resetCrop: () => this.resetCrop(),
+      setGrid: () => this.setState({ reviewView:'grid' }),
+      setList: () => this.setState({ reviewView:'list' }),
+      onTitle: e => this.onTitle(e),
+      onReorderMove: e => this.onReorderMove(e),
+      onReorderUp: () => this.onReorderUp(),
+      startProcessing: () => this.startProcessing(),
+      tabPreview: () => this.setState({ resultTab:'preview' }),
+      tabText: () => this.setState({ resultTab:'text' }),
+      tabAsk: () => this.setState({ resultTab:'ask' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
