@@ -23,6 +23,7 @@ import { CloudFolders, fileHandler } from "@/features/files";
 import type {
   Quad,
   ScanItem,
+  ScanItemSource,
   ScanManifestItem,
   ScanRotation,
   ScanSessionManifest,
@@ -63,6 +64,7 @@ function toManifestItems(items: ScanItem[]): ScanManifestItem[] {
       itemId: i.itemId,
       fileId: i.fileId,
       kind: i.kind,
+      source: i.source,
       fileName: i.fileName,
       mimeType: i.mimeType,
       quad: i.quad,
@@ -146,6 +148,7 @@ export function useScanSession(): UseScanSessionResult {
         itemId: m.itemId,
         fileId: m.fileId,
         kind: m.kind,
+        source: m.source ?? "file",
         fileName: m.fileName,
         mimeType: m.mimeType,
         status: "uploaded" as const,
@@ -202,7 +205,7 @@ export function useScanSession(): UseScanSessionResult {
   );
 
   const addOne = useCallback(
-    (file: File, previewUrl?: string) => {
+    (file: File, previewUrl?: string, source: ScanItemSource = "file") => {
       const itemId = crypto.randomUUID();
       const isPdf =
         file.type === "application/pdf" ||
@@ -215,6 +218,7 @@ export function useScanSession(): UseScanSessionResult {
       const item: ScanItem = {
         itemId,
         kind: isPdf ? "pdf" : "image",
+        source,
         fileName: file.name,
         mimeType: file.type || (isPdf ? "application/pdf" : "image/jpeg"),
         previewUrl: preview,
@@ -239,7 +243,7 @@ export function useScanSession(): UseScanSessionResult {
       shotCounterRef.current += 1;
       const fileName = `scan-${String(shotCounterRef.current).padStart(2, "0")}.jpg`;
       void dataUrlToFile(dataUrl, fileName).then((file) =>
-        addOne(file, dataUrl),
+        addOne(file, dataUrl, "camera"),
       );
     },
     [addOne],

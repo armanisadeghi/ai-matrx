@@ -50,9 +50,10 @@ export async function fetchProcessingStatus(
     db
       .from("processed_documents")
       .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
       .eq("id", docId)
       .not("clean_content", "is", null),
-    db.from("processed_documents").select("metadata").eq("id", docId).maybeSingle(),
+    db.from("processed_documents").select("metadata").is("deleted_at", null).eq("id", docId).maybeSingle(),
   ]);
 
   const metadata = (docRes.data?.metadata ?? {}) as {
@@ -102,6 +103,41 @@ export async function fetchPageAnalysis(
     cleaned: (row.cleaned_char_count ?? 0) > 0,
     usedOcr: row.used_ocr,
   }));
+}
+
+/**
+ * Recent scans for the desktop home/sidebar — processed documents born
+ * from /pdf/from-images, newest first. Direct docproc read (canonical
+ * UI↔DB path).
+ */
+export interface RecentScanRow {
+  docId: string;
+  name: string;
+  createdAt: string;
+  itemCount: number | null;
+  cleanReady: boolean;
+}
+
+export async function fetchRecentScans(limit = 12): Promise<RecentScanRow[]> {
+  const { data } = await docprocDb(supabase)
+    .from("processed_documents")
+    // clean_content_completed_at is the cheap presence marker — never pull
+    // the (potentially huge) clean_content body for a list view.
+    .select("id, name, created_at, metadata, clean_content_completed_at")
+    .is("deleted_at", null)
+    .eq("metadata->>via", "/pdf/from-images")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => {
+    const meta = (row.metadata ?? {}) as { item_count?: number };
+    return {
+      docId: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+      itemCount: typeof meta.item_count === "number" ? meta.item_count : null,
+      cleanReady: Boolean(row.clean_content_completed_at),
+    };
+  });
 }
 
 /** First page's raw text — the "here's what OCR read" peek. */

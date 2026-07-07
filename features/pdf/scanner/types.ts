@@ -23,12 +23,16 @@ export type ScanItemStatus = "uploading" | "uploaded" | "error";
 
 export type ScanRotation = 0 | 90 | 180 | 270;
 
+/** Where an item entered the session — drives the CAM/FILE chip. */
+export type ScanItemSource = "camera" | "file";
+
 export interface ScanItem {
   /** Local id — stable across reorder/crop; NOT the cld_files id. */
   itemId: string;
   /** cld_files id, set the moment the immediate upload completes. */
   fileId?: string;
   kind: ScanItemKind;
+  source: ScanItemSource;
   fileName: string;
   mimeType: string;
   /** Object/data URL for thumbnails. Session-local, never persisted. */
@@ -49,6 +53,8 @@ export interface ScanManifestItem {
   itemId: string;
   fileId: string;
   kind: ScanItemKind;
+  /** Optional for manifests written before source tracking (defaults to "file"). */
+  source?: ScanItemSource;
   fileName: string;
   mimeType: string;
   quad?: Quad | null;
