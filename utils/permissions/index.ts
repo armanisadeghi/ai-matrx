@@ -14,7 +14,10 @@ export * from './service';
 // React hooks
 export * from './hooks';
 
-// Access gate (useAccess / getResourceAccess). requireAccess is server-only —
-// import it from '@/utils/permissions/requireAccess' directly, not via this barrel.
-export * from './access';
+// Access gate. Pure types + helpers (AccessLevel, accessSatisfies, canEditAccess,
+// canViewAccess, NO_ACCESS, resolveResourceAccess) from the isomorphic core; the
+// client hook (useAccess) + browser convenience (getResourceAccess) from access.
+// requireAccess is server-only — import from '@/utils/permissions/requireAccess'.
+export * from './access-core';
+export { useAccess, getResourceAccess } from './access';
 

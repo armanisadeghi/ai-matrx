@@ -20,14 +20,8 @@ import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveResourceAccess, NO_ACCESS, type ResourceAccess } from "./access-core";
 
-export {
-  accessSatisfies,
-  canEditAccess,
-  canViewAccess,
-  NO_ACCESS,
-  type AccessLevel,
-  type ResourceAccess,
-} from "./access-core";
+// Pure types + helpers (AccessLevel, accessSatisfies, canEditAccess, …) come from
+// ./access-core — import them from there or via the @/utils/permissions barrel.
 
 /**
  * Resolve the current caller's access to a resource using the browser client.
@@ -56,21 +50,19 @@ export function useAccess(
   resourceId: string | undefined,
 ): ResourceAccess & { loading: boolean; refresh: () => Promise<void> } {
   const [access, setAccess] = useState<ResourceAccess>(NO_ACCESS);
-  const [loading, setLoading] = useState(true);
+  // Loading only while there's something to resolve; lazy init avoids a
+  // synchronous setState in the effect (react-hooks/set-state-in-effect).
+  const [loading, setLoading] = useState<boolean>(() =>
+    Boolean(resourceType && resourceId),
+  );
 
   useEffect(() => {
+    if (!resourceType || !resourceId) return;
     let active = true;
-    if (!resourceType || !resourceId) {
-      setAccess(NO_ACCESS);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
     getResourceAccess(resourceType, resourceId).then((result) => {
-      if (active) {
-        setAccess(result);
-        setLoading(false);
-      }
+      if (!active) return;
+      setAccess(result);
+      setLoading(false);
     });
     return () => {
       active = false;

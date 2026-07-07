@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ArrowUpRight, Sparkles, Layers } from "lucide-react";
+import { ArrowUpRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { isForkable } from "@/utils/permissions/shareLinks";
@@ -117,7 +117,6 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
     <div className="flex min-h-dvh flex-col bg-textured">
       <header className="flex items-center justify-between border-b border-border/60 bg-card/40 px-4 backdrop-blur sm:px-6" style={{ height: "3.5rem" }}>
         <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
-          <Sparkles className="h-5 w-5 text-primary" />
           AI Matrx
         </Link>
         <div className="flex items-center gap-2">
