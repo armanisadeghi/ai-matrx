@@ -13,16 +13,17 @@ import {
 } from "@/features/pdf-demo/components/PdfSourcePicker";
 import { PdfJsonResult } from "@/features/pdf-demo/components/PdfJsonResult";
 import { RegionOverlayPreview } from "@/features/pdf-demo/components/RegionOverlayPreview";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { RepeatedRegionsReport } from "@/features/pdf-extractor/types";
+import type { PdfRepeatedRegionsProgressData } from "@/types/python-generated/stream-events";
 
 export default function DetectRepeatedRegionsDemo() {
-  const api = usePdfDemoApi();
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);
   const [minPagesRatio, setMinPagesRatio] = useState(0.3333);
   const [minConfidence, setMinConfidence] = useState(0.5);
   const [renderDpi, setRenderDpi] = useState(120);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [result, setResult] = useState<RepeatedRegionsReport | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,20 +31,33 @@ export default function DetectRepeatedRegionsDemo() {
     setRunning(true);
     setError(null);
     setResult(null);
+    setProgress(null);
     try {
-      const json = await api.postJson<RepeatedRegionsReport>(
-        "detectRepeatedRegions",
+      const report = await drainPdfStream<RepeatedRegionsReport>(
+        "/utilities/pdf/detect-repeated-regions",
         {
           ...source.payload,
           min_pages_ratio: minPagesRatio,
           min_confidence: minConfidence,
         },
+        "pdf_repeated_regions_complete",
+        {
+          onProgress: (d) => {
+            if (d.type === "pdf_repeated_regions_progress") {
+              const p = d as PdfRepeatedRegionsProgressData;
+              setProgress(
+                `Detecting — page ${p.page_number}/${p.total_pages}`,
+              );
+            }
+          },
+        },
       );
-      setResult(json);
+      setResult(report);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setRunning(false);
+      setProgress(null);
     }
   }
 
@@ -81,21 +95,24 @@ export default function DetectRepeatedRegionsDemo() {
     </FieldGroup>
   );
 
+  const regions = result?.regions ?? [];
   const results = result ? (
     <>
       <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
-        <span className="font-medium">{result.regions.length}</span> region
-        {result.regions.length === 1 ? "" : "s"} detected across{" "}
+        <span className="font-medium">{regions.length}</span> region
+        {regions.length === 1 ? "" : "s"} detected across{" "}
         <span className="font-medium">{result.page_count}</span> page
         {result.page_count === 1 ? "" : "s"}.
       </div>
       <RegionOverlayPreview
         sourcePayload={source.payload}
-        regions={result.regions}
+        regions={regions}
         dpi={renderDpi}
       />
       <PdfJsonResult data={result} title="Detector output" />
     </>
+  ) : progress ? (
+    <PdfStreamProgress text={progress} />
   ) : null;
 
   return (

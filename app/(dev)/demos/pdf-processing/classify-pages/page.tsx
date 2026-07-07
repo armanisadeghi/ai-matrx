@@ -6,13 +6,14 @@ import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
 } from "@/features/pdf-demo/components/PdfSourcePicker";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { LayoutClassificationReport } from "@/features/pdf-extractor/types";
+import type { PdfPageClassifiedData } from "@/types/python-generated/stream-events";
 
 export default function ClassifyPagesDemo() {
-  const api = usePdfDemoApi();
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [result, setResult] = useState<LayoutClassificationReport | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,16 +21,29 @@ export default function ClassifyPagesDemo() {
     setRunning(true);
     setError(null);
     setResult(null);
+    setProgress(null);
     try {
-      const json = await api.postJson<LayoutClassificationReport>(
-        "classifyPages",
+      const report = await drainPdfStream<LayoutClassificationReport>(
+        "/utilities/pdf/classify-pages",
         { ...source.payload },
+        "pdf_classify_complete",
+        {
+          onProgress: (d) => {
+            if (d.type === "pdf_page_classified") {
+              const p = d as PdfPageClassifiedData;
+              setProgress(
+                `Page ${p.page_number}/${p.total_pages} — ${p.page_class} (${Math.round(p.confidence * 100)}%)`,
+              );
+            }
+          },
+        },
       );
-      setResult(json);
+      setResult(report);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setRunning(false);
+      setProgress(null);
     }
   }
 
@@ -37,13 +51,14 @@ export default function ClassifyPagesDemo() {
     <PdfDemoShell
       title="Classify pages"
       endpoint="POST /utilities/pdf/classify-pages"
-      description="Assign a page class (cover / TOC / body / exhibit / signature / billing / appendix / …) to every page with confidence + matched indicators."
+      description="Assign a page class (cover / TOC / body / exhibit / signature / billing / appendix / …) to every page with confidence + matched indicators. Streams one event per page."
       source={source}
       onSourceChange={setSource}
       onRun={run}
       running={running}
       jsonResult={result}
       error={error}
+      extra={progress ? <PdfStreamProgress text={progress} /> : null}
     />
   );
 }

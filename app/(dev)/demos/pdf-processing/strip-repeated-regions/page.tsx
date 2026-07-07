@@ -7,16 +7,23 @@ import {
   EMPTY_PDF_SOURCE,
   type PdfSourceState,
 } from "@/features/pdf-demo/components/PdfSourcePicker";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { drainPdfStream, PdfStreamProgress } from "@/features/pdf/api/streamDrain";
 import type { StripRepeatedRegionsResultSchema } from "@/features/pdf-extractor/types";
+import type { PdfRepeatedRegionsProgressData } from "@/types/python-generated/stream-events";
+
+const STAGE_LABELS: Record<PdfRepeatedRegionsProgressData["stage"], string> = {
+  detect: "Detecting regions",
+  extract_text: "Extracting text",
+  strip: "Stripping regions",
+};
 
 export default function StripRepeatedRegionsDemo() {
-  const api = usePdfDemoApi();
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);
   const [minPagesRatio, setMinPagesRatio] = useState(0.3333);
   const [minConfidence, setMinConfidence] = useState(0.5);
   const [acceptedIds, setAcceptedIds] = useState("");
   const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [result, setResult] = useState<StripRepeatedRegionsResultSchema | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,24 +31,39 @@ export default function StripRepeatedRegionsDemo() {
     setRunning(true);
     setError(null);
     setResult(null);
+    setProgress(null);
     try {
       const ids = acceptedIds.trim()
         ? acceptedIds.split(",").map((s) => s.trim()).filter(Boolean)
         : null;
-      const json = await api.postJson<StripRepeatedRegionsResultSchema>(
-        "stripRepeatedRegions",
+      // Terminal payload is FLATTENED vs the old blocking body — page_count /
+      // regions / detector_version are top-level, no nested `regions` report.
+      const report = await drainPdfStream<StripRepeatedRegionsResultSchema>(
+        "/utilities/pdf/strip-repeated-regions",
         {
           ...source.payload,
           min_pages_ratio: minPagesRatio,
           min_confidence: minConfidence,
           ...(ids ? { accepted_region_ids: ids } : {}),
         },
+        "pdf_repeated_regions_strip_complete",
+        {
+          onProgress: (d) => {
+            if (d.type === "pdf_repeated_regions_progress") {
+              const p = d as PdfRepeatedRegionsProgressData;
+              setProgress(
+                `${STAGE_LABELS[p.stage] ?? p.stage} — page ${p.page_number}/${p.total_pages}`,
+              );
+            }
+          },
+        },
       );
-      setResult(json);
+      setResult(report);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setRunning(false);
+      setProgress(null);
     }
   }
 
@@ -56,6 +78,7 @@ export default function StripRepeatedRegionsDemo() {
       running={running}
       jsonResult={result}
       error={error}
+      extra={progress ? <PdfStreamProgress text={progress} /> : null}
     >
       <FieldGroup>
         <Field label="Min pages ratio">
