@@ -236,14 +236,16 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.ai-voice",
     label: "AI Voice",
     icon: Mic,
-    category: "voice",
+    category: "dupes",
+    gate: "admin",
     overlayId: "aiVoiceWindow",
   },
   {
     id: "tile.transcription-cleanup",
     label: "Transcription Cleanup",
     icon: CircleDot,
-    category: "voice",
+    category: "dupes",
+    gate: "admin",
     overlayId: "transcriptionCleanup",
   },
   {
@@ -416,7 +418,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.agent-import",
     label: "Import Agent",
     icon: Upload,
-    category: "agents",
+    category: "dupes",
+    gate: "admin",
     overlayId: "agentImportWindow",
   },
   {
@@ -534,7 +537,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.site-workbench",
     label: "Site Workbench",
     icon: BookMarked,
-    category: "files-web",
+    category: "dupes",
+    gate: "admin",
     overlayId: "browserWorkbenchWindow",
   },
   {
@@ -643,7 +647,8 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     id: "tile.news",
     label: "News",
     icon: Newspaper,
-    category: "general",
+    category: "dupes",
+    gate: "admin",
     overlayId: "newsWindow",
   },
   {

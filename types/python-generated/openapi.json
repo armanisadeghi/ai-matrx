@@ -18659,6 +18659,7 @@
           "RAG"
         ],
         "summary": "Rag Verify Endpoint",
+        "description": "Streamed faithfulness check. Events (all typed DataPayloads):\n\n``rag_verify_claims`` (pass-1 done: the extracted claims) →\n``rag_verify_verdict`` per claim, live as the streamed judge settles it →\nterminal ``rag_verify_result`` carrying the old blocking\n``VerifyResponse`` body (claims / overall_faithfulness / judge_model /\nlatency_ms) — the FE migration is \"read one event\".",
         "operationId": "rag_verify_endpoint_rag_verify_post",
         "requestBody": {
           "content": {
@@ -18675,9 +18676,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VerifyResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -23723,6 +23722,26 @@
         }
       }
     },
+    "/runs/stream": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Stream Run Announcements",
+        "description": "User-scoped SSE feed of run-lifecycle announcements (P5).\n\nKills the runs-list poll: the 0020 triggers on ``workflow.run`` NOTIFY\non every INSERT and real status transition; this endpoint forwards the\nframes belonging to the authenticated caller. A client attached here\ndiscovers a cron / webhook / queued / inline run the instant it exists,\nand every status change after, with zero polling.\n\nFrames are EPHEMERAL ``run_announce`` events (no SSE ``id:``, no\nreplay) — the runs-list fetch is the snapshot; these are upsert /\nrefetch hints on top. Declared BEFORE /runs/{run_id} so the literal\npath wins route matching.",
+        "operationId": "stream_run_announcements_runs_stream_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/runs/{run_id}": {
       "get": {
         "tags": [
@@ -24692,7 +24711,7 @@
           "Workflow"
         ],
         "summary": "Get Run Cost",
-        "description": "Per-run cost summary. Joins cx_request on the run's conversation_id.\n\nReturns zeros if the run has no associated LLM calls (e.g. a pure-\ndeterministic workflow). The cost field on cx_request is already in\nUSD; total_cost_usd is the straight sum.",
+        "description": "Per-run cost summary. Joins cx_request on the run's conversation_id.\n\nReturns zeros if the run has no associated LLM calls (e.g. a pure-\ndeterministic workflow). The cost field on cx_request is already in\nUSD; total_cost_usd is the straight sum. Computation lives in\n``aidream/api/workflow_cost.py`` — shared with the terminal\nrun-completion callback so both surfaces report identical numbers.",
         "operationId": "get_run_cost_runs__run_id__cost_get",
         "parameters": [
           {
@@ -26385,6 +26404,7 @@
           "Assets"
         ],
         "summary": "Upload Asset",
+        "description": "Validate the multipart form and hand off to the asset service.\n\nAll pipeline behaviour (preset resolution, MIME sniff, master write,\nvariant rendering, share/permission sub-ops, idempotency replay) lives\nin ``aidream.services.assets.service.upload_asset`` — this endpoint\ndoes no work itself.",
         "operationId": "upload_asset_assets_post",
         "parameters": [
           {
@@ -48576,42 +48596,6 @@
         "type": "object",
         "title": "ClaimPatch"
       },
-      "ClaimVerdictOut": {
-        "properties": {
-          "claim": {
-            "type": "string",
-            "title": "Claim"
-          },
-          "verdict": {
-            "type": "string",
-            "title": "Verdict"
-          },
-          "confidence": {
-            "type": "number",
-            "title": "Confidence"
-          },
-          "supporting_chunk_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Supporting Chunk Ids"
-          },
-          "reasoning": {
-            "type": "string",
-            "title": "Reasoning"
-          }
-        },
-        "type": "object",
-        "required": [
-          "claim",
-          "verdict",
-          "confidence",
-          "supporting_chunk_ids",
-          "reasoning"
-        ],
-        "title": "ClaimVerdictOut"
-      },
       "ClassifyPagesRequest": {
         "properties": {
           "media": {
@@ -51018,6 +51002,19 @@
               }
             ],
             "title": "Definition Version Id"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url",
+            "description": "Optional URL POSTed the terminal run summary (run_id, status, outputs/error, duration, cost) once per fired run when it completes / fails / cancels. Single-request semantics for external callers — no run polling."
           }
         },
         "additionalProperties": false,
@@ -75273,6 +75270,19 @@
             "title": "Mode",
             "description": "'inline' streams the run through this HTTP response as NDJSON. 'queued' enqueues a wf_job row and returns immediately with the run_id — a worker process picks it up. Use queued for anything expected to run longer than a typical HTTP request, for long scrape+LLM chains, or when the caller doesn't need streaming.",
             "default": "inline"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url",
+            "description": "Optional URL POSTed the terminal run summary (run_id, status, outputs/error, duration, cost) exactly once when the run completes / fails / cancels — by ANY path, including worker runs and cancels. Gives external callers single-request semantics with zero polling. Delivery is retried with exponential backoff and never blocks the run; the outcome is recorded on the run's metadata (_callback)."
           }
         },
         "type": "object",
@@ -82930,6 +82940,17 @@
               }
             ],
             "title": "Max Steps"
+          },
+          "callback_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Callback Url"
           }
         },
         "additionalProperties": true,
@@ -84714,38 +84735,6 @@
           "content_text"
         ],
         "title": "VerifyRequestChunk"
-      },
-      "VerifyResponse": {
-        "properties": {
-          "claims": {
-            "items": {
-              "$ref": "#/components/schemas/ClaimVerdictOut"
-            },
-            "type": "array",
-            "title": "Claims"
-          },
-          "overall_faithfulness": {
-            "type": "number",
-            "title": "Overall Faithfulness"
-          },
-          "judge_model": {
-            "type": "string",
-            "title": "Judge Model"
-          },
-          "latency_ms": {
-            "type": "integer",
-            "title": "Latency Ms"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "claims",
-          "overall_faithfulness",
-          "judge_model",
-          "latency_ms"
-        ],
-        "title": "VerifyResponse"
       },
       "Viewport": {
         "properties": {

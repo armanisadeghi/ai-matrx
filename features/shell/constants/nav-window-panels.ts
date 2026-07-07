@@ -31,7 +31,12 @@ export type ShellNavPanelActionId =
   | "open-run-history-panel"
   | "open-smart-code-editor-panel"
   | "open-code-files-panel"
-  | "open-context-switcher-panel";
+  | "open-context-switcher-panel"
+  | "open-news-panel"
+  | "open-ai-voice-panel"
+  | "open-transcription-cleanup-panel"
+  | "open-import-agent-panel"
+  | "open-site-workbench-panel";
 
 export interface NavWindowPanelActionDef {
   tileId: string;
@@ -170,6 +175,36 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     label: "Context Switcher Window",
     iconName: NAV_WINDOW_PANEL_ICON,
     href: "/scopes",
+  },
+  "open-news-panel": {
+    tileId: "tile.news",
+    label: "News Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/news",
+  },
+  "open-ai-voice-panel": {
+    tileId: "tile.ai-voice",
+    label: "AI Voice Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/transcripts",
+  },
+  "open-transcription-cleanup-panel": {
+    tileId: "tile.transcription-cleanup",
+    label: "Transcription Cleanup Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/transcripts/cleanup",
+  },
+  "open-import-agent-panel": {
+    tileId: "tile.agent-import",
+    label: "Import Agent Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/agents/new/import",
+  },
+  "open-site-workbench-panel": {
+    tileId: "tile.site-workbench",
+    label: "Site Workbench Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/tools/pdf-extractor",
   },
 };
 

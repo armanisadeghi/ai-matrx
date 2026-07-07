@@ -7054,7 +7054,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rag Verify Endpoint */
+        /**
+         * Rag Verify Endpoint
+         * @description Streamed faithfulness check. Events (all typed DataPayloads):
+         *
+         *     ``rag_verify_claims`` (pass-1 done: the extracted claims) →
+         *     ``rag_verify_verdict`` per claim, live as the streamed judge settles it →
+         *     terminal ``rag_verify_result`` carrying the old blocking
+         *     ``VerifyResponse`` body (claims / overall_faithfulness / judge_model /
+         *     latency_ms) — the FE migration is "read one event".
+         */
         post: operations["rag_verify_endpoint_rag_verify_post"];
         delete?: never;
         options?: never;
@@ -8782,6 +8791,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream Run Announcements
+         * @description User-scoped SSE feed of run-lifecycle announcements (P5).
+         *
+         *     Kills the runs-list poll: the 0020 triggers on ``workflow.run`` NOTIFY
+         *     on every INSERT and real status transition; this endpoint forwards the
+         *     frames belonging to the authenticated caller. A client attached here
+         *     discovers a cron / webhook / queued / inline run the instant it exists,
+         *     and every status change after, with zero polling.
+         *
+         *     Frames are EPHEMERAL ``run_announce`` events (no SSE ``id:``, no
+         *     replay) — the runs-list fetch is the snapshot; these are upsert /
+         *     refetch hints on top. Declared BEFORE /runs/{run_id} so the literal
+         *     path wins route matching.
+         */
+        get: operations["stream_run_announcements_runs_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}": {
         parameters: {
             query?: never;
@@ -9241,7 +9281,9 @@ export interface paths {
          *
          *     Returns zeros if the run has no associated LLM calls (e.g. a pure-
          *     deterministic workflow). The cost field on cx_request is already in
-         *     USD; total_cost_usd is the straight sum.
+         *     USD; total_cost_usd is the straight sum. Computation lives in
+         *     ``aidream/api/workflow_cost.py`` — shared with the terminal
+         *     run-completion callback so both surfaces report identical numbers.
          */
         get: operations["get_run_cost_runs__run_id__cost_get"];
         put?: never;
@@ -9972,7 +10014,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload Asset */
+        /**
+         * Upload Asset
+         * @description Validate the multipart form and hand off to the asset service.
+         *
+         *     All pipeline behaviour (preset resolution, MIME sniff, master write,
+         *     variant rendering, share/permission sub-ops, idempotency replay) lives
+         *     in ``aidream.services.assets.service.upload_asset`` — this endpoint
+         *     does no work itself.
+         */
         post: operations["upload_asset_assets_post"];
         delete?: never;
         options?: never;
@@ -17361,19 +17411,6 @@ export interface components {
             /** Large Employer */
             large_employer?: boolean | null;
         };
-        /** ClaimVerdictOut */
-        ClaimVerdictOut: {
-            /** Claim */
-            claim: string;
-            /** Verdict */
-            verdict: string;
-            /** Confidence */
-            confidence: number;
-            /** Supporting Chunk Ids */
-            supporting_chunk_ids: string[];
-            /** Reasoning */
-            reasoning: string;
-        };
         /** ClassifyPagesRequest */
         ClassifyPagesRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -18369,6 +18406,11 @@ export interface components {
             description?: string | null;
             /** Definition Version Id */
             definition_version_id?: string | null;
+            /**
+             * Callback Url
+             * @description Optional URL POSTed the terminal run summary (run_id, status, outputs/error, duration, cost) once per fired run when it completes / fails / cancels. Single-request semantics for external callers — no run polling.
+             */
+            callback_url?: string | null;
         };
         /** CreateWorkflowRequest */
         CreateWorkflowRequest: {
@@ -27243,6 +27285,11 @@ export interface components {
              * @enum {string}
              */
             mode: "inline" | "queued";
+            /**
+             * Callback Url
+             * @description Optional URL POSTed the terminal run summary (run_id, status, outputs/error, duration, cost) exactly once when the run completes / fails / cancels — by ANY path, including worker runs and cancels. Gives external callers single-request semantics with zero polling. Delivery is retried with exponential backoff and never blocks the run; the outcome is recorded on the run's metadata (_callback).
+             */
+            callback_url?: string | null;
         };
         /** SandboxBindRequest */
         SandboxBindRequest: {
@@ -30070,6 +30117,8 @@ export interface components {
             task_id?: string | null;
             /** Max Steps */
             max_steps?: number | null;
+            /** Callback Url */
+            callback_url?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -30708,17 +30757,6 @@ export interface components {
             chunk_id: string;
             /** Content Text */
             content_text: string;
-        };
-        /** VerifyResponse */
-        VerifyResponse: {
-            /** Claims */
-            claims: components["schemas"]["ClaimVerdictOut"][];
-            /** Overall Faithfulness */
-            overall_faithfulness: number;
-            /** Judge Model */
-            judge_model: string;
-            /** Latency Ms */
-            latency_ms: number;
         };
         /** Viewport */
         Viewport: {
@@ -44143,7 +44181,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VerifyResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -47289,6 +47327,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_run_announcements_runs_stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

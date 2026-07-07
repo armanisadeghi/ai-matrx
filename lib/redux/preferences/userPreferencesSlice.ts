@@ -330,6 +330,17 @@ export interface ScratchpadPreferences {
   activeId: string | null;
 }
 
+/** User-owned Site Workbench sidebar bookmarks (synced). System bookmarks are fixed in code. */
+export interface SiteWorkbenchUserBookmark {
+  id: string;
+  label: string;
+  url: string;
+}
+
+export interface SiteWorkbenchPreferences {
+  bookmarks: SiteWorkbenchUserBookmark[];
+}
+
 export interface OrganizationPreferences {
   /**
    * The user's DEFAULT active organization. When set, the active-org bootstrap
@@ -396,7 +407,8 @@ export interface AgentConnectionsPreferences {
  *  the app's dark/light mode). Per-artifact metadata overrides these. The
  *  option unions live with the mermaid core so the renderer and this slice
  *  can never drift. */
-export type MermaidPreferences = import("@/components/mermaid/types").MermaidOptionPreferences;
+export type MermaidPreferences =
+  import("@/components/mermaid/types").MermaidOptionPreferences;
 
 /**
  * Per-surface override of the conversation source filter (which `source_app`
@@ -509,6 +521,7 @@ export interface UserPreferences {
   audioDevices: AudioDevicePreferences;
   organization: OrganizationPreferences;
   scratchpad: ScratchpadPreferences;
+  siteWorkbench: SiteWorkbenchPreferences;
 }
 
 // Add state interface for async operations
@@ -744,6 +757,9 @@ export const initializeUserPreferencesState = (
       // null = no scratchpad yet; the first open/type creates + activates one.
       activeId: null,
     },
+    siteWorkbench: {
+      bookmarks: [],
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -809,6 +825,10 @@ export const initializeUserPreferencesState = (
     scratchpad: {
       ...defaultPreferences.scratchpad,
       ...preferences.scratchpad,
+    },
+    siteWorkbench: {
+      ...defaultPreferences.siteWorkbench,
+      ...preferences.siteWorkbench,
     },
   };
 
@@ -928,6 +948,9 @@ const userPreferencesSlice = createSlice({
         state.scratchpad = {
           ...state._meta.loadedPreferences.scratchpad,
         };
+        state.siteWorkbench = {
+          ...state._meta.loadedPreferences.siteWorkbench,
+        };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
       }
@@ -997,8 +1020,7 @@ const userPreferencesSlice = createSlice({
     builder.addCase(REHYDRATE_ACTION_TYPE, (state, action: RehydrateAction) => {
       if (action.payload.sliceName !== "userPreferences") return;
       const loaded = action.payload.state as
-        | Partial<UserPreferences>
-        | undefined;
+        Partial<UserPreferences> | undefined;
       if (!loaded) return;
 
       if (loaded.favorites)
@@ -1076,6 +1098,11 @@ const userPreferencesSlice = createSlice({
           ...state.scratchpad,
           ...loaded.scratchpad,
         };
+      if (loaded.siteWorkbench)
+        state.siteWorkbench = {
+          ...state.siteWorkbench,
+          ...loaded.siteWorkbench,
+        };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -1150,6 +1177,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "audioDevices",
   "organization",
   "scratchpad",
+  "siteWorkbench",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
@@ -1181,7 +1209,8 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       if (identity.type !== "auth") return null; // guests have no server state
       const { supabase } = await import("@/utils/supabase/client");
       const { data, error } = await supabase
-        .schema("users").from("user_preferences")
+        .schema("users")
+        .from("user_preferences")
         .select("preferences")
         .eq("user_id", identity.userId)
         .abortSignal(signal)
@@ -1194,7 +1223,8 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
       const { supabase } = await import("@/utils/supabase/client");
       const { ensureOrgId } = await import("@/lib/organizations/personalOrg");
       await supabase
-        .schema("users").from("user_preferences")
+        .schema("users")
+        .from("user_preferences")
         .upsert({
           organization_id: await ensureOrgId(undefined),
           user_id: identity.userId,

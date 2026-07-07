@@ -7668,6 +7668,163 @@
     "title": "WorkflowNodeTestResultData",
     "type": "object"
   },
+  "RagVerifyClaimsData": {
+    "additionalProperties": false,
+    "description": "POST /rag/verify pass-1 progress: the answer has been split into\natomic claims; the judge will now settle them one by one.",
+    "properties": {
+      "type": {
+        "const": "rag_verify_claims",
+        "default": "rag_verify_claims",
+        "title": "Type",
+        "type": "string"
+      },
+      "claims": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Claims",
+        "type": "array"
+      },
+      "count": {
+        "title": "Count",
+        "type": "integer"
+      },
+      "judge_model": {
+        "title": "Judge Model",
+        "type": "string"
+      }
+    },
+    "required": [
+      "count",
+      "judge_model"
+    ],
+    "title": "RagVerifyClaimsData",
+    "type": "object"
+  },
+  "RagVerifyVerdictData": {
+    "additionalProperties": false,
+    "description": "POST /rag/verify per-claim progress: the streamed judge settled one\nclaim. ``index`` is the 0-based position in the claims list. Provisional —\nthe terminal ``rag_verify_result`` event is authoritative.",
+    "properties": {
+      "type": {
+        "const": "rag_verify_verdict",
+        "default": "rag_verify_verdict",
+        "title": "Type",
+        "type": "string"
+      },
+      "index": {
+        "title": "Index",
+        "type": "integer"
+      },
+      "claim": {
+        "title": "Claim",
+        "type": "string"
+      },
+      "verdict": {
+        "title": "Verdict",
+        "type": "string"
+      },
+      "confidence": {
+        "title": "Confidence",
+        "type": "number"
+      },
+      "supporting_chunk_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Supporting Chunk Ids",
+        "type": "array"
+      },
+      "reasoning": {
+        "default": "",
+        "title": "Reasoning",
+        "type": "string"
+      }
+    },
+    "required": [
+      "index",
+      "claim",
+      "verdict",
+      "confidence"
+    ],
+    "title": "RagVerifyVerdictData",
+    "type": "object"
+  },
+  "RagVerifyResultData": {
+    "$defs": {
+      "RagVerifyClaimItem": {
+        "description": "One settled claim inside the terminal rag_verify_result event.",
+        "properties": {
+          "claim": {
+            "title": "Claim",
+            "type": "string"
+          },
+          "verdict": {
+            "title": "Verdict",
+            "type": "string"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "supporting_chunk_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Supporting Chunk Ids",
+            "type": "array"
+          },
+          "reasoning": {
+            "default": "",
+            "title": "Reasoning",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim",
+          "verdict",
+          "confidence"
+        ],
+        "title": "RagVerifyClaimItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal event for POST /rag/verify — carries exactly what the old\nblocking ``VerifyResponse`` JSON body carried, so the FE migration is\n\"read one event\".",
+    "properties": {
+      "type": {
+        "const": "rag_verify_result",
+        "default": "rag_verify_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "claims": {
+        "items": {
+          "$ref": "#/$defs/RagVerifyClaimItem"
+        },
+        "title": "Claims",
+        "type": "array"
+      },
+      "overall_faithfulness": {
+        "title": "Overall Faithfulness",
+        "type": "number"
+      },
+      "judge_model": {
+        "title": "Judge Model",
+        "type": "string"
+      },
+      "latency_ms": {
+        "title": "Latency Ms",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "overall_faithfulness",
+      "judge_model",
+      "latency_ms"
+    ],
+    "title": "RagVerifyResultData",
+    "type": "object"
+  },
   "ToolStartedData": {
     "additionalProperties": false,
     "properties": {

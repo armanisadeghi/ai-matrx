@@ -1208,6 +1208,39 @@ export interface PodcastTickEvent {
   total?: number;
 }
 
+export interface RagVerifyClaimsData {
+  type?: "rag_verify_claims";
+  claims?: string[];
+  count: number;
+  judge_model: string;
+}
+
+export interface RagVerifyClaimItem {
+  claim: string;
+  verdict: string;
+  confidence: number;
+  supporting_chunk_ids?: string[];
+  reasoning?: string;
+}
+
+export interface RagVerifyResultData {
+  type?: "rag_verify_result";
+  claims?: RagVerifyClaimItem[];
+  overall_faithfulness: number;
+  judge_model: string;
+  latency_ms: number;
+}
+
+export interface RagVerifyVerdictData {
+  type?: "rag_verify_verdict";
+  index: number;
+  claim: string;
+  verdict: string;
+  confidence: number;
+  supporting_chunk_ids?: string[];
+  reasoning?: string;
+}
+
 export interface ScrapeBatchCompleteData {
   type?: "scrape_batch_complete";
   total_scraped: number;
@@ -1337,6 +1370,9 @@ export type TypedDataPayload =
   | PodcastStageStartedEvent
   | PodcastTickEvent
   | QuestionnaireDisplayData
+  | RagVerifyClaimsData
+  | RagVerifyResultData
+  | RagVerifyVerdictData
   | ScrapeBatchCompleteData
   | SearchErrorData
   | SearchResultsData

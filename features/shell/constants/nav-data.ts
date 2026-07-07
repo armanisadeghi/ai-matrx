@@ -280,6 +280,12 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: NAV_WINDOW_PANEL_ICON,
         panelAction: "open-run-history-panel",
       },
+      {
+        label: "Import Agent Window",
+        href: "/agents/new/import",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-import-agent-panel",
+      },
       // Actions — collected at the bottom below a divider.
       {
         label: "New Agent",
@@ -540,6 +546,12 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
+      {
+        label: "News Window",
+        href: "/news",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-news-panel",
+      },
       // Actions — collected at the bottom below a divider.
       {
         label: "New Research",
@@ -782,6 +794,12 @@ export const primaryNavItems: ShellNavItem[] = [
         panelAction: "open-web-scraper-panel",
       },
       {
+        label: "Site Workbench Window",
+        href: "/tools/pdf-extractor",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-site-workbench-panel",
+      },
+      {
         label: "Markdown Studio",
         href: "/markdown-studio",
         iconName: "PenLine",
@@ -900,6 +918,18 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/transcripts",
         iconName: NAV_WINDOW_PANEL_ICON,
         panelAction: "open-advanced-voice-pad-panel",
+      },
+      {
+        label: "AI Voice Window",
+        href: "/transcripts",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-ai-voice-panel",
+      },
+      {
+        label: "Transcription Cleanup Window",
+        href: "/transcripts/cleanup",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-transcription-cleanup-panel",
       },
       // Actions — collected at the bottom below a divider.
       {

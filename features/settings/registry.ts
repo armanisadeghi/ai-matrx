@@ -78,6 +78,7 @@ const FlashcardsTab = lazyTab(() => import("./tabs/FlashcardsTab"));
 const AiModelsTab = lazyTab(() => import("./tabs/AiModelsTab"));
 const AdminServerTab = lazyTab(() => import("./tabs/AdminServerTab"));
 const LayoutTab = lazyTab(() => import("./tabs/LayoutTab"));
+const SiteWorkbenchTab = lazyTab(() => import("./tabs/SiteWorkbenchTab"));
 const WindowsTab = lazyTab(() => import("./tabs/WindowsTab"));
 const SystemTab = lazyTab(() => import("./tabs/SystemTab"));
 const LanguageTab = lazyTab(() => import("./tabs/LanguageTab"));
@@ -226,6 +227,16 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["minimize", "restore", "hide"],
     component: WindowsTab,
     persistence: "session",
+  },
+  {
+    id: "appearance.site-workbench",
+    label: "Site Workbench",
+    icon: Globe,
+    parentId: "appearance",
+    description: "Built-in and personal bookmarks for the embedded browser.",
+    searchKeywords: ["bookmark", "iframe", "browser", "lucide"],
+    component: SiteWorkbenchTab,
+    persistence: "synced",
   },
 
   // ── AI & Models ───────────────────────────────────────────────────────────
@@ -385,8 +396,16 @@ export const settingsRegistry: SettingsTabDef[] = [
     label: "Dictionary",
     icon: BookA,
     parentId: "voice",
-    description: "Your personal terminology & pronunciation for transcription and speech.",
-    searchKeywords: ["dictionary", "pronunciation", "terminology", "glossary", "keyterms", "spelling"],
+    description:
+      "Your personal terminology & pronunciation for transcription and speech.",
+    searchKeywords: [
+      "dictionary",
+      "pronunciation",
+      "terminology",
+      "glossary",
+      "keyterms",
+      "spelling",
+    ],
     component: DictionaryTab,
     persistence: "synced",
   },

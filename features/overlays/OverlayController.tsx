@@ -2321,11 +2321,13 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "browserWorkbenchWindow" }))
             }
             initialBookmarks={data?.initialBookmarks as unknown}
-            initialTabs={data?.initialTabs as unknown}
+            initialTabs={(data?.initialTabs ?? data?.tabs) as unknown}
             initialActiveTabId={
               typeof data?.initialActiveTabId === "string"
                 ? data.initialActiveTabId
-                : null
+                : typeof data?.activeTabId === "string"
+                  ? data.activeTabId
+                  : null
             }
           />
         );

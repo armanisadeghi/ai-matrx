@@ -7,6 +7,15 @@ import {
   normalizeUserUrl,
   shortUrlLabel,
 } from "@/features/window-panels/utils/embed-site-url";
+import {
+  isSystemSiteWorkbenchBookmark,
+  mergeSiteWorkbenchBookmarks,
+  SITE_WORKBENCH_DEFAULT_URL,
+  SITE_WORKBENCH_USER_BOOKMARKS_MAX,
+  type SiteWorkbenchBookmark,
+} from "@/features/window-panels/windows/iframe/site-workbench-bookmarks";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,13 +23,7 @@ import { cn } from "@/lib/utils";
 import { BookMarked, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
-const DEFAULT_START_URL = "https://lucide.dev/icons/";
-
-export interface BrowserWorkbenchBookmark {
-  id: string;
-  label: string;
-  url: string;
-}
+export type { SiteWorkbenchBookmark };
 
 export interface BrowserWorkbenchTab {
   id: string;
@@ -32,7 +35,7 @@ function newId(): string {
   return globalThis.crypto.randomUUID();
 }
 
-function isBookmarkRow(x: unknown): x is BrowserWorkbenchBookmark {
+function isTabRow(x: unknown): x is BrowserWorkbenchTab {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
   return (
@@ -40,15 +43,6 @@ function isBookmarkRow(x: unknown): x is BrowserWorkbenchBookmark {
     typeof o.label === "string" &&
     typeof o.url === "string"
   );
-}
-
-function isTabRow(x: unknown): x is BrowserWorkbenchTab {
-  return isBookmarkRow(x);
-}
-
-function parseBookmarks(raw: unknown): BrowserWorkbenchBookmark[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter(isBookmarkRow);
 }
 
 function parseTabs(raw: unknown): BrowserWorkbenchTab[] {
@@ -82,21 +76,92 @@ export default function BrowserWorkbenchWindow({
   );
 }
 
+function BookmarkSection({
+  title,
+  bookmarks,
+  onOpen,
+  onRemove,
+  removable,
+}: {
+  title: string;
+  bookmarks: SiteWorkbenchBookmark[];
+  onOpen: (url: string, label: string) => void;
+  onRemove?: (id: string) => void;
+  removable: boolean;
+}) {
+  if (bookmarks.length === 0) return null;
+  return (
+    <div className="space-y-0.5">
+      <div className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </div>
+      <ul className="space-y-0.5 px-1.5 pb-1">
+        {bookmarks.map((b) => (
+          <li key={b.id} className="group flex items-stretch gap-0.5">
+            <button
+              type="button"
+              className="min-w-0 flex-1 rounded-md border border-transparent px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+              onClick={() => onOpen(b.url, b.label)}
+            >
+              <span className="line-clamp-2 font-medium">{b.label}</span>
+              <span className="line-clamp-1 font-mono text-[10px] text-muted-foreground">
+                {shortUrlLabel(b.url)}
+              </span>
+            </button>
+            {removable && onRemove ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-auto w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                onClick={() => onRemove(b.id)}
+                aria-label={`Remove ${b.label}`}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function BrowserWorkbenchWindowInner({
   onClose,
-  initialBookmarks,
   initialTabs,
   initialActiveTabId,
-}: Omit<BrowserWorkbenchWindowProps, "isOpen">) {
-  const [bookmarks, setBookmarks] = useState<BrowserWorkbenchBookmark[]>(() =>
-    parseBookmarks(initialBookmarks),
+}: Omit<BrowserWorkbenchWindowProps, "isOpen" | "initialBookmarks">) {
+  const [userBookmarks, setUserBookmarks] = useSetting<
+    SiteWorkbenchUserBookmark[]
+  >("userPreferences.siteWorkbench.bookmarks");
+
+  const allBookmarks = useMemo(
+    () => mergeSiteWorkbenchBookmarks(userBookmarks),
+    [userBookmarks],
+  );
+
+  const systemBookmarks = useMemo(
+    () =>
+      allBookmarks.filter((bookmark) =>
+        isSystemSiteWorkbenchBookmark(bookmark.id),
+      ),
+    [allBookmarks],
+  );
+
+  const personalBookmarks = useMemo(
+    () =>
+      allBookmarks.filter(
+        (bookmark) => !isSystemSiteWorkbenchBookmark(bookmark.id),
+      ),
+    [allBookmarks],
   );
 
   const [tabs, setTabs] = useState<BrowserWorkbenchTab[]>(() => {
     const parsed = parseTabs(initialTabs);
     if (parsed.length > 0) return parsed;
     const id = newId();
-    return [{ id, label: "Lucide", url: DEFAULT_START_URL }];
+    return [{ id, label: "Lucide", url: SITE_WORKBENCH_DEFAULT_URL }];
   });
 
   const [activeTabId, setActiveTabId] = useState<string | null>(() => {
@@ -130,11 +195,10 @@ function BrowserWorkbenchWindowInner({
 
   const collectData = useCallback(
     (): Record<string, unknown> => ({
-      bookmarks,
       tabs,
       activeTabId,
     }),
-    [bookmarks, tabs, activeTabId],
+    [tabs, activeTabId],
   );
 
   const openOrFocusUrl = useCallback((url: string, label: string) => {
@@ -176,7 +240,7 @@ function BrowserWorkbenchWindowInner({
 
   const newTab = useCallback(() => {
     const id = newId();
-    const url = DEFAULT_START_URL;
+    const url = SITE_WORKBENCH_DEFAULT_URL;
     setTabs((prev) => [...prev, { id, url, label: "New" }]);
     setActiveTabId(id);
   }, []);
@@ -196,24 +260,38 @@ function BrowserWorkbenchWindowInner({
 
   const bookmarkActive = useCallback(() => {
     if (!activeTab) return;
-    const exists = bookmarks.some((b) => b.url === activeTab.url);
-    if (exists) {
+    const normalized = normalizeUserUrl(activeTab.url);
+    if (!normalized) {
+      toast.error("Invalid URL");
+      return;
+    }
+    if (allBookmarks.some((bookmark) => bookmark.url === normalized)) {
       toast.message("Already in bookmarks");
       return;
     }
-    setBookmarks((prev) => [
-      ...prev,
+    if (userBookmarks.length >= SITE_WORKBENCH_USER_BOOKMARKS_MAX) {
+      toast.error(
+        `You can save up to ${SITE_WORKBENCH_USER_BOOKMARKS_MAX} bookmarks`,
+      );
+      return;
+    }
+    setUserBookmarks([
+      ...userBookmarks,
       {
         id: newId(),
-        label: activeTab.label || shortUrlLabel(activeTab.url),
-        url: activeTab.url,
+        label: activeTab.label || shortUrlLabel(normalized),
+        url: normalized,
       },
     ]);
-  }, [activeTab, bookmarks]);
+  }, [activeTab, allBookmarks, setUserBookmarks, userBookmarks]);
 
-  const removeBookmark = useCallback((id: string) => {
-    setBookmarks((prev) => prev.filter((b) => b.id !== id));
-  }, []);
+  const removeUserBookmark = useCallback(
+    (id: string) => {
+      if (isSystemSiteWorkbenchBookmark(id)) return;
+      setUserBookmarks(userBookmarks.filter((bookmark) => bookmark.id !== id));
+    },
+    [setUserBookmarks, userBookmarks],
+  );
 
   const sidebar = (
     <div className="flex h-full min-h-0 flex-col">
@@ -228,44 +306,33 @@ function BrowserWorkbenchWindowInner({
           size="sm"
           className="h-6 px-1.5"
           onClick={bookmarkActive}
-          title="Bookmark active tab"
+          title="Save active tab to your bookmarks"
         >
           <Plus className="h-3.5 w-3.5" />
         </Button>
       </div>
       <ScrollArea className="min-h-0 flex-1">
-        <ul className="space-y-0.5 p-1.5">
-          {bookmarks.length === 0 ? (
-            <li className="px-1 py-2 text-[11px] text-muted-foreground">
-              Save the current page with +. Click a bookmark to open a tab.
-            </li>
-          ) : (
-            bookmarks.map((b) => (
-              <li key={b.id} className="group flex items-stretch gap-0.5">
-                <button
-                  type="button"
-                  className="min-w-0 flex-1 rounded-md border border-transparent px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
-                  onClick={() => openOrFocusUrl(b.url, b.label)}
-                >
-                  <span className="line-clamp-2 font-medium">{b.label}</span>
-                  <span className="line-clamp-1 font-mono text-[10px] text-muted-foreground">
-                    {shortUrlLabel(b.url)}
-                  </span>
-                </button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto w-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={() => removeBookmark(b.id)}
-                  aria-label={`Remove ${b.label}`}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </li>
-            ))
-          )}
-        </ul>
+        {allBookmarks.length === 0 ? (
+          <p className="px-2 py-2 text-[11px] text-muted-foreground">
+            Save the current page with +. Click a bookmark to open a tab.
+          </p>
+        ) : (
+          <>
+            <BookmarkSection
+              title="Built-in"
+              bookmarks={systemBookmarks}
+              onOpen={openOrFocusUrl}
+              removable={false}
+            />
+            <BookmarkSection
+              title="Yours"
+              bookmarks={personalBookmarks}
+              onOpen={openOrFocusUrl}
+              onRemove={removeUserBookmark}
+              removable
+            />
+          </>
+        )}
       </ScrollArea>
     </div>
   );
