@@ -301,6 +301,58 @@ export const assessmentService = {
     };
   },
 
+  /**
+   * Duplicate an assessment (+ its items) into a NEW assessment owned by the
+   * current user — the P7 "duplicate-to-edit" path for a view-only sharee.
+   * Copies content + trust; resets provenance to the copied-from assessment.
+   */
+  async duplicate(id: string): Promise<AsResult<AssessmentRow>> {
+    try {
+      const src = await this.getAssessmentWithItems(id);
+      if (src.error || !src.data)
+        return fail("duplicate", src.error ?? "source not found");
+      const { assessment: a, items } = src.data;
+      const created = await this.createAssessment({
+        assessmentKind: a.assessment_kind as NewAssessmentInput["assessmentKind"],
+        title: `${a.title} (copy)`,
+        description: a.description,
+        status: "ready",
+        sourceKind: a.source_kind as NewAssessmentInput["sourceKind"],
+        sourceId: a.source_id,
+        sourceTitle: a.source_title,
+        topic: a.topic,
+        examType: a.exam_type,
+        depth: a.depth as NewAssessmentInput["depth"],
+        timeLimitSeconds: a.time_limit_seconds,
+        config: (a.config as NewAssessmentInput["config"]) ?? {},
+        metadata: { question_count: items.length, duplicated_from: a.id },
+      });
+      if (created.error || !created.data)
+        return fail("duplicate", created.error ?? "copy failed");
+      if (items.length > 0) {
+        await this.addItems(
+          created.data.id,
+          items.map((it) => ({
+            questionType: it.question_type as NewAssessmentItemInput["questionType"],
+            prompt: it.prompt,
+            options: (it.options as string[] | null) ?? null,
+            correctAnswer: it.correct_answer,
+            acceptableAnswers: (it.acceptable_answers as string[] | null) ?? null,
+            explanation: it.explanation,
+            rubric: it.rubric,
+            depth: it.depth as NewAssessmentItemInput["depth"],
+            points: Number(it.points ?? 1),
+            topic: it.topic,
+            position: it.position,
+          })),
+        );
+      }
+      return { data: created.data, error: null };
+    } catch (e) {
+      return fail("duplicate", e);
+    }
+  },
+
   // ─── RESULTS (per-taking scored report + learning gain) ─────────────────────
   /** Open a result row when the learner starts a taking. */
   async createResult(

@@ -76,13 +76,21 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/learn",
       label: "Study guides (content engine)",
       description:
-        "Pure-SEO content library; articles at /learn/[...slug] (JSON-LD).",
+        "DB-backed SEO content library; articles at /learn/[...slug] (JSON-LD, ISR).",
       filePath: "app/(core)/education/learn/page.tsx",
       status: "Live",
       notes: [
-        "Demo seeded from data/learn-content.ts",
-        "Production engine will read education.study_structured_section",
+        "Content in education.learn_doc; reads via features/education/publishing/queries.ts",
+        "Authoring at /education/learn/admin (super-admin; publish without deploy)",
       ],
+    },
+    {
+      url: "/education/learn/admin",
+      label: "Study-guide authoring",
+      description:
+        "Super-admin authoring: create / edit / preview / publish learn docs; agent-assisted drafting.",
+      filePath: "app/(core)/education/learn/admin/page.tsx",
+      status: "Live",
     },
     {
       url: "/education/subjects/quick-math",
@@ -228,6 +236,51 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(core)/education/flashcards/progress/page.tsx",
       status: "Live",
     },
+    {
+      url: "/education/game",
+      label: "Study Games (Engagement Engine)",
+      description:
+        "App tool — LIVE (P10). List-first home: Solo Arcade, Host, Join + healthy streak (freezes/rest days), opt-in weekly league (mastery-gain), outcome badges. Play IS review — every answer records to the spine (method='game').",
+      filePath: "app/(core)/education/game/page.tsx",
+      status: "Live",
+      notes: [
+        "Sub-routes: /solo (arcade), /host (create room), /join (by code), /play/[roomId]?code= (live multiplayer)",
+        "Realtime: Supabase Broadcast + presence (channel edu-game:<roomId>); only results persist",
+        "DB: education.game_room / game_result / game_badge / league_membership + streak forgiveness",
+      ],
+    },
+    {
+      url: "/education/game/solo",
+      label: "Solo Arcade",
+      description:
+        "P10 — single-player against your SRS due/weak queue; the daily-habit surface. Heavy client, code-split (ssr:false).",
+      filePath: "app/(core)/education/game/solo/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/game/host",
+      label: "Host a game",
+      description:
+        "P10 — create a multiplayer room from a deck or your due queue; wires P8 education.game_room_size (max players shown before hosting).",
+      filePath: "app/(core)/education/game/host/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/game/join",
+      label: "Join a game",
+      description:
+        "P10 — join a room by 5-char code (cross-owner via game_room_by_code RPC). No player tax.",
+      filePath: "app/(core)/education/game/join/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/game/play/[roomId]",
+      label: "Live multiplayer game",
+      description:
+        "P10 — lobby → play → results. Broadcast roster + per-player SRS queues + comeback power-ups + team/private scoreboard (no speed-shame). Rejoin syncs to host started_at.",
+      filePath: "app/(core)/education/game/play/[roomId]/page.tsx",
+      status: "Live",
+    },
   ],
 
   components: [
@@ -284,7 +337,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       name: "Registries (data/*)",
       filePath: "features/education/data/registry.ts",
       description:
-        "subjects / levels / exam-prep / study-aids / features / tools / learn-content — add an entry, get a page.",
+        "subjects / levels / exam-prep / study-aids / features / tools — add a registry entry, get a page. Learn docs are DB-backed (education.learn_doc).",
       tier: "official",
     },
     {
@@ -339,6 +392,42 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       description:
         "P5 — pre/post learning-gain report + print/PDF export (reads P1's contract; seed fixtures until it lands).",
       tier: "official",
+    },
+    {
+      name: "EngageHome",
+      filePath: "features/education/engage/components/EngageHome.tsx",
+      description:
+        "P10 — the /education/game list-first home (Solo/Host/Join + streak + league + badges).",
+      tier: "internal",
+    },
+    {
+      name: "PlaySurface",
+      filePath: "features/education/engage/components/play/PlaySurface.tsx",
+      description:
+        "P10 — the shared in-game UI (HUD, MC question, power-up bar, feedback) driven by useGamePlay; used by solo + multiplayer.",
+      tier: "internal",
+    },
+    {
+      name: "MultiplayerGameImpl",
+      filePath:
+        "features/education/engage/components/multiplayer/MultiplayerGameImpl.tsx",
+      description:
+        "P10 — the live multiplayer surface (lobby → play → results) composing the Broadcast channel + game engine. Code-split via MultiplayerGame.",
+      tier: "internal",
+    },
+    {
+      name: "SoloArcadeImpl",
+      filePath: "features/education/engage/components/solo/SoloArcadeImpl.tsx",
+      description:
+        "P10 — the solo arcade round surface. Code-split via SoloArcade (ssr:false).",
+      tier: "internal",
+    },
+    {
+      name: "StreakCard",
+      filePath: "features/education/engage/components/streak/StreakCard.tsx",
+      description:
+        "P10 — the healthy-streak surface: current/longest, banked freezes, planned rest-day picker (anti-Duolingo).",
+      tier: "internal",
     },
   ],
 

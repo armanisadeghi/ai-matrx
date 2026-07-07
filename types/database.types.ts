@@ -10207,74 +10207,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      game_room_by_code: {
-        Args: { p_code: string }
-        Returns: {
-          config: Json
-          created_at: string
-          host_user_id: string
-          id: string
-          join_code: string
-          source_kind: string
-          source_set_id: string
-          source_title: string
-          started_at: string
-          status: string
-        }[]
-      }
-      game_room_players: {
-        Args: { p_room_id: string }
-        Returns: {
-          answered_count: number
-          best_streak: number
-          correct_count: number
-          created_at: string
-          currency_earned: number
-          display_name: string
-          mastery_gain: number
-          score: number
-          user_id: string
-        }[]
-      }
-      league_add_result: {
-        Args: { p_display_name?: string; p_mastery_gain: number }
-        Returns: undefined
-      }
-      league_leaderboard: {
-        Args: { p_week_start: string }
-        Returns: {
-          display_name: string
-          games_played: number
-          is_me: boolean
-          mastery_gain: number
-          user_id: string
-        }[]
-      }
       reap_stale_study_sessions: {
         Args: { p_max_age?: string }
         Returns: number
-      }
-      set_streak_rest_weekdays: {
-        Args: { p_weekdays: number[] }
-        Returns: {
-          created_at: string
-          current_streak: number
-          freezes_available: number
-          freezes_used: number
-          frozen_dates: string[]
-          last_active_date: string | null
-          longest_streak: number
-          organization_id: string
-          rest_weekdays: number[]
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "study_streak"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
     }
     Enums: {
@@ -26233,7 +26168,7 @@ export type Database = {
       edu_learn_doc_upsert: {
         Args: {
           p_content_updated_at?: string
-          p_id: string
+          p_id?: string
           p_keywords?: string[]
           p_letter?: string
           p_related?: Json
@@ -26803,6 +26738,35 @@ export type Database = {
       }
       fork_shared_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
       fork_shared_quiz: { Args: { p_quiz_id: string }; Returns: Json }
+      game_room_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          config: Json
+          created_at: string
+          host_user_id: string
+          id: string
+          join_code: string
+          source_kind: string
+          source_set_id: string
+          source_title: string
+          started_at: string
+          status: string
+        }[]
+      }
+      game_room_players: {
+        Args: { p_room_id: string }
+        Returns: {
+          answered_count: number
+          best_streak: number
+          correct_count: number
+          created_at: string
+          currency_earned: number
+          display_name: string
+          mastery_gain: number
+          score: number
+          user_id: string
+        }[]
+      }
       generate_canvas_content_hash: {
         Args: { content_data: Json }
         Returns: string
@@ -28026,6 +27990,20 @@ export type Database = {
         Returns: Json
       }
       kg_simulated_scope_graph: { Args: { p_scope_id: string }; Returns: Json }
+      league_add_result: {
+        Args: { p_display_name?: string; p_mastery_gain: number }
+        Returns: undefined
+      }
+      league_leaderboard: {
+        Args: { p_week_start: string }
+        Returns: {
+          display_name: string
+          games_played: number
+          is_me: boolean
+          mastery_gain: number
+          user_id: string
+        }[]
+      }
       list_entities_by_scopes: {
         Args: {
           p_entity_type?: string
@@ -28969,6 +28947,16 @@ export type Database = {
           p_preview?: string
         }
         Returns: string
+      }
+      set_streak_rest_weekdays: {
+        Args: { p_weekdays: number[] }
+        Returns: Database["education"]["Tables"]["study_streak"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "study_streak"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       share_resource_with_org: {
         Args: {

@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, NotebookPen, CalendarClock } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, NotebookPen, CalendarClock, Gamepad2 } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -167,6 +167,26 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Adaptive re-planning on new performance data (re-plan in place)",
       "Anti-burnout: honored rest days, gentle daily caps, tapered practice-test finish",
     ],
+  },
+  {
+    slug: "game",
+    name: "Study Games",
+    tagline: "Play IS review — SRS-wired multiplayer + solo arcade",
+    description: "A real-time multiplayer study game (host a room, join by code) and a solo arcade, both fed by the FSRS engine so every round is genuine review. Healthy streaks, opt-in leagues, outcome badges — no speed-shame, ever.",
+    icon: Gamepad2,
+    letter: "Gm",
+    status: "live", // P10 — SRS-wired multiplayer + solo arcade + healthy streaks/leagues/badges
+    accessTier: "free",
+    visionRef: "VISION §11 Engagement / Gamification",
+    capabilities: [
+      "Real-time multiplayer: host a room, players join by code (no player tax)",
+      "Per-player SRS-biased question queues — every answer is real review",
+      "Solo arcade against your due/weak queue (the daily-habit surface)",
+      "Correctness-first scoring + earn-to-upgrade power-ups + comeback assist",
+      "Healthy streaks (freezes + rest days), opt-in mastery-gain leagues, outcome badges",
+      "Every answer records to the study spine (method='game') → mastery + P5 analytics",
+    ],
+    featured: true,
   },
 ];
 

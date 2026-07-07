@@ -4,10 +4,22 @@
 // wrapper over the data-driven renderers. Server-only (used in route modules).
 import type { Metadata } from "next";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
-import { getAxisEntry } from "./data/registry";
+import { getAxisEntries, getAxisEntry } from "./data/registry";
 import { EDU_TOOL_BY_SLUG } from "./data/tools";
 import { EDU_AXIS_BY_ID, eduHref } from "./constants";
 import type { EduAxisId } from "./types";
+
+/**
+ * Static params for an axis's [slug] route — every non-planned entry (incl.
+ * index-hidden leaves like grade pages, which are real, linkable URLs). Pair
+ * with `export const dynamicParams = true` + `revalidate` in the route so new
+ * entries still render on demand.
+ */
+export function axisStaticParams(axisId: EduAxisId): { slug: string }[] {
+  return getAxisEntries(axisId)
+    .filter((e) => e.status !== "planned")
+    .map((e) => ({ slug: e.slug }));
+}
 
 /** Build per-entry metadata for an axis detail page, or a sensible fallback. */
 export function axisDetailMetadata(axisId: EduAxisId, slug: string): Metadata {

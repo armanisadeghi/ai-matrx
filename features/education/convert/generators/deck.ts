@@ -29,8 +29,37 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
+/**
+ * The from-source deck agent grounds + cites against `### Chunk <id>` markers —
+ * it returns NO cards for an unmarked blob. Ingest gives us plain text, so we
+ * synthesize chunk markers (paragraph-packed to ~1000 chars) before sending.
+ */
+function chunkForGrounding(text: string): string {
+  const paras = text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const chunks: string[] = [];
+  let buf = "";
+  for (const p of paras) {
+    if (buf && buf.length + p.length > 1000) {
+      chunks.push(buf);
+      buf = p;
+    } else {
+      buf = buf ? `${buf}\n\n${p}` : p;
+    }
+  }
+  if (buf) chunks.push(buf);
+  if (chunks.length === 0) chunks.push(text.trim());
+  return chunks.map((c, i) => `### Chunk c${i + 1} (Page 1)\n${c}`).join("\n\n");
+}
+
 /** Coerce one raw agent card object → NewCardInput (drops unusable entries). */
-function coerceCard(raw: unknown, docId: string): NewCardInput | null {
+function coerceCard(
+  raw: unknown,
+  docId: string,
+  anchorFileId: string,
+): NewCardInput | null {
   if (!isRecord(raw)) return null;
   const str = (k: string) =>
     typeof raw[k] === "string" ? (raw[k] as string).trim() : "";
@@ -43,18 +72,25 @@ function coerceCard(raw: unknown, docId: string): NewCardInput | null {
   };
 
   const rawSource = raw.source;
-  const source = isRecord(rawSource)
+  // Per-card lineage points at the ingest anchor file (fcService writes a
+  // card→file `source` edge when file_id is set), keeping the agent-echoed
+  // chunk/page for the citation locator.
+  const source = anchorFileId
     ? {
-        file_id: "",
+        file_id: anchorFileId,
         processed_document_id:
+          isRecord(rawSource) &&
           typeof rawSource.processed_document_id === "string"
             ? rawSource.processed_document_id
             : docId || undefined,
         chunk_id:
-          typeof rawSource.chunk_id === "string"
+          isRecord(rawSource) && typeof rawSource.chunk_id === "string"
             ? rawSource.chunk_id
             : undefined,
-        page: typeof rawSource.page === "number" ? rawSource.page : undefined,
+        page:
+          isRecord(rawSource) && typeof rawSource.page === "number"
+            ? rawSource.page
+            : undefined,
       }
     : undefined;
 
@@ -69,7 +105,11 @@ function coerceCard(raw: unknown, docId: string): NewCardInput | null {
   };
 }
 
-function coerceCards(value: unknown, docId: string): {
+function coerceCards(
+  value: unknown,
+  docId: string,
+  anchorFileId: string,
+): {
   title: string;
   cards: NewCardInput[];
 } {
@@ -86,7 +126,7 @@ function coerceCards(value: unknown, docId: string): {
         ? (value as unknown[])
         : [];
   const cards = rawCards
-    .map((c) => coerceCard(c, docId))
+    .map((c) => coerceCard(c, docId, anchorFileId))
     .filter((c): c is NewCardInput => c !== null);
   return { title, cards };
 }
@@ -96,14 +136,16 @@ async function run(
   ctx: ConvertContext,
 ): Promise<ConvertResult> {
   const { source, options } = request;
-  const docId = source.ref?.processedDocumentId ?? "";
+  const anchorFileId = source.ref?.fileId ?? "";
+  // The agent grounds cards against these markers + echoes document_id back.
+  const docId = source.ref?.processedDocumentId ?? anchorFileId || "ingest";
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
     agentId: FC_AGENTS.generateFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
     variables: {
-      source_content: source.text,
+      source_content: chunkForGrounding(source.text),
       document_id: docId,
       count: String(options?.count ?? 15),
       difficulty: options?.difficulty ?? "Mixed",
@@ -111,7 +153,7 @@ async function run(
     onRequestId: ctx.onRequestId,
   });
 
-  const { title, cards } = coerceCards(extracted.value, docId);
+  const { title, cards } = coerceCards(extracted.value, docId, anchorFileId);
   if (cards.length === 0) {
     throw new Error("The deck generator returned no usable cards");
   }

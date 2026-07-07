@@ -11,7 +11,7 @@ open (e.g. a route name), append it as a final line.
 You are taking ownership of ONE project from the Education Hub master plan.
 
 Brief Directory:   docs/proposals/education-projects/{your-project-brief.md}
-Your project and brief: P3 — Study Media | `P3-study-media.md` 
+Your project and brief: P6 — Growth Content Engine | `P6-content-publishing.md` | 
 
 Do this, in order:
 1. Read docs/proposals/education-projects/README.md (the master plan) — you are one of ~11

@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 227 active entity tokens. A token here is FK-valid for
+// 239 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -64,6 +64,9 @@ export type EntityTypeToken =
   | "app_sync_status"
   | "applet"
   | "artifact"
+  | "assessment"
+  | "assessment_item"
+  | "assessment_result"
   | "auto_ingest_batch"
   | "auto_ingest_cost_event"
   | "canvas_comment"
@@ -131,6 +134,9 @@ export type EntityTypeToken =
   | "flashcard_set"
   | "flexible_data"
   | "folder"
+  | "game_badge"
+  | "game_result"
+  | "game_room"
   | "global_execution"
   | "global_execution_checkpoint"
   | "global_execution_event"
@@ -149,6 +155,8 @@ export type EntityTypeToken =
   | "kg_sweep_run"
   | "kg_sweep_state"
   | "kg_value_match"
+  | "league_membership"
+  | "learn_doc"
   | "membership"
   | "message"
   | "microservice_project"
@@ -207,6 +215,10 @@ export type EntityTypeToken =
   | "studio_session"
   | "study_attempt"
   | "study_goal"
+  | "study_media"
+  | "study_plan"
+  | "study_plan_block"
+  | "study_plan_day"
   | "study_session"
   | "surface"
   | "system_error"
@@ -276,6 +288,7 @@ export type ComponentEntityToken =
   | "app_execution"
   | "app_rate_limit"
   | "artifact"
+  | "assessment_item"
   | "canvas_item_state"
   | "cmp_entry"
   | "component_group"
@@ -369,6 +382,9 @@ export type ScopeableEntityToken =
   | "app_sync_status"
   | "applet"
   | "artifact"
+  | "assessment"
+  | "assessment_item"
+  | "assessment_result"
   | "auto_ingest_batch"
   | "auto_ingest_cost_event"
   | "canvas_comment"
@@ -419,6 +435,9 @@ export type ScopeableEntityToken =
   | "flashcard_set"
   | "flexible_data"
   | "folder"
+  | "game_badge"
+  | "game_result"
+  | "game_room"
   | "global_execution"
   | "global_execution_checkpoint"
   | "global_execution_event"
@@ -437,6 +456,8 @@ export type ScopeableEntityToken =
   | "kg_sweep_run"
   | "kg_sweep_state"
   | "kg_value_match"
+  | "league_membership"
+  | "learn_doc"
   | "membership"
   | "message"
   | "microservice_project"
@@ -494,6 +515,10 @@ export type ScopeableEntityToken =
   | "studio_session"
   | "study_attempt"
   | "study_goal"
+  | "study_media"
+  | "study_plan"
+  | "study_plan_block"
+  | "study_plan_day"
   | "study_session"
   | "surface"
   | "system_error"
@@ -559,6 +584,7 @@ export type ListedEntityToken =
   | "ai_setting"
   | "content_ir_kind"
   | "dataset"
+  | "learn_doc"
   | "surface"
   | "workbook";
 
@@ -602,6 +628,9 @@ export const ENTITY_TYPE_METADATA = {
   "app_sync_status": { token: "app_sync_status", schema: "public", table: "app_sync_status", label: "App Sync Status", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "applet": { token: "applet", schema: "public", table: "applet", label: "Applet", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "artifact": { token: "artifact", schema: "chat", table: "artifact", label: "Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "assessment": { token: "assessment", schema: "education", table: "assessment", label: "Assessment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "assessment_item": { token: "assessment_item", schema: "education", table: "assessment_item", label: "Assessment Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
+  "assessment_result": { token: "assessment_result", schema: "education", table: "assessment_result", label: "Assessment Result", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "auto_ingest_batch": { token: "auto_ingest_batch", schema: "public", table: "auto_ingest_batch", label: "Auto Ingest Batch", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "auto_ingest_cost_event": { token: "auto_ingest_cost_event", schema: "public", table: "auto_ingest_cost_event", label: "Auto Ingest Cost Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "canvas_comment": { token: "canvas_comment", schema: "canvas", table: "canvas_comments", label: "Canvas Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -669,6 +698,9 @@ export const ENTITY_TYPE_METADATA = {
   "flashcard_set": { token: "flashcard_set", schema: "users", table: "user_flashcard_sets", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "flexible_data": { token: "flexible_data", schema: "public", table: "flexible_data", label: "Flexible Data", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "folder": { token: "folder", schema: "files", table: "folders", label: "Folder", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Sources" },
+  "game_badge": { token: "game_badge", schema: "education", table: "game_badge", label: "Game Badge", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "game_result": { token: "game_result", schema: "education", table: "game_result", label: "Game Result", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "game_room": { token: "game_room", schema: "education", table: "game_room", label: "Game Room", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "global_execution": { token: "global_execution", schema: "runtime", table: "global_execution", label: "Runtime Execution", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "global_execution_checkpoint": { token: "global_execution_checkpoint", schema: "runtime", table: "global_execution_checkpoint", label: "Runtime Checkpoint", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "global_execution_event": { token: "global_execution_event", schema: "runtime", table: "global_execution_event", label: "Runtime Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
@@ -687,6 +719,8 @@ export const ENTITY_TYPE_METADATA = {
   "kg_sweep_run": { token: "kg_sweep_run", schema: "reg", table: "kg_sweep_run", label: "KG Sweep Run", baseTier: 3, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "kg_sweep_state": { token: "kg_sweep_state", schema: "reg", table: "kg_sweep_state", label: "KG Sweep State", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "kg_value_match": { token: "kg_value_match", schema: "reg", table: "kg_value_matches", label: "KG Value Match", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "league_membership": { token: "league_membership", schema: "education", table: "league_membership", label: "League Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "learn_doc": { token: "learn_doc", schema: "education", table: "learn_doc", label: "Study Guide", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null },
   "microservice_project": { token: "microservice_project", schema: "public", table: "microservice_project", label: "Microservice Project", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -745,6 +779,10 @@ export const ENTITY_TYPE_METADATA = {
   "studio_session": { token: "studio_session", schema: "transcripts", table: "studio_sessions", label: "Audio Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "study_attempt": { token: "study_attempt", schema: "education", table: "study_attempt", label: "Study Attempt", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "study_goal": { token: "study_goal", schema: "education", table: "study_goal", label: "Study Goal", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "study_media": { token: "study_media", schema: "education", table: "study_media", label: "Study Media", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "study_plan": { token: "study_plan", schema: "education", table: "study_plan", label: "Study Plan", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "study_plan_block": { token: "study_plan_block", schema: "education", table: "study_plan_block", label: "Study Plan Block", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
+  "study_plan_day": { token: "study_plan_day", schema: "education", table: "study_plan_day", label: "Study Plan Day", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "study_session": { token: "study_session", schema: "education", table: "study_session", label: "Study Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
   "surface": { token: "surface", schema: "ui", table: "ui_surface", label: "UI Surface", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null },
   "system_error": { token: "system_error", schema: "public", table: "system_error", label: "System Error", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null },
@@ -833,6 +871,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "app_sync_status",
   "applet",
   "artifact",
+  "assessment",
+  "assessment_item",
+  "assessment_result",
   "auto_ingest_batch",
   "auto_ingest_cost_event",
   "canvas_comment",
@@ -900,6 +941,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "flashcard_set",
   "flexible_data",
   "folder",
+  "game_badge",
+  "game_result",
+  "game_room",
   "global_execution",
   "global_execution_checkpoint",
   "global_execution_event",
@@ -918,6 +962,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "kg_sweep_run",
   "kg_sweep_state",
   "kg_value_match",
+  "league_membership",
+  "learn_doc",
   "membership",
   "message",
   "microservice_project",
@@ -976,6 +1022,10 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "studio_session",
   "study_attempt",
   "study_goal",
+  "study_media",
+  "study_plan",
+  "study_plan_block",
+  "study_plan_day",
   "study_session",
   "surface",
   "system_error",
