@@ -425,6 +425,78 @@ exists, `microCoach()` is a clean no-op.
 
 ---
 
+---
+
+## Trust addendum — every agent carries the TrustEnvelope  **(P0, cross-cutting)**
+
+> Contract + types: [`../trust/TRUST_ENVELOPE.md`](../trust/TRUST_ENVELOPE.md) +
+> `features/education/trust/types.ts`. This addendum amends the schemas above; it does not replace
+> them. At Convergence A, any generation/grading agent NOT honoring this is a defect.
+
+**Every generation agent** (`fc_generate_cards`, `fc_generate_from_source`, `fc_make_quiz_items`,
+`fc_enrich_card`, and the P1–P4/P6/P9 generators) adds a `trust` object to each generated item
+(per card / per quiz question / per segment) — and MAY repeat it on the containing set:
+
+```json
+"trust": {
+  "type": "object",
+  "properties": {
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourceId":   { "type": "string" },
+          "sourceKind": { "type": "string", "enum": ["document","chunk","section","file","url","scope","transcript","web"] },
+          "locator":    { "type": "string" },
+          "excerpt":    { "type": "string" },
+          "title":      { "type": "string" }
+        },
+        "required": ["sourceId","sourceKind"],
+        "additionalProperties": false
+      }
+    },
+    "confidence": { "type": "string", "enum": ["grounded","inferred","not_in_material"] },
+    "groundedIn": { "type": "string" }
+  },
+  "required": ["citations","confidence"],
+  "additionalProperties": false
+}
+```
+
+Rules baked into the prompt (not a client-side filter):
+
+- **Grounded generation (`fc_generate_from_source` + all P9 kit generators):** each item's
+  `trust.citations[]` MUST reference the exact source passage it came from. When the source is fed
+  with `### Chunk <chunk_id>` markers (as `CreateFromSource` does), echo that `chunk_id` as
+  `sourceId` (`sourceKind:"chunk"`), the page as `locator`, and the verbatim supporting sentence(s)
+  as `excerpt`. `confidence:"grounded"`. If a requested item cannot be supported by the material,
+  DROP it rather than invent one.
+- **Ungrounded generation (`fc_generate_cards` from a topic):** no corpus ⇒ `citations:[]`,
+  `confidence:"inferred"`, `groundedIn` omitted. Honest by construction.
+- **Grounded answering (`fc_help_live` / the tutor):** answer from the learner's material when it
+  supports the question (`confidence:"grounded"`, cite it). When it does NOT, **refuse honestly**:
+  return `confidence:"not_in_material"`, `citations:[]`, and phrase the answer as the explicit
+  choice — *"That isn't in your material. Want me to answer from general knowledge?"* — never a
+  confident fabricated answer. The FE presents the escape hatch; the agent never pretends.
+
+**Grade-on-meaning** (`fc_grade_spoken` today; P1 typed/short-answer next) grades MEANING, not
+strings — a paraphrase, synonym, or reordered answer conveying the required idea is `correct`.
+Typed/short-answer graders return the `GradeVerdict` shape (adopted as P1's one grading path):
+
+```json
+{
+  "correct": { "type": "boolean" },
+  "partial": { "type": "boolean" },
+  "misconception": { "type": ["string","null"], "description": "the NAMED wrong idea, if any" },
+  "explanation": { "type": "string", "description": "why, in meaning terms — never 'wrong exact words'" }
+}
+```
+
+Reference retrofits: `fc_generate_from_source` (real citations) + `fc_help_live` (honest refusal).
+
+---
+
 > **Adaptive next-batch selection is NOT an agent** — it's an FSRS algorithm + query over `item_mastery`
 > (due/struggle) + `study_goal` topics + the dimension graph. See `lib/srs/fsrs.ts`.
 
