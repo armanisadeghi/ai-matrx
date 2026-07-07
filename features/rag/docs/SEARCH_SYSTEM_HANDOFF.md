@@ -51,7 +51,17 @@ State of the search-quality rescue + model upgrade that ran 2026-06-27 → 2026-
 7. **Bug 7 (deferred by design):** the `?q=` deep-link auto-run fires before Redux context hydrates → runs org-unfiltered. Acceptable for the "AI search — everything" hand-off; revisit if org-scoped deep links appear.
 8. ~~**`_SCOPE_ENTITY_TYPE_ALIASES` sync guard**~~ — **DONE (2026-07-07).** `aidream/scripts/check_scope_alias_sync.py` is the loud reader: it asserts every `platform.entity_types` token that is BOTH `default_auto_ingest` (becomes chunks) AND `default_scopeable` (can be scope-tagged) is covered by an alias etype value — that intersection (today `{file, note, transcript}`, all covered) is the only set whose omission silently breaks scope filtering. Defensive legacy/plural aliases (`notes`, `ctx_tasks`, …) are reported INFO, not failures. Run: `uv run python scripts/check_scope_alias_sync.py`; wire into CI to catch a future scopeable+ingestable type added without a map entry.
 
-**NOT part of the search path but found during this audit (see aidream KNOWN_DEFECTS OPEN):** KG entity clustering has never functioned (23,760 entities, 0 embedded, 0 clusters) — a bootstrap deadlock in `_maybe_kick_clustering` Gate 1 + a post-voyage 1024-vs-`vector(1536)` dimension mismatch in `kg_clustering/embed.py` + a missing HNSW index. Degrades entity-lane / entity-importance quality, not retrieval correctness. Dormant; a dedicated fix (decide entity model → migrate the empty column + rebuild index → break the deadlock).
+## Entity clustering + canonicalization → search (2026-07-07, INVEST build)
+
+KG entity clustering had never functioned (23,760 entities, 0 embedded, 0 clusters) — a bootstrap deadlock in `_maybe_kick_clustering` Gate 1 + a post-voyage 1024-vs-`vector(1536)` dimension mismatch. Now fixed AND wired into search:
+
+- **Dimension**: `rag.kg_entities.embedding vector(1024)` (voyage-4-large; migration kg_036/kg_037). `kg_clustering/{embed,cluster,resolve}` + the gate use it.
+- **Deadlock**: Gate 1 counts `canonical_id IS NULL AND embedding IS NULL` (new/un-embedded work) — breaks the deadlock without re-firing forever on permanent singletons.
+- **Cross-spelling recall (on, no search change)**: `merge_near_duplicates` now preserves each merged loser's surface form (+ its own aliases) on the survivor in `kg_entity_aliases`. The entity-recall lane already matches names AND aliases, so a query for any merged spelling (e.g. `HTN` → `hypertension`) resolves to the survivor and its chunks.
+- **Cluster expansion (opt-in)**: `search(expand_entity_clusters=…)` / `SearchRequest.expand_entity_clusters` / a `/rag/search` sidebar toggle — also surfaces chunks about a matched entity's KG-cluster siblings (canonical concept expansion). Bounded (`_ENTITY_CLUSTER_EXPANSION_CAP=40`), org-explicit, sibling names never returned. **Default off** — recall-broadening for everyone is an eval call; cross-spelling works regardless.
+- **Backfill**: `aidream/scripts/backfill_entity_clustering.py` (per-org embed→resolve→cluster→name; idempotent).
+
+Adversarially reviewed (2 agents): no cross-tenant leak (per-org clustering + org-explicit sibling filter + Step-2 chunk ACL + names-not-expanded); alias-preservation transaction is abort-safe.
 
 ## Verification friction (this machine)
 
