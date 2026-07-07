@@ -36,6 +36,11 @@ import {
   capturePythonClientError,
   relationPathFromUrl,
 } from "@/lib/diagnostics/capturePythonClientError";
+import {
+  expandCompactEvent,
+  isCompactEvent,
+  type TypedStreamEvent,
+} from "@/types/python-generated/stream-events";
 
 // ---------------------------------------------------------------------------
 // Request ID helper
@@ -391,6 +396,91 @@ export async function postJson<T, B = unknown>(
   } catch (err) {
     failClient(err, "POST", path, url);
   }
+}
+
+/**
+ * POST JSON and consume the canonical matrx-connect NDJSON stream
+ * (`{"event": "<type>", "data": {...}}` lines) as typed events.
+ *
+ * The 2026-07 stream-everything conversion made this the standard response
+ * shape for long-running backend operations (file-analysis refresh,
+ * extraction-run indexing, …). Pre-stream failures (401/403/404/409) stay
+ * plain HTTP and throw a `BackendApiError`; once the stream opens, failures
+ * arrive in-band as `event: "error"` lines that the caller handles.
+ *
+ * Heartbeats interleave every ~5s — callers ignore what they don't handle.
+ * Compact chunk lines (`{"e":"c","t":...}`) are expanded to the standard
+ * envelope so consumers only ever see `TypedStreamEvent`.
+ *
+ *   for await (const evt of postNdjson(path, body, { signal })) {
+ *     if (evt.event !== "data") continue;
+ *     ...switch on evt.data.type
+ *   }
+ */
+export async function* postNdjson<B = unknown>(
+  path: string,
+  body: B,
+  opts: RequestOptions = {},
+): AsyncGenerator<TypedStreamEvent, void, void> {
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "postNdjson",
+    "POST",
+  );
+  let stream: NonNullable<Response["body"]>;
+  try {
+    const { headers } = await buildHeaders(opts, true);
+    const response = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: opts.signal,
+    });
+    if (!response.ok || !response.body) throw await parseHttpError(response);
+    stream = response.body;
+  } catch (err) {
+    failClient(err, "POST", path, url);
+  }
+  const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += value;
+      let nl = buffer.indexOf("\n");
+      while (nl !== -1) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(nl + 1);
+        if (line.length > 0) {
+          const evt = parseNdjsonLine(line);
+          if (evt) yield evt;
+        }
+        nl = buffer.indexOf("\n");
+      }
+    }
+    const tail = buffer.trim();
+    if (tail.length > 0) {
+      const evt = parseNdjsonLine(tail);
+      if (evt) yield evt;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function parseNdjsonLine(line: string): TypedStreamEvent | null {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(line);
+  } catch {
+    return null; // torn or non-JSON line — skip, never crash the stream
+  }
+  if (!raw || typeof raw !== "object") return null;
+  if (isCompactEvent(raw)) return expandCompactEvent(raw);
+  if (!("event" in raw)) return null;
+  return raw as TypedStreamEvent;
 }
 
 /** PATCH JSON. */

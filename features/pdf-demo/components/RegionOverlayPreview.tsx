@@ -292,7 +292,7 @@ export function RegionOverlayPreview({
             />
             <span className="font-medium">{r.kind}</span>
             <span className="text-muted-foreground">
-              · {r.pages.length} page{r.pages.length === 1 ? "" : "s"}
+              · {(r.pages ?? []).length} page{(r.pages ?? []).length === 1 ? "" : "s"}
             </span>
             <span className="text-muted-foreground">· {r.confidence.toFixed(2)}</span>
           </div>

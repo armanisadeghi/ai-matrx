@@ -11,6 +11,14 @@
  * `file_analysis` invalidate-and-refetch through the shared store.
  * INSERT events on `file_analysis_result` append optimistically into the
  * cached value so the FE streams detector results live without polling.
+ *
+ * The user-triggered refresh flow does NOT rely on this channel: since the
+ * 2026-07 stream-everything conversion, `POST /analysis/refresh` streams
+ * per-detector progress and its terminal event carries the full GET-shaped
+ * payload, which the caller writes into this cache via `mutate` (see
+ * AnalysisTab.handleRefresh). Realtime here serves passive viewers and the
+ * upload-hook / lazy-backfill paths. The plain GET remains legitimate for
+ * initial load — it is never a poll target after a refresh.
  */
 
 "use client";

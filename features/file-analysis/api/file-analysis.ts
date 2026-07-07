@@ -47,11 +47,13 @@ import {
   delJson,
   getJson,
   postJson,
+  postNdjson,
   putJson,
   type RequestOptions,
   type ResponseMeta,
 } from "@/lib/python-client";
 import type { components } from "@/types/python-generated/api-types";
+import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 
 // ─── Type re-exports (named locally for callers) ────────────────────────────
 
@@ -61,7 +63,11 @@ export type FileAnalysisResponse = Schemas["FileAnalysisResponse"];
 export type FileAnalysisHead = Schemas["FileAnalysisHead"];
 export type FileAnalysisResultRow = Schemas["FileAnalysisResultRow"];
 export type AnalyzeRefreshBody = Schemas["AnalyzeRefreshBody"];
-export type AnalyzeRefreshResponse = Schemas["AnalyzeRefreshResponse"];
+
+// Typed data events for the analysis-refresh NDJSON stream (2026-07
+// stream-everything conversion; the old 202 AnalyzeRefreshResponse is gone):
+// import FileAnalysisStartedData / FileDetectorCompletedData /
+// FileAnalysisCompleteData from "@/types/python-generated/stream-events".
 
 export type AnnotationOut = Schemas["AnnotationOut"];
 export type AnnotationCreateBody = Schemas["AnnotationCreateBody"];
@@ -86,9 +92,12 @@ export type ActivePageIdsResponse = Schemas["ActivePageIdsResponse"];
 
 export type SearchRequest =
   Schemas["aidream__api__routers__file_search__SearchRequest"];
-export type SearchResponse = Schemas["SearchResponse"];
-export type SearchHitOut =
-  Schemas["aidream__api__routers__file_search__SearchHitOut"];
+
+// In-file search also streams now (`file_search_started` →
+// N × `file_search_page` → `file_search_complete`); the old blocking
+// SearchResponse/SearchHitOut schemas are gone from the OpenAPI spec.
+// Import FileSearchPageData / FileSearchCompleteData / FileSearchHitItem
+// from "@/types/python-generated/stream-events".
 
 export type RegionExtractRequest = Schemas["RegionExtractRequest"];
 export type RegionExtractResponse = Schemas["RegionExtractResponse"];
@@ -124,12 +133,23 @@ export function getAnalysis(
   return getJson<FileAnalysisResponse>(`/files/${fid(fileId)}/analysis`, opts);
 }
 
-export function refreshAnalysis(
+/**
+ * Re-run the detector pipeline. STREAMS per-detector progress (NDJSON):
+ * `file_analysis_started` → N × `file_detector_completed` → terminal
+ * `file_analysis_complete`, whose `head` + `results` are byte-compatible
+ * with the `GET /files/{file_id}/analysis` response — write them straight
+ * into the shared cache, never refetch.
+ *
+ * Caveat: if an analysis for this file is already in flight, the refresh
+ * JOINS it — the stream may go straight to the terminal event with no
+ * per-detector progress.
+ */
+export function refreshAnalysisStream(
   fileId: string,
   body: AnalyzeRefreshBody,
   opts: RequestOptions = {},
-): Result<AnalyzeRefreshResponse> {
-  return postJson<AnalyzeRefreshResponse, AnalyzeRefreshBody>(
+): AsyncGenerator<TypedStreamEvent, void, void> {
+  return postNdjson<AnalyzeRefreshBody>(
     `/files/${fid(fileId)}/analysis/refresh`,
     body,
     opts,
@@ -444,16 +464,17 @@ export function promoteAnnotationToEntity(
 
 // ─── Search / region / render ───────────────────────────────────────────────
 
-export function searchInFile(
+/**
+ * Search inside a file. STREAMS results per page (NDJSON):
+ * `file_search_started` → N × `file_search_page` (hits per scanned page) →
+ * terminal `file_search_complete` with the full hit list + `truncated`.
+ */
+export function searchInFileStream(
   fileId: string,
   body: SearchRequest,
   opts: RequestOptions = {},
-): Result<SearchResponse> {
-  return postJson<SearchResponse, SearchRequest>(
-    `/files/${fid(fileId)}/search`,
-    body,
-    opts,
-  );
+): AsyncGenerator<TypedStreamEvent, void, void> {
+  return postNdjson<SearchRequest>(`/files/${fid(fileId)}/search`, body, opts);
 }
 
 export function extractRegion(

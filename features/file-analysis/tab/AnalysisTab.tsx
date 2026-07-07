@@ -39,11 +39,17 @@ import {
   Table2,
   Tag
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import * as Api from "@/features/file-analysis/api/file-analysis";
+import type {
+  FileAnalysisCompleteData,
+  FileAnalysisStartedData,
+  FileDetectorCompletedData,
+} from "@/types/python-generated/stream-events";
 import { TextContent } from "@/features/file-analysis/content/TextContent";
 import { TablesContent } from "@/features/file-analysis/content/TablesContent";
 import { ImagesContent } from "@/features/file-analysis/content/ImagesContent";
@@ -98,6 +104,10 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
   const annotations = useAnnotations(fileId);
   const [section, setSection] = useState<Section>("overview");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState<{
+    complete: number;
+    total: number;
+  } | null>(null);
 
   const head = analysis.data?.head;
   const results = analysis.data?.results ?? [];
@@ -162,18 +172,65 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
     };
   }, [results, head?.page_count]);
 
+  // Consume the analysis-refresh NDJSON stream: per-detector events drive
+  // the live progress counter; the terminal `file_analysis_complete` carries
+  // the full GET-shaped payload, which goes straight into the shared cache —
+  // no refetch, no polling. If the stream joins an already-running analysis
+  // it may skip straight to the terminal event; that path works identically.
   const handleRefresh = async () => {
     setRefreshing(true);
+    setRefreshProgress(null);
+    let sawTerminal = false;
     try {
-      await Api.refreshAnalysis(fileId, {
+      const stream = Api.refreshAnalysisStream(fileId, {
         force: true,
         only_stale: false,
         detectors: null,
         confidence_tiers: null,
       });
-      setTimeout(() => analysis.refetch(), 800);
+      for await (const evt of stream) {
+        if (evt.event === "error") {
+          toast.error(evt.data.user_message ?? evt.data.message ?? "Analysis refresh failed");
+          break;
+        }
+        if (evt.event !== "data") continue;
+        const d = evt.data;
+        if (!d || typeof d !== "object" || !("type" in d)) continue;
+        // The generated data union includes UntypedDataPayload (indexed),
+        // so literal narrowing alone can't pin the member — assert to the
+        // generated per-event interface after checking the discriminant.
+        if (d.type === "file_analysis_started") {
+          const p = d as FileAnalysisStartedData;
+          setRefreshProgress({ complete: 0, total: p.total_detectors });
+        } else if (d.type === "file_detector_completed") {
+          const p = d as FileDetectorCompletedData;
+          setRefreshProgress({ complete: p.complete, total: p.total });
+        } else if (d.type === "file_analysis_complete") {
+          const p = d as FileAnalysisCompleteData;
+          sawTerminal = true;
+          if (p.head && p.results) {
+            // Server guarantees head/results are byte-compatible with the
+            // GET /files/{id}/analysis response; the stream-event schema
+            // types them loosely, hence the assertion.
+            analysis.mutate({
+              head: p.head as unknown as Api.FileAnalysisHead,
+              results: p.results as unknown as Api.FileAnalysisResultRow[],
+            });
+          } else {
+            analysis.refetch();
+          }
+        }
+      }
+      // Stream closed without a terminal event (fatal mid-stream failure,
+      // disconnect) — converge once via the plain GET so the UI never
+      // shows a half-updated run.
+      if (!sawTerminal) analysis.refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Analysis refresh failed");
+      analysis.refetch();
     } finally {
       setRefreshing(false);
+      setRefreshProgress(null);
     }
   };
 
@@ -184,12 +241,17 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="text-sm font-semibold">Document analysis</h2>
           <StatusBadge status={status} />
-          {(status === "pending" || status === "running") && progressTotal > 0 ? (
+          {refreshing && refreshProgress ? (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {refreshProgress.complete} / {refreshProgress.total} detectors
+            </span>
+          ) : null}
+          {!refreshing && (status === "pending" || status === "running") && progressTotal > 0 ? (
             <span className="text-xs tabular-nums text-muted-foreground">
               {progressComplete} / {progressTotal} detectors
             </span>
           ) : null}
-          {(status === "pending" || status === "running") && progressTotal === 0 ? (
+          {!refreshing && (status === "pending" || status === "running") && progressTotal === 0 ? (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> starting backfill
             </span>

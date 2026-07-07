@@ -1,5 +1,7 @@
 /**
- * Right-rail Search panel — POST /files/{id}/search → list of hits.
+ * Right-rail Search panel — POST /files/{id}/search (NDJSON stream) → hits
+ * appear live per scanned page; the terminal `file_search_complete` event
+ * replaces the accumulated list with the canonical full set.
  */
 
 "use client";
@@ -12,8 +14,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type {
-  SearchHitOut,
-} from "@/features/file-analysis/api/file-analysis";
+  FileSearchCompleteData,
+  FileSearchHitItem,
+  FileSearchPageData,
+} from "@/types/python-generated/stream-events";
 
 interface Props {
   fileId: string;
@@ -26,23 +30,42 @@ export function SearchPanel({ fileId, onJumpToPage }: Props) {
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hits, setHits] = useState<SearchHitOut[]>([]);
+  const [hits, setHits] = useState<FileSearchHitItem[]>([]);
   const [truncated, setTruncated] = useState(false);
 
   async function run() {
     if (!query.trim()) return;
     setLoading(true);
     setError(null);
+    setHits([]);
+    setTruncated(false);
     try {
-      const { data } = await Api.searchInFile(fileId, {
+      const stream = Api.searchInFileStream(fileId, {
         query,
         regex,
         case_sensitive: caseSensitive,
         max_hits: 200,
         include_excluded_pages: false,
       });
-      setHits(data.hits);
-      setTruncated(data.truncated);
+      for await (const evt of stream) {
+        if (evt.event === "error") {
+          setError(evt.data.user_message ?? evt.data.message ?? "Search failed");
+          break;
+        }
+        if (evt.event !== "data") continue;
+        const d = evt.data;
+        if (!d || typeof d !== "object" || !("type" in d)) continue;
+        if (d.type === "file_search_page") {
+          const p = d as FileSearchPageData;
+          const pageHits = p.hits ?? [];
+          if (pageHits.length > 0) setHits((prev) => [...prev, ...pageHits]);
+        } else if (d.type === "file_search_complete") {
+          // Canonical full set — replaces the per-page accumulation.
+          const p = d as FileSearchCompleteData;
+          setHits(p.hits ?? []);
+          setTruncated(p.truncated ?? false);
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setHits([]);

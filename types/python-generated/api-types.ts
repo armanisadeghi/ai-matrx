@@ -1873,10 +1873,11 @@ export interface paths {
          * Detect Repeated Regions Endpoint
          * @description Find headers / footers / watermarks / repeated margins.
          *
-         *     The returned report is deterministic for a given PDF + parameters. A
-         *     follow-up call to ``/pdf/strip-repeated-regions`` with a subset of the
-         *     returned ``region_id`` values removes the chosen regions from per-page
-         *     text — useful as a RAG ingestion pre-pass.
+         *     Streams per-page scan progress (``pdf_repeated_regions_progress``) and a
+         *     terminal ``pdf_repeated_regions_complete`` carrying the deterministic
+         *     report. A follow-up call to ``/pdf/strip-repeated-regions`` with a subset
+         *     of the returned ``region_id`` values removes the chosen regions from
+         *     per-page text — useful as a RAG ingestion pre-pass.
          */
         post: operations["detect_repeated_regions_endpoint_utilities_pdf_detect_repeated_regions_post"];
         delete?: never;
@@ -1898,8 +1899,11 @@ export interface paths {
          * Strip Repeated Regions Endpoint
          * @description Detect + strip repeated regions from per-page text in one call.
          *
-         *     Returns the post-strip per-page text alongside the original detector
-         *     report so the caller can audit what was removed.
+         *     Streams per-page progress through the detect and text-extraction stages
+         *     (``pdf_repeated_regions_progress``) and a terminal
+         *     ``pdf_repeated_regions_strip_complete`` carrying the post-strip per-page
+         *     text alongside the original detector report so the caller can audit what
+         *     was removed.
          */
         post: operations["strip_repeated_regions_endpoint_utilities_pdf_strip_repeated_regions_post"];
         delete?: never;
@@ -1919,7 +1923,9 @@ export interface paths {
         put?: never;
         /**
          * Classify Pages Endpoint
-         * @description Assign a ``PageClass`` label (cover / TOC / body / exhibit / billing / ...) to every page.
+         * @description Assign a ``PageClass`` label (cover / TOC / body / exhibit / billing / ...)
+         *     to every page. Streams one ``pdf_page_classified`` per page and a terminal
+         *     ``pdf_classify_complete`` carrying the full report.
          */
         post: operations["classify_pages_endpoint_utilities_pdf_classify_pages_post"];
         delete?: never;
@@ -1939,7 +1945,9 @@ export interface paths {
         put?: never;
         /**
          * Extract Reading Order Endpoint
-         * @description Per-page reading-order blocks with multi-column clustering.
+         * @description Per-page reading-order blocks with multi-column clustering. Streams one
+         *     ``pdf_reading_order_page`` per page and a terminal
+         *     ``pdf_reading_order_complete`` carrying the full block lists.
          */
         post: operations["extract_reading_order_endpoint_utilities_pdf_extract_reading_order_post"];
         delete?: never;
@@ -2139,9 +2147,11 @@ export interface paths {
          * @description Detect every table on every page via PyMuPDF's native
          *     ``page.find_tables()``. No Java / tabula dependency.
          *
-         *     Returns a structured ``PdfTablesReport`` with per-table bbox, header,
-         *     rows, and a markdown rendering so the FE can display tables inline
-         *     without re-fetching a file artifact.
+         *     Streams one ``pdf_tables_page`` per scanned page, one
+         *     ``pdf_table_extracted`` per detected table, and a terminal
+         *     ``pdf_tables_complete`` carrying the full structured ``PdfTablesReport``
+         *     content (per-table bbox, header, rows, markdown) so the FE can display
+         *     tables inline without re-fetching a file artifact.
          */
         post: operations["extract_tables_utilities_pdf_extract_tables_post"];
         delete?: never;
@@ -5957,8 +5967,14 @@ export interface paths {
         /**
          * Index Run Into Rag
          * @description Materialize a completed extraction run's results into RAG as
-         *     agent-derivative chunks. Idempotent (safe to call multiple times —
-         *     reuses the derivative row and rewrites the chunks).
+         *     agent-derivative chunks, STREAMING chunk/embed progress live
+         *     (stream-everything mandate — this replaced the old blocking JSON shape).
+         *     Idempotent (safe to call multiple times — reuses the derivative row and
+         *     rewrites the chunks).
+         *
+         *     Events: ``extraction_index_progress`` (stages ``loaded`` → ``chunked`` →
+         *     ``embedding`` per batch → ``writing``) then a terminal
+         *     ``extraction_index_complete`` carrying the legacy response body's fields.
          *
          *     This is the manual counterpart to the auto-hook in ``_finalize_run``.
          *     Use it to:
@@ -6879,7 +6895,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rag Search Endpoint */
+        /**
+         * Rag Search Endpoint
+         * @description Streaming search (stream-everything mandate, 2026-07-06). Identical
+         *     behavior to ``POST /search/stream`` — that route stays as an alias; this
+         *     is the canonical path. Emits ``rag.citation`` events per hit as retrieval
+         *     fuses, then one consolidated ``RagSearchResult``.
+         */
         post: operations["rag_search_endpoint_rag_search_post"];
         delete?: never;
         options?: never;
@@ -6948,7 +6970,22 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rag Ingest Endpoint */
+        /**
+         * Rag Ingest Endpoint
+         * @description Streaming ingest (stream-everything mandate, 2026-07-06). Identical
+         *     behavior to ``POST /ingest/stream`` — that route stays as an alias; this
+         *     is the canonical path. The FE "Process for RAG" button hits this endpoint;
+         *     it now watches fetch → extract → cleanup → chunk → embed → NER live and
+         *     reads the terminal ``RagIngestResult`` event as the old response body.
+         *
+         *     Everything the blocking variant guaranteed still holds inside
+         *     ``_run_ingest_stream``: the universal auto-ingest funnel (effective-org
+         *     resolution, budget shield, model-visibility gates, post-ingest suggestion
+         *     pass; actor="manual" bypasses enable toggles, never budget/visibility) and
+         *     the cld_file anti-duplication lock (open → run holds a 'processing' row so
+         *     a concurrent sweeper claim loses the CAS — kg_032; a live run streams a
+         *     ``run_in_progress`` result, never a second ingest).
+         */
         post: operations["rag_ingest_endpoint_rag_ingest_post"];
         delete?: never;
         options?: never;
@@ -6967,13 +7004,13 @@ export interface paths {
         put?: never;
         /**
          * Rag Ingest Conversation
-         * @description Ingest a conversation into the knowledge graph by conversation id.
+         * @description Streaming conversation ingest (stream-everything mandate, 2026-07-06).
          *
          *     Thin wrapper around ``POST /rag/ingest`` so callers can ingest a whole
          *     conversation without knowing the ``source_kind='cx_message'`` plumbing.
          *     The resolver is fail-closed on ownership: a conversation the caller
-         *     does not own resolves to nothing and returns a clean "source_not_found"
-         *     response rather than an error or a cross-tenant leak.
+         *     does not own resolves to nothing and streams a clean "source_not_found"
+         *     result rather than an error or a cross-tenant leak.
          *
          *     The effective org is resolved (personal-org fallback) before the ingest
          *     call so the written kg_chunks are always org-scoped (non-NULL invariant).
@@ -8464,23 +8501,20 @@ export interface paths {
         put?: never;
         /**
          * Test Single Node
-         * @description Run ONE node in isolation against user-supplied inputs.
+         * @description Run ONE node in isolation against user-supplied inputs — STREAMING.
          *
          *     No run row, no checkpoint, no scheduler — just resolve the executor
          *     from the registry and call its ``execute()`` once with the supplied
-         *     inputs and the node's saved (or overridden) config. Returns the
-         *     typed output, the duration, and any error.
+         *     inputs and the node's saved (or overridden) config.
          *
-         *     Useful for:
-         *       - Trying a different prompt / model / temperature without editing
-         *         and saving the whole workflow.
-         *       - Debugging a failing node by iterating on inputs.
-         *       - Smoke-testing a brand-new node config before wiring it into the
-         *         full graph.
+         *     The node executes with the live request emitter installed, so an
+         *     agent/LLM node's tokens (``chunk``), reasoning, phases, and tool
+         *     events flow straight to the client in real time. The stream ends
+         *     with ONE terminal ``data`` event, ``workflow_node_test_result``,
+         *     carrying exactly what the old blocking JSON response carried
+         *     (success / duration_ms / output / error_type / error_message).
          *
-         *     Never writes to wf_run / wf_checkpoint / wf_node_outcome. The
-         *     invocation IS logged to ``wf_node_events`` with run_id set to the
-         *     test marker so you can grep the audit trail if needed.
+         *     Never writes to wf_run / wf_checkpoint / wf_node_outcome.
          */
         post: operations["test_single_node_workflows__definition_id__nodes__node_id__test_post"];
         delete?: never;
@@ -10835,14 +10869,18 @@ export interface paths {
         put?: never;
         /**
          * Ingest File For Rag
-         * @description On-demand RAG ingest for a file.
+         * @description Streaming on-demand RAG ingest for a file (stream-everything mandate,
+         *     2026-07-06 — identical behavior to ``/ingest/stream``, which stays as an
+         *     alias; this is the canonical path).
          *
          *     Runs through ``auto_ingest`` (budget + visibility + the 8-agent
          *     scope-suggestion orchestrator) via the ``cld_file_rag_jobs`` lifecycle:
          *     it ADOPTS any deferred auto-RAG job (so the file is never double-run) and
          *     409s if a run is already in progress. Already-ingested + not ``force`` →
          *     409 ``rag_already_complete`` (use ``/refresh`` to re-run). Requires write
-         *     access — a read-only grantee must not kick off paid derived work.
+         *     access — a read-only grantee must not kick off paid derived work. The
+         *     guards fire as normal HTTP 409s BEFORE the stream opens; the terminal
+         *     ``RagIngestResult`` event carries what the old JSON response did.
          */
         post: operations["ingest_file_for_rag_files__file_id__ingest_post"];
         delete?: never;
@@ -11072,7 +11110,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Process Image */
+        /**
+         * Process Image
+         * @description Render + stage every requested variant — streamed.
+         *
+         *     Streams ``image_op_stage`` prep events, one ``image_studio_variant``
+         *     event per variant as it finishes rendering + staging (or fails), then a
+         *     terminal ``image_studio_process_complete`` whose ``result`` is the same
+         *     ProcessResponse body the legacy blocking response returned.
+         */
         post: operations["process_image_images_studio_process_post"];
         delete?: never;
         options?: never;
@@ -11089,7 +11135,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Commit Job */
+        /**
+         * Commit Job
+         * @description Commit staged variants to permanent cld_files rows — streamed.
+         *
+         *     Streams one ``image_studio_commit_item`` event per committed (or failed)
+         *     variant/source, then a terminal ``image_studio_commit_complete`` whose
+         *     ``result`` is the legacy CommitResponse body minus the server-only
+         *     ``storage_uri`` fields.
+         */
         post: operations["commit_job_images_studio_commit_post"];
         delete?: never;
         options?: never;
@@ -11150,12 +11204,14 @@ export interface paths {
         put?: never;
         /**
          * Detect Document
-         * @description Detect the outer boundary of a photographed document.
+         * @description Detect the outer boundary of a photographed document — streamed.
          *
-         *     Pure-data endpoint — nothing is persisted. Returns an ordered quad
-         *     (TL/TR/BR/BL) in post-EXIF-transpose pixel coordinates plus a 0..1
-         *     confidence. ``found=false`` (quad null) means no plausible document
-         *     boundary — the FE defaults to a full-frame quad.
+         *     Pure-data operation — nothing is persisted. Streams ``image_op_stage``
+         *     events (loading_source → detecting) then a terminal
+         *     ``image_document_detected`` event with an ordered quad (TL/TR/BR/BL) in
+         *     post-EXIF-transpose pixel coordinates plus a 0..1 confidence.
+         *     ``found=false`` (corners null) means no plausible document boundary —
+         *     the FE defaults to a full-frame quad.
          */
         post: operations["detect_document_images_detect_document_post"];
         delete?: never;
@@ -11175,11 +11231,14 @@ export interface paths {
         put?: never;
         /**
          * Edit Image
-         * @description Run any registered image op against a cloud file.
+         * @description Run any registered image op against a cloud file — streamed.
          *
-         *     Produces a NEW cld_files row tagged with derivation metadata. The
-         *     source row is never modified. Optional ``mask_id`` restricts the
-         *     op's effect to the masked region (where supported).
+         *     Streams ``image_op_stage`` events (loading_source → running_op →
+         *     persisting → rendering_variants) then a terminal ``image_edit_complete``
+         *     event whose ``asset`` is the same Asset envelope the legacy blocking
+         *     response returned. Produces a NEW cld_files row tagged with derivation
+         *     metadata; the source row is never modified. Optional ``mask_id``
+         *     restricts the op's effect to the masked region (where supported).
          */
         post: operations["edit_image_images_edit_post"];
         delete?: never;
@@ -11199,7 +11258,7 @@ export interface paths {
         put?: never;
         /**
          * Bg Remove
-         * @description Foreground extraction via rembg.
+         * @description Foreground extraction via rembg — streamed (see /images/edit).
          *
          *     When ``mask_id`` is supplied, the mask is OR'd into the rembg alpha
          *     output — pixels marked in the mask stay opaque even if rembg would
@@ -11223,7 +11282,8 @@ export interface paths {
         put?: never;
         /**
          * Inpaint
-         * @description Content-aware fill within the mask region (OpenCV Telea / NS).
+         * @description Content-aware fill within the mask region (OpenCV Telea / NS) —
+         *     streamed (see /images/edit).
          *
          *     For Wave 2 this endpoint will accept the same wire shape but route
          *     diffusion-based inpainting to a GPU microservice when ``method`` is
@@ -11621,6 +11681,9 @@ export interface paths {
         /**
          * Regenerate Asset
          * @description Re-render one image/video in place with a chosen model (or custom prompt).
+         *
+         *     Streams: podcast_asset_gen_started → provider progress → record_update /
+         *     resource_changed → podcast_asset_result (terminal, carries the asset row).
          */
         post: operations["regenerate_asset_podcast_runs__run_id__assets_regenerate_post"];
         delete?: never;
@@ -11642,6 +11705,8 @@ export interface paths {
          * Add Asset
          * @description Add a brand-new asset from the user's own description (also how you go
          *     beyond the default 5 images / 2 videos).
+         *
+         *     Streams the same event sequence as /assets/regenerate.
          */
         post: operations["add_asset_podcast_runs__run_id__assets_add_post"];
         delete?: never;
@@ -13115,7 +13180,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Refresh Analysis */
+        /**
+         * Refresh Analysis
+         * @description Re-run the detector pipeline and STREAM per-detector progress live
+         *     (stream-everything mandate — this replaced the old 202 + FE-poll shape).
+         *
+         *     Events: ``file_analysis_started`` → N × ``file_detector_completed`` →
+         *     terminal ``file_analysis_complete`` (same head+results payload as
+         *     ``GET /files/{file_id}/analysis``, so the client never re-fetches).
+         */
         post: operations["refresh_analysis_files__file_id__analysis_refresh_post"];
         delete?: never;
         options?: never;
@@ -15033,16 +15106,6 @@ export interface components {
              */
             only_stale: boolean;
         };
-        /** AnalyzeRefreshResponse */
-        AnalyzeRefreshResponse: {
-            /** File Id */
-            file_id: string;
-            /**
-             * Status
-             * @constant
-             */
-            status: "accepted";
-        };
         /** AnalyzeRequest */
         AnalyzeRequest: {
             /**
@@ -15517,7 +15580,7 @@ export interface components {
              * Position
              * @description Echoed when fit='cover'. None for contain/inside.
              */
-            position?: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["matrx_utils__file_handling__asset_envelope__FocalPoint"] | null;
+            position?: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"] | null;
             /**
              * Notes
              * @description Soft warnings (e.g. 'anchor entropy unsupported, used center', 'exif-transpose failed'). Empty when nothing notable.
@@ -17547,13 +17610,6 @@ export interface components {
              */
             choice: "A" | "B";
         };
-        /** CommitFailure */
-        CommitFailure: {
-            /** Preset Id */
-            preset_id: string;
-            /** Error */
-            error: string;
-        };
         /** CommitRequest */
         CommitRequest: {
             /** Job Id */
@@ -17588,48 +17644,6 @@ export interface components {
             source_filename?: string | null;
             /** Base Filename */
             base_filename?: string | null;
-        };
-        /** CommitResponse */
-        CommitResponse: {
-            /** Folder Path */
-            folder_path: string;
-            /** Saved */
-            saved: components["schemas"]["CommittedVariant"][];
-            /** Failed */
-            failed: components["schemas"]["CommitFailure"][];
-            source?: components["schemas"]["CommittedSource"] | null;
-        };
-        /** CommittedSource */
-        CommittedSource: {
-            /** File Id */
-            file_id: string;
-            /** Filename */
-            filename: string;
-            /** File Path */
-            file_path: string;
-            /** Storage Uri */
-            storage_uri: string;
-            /** Size */
-            size: number;
-            /** Public Url */
-            public_url?: string | null;
-        };
-        /** CommittedVariant */
-        CommittedVariant: {
-            /** Preset Id */
-            preset_id: string;
-            /** File Id */
-            file_id: string;
-            /** Filename */
-            filename: string;
-            /** File Path */
-            file_path: string;
-            /** Storage Uri */
-            storage_uri: string;
-            /** Size */
-            size: number;
-            /** Public Url */
-            public_url?: string | null;
         };
         /** CompactTurnsRequest */
         CompactTurnsRequest: {
@@ -19057,18 +19071,6 @@ export interface components {
              */
             mode: "standard" | "relaxed";
         };
-        /** DetectDocumentResponse */
-        DetectDocumentResponse: {
-            /** Found */
-            found: boolean;
-            quad: components["schemas"]["DocumentQuad"] | null;
-            /** Confidence */
-            confidence: number;
-            /** Image Width */
-            image_width: number;
-            /** Image Height */
-            image_height: number;
-        };
         /** DetectRepeatedRegionsRequest */
         DetectRepeatedRegionsRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -19548,34 +19550,6 @@ export interface components {
             found: boolean;
             /** Name */
             name?: string | null;
-        };
-        /**
-         * DocumentQuad
-         * @description Ordered document corners in post-EXIF-transpose pixel coordinates —
-         *     the orientation a browser displays, and the exact space the
-         *     ``perspective_crop`` op consumes.
-         */
-        DocumentQuad: {
-            /** Top Left */
-            top_left: [
-                number,
-                number
-            ];
-            /** Top Right */
-            top_right: [
-                number,
-                number
-            ];
-            /** Bottom Right */
-            bottom_right: [
-                number,
-                number
-            ];
-            /** Bottom Left */
-            bottom_left: [
-                number,
-                number
-            ];
         };
         /** DocumentRecord */
         DocumentRecord: {
@@ -20892,51 +20866,6 @@ export interface components {
              */
             run_enrich: boolean;
         };
-        /** FileIngestResponse */
-        FileIngestResponse: {
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** Field Id */
-            field_id?: string | null;
-            /**
-             * Chunks Written
-             * @default 0
-             */
-            chunks_written: number;
-            /**
-             * Chunks Reused
-             * @default 0
-             */
-            chunks_reused: number;
-            /**
-             * Embeddings Written
-             * @default 0
-             */
-            embeddings_written: number;
-            /**
-             * Skipped Unchanged
-             * @default false
-             */
-            skipped_unchanged: boolean;
-            /**
-             * Embedding Model
-             * @default
-             */
-            embedding_model: string;
-            /** Skipped Reason */
-            skipped_reason?: string | null;
-            /**
-             * Suggestions Created
-             * @default 0
-             */
-            suggestions_created: number;
-            /** Error */
-            error?: string | null;
-            /** Job Id */
-            job_id?: string | null;
-        };
         /** FileLineageSummary */
         FileLineageSummary: {
             /** Parent File Id */
@@ -21393,7 +21322,7 @@ export interface components {
          *     top-left of the source. Used with fit='cover' to crop around a
          *     user-chosen point of interest rather than a named anchor.
          */
-        "FocalPoint-Input": {
+        FocalPoint: {
             /**
              * X
              * @description 0=left, 1=right
@@ -22121,32 +22050,6 @@ export interface components {
             }[];
             /** Roots */
             roots?: string[];
-        };
-        /** IngestResponse */
-        IngestResponse: {
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** Field Id */
-            field_id: string | null;
-            /** Chunks Written */
-            chunks_written: number;
-            /**
-             * Chunks Reused
-             * @default 0
-             */
-            chunks_reused: number;
-            /** Embeddings Written */
-            embeddings_written: number;
-            /** Skipped Unchanged */
-            skipped_unchanged: boolean;
-            /** Embedding Model */
-            embedding_model: string;
-            /** Skipped Reason */
-            skipped_reason?: string | null;
-            /** Error */
-            error?: string | null;
         };
         /**
          * InitialIterationRequest
@@ -22944,18 +22847,6 @@ export interface components {
              */
             debug: boolean;
         };
-        /** LayoutClassificationReport */
-        LayoutClassificationReport: {
-            /** Page Count */
-            page_count: number;
-            /** Pages */
-            pages: components["schemas"]["PageClassification"][];
-            /**
-             * Classifier Version
-             * @default v1
-             */
-            classifier_version: string;
-        };
         /** LegalSearchRequest */
         LegalSearchRequest: {
             /** Query */
@@ -23384,17 +23275,6 @@ export interface components {
              * @default []
              */
             processing_descendants: components["schemas"]["LineageNode"][];
-        };
-        /** LinkedEntityOut */
-        LinkedEntityOut: {
-            /** Entity Id */
-            entity_id: string;
-            /** Name */
-            name: string;
-            /** Kind */
-            kind: string;
-            /** Weight */
-            weight: number;
         };
         /** ListConversationsResponse */
         ListConversationsResponse: {
@@ -24575,20 +24455,6 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
-        /** PageClassification */
-        PageClassification: {
-            /** Page Number */
-            page_number: number;
-            /**
-             * Page Class
-             * @enum {string}
-             */
-            page_class: "blank" | "cover" | "toc" | "body" | "exhibit" | "billing" | "signature" | "appendix" | "footer-only" | "image-only" | "unknown";
-            /** Confidence */
-            confidence: number;
-            /** Indicators */
-            indicators?: string[];
-        };
         /** PageDetail */
         PageDetail: {
             /** Page Index */
@@ -24719,27 +24585,6 @@ export interface components {
             x1: number;
             /** Y1 */
             y1: number;
-        };
-        /**
-         * PdfExtractedTable
-         * @description One table detected on one page.
-         */
-        PdfExtractedTable: {
-            /** Page Number */
-            page_number: number;
-            /** Table Index */
-            table_index: number;
-            bbox: components["schemas"]["PdfTableBbox"];
-            /** Row Count */
-            row_count: number;
-            /** Column Count */
-            column_count: number;
-            /** Header */
-            header: (string | null)[];
-            /** Rows */
-            rows: (string | null)[][];
-            /** Markdown */
-            markdown: string;
         };
         /** PdfFromImagesItem */
         PdfFromImagesItem: {
@@ -25026,40 +24871,6 @@ export interface components {
             spec?: string | null;
             /** Tags */
             tags?: string[];
-        };
-        /**
-         * PdfTableBbox
-         * @description Bbox of a detected table on the page (PDF coordinates).
-         */
-        PdfTableBbox: {
-            /** X0 */
-            x0: number;
-            /** Y0 */
-            y0: number;
-            /** X1 */
-            x1: number;
-            /** Y1 */
-            y1: number;
-        };
-        /**
-         * PdfTablesReport
-         * @description Wire shape for ``POST /utilities/pdf/extract-tables``.
-         */
-        PdfTablesReport: {
-            /** Page Count */
-            page_count: number;
-            /** Tables */
-            tables: components["schemas"]["PdfExtractedTable"][];
-            /**
-             * Detector
-             * @default pymupdf.find_tables
-             */
-            detector: string;
-            /**
-             * Detector Version
-             * @default v1
-             */
-            detector_version: string;
         };
         /** PendingBatchListResponse */
         PendingBatchListResponse: {
@@ -25610,7 +25421,7 @@ export interface components {
              * @description Used when fit='cover'. Pass a named anchor string or {x, y} focal point. 'entropy' / 'attention' are smart-crop modes (energy-based, face-based).
              * @default center
              */
-            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint-Input"];
+            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["FocalPoint"];
             /**
              * Background Color
              * @description Hex color (#rgb / #rrggbb / #rrggbbaa). Used to flatten alpha on jpeg/avif outputs and to pad letterbox when fit='contain' / 'inside'.
@@ -25697,14 +25508,6 @@ export interface components {
              * @default false
              */
             debug: boolean;
-        };
-        /** ProcessResponse */
-        ProcessResponse: {
-            /** Job Id */
-            job_id: string;
-            source: components["schemas"]["StudioSourceOut"];
-            /** Variants */
-            variants: components["schemas"]["StudioVariantOut"][];
         };
         /**
          * ProjectionResponse
@@ -25829,26 +25632,6 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
-        /** PublishResult */
-        PublishResult: {
-            /**
-             * Status
-             * @description unchanged | published | updated | cleared | empty
-             */
-            status: string;
-            /** Level */
-            level: string;
-            /** Owner Id */
-            owner_id: string | null;
-            /** External Id */
-            external_id: string | null;
-            /** Version Id */
-            version_id: string | null;
-            /** Rule Count */
-            rule_count: number;
-            /** Rules Hash */
-            rules_hash: string | null;
-        };
         /** QuickScrapeRequest */
         QuickScrapeRequest: {
             /**
@@ -25928,39 +25711,6 @@ export interface components {
              * @default false
              */
             stream: boolean;
-        };
-        /** ReadingOrderBlock */
-        ReadingOrderBlock: {
-            /** Block Index */
-            block_index: number;
-            /** Column Index */
-            column_index: number;
-            /** X0 */
-            x0: number;
-            /** Y0 */
-            y0: number;
-            /** X1 */
-            x1: number;
-            /** Y1 */
-            y1: number;
-            /** Text */
-            text: string;
-        };
-        /** ReadingOrderPage */
-        ReadingOrderPage: {
-            /** Page Number */
-            page_number: number;
-            /** Column Count */
-            column_count: number;
-            /** Blocks In Order */
-            blocks_in_order: components["schemas"]["ReadingOrderBlock"][];
-        };
-        /** ReadingOrderReport */
-        ReadingOrderReport: {
-            /** Page Count */
-            page_count: number;
-            /** Pages */
-            pages: components["schemas"]["ReadingOrderPage"][];
         };
         /**
          * RealtimeTool
@@ -26635,62 +26385,6 @@ export interface components {
             /** New Order */
             new_order: number[];
         };
-        /**
-         * RepeatedRegion
-         * @description A pattern detected across multiple pages.
-         *
-         *     Stable across detector runs given the same input — the *region_id* is
-         *     deterministic from the (kind, y_band, x_band, normalized_text_template)
-         *     quadruple so consumers can reference a region by id when applying
-         *     accept/reject decisions.
-         */
-        RepeatedRegion: {
-            /** Region Id */
-            region_id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "header" | "footer" | "watermark" | "side-margin" | "logo" | "page-number" | "running-title" | "unknown";
-            /** Text Template */
-            text_template: string;
-            /** Pages */
-            pages: number[];
-            /** Bbox Per Page */
-            bbox_per_page: components["schemas"]["RepeatedRegionBbox"][];
-            /** Confidence */
-            confidence: number;
-        };
-        /**
-         * RepeatedRegionBbox
-         * @description One occurrence of a repeated region on a single page.
-         */
-        RepeatedRegionBbox: {
-            /** Page Number */
-            page_number: number;
-            /** X0 */
-            x0: number;
-            /** Y0 */
-            y0: number;
-            /** X1 */
-            x1: number;
-            /** Y1 */
-            y1: number;
-            /** Raw Text */
-            raw_text: string;
-        };
-        /** RepeatedRegionsReport */
-        RepeatedRegionsReport: {
-            /** Page Count */
-            page_count: number;
-            /** Regions */
-            regions: components["schemas"]["RepeatedRegion"][];
-            /**
-             * Detector Version
-             * @default v1
-             */
-            detector_version: string;
-        };
         /** ReplaceRequest */
         ReplaceRequest: {
             selector: components["schemas"]["MessageSelector"];
@@ -27201,31 +26895,6 @@ export interface components {
             data: {
                 [key: string]: unknown;
             };
-        };
-        /** RunAsset */
-        RunAsset: {
-            /**
-             * Asset Kind
-             * @enum {string}
-             */
-            asset_kind: "image" | "video";
-            /** Slot */
-            slot: number;
-            /** Status */
-            status: string;
-            /** Url */
-            url?: string | null;
-            /** File Id */
-            file_id?: string | null;
-            /** Prompt */
-            prompt?: string | null;
-            /** Model Alias */
-            model_alias?: string | null;
-            /**
-             * Is Manual
-             * @default false
-             */
-            is_manual: boolean;
         };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
@@ -28039,45 +27708,6 @@ export interface components {
              */
             search_type: string;
         };
-        /** SearchBboxOut */
-        SearchBboxOut: {
-            /** X0 */
-            x0: number;
-            /** Y0 */
-            y0: number;
-            /** X1 */
-            x1: number;
-            /** Y1 */
-            y1: number;
-        };
-        /** SearchEntityOut */
-        SearchEntityOut: {
-            /** Entity Id */
-            entity_id: string;
-            /** Name */
-            name: string;
-            /** Kind */
-            kind: string;
-            /** Mention Count */
-            mention_count: number;
-            /** Artifact Count */
-            artifact_count: number;
-            /** Source Kind Counts */
-            source_kind_counts: {
-                [key: string]: number;
-            };
-            /** Top Chunk Id */
-            top_chunk_id?: string | null;
-            /** Importance */
-            importance?: number | null;
-            /**
-             * Is Concept
-             * @default false
-             */
-            is_concept: boolean;
-            /** Linked */
-            linked?: components["schemas"]["LinkedEntityOut"][];
-        };
         /** SearchExamplesResponse */
         SearchExamplesResponse: {
             /** Query */
@@ -28132,45 +27762,6 @@ export interface components {
              * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
              */
             scope_ids?: string[] | null;
-        };
-        /** SearchResponse */
-        SearchResponse: {
-            /** File Id */
-            file_id: string;
-            /** Query */
-            query: string;
-            /** Regex */
-            regex: boolean;
-            /** Case Sensitive */
-            case_sensitive: boolean;
-            /** Hits */
-            hits: components["schemas"]["aidream__api__routers__file_search__SearchHitOut"][];
-            /** Truncated */
-            truncated: boolean;
-        };
-        /** SearchResponseOut */
-        SearchResponseOut: {
-            /** Query */
-            query: string;
-            /** Hits */
-            hits: components["schemas"]["aidream__api__routers__rag__SearchHitOut"][];
-            /** Total Candidates */
-            total_candidates: number;
-            /** Embedding Model */
-            embedding_model: string;
-            /** Reranker Model */
-            reranker_model: string | null;
-            /** Latency Ms */
-            latency_ms: number;
-            /** Entity Map */
-            entity_map?: components["schemas"]["SearchEntityOut"][];
-            /** Matched Entities */
-            matched_entities?: string[];
-            /**
-             * Rerank Status
-             * @default off
-             */
-            rerank_status: string;
         };
         /** SearchSourceRef */
         SearchSourceRef: {
@@ -29009,17 +28600,6 @@ export interface components {
             min_confidence: number;
         };
         /**
-         * StripRepeatedRegionsResultSchema
-         * @description Wire shape for ``POST /utilities/pdf/strip-repeated-regions``.
-         */
-        StripRepeatedRegionsResultSchema: {
-            /** Pages Text */
-            pages_text: string[];
-            regions: components["schemas"]["RepeatedRegionsReport"];
-            /** Stripped Region Ids */
-            stripped_region_ids: string[];
-        };
-        /**
          * StuckRow
          * @description One currently-stuck row in a watched table.
          *
@@ -29067,62 +28647,6 @@ export interface components {
             operation?: ("render_page" | "render_all" | "render_thumbnail") | null;
             params?: components["schemas"]["JsonValue"] | null;
             overrides?: components["schemas"]["JsonValue"] | null;
-        };
-        /** StudioSourceOut */
-        StudioSourceOut: {
-            /** Width */
-            width: number;
-            /** Height */
-            height: number;
-            /** Size */
-            size: number;
-            /** Format */
-            format: string;
-            /** Signed Url */
-            signed_url?: string | null;
-            /** Expires In */
-            expires_in?: number | null;
-            /** File Id */
-            file_id?: string | null;
-            /** Staged */
-            staged: boolean;
-        };
-        /** StudioVariantOut */
-        StudioVariantOut: {
-            /** Preset Id */
-            preset_id: string;
-            /** Filename */
-            filename: string;
-            /**
-             * Format
-             * @enum {string}
-             */
-            format: "jpeg" | "png" | "webp" | "avif";
-            /** Width */
-            width: number;
-            /** Height */
-            height: number;
-            /** Quality */
-            quality: number | null;
-            /** Size */
-            size: number;
-            /** Signed Url */
-            signed_url: string;
-            /** Expires In */
-            expires_in: number;
-            /** Compression Ratio */
-            compression_ratio: number | null;
-            /**
-             * Fit
-             * @enum {string}
-             */
-            fit: "cover" | "contain" | "inside";
-            /** Position */
-            position: ("center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right" | "entropy" | "attention") | components["schemas"]["aidream__api__routers__image_studio__FocalPoint"] | null;
-            /** Notes */
-            notes?: string[];
-            /** Error */
-            error?: string | null;
         };
         /**
          * SubOpError
@@ -29768,27 +29292,6 @@ export interface components {
             config_override?: {
                 [key: string]: unknown;
             } | null;
-        };
-        /** TestNodeResponse */
-        TestNodeResponse: {
-            /** Success */
-            success: boolean;
-            /** Duration Ms */
-            duration_ms: number;
-            /** Node Id */
-            node_id: string;
-            /** Spec Type */
-            spec_type: string;
-            /** Output */
-            output?: {
-                [key: string]: unknown;
-            } | null;
-            /** Error Type */
-            error_type?: string | null;
-            /** Error Message */
-            error_message?: string | null;
-        } & {
-            [key: string]: unknown;
         };
         /** ToolDetail */
         ToolDetail: {
@@ -31775,22 +31278,6 @@ export interface components {
             /** Text */
             text: string;
         };
-        /** SearchHitOut */
-        aidream__api__routers__file_search__SearchHitOut: {
-            /** Page Number */
-            page_number: number;
-            /** Page Id */
-            page_id?: string | null;
-            bbox: components["schemas"]["SearchBboxOut"];
-            /** Snippet */
-            snippet: string;
-            /** Matched Text */
-            matched_text: string;
-            /** Char Start */
-            char_start?: number | null;
-            /** Char End */
-            char_end?: number | null;
-        };
         /** SearchRequest */
         aidream__api__routers__file_search__SearchRequest: {
             /** Query */
@@ -31816,13 +31303,6 @@ export interface components {
              */
             include_excluded_pages: boolean;
         };
-        /** FocalPoint */
-        aidream__api__routers__image_studio__FocalPoint: {
-            /** X */
-            x: number;
-            /** Y */
-            y: number;
-        };
         /** IngestRequest */
         aidream__api__routers__rag__IngestRequest: {
             /**
@@ -31844,43 +31324,6 @@ export interface components {
              * @default false
              */
             run_enrich: boolean;
-        };
-        /** SearchHitOut */
-        aidream__api__routers__rag__SearchHitOut: {
-            /** Chunk Id */
-            chunk_id: string;
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** Field Id */
-            field_id: string | null;
-            /** Parent Chunk Id */
-            parent_chunk_id: string | null;
-            /** Chunk Kind */
-            chunk_kind: string;
-            /** Snippet */
-            snippet: string;
-            /** Score */
-            score: number;
-            /** Vector Rank */
-            vector_rank: number | null;
-            /** Lexical Rank */
-            lexical_rank: number | null;
-            /** Rerank Score */
-            rerank_score: number | null;
-            /** Metadata */
-            metadata: {
-                [key: string]: unknown;
-            };
-            /** Source Ref */
-            source_ref?: {
-                [key: string]: unknown;
-            } | null;
-            /** Entities */
-            entities?: string[];
-            /** Entity Rank */
-            entity_rank?: number | null;
         };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
@@ -32051,24 +31494,6 @@ export interface components {
             consecutive_errors: number;
             /** Error Message */
             error_message?: string | null;
-        };
-        /**
-         * FocalPoint
-         * @description Continuous focal point — normalized [0..1] coordinates from the
-         *     top-left of the source. Used with fit='cover' to crop around a
-         *     user-chosen point of interest rather than a named anchor.
-         */
-        matrx_utils__file_handling__asset_envelope__FocalPoint: {
-            /**
-             * X
-             * @description 0=left, 1=right
-             */
-            x: number;
-            /**
-             * Y
-             * @description 0=top, 1=bottom
-             */
-            y: number;
         };
     };
     responses: never;
@@ -32548,7 +31973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PublishResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -35037,7 +34462,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RepeatedRegionsReport"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -35070,7 +34495,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StripRepeatedRegionsResultSchema"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -35103,7 +34528,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LayoutClassificationReport"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -35136,7 +34561,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ReadingOrderReport"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -35426,7 +34851,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PdfTablesReport"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -44518,7 +43943,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SearchResponseOut"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -44617,7 +44042,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IngestResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -44652,7 +44077,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["IngestResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -47414,7 +46839,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TestNodeResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -51395,7 +50820,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FileIngestResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -51881,7 +51306,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProcessResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -51916,7 +51341,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CommitResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -52002,7 +51427,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DetectDocumentResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -52037,7 +51462,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Asset"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -52072,7 +51497,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Asset"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -52107,7 +51532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Asset"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -52809,7 +52234,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunAsset"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -52844,7 +52269,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RunAsset"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -55679,12 +55104,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            202: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AnalyzeRefreshResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -56663,7 +56088,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SearchResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
