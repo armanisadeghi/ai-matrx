@@ -113,7 +113,7 @@ export function EducationTutorClient({
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
     ready: !isInitializing && isFreshRoute,
-    config: { responseDensity: "comfortable" },
+    config: { responseDensity: "compact" },
     preferFresh: isFreshRoute,
     // Keep the streaming instance alive across the post-submit router.replace.
     retainOnUnmount: true,
@@ -195,7 +195,7 @@ export function EducationTutorClient({
               agentId,
               conversationId: conversationIdProp,
               apiEndpointMode: "agent",
-              responseDensity: "comfortable",
+              responseDensity: "compact",
             }),
           ).unwrap();
         }
