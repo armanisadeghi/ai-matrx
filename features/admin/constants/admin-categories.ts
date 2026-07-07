@@ -760,6 +760,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/database-admin",
       },
       {
+        title: "Relationship Manager",
+        description:
+          "Reachability & containment registry — which relationships convey access (sharing cascade), unregistered pairs, closure inspector, cache rebuild, and write-time enforcement.",
+        iconName: "Network",
+        link: "/administration/relationships",
+        isNew: true,
+      },
+      {
         title: "Database Tools Hub",
         description:
           "Unified hub for all database admin tools — SQL editors, legacy dashboard, canonicalization workflow, and schema visualizers (duplicates marked Dup).",

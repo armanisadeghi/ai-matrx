@@ -351,8 +351,8 @@ export function useProcessingRunner(): UseProcessingRunner {
                   const { data } = await supabase.rpc("rag_library_list", {
                     p_limit: 5,
                     p_offset: 0,
-                    p_search: null,
-                    p_status_filter: null,
+                    p_search: undefined,
+                    p_status_filter: undefined,
                     p_source_kind: "cld_file",
                   });
                   const docs =

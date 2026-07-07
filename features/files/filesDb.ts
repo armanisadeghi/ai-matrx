@@ -41,7 +41,7 @@ export function filesDb<C extends SupabaseClient<Database>>(client: C) {
  * `download_url`), never assembled client-side from a storage location.
  */
 export const FILES_TABLE_COLUMNS =
-  "id, created_by, file_path, file_name, mime_type, size_bytes, checksum, visibility, current_version, parent_folder_id, metadata, created_at, updated_at, deleted_at, organization_id, parent_file_id, derivation_kind, derivation_metadata, duplicate_of_file_id, canonical_processed_document_id, width, height, duration_ms";
+  "id, created_by, updated_by, version, file_path, file_name, mime_type, size_bytes, checksum, visibility, current_version, parent_folder_id, metadata, created_at, updated_at, deleted_at, organization_id, parent_file_id, derivation_kind, derivation_metadata, duplicate_of_file_id, canonical_processed_document_id, width, height, duration_ms";
 
 /**
  * Same rule for `files.file_versions` — its `storage_uri` is server-only.

@@ -78,6 +78,7 @@ When a table is MOVED or RETIRED, **the old name MUST stop working — abruptly.
 | Relocate a table to another schema, references intact | **`db-move-table-schema`** |
 | Bring a table/feature onto the platform standard — base cols + FKs, RLS, registry, satellites, versioning (a.k.a. "retrofit" / "base retrofit" / "Wave 3"; take it to certified or stop at the transition floor) | **`db-canonicalize-table`** |
 | Drop / merge / modify-logic | inline below |
+| Sharing cascade / containment rules / new association edge shape ("share X and its contents come along") | **TOOLKIT.md §3** (`association_types` + `reachability`) + [`docs/db_changes/REACHABILITY-ROLLOUT.md`](../../../docs/db_changes/REACHABILITY-ROLLOUT.md); manage rules via `/administration/relationships`, never raw SQL |
 
 ## Constants (full table in TOOLKIT.md §0)
 - Project: **Matrx Main** · `project_id` **`txzxabzwovsujtloxrus`**.

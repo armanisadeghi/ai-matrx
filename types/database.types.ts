@@ -9795,6 +9795,8 @@ export type Database = {
           size_bytes: number | null
           storage_uri: string
           updated_at: string
+          updated_by: string | null
+          version: number
           visibility: Database["platform"]["Enums"]["visibility"]
           width: number | null
         }
@@ -9821,6 +9823,8 @@ export type Database = {
           size_bytes?: number | null
           storage_uri: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           width?: number | null
         }
@@ -9847,6 +9851,8 @@ export type Database = {
           size_bytes?: number | null
           storage_uri?: string
           updated_at?: string
+          updated_by?: string | null
+          version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           width?: number | null
         }
@@ -22979,6 +22985,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_reachability_containers: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          container_id: string
+          container_type: string
+          depth: number
+          max_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      admin_reachability_contents: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      admin_rebuild_reachability: { Args: never; Returns: number }
       admin_recent_activity: {
         Args: { p_action_prefix?: string; p_limit?: number }
         Returns: {
@@ -22990,6 +23015,33 @@ export type Database = {
           metadata: Json
           occurred_at: string
           organization_id: string
+        }[]
+      }
+      admin_relationship_rules: {
+        Args: never
+        Returns: {
+          closure_rows: number
+          container_side: string
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+          created_at: string
+          edge_count: number
+          is_active: boolean
+          label: string
+          notes: string
+          source_type: string
+          target_type: string
+          updated_at: string
+        }[]
+      }
+      admin_relationship_system_status: {
+        Args: never
+        Returns: {
+          closure_rows: number
+          enforcement_enabled: boolean
+          max_depth: number
+          rules_conveying: number
+          total_rules: number
+          unregistered_pairs: number
         }[]
       }
       admin_reply_user_review:
@@ -23020,9 +23072,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_set_association_enforcement: {
+        Args: { p_enabled: boolean }
+        Returns: boolean
+      }
       admin_set_scope_type_system: {
         Args: { p_is_system: boolean; p_scope_type_id: string }
         Returns: Json
+      }
+      admin_unregistered_pairs: {
+        Args: never
+        Returns: {
+          edge_count: number
+          label: string
+          source_type: string
+          target_type: string
+        }[]
       }
       admin_update: {
         Args: {
@@ -23038,6 +23103,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_upsert_relationship_rule: {
+        Args: {
+          p_container_side: string
+          p_conveys_max: Database["public"]["Enums"]["permission_level"]
+          p_is_active: boolean
+          p_label?: string
+          p_notes?: string
+          p_source_type: string
+          p_target_type: string
+        }
+        Returns: undefined
       }
       agent_set_list: {
         Args: never
@@ -35902,10 +35979,12 @@ export type Database = {
           audio_storage_path: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           ended_at: string | null
           id: string
           is_deleted: boolean
           is_public: boolean
+          metadata: Json
           module_id: string
           organization_id: string
           project_id: string | null
@@ -35919,6 +35998,7 @@ export type Database = {
           updated_by: string | null
           user_id: string
           version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           assistant_conversation_id?: string | null
@@ -35926,10 +36006,12 @@ export type Database = {
           audio_storage_path?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           ended_at?: string | null
           id?: string
           is_deleted?: boolean
           is_public?: boolean
+          metadata?: Json
           module_id?: string
           organization_id: string
           project_id?: string | null
@@ -35943,6 +36025,7 @@ export type Database = {
           updated_by?: string | null
           user_id: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           assistant_conversation_id?: string | null
@@ -35950,10 +36033,12 @@ export type Database = {
           audio_storage_path?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           ended_at?: string | null
           id?: string
           is_deleted?: boolean
           is_public?: boolean
+          metadata?: Json
           module_id?: string
           organization_id?: string
           project_id?: string | null
@@ -35967,6 +36052,7 @@ export type Database = {
           updated_by?: string | null
           user_id?: string
           version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -35981,7 +36067,7 @@ export type Database = {
       transcripts: {
         Row: {
           audio_file_path: string | null
-          created_at: string | null
+          created_at: string
           created_by: string | null
           deleted_at: string | null
           description: string | null
@@ -35991,7 +36077,7 @@ export type Database = {
           is_deleted: boolean | null
           is_draft: boolean | null
           is_public: boolean
-          metadata: Json | null
+          metadata: Json
           organization_id: string
           project_id: string | null
           segments: Json
@@ -35999,7 +36085,7 @@ export type Database = {
           tags: string[] | null
           task_id: string | null
           title: string
-          updated_at: string | null
+          updated_at: string
           updated_by: string | null
           user_id: string
           version: number
@@ -36008,7 +36094,7 @@ export type Database = {
         }
         Insert: {
           audio_file_path?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -36018,7 +36104,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_draft?: boolean | null
           is_public?: boolean
-          metadata?: Json | null
+          metadata?: Json
           organization_id: string
           project_id?: string | null
           segments?: Json
@@ -36026,7 +36112,7 @@ export type Database = {
           tags?: string[] | null
           task_id?: string | null
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id: string
           version?: number
@@ -36035,7 +36121,7 @@ export type Database = {
         }
         Update: {
           audio_file_path?: string | null
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
@@ -36045,7 +36131,7 @@ export type Database = {
           is_deleted?: boolean | null
           is_draft?: boolean | null
           is_public?: boolean
-          metadata?: Json | null
+          metadata?: Json
           organization_id?: string
           project_id?: string | null
           segments?: Json
@@ -36053,7 +36139,7 @@ export type Database = {
           tags?: string[] | null
           task_id?: string | null
           title?: string
-          updated_at?: string | null
+          updated_at?: string
           updated_by?: string | null
           user_id?: string
           version?: number
@@ -39039,6 +39125,7 @@ export type Database = {
       }
       trigger: {
         Row: {
+          callback_url: string | null
           created_at: string
           created_by: string | null
           cron_expression: string | null
@@ -39068,6 +39155,7 @@ export type Database = {
           webhook_secret: string | null
         }
         Insert: {
+          callback_url?: string | null
           created_at?: string
           created_by?: string | null
           cron_expression?: string | null
@@ -39097,6 +39185,7 @@ export type Database = {
           webhook_secret?: string | null
         }
         Update: {
+          callback_url?: string | null
           created_at?: string
           created_by?: string | null
           cron_expression?: string | null

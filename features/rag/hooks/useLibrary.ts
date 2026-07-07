@@ -282,9 +282,9 @@ export function useLibrary(opts: UseLibraryOptions = {}) {
           {
             p_limit: limit,
             p_offset: offset,
-            p_search: search ?? null,
-            p_status_filter: status ?? null,
-            p_source_kind: null,
+            p_search: search ?? undefined,
+            p_status_filter: status ?? undefined,
+            p_source_kind: undefined,
           },
         );
         if (cancelled) return;
@@ -373,7 +373,7 @@ export function useLibrarySummary(
       try {
         const { data, error: rpcError } = await supabase.rpc(
           "rag_library_summary_totals",
-          { p_organization_id: orgId ?? null },
+          { p_organization_id: orgId ?? undefined },
         );
         if (rpcError) throw new Error(rpcError.message);
         const totals = (data ?? null) as ApiSummaryTotals | null;
