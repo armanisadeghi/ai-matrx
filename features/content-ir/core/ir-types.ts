@@ -39,7 +39,8 @@ export interface IrResidue {
 /** Which wire syntax carried the kind discriminator for a node. */
 export type IrDiscriminator =
   | { format: "json"; key: "__kind" }
-  | { format: "xml"; tag: string };
+  | { format: "xml"; tag: string }
+  | { format: "fence"; language: string };
 
 /** A schema-shaped structured node. Children live inside `value` (and carry their own metadata via `nodeIndex`). */
 export interface IrStructuredNode {

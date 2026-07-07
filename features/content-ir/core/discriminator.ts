@@ -20,6 +20,10 @@ export function xmlDiscriminator(tag: string): IrDiscriminator {
   return { format: "xml", tag };
 }
 
+export function fenceDiscriminator(language: string): IrDiscriminator {
+  return { format: "fence", language };
+}
+
 /** What a resolver can say about an opening compound value. */
 export type KindResolution =
   | { outcome: "kind"; kind: string }

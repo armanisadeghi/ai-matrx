@@ -23,3 +23,10 @@ insert into content_ir.kind_surface (kind_definition_id, surface_type, token, pa
 select kd.id, 'xml_tag', 'flashcards', 'flashcards_legacy_text', '{}'::jsonb, true, kd.organization_id
 from content_ir.kind_definition kd where kd.kind='flashcard_set' and kd.deleted_at is null
   and not exists (select 1 from content_ir.kind_surface s where s.surface_type='xml_tag' and s.token='flashcards' and s.deleted_at is null);
+
+-- 4. ```flashcards fence surface (same body format, same strategy, fence discriminator) —
+--    the first consumer of the fence-finalize hook.
+insert into content_ir.kind_surface (kind_definition_id, surface_type, token, parser_strategy, parser_config, streaming, organization_id)
+select kd.id, 'fence_lang', 'flashcards', 'flashcards_legacy_text', '{}'::jsonb, true, kd.organization_id
+from content_ir.kind_definition kd where kd.kind='flashcard_set' and kd.deleted_at is null
+  and not exists (select 1 from content_ir.kind_surface s where s.surface_type='fence_lang' and s.token='flashcards' and s.deleted_at is null);

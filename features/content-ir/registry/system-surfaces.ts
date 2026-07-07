@@ -46,4 +46,14 @@ export const SYSTEM_SURFACE_ENTRIES: KindSurfaceEntry[] = [
     parserStrategy: "flashcards_legacy_text",
     streaming: true,
   },
+  // ```flashcards fences carry the same Front/Back body as the XML surface
+  // (SPECIAL_CODE_LANGUAGES promotes them to the flashcards block today) —
+  // same strategy, fence discriminator. First consumer of the fence hook.
+  {
+    surfaceType: "fence_lang",
+    token: "flashcards",
+    kind: "flashcard_set",
+    parserStrategy: "flashcards_legacy_text",
+    streaming: true,
+  },
 ];

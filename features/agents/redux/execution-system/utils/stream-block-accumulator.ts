@@ -44,7 +44,10 @@ import {
   type CanonicalBlockIR,
 } from "@/features/content-ir/core/ir-types";
 import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
-import { envelopeForCompletedXmlRegion } from "@/features/content-ir/surfaces/xml-finalize";
+import {
+  envelopeForCompletedFenceRegion,
+  envelopeForCompletedXmlRegion,
+} from "@/features/content-ir/surfaces/xml-finalize";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 // ============================================================================
@@ -326,6 +329,14 @@ export class StreamBlockAccumulator {
   private irFedFragmentLen = 0;
   /** Final envelope of the region being closed — consumed by the complete emit. */
   private irEnvelope: CanonicalBlockIR | null = null;
+
+  /**
+   * True only between seeing a LITERAL closing fence line and the block's
+   * emit (set in the code_fence close branch). Stream-death finalize never
+   * sets it, so the fence-surface convergence hook fires exclusively on
+   * genuinely completed fence regions.
+   */
+  private fenceClosedCleanly = false;
   /** Every session identity opened during this stream (disposed at finalize). */
   private irIdentities: string[] = [];
   private upsertAction: (payload: {
@@ -800,6 +811,10 @@ export class StreamBlockAccumulator {
             const confirmed = detectJsonBlockType(this.currentBlockContent);
             this.currentBlockType = confirmed ?? "code";
           }
+          // Fence-surface convergence: only a literal closing fence marks the
+          // region COMPLETE (a stream-death finalize never sets this flag), so
+          // the fence hook fires exclusively on genuinely completed regions.
+          this.fenceClosedCleanly = true;
           this.closeCurrentBlock(dispatch);
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
@@ -1100,6 +1115,22 @@ export class StreamBlockAccumulator {
       );
       if (xmlEnvelope) this.irEnvelope = xmlEnvelope;
     }
+    // Fence-surface convergence (the fence twin of the XML hook): a fence
+    // region that closed with a LITERAL closing fence (fenceClosedCleanly —
+    // never set by stream-death finalize) whose normalized language resolves
+    // through the surface registry converges to its canonical kind. Content
+    // here is the inner body only (fence chrome is never appended).
+    if (this.subState.kind === "code_fence" && this.fenceClosedCleanly) {
+      const normalizedLang = normalizeCodeLanguage(this.subState.language);
+      if (normalizedLang) {
+        const fenceEnvelope = envelopeForCompletedFenceRegion(
+          normalizedLang,
+          this.currentBlockContent,
+        );
+        if (fenceEnvelope) this.irEnvelope = fenceEnvelope;
+      }
+    }
+    this.fenceClosedCleanly = false;
     this.emitCurrentBlock(dispatch, "complete");
     this.irEnvelope = null;
     this.currentBlockContent = "";

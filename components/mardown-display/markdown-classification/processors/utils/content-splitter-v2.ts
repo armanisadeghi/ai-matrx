@@ -37,7 +37,10 @@ import {
   mightBeOurFileUrl,
 } from "@/lib/media/our-file-sources";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
-import { envelopeForCompletedXmlRegion } from "@/features/content-ir/surfaces/xml-finalize";
+import {
+  envelopeForCompletedFenceRegion,
+  envelopeForCompletedXmlRegion,
+} from "@/features/content-ir/surfaces/xml-finalize";
 import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
 
 /**
@@ -1775,10 +1778,29 @@ export const splitContentIntoBlocksV2 = (
         normalizedLanguage &&
         SPECIAL_CODE_LANGUAGES.includes(normalizedLanguage)
       ) {
+        // Fence-surface convergence (the fence twin of the XML hook below):
+        // one-shot mirror of the accumulator's fence-close hook. The fence is
+        // COMPLETE iff extraction stopped on a literal closing-fence line (an
+        // EOF-truncated fence keeps legacy rendering). Complete-only; loud
+        // fail-open inside the hook.
+        const closedCleanly =
+          extraction.nextIndex <= lines.length &&
+          (lines[extraction.nextIndex - 1] ?? "").trim().startsWith("```");
+        let fenceMetadata: Record<string, unknown> | undefined;
+        if (closedCleanly) {
+          const fenceEnvelope = envelopeForCompletedFenceRegion(
+            normalizedLanguage,
+            extraction.content,
+          );
+          if (fenceEnvelope) {
+            fenceMetadata = { [IR_ENVELOPE_KEY]: fenceEnvelope };
+          }
+        }
         blocks.push({
           type: normalizedLanguage as SplitterBlockType,
           content: extraction.content,
           language: codeCheck.language,
+          ...(fenceMetadata ? { metadata: fenceMetadata } : {}),
         });
       } else if (codeCheck.language === "json") {
         // Check for special JSON block types
