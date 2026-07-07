@@ -16,8 +16,12 @@ export type StudyMediaRow = Edu["study_media"]["Row"];
 export type StudyMediaInsert = Edu["study_media"]["Insert"];
 export type StudyMediaUpdate = Edu["study_media"]["Update"];
 
-/** Which of the two P3 tools owns this artifact. */
-export type EduMediaKind = "audio" | "mind_map";
+/**
+ * Which study-media kind this artifact is. `audio` + `mind_map` are the P3
+ * tools; `summary` is the grounded study summary produced by the P9 Universal
+ * Ingest kit flow (shares this table for its trust + visibility + versioning).
+ */
+export type EduMediaKind = "audio" | "mind_map" | "summary";
 
 /**
  * The four audio study formats.
