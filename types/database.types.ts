@@ -26050,16 +26050,6 @@ export type Database = {
           table_name: string
         }[]
       }
-      get_prompt_access_level: {
-        Args: { prompt_id: string }
-        Returns: {
-          can_delete: boolean
-          can_edit: boolean
-          is_owner: boolean
-          owner_email: string
-          permission_level: string
-        }[]
-      }
       get_prompt_app_execution_payload: {
         Args: { p_app_id: string }
         Returns: Json
@@ -26159,6 +26149,10 @@ export type Database = {
           message_id: string
           message_order: number
         }[]
+      }
+      get_resource_access: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
       }
       get_resource_permissions: {
         Args: { p_resource_id: string; p_resource_type: string }

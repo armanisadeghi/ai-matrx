@@ -14,3 +14,7 @@ export * from './service';
 // React hooks
 export * from './hooks';
 
+// Access gate (useAccess / getResourceAccess). requireAccess is server-only —
+// import it from '@/utils/permissions/requireAccess' directly, not via this barrel.
+export * from './access';
+
