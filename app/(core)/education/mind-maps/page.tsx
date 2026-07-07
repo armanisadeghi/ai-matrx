@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { MindMapHome } from "@/features/education/media/mindmap/components/MindMapHome";
 
 export const metadata: Metadata = toolMetadata("mind-maps");
 
 export default function MindMapsToolPage() {
-  return <EduToolComingSoon slug="mind-maps" />;
+  return <MindMapHome />;
 }

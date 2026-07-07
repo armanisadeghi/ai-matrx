@@ -108,7 +108,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Generate broadcast-quality audio overviews, two-voice debates, and multi-host panels; audio review quizzes.",
     icon: Headphones,
     letter: "Au",
-    status: "coming-soon",
+    status: "live",
     accessTier: "trial",
     visionRef: "VISION §9 Audio Study",
     capabilities: [
@@ -125,7 +125,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "AI-generated mind maps, knowledge graphs, and diagrams with clickable nodes that link to cards and explanations.",
     icon: Network,
     letter: "Mm",
-    status: "coming-soon",
+    status: "live",
     accessTier: "free",
     visionRef: "VISION §10 Visual Learning",
     capabilities: [

@@ -200,6 +200,10 @@ export type SourceFeature =
   | "education-flashcards-help"
   | "education-flashcards-review"
   | "education-flashcards-coach"
+  /** Generated Study Media (P3) — the Mind Maps generator (a diagram_spec agent)
+   *  under `/education/mind-maps`. Audio Study reuses the podcast pipeline's own
+   *  source features, so it has no entry here. See features/education/media/. */
+  | "education-mindmap"
   /** The persistent, memory-carrying AI Tutor conversation surface
    *  (`/education/tutor`). Unlike the fastfire/flashcards background lanes
    *  above, these are REAL user chats (NOT system-marked) — grounded in the

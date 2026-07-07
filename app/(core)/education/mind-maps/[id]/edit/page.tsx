@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { MindMapDetail } from "@/features/education/media/mindmap/components/MindMapDetail";
 
 export const metadata: Metadata = toolMetadata("mind-maps");
 
-// Authoring surface — gated to EDIT permission (see ROUTING.md).
-export default function MindMapEditPage() {
-  return <EduToolComingSoon slug="mind-maps" surface={{ label: "Edit the map", gate: "edit" }} />;
+// Authoring surface (regenerate / delete / share). Owner controls live inside
+// MindMapDetail; non-owners see the read-only map.
+export default async function MindMapEditPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <MindMapDetail mediaId={id} />;
 }

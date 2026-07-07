@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { AudioStudyDetail } from "@/features/education/media/audio/components/AudioStudyDetail";
 
 export const metadata: Metadata = toolMetadata("audio-study");
 
-// Player — the shareable URL. Gated by the audio item's view access.
-export default function AudioStudyPlayerPage() {
-  return <EduToolComingSoon slug="audio-study" surface={{ label: "Listen", gate: "view" }} />;
+// Player + live generation — the shareable URL. Access is enforced by RLS + the
+// study_media view gate; the component shows owner controls only to the owner.
+export default async function AudioStudyPlayerPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <AudioStudyDetail mediaId={id} />;
 }
