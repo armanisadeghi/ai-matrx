@@ -33,7 +33,11 @@ const CORE_COVERED_TOKENS: ReadonlySet<string> = new Set([
   "project",
   "note",
   "studio_session",
+  // Files ride the Resources tab under BOTH spellings: the legacy war-room
+  // alias AND the canonical token (RPC hydration returns edges as `file`, so
+  // missing it spawned a confusing duplicate derived "Files" tab).
   "user_file",
+  "file",
   "udt_document",
   "conversation",
 ]);

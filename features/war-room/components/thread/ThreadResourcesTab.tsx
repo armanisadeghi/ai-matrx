@@ -78,6 +78,7 @@ export function ThreadResourcesTab({
   const adapter = useThreadResourcesAdapter(threadId);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState(false);
@@ -91,18 +92,31 @@ export function ThreadResourcesTab({
   // under War Room/<thread> no matter what), the edge is written SECOND, and
   // EVERY terminal outcome is loud. A created-but-unattached file is reported
   // with its location — it must never look like it "just disappeared".
-  const handleFilesSelected = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const files = e.target.files;
-    e.target.value = "";
-    if (!files || files.length === 0) return;
+  const uploadAndAttach = async (files: File[]) => {
+    if (files.length === 0) return;
     setIsUploading(true);
+    // Watchdog: if the upload pipeline never settles (hung dialog promise,
+    // dead transport), SAY so — a stuck-silent gesture is the bug class.
+    const watchdog = setTimeout(() => {
+      console.error("[ThreadResourcesTab] upload pipeline unresponsive >60s", {
+        files: files.map((f) => f.name),
+      });
+      toast.error(
+        "The upload isn't responding — it may be stalled. Check your connection and retry.",
+      );
+    }, 60_000);
     try {
+      console.info("[war-room upload] start", files.map((f) => f.name));
       const result = await requestUpload({
-        files: Array.from(files),
+        files,
         folderPath: folderForWarRoomThread(threadId),
         visibility: "private",
+      });
+      console.info("[war-room upload] pipeline result", {
+        uploaded: result.uploaded.length,
+        aliased: result.aliased.length,
+        failed: result.failed.length,
+        cancelled: result.cancelled,
       });
       if (result.cancelled) {
         toast.info("Upload cancelled — nothing was attached");
@@ -152,8 +166,28 @@ export function ThreadResourcesTab({
           : "Upload failed unexpectedly",
       );
     } finally {
+      clearTimeout(watchdog);
       setIsUploading(false);
     }
+  };
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = "";
+    void uploadAndAttach(files);
+  };
+
+  // Drop a file anywhere on the tab body → upload + attach. Without this the
+  // most natural gesture had NO handler — the browser navigated to the file
+  // (or a drag layer swallowed it) with zero feedback: the "file just
+  // disappeared" bug class.
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    if (files.length === 0) return;
+    void uploadAndAttach(files);
   };
 
   // ── Files: pick existing cloud files ──────────────────────────────────────
@@ -231,7 +265,31 @@ export function ThreadResourcesTab({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div
+      className={cn(
+        "relative flex h-full min-h-0 flex-col",
+        isDragOver && "ring-2 ring-inset ring-primary/50",
+      )}
+      onDragOver={(e) => {
+        if (!e.dataTransfer?.types.includes("Files")) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+        setIsDragOver(false);
+      }}
+      onDrop={handleDrop}
+    >
+      {isDragOver ? (
+        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-background/70">
+          <span className="flex items-center gap-2 rounded-md border border-primary/40 bg-card px-3 py-1.5 text-xs font-medium text-foreground">
+            <Upload className="size-3.5 text-primary" />
+            Drop to upload & attach
+          </span>
+        </div>
+      ) : null}
       <input
         ref={fileInputRef}
         type="file"

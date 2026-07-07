@@ -656,6 +656,22 @@ export async function uploadWithProgress<T>(
       );
     });
 
+    // A stalled connection must NEVER hang the upload promise forever — an
+    // unsettled promise upstream reads as "the file just disappeared" (button
+    // spinner stuck, no toast, no error). 10 min covers large files on slow
+    // links; a genuinely stalled transfer fails loudly instead of silently.
+    xhr.timeout = 10 * 60 * 1000;
+    xhr.addEventListener("timeout", () => {
+      reject(
+        new BackendApiError({
+          code: "internal",
+          detail: "Upload timed out (no response within 10 minutes)",
+          userMessage: "Upload timed out — check your connection and retry.",
+          requestId,
+        }),
+      );
+    });
+
     if (opts.signal) {
       if (opts.signal.aborted) {
         xhr.abort();
