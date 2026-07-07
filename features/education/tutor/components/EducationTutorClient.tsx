@@ -30,6 +30,7 @@ import { loadConversation } from "@/features/agents/redux/execution-system/thunk
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { setFocus, clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
@@ -127,25 +128,44 @@ export function EducationTutorClient({
     if (conversationIdProp || !liveConversationId || !authReady) return;
     if (groundedRef.current === liveConversationId) return;
     groundedRef.current = liveConversationId;
+    const target = liveConversationId;
     let cancelled = false;
     (async () => {
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
+        // The launcher creates the instance's variable-values slot
+        // asynchronously (createInstanceFull). `setUserVariableValues` silently
+        // no-ops if the slot doesn't exist yet, so wait for it (bounded ~2s)
+        // before dispatching — otherwise the tutor could launch UNGROUNDED with
+        // no signal. Loud recovery: if it never appears, scream + allow a retry.
+        const hasSlot = () =>
+          !!store.getState().instanceVariableValues?.byConversationId?.[target];
+        for (let i = 0; i < 40 && !hasSlot(); i++) {
+          await new Promise((r) => setTimeout(r, 50));
+          if (cancelled) return;
+        }
+        if (cancelled) return;
+        if (!hasSlot()) {
+          console.error(
+            "[EducationTutorClient] grounding NOT applied — instance variable slot never appeared for",
+            target,
+          );
+          groundedRef.current = null; // let a later render retry
+          return;
+        }
         dispatch(
-          setUserVariableValues({
-            conversationId: liveConversationId,
-            values: grounding,
-          }),
+          setUserVariableValues({ conversationId: target, values: grounding }),
         );
       } catch (err) {
         console.error("[EducationTutorClient] grounding failed", err);
+        groundedRef.current = null;
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [conversationIdProp, liveConversationId, authReady, dispatch, seed]);
+  }, [conversationIdProp, liveConversationId, authReady, dispatch, store, seed]);
 
   // ── Existing-conversation load (only on /education/tutor/[id]) ────────────
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -211,6 +231,14 @@ export function EducationTutorClient({
   });
 
   const conversationId = conversationIdProp ?? liveConversationId ?? null;
+  // Show the tutor empty-state (hero + starters) ONLY on a fresh, still-empty
+  // conversation. We render it via `afterMessages` (inside the scroll area),
+  // NOT `landingContent` — `landingContent` makes AgentConversationColumn
+  // SUPPRESS the whole bottom input block (the landing is expected to carry its
+  // own composer, like /chat/new's NewChatGreeting does). TutorLanding has no
+  // composer, so using the landing slot would leave the fresh route with no way
+  // to type. `afterMessages` keeps the real SmartAgentInput mounted.
+  const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
 
   if (isInitializing || !conversationId) {
     return (
@@ -219,6 +247,8 @@ export function EducationTutorClient({
       </div>
     );
   }
+
+  const showEmptyState = !hideLanding && isFreshRoute && messageCount === 0;
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-textured">
@@ -233,10 +263,10 @@ export function EducationTutorClient({
             showSubmitOnEnterToggle: false,
             placeholder: "Ask your tutor anything about what you're studying…",
           }}
-          landingContent={
-            hideLanding || !isFreshRoute ? undefined : (
+          afterMessages={
+            showEmptyState ? (
               <TutorLanding conversationId={conversationId} />
-            )
+            ) : undefined
           }
         />
       </div>
