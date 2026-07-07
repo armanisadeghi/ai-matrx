@@ -3,19 +3,30 @@
 /**
  * CropSheet — per-photo crop drawer.
  *
- * Opens on an uploaded image item, auto-runs server boundary detection
- * (`POST /images/detect-document`), and draws the result as a draggable
- * QuadEditor overlay. The user accepts, adjusts, resets to full frame, or
- * cancels. Crops are stored as quad JSON on the item and applied
- * SERVER-SIDE at PDF build time — originals are never touched.
+ * Non-negotiable: the FIRST render shows the entire image with all four
+ * corner handles visible. The editor is sized to the measured drawer
+ * body (never overflow-scrolled), and QuadEditor auto-fits the view to
+ * the quad on every change.
  *
- * The editor works on the displayed image; the quad the detector returns
- * and the quad the server crops with share the same post-EXIF-transpose
- * coordinate space, so no conversion happens anywhere.
+ * Rotation is REAL here: the preview physically rotates (a canvas-
+ * rendered display copy) and the quad is coordinate-mapped between the
+ * original space (what the server crops with — crop applies BEFORE
+ * rotation) and the rotated display space, so corners stay attached to
+ * the same document points while you rotate.
+ *
+ * Detection: the background pass usually pre-populates the quad; if
+ * nothing was found, the conservative pass runs on open, and "Try
+ * harder" fires the relaxed server pass (brightness region + rect
+ * fallback).
  */
 
-import React, { useCallback, useState } from "react";
-import { Check, Loader2, Maximize2, RotateCw } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Check, Loader2, Maximize2, RotateCw, ScanSearch } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +39,7 @@ import {
 import { useFileSrc } from "@/features/files";
 
 import { detectDocument } from "../api";
-import type { Quad, ScanItem, ScanRotation } from "../types";
+import type { Quad, QuadPoint, ScanItem, ScanRotation } from "../types";
 import { QuadEditor, fullFrameQuad } from "./QuadEditor";
 
 interface CropSheetProps {
@@ -40,7 +51,7 @@ interface CropSheetProps {
 export function CropSheet({ item, onClose, onApply }: CropSheetProps) {
   return (
     <Drawer open={Boolean(item)} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[92dvh]">
+      <DrawerContent className="h-[92dvh]">
         {/* Keyed remount resets all editor state per item — no sync effects. */}
         {item && (
           <CropEditor
@@ -55,6 +66,108 @@ export function CropSheet({ item, onClose, onApply }: CropSheetProps) {
   );
 }
 
+// ── Rotation coordinate maps (θ clockwise; original size W×H) ────────────
+
+function pointToDisplay(
+  p: QuadPoint,
+  rot: ScanRotation,
+  w: number,
+  h: number,
+): QuadPoint {
+  switch (rot) {
+    case 90:
+      return [h - p[1], p[0]];
+    case 180:
+      return [w - p[0], h - p[1]];
+    case 270:
+      return [p[1], w - p[0]];
+    default:
+      return p;
+  }
+}
+
+function pointFromDisplay(
+  p: QuadPoint,
+  rot: ScanRotation,
+  w: number,
+  h: number,
+): QuadPoint {
+  switch (rot) {
+    case 90:
+      return [p[1], h - p[0]];
+    case 180:
+      return [w - p[0], h - p[1]];
+    case 270:
+      return [w - p[1], p[0]];
+    default:
+      return p;
+  }
+}
+
+function quadToDisplay(q: Quad, rot: ScanRotation, w: number, h: number): Quad {
+  return {
+    top_left: pointToDisplay(q.top_left, rot, w, h),
+    top_right: pointToDisplay(q.top_right, rot, w, h),
+    bottom_right: pointToDisplay(q.bottom_right, rot, w, h),
+    bottom_left: pointToDisplay(q.bottom_left, rot, w, h),
+  };
+}
+
+function quadFromDisplay(q: Quad, rot: ScanRotation, w: number, h: number): Quad {
+  return {
+    top_left: pointFromDisplay(q.top_left, rot, w, h),
+    top_right: pointFromDisplay(q.top_right, rot, w, h),
+    bottom_right: pointFromDisplay(q.bottom_right, rot, w, h),
+    bottom_left: pointFromDisplay(q.bottom_left, rot, w, h),
+  };
+}
+
+/** Display bitmap cap — plenty for on-screen zoom without multi-MB data URLs. */
+const DISPLAY_MAX_DIM = 2400;
+
+/** Canvas-render a rotated display copy (rotation 0 passes through). */
+function useRotatedImage(
+  src: string | null,
+  rotation: ScanRotation,
+): { url: string | null; loading: boolean } {
+  const [state, setState] = useState<{ key: string; url: string | null }>({
+    key: "",
+    url: null,
+  });
+  const key = `${src}|${rotation}`;
+
+  useEffect(() => {
+    // Rotation 0 is derived directly below — this effect only renders
+    // rotated copies (setState happens in the async onload callback).
+    if (!src || rotation === 0) return;
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const scale = Math.min(1, DISPLAY_MAX_DIM / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      const swap = rotation % 180 !== 0;
+      canvas.width = swap ? h : w;
+      canvas.height = swap ? w : h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.drawImage(img, -w / 2, -h / 2, w, h);
+      setState({ key, url: canvas.toDataURL("image/jpeg", 0.85) });
+    };
+    img.src = src;
+    return () => {
+      cancelled = true;
+    };
+  }, [src, rotation, key]);
+
+  if (rotation === 0) return { url: src, loading: false };
+  return { url: state.key === key ? state.url : null, loading: state.key !== key };
+}
+
 function CropEditor({
   item,
   onClose,
@@ -64,14 +177,30 @@ function CropEditor({
   onClose: () => void;
   onApply: (itemId: string, quad: Quad | null, rotation: ScanRotation) => void;
 }) {
-  const [naturalSize, setNaturalSize] = useState<{
-    w: number;
-    h: number;
-  } | null>(null);
+  // Quad state lives in ORIGINAL post-EXIF space (the server contract).
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(
+    null,
+  );
   const [quad, setQuad] = useState<Quad | null>(item.quad ?? null);
   const [rotation, setRotation] = useState<ScanRotation>(item.rotation);
   const [detecting, setDetecting] = useState(false);
   const [detectNote, setDetectNote] = useState<string | null>(null);
+  const [offerRetry, setOfferRetry] = useState(false);
+
+  // Measured drawer-body area — the editor is sized to fit it exactly.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [bodySize, setBodySize] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0)
+        setBodySize({ w: r.width, h: r.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Prefer the session-local preview; fall back to the uploaded file's URL
   // (resumed sessions have no local preview).
@@ -81,42 +210,60 @@ function CropEditor({
       : null,
   );
   const imageUrl = item.previewUrl ?? remoteSrc ?? null;
+  const rotated = useRotatedImage(imageUrl, rotation);
 
-  // Dimension probe doubles as the detection trigger — an event handler,
-  // so no setState-in-effect cascades.
+  const runDetect = useCallback(
+    (mode: "standard" | "relaxed", sizeOverride?: { w: number; h: number }) => {
+      const size = sizeOverride ?? naturalSize;
+      if (!item.fileId || !size) return;
+      setDetecting(true);
+      setOfferRetry(false);
+      detectDocument(item.fileId, mode)
+        .then((res) => {
+          if (res.found && res.quad) {
+            setQuad(res.quad);
+            setDetectNote(
+              `Document detected (${Math.round(res.confidence * 100)}% confidence) — drag the corners to adjust`,
+            );
+            setOfferRetry(mode === "standard");
+          } else {
+            setQuad(fullFrameQuad(size.w, size.h));
+            setDetectNote(
+              mode === "standard"
+                ? "No document boundary found"
+                : "Still nothing — drag the corners manually",
+            );
+            setOfferRetry(mode === "standard");
+          }
+        })
+        .catch(() => {
+          setQuad(fullFrameQuad(size.w, size.h));
+          setDetectNote("Detection unavailable — drag the corners manually");
+        })
+        .finally(() => setDetecting(false));
+    },
+    [item.fileId, naturalSize],
+  );
+
+  // Dimension probe doubles as the initial-detection trigger (an event
+  // handler, not an effect): pre-detected quads render immediately,
+  // otherwise the conservative pass runs now.
   const handleImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const img = e.currentTarget;
       const size = { w: img.naturalWidth, h: img.naturalHeight };
       setNaturalSize(size);
-      if (quad) return; // re-editing an existing crop — keep it
-      const fallback = fullFrameQuad(size.w, size.h);
-      if (!item.fileId) {
-        setQuad(fallback);
+      if (quad) {
+        setOfferRetry(true); // allow re-running detection over an existing crop
         return;
       }
-      setDetecting(true);
-      detectDocument(item.fileId)
-        .then((res) => {
-          if (res.found && res.quad) {
-            setQuad(res.quad);
-            setDetectNote(
-              `Document detected (${Math.round(res.confidence * 100)}% confidence) — adjust the corners if needed`,
-            );
-          } else {
-            setQuad(fallback);
-            setDetectNote(
-              "No document boundary detected — full frame selected",
-            );
-          }
-        })
-        .catch(() => {
-          setQuad(fallback);
-          setDetectNote("Boundary detection unavailable — full frame selected");
-        })
-        .finally(() => setDetecting(false));
+      if (item.fileId) {
+        runDetect("standard", size);
+      } else {
+        setQuad(fullFrameQuad(size.w, size.h));
+      }
     },
-    [item.fileId, quad],
+    [quad, item.fileId, runDetect],
   );
 
   const isFullFrame =
@@ -133,54 +280,118 @@ function CropEditor({
     onClose();
   }, [item.itemId, quad, isFullFrame, rotation, onApply, onClose]);
 
+  // Display-space geometry (rotation-aware).
+  const displayDims = naturalSize
+    ? rotation % 180 !== 0
+      ? { w: naturalSize.h, h: naturalSize.w }
+      : naturalSize
+    : null;
+  // Editor viewport: fit the display aspect into the measured body with
+  // breathing room so edge handles stay comfortably tappable.
+  const editorSize =
+    displayDims && bodySize
+      ? (() => {
+          const availW = Math.max(bodySize.w - 40, 80);
+          const availH = Math.max(bodySize.h - 40, 80);
+          const s = Math.min(availW / displayDims.w, availH / displayDims.h);
+          return {
+            w: Math.round(displayDims.w * s),
+            h: Math.round(displayDims.h * s),
+          };
+        })()
+      : null;
+
+  const displayQuad =
+    quad && naturalSize
+      ? quadToDisplay(quad, rotation, naturalSize.w, naturalSize.h)
+      : null;
+
+  const handleEditorChange = useCallback(
+    (dq: Quad) => {
+      if (!naturalSize) return;
+      setQuad(quadFromDisplay(dq, rotation, naturalSize.w, naturalSize.h));
+    },
+    [naturalSize, rotation],
+  );
+
+  const ready = Boolean(
+    imageUrl && naturalSize && displayDims && editorSize && displayQuad && rotated.url,
+  );
+
   return (
     <>
-      <DrawerHeader className="pb-2">
-        <DrawerTitle className="text-sm">
-          {detecting ? "Detecting document…" : "Adjust crop"}
-        </DrawerTitle>
+      <DrawerHeader className="pb-1 pt-3">
+        <div className="flex items-center gap-2">
+          <DrawerTitle className="text-sm">
+            {detecting ? "Detecting document…" : "Adjust crop"}
+          </DrawerTitle>
+          {offerRetry && !detecting && item.fileId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto h-7 px-2 text-xs"
+              onClick={() => runDetect("relaxed")}
+            >
+              <ScanSearch className="mr-1 h-3 w-3" />
+              Try harder
+            </Button>
+          )}
+        </div>
         {detectNote && !detecting && (
-          <p className="text-xs text-muted-foreground">{detectNote}</p>
+          <p className="text-left text-xs text-muted-foreground">{detectNote}</p>
         )}
       </DrawerHeader>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4">
-        {imageUrl ? (
-          <div className="relative mx-auto max-w-lg">
-            {/* Probe reads dimensions + kicks off detection before the
-                editor mounts. */}
+      {/* The measured, non-scrolling stage — the editor ALWAYS fits inside. */}
+      <div
+        ref={bodyRef}
+        className="relative min-h-0 flex-1 overflow-hidden"
+      >
+        {imageUrl && (
+          <>
+            {/* Hidden probe reads the ORIGINAL dimensions once. */}
             {!naturalSize && (
               <img
                 src={imageUrl}
                 alt=""
-                className="w-full opacity-0"
+                className="absolute h-px w-px opacity-0"
                 onLoad={handleImageLoad}
               />
             )}
-            {naturalSize && quad && (
-              <QuadEditor
-                imageUrl={imageUrl}
-                naturalWidth={naturalSize.w}
-                naturalHeight={naturalSize.h}
-                quad={quad}
-                onChange={setQuad}
-              />
-            )}
-            {(detecting || !naturalSize) && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            {ready && (
+              <div className="flex h-full w-full items-center justify-center">
+                <QuadEditor
+                  imageUrl={rotated.url as string}
+                  naturalWidth={(displayDims as { w: number }).w}
+                  naturalHeight={(displayDims as { h: number }).h}
+                  viewportWidth={(editorSize as { w: number }).w}
+                  viewportHeight={(editorSize as { h: number }).h}
+                  quad={displayQuad as Quad}
+                  onChange={handleEditorChange}
+                />
               </div>
             )}
+          </>
+        )}
+        {imageUrl && !ready && (
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ) : (
-          <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">
+        )}
+        {!imageUrl && (
+          <div className="flex h-full items-center justify-center px-6 text-center text-xs text-muted-foreground">
             Preview unavailable for this file format — the crop editor needs a
             browser-renderable image.
           </div>
         )}
+        {detecting && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/40">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        )}
       </div>
 
-      <DrawerFooter className="flex-row gap-2 pb-safe pt-3">
+      <DrawerFooter className="flex-row gap-2 pb-safe pt-2">
         <Button
           variant="outline"
           size="sm"
@@ -197,6 +408,7 @@ function CropEditor({
           variant="outline"
           size="sm"
           className="h-10"
+          disabled={!naturalSize}
           onClick={() => setRotation(((rotation + 90) % 360) as ScanRotation)}
         >
           <RotateCw className="mr-1.5 h-3.5 w-3.5" />

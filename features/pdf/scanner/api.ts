@@ -18,14 +18,19 @@ import type {
   ScanPdfResult,
 } from "./types";
 
-/** Boundary detection for one uploaded photo. Pure read — nothing persisted. */
+/**
+ * Boundary detection for one uploaded photo. Pure read — nothing persisted.
+ * `mode: "relaxed"` is the user-triggered "try again" pass (brightness
+ * region + rect fallback) for shots the conservative pass gives up on.
+ */
 export async function detectDocument(
   fileId: string,
+  mode: "standard" | "relaxed" = "standard",
 ): Promise<DetectDocumentResponse> {
   const { data } = await postJson<
     DetectDocumentResponse,
-    { source_id: string }
-  >("/images/detect-document", { source_id: fileId });
+    { source_id: string; mode: "standard" | "relaxed" }
+  >("/images/detect-document", { source_id: fileId, mode });
   return data;
 }
 

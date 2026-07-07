@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { useFileSrc } from "@/features/files";
 
 import type { ScanItem } from "../types";
@@ -194,18 +195,21 @@ function SortableTile({
         </button>
       )}
 
-      {/* Remove */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove(item.itemId);
-        }}
-        aria-label={`Remove ${item.fileName}`}
-        className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-70 transition-opacity hover:opacity-100"
+      {/* Remove — full 44px tap target */}
+      <div
+        className="absolute -right-1.5 -top-1.5"
+        onPointerDown={(e) => e.stopPropagation()}
       >
-        <X className="h-3 w-3" />
-      </button>
+        <TapTargetButtonSolid
+          icon={<X className="h-4 w-4" />}
+          ariaLabel={`Remove ${item.fileName}`}
+          tooltip={false}
+          onClick={() => onRemove(item.itemId)}
+          bgColor="bg-black/60"
+          iconColor="text-white"
+          hoverBgColor="hover:bg-black/80"
+        />
+      </div>
     </div>
   );
 }
