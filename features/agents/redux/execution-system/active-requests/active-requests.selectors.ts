@@ -818,6 +818,26 @@ export const selectUnifiedSlots = (requestId: string) =>
             pushBlock(blockOrder[i]);
           }
           lastEmittedBlockIndex = end;
+        } else if (entry.kind === "render_block") {
+          // Server-driven render_block (content-ir Phase 5 / py-block-detector):
+          // process-stream pushes the block into renderBlockOrder AND records a
+          // `render_block` timeline entry at its chronological spot. Unlike
+          // client chunk text, these blocks are NOT covered by a text_end range,
+          // so WITHOUT this branch they were silently dropped from the slot list
+          // — collapsing a "block → tool → block" turn to just the tool card and
+          // destroying chronological order. Emit the referenced block here at its
+          // exact timeline position (pushBlock dedupes, so a later text_end range
+          // that happens to span it is harmless). Advancing lastEmittedBlockIndex
+          // past it keeps the reasoning_end / trailing sweeps from re-walking it.
+          pendingStatus = null;
+          const blockId = entry.data.blockId;
+          if (blockId !== undefined) {
+            pushBlock(blockId);
+            const idx = blockOrder.indexOf(blockId);
+            if (idx >= 0) {
+              lastEmittedBlockIndex = Math.max(lastEmittedBlockIndex, idx + 1);
+            }
+          }
         } else if (
           entry.kind === "tool_event" &&
           entry.data.event === "tool_started" &&

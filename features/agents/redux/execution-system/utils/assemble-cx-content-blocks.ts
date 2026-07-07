@@ -43,6 +43,7 @@ import type {
   TimelineTextEnd,
   TimelineReasoningEnd,
   TimelineToolEvent,
+  TimelineRenderBlock,
 } from "@/features/agents/types/request.types";
 import { toCxMediaPart } from "@/features/files/blocks/image/adapters/to-cx-media-part";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
@@ -65,6 +66,10 @@ function isTextEnd(e: TimelineEntry): e is TimelineTextEnd {
 
 function isToolEvent(e: TimelineEntry): e is TimelineToolEvent {
   return e.kind === "tool_event";
+}
+
+function isRenderBlock(e: TimelineEntry): e is TimelineRenderBlock {
+  return e.kind === "render_block";
 }
 
 const MEDIA_BLOCK_TYPES = new Set([
@@ -349,6 +354,51 @@ export function assembleMessageParts(request: ActiveRequest): CxContentBlock[] {
     }
 
     // ── Tool event → flush text, emit tool blocks ──────────────────────
+    // ── Server render_block → flush text, emit the block at its position ────
+    // content-ir Phase 5 / py-block-detector: the server streams answer content
+    // as render_block events, each recorded as a `render_block` timeline entry
+    // (never covered by a text_end range). WITHOUT emitting them here, Pass 2
+    // sweeps every server block to the END of the message — AFTER all tool_calls
+    // — so a persisted / reloaded "block → tool → block" turn renders the tools
+    // out of chronological position. Emit at the timeline spot and mark the
+    // block consumed so Pass 2 skips it. Mirrors the `render_block` branch in
+    // selectUnifiedSlots (the live path).
+    if (isRenderBlock(entry)) {
+      const blockId = entry.data.blockId;
+      if (blockId === undefined) continue;
+      const idx = request.renderBlockOrder.indexOf(blockId);
+      if (idx < 0 || consumedRenderBlockIndices.has(idx)) continue;
+      consumedRenderBlockIndices.add(idx);
+      const block = request.renderBlocks[blockId];
+      if (!block) continue;
+
+      if (MEDIA_BLOCK_TYPES.has(block.type)) {
+        // Media belongs in the current text run's flow (queued, flushed in
+        // arrival order alongside surrounding text).
+        const mediaBlock = renderBlockToMediaBlock(block);
+        if (mediaBlock) pendingMedia.push(mediaBlock);
+      } else if (typeof block.content === "string" && block.content.length > 0) {
+        // Flush any preceding text so this typed block keeps its exact spot,
+        // then emit it as its own part (same reconstruction Pass 2 uses).
+        flushPendingText();
+        const reconstructed = reconstructBlockMarkdown({
+          type: block.type,
+          content: block.content,
+          data: block.data ?? null,
+        });
+        if (reconstructed.length > 0) {
+          const envelope = completeEnvelopeOf(block);
+          const cache = envelope ? envelopeCacheFromEnvelopes([envelope]) : null;
+          blocks.push({
+            type: "text",
+            text: reconstructed,
+            ...(cache ? { metadata: { [IR_ENVELOPE_KEY]: cache } } : {}),
+          } as CxTextContent);
+        }
+      }
+      continue;
+    }
+
     if (isToolEvent(entry)) {
       const lifecycle = request.toolLifecycle[entry.data.call_id];
       if (!lifecycle) continue;
