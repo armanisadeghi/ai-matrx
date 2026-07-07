@@ -1,5 +1,10 @@
 # Education Hub — Delivery Roadmap & Project Decomposition
 
+> ⚠️ **2026-07-07: Execution briefs supersede §3 of this doc.** One standalone, hand-off-ready
+> brief per project (re-verified against live code + DB) lives in
+> [`education-projects/`](./education-projects/README.md) — assign agents from THERE, not from §3.
+> This doc remains the narrative overview.
+
 > **Status date:** 2026-06-29. **Source of truth for scope:** [`app/(core)/education/VISION-education-hub.md`](../../app/(core)/education/VISION-education-hub.md).
 > This roadmap is grounded in a live codebase + database audit (not memory). Each project below is
 > sized to hand to one capable agent with a human in the loop. Read §1 before assigning anything.
@@ -308,4 +313,10 @@ waiting. Priority ordering *within* the wave (by vision impact):
    one surface. Confirm the hand-off.
 
 ## Change log
+- **2026-07-07** — Execution briefs created in [`education-projects/`](./education-projects/README.md)
+  after a fresh live re-audit. §6 flag 1 RESOLVED: `quiz_sessions` is the canvas artifact quiz store
+  (`features/canvas/artifact-types/persistence/quiz-adapter.ts`) — P1 builds new canonical tables.
+  Sharing plumbing materially improved since 2026-06-29 (grants really grant; uncommitted
+  token-vs-table registry reconciliation pending — P7 owns landing it); all three P7 product gaps
+  still open.
 - **2026-06-29** — Created from a live code + DB audit. 8 projects, 3 convergence points, waves.
