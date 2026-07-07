@@ -14,7 +14,7 @@
  * Keep tab content and badge logic HERE so the presentations can never drift.
  */
 
-import { useState, type ComponentType, type ReactNode } from "react";
+import { type ComponentType, type ReactNode } from "react";
 import {
   Paperclip,
   Wrench,
@@ -33,7 +33,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
-import { PromptPreviewModal } from "@/features/agents/prompt-preview/PromptPreviewModal";
 
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { RunToolPicker } from "./RunToolPicker";
@@ -67,6 +66,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useOpenChatDebugWindow } from "@/features/overlays/openers/chatDebugWindow";
 import { useOpenAgentMemoryWindow } from "@/features/overlays/openers/agentMemoryWindow";
+import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPreviewWindow";
 import type { Resource } from "@/features/agents/resources/types";
 
 export type RunControlsTab =
@@ -311,8 +311,8 @@ export function RunControlsTabPanel({
     fill ? "min-h-0 flex-1" : heightClassName,
   );
   const scrollClass = "h-full overflow-y-auto overscroll-contain";
-  const [previewOpen, setPreviewOpen] = useState(false);
   const openMemoryWindow = useOpenAgentMemoryWindow();
+  const openPromptPreview = useOpenPromptPreviewWindow();
 
   return (
     <div className={panelClass}>
@@ -468,7 +468,10 @@ export function RunControlsTabPanel({
 
           <button
             type="button"
-            onClick={() => setPreviewOpen(true)}
+            onClick={() => {
+              openPromptPreview({ conversationId });
+              onClose();
+            }}
             className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-500">
@@ -483,11 +486,6 @@ export function RunControlsTabPanel({
               </span>
             </span>
           </button>
-          <PromptPreviewModal
-            conversationId={conversationId}
-            open={previewOpen}
-            onOpenChange={setPreviewOpen}
-          />
         </div>
       )}
     </div>

@@ -1688,6 +1688,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "singleton",
   },
 
+  // ── Full Prompt Preview ───────────────────────────────────────────────────
+  {
+    slug: "prompt-preview-window",
+    overlayId: "promptPreviewWindow",
+    kind: "window",
+    label: "Full prompt preview",
+    defaultData: { conversationId: "" },
+    // Ephemeral: the content re-runs the dry-run assembly on open from the live
+    // draft in Redux; there is no window-local state worth restoring on reload
+    // (and the conversationId is caller-supplied).
+    ephemeral: true,
+    // Content-dominant read-only view of a long prompt → full-viewport on mobile.
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
+
   // ── Agent Memory ────────────────────────────────────────────────────────
   {
     slug: "agent-memory-window",

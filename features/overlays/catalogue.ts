@@ -105,6 +105,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  promptPreviewWindow: {
+    label: "Full Prompt Preview Window",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentCreateAppWindow: {
     label: "Agent Create App Window",
     instanceMode: "singleton",

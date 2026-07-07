@@ -149,6 +149,10 @@ const SystemInstructionWindow = lazyOverlay(
     import("@/features/window-panels/windows/agents/SystemInstructionWindow"),
   { ssr: false },
 );
+const PromptPreviewWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/PromptPreviewWindow"),
+  { ssr: false },
+);
 const AgentMemoryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentMemoryWindow"),
   { ssr: false },
@@ -1100,6 +1104,9 @@ export default function OverlayController() {
     systemInstructionWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "systemInstructionWindow"),
     ),
+    promptPreviewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "promptPreviewWindow"),
+    ),
     agentMemoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentMemoryWindow"),
     ),
@@ -1373,6 +1380,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     systemInstructionWindow: useAppSelector((s) =>
       selectOverlayData(s, "systemInstructionWindow"),
+    ) as Record<string, unknown> | null,
+    promptPreviewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "promptPreviewWindow"),
     ) as Record<string, unknown> | null,
   };
 
@@ -1793,6 +1803,28 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "systemInstructionWindow" }))
+            }
+            conversationId={conversationId}
+          />
+        );
+      })()}
+
+      {/* promptPreviewWindow */}
+      {(() => {
+        const isOpen = isOpenById.promptPreviewWindow;
+        const data = dataById.promptPreviewWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const conversationId =
+          typeof data?.conversationId === "string" ? data.conversationId : "";
+        if (!conversationId) return null;
+        return (
+          <PromptPreviewWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "promptPreviewWindow" }))
             }
             conversationId={conversationId}
           />

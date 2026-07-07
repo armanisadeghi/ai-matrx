@@ -138,6 +138,7 @@ export const OVERLAY_IDS = [
   "smartCodeEditorWindow",
   "sourceInspectorWindow",
   "systemInstructionWindow",
+  "promptPreviewWindow",
   "surfaceContextInspector",
   "streamDebug",
   "streamDebugHistoryWindow",
