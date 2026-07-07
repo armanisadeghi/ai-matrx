@@ -26,6 +26,9 @@ import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { Loader2 } from "lucide-react";
 
+/** Language for ``` fences with no info string (plain text / notes / prose). */
+const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
+
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
  * populate the `data` field. This is always a Python pipeline bug.
@@ -921,7 +924,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         <BlockComponents.CodeBlock
           key={index}
           code={block.content}
-          language={block.language || "typescript"}
+          language={block.language || DEFAULT_UNLABELED_FENCE_LANGUAGE}
           fontSize={16}
           className="my-3"
           onCodeChange={

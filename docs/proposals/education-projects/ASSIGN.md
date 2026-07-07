@@ -10,8 +10,8 @@ open (e.g. a route name), append it as a final line.
 ```
 You are taking ownership of ONE project from the Education Hub master plan.
 
-Your project: {P2 — AI Tutor}
-Your brief:   docs/proposals/education-projects/{P2-ai-tutor.md}
+Brief Directory:   docs/proposals/education-projects/{your-project-brief.md}
+Your project and brief: P3 — Study Media | `P3-study-media.md` 
 
 Do this, in order:
 1. Read docs/proposals/education-projects/README.md (the master plan) — you are one of ~11
@@ -34,25 +34,33 @@ Coordination: where your brief names another project as a dependency, check whet
 contract/stub already exists in the repo before waiting on anything. If you're genuinely
 blocked or a product decision is mine to make, ask me directly (the AskUserQuestion tool is
 fine) — don't guess on product semantics, and don't silently shrink scope.
+
+Commits: Make small commits. Don't stash other people's work. If your work gets accidentally added to another commit, that's ok. Just don't let your work get lost. Right now, we're in the middle of scheduled downtime so if we're going to break things on the way to fixing things, this is the time to do it.
+
+Loop: Work in a loop with your sights set on making every part of my vision a reality. Make improvements and enhancements when you see the opportunity. Apply all best practices. Finally, use adversarial agents to check all of your work. When you truly have nothing more you can do and you are totally blocked, come back with clear questions that set the stage for me so that I can answer quickly even though I'm juggling 10 projects at once.
 ```
 
 ---
 
 **Fill-in reference:**
 
-| Project | Brief file |
-|---|---|
-| P0 — Trust Layer | `P0-trust-layer.md` |
-| P1 — Assessment Engine | `P1-assessment-engine.md` |
-| P2 — AI Tutor | `P2-ai-tutor.md` |
-| P3 — Study Media | `P3-study-media.md` |
-| P4 — Smart Notes | `P4-smart-notes.md` |
-| P5 — Study Intelligence | `P5-study-intelligence.md` |
-| P6 — Growth Content Engine | `P6-content-publishing.md` |
-| P7 — Sharing & Public Access | `P7-sharing-public-access.md` |
-| P8 — Billing Integrity & Entitlements | `P8-entitlements-billing.md` |
-| P9 — Universal Ingest | `P9-universal-ingest.md` |
-| P10 — Engagement Engine | `P10-engagement-engine.md` |
-| F1 — flashcards addendum | give `F1-flashcards-feature-adds.md` to the ACTIVE flashcards agent in its existing session, not a fresh one |
+| Project | Brief file | Assigned? |
+|---|---|---|
+| P0 — Trust Layer | `P0-trust-layer.md` | XO |
+| P1 — Assessment Engine | `P1-assessment-engine.md` |  |
+| P2 — AI Tutor | `P2-ai-tutor.md` | x |
+| P3 — Study Media | `P3-study-media.md` | x |
+| P4 — Smart Notes | `P4-smart-notes.md` |  |
+| P5 — Study Intelligence | `P5-study-intelligence.md` | x |
+| P6 — Growth Content Engine | `P6-content-publishing.md` |  |
+| P7 — Sharing & Public Access | `P7-sharing-public-access.md` | x |
+| P8 — Billing Integrity & Entitlements | `P8-entitlements-billing.md` | x |
+| P9 — Universal Ingest | `P9-universal-ingest.md` |  |
+| P10 — Engagement Engine | `P10-engagement-engine.md` |  |
+| F1 — flashcards addendum | give `F1-flashcards-feature-adds.md` to the ACTIVE flashcards agent in its existing session, not a fresh one |  |
 
-Assignment order if staffing gradually: P0, P7, P8 → P9, P2 → P1, P5 → P10, P3 → P6, P4.
+Assignment order if staffing gradually:
+- P0, P7, P8 → P9
+- P2 → P1
+- P5 → P10
+- P3 → P6, P4.

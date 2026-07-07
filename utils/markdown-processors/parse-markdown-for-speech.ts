@@ -19,6 +19,39 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * The spoken word a fill-in-the-blank run of underscores becomes. One constant
+ * so every speech surface reads the same thing — change it here (e.g. "what")
+ * and TTS + generated flashcard fronts follow.
+ */
+export const SPEECH_BLANK_WORD = "blank";
+
+/**
+ * Fill-in-the-blank underscores → a spoken word. A run of two-or-more
+ * underscores (any length — "___", "_____"), including the spaced style
+ * ("_ _ _"), reads as "blank" instead of the literal "underscore" every TTS
+ * engine would otherwise say. Generic and reusable: the centralized speech
+ * cleaner AND the generated flashcard spoken-fronts both route through this, so
+ * a blank sounds identical everywhere.
+ *
+ * Guards (so it only ever touches real blanks):
+ *  - bounded by non-alphanumerics → never mangles `snake_case` or `__dunder__`;
+ *  - a line of ONLY underscores is a markdown thematic break (divider), left
+ *    untouched here for the horizontal-rule rule to drop.
+ */
+export function normalizeSpeechBlanks(text: string): string {
+  if (!text || !text.includes("_")) return text;
+  const blank = /(?<![\p{L}\p{N}])_(?:[ \t]*_)+(?![\p{L}\p{N}])/gu;
+  return text
+    .split("\n")
+    .map((line) =>
+      /^[ \t]*_[ \t_]*$/.test(line)
+        ? line // whole-line underscores = divider, not a blank
+        : line.replace(blank, ` ${SPEECH_BLANK_WORD} `),
+    )
+    .join("\n");
+}
+
 /** Apply dictionary pronunciation substitutions, whole-word & case-insensitive. */
 function applyPronunciations(text: string, pairs: SpeechPronunciation[]): string {
   let out = text;
@@ -254,9 +287,13 @@ export function parseMarkdownToText(
 
   // Custom Dictionary substitutions run FIRST so the spoken form is locked in
   // before built-in abbreviation/number expansion can touch the same tokens.
-  const source = options?.pronunciations?.length
-    ? applyPronunciations(markdown, options.pronunciations)
-    : markdown;
+  // Fill-in-the-blank underscores collapse to the spoken "blank" up front, before
+  // the emphasis (`_italic_` / `__bold__`) rules could shred a bare "___" run.
+  const source = normalizeSpeechBlanks(
+    options?.pronunciations?.length
+      ? applyPronunciations(markdown, options.pronunciations)
+      : markdown,
+  );
 
   let result = stripLeadingMarkdown(stripReasoningTags(source))
     // Handle Mermaid diagrams first (before other processing)

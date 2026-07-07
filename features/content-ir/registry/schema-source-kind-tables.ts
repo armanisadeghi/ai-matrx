@@ -57,8 +57,14 @@ export interface KindEdgeProjection {
  * our transform wrote. We validate the array-of-named-typed-objects shape and
  * let `storageToKindSchema` enforce the rest; a malformed row throws rather
  * than silently yielding an empty kind.
+ *
+ * A scalar/passthrough kind (`text`, `number`, `boolean`, `json`,
+ * `string_list`, the workflow node-result kinds, …) has NO named fields, so its
+ * `data` is stored as SQL `null`. That is a valid empty field map — normalize
+ * it to `[]`, never a malformed row.
  */
 function asStoredData(value: Json, kind: string): StoredFieldElement[] {
+  if (value === null || value === undefined) return [];
   if (!Array.isArray(value)) {
     throw new KindTablesError(`kind "${kind}": data must be a JSON array.`);
   }

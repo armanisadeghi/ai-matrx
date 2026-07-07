@@ -239,9 +239,7 @@ function fileNameOf(meta: Record<string, unknown>): string | null {
 
 function pageNumberOf(meta: Record<string, unknown>): number | null {
   const pn = (meta?.page_number ?? meta?.first_page) as
-    | number
-    | string
-    | undefined;
+    number | string | undefined;
   if (typeof pn === "number") return pn;
   if (typeof pn === "string") {
     const n = Number.parseInt(pn, 10);
@@ -932,9 +930,7 @@ function SearchTab({ scope }: { scope: Scope }) {
       scope.sourceKinds
         ? {
             source_kinds: scope.sourceKinds as (
-              | "cld_file"
-              | "note"
-              | "code_file"
+              "cld_file" | "note" | "code_file"
             )[],
           }
         : undefined,
@@ -2166,11 +2162,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
     surfaceKey,
     sourceFeature: RAG_SEARCH_SOURCE_FEATURE,
     apiEndpointMode: "agent",
-    config: {
-      displayMode: "direct",
-      autoRun: false,
-      allowChat: true,
-    },
+    config: { responseDensity: "compact" },
     runtime: {
       surfaceName: RAG_SEARCH_SURFACE,
       applicationScope,

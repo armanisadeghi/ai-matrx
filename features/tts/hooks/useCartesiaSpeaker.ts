@@ -204,11 +204,24 @@ export function useCartesiaSpeaker({
   }, [phase]);
 
   const stop = useCallback(async () => {
-    if (playerRef.current && hasPlayedRef.current) {
+    // Idempotent teardown: a WebPlayer whose AudioContext is already closed
+    // (natural completion, or an unmount-cleanup stop racing an explicit one)
+    // throws "Cannot close a closed AudioContext" on a second stop. Claim the
+    // player synchronously so a concurrent stop is a no-op, and drop the ref so
+    // the next speak() builds a fresh player rather than replaying a dead ctx.
+    const player = playerRef.current;
+    playerRef.current = null;
+    hasPlayedRef.current = false;
+    if (player) {
       try {
-        await playerRef.current.stop();
+        await player.stop();
       } catch (err) {
-        console.error('[useCartesiaSpeaker] stop failed:', err);
+        const msg = err instanceof Error ? err.message : String(err);
+        // Benign double-teardown — the context is already gone. Anything else
+        // is a real failure worth surfacing.
+        if (!/closed AudioContext/i.test(msg)) {
+          console.error('[useCartesiaSpeaker] stop failed:', err);
+        }
       }
     }
     if (mountedRef.current) setPhase('idle');

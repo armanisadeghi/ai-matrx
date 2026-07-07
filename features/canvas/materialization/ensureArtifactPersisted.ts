@@ -60,9 +60,7 @@ function resolveSource(input: EnsureArtifactInput): ArtifactSourceRef | null {
 
 function extractRowPayload(row: CanvasArtifactRow): string {
   const stored = row.content as
-    | { data?: unknown; type?: string; metadata?: unknown }
-    | string
-    | null;
+    { data?: unknown; type?: string; metadata?: unknown } | string | null;
   if (stored && typeof stored === "object" && "data" in stored) {
     return typeof stored.data === "string"
       ? stored.data
@@ -273,6 +271,7 @@ export async function ensureArtifactPersisted(
       canvasType: input.canvasType,
       title: input.title ?? null,
       source,
+      artifactIndex,
       conversationId: input.conversationId ?? null,
     });
     steps.push("cx_artifact discovery index upserted");

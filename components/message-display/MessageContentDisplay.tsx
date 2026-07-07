@@ -59,8 +59,8 @@ const MessageContentDisplay = ({
         );
       }
 
-      // Get language from match, default to 'typescript' if none specified
-      const language = match ? match[1] : "typescript";
+      // Unlabeled fences are usually prose/notes — markdown, not TypeScript.
+      const language = match?.[1] || "markdown";
 
       return (
         <CodeBlock

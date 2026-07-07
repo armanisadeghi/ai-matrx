@@ -63,13 +63,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Atomic get-or-create on the ANY-SURFACE natural key
-        //   (user_id, source_system, source_id, artifact_type, external_system)
-        // backed by the FULL `NULLS NOT DISTINCT` unique index
+        //   (user_id, source_system, source_id, artifact_index, artifact_type,
+        //   external_system) backed by the FULL `NULLS NOT DISTINCT` unique index
         // `uq_cx_artifact_source_natural_key` (migration
-        // artifacts_any_surface_source_identity.sql — replaced the message-based
-        // key, which under NULLS NOT DISTINCT would have collapsed all non-chat
-        // rows of one type per user into a single slot). This route is chat-only,
-        // so source is always ('cx_message', messageId) — 1:1 with the old key.
+        // chat_artifact_discovery_index_artifact_index.sql added artifact_index
+        // so multi-artifact messages no longer 23505). This route is chat-only
+        // and omits artifact_index (NULL) — one manual slot per message+type.
         // ON CONFLICT DO NOTHING (`ignoreDuplicates`) NEVER emits a 23505/409:
         // a concurrent create / double-mount overlay open returns an EMPTY
         // result instead of a duplicate row (the old select-then-insert had no
@@ -105,7 +104,8 @@ export async function POST(request: NextRequest) {
           .schema("chat")
           .from("artifact")
           .upsert(insertRow, {
-            onConflict: "user_id,source_system,source_id,artifact_type,external_system",
+            onConflict:
+              "user_id,source_system,source_id,artifact_index,artifact_type,external_system",
             ignoreDuplicates: true,
           })
           .select()

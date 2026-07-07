@@ -410,6 +410,16 @@ export function SingleCardVoiceTest({
               <p className="max-w-xl text-lg font-semibold leading-snug text-foreground">
                 {card.front}
               </p>
+              {/* Finished before the timer? Close the window NOW and grade —
+                  no dead wait. `finishAnswer` is idempotent with the timeout,
+                  so whichever fires first wins and the other no-ops. */}
+              <Button
+                className="mt-1 gap-1.5"
+                onClick={finishAnswer}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                Done answering
+              </Button>
             </>
           )}
 

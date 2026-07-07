@@ -37,7 +37,10 @@
  * reconcile-on-load pass make that acceptable for v1.
  */
 
-import type { CxContentBlock, CxTextContent } from "@/features/public-chat/types/cx-tables";
+import type {
+  CxContentBlock,
+  CxTextContent,
+} from "@/features/public-chat/types/cx-tables";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { getAdapter } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
@@ -51,11 +54,7 @@ import { wrapArtifactText } from "./artifactWire";
 
 /** Known source systems; open (string & {}) so new surfaces need no union edit. */
 export type SourceSystem =
-  | "cx_message"
-  | "note"
-  | "transcript"
-  | "ctx_task"
-  | (string & {});
+  "cx_message" | "note" | "transcript" | "ctx_task" | (string & {});
 
 export interface MaterializeSource {
   system: SourceSystem;
@@ -181,6 +180,7 @@ export async function materializeBlocks(
           canvasType: artifact.canvasType,
           title: artifact.title ?? null,
           source: { system: source.system, id: source.id },
+          artifactIndex: artifact.artifactIndex,
           conversationId: source.conversationId ?? null,
         });
       } catch (err) {
@@ -274,7 +274,10 @@ export async function materializeBlocks(
     return {
       materializedCount: idByIndex.size,
       rewrittenContent: null,
-      errors: [...errors, `source rewrite failed: ${res.error ?? "unknown error"}`],
+      errors: [
+        ...errors,
+        `source rewrite failed: ${res.error ?? "unknown error"}`,
+      ],
     };
   }
 

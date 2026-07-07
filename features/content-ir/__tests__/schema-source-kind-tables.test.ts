@@ -80,6 +80,21 @@ describe("content_ir read adapter — reconstruction", () => {
     expect(Object.keys(schemas.ordered.fields)).toEqual(["zebra", "alpha"]);
   });
 
+  it("reconstructs a scalar kind (null data) as an empty field map, not malformed", () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const defs: KindDefProjection[] = [
+      // Scalar/passthrough kinds (text, number, json, …) have NO named fields,
+      // so their stored `data` is SQL null — a valid empty field map.
+      { id: "t", kind: "text", label: "Text", data: null },
+      { id: "n", kind: "number", label: "Number", data: null },
+    ];
+    const { schemas } = reconstructKindRegistry(defs, []);
+    expect(schemas.text).toEqual({ kind: "text", fields: {} });
+    expect(schemas.number).toEqual({ kind: "number", fields: {} });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   it("skips (loudly) a kind whose data is malformed, keeping the rest", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const defs: KindDefProjection[] = [
