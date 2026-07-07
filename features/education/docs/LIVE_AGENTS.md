@@ -563,3 +563,17 @@ The grounded-AI trust layer. Contract + primitives live in `features/education/t
 | `helpLive` (retrofit v6) | `9035ed6e-a936-488d-9e9b-582cc6effb7d` | `trust` + honest `not_in_material` refusal |
 | `verifyAgainstSource` | `90b49ead-0b82-4773-a961-234688197e0a` | `{status: verified\|drifted\|unverifiable, explanation, suggested_fix}` |
 | `gradeTypedAnswer` | `b39183d1-3d66-467a-ab5b-36f5cf508c45` | `GradeVerdict {correct, partial, misconception, explanation}` (grade-on-meaning) |
+
+---
+
+## P2 AI Tutor agents (2026-07-07)
+
+The persistent, memory-carrying conversational tutor + the per-card micro-coach.
+Contract + surface live in `features/education/tutor/` (see its `FEATURE.md`).
+
+| Key | Agent id | Model | Shape |
+|---|---|---|---|
+| `EDU_TUTOR_AGENTS.tutor` | `46b7b357-6d45-44cd-9c12-1b647d94d5ee` | gemini-3.5-flash | Streaming TEXT chat. Vars: `learner_memory`, `study_material`, `teaching_mode`, `personality_style` (substituted into the system prompt at launch). Grounds in the learner's own material with inline citations, honest boundary, Socratic/Direct, personality-tunable. |
+| `FC_AGENTS.microCoach` | `0d6c715b-b861-4769-b0de-5d33f29f64a8` | gemini-flash-lite | `{ tip }` — one-sentence post-grade coaching, `fc_micro_coach` (AGENT_SPECS §11). Lights up the no-op lane in `StudyDeck`. |
+
+Superseded: `df4a4142-…` (first tutor draft, deactivated — its `learner_memory`/`study_material` never wired as prompt variables; recreated as `46b7b357-…`).
