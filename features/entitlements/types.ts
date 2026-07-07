@@ -46,8 +46,33 @@ export type EntitlementReason =
   | "not_authenticated"
   | "resolver_error";
 
-/** Metering window a capability's cap resets over. `null` = not metered (gate only). */
-export type EntitlementPeriod = "day" | "week" | "month" | "lifetime" | null;
+/**
+ * Metering window a capability's cap resets over. `null` = not metered (gate only).
+ *
+ * Rolling windows (`rolling_1h`, `rolling_5h`) are burst protection — the AI-cost
+ * spike guard (Arman, 2026-07-07): monthly caps stay generous, but a short
+ * rolling window stops a single session from torching the month's budget (and
+ * protects the expensive live-grader path). Calendar windows (`day`/`week`/
+ * `month`) reset on boundaries; rolling windows slide continuously.
+ */
+export type EntitlementPeriod =
+  | "rolling_1h"
+  | "rolling_5h"
+  | "day"
+  | "week"
+  | "month"
+  | "lifetime"
+  | null;
+
+/** One metering window's state — a capability may be capped across several at once. */
+export interface EntitlementWindow {
+  period: Exclude<EntitlementPeriod, null>;
+  used: number;
+  limit: number;
+  remaining: number;
+  /** ISO timestamp this window frees up, or null when unknown. */
+  resetsAt: string | null;
+}
 
 /**
  * The verdict shape — the contract every consumer depends on. Stable.
@@ -70,8 +95,18 @@ export interface EntitlementResult {
   tier: EntitlementTier;
   /** Machine-readable cause; drives paywall copy + telemetry. */
   reason: EntitlementReason;
-  /** Window the cap resets over; `null` when the capability is a pure gate. */
+  /**
+   * The BINDING window — the most-restrictive metering window for this
+   * capability right now (`limit`/`remaining`/`used` above mirror it). `null`
+   * when the capability is a pure gate or unlimited.
+   */
   period: EntitlementPeriod;
+  /**
+   * Every configured metering window for this capability at the user's tier
+   * (monthly + any burst windows). Empty when unlimited/ungated. Lets nudges
+   * show "12 of 30 this month · 3 of 5 in the last 5 hours".
+   */
+  windows: EntitlementWindow[];
   /** True while entitlement state is still hydrating at session boot. */
   isLoading: boolean;
 }
@@ -105,9 +140,12 @@ export interface EntitlementSnapshot {
 }
 
 export interface EntitlementUsage {
+  /** The binding window's usage (mirrors the most-restrictive window). */
   used: number;
   limit: number | null;
   period: EntitlementPeriod;
   /** ISO timestamp the current period resets, or null when unmetered/lifetime. */
   resetsAt: string | null;
+  /** All configured windows for this capability at the user's tier. */
+  windows: EntitlementWindow[];
 }

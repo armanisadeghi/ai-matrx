@@ -22,18 +22,29 @@
 
 import type { EntitlementPeriod, EntitlementTier } from "./types";
 
+// Metering principle (Arman, 2026-07-07): we meter AI GENERATION, never saved
+// content. Storage + studying + keeping decks are free forever (capping what a
+// user already made is the exact Quizlet/Chegg dark pattern we attack). The cost
+// to protect is any path with AI involvement — especially multi-call paths
+// (per-card enrichment = one model call per card) and the live grader.
+//
+// Every metered capability declares a PRIMARY display period here; the actual
+// enforcement windows (monthly + burst) live in billing.capability_limit so we
+// can tune burst protection without a deploy.
+
 /** All metered/gated capabilities. Extend this union by adding a registry entry. */
 export type Capability =
   | "education.generate_cards"
+  | "education.card_enrichment"
   | "education.tutor_message"
   | "education.audio_generate"
   | "education.quiz_generate"
   | "education.practice_test_generate"
   | "education.mindmap_generate"
   | "education.notes_generate"
-  | "education.game_room_size"
   | "education.ingest_document"
-  | "education.deck_count";
+  | "education.live_grade"
+  | "education.game_room_size";
 
 export interface CapabilityDefinition {
   id: Capability;
@@ -74,6 +85,18 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     enforced: false,
     upgradeMessage:
       "You've used your flashcard generations this month. Upgrade for unlimited decks.",
+  }),
+  "education.card_enrichment": def({
+    id: "education.card_enrichment",
+    label: "Enrich flashcards",
+    description:
+      "Per-card AI enrichment (mnemonics, examples, hints) — one model call per card, metered by card count.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've used your card enrichments this month. Upgrade for unlimited enrichment.",
   }),
   "education.tutor_message": def({
     id: "education.tutor_message",
@@ -141,6 +164,18 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     upgradeMessage:
       "You've used your note generations this month. Upgrade for more.",
   }),
+  "education.live_grade": def({
+    id: "education.live_grade",
+    label: "Live AI grading",
+    description:
+      "Real-time AI grading of a free-response / spoken answer. The most compute-heavy AI path — burst-limited.",
+    period: "day",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've reached today's live gradings. Upgrade for unlimited AI grading.",
+  }),
   "education.game_room_size": def({
     id: "education.game_room_size",
     label: "Multiplayer game room size",
@@ -157,23 +192,14 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
   "education.ingest_document": def({
     id: "education.ingest_document",
     label: "Ingest a document",
-    description: "Upload/import a document to turn into a study kit.",
+    description:
+      "Upload/import a document to turn into a study kit (the AI kit fan-out is the metered cost, not storage).",
     period: "month",
     defaultFreeLimit: null,
     minTier: "free",
     enforced: false,
     upgradeMessage:
       "You've used your document uploads this month. Upgrade for more.",
-  }),
-  "education.deck_count": def({
-    id: "education.deck_count",
-    label: "Saved decks",
-    description: "Total flashcard decks a user may keep. A lifetime gate.",
-    period: "lifetime",
-    defaultFreeLimit: null,
-    minTier: "free",
-    enforced: false,
-    upgradeMessage: "You've reached your saved-deck limit. Upgrade for unlimited decks.",
   }),
 };
 

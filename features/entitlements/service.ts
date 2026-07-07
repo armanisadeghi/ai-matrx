@@ -15,9 +15,12 @@ import { createClient } from "@/utils/supabase/client";
 import { getCapability, type Capability } from "./registry";
 import type {
   EntitlementCheckResult,
+  EntitlementReason,
+  EntitlementPeriod,
   EntitlementSnapshot,
   EntitlementTier,
   EntitlementUsage,
+  EntitlementWindow,
 } from "./types";
 
 function permissiveVerdict(capability: Capability): EntitlementCheckResult {
@@ -31,6 +34,7 @@ function permissiveVerdict(capability: Capability): EntitlementCheckResult {
     tier: "free",
     reason: "permissive_stub",
     period: dfn.period,
+    windows: [],
     isLoading: false,
     checkId: null,
   };
@@ -105,8 +109,9 @@ interface EntitlementCheckRow {
   limit: number | null;
   used: number;
   tier: EntitlementTier;
-  reason: EntitlementCheckResult["reason"];
-  period: EntitlementCheckResult["period"];
+  reason: EntitlementReason;
+  period: EntitlementPeriod;
+  windows?: EntitlementWindow[] | null;
   check_id: string | null;
 }
 
@@ -130,6 +135,7 @@ function mapCheckRow(
     tier: row.tier,
     reason: row.reason,
     period: row.period,
+    windows: row.windows ?? [],
     isLoading: false,
     checkId: row.check_id,
   };

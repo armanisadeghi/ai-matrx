@@ -1,13 +1,19 @@
 // features/entitlements/state/selectors.ts
 //
 // Every property has its own memoized selector (Redux doctrine). The
-// entitlement verdict per capability is derived here so the hook is a thin
-// wrapper and server/UI stay in agreement on the resolution logic.
+// entitlement verdict per capability is DERIVED from the boot-hydrated snapshot
+// so the hook is a thin wrapper and the UI can render `remaining` without a
+// round-trip. The resolver RPC (server truth) computed the windows; the client
+// only presents the most-restrictive one. `check()` is authoritative at spend.
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import { getCapability, type Capability } from "../registry";
-import type { EntitlementResult, EntitlementTier } from "../types";
+import { type Capability } from "../registry";
+import type {
+  EntitlementResult,
+  EntitlementTier,
+  EntitlementWindow,
+} from "../types";
 
 const selectEntitlementsState = (state: RootState) => state.entitlements;
 
@@ -36,13 +42,19 @@ export const selectEntitlementsError = createSelector(
   (e) => e.error,
 );
 
+/** The most-restrictive (binding) window from a set — least remaining wins. */
+function bindingWindow(windows: EntitlementWindow[]): EntitlementWindow | null {
+  if (windows.length === 0) return null;
+  return windows.reduce((a, b) => (b.remaining < a.remaining ? b : a));
+}
+
 /**
- * The verdict for one capability, derived from the hydrated snapshot + the
- * registry. This mirrors the resolver RPC's logic so the client can render
- * `remaining` BEFORE an action without a round-trip; the server re-check is
- * still truth at spend time.
+ * The verdict for one capability, derived from the hydrated snapshot.
  *
- * Cache one selector instance per capability so referential identity is stable.
+ * The snapshot only carries usage for ENFORCED, metered capabilities. Absence =
+ * unenforced or unlimited → allowed with no cap. Presence → the binding window
+ * decides `allowed`. Cache one selector instance per capability for referential
+ * stability.
  */
 const verdictSelectorCache = new Map<
   Capability,
@@ -58,71 +70,37 @@ export function makeSelectEntitlement(
   const selector = createSelector(
     selectEntitlementsState,
     (e): EntitlementResult => {
-      const dfn = getCapability(capability);
       const isLoading = e.isLoading;
-
-      // Per-capability rollout switch: until enforcement flips, everyone is
-      // allowed. Loud-in-dev happens in the hook (a UI concern), not here.
-      if (!dfn.enforced) {
-        const usage = e.usage[capability];
-        return {
-          capability,
-          allowed: true,
-          remaining: usage?.limit != null ? Math.max(usage.limit - usage.used, 0) : null,
-          limit: usage?.limit ?? null,
-          used: usage?.used ?? 0,
-          tier: e.tier,
-          reason: "permissive_stub",
-          period: dfn.period,
-          isLoading,
-        };
-      }
-
-      // Premium (paid or trialing): unlimited across metered capabilities.
-      if (e.tier === "premium" || e.tier === "trial") {
-        return {
-          capability,
-          allowed: true,
-          remaining: null,
-          limit: null,
-          used: e.usage[capability]?.used ?? 0,
-          tier: e.tier,
-          reason: "allowed",
-          period: dfn.period,
-          isLoading,
-        };
-      }
-
-      // Free tier: apply the snapshot's per-capability cap (resolver-provided,
-      // falling back to the registry's design default).
       const usage = e.usage[capability];
-      const limit = usage?.limit ?? dfn.defaultFreeLimit;
-      const used = usage?.used ?? 0;
 
-      if (limit == null) {
+      // No metered usage entry → unenforced or unlimited. Allowed, uncapped.
+      if (!usage || usage.windows.length === 0) {
         return {
           capability,
           allowed: true,
           remaining: null,
           limit: null,
-          used,
+          used: 0,
           tier: e.tier,
           reason: "allowed",
-          period: dfn.period,
+          period: null,
+          windows: [],
           isLoading,
         };
       }
 
-      const remaining = Math.max(limit - used, 0);
+      const binding = bindingWindow(usage.windows)!;
+      const allowed = usage.windows.every((w) => w.remaining > 0);
       return {
         capability,
-        allowed: remaining > 0,
-        remaining,
-        limit,
-        used,
+        allowed,
+        remaining: binding.remaining,
+        limit: binding.limit,
+        used: binding.used,
         tier: e.tier,
-        reason: remaining > 0 ? "allowed" : "cap_reached",
-        period: dfn.period,
+        reason: allowed ? "allowed" : "cap_reached",
+        period: binding.period,
+        windows: usage.windows,
         isLoading,
       };
     },

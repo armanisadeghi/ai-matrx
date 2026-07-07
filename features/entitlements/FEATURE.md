@@ -53,6 +53,38 @@ imperative, server-truth path — call it immediately before an action that spen
 | [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. |
 | [`state/selectors.ts`](./state/selectors.ts) | Per-capability memoized verdict selectors. |
 
+## Metering model (Arman decisions, 2026-07-07)
+
+- **Meter AI generation, NEVER saved content.** Storage + studying + keeping decks
+  are free forever — capping what a user already made is the exact Quizlet/Chegg
+  dark pattern we attack. The cost to protect is any AI path, especially multi-call
+  ones (`education.card_enrichment` = one model call per card) and the live grader
+  (`education.live_grade`).
+- **Multi-window metering.** A capability is capped across several windows at once:
+  a generous **monthly** cap PLUS a short **rolling burst** window (`rolling_5h`,
+  `rolling_1h`) so one session can't torch the month's budget. The resolver denies
+  if ANY window is exceeded and reports the **binding** (most-restrictive) window +
+  the full window set (`verdict.windows`). Verified live: 10/10 in the 5h window
+  blocks even with 20 left in the month.
+
+### Approved free-tier matrix (encoded in `billing.capability_limit`, enforcement OFF)
+
+| Capability | Monthly | Burst |
+|---|---|---|
+| generate_cards | 30 | 10 / 5h |
+| card_enrichment (per card) | 500 | 150 / 5h |
+| tutor_message | 30 / day | 15 / 5h |
+| audio_generate | 3 | 1 / 5h |
+| quiz_generate | 30 | 10 / 5h |
+| practice_test_generate | 5 | 2 / 5h |
+| mindmap_generate | 15 | 5 / 5h |
+| notes_generate | 30 | 10 / 5h |
+| ingest_document | 20 | 8 / 5h |
+| live_grade | 30 / day | 10 / 1h |
+
+Premium/trial = unlimited (no limit rows). Numbers activate per-capability once the
+aidream spend re-check lands (`enforced` flips in `billing.capability`).
+
 ## Invariants
 
 - **Features never read plan/subscription/usage tables directly.** They ask the resolver
@@ -68,9 +100,11 @@ imperative, server-truth path — call it immediately before an action that spen
 ## Roadmap (this project)
 
 - [x] Day-1 contract: `useEntitlement` + capability registry + Redux slice + selectors (permissive).
-- [ ] DB layer: `billing` schema (products/prices, subscriptions, customers, capability_limit,
-      usage_ledger, trials) + `entitlement_check` / `entitlement_snapshot` resolver RPCs.
-- [ ] Boot hydration wired into the SSR layout chain (fill `fetchEntitlementSnapshot`).
+- [x] DB layer: `billing` schema (products/prices, subscriptions, customers, capability +
+      capability_limit, usage_ledger) + `entitlement_check` / `entitlement_snapshot` /
+      `entitlement_consume` resolver RPCs. Multi-window metering. Verified live.
+- [x] Approved free-tier matrix encoded (enforcement OFF).
+- [x] Boot hydration wired (`DeferredSingletons` idle task → `fetchEntitlementSnapshot`).
 - [ ] Stripe: SDK, checkout, customer portal, webhooks (`app/api/stripe/**`), lifecycle sync.
 - [ ] Metering + per-capability enforcement flip; aidream-side spend re-check.
 - [ ] `/pricing` (DB-backed) + billing-integrity pledge + comparison pages.
