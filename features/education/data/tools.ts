@@ -158,7 +158,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "AI day-by-day study schedule from exam dates + mastery + available time, re-planning automatically.",
     icon: CalendarClock,
     letter: "Pl",
-    status: "coming-soon",
+    status: "live", // v1 shipped (study_goal CRUD + heuristic); AI schedule/calendar/re-plan = P5 in the roadmap
     accessTier: "trial",
     visionRef: "VISION §12 Personalized Study Planner",
     capabilities: [

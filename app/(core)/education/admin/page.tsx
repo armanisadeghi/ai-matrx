@@ -110,9 +110,9 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/education/fastfire",
       label: "FastFire",
-      description: "App tool — placeholder (signature feature).",
+      description: "App tool — LIVE. Signature spoken-recall drill with live per-card AI grading.",
       filePath: "app/(core)/education/fastfire/page.tsx",
-      status: "Coming soon",
+      status: "Live",
     },
     {
       url: "/education/tutor",
