@@ -1,5 +1,5 @@
 {
-  "generated_for": "37-kinds+3dcb252ab4ad",
+  "generated_for": "37-kinds+16497a279e90",
   "columns": [
     "definition",
     "example",
@@ -171,12 +171,12 @@
       "is_active": true,
       "assets": {
         "definition": "ok",
-        "example": "warn",
+        "example": "ok",
         "gate_structural": "ok",
-        "component": "warn",
+        "component": "ok",
         "skill": "ok",
         "content_block": "ok",
-        "surface": "warn"
+        "surface": "ok"
       }
     },
     {
@@ -537,11 +537,6 @@
       "severity": "yellow",
       "code": "detector-token-unregistered",
       "message": "detector token \"editor_error\" (xml_tag; stream-block-accumulator.ts#ATTR_XML_TAGS, content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS) has no kind_surface row — expected until Stage 5"
-    },
-    {
-      "severity": "yellow",
-      "code": "detector-token-unregistered",
-      "message": "detector token \"flashcards\" (xml_tag; stream-block-accumulator.ts#SIMPLE_XML_TAGS) has no kind_surface row — expected until Stage 5"
     },
     {
       "severity": "yellow",

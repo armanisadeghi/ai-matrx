@@ -57,7 +57,17 @@
 - **Loud recovery** — every fail-open path logs at ERROR; a silent fallback is a defect.
 - **Definition of done for a Shape:** its `check:shapes` row is green + a preview screenshot.
 
+## Stage 1 reality (live 2026-07-05)
+
+- **Keystone LIVE:** `<flashcards>` XML converges at region finalize (both hosts) to a canonical `flashcard_set` envelope (`discriminator {format:'xml', tag}`) via `registry/surface-registry.ts` + the `flashcards_legacy_text` strategy (wraps the existing parser — never a second grammar). Routing parity with `__kind` JSON proven by test.
+- **Resolver LIVE:** `registry/component-registry.ts` (`resolveComponent(kind, platform, role)`, compiled floor `system-components.ts` + warm `kind_component` override) gates `applyIrKindRoute` per R6; routed blocks stamp `metadata.__ir_route {by, key}` — the runtime proof.
+- **Feedback loop LIVE:** `/administration/kind-registry` status board (live doctor vs committed snapshot) + `/administration/kind-registry/<kind>` Preview/Gate/Schema/Assets (Preview renders through the REAL route path; Gate runs the dual gate in-browser, read-only). `pnpm shape:sample <kind> --file|--stdin [--apply]` = the sanctioned sample path (never writes `is_active`). check-doctrine "Frozen sets" detector guards the legacy literals.
+- **Converter LIVE:** `convert/kind-variable-bridge.ts` — kind fields ⇄ `VariableDefinition` (+ ContextSlot→fields) with loss-report discipline.
+- **flashcard_set = the first all-green 7/7 kind** (canonical example authored through the real gate).
+- Python enablement shipped in aidream: `.claude/skills/workflow-io-kinds/` + `docs/workflow/KINDS_ROLLOUT.md`.
+
 ## Change Log
 
+- 2026-07-05 — Stage 1 shipped (see "Stage 1 reality"): keystone XML→kind convergence, component resolver + R6 gate + `__ir_route` marker, preview route + status board, `shape:sample` CLI, frozen-sets doctrine flag, kind↔variable converter, flashcard-set skill dedupe, first `kind_component`/`kind_surface` rows, flashcard_set all-green.
 - 2026-07-05 — Created (Stage 0). Stage W recorded: 3 new content_ir tables, 11 workflow-I/O kinds, engine integration, `response_format_for_kind`.
 - 2026-07-05 — Shape doctor shipped (R10): pure `registry/shape-doctor.ts` + `pnpm check:shapes[:strict|:refresh]` (CLI `scripts/shape/check-shapes.ts`) → committed snapshot `scripts/shape/shapes-status.json` + generated [`SHAPES_STATUS.md`](./SHAPES_STATUS.md). Recomputes the structural gate via `validateStructuralLeg` (never trusts stored `validation_status`); reds = active-gate-fail / duplicate-skill / component-without-schema / snapshot-drift.
