@@ -2,9 +2,11 @@
 
 /**
  * Publish a data store to an audience + list its grants — Shared Knowledge
- * Resources. All over HTTP (`/rag/data-stores/{id}/grants`) because `rag.*` is
- * not PostgREST-exposed; the backend SECURITY DEFINER RPCs (super-admin gated)
- * do the mutation. Lazy by design — nothing fires until a consumer mounts.
+ * Resources. All over HTTP (`/rag/data-stores/{id}/grants`) because these are
+ * privileged MUTATIONS behind super-admin-gated SECURITY DEFINER RPCs — not
+ * because of schema exposure (`rag.*` IS PostgREST-exposed as of 2026-06; see
+ * features/rag/docs/SEARCH_SYSTEM_HANDOFF.md). Lazy by design — nothing fires
+ * until a consumer mounts.
  */
 
 import { useCallback, useEffect, useState } from "react";

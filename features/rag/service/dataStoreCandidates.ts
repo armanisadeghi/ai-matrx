@@ -1,12 +1,15 @@
 // features/rag/service/dataStoreCandidates.ts
 //
 // Candidate source for the `data_store` entity token in the association
-// pickers. The `rag` schema is NOT PostgREST-exposed, so the generic
-// registry-driven table read can't list stores — they list through the
-// Python API (`GET /rag/data-stores`, service-role pool with explicit user
-// checks; same path as `useDataStores`). Registered on the entity-registry
-// overlay as `listCandidates`, which every picker consults before the
-// generic read.
+// pickers. Lists through the Python API (`GET /rag/data-stores`, service-role
+// pool with explicit user checks; same path as `useDataStores`) — NOT because
+// of schema exposure (`rag.*` IS PostgREST-exposed as of 2026-06), but because
+// the Python visibility clause (data_store_grants global/industry/org branches)
+// is richer than the current rag RLS on `data_stores`: a direct supabase-js read
+// would return FEWER stores wherever sharing/grants matter. A direct-read swap is
+// viable only after per-table RLS parity (SEARCH_SYSTEM_HANDOFF.md PENDING #4).
+// Registered on the entity-registry overlay as `listCandidates`, which every
+// picker consults before the generic read.
 //
 // The endpoint has no search param — filter client-side (store counts are
 // small; the list endpoint is already the app-wide pattern).
