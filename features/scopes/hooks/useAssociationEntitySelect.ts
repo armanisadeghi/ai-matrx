@@ -15,6 +15,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import {
@@ -86,14 +87,33 @@ export function useAssociationEntitySelectAdapter(
     activeId: effectiveActive,
     setActive,
     createAndAttach: async (title) => {
+      // CREATE first (durable row), ASSOCIATE second (idempotent edge).
       const created = await createEntityRow(token, {
         title,
         orgId: container.orgId,
         extraColumns: createColumns,
       });
+      // Create-failure surfaces via the component's generic toast (null
+      // return); entityRows already console.errors the DB detail.
       if (!created.ok) return null;
-      const attached = await links.attach(token, created.data.id, title);
-      if (!attached.ok) return null;
+      let attached = await links.attach(token, created.data.id, title);
+      if (!attached.ok) {
+        // The row EXISTS — retry the idempotent edge once, then say exactly
+        // what happened. A created-but-unlinked item must never look like a
+        // failed create (the row would silently "disappear").
+        attached = await links.attach(token, created.data.id, title);
+      }
+      if (!attached.ok) {
+        console.error("[useAssociationEntitySelectAdapter] created but attach failed", {
+          token,
+          id: created.data.id,
+          error: attached.error,
+        });
+        toast.error(
+          `Created "${title}" but couldn't link it here — it exists in your library`,
+        );
+        return null;
+      }
       setTitleOverrides((prev) => ({ ...prev, [created.data.id]: title }));
       await setActive(created.data.id);
       return created.data.id;

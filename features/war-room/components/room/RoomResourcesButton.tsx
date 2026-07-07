@@ -26,7 +26,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { WarRoomResourcesList } from "@/features/war-room/components/resources/WarRoomResourcesList";
 import { useRoomResourcesAdapter } from "@/features/war-room/hooks/useThreadResourcesAdapter";
 import { selectContentAssignmentsForRoom } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
@@ -84,7 +84,7 @@ function RoomResourcesSheet({
   const adapter = useRoomResourcesAdapter(sessionId);
   const body = (
     <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-1 py-1">
-      <AssociationList adapter={adapter} variant="full" />
+      <WarRoomResourcesList adapter={adapter} variant="full" containerKind="room" />
     </div>
   );
   const subtitle =

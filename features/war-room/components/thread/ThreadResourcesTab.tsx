@@ -17,7 +17,6 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
-  ExternalLink,
   FileAudio,
   File as FileIcon,
   FilePlus2,
@@ -27,7 +26,6 @@ import {
   Loader2,
   Plus,
   Upload,
-  X,
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
@@ -47,15 +45,17 @@ import {
   folderForWarRoomThread,
   fileIdToMediaRef,
   useFile,
-  useFileSrc,
 } from "@/features/files";
 import {
   createDocument,
   listAccessibleDocuments,
 } from "@/features/data-tables/document-service";
 import type { DocumentRow } from "@/features/data-tables/types";
-import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
 import type { ContainerResourceRow } from "@/features/scopes/components/associations/AssociationList";
+import {
+  WarRoomResourcesList,
+  type ResourceRowContext,
+} from "@/features/war-room/components/resources/WarRoomResourcesList";
 import { attachEntityToThread } from "@/features/war-room/redux/thunks";
 import { useThreadResourcesAdapter } from "@/features/war-room/hooks/useThreadResourcesAdapter";
 import { cn } from "@/lib/utils";
@@ -85,6 +85,12 @@ export function ThreadResourcesTab({
   const [newFileOpen, setNewFileOpen] = useState(false);
 
   // ── Files: upload from disk → attach each returned cld_files.id ──────────
+  //
+  // CREATE-then-ASSOCIATE contract (see the association-entity-select skill):
+  // the file row is created FIRST (durable — it lives in the user's library
+  // under War Room/<thread> no matter what), the edge is written SECOND, and
+  // EVERY terminal outcome is loud. A created-but-unattached file is reported
+  // with its location — it must never look like it "just disappeared".
   const handleFilesSelected = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -98,18 +104,31 @@ export function ThreadResourcesTab({
         folderPath: folderForWarRoomThread(threadId),
         visibility: "private",
       });
-      if (result.cancelled) return;
+      if (result.cancelled) {
+        toast.info("Upload cancelled — nothing was attached");
+        return;
+      }
       const aliasedIds = result.aliased.map((a) => a.existingFileId);
       const ids = [...result.uploaded, ...aliasedIds];
       let attached = 0;
+      const unattached: string[] = [];
       for (const id of ids) {
         if (await dispatch(attachEntityToThread(threadId, "user_file", id))) {
           attached += 1;
+        } else {
+          unattached.push(id);
         }
       }
       if (attached > 0) {
         toast.success(
           attached === 1 ? "Attached 1 file" : `Attached ${attached} files`,
+        );
+      }
+      if (unattached.length > 0) {
+        // The upload SUCCEEDED — the file exists in the library. Say so, and
+        // say where, instead of letting it vanish.
+        toast.error(
+          `Uploaded ${unattached.length === 1 ? "1 file" : `${unattached.length} files`} to your Files (War Room folder) but couldn't attach ${unattached.length === 1 ? "it" : "them"} here — use "Add file" to retry`,
         );
       }
       if (result.failed.length > 0) {
@@ -120,6 +139,18 @@ export function ThreadResourcesTab({
             : `Failed to upload ${result.failed.length} files`,
         );
       }
+      if (ids.length === 0 && result.failed.length === 0) {
+        // Guard-host edge case (everything skipped in the duplicate dialog
+        // with no alias chosen) — never end a user gesture in silence.
+        toast.info("Nothing was uploaded or attached");
+      }
+    } catch (err) {
+      console.error("[ThreadResourcesTab] upload flow failed", err);
+      toast.error(
+        err instanceof Error && err.message
+          ? `Upload failed: ${err.message}`
+          : "Upload failed unexpectedly",
+      );
     } finally {
       setIsUploading(false);
     }
@@ -147,6 +178,10 @@ export function ThreadResourcesTab({
           attached === 1 ? "Attached 1 file" : `Attached ${attached} files`,
         );
       }
+      // attach failures already toast inside attachEntityToThread
+    } catch (err) {
+      console.error("[ThreadResourcesTab] attach-existing flow failed", err);
+      toast.error("Couldn't attach the selected files");
     } finally {
       setIsPicking(false);
     }
@@ -171,7 +206,15 @@ export function ThreadResourcesTab({
       if (ok) {
         toast.success("Document created");
         window.open(`/documents/${doc.id}`, "_blank", "noopener,noreferrer");
+      } else {
+        // Created but not linked — the document exists; never let it vanish.
+        toast.error(
+          `Created "${doc.document_name}" but couldn't attach it here — use "Add document" to retry`,
+        );
       }
+    } catch (err) {
+      console.error("[ThreadResourcesTab] create-document flow failed", err);
+      toast.error("Couldn't create the document");
     } finally {
       setCreatingDoc(false);
     }
@@ -237,12 +280,13 @@ export function ThreadResourcesTab({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-1.5 py-2">
-        <AssociationList
+        <WarRoomResourcesList
           adapter={adapter}
           variant={compact ? "compact" : "full"}
+          containerKind="thread"
           renderRow={(row, ctx) =>
             row.token === "file" ? (
-              <FileResourceRow row={row} ctx={ctx} compact={compact} />
+              <FileResourceRow ctx={ctx} row={row} compact={compact} />
             ) : null
           }
         />
@@ -314,12 +358,11 @@ function FileResourceRow({
   compact,
 }: {
   row: ContainerResourceRow;
-  ctx: { title: string; busy: boolean; onDetach: () => void; onOpen: () => void };
+  ctx: ResourceRowContext;
   compact?: boolean;
 }) {
   const fileId = row.resourceId;
   const { file, status } = useFile({ kind: "file_id", fileId });
-  const src = useFileSrc({ kind: "file_id", fileId });
 
   const name = file?.meta.fileName ?? ctx.title;
   const category = file?.meta.category;
@@ -331,72 +374,42 @@ function FileResourceRow({
         ? FileVideo
         : FileIcon;
 
-  return (
-    <div
-      className={cn(
-        "group flex items-center gap-2 rounded-md px-2 transition-colors hover:bg-accent",
-        compact ? "py-1" : "py-1.5",
-        ctx.busy && "opacity-50",
-      )}
-    >
+  return ctx.card(
+    <div className={cn("flex items-start gap-2", ctx.busy && "opacity-50")}>
       {isMedia ? (
         <InlineMediaRef
           ref={fileIdToMediaRef(fileId)}
           size="xs"
           fit="cover"
-          className="shrink-0 rounded"
+          className="mt-0.5 shrink-0 rounded"
         />
       ) : (
-        <span className="grid size-6 shrink-0 place-items-center rounded bg-muted">
+        <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded bg-muted">
           {status === "resolving" ? (
-            <Loader2 className="size-3 animate-spin text-muted-foreground" />
+            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
           ) : (
             <TypeIcon className="size-3.5 text-muted-foreground" />
           )}
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-xs text-foreground">{name}</p>
-        {!compact && file?.meta.mime ? (
-          <p className="truncate text-[10px] text-muted-foreground">
-            {file.meta.mime}
-          </p>
-        ) : null}
+        <p className="truncate text-sm text-foreground">{name}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {ctx.idPrefix}
+          {!compact && file?.meta.mime ? (
+            <span className="text-[10px] text-muted-foreground">
+              {file.meta.mime}
+            </span>
+          ) : null}
+          {row.originNote ? (
+            <span className="text-[10px] text-muted-foreground">
+              {row.originNote}
+            </span>
+          ) : null}
+        </div>
       </div>
-      {row.originNote && (
-        <span className="shrink-0 text-[10px] text-muted-foreground/60">
-          {row.originNote}
-        </span>
-      )}
-      {src ? (
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:!text-foreground group-hover:opacity-100"
-          title="Open file"
-        >
-          <ExternalLink className="size-3.5" />
-        </a>
-      ) : null}
-      {row.removable && (
-        <button
-          type="button"
-          disabled={ctx.busy}
-          onClick={ctx.onDetach}
-          title="Detach"
-          aria-label="Detach"
-          className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:!text-destructive group-hover:opacity-100 disabled:opacity-50"
-        >
-          {ctx.busy ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <X className="size-3.5" />
-          )}
-        </button>
-      )}
-    </div>
+      {ctx.menu}
+    </div>,
   );
 }
 

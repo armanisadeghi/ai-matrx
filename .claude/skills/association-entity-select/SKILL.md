@@ -9,6 +9,15 @@ description: Place or extend the canonical AssociationEntitySelect — the ONE c
 
 Component: `features/scopes/components/associations/AssociationEntitySelect.tsx`. Redux-free; everything flows through an **adapter**. Docs: `features/scopes/FEATURE.md` §"Association cards + list".
 
+## The CREATE-then-ASSOCIATE contract (applies to EVERY association surface)
+
+Two component classes, one law each:
+
+1. **Associate-existing** (pickers, "Add" panels): the ONLY job is the edge — it must be written and verified (`AssociationWriteResult.ok`), and failure must toast. An "attach" that silently no-ops is the bug class.
+2. **Create-then-associate** (upload file → attach, "+ New Note", new doc → attach): the item is created FIRST (durable row — it exists in the user's library regardless of what happens next), the edge is written SECOND (idempotent, retry-once is safe). **Every terminal outcome is loud, and a created-but-unlinked item is reported WITH its location** ("Uploaded to your Files (War Room folder) but couldn't attach — use Add file to retry"). The user gesture must never end in silence: cancellation, zero-result, create-failure, and attach-failure each get their own message. A created item that vanishes without a trace is the exact bug this contract kills.
+
+References: `ThreadResourcesTab.handleFilesSelected` (upload → attach, all outcomes loud) and `useAssociationEntitySelectAdapter.createAndAttach` (create → attach with retry + created-but-unlinked toast).
+
 ## Rules
 
 - **Never rebuild any face of this** — no bespoke note/session switchers, no standalone rename spans next to a separate dropdown, no "+ New X" menu items wired by hand. If a toolbar shows an entity's name, this component owns that name.

@@ -56,6 +56,8 @@ Every `sourceType`/`targetType` MUST be a **canonical `EntityTypeToken`** — ge
 
 > A relationship has **exactly one** canonical path. If two surfaces reach the same edge two ways (one via associations, one via a junction), that's the bug — collapse to associations.
 
+> **Create-then-associate contract:** a surface that CREATES an item and attaches it (upload→attach, "+ New X") creates the durable row FIRST, writes the idempotent edge SECOND, and makes every terminal outcome loud — a created-but-unlinked item is reported WITH its location, never silently orphaned. Full contract + reference implementations: the `association-entity-select` skill.
+
 ---
 
 ## Recipe A-DB — collapse the junction in the DB (2026 downtime SOP)

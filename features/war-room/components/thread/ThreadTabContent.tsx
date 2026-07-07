@@ -19,7 +19,7 @@ import { combinedSectionKind } from "@/features/war-room/components/room/threadK
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectThreadAnchorType } from "@/features/war-room/redux/selectors";
 import { useThreadResourcesAdapter } from "@/features/war-room/hooks/useThreadResourcesAdapter";
-import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import { WarRoomResourcesList } from "@/features/war-room/components/resources/WarRoomResourcesList";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { cn } from "@/lib/utils";
 import { entityTabToken, type ThreadTab } from "@/features/war-room/types";
@@ -101,9 +101,10 @@ function EntityTokenTab({
   if (!info) return <ThreadResourcesTab threadId={threadId} compact={compact} />;
   return (
     <div className="h-full min-h-0 overflow-y-auto scrollbar-thin px-1.5 py-2">
-      <AssociationList
+      <WarRoomResourcesList
         adapter={adapter}
         variant={compact ? "compact" : "full"}
+        containerKind="thread"
         tokens={[info.token]}
       />
     </div>
