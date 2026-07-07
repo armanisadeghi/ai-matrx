@@ -9,6 +9,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {
   MediaResult,
   StudyMediaRow,
@@ -44,7 +45,7 @@ function fail<T>(context: string, error: unknown): MediaResult<T> {
   return { data: null, error: `${context}: ${describeError(error)}` };
 }
 
-function toInsert(input: NewStudyMediaInput): StudyMediaInsert {
+function toInsert(input: NewStudyMediaInput, orgId: string): StudyMediaInsert {
   return {
     media_kind: input.mediaKind,
     title: input.title,
@@ -62,10 +63,10 @@ function toInsert(input: NewStudyMediaInput): StudyMediaInsert {
     duration_seconds: input.durationSeconds ?? null,
     ir_envelope: (input.irEnvelope ?? null) as StudyMediaInsert["ir_envelope"],
     diagram_kind: input.diagramKind ?? null,
-    // organization_id / created_by / updated_by / version filled by triggers.
-    // TS requires organization_id on Insert; the _stamp_org_default trigger
-    // overwrites it, but PostgREST still wants a value on the wire.
-    organization_id: "00000000-0000-0000-0000-000000000000",
+    // organization_id is resolved by the caller (create) via ensureOrgId — the
+    // `_stamp_org_default` trigger only fills a NULL org, so a real value must be
+    // on the wire (a non-null sentinel would violate the org FK).
+    organization_id: orgId,
   };
 }
 
@@ -74,7 +75,8 @@ export const studyMediaService = {
     input: NewStudyMediaInput,
   ): Promise<MediaResult<StudyMediaRow>> {
     try {
-      const row = toInsert(input);
+      const orgId = await ensureOrgId(undefined);
+      const row = toInsert(input, orgId);
       if (input.visibility) row.visibility = input.visibility;
       const { data, error } = await EDU()
         .from("study_media")
