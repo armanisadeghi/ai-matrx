@@ -12,6 +12,7 @@ export {
   RESOURCE_TYPES,
   getShareableResource,
   resolveTableName,
+  resolveResourceToken,
   getResourceTypeLabel,
   getResourceSharePath,
 } from "./registry";
@@ -74,6 +75,11 @@ export interface ShareWithUserOptions {
   resourceId: string;
   userId: string;
   permissionLevel: PermissionLevel;
+  /**
+   * Optional human title of the resource, used for the in-app DM notification
+   * card ("X shared '<title>' with you"). Falls back to the type label.
+   */
+  resourceName?: string;
 }
 
 export interface ShareWithOrgOptions {

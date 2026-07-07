@@ -1,119 +1,150 @@
-# Education Hub — Project Briefs (Execution Set)
+# Education Hub — MASTER PLAN (single source of truth for execution)
 
-> **Status date:** 2026-07-07. Supersedes the decomposition detail in
-> [`EDUCATION_HUB_ROADMAP.md`](../EDUCATION_HUB_ROADMAP.md) (which remains the narrative overview).
-> **Scope source of truth:** [`app/(core)/education/VISION-education-hub.md`](../../../app/(core)/education/VISION-education-hub.md).
-> Every claim below was re-verified against the live codebase + live DB on 2026-07-07.
-
-Each project has a standalone brief in this folder, written to be handed to one agent **blind** —
-the brief plus the repo is everything they need. Assign one agent per brief; all eight can run
-simultaneously.
-
-| # | Brief | One-liner |
-|---|---|---|
-| P1 | [P1-assessment-engine.md](./P1-assessment-engine.md) | Quizzes + practice tests + pre/post learning-gain capture |
-| P2 | [P2-ai-tutor.md](./P2-ai-tutor.md) | Persistent, RAG-grounded, voice-first tutor at every surface |
-| P3 | [P3-study-media.md](./P3-study-media.md) | Audio study (overviews/debates/panels) + mind maps |
-| P4 | [P4-smart-notes.md](./P4-smart-notes.md) | Notes + live lecture capture + one-click convert-to-anything |
-| P5 | [P5-study-intelligence.md](./P5-study-intelligence.md) | AI planner completion + analytics + learning-gain dashboards |
-| P6 | [P6-content-publishing.md](./P6-content-publishing.md) | `/learn` → DB-backed publishing engine + SEO machinery |
-| P7 | [P7-sharing-public-access.md](./P7-sharing-public-access.md) | `useAccess` gate + generic public viewer + duplicate-to-edit |
-| P8 | [P8-entitlements-billing.md](./P8-entitlements-billing.md) | Entitlements resolver + usage metering + Stripe |
+> **Status date:** 2026-07-07 (v2 — competitive research merged).
+> **This is the one document.** It merges the vision
+> ([`VISION-education-hub.md`](../../../app/(core)/education/VISION-education-hub.md)), the
+> delivery roadmap ([`EDUCATION_HUB_ROADMAP.md`](../EDUCATION_HUB_ROADMAP.md)), and the
+> competitive research
+> ([`COMPETITIVE_INSIGHTS_AND_REPRIORITIZATION.md`](../COMPETITIVE_INSIGHTS_AND_REPRIORITIZATION.md))
+> into one prioritized, fully-assignable project set. Every brief in this folder is standalone —
+> hand it to one agent blind. Every factual claim was re-verified against live code + live DB on
+> 2026-07-07.
 
 ---
 
-## Current status (verified 2026-07-07 — what changed since the 2026-06-29 roadmap)
+## 1. The strategic thesis (why this plan is shaped this way)
 
-**Still true:**
-- The 6 tool routes (quizzes, practice-tests, tutor, audio-study, mind-maps, notes) are ALL still
-  `EduToolComingSoon` stubs — full route trees exist, every page is the placeholder.
-- `/learn` is still the hardcoded `LEARN_DOCS` registry (8 docs); `education.study_structured_section`
-  is still **0 rows**; sitemap still hardcodes a single `/education` URL; no `generateStaticParams`,
-  no OG-image routes, no axis JSON-LD (nuance: `LearnArticle` DOES emit Article JSON-LD).
-- Planner is still v1 (real `study_goal` CRUD + client-side heuristic `priorityScore`; no AI
-  schedule, no calendar, no re-planning). `features/scheduling` (sch_task, cron preview) exists
-  and is completely unconsumed by education.
-- Entitlements/billing is still **greenfield**: no Stripe dependency, no billing tables,
-  `features/pricing` is static UI consumed only by dev demos, `AccessTierBadge` is display-only.
-- Study spine is live and populated: `study_session` 147, `study_attempt` 190, `item_mastery` 110
-  (FSRS), `study_streak`, `study_goal` (0 data rows). All writes via
-  `studyService.recordAttempt` → `study_record_attempt` RPC.
+The market is in trust collapse: incumbents (Quizlet 1.4★ consumer Trustpilot, Chegg −99% +
+FTC $7.5M, Course Hero 1.6★) imploded on **paywall ambushes and billing dark patterns**, while
+the AI-native wave (NotebookLM 17M MAU, Knowt, StudyFetch, Gizmo) proved demand for
+one-upload-to-study-kit and grounded audio — but **every one of them is a generation toy, not a
+study system**. NotebookLM users export to Anki for real spaced repetition; Knowt's SRS is fake.
 
-**Changed since the roadmap:**
-- **Sharing plumbing was overhauled.** Token unification (2026-06-26) + the 2026-07-07
-  registry/owner-column fix (`ded0c6ecd`) mean grants actually grant on canonicalized tables.
-  There is an **uncommitted token-vs-table registry reconciliation** in `utils/permissions/`
-  (4 files) that P7 must own/land first. The three P7 *product* gaps (view/edit gate, generic
-  public viewer, duplicate-to-edit) all remain open.
-- **Flashcards moved a lot** (voice grading primitives `gradeSpokenAnswer` + `VoiceTestButton`,
-  adaptive cross-set Review-due via `useDueReview`, shared `StudyDeck` primitive extracted,
-  live-streaming card creation). Its persistence layer split into
-  `features/flashcards/services/flashcardPersistenceService.ts` (server-side search done;
-  pagination not).
-- **`quiz_sessions` flag RESOLVED:** it is the **canvas artifact quiz store**
-  (`features/canvas/artifact-types/persistence/quiz-adapter.ts`; blob `state` JSONB,
-  content-hash keyed, 64 rows / 3 users since Oct 2025). It is NOT an assessment spine.
-  P1 builds new canonical tables and leaves `quiz_sessions` to canvas.
+**We already own what they don't: the study loop** — a real FSRS engine, a populated study spine
+(mastery/sessions/attempts), and measured learning gain. The position:
 
-**Flashcards in-flight items (still owned by the active flashcards agent — do NOT absorb):**
-view/edit gate + duplicate-to-edit (deferred to P7 as "Wave-5", see coordination note in P7),
-image/audio card attachments, enhance/expand UI (agents exist, UI is a toast stub),
-`microCoach` (null id, wired as no-op — P2 authors it, see coordination note in P2),
-FastFire mid-session adaptation, list pagination.
+> **The all-in-one study system that is provably grounded in your own material, honest about
+> what it doesn't know, generous and honest on price, and that proves it makes you smarter.**
 
----
+Four consequences drive the plan: **TRUST** becomes a P0 layer gating every AI feature; **billing
+integrity** turns P8 from plumbing into a marketing weapon; **onboarding/import** (ONBOARD) and
+**engagement** (ENGAGE) become their own projects; and P6 absorbs the **exam hub + community
+library** growth engines.
 
-## Shared contracts — published day 1 so nobody blocks
+## 2. What the system is (one paragraph)
 
-| Contract | State | Interface |
-|---|---|---|
-| **Study spine** | ✅ built | `studyService.recordAttempt({session, item, method, grade})` → FSRS + `item_mastery`. Every tool records here. Extend `method` values; never fork the tables. |
-| **Agent-execution AI** | ✅ built | Author agents via agent_author → wire with `launchAgentExecution` + content-IR streaming. Copy `features/flashcards/data/useGenerateCards` + `data/agents.ts` (UUID registry) + `AGENT_SPECS.md` pattern. No raw Python `fetch()`. |
-| **Content model** | ✅ pattern | Canonical table + `platform.associations` edges + `platform.visibility` enum + `*Result` service. Copy the `fc_set`/`fc_card` + `flashcardPersistenceService` shape. New tables follow the `db-change` / `db-canonicalize-table` skills. |
-| **Access gate** (P7) | 🔲 day-1 contract | `useAccess(resourceType, id)` → `{level: 'none'\|'view'\|'edit'\|'admin', isOwner, loading}` + a server-side `requireAccess` guard + duplicate-to-edit + public viewer route pattern. P1–P5 wire edit routes against this signature immediately; P7 ships the implementation. |
-| **Entitlements** (P8) | 🔲 day-1 contract | `useEntitlement(capability)` → `{allowed, remaining, tier, reason}` + capability registry. P1–P5 wrap every expensive AI action in it immediately (P8 ships a permissive stub on day 1, real enforcement later). |
-| **Converter contract** (P4↔P1/P3/flashcards) | 🔲 day-1 contract | `convertContent({source, targetKind})` — P4 defines the interface; flashcards/P1/P3 each expose their generator behind it. |
-| **Learning-gain contract** (P1→P5) | 🔲 day-1 contract | Baseline/post assessment rows keyed `(user, topic/deck, phase: baseline\|post, score, taken_at)` — P1 defines + persists, P5 reads. |
+A single hub at `/education`: a student uploads or imports anything (P9) → grounded study
+artifacts fan out (flashcards ✅, quizzes/tests P1, audio P3, mind maps P3, notes P4) → every
+study action (classic modes ✅, FastFire ✅, games P10, audio review P3, assessments P1) records
+to ONE study spine (FSRS mastery, sessions, attempts ✅) → intelligence reads the spine (tutor
+P2, planner + analytics + learning-gain P5) → everything is shareable (P7), metered honestly
+(P8), trust-enveloped (P0), and fed by an SEO/community acquisition engine (P6). Nothing is
+siloed; every tool makes every other tool smarter.
 
----
+## 3. Current foundation (verified 2026-07-07 — what agents build ON)
 
-## Waves & convergence
+- **Built + live:** flashcards ~90% (all create paths incl. Quizlet/CSV import, 5 study modes,
+  FastFire w/ voice grading, editor, adaptive Review-due); the study spine (`study_session` 147 /
+  `study_attempt` 190 / `item_mastery` 110 FSRS / `study_streak`); the agent-execution pipeline
+  (UUID-authored agents + content-IR streaming — NO raw Python calls); the content-model pattern
+  (`fc_*` + associations + visibility + RLS); the marketing hub (5 content-complete axes);
+  planner v1 (heuristic); voice primitives (`gradeSpokenAnswer`, `VoiceTestButton`); podcast/
+  audio pipeline (1–20 speakers, recovery); RAG; sharing plumbing (grants really grant as of
+  2026-07-07).
+- **Stubs:** all 6 tool routes (quizzes, practice-tests, tutor, audio-study, mind-maps, notes)
+  are `EduToolComingSoon` placeholders with full route trees.
+- **Empty/greenfield:** `/learn` is a hardcoded 8-doc registry (`study_structured_section` 0
+  rows); SEO machinery absent; view/edit gate + public viewer + duplicate-to-edit absent;
+  billing/entitlements fully greenfield (no Stripe, no tables); no trust surfaces (citations/
+  confidence/refusals) despite RAG being live.
+- **Resolved:** `education.quiz_sessions` is the canvas artifact quiz store — NOT an assessment
+  spine; P1 builds fresh.
 
-**Wave 1 — all of P1–P8 in parallel** (+ flashcards agent in flight). Priority within the wave:
-1. **P2 Tutor · P1 Assessment · P7 Sharing** — top differentiators + the #1 audit gap.
-2. **P5 Study Intelligence · P8 Entitlements** — the institutional/learning-gain edge + monetization.
-3. **P3 Media · P4 Notes · P6 Publishing** — strong reuse, strong growth.
+## 4. The project set — 11 briefs + 1 addendum, all assignable now
 
-**Convergence A — Access & Monetization Integration.** Every tool wires `useAccess` at its
-edit/share points and `useEntitlement` at its metered AI actions. DoD: every shareable item
-respects view-vs-edit; every metered action shows the paywall on cap.
+| # | Brief | One-liner | Tier |
+|---|---|---|---|
+| **P0** | [P0-trust-layer.md](./P0-trust-layer.md) | **NEW.** TrustEnvelope: citations, confidence, honest refusals, grade-on-meaning, verify-against-source — contract + primitives + brand surface | **1** |
+| **P7** | [P7-sharing-public-access.md](./P7-sharing-public-access.md) | `useAccess` gate + generic public viewer + duplicate-to-edit (unblocks community) | **1** |
+| **P8** | [P8-entitlements-billing.md](./P8-entitlements-billing.md) | **REFRAMED + MOVED UP.** Billing integrity + generous free tier + no-dark-patterns pledge + Stripe + `useEntitlement` | **1** |
+| **P9** | [P9-universal-ingest.md](./P9-universal-ingest.md) | **NEW.** One upload → grounded kit; Quizlet/Anki/CSV import; export + data ownership | **2** |
+| **P2** | [P2-ai-tutor.md](./P2-ai-tutor.md) | Grounded, cited, voice-first tutor with cross-session memory (fills Quizlet's abandoned tutor hole) | **2** |
+| **P1** | [P1-assessment-engine.md](./P1-assessment-engine.md) | Quizzes + practice tests + depth-on-demand + AI-graded free-response + learning-gain capture | **3** |
+| **P5** | [P5-study-intelligence.md](./P5-study-intelligence.md) | **MOVED UP.** AI planner + "prove it makes you smarter" analytics + anti-burnout intelligence | **3** |
+| **P10** | [P10-engagement-engine.md](./P10-engagement-engine.md) | **NEW.** SRS-wired multiplayer game (play IS review) + healthy anti-Duolingo streaks/leagues | **4** |
+| **P3** | [P3-study-media.md](./P3-study-media.md) | Audio study (NotebookLM-floor naturalness, adaptive to weak areas) + mind maps | **4** |
+| **P6** | [P6-content-publishing.md](./P6-content-publishing.md) | **EXPANDED.** Publishing/SEO engine + free exam hub (AI-graded FRQs) + community library + Certified tier | **5** |
+| **P4** | [P4-smart-notes.md](./P4-smart-notes.md) | Notes + live lecture capture + the cross-tool converter contract | **5** |
+| **F1** | [F1-flashcards-feature-adds.md](./F1-flashcards-feature-adds.md) | Addendum for the ACTIVE flashcards agent (confidence-tap, make-this-deeper, cloze, mastery viz) — not a new assignment | — |
 
-**Convergence B — The Connected Study Loop.** P4's converters + a unified study dashboard (P5) +
-cross-tool learning gain. DoD: note → deck → quiz → spaced review → planner → analytics with
-nothing siloed.
+Tiers are assignment priority, not sequencing — **all 11 run in parallel** (foundations exist;
+contracts below decouple them). If agent capacity is constrained, staff tiers 1→5 in order.
 
-**Convergence C — Institutional Readiness.** Teacher assignment, class analytics, LMS embed
-(LTI 1.3/OneRoster), FERPA/COPPA, exportable reports. Feeds off P5 + P7 + P8.
+## 5. The contracts — published day 1 so nobody waits on anybody
 
-**Wave 2 fan-out (unlocked after Convergence B):** Gamification & Social (leaderboards,
-head-to-head, class rooms — `study_streak` already exists), Institutional, multi-format
-ingestion breadth, mobile parity.
+| Contract | Owner | Consumers | Interface |
+|---|---|---|---|
+| Study spine | ✅ built | every study tool | `studyService.recordAttempt({session, item, method, grade})` → FSRS + mastery. Extend `method`, never fork. |
+| Agent-execution AI | ✅ built | every AI project | author via agent_author → `launchAgentExecution` + content-IR streaming (copy flashcards `useGenerateCards` + `data/agents.ts`). |
+| Content model | ✅ pattern | P1, P3, P10 | canonical table + associations + `visibility` + `*Result` service (copy `fc_*`). Tables via `db-change` skills. |
+| **TrustEnvelope** | **P0** | P1–P4, P6, P9 | `{citations[], confidence: 'grounded'\|'inferred'\|'not_in_material'}` in content-IR kinds + `<SourceCitations/>` + grade-on-meaning verdict shape. |
+| **Access gate** | **P7** | all tools, P6-C, P10 | `useAccess(type, id)` → `{level, isOwner}` + `requireAccess` server guard + public-viewer route + duplicate-to-edit. |
+| **Entitlements** | **P8** | all metered actions | `useEntitlement(capability)` → `{allowed, remaining, tier, reason}` + capability registry (permissive stub day 1). |
+| **Converter** | **P4** (w/ P9 week-1) | P9 kit flow, flashcards, P1, P3 | `convertContent({source, targetKind})` — one dispatch for note-convert AND upload-kit fan-out. |
+| **Learning gain** | **P1** | P5, P6-B | baseline/post rows `(user, topic/deck, phase, score, taken_at)`. |
+| **Exam-hub service** | **P1** | P6-B | exam-type-first-class assessments + mock-exam generation as a service. |
 
----
+## 6. The TRUST mandate (cross-cutting, enforced at Convergence A)
 
-## Open flags for Arman (resolve at assignment, not blocking day 1)
+Every AI output in the hub carries the TrustEnvelope (citations + confidence + refusal path);
+every grading path grades meaning, not strings; every cap/paywall is visible before, never
+during, an action; no ads, ever; streaks forgive; metrics headline outcomes (mastery, learning
+gain) over vanity (hours, streaks). **At Convergence A, any AI surface without the envelope and
+any metered action without a pre-visible limit is a defect.**
 
-1. ~~`quiz_sessions` reconciliation~~ **RESOLVED** — canvas-owned; P1 builds new tables.
-2. **Public viewer route shape** (P7): extend the per-feature `/p/[slug]` + `/share/[token]`
-   pattern into one generic registry-driven viewer, or keep per-feature routes behind a shared
-   guard? P7's brief recommends a generic `/p/e/[resourceType]/[id]` viewer — confirm.
-3. **microCoach authorship** (P2): the null-id no-op is flashcards plumbing, but it's a tutor
-   agent — P2's brief claims it. Confirm the flashcards agent agrees.
-4. **Mind-maps timing** (P3): folded in as the lighter second half; P3 phases audio first.
-   Confirm mind-maps ships in this wave.
-5. **Entitlements vs `account_tiers`** (P8): kept separate (operational vs commercial) per the
-   requirements doc. Confirm.
-6. **P7 × flashcards coordination**: P7 lands the gate in flashcards as the reference
-   implementation (the flashcards agent's "Wave-5" items). Confirm the hand-off.
-7. **Uncommitted `utils/permissions/` diff**: P7 takes ownership of landing it (it's the registry
-   token-vs-table reconciliation P7 builds on). If another session owns it, resolve before P7 starts.
+## 7. Waves, convergences, fan-out
+
+**Wave 1 (now):** all 11 projects in parallel + F1 with the flashcards agent. Day-1 contract
+publications: P0 (TrustEnvelope), P7 (useAccess), P8 (useEntitlement), P4+P9 (converter), P1
+(learning-gain + exam-hub shapes).
+
+**→ Convergence A — Trust, Access & Monetization Integration.** Every tool: TrustEnvelope on AI
+outputs, `useAccess` at edit/share points, `useEntitlement` at metered actions. DoD: the §6
+audit passes hub-wide; the pledge/comparison pages are live and true.
+
+**→ Convergence B — The Connected Study Loop.** Converter fan-out (note→deck→quiz→map→audio),
+the unified dashboard (P5) surfacing next-best-action across ALL tools (incl. game + audio
+review), cross-tool learning gain. DoD: one upload flows through every tool with nothing siloed;
+NotebookLM's "features without a system" gap is demonstrably closed.
+
+**→ Convergence C — Institutional & Community Readiness.** Teacher assignment + class analytics
+(P5+P7), LMS embed (LTI 1.3/OneRoster), FERPA/COPPA, exportable reports (P5), certified/community
+library at scale (P6-C), live classroom mode (P10 fan-out).
+
+**Wave 2 fan-out (unlocked by B):** per-class hub (scopes-native — vision ADD pending approval),
+class/group social rooms, study songs/mnemonics, talk-to-the-hosts audio, offline mode + browser
+extension clipper, native mobile parity, standards alignment, grade-adaptive theming (K-5).
+
+## 8. Open flags for Arman
+
+1. **Vision additions approval** (competitive doc §4): anti-burnout, depth-on-demand,
+   never-lose-work/ownership, integrity positioning, healthy-gamification, Certified/community
+   tier, per-class hub. The briefs ASSUME approval of the first six (they're baked in); per-class
+   hub is deferred to Wave 2 pending your call. Say the word and the vision doc gets amended.
+2. **Free-tier capability matrix** (P8): proposed for your approval before enforcement flips —
+   generosity is a product decision.
+3. **Public viewer route shape** (P7): recommend one generic `/p/e/[resourceType]/[id]`. Confirm.
+4. **microCoach + import/export + view-edit-gate hand-offs** (F1): three items formally move off
+   the flashcards agent's queue to P2/P9/P7 respectively — confirm with that agent.
+5. **Uncommitted `utils/permissions/` diff**: P7 owns landing it. If another session owns it,
+   resolve before P7 starts.
+6. **Game route name** (P10) and **mind-maps timing** (P3 phases audio first) — kickoff calls.
+7. **Stripe test keys** (P8) needed before checkout testing.
+8. **Audio naturalness bar** (P3): if our TTS is materially below NotebookLM's, that's an
+   aidream escalation — expect it early from the P3 agent.
+
+## Change log
+- **2026-07-07 v2** — Competitive research merged: added P0/P9/P10, expanded P6 (exam hub +
+  community), reframed P8 (billing integrity, moved up), elevated P5, mandate sections added to
+  P1/P2/P3/P4/P7, F1 addendum for the flashcards agent, TRUST mandate + updated contracts/waves.
+- **2026-07-07 v1** — Initial 8 briefs from the live re-audit of the 2026-06-29 roadmap.

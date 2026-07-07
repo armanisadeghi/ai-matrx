@@ -55,6 +55,17 @@ context already loaded.
   existing wiring) plus the main tutor agent(s). Register via agent_author; document in
   `LIVE_AGENTS.md`.
 
+**IN — competitive mandates (added 2026-07-07 from the market research)**
+- **TrustEnvelope is non-negotiable (P0):** every answer cites; out-of-corpus questions get the
+  honest refusal + explicit general-knowledge opt-in; confidence signals visible. The tutor is
+  the single most trust-sensitive surface — StudyFetch's "confidently wrong" reputation is the
+  cautionary tale, NotebookLM's grounding (40%→13% hallucination) is the bar.
+- **Voice-you-talk-to is elevated, not optional:** the fastest-rising feature across the
+  research. The voice round-trip is a launch requirement, and latency/feel gets real tuning time.
+- **Market position note for the feature doc:** Quizlet *killed* its Q-Chat tutor — we are
+  filling an abandoned hole for its migrating users; keep the tutor reachable within two clicks
+  of every study surface (`AskTutor` is that mechanism).
+
 **OUT**
 - Grading engines (reuse grading-core / FastFire's). The study data itself (spine-owned).
   Homework-help file ingestion breadth (reuse `fileHandler` for what exists; ingestion breadth is
@@ -87,8 +98,10 @@ context already loaded.
 ## Dependencies & contracts
 
 - Agent pipeline ✅, RAG ✅, study spine ✅, voice primitives ✅, chat infra ✅.
-- **Consumes:** P7 `useAccess` (shared conversations later; wire the signature), P8
-  `useEntitlement` (tutor messages are a metered capability — wrap the send path day 1).
+- **Consumes:** P0 TrustEnvelope (citations/refusals/confidence — day-1 contract; the tutor is
+  P0's second reference retrofit, coordinate directly), P7 `useAccess` (shared conversations
+  later; wire the signature), P8 `useEntitlement` (tutor messages are a metered capability —
+  wrap the send path day 1).
 - **Coordination flag:** `microCoach` is listed among the flashcards agent's in-flight items but
   is tutor-domain; this brief claims it. Confirm with Arman/the flashcards agent at kickoff.
 

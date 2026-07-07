@@ -1,45 +1,56 @@
 /**
  * Shareable Resource Registry — TypeScript mirror
  *
- * Single source of truth lives in the Postgres `shareable_resource_registry`
- * table. This file mirrors the same data so the FE doesn't have to fetch the
- * registry on every page load. The ts→db mirror is verified at test time by
- * `utils/permissions/__tests__/registry.parity.test.ts` — if a row is added
- * to the DB and not here (or vice versa) the test fails.
+ * Single source of truth lives in the Postgres
+ * `platform.shareable_resource_registry` table. This file mirrors the same data
+ * so the FE doesn't have to fetch the registry on every page load. The TS↔DB
+ * mirror is verified at test time by
+ * `utils/permissions/__tests__/registry.parity.test.ts` — if a row is added to
+ * the DB and not here (or vice versa) the test fails.
  *
- * Adding a new shareable resource type:
- *   1. INSERT a row into public.shareable_resource_registry (one place).
- *   2. Mirror that row in REGISTRY below.
- *   3. The parity test will keep them in sync forever.
+ * REGENERATE (do not hand-edit rows): after any registry migration run
+ *   `pnpm tsx scripts/regen-shareable-registry-snapshot.ts`
+ * to refresh the DB snapshot, then update the rows below to match it.
  *
- * That's it. Do NOT add aliases to share-related RPCs, do NOT hardcode a URL
- * pattern in ShareModal, do NOT add a label in a separate map. Everything
- * driven from this registry.
+ * ── Token vs. table (post-2026-canonicalization) ─────────────────────────────
+ * Two distinct canonical values live on every row; DO NOT conflate them:
+ *   • `resourceType` — the ENTITY TOKEN. This is the object key, the value
+ *     stored in `iam.permissions.resource_type`, and the `p_resource_type`
+ *     passed to every share RPC. Reference resources by this, never by table.
+ *   • `tableName` (+ `schemaName`) — the PHYSICAL table (schema.table) for
+ *     direct supabase-js `.from()` reads. Equals the DB registry `table_name`.
+ * They coincided before the reorg (public tables named after their token) and
+ * diverge now (token `note` → `workbench.notes`, token `file` → `files.files`).
+ * For permission/RPC/`iam.permissions` work use `resourceType`; for a direct
+ * table read use `.schema(schemaName).from(tableName)`.
  */
 
 export interface ShareableResourceEntry {
   /**
-   * Public alias used in TS / RPC arguments / UI props.
-   * Frequently equals tableName; for legacy types it's the singular form.
+   * The entity TOKEN — public alias used in TS / RPC arguments / UI props and
+   * stored in `iam.permissions.resource_type`. This is what you pass to the
+   * share RPCs; it is NOT the physical table name.
    */
   resourceType: string;
 
   /**
-   * The canonical Postgres table name. ALL permissions.resource_type rows
-   * store this value. RLS policies key on this string.
+   * The PHYSICAL Postgres table name (within `schemaName`), mirroring the DB
+   * registry `table_name`. Used for direct `.from()` reads. NOT the permissions
+   * key — reference resources by `resourceType`. Multiple tokens may share a
+   * physical name across schemas (e.g. `definition` in agent/app/skill/workflow).
    */
   tableName: string;
 
   /** Primary-key column on the resource table. Almost always 'id'. */
   idColumn: string;
 
-  /** Column holding owner's auth.uid(). Almost always 'user_id'. */
+  /** Column holding the owner's auth.uid(). Canonical tables use 'created_by'. */
   ownerColumn: string;
 
   /**
-   * Column holding the public-visibility boolean.
-   * Null means the table has no public flag (visibility is private-only or
-   * controlled by another mechanism).
+   * Column holding the public-visibility boolean, when the table has one.
+   * Null for canonical tables (visibility is the `platform.visibility` enum,
+   * driven via make_resource_public/private — never a boolean here).
    */
   isPublicColumn: string | null;
 
@@ -48,320 +59,50 @@ export interface ShareableResourceEntry {
 
   /**
    * URL pattern for the share link. `{id}` is substituted with the resource id.
-   * Replaces the inline resourcePaths map in ShareModal.getShareUrl().
    */
   urlPathTemplate: string;
 
   /**
-   * When false, the table's RLS does NOT call has_permission(). Sharing rows
-   * insert successfully but RLS will not actually grant the grantee access.
+   * When false, the table's RLS does NOT call has_permission()/has_access().
+   * A permission grant inserts but does not actually grant the grantee access.
    * Surfaces broken end-to-end states explicitly.
    */
   rlsUsesHasPermission: boolean;
 
   /**
-   * Non-`public` Postgres schema the resource table lives in, if any. supabase-js
-   * reaches it via `.schema(schemaName)`. Omitted ⇒ `public`.
-   * (Set for files/folders after the 2026 restructure moved them to the `files`
-   * schema.) FE-only — not part of the DB `shareable_resource_registry` parity.
+   * Non-`public` Postgres schema the resource table lives in. supabase-js
+   * reaches it via `.schema(schemaName)`. Omitted ⇒ `public`. FE-only — not
+   * part of the DB-registry parity comparison.
    */
   schemaName?: string;
-
-  /**
-   * Physical table name to use for direct `.from()` reads/writes when it differs
-   * from `tableName` (which doubles as the `permissions.resource_type` / RLS key
-   * and the DB-registry value the parity test checks). Omitted ⇒ use `tableName`.
-   * (Set for files/folders: `tableName` is the canonical permissions key
-   * `'file'` / `'folder'`, but the physical table is `files.files` /
-   * `files.folders` after the 2026 canonicalization.) FE-only.
-   */
-  physicalTable?: string;
 }
 
 /**
- * The canonical client-side mirror of public.shareable_resource_registry.
- * Verified against the DB by the parity test.
+ * The canonical client-side mirror of platform.shareable_resource_registry.
+ * Verified against the DB by the parity test. Regenerate rows from the DB — do
+ * not hand-tune individual fields.
  */
 export const SHAREABLE_RESOURCE_REGISTRY = {
   agent: {
     resourceType: "agent",
-    // `tableName` matches DB shareable_resource_registry.table_name = 'definition'.
-    // Physical table is `agent.definition`, reached via `.schema('agent')`.
-    // The parity test maps by resourceType key ('agent'), not tableName.
     tableName: "definition",
     schemaName: "agent",
-    physicalTable: "definition",
     idColumn: "id",
-    // DB canonical (live DB + registry): owner_column = created_by.
     ownerColumn: "created_by",
-    // DB canonical: agent.definition uses visibility enum, not is_public bool.
     isPublicColumn: null,
     displayLabel: "Agent",
-    // DB snapshot has "/agents/{id}" — keep aligned with DB registry.
     urlPathTemplate: "/agents/{id}",
     rlsUsesHasPermission: true,
   },
-  agent_app: {
-    resourceType: "agent_app",
-    // NOTE: The DB registry uses resource_type='app' (not 'agent_app'). The FE
-    // key 'agent_app' has no matching DB row — the parity test will flag this as
-    // "missing from DB". This is pre-existing drift from before this audit.
-    // Do NOT change the FE key to 'app' without updating all call sites.
-    // tableName must match DB table_name for the app resource = 'definition'.
-    tableName: "definition",
-    schemaName: "app",
-    physicalTable: "definition",
-    idColumn: "id",
-    // DB canonical: app.definition uses created_by (not user_id).
-    ownerColumn: "created_by",
-    // DB canonical (new snapshot): is_public_column = null for 'app'.
-    isPublicColumn: null,
-    displayLabel: "App",
-    urlPathTemplate: "/apps/{id}",
-    rlsUsesHasPermission: true,
-  },
-  prompt: {
-    resourceType: "prompt",
-    tableName: "prompts",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Prompt",
-    urlPathTemplate: "/ai/prompts/edit/{id}",
-    rlsUsesHasPermission: true,
-  },
-  note: {
-    resourceType: "note",
-    tableName: "notes",
-    // 2026 reorg: notes canonicalized + moved public→workbench (reached via
-    // .schema('workbench')). Live workbench.notes has created_by + visibility
-    // only (no user_id / is_public) — the DB registry row now matches, so owner
-    // reads created_by and public is driven by the visibility enum (no bool col).
-    schemaName: "workbench",
+  agent_card: {
+    resourceType: "agent_card",
+    tableName: "card",
+    schemaName: "agent",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
-    displayLabel: "Note",
-    urlPathTemplate: "/notes/{id}",
-    rlsUsesHasPermission: true,
-  },
-  content_template: {
-    resourceType: "content_template",
-    tableName: "content_template",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Content Template",
-    urlPathTemplate: "/settings/content-templates/{id}",
-    rlsUsesHasPermission: true,
-  },
-  workflow: {
-    resourceType: "workflow",
-    // DB `shareable_resource_registry` row: resource_type='workflow',
-    // table_name='definition', schema_name='workflow'. Physical table is
-    // `workflow.definition`, reached via `.schema('workflow')`.
-    tableName: "definition",
-    schemaName: "workflow",
-    physicalTable: "definition",
-    idColumn: "id",
-    // DB canonical: workflow.definition has created_by + visibility (no user_id /
-    // is_public). Registry row matches — owner reads created_by; public via enum.
-    ownerColumn: "created_by",
-    isPublicColumn: null,
-    displayLabel: "Workflow",
-    urlPathTemplate: "/workflows/{id}",
-    rlsUsesHasPermission: true,
-  },
-  conversation: {
-    resourceType: "conversation",
-    // `tableName` is the value passed as `p_resource_type` to the share RPCs.
-    // DB `shareable_resource_registry` row: resource_type='conversation', table_name='conversation',
-    // schema_name='chat'. Physical table is `chat.conversation`, reached via `.schema('chat')`.
-    tableName: "conversation",
-    schemaName: "chat",
-    physicalTable: "conversation",
-    idColumn: "id",
-    // DB canonical: chat.conversation has created_by + visibility (no user_id /
-    // is_public). Registry row matches — owner reads created_by; public via enum.
-    ownerColumn: "created_by",
-    isPublicColumn: null,
-    displayLabel: "Conversation",
-    urlPathTemplate: "/chat/{id}",
-    rlsUsesHasPermission: true,
-  },
-  canvas_items: {
-    resourceType: "canvas_items",
-    tableName: "canvas_items",
-    // 2026 reorg: moved public→canvas. Reached via .schema('canvas').
-    schemaName: "canvas",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Canvas",
-    urlPathTemplate: "/canvas/{id}",
-    rlsUsesHasPermission: true,
-  },
-  udt_datasets: {
-    resourceType: "udt_datasets",
-    tableName: "udt_datasets",
-    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
-    schemaName: "workbench",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Dataset",
-    urlPathTemplate: "/data/{id}",
-    rlsUsesHasPermission: true,
-  },
-  udt_picklists: {
-    resourceType: "udt_picklists",
-    tableName: "udt_picklists",
-    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
-    schemaName: "workbench",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "List",
-    urlPathTemplate: "/lists/{id}",
-    rlsUsesHasPermission: true,
-  },
-  udt_workbooks: {
-    resourceType: "udt_workbooks",
-    tableName: "udt_workbooks",
-    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
-    schemaName: "workbench",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Workbook",
-    urlPathTemplate: "/workbooks/{id}",
-    rlsUsesHasPermission: true,
-  },
-  udt_documents: {
-    resourceType: "udt_documents",
-    tableName: "udt_documents",
-    // 2026 reorg: udt_* moved public→workbench. Reached via .schema('workbench').
-    schemaName: "workbench",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Document",
-    urlPathTemplate: "/documents/{id}",
-    rlsUsesHasPermission: true,
-  },
-  transcript: {
-    resourceType: "transcript",
-    tableName: "transcripts",
-    // 2026 reorg: moved public→transcripts. Reached via .schema('transcripts').
-    schemaName: "transcripts",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Transcript",
-    urlPathTemplate: "/transcripts/{id}",
-    rlsUsesHasPermission: true,
-  },
-  quiz_sessions: {
-    resourceType: "quiz_sessions",
-    tableName: "quiz_sessions",
-    // 2026 reorg: moved public→education. Reached via .schema('education').
-    schemaName: "education",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: null,
-    displayLabel: "Quiz",
-    urlPathTemplate: "/quizzes/{id}",
-    rlsUsesHasPermission: true,
-  },
-  sandbox_instances: {
-    resourceType: "sandbox_instances",
-    tableName: "sandbox_instances",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: null,
-    displayLabel: "Sandbox",
-    urlPathTemplate: "/sandbox/{id}",
-    rlsUsesHasPermission: true,
-  },
-  file: {
-    // Canonical now: the file system was fully canonicalized in the 2026
-    // restructure. `resourceType` / `tableName` is `'file'` — this is the
-    // value sent as `p_resource_type` to the share RPCs / `resolve_shareable_
-    // resource`, which knows `'file'` (NOT the old `'cld_files'`). Physical
-    // table is `files.files`, reached via `.schema('files')`.
-    resourceType: "file",
-    tableName: "file",
-    schemaName: "files",
-    physicalTable: "files",
-    idColumn: "id",
-    // Canonical owner column (trigger-stamped), not the old `owner_id`.
-    ownerColumn: "created_by",
-    // No `is_public` boolean — files carry the `platform.visibility` enum.
-    isPublicColumn: null,
-    displayLabel: "File",
-    urlPathTemplate: "/files/f/{id}",
-    // Files resolve access via the canonical resolver `iam.has_access('file',…)`
-    // (owner + grant + org + visibility/share-link), and file grants live in
-    // the canonical `public.permissions` store (resource_type='file').
-    rlsUsesHasPermission: true,
-  },
-  folder: {
-    // Folders are a registered canonical entity with file→folder / folder→
-    // folder containment; sharing flows through `public.permissions`
-    // (resource_type='folder') with `iam.has_access` RLS + visibility enum.
-    resourceType: "folder",
-    tableName: "folder",
-    schemaName: "files",
-    physicalTable: "folders",
-    idColumn: "id",
-    ownerColumn: "created_by",
-    isPublicColumn: null,
-    displayLabel: "Folder",
-    // Mirrors the DB registry (`shareable_resource_registry`) — the source of
-    // truth the parity test enforces. Note: the live folder browse route is
-    // `/files/folders` (see app/(core)/files/folders); the registry template
-    // and live route should be reconciled in the DB registry.
-    urlPathTemplate: "/files/folder/{id}",
-    rlsUsesHasPermission: true,
-  },
-  prompt_actions: {
-    resourceType: "prompt_actions",
-    tableName: "prompt_actions",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
-    displayLabel: "Action",
-    urlPathTemplate: "/ai/prompts/actions/{id}",
-    rlsUsesHasPermission: true,
-  },
-  flashcard_data: {
-    resourceType: "flashcard_data",
-    tableName: "flashcard_data",
-    // 2026 reorg: moved public→education. Reached via .schema('education').
-    schemaName: "education",
-    idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "public",
-    displayLabel: "Flashcard",
-    urlPathTemplate: "/flashcards/{id}",
-    rlsUsesHasPermission: true,
-  },
-  task: {
-    // Canonical: workspace domain moved to `workspace` schema; physical table is
-    // `workspace.tasks`, reached via `.schema('workspace')` (see workspaceDb).
-    // tableName matches DB shareable_resource_registry.table_name = 'tasks'.
-    resourceType: "task",
-    tableName: "tasks",
-    schemaName: "workspace",
-    physicalTable: "tasks",
-    idColumn: "id",
-    // DB canonical: workspace.tasks has NO user_id column. RLS and DB registry
-    // both use created_by. isResourceOwner() queries created_by.
-    ownerColumn: "created_by",
-    // workspace.tasks uses visibility enum, no is_public column.
-    isPublicColumn: null,
-    displayLabel: "Task",
-    urlPathTemplate: "/tasks/{id}",
+    displayLabel: "Agent Card",
+    urlPathTemplate: "/agents/card/{id}",
     rlsUsesHasPermission: true,
   },
   analysis_recipes: {
@@ -374,6 +115,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/settings/analysis/recipes/{id}",
     rlsUsesHasPermission: false,
   },
+  app: {
+    resourceType: "app",
+    tableName: "definition",
+    schemaName: "app",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "App",
+    urlPathTemplate: "/apps/{id}",
+    rlsUsesHasPermission: true,
+  },
   auto_ingest_batch: {
     resourceType: "auto_ingest_batch",
     tableName: "auto_ingest_batch",
@@ -384,11 +136,130 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/administration/kg-cost/batches/{id}",
     rlsUsesHasPermission: false,
   },
+  canvas_item: {
+    resourceType: "canvas_item",
+    tableName: "canvas_items",
+    schemaName: "canvas",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Canvas Item",
+    urlPathTemplate: "/canvas/{id}",
+    rlsUsesHasPermission: true,
+  },
+  code_file: {
+    resourceType: "code_file",
+    tableName: "code_files",
+    schemaName: "code",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Code File",
+    urlPathTemplate: "/code/files/{id}",
+    rlsUsesHasPermission: true,
+  },
+  code_folder: {
+    resourceType: "code_folder",
+    tableName: "code_file_folders",
+    schemaName: "code",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Code Folder",
+    urlPathTemplate: "/code/folders/{id}",
+    rlsUsesHasPermission: true,
+  },
+  code_repository: {
+    resourceType: "code_repository",
+    tableName: "code_repositories",
+    schemaName: "code",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Code Repository",
+    urlPathTemplate: "/code/repos/{id}",
+    rlsUsesHasPermission: true,
+  },
+  content_template: {
+    resourceType: "content_template",
+    tableName: "content_template",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: null,
+    displayLabel: "Content Template",
+    urlPathTemplate: "/settings/content-templates/{id}",
+    rlsUsesHasPermission: true,
+  },
+  conversation: {
+    resourceType: "conversation",
+    tableName: "conversation",
+    schemaName: "chat",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Conversation",
+    urlPathTemplate: "/chat/{id}",
+    rlsUsesHasPermission: true,
+  },
+  dm_conversation: {
+    resourceType: "dm_conversation",
+    tableName: "dm_conversations",
+    schemaName: "communication",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Direct Conversation",
+    urlPathTemplate: "/messages/{id}",
+    rlsUsesHasPermission: true,
+  },
+  fc_card: {
+    resourceType: "fc_card",
+    tableName: "fc_card",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Flashcard",
+    urlPathTemplate: "/education/flashcards/card/{id}",
+    rlsUsesHasPermission: true,
+  },
+  fc_set: {
+    resourceType: "fc_set",
+    tableName: "fc_set",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Flashcard Set",
+    urlPathTemplate: "/education/flashcards/{id}",
+    rlsUsesHasPermission: true,
+  },
+  feature_doc: {
+    resourceType: "feature_doc",
+    tableName: "feature_docs",
+    schemaName: "admin",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Feature Doc",
+    urlPathTemplate: "/admin/docs/{slug}",
+    rlsUsesHasPermission: true,
+  },
+  file: {
+    resourceType: "file",
+    tableName: "files",
+    schemaName: "files",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "File",
+    urlPathTemplate: "/files/f/{id}",
+    rlsUsesHasPermission: true,
+  },
   file_analysis: {
     resourceType: "file_analysis",
-    tableName: "file_analysis",
+    tableName: "analysis",
     schemaName: "files",
-    physicalTable: "analysis",
     idColumn: "file_id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -398,9 +269,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   file_entities: {
     resourceType: "file_entities",
-    tableName: "file_entities",
+    tableName: "entities",
     schemaName: "files",
-    physicalTable: "entities",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -410,9 +280,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   file_overrides: {
     resourceType: "file_overrides",
-    tableName: "file_overrides",
+    tableName: "overrides",
     schemaName: "files",
-    physicalTable: "overrides",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -422,9 +291,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   file_page_annotations: {
     resourceType: "file_page_annotations",
-    tableName: "file_page_annotations",
+    tableName: "page_annotations",
     schemaName: "files",
-    physicalTable: "page_annotations",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
@@ -434,15 +302,58 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   file_pages: {
     resourceType: "file_pages",
-    tableName: "file_pages",
+    tableName: "pages",
     schemaName: "files",
-    physicalTable: "pages",
     idColumn: "id",
     ownerColumn: "owner_id",
     isPublicColumn: null,
     displayLabel: "File Page",
     urlPathTemplate: "/files/{id}",
     rlsUsesHasPermission: false,
+  },
+  flashcard_data: {
+    resourceType: "flashcard_data",
+    tableName: "flashcard_data",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: "public",
+    displayLabel: "Flashcard",
+    urlPathTemplate: "/flashcards/{id}",
+    rlsUsesHasPermission: true,
+  },
+  folder: {
+    resourceType: "folder",
+    tableName: "folders",
+    schemaName: "files",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Folder",
+    urlPathTemplate: "/files/folder/{id}",
+    rlsUsesHasPermission: true,
+  },
+  note: {
+    resourceType: "note",
+    tableName: "notes",
+    schemaName: "workbench",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Note",
+    urlPathTemplate: "/notes/{id}",
+    rlsUsesHasPermission: true,
+  },
+  note_folder: {
+    resourceType: "note_folder",
+    tableName: "note_folders",
+    schemaName: "workbench",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Note Folder",
+    urlPathTemplate: "/notes?folder={id}",
+    rlsUsesHasPermission: true,
   },
   pdf_redaction_audits: {
     resourceType: "pdf_redaction_audits",
@@ -455,6 +366,28 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/files/{id}",
     rlsUsesHasPermission: false,
   },
+  project: {
+    resourceType: "project",
+    tableName: "projects",
+    schemaName: "workspace",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Project",
+    urlPathTemplate: "/projects/{id}",
+    rlsUsesHasPermission: true,
+  },
+  quiz_sessions: {
+    resourceType: "quiz_sessions",
+    tableName: "quiz_sessions",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: null,
+    displayLabel: "Quiz",
+    urlPathTemplate: "/quizzes/{id}",
+    rlsUsesHasPermission: true,
+  },
   redaction_mapping: {
     resourceType: "redaction_mapping",
     tableName: "redaction_mapping",
@@ -466,10 +399,41 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/files/{id}",
     rlsUsesHasPermission: false,
   },
-  scope_association_suggestions: {
-    resourceType: "scope_association_suggestions",
+  research_template: {
+    resourceType: "research_template",
+    tableName: "rs_template",
+    schemaName: "research",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Research Template",
+    urlPathTemplate: "/research/templates/{id}",
+    rlsUsesHasPermission: true,
+  },
+  research_topic: {
+    resourceType: "research_topic",
+    tableName: "rs_topic",
+    schemaName: "research",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Research Topic",
+    urlPathTemplate: "/research/topics/{id}",
+    rlsUsesHasPermission: true,
+  },
+  sandbox_instances: {
+    resourceType: "sandbox_instances",
+    tableName: "sandbox_instances",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: null,
+    displayLabel: "Sandbox",
+    urlPathTemplate: "/sandbox/{id}",
+    rlsUsesHasPermission: true,
+  },
+  scope_association_suggestion: {
+    resourceType: "scope_association_suggestion",
     tableName: "scope_association_suggestions",
-    // 2026 reorg: moved public→rag. Reached via .schema('rag').
     schemaName: "rag",
     idColumn: "id",
     ownerColumn: "user_id",
@@ -478,10 +442,9 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/scopes/suggestions/{id}",
     rlsUsesHasPermission: false,
   },
-  scope_item_value_suggestions: {
-    resourceType: "scope_item_value_suggestions",
+  scope_item_value_suggestion: {
+    resourceType: "scope_item_value_suggestion",
     tableName: "scope_item_value_suggestions",
-    // 2026 reorg: moved public→rag. Reached via .schema('rag').
     schemaName: "rag",
     idColumn: "id",
     ownerColumn: "user_id",
@@ -492,7 +455,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   scraper_preset: {
     resourceType: "scraper_preset",
-    tableName: "scraper.crawl_presets",
+    tableName: "crawl_presets",
+    schemaName: "scraper",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: "is_public",
@@ -502,7 +466,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   scraper_run: {
     resourceType: "scraper_run",
-    tableName: "scraper.crawl_runs",
+    tableName: "crawl_runs",
+    schemaName: "scraper",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
@@ -512,7 +477,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   scraper_schedule: {
     resourceType: "scraper_schedule",
-    tableName: "scraper.crawl_schedules",
+    tableName: "crawl_schedules",
+    schemaName: "scraper",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: "is_public",
@@ -522,7 +488,8 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   scraper_site: {
     resourceType: "scraper_site",
-    tableName: "scraper.sites",
+    tableName: "sites",
+    schemaName: "scraper",
     idColumn: "id",
     ownerColumn: "owner_user_id",
     isPublicColumn: "is_public",
@@ -532,25 +499,106 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   skill: {
     resourceType: "skill",
-    // `tableName` is the value passed as `p_resource_type` to the share RPCs.
-    // DB `shareable_resource_registry` row: resource_type='skill', table_name='definition',
-    // schema_name='skill'. Physical table is `skill.definition`, reached via `.schema('skill')`.
-    tableName: "skill",
+    tableName: "definition",
     schemaName: "skill",
-    physicalTable: "definition",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Skill",
+    urlPathTemplate: "/skills/{id}",
+    rlsUsesHasPermission: true,
+  },
+  studio_session: {
+    resourceType: "studio_session",
+    tableName: "studio_sessions",
+    schemaName: "transcripts",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Audio Session",
+    urlPathTemplate: "/transcripts/studio?session={id}",
+    rlsUsesHasPermission: true,
+  },
+  task: {
+    resourceType: "task",
+    tableName: "tasks",
+    schemaName: "workspace",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Task",
+    urlPathTemplate: "/tasks/{id}",
+    rlsUsesHasPermission: true,
+  },
+  thread: {
+    resourceType: "thread",
+    tableName: "threads",
+    schemaName: "workspace",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Thread",
+    urlPathTemplate: "/war-room/all",
+    rlsUsesHasPermission: true,
+  },
+  transcript: {
+    resourceType: "transcript",
+    tableName: "transcripts",
+    schemaName: "transcripts",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Transcript",
+    urlPathTemplate: "/transcripts/{id}",
+    rlsUsesHasPermission: true,
+  },
+  udt_datasets: {
+    resourceType: "udt_datasets",
+    tableName: "udt_datasets",
+    schemaName: "workbench",
     idColumn: "id",
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
-    displayLabel: "Skill",
-    urlPathTemplate: "/skills/{id}",
+    displayLabel: "Dataset",
+    urlPathTemplate: "/data/{id}",
+    rlsUsesHasPermission: true,
+  },
+  udt_documents: {
+    resourceType: "udt_documents",
+    tableName: "udt_documents",
+    schemaName: "workbench",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: "is_public",
+    displayLabel: "Document",
+    urlPathTemplate: "/documents/{id}",
+    rlsUsesHasPermission: true,
+  },
+  udt_picklists: {
+    resourceType: "udt_picklists",
+    tableName: "udt_picklists",
+    schemaName: "workbench",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: "is_public",
+    displayLabel: "List",
+    urlPathTemplate: "/lists/{id}",
+    rlsUsesHasPermission: true,
+  },
+  udt_workbooks: {
+    resourceType: "udt_workbooks",
+    tableName: "udt_workbooks",
+    schemaName: "workbench",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: "is_public",
+    displayLabel: "Workbook",
+    urlPathTemplate: "/workbooks/{id}",
     rlsUsesHasPermission: true,
   },
   user_analysis_preferences: {
     resourceType: "user_analysis_preferences",
     tableName: "user_analysis_preferences",
-    // 2026 reorg: moved public→users. Reached via .schema('users'). (The DB
-    // registry row still says schema_name='public' — stale; the live table is
-    // users.user_analysis_preferences. schemaName is FE-only, not parity-checked.)
     schemaName: "users",
     idColumn: "user_id",
     ownerColumn: "user_id",
@@ -559,21 +607,34 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/settings/analysis",
     rlsUsesHasPermission: false,
   },
-  wf_definition: {
-    resourceType: "wf_definition",
-    tableName: "wf_definition",
+  war_room: {
+    resourceType: "war_room",
+    tableName: "war_rooms",
+    schemaName: "workspace",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
-    displayLabel: "Workflow",
-    urlPathTemplate: "/workflows/{id}",
-    rlsUsesHasPermission: false,
+    displayLabel: "War Room",
+    urlPathTemplate: "/war-room/{id}",
+    rlsUsesHasPermission: true,
+  },
+  wc_claim: {
+    resourceType: "wc_claim",
+    tableName: "wc_claim",
+    schemaName: "legal",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "WC Claim",
+    urlPathTemplate: "/legal/wc/{id}",
+    rlsUsesHasPermission: true,
   },
   wf_run: {
     resourceType: "wf_run",
-    tableName: "wf_run",
+    tableName: "run",
+    schemaName: "workflow",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Run",
     urlPathTemplate: "/runs/{id}",
@@ -581,31 +642,43 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   wf_trigger: {
     resourceType: "wf_trigger",
-    tableName: "wf_trigger",
+    tableName: "trigger",
+    schemaName: "workflow",
     idColumn: "id",
-    ownerColumn: "user_id",
+    ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Workflow Trigger",
     urlPathTemplate: "/workflows/{id}/triggers/{id}",
     rlsUsesHasPermission: false,
   },
+  workflow: {
+    resourceType: "workflow",
+    tableName: "definition",
+    schemaName: "workflow",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Workflow",
+    urlPathTemplate: "/workflows/{id}",
+    rlsUsesHasPermission: true,
+  },
 } as const satisfies Record<string, ShareableResourceEntry>;
 
 /**
- * Union of all valid resource-type aliases. Exactly mirrors the registry's
- * primary keys.
+ * Union of all valid resource-type tokens. Exactly mirrors the registry keys.
  */
 export type ResourceType = keyof typeof SHAREABLE_RESOURCE_REGISTRY;
 
-/** Ordered list of resource-type aliases (useful for tests, dropdowns, etc.) */
+/** Ordered list of resource-type tokens (useful for tests, dropdowns, etc.) */
 export const RESOURCE_TYPES = Object.keys(
   SHAREABLE_RESOURCE_REGISTRY,
 ) as ResourceType[];
 
 /**
- * Look up a registry entry by alias OR canonical table_name. Returns undefined
- * for unregistered types so callers can fail gracefully (the DB will reject
- * any subsequent write either way).
+ * Look up a registry entry by token OR physical table_name. Returns undefined
+ * for unregistered types so callers can fail gracefully (the DB will reject any
+ * subsequent write either way). Prefer the token; table_name lookup is a
+ * best-effort convenience and is ambiguous when tokens share a physical name.
  */
 export function getShareableResource(
   typeOrTable: string,
@@ -620,18 +693,35 @@ export function getShareableResource(
 }
 
 /**
- * Resolve a resource type to its canonical Postgres table name. Throws if the
- * type isn't registered — this matches the DB-side resolver behavior so
- * callers can rely on a single failure mode.
+ * Resolve a resource type to its PHYSICAL Postgres table name. Throws if the
+ * type isn't registered. NOTE: for `iam.permissions.resource_type` filters and
+ * share-RPC arguments use the TOKEN (`resourceType`) instead — this returns the
+ * physical table, which differs from the token on canonical tables.
  */
 export function resolveTableName(resourceType: string): string {
   const entry = getShareableResource(resourceType);
   if (!entry) {
     throw new Error(
-      `Unknown shareable resource type: ${resourceType}. Register it in shareable_resource_registry (see utils/permissions/registry.ts and features/sharing/FEATURE.md).`,
+      `Unknown shareable resource type: ${resourceType}. Register it in platform.shareable_resource_registry (see utils/permissions/registry.ts and features/sharing/FEATURE.md).`,
     );
   }
   return entry.tableName;
+}
+
+/**
+ * Resolve a resource type to its canonical ENTITY TOKEN — the value stored in
+ * `iam.permissions.resource_type` and passed to the share RPCs. Throws if the
+ * type isn't registered. Use this (never resolveTableName) for any
+ * permissions/grant query or RPC call.
+ */
+export function resolveResourceToken(resourceType: string): string {
+  const entry = getShareableResource(resourceType);
+  if (!entry) {
+    throw new Error(
+      `Unknown shareable resource type: ${resourceType}. Register it in platform.shareable_resource_registry (see utils/permissions/registry.ts and features/sharing/FEATURE.md).`,
+    );
+  }
+  return entry.resourceType;
 }
 
 /** Human-readable label for a resource type (replaces the legacy map). */

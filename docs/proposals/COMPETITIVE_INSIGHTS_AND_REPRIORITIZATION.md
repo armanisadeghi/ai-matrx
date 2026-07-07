@@ -189,6 +189,11 @@ offline/export); per-class hub; integrity-positive copy.
   Trustpilot; StudyFetch/Turbolearn cancellation complaints) — this is the safest, highest-ROI wedge.
 
 ## Change log
+- **2026-07-07 (later)** — **Merged into the execution set:** §5–§6 are now operationalized in
+  [`education-projects/README.md`](./education-projects/README.md) (the master plan) — `TRUST`→P0,
+  `ONBOARD`→P9, `ENGAGE`→P10, `LIBRARY`→P6 (expanded), P8 reframed/moved up, P5 elevated, mandate
+  sections added to P1/P2/P3/P4/P7, F1 flashcards addendum. Assign agents from THERE. §4 vision
+  additions still await the user's approval (master-plan flag 1).
 - **2026-07-07** — Created from a 9-competitor deep-research fan-out. Ranked market wants, per-competitor
   intel, 15 cross-cutting themes, proposed vision elevations/additions, and a re-prioritized task set with 4
   new projects (`TRUST`, `ONBOARD`, `ENGAGE`, `LIBRARY`) + elevations of P8/P5/P2/P3/P1.

@@ -79,9 +79,12 @@ and **owns the cross-tool converter contract** that Convergence B is built from.
 
 - `features/notes` ✅ (sharing just fixed — you inherit the reference implementation),
   `features/transcripts` ✅, flashcards generators ✅.
-- **Publishes:** the converter contract (day 1) → P1, P3, flashcards, Convergence B.
+- **Publishes:** the converter contract (day 1) → P1, P3, flashcards, Convergence B — **and P9
+  (ONBOARD)**, whose one-upload→kit hero flow is a fan-out over this same contract. Coordinate
+  the signature with P9 in week 1 so kit generation and note conversion are the same dispatch.
 - **Consumes:** P1 quiz generator + P3 media generators as they land (integrate behind the
-  already-shipped contract — no waiting); P7/P8 signatures.
+  already-shipped contract — no waiting); P0 TrustEnvelope (summaries and converted artifacts
+  cite the note/passage they came from); P7/P8 signatures.
 
 ## Build guidance
 

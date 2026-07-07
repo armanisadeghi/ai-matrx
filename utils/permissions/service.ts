@@ -15,11 +15,11 @@
  *   get_resource_permissions()    — list all grants with user/org details (owner-only)
  *   is_resource_owner()           — check ownership for any table
  *
- * Canonical-visibility resources (see VISIBILITY_ENUM_RESOURCE_TYPES, e.g.
- * `cx_conversation`): the row carries the `platform.visibility` enum
- * (`private < internal < link < public`) read by RLS via `iam.has_access`, and
- * the legacy `is_public` column is deprecated/ignored. For these, public toggle
- * read/write goes DIRECTLY to the `visibility` column (owner-only via the
+ * Canonical-visibility resources (any registry row with `isPublicColumn = null`,
+ * detected by `usesVisibilityEnum()`): the row carries the `platform.visibility`
+ * enum (`private < internal < link < public`) read by RLS via `iam.has_access`,
+ * and the legacy `is_public` column is deprecated/ignored. For these, public
+ * toggle read/write goes DIRECTLY to the `visibility` column (owner-only via the
  * owner-UPDATE RLS policy), NOT the `make_resource_*` RPCs.
  *
  * Visibility model (two tiers only):
@@ -49,7 +49,7 @@ import {
   ShareActionResult,
   satisfiesPermissionLevel,
 } from "./types";
-import { getShareableResource } from "./registry";
+import { getShareableResource, getResourceTypeLabel } from "./registry";
 
 /**
  * Minimal query surface used by the dynamic-table helpers below. The registry
@@ -135,43 +135,18 @@ export interface ResourceVisibility {
 }
 
 /**
- * Resource types whose row carries the canonical `platform.visibility` enum
- * (`private < internal < link < public`) instead of the legacy `is_public`
- * boolean. RLS reads `visibility` (via `iam.has_access`) for these; `is_public`
- * is deprecated and ignored. The owner-UPDATE RLS policy lets the owner write
- * `visibility` directly — so for these types we bypass the `make_resource_*`
- * RPCs (which only touch the now-ignored `is_public` column) and read/write the
- * `visibility` column directly. Public read works via the public-SELECT policy.
- *
- * Other resource types still flow through the registry + RPCs unchanged.
+ * True when a resource's public state is driven by the canonical
+ * `platform.visibility` enum (`private < internal < link < public`) rather than
+ * a legacy boolean column. Derived from the registry — a canonical table has
+ * `isPublicColumn = null` (no boolean flag; RLS reads `visibility` via
+ * `iam.has_access`). The owner-UPDATE RLS policy lets the owner write
+ * `visibility` directly, so for these we read/write the column via
+ * `setVisibilityColumn` instead of the `make_resource_*` RPCs. Registry-derived
+ * so it covers EVERY canonical token automatically — never a hand-kept list
+ * (that list drifted the moment a new table canonicalized).
  */
-const VISIBILITY_ENUM_RESOURCE_TYPES = new Set<string>([
-  "cx_conversation",
-  // The 2026 file-system canonicalization moved `files.files`/`files.folders`
-  // onto the `platform.visibility` enum read by `iam.has_access` RLS. The
-  // owner-UPDATE policy lets the owner write `visibility` directly, so public
-  // toggles go straight to the column (via `.schema('files')`) — never the
-  // `make_resource_*` RPCs, which only touch the now-ignored `is_public`.
-  "file",
-  "folder",
-  // The 2026 canonical reorg moved these tables onto the platform.visibility
-  // enum. RLS uses `visibility` (via iam.has_access), not `is_public`. The
-  // make_resource_public/private RPCs still update visibility correctly via
-  // the DB's resolve_shareable_resource, but isResourceOwner() on the FE must
-  // use ownerColumn = "created_by", which the registry already reflects.
-  "task",
-  "agent",
-  "agent_app",
-  // 2026 reorg: notes moved public→workbench AND onto the platform.visibility enum.
-  // Live workbench.notes has created_by + visibility only (no user_id / is_public),
-  // so ownership must read created_by and public toggles write `visibility` directly.
-  // The DB shareable_resource_registry row is still stale (user_id/is_public); this
-  // override is the canonical handling, matching task/file/folder/agent.
-  "note",
-]);
-
 function usesVisibilityEnum(resourceType: ResourceType): boolean {
-  return VISIBILITY_ENUM_RESOURCE_TYPES.has(resourceType);
+  return getShareableResource(resourceType)?.isPublicColumn == null;
 }
 
 /**
@@ -185,7 +160,7 @@ async function setVisibilityColumn(
   visibility: "private" | "internal" | "link" | "public",
 ): Promise<ShareActionResult> {
   const entry = getShareableResource(resourceType);
-  const tableName = entry?.physicalTable ?? entry?.tableName ?? resourceType;
+  const tableName = entry?.tableName ?? resourceType;
   const idColumn = entry?.idColumn ?? "id";
   const scoped = resolveDynamicClient(entry?.schemaName);
   const { data, error } = await scoped
@@ -223,7 +198,7 @@ export async function getResourceVisibility(
     // Canonical `visibility`-enum resources: "public" ⇒ isPublic. The legacy
     // `is_public` column is no longer read by RLS, so reading it would lie.
     if (usesVisibilityEnum(resourceType)) {
-      const tableName = entry?.physicalTable ?? entry?.tableName ?? resourceType;
+      const tableName = entry?.tableName ?? resourceType;
       const idColumn = entry?.idColumn ?? "id";
       const visClient = resolveDynamicClient(entry?.schemaName);
       const { data, error } = await visClient
@@ -239,7 +214,7 @@ export async function getResourceVisibility(
     }
     const client = resolveDynamicClient(entry.schemaName);
     const { data, error } = await client
-      .from(entry.physicalTable ?? entry.tableName)
+      .from(entry.tableName)
       .select(entry.isPublicColumn)
       .eq(entry.idColumn, resourceId)
       .maybeSingle<Record<string, boolean | null>>();
@@ -263,7 +238,8 @@ export async function shareWithUser(
   options: ShareWithUserOptions,
 ): Promise<ShareActionResult> {
   try {
-    const { resourceType, resourceId, userId, permissionLevel } = options;
+    const { resourceType, resourceId, userId, permissionLevel, resourceName } =
+      options;
 
     const { data, error } = await supabase.rpc("share_resource_with_user", {
       p_resource_type: resourceType,
@@ -280,25 +256,51 @@ export async function shareWithUser(
         error: parsed.error || "Failed to share with user",
       };
 
-    // Fire-and-forget notification — failure doesn't affect the grant
+    // Fire-and-forget notifications — failure doesn't affect the grant.
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        const sharerName =
-          user.user_metadata?.full_name ||
-          user.user_metadata?.name ||
-          user.email ||
-          "Someone";
-        fetch("/api/sharing/notify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recipientUserId: userId,
-            resourceType,
-            resourceId,
-            sharerName,
+      if (!user) return;
+      const sharerName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email ||
+        "Someone";
+      const resourceLabel = getResourceTypeLabel(resourceType);
+
+      // (1) Email (respects the recipient's preferences server-side).
+      fetch("/api/sharing/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientUserId: userId,
+          resourceType,
+          resourceId,
+          sharerName,
+        }),
+      }).catch((err) => console.error("Sharing notification failed:", err));
+
+      // (2) In-app DM with a clickable resource card. Lazy import keeps the
+      // messaging service out of the permissions bundle.
+      import("@/features/messaging/service/sendDirectActionMessage")
+        .then(({ sendDirectActionMessage }) =>
+          sendDirectActionMessage({
+            currentUserId: user.id,
+            recipientId: userId,
+            content: `${sharerName} shared a ${resourceLabel} with you`,
+            actionData: {
+              kind: "resource_shared",
+              version: 1,
+              payload: {
+                resource_type: resourceType,
+                resource_id: resourceId,
+                resource_title: resourceName || resourceLabel,
+                resource_label: resourceLabel,
+                permission_level: permissionLevel,
+                sharer_name: sharerName,
+              },
+            },
           }),
-        }).catch((err) => console.error("Sharing notification failed:", err));
-      }
+        )
+        .catch((err) => console.error("Sharing DM failed:", err));
     });
 
     return {
@@ -639,17 +641,13 @@ export async function isResourceOwner(
     const entry = getShareableResource(resourceType);
     if (!entry) return false;
 
-    // Canonical `visibility`-enum resources own via `created_by` (trigger-stamped,
-    // RLS-canonical), not the deprecated `user_id`/`owner_id` columns. The
-    // registry's `ownerColumn` is already `created_by` for file/folder, but keep
-    // the explicit guard so any other enum resource added later is covered too.
-    const ownerColumn = usesVisibilityEnum(resourceType)
-      ? "created_by"
-      : entry.ownerColumn;
+    // The registry is authoritative for the owner column (canonical tables use
+    // `created_by`; file satellites `owner_id`; udt/legacy `user_id`). Read it
+    // directly — no per-type override.
+    const ownerColumn = entry.ownerColumn;
 
-    // Resolve the real physical table + schema (file/folder live in `files.*`,
-    // not `public`, and their `tableName` is the RLS key, not the table name).
-    const tableName = entry.physicalTable ?? entry.tableName;
+    // `tableName` is the physical table; `schemaName` its (non-public) schema.
+    const tableName = entry.tableName;
     const client = resolveDynamicClient(entry.schemaName);
     const [
       { data: row },

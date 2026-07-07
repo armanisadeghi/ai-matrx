@@ -52,10 +52,24 @@ dashboard: "exactly what to study next, for how long, and why."
   goal urgency. This becomes the education home's authenticated centerpiece.
 - Generalize `StudyProgress`/`StudyTrends` beyond `fc_card` as other item types land.
 
+**IN — competitive mandates (added 2026-07-07 from the market research; this project MOVED UP)**
+- **"Prove it makes you smarter" — the consumer reframe.** Learning-gain was scoped as an
+  institutional sell; the research shows it's a mass-market trust wedge (the anti-brain-rot
+  anxiety, NotebookLM's "summarization trap," Chegg's cheating stigma). The dashboard's headline
+  is retention/gain evidence for the *student* ("you now retain X% of this deck; here's your
+  pre/post delta"), with the institutional export as the formal artifact. Outcomes over vanity
+  metrics everywhere — hours studied and streaks never headline.
+- **Anti-burnout review-debt intelligence — a genuinely new capability no competitor has.**
+  Review-debt burnout is Anki's #1 quit reason. Build load-smoothing into the planner + due
+  queue: gentle daily caps with overflow redistribution, scheduled rest days that don't wreck the
+  FSRS schedule, a "recovery plan" after an absence (triage the backlog: what to review, what to
+  let lapse) — instead of the guilt-inducing 500-cards-due wall. Coordinate the due-queue hooks
+  with `useDueReview` (flashcards) and the healthy-streak mechanics (P10).
+
 **OUT**
 - Raw data capture (tools/spine own it). The assessment engine (P1 — you read its deltas).
-  Teacher/class-level analytics (Convergence C). Gamification displays (Wave 2 — but keep streak
-  data visible where natural).
+  Teacher/class-level analytics (Convergence C). Streak/league UI and mechanics (P10 — you
+  display outcomes; they own engagement).
 
 ## Deliverables / Definition of done
 

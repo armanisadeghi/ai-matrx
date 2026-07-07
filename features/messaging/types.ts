@@ -66,6 +66,21 @@ export interface AgentDriftActionPayload {
   usage_label?: string;
 }
 
+/** Payload for `kind: "resource_shared"` — "X shared a Note with you". */
+export interface ResourceSharedActionPayload {
+  /** Registry entity token (e.g. "note", "agent"). */
+  resource_type: string;
+  resource_id: string;
+  /** Human title of the shared resource (the sharer supplies it). */
+  resource_title: string;
+  /** Display label of the type (e.g. "Note"). */
+  resource_label: string;
+  /** Permission granted to the recipient. */
+  permission_level?: "viewer" | "editor" | "admin";
+  /** Display name of the person who shared it. */
+  sharer_name?: string;
+}
+
 export interface Message {
   id: string; // UUID
   conversation_id: string; // UUID

@@ -57,10 +57,25 @@ delta." It also replaces two of the six placeholder tools with real product.
 - Edit routes wired against the P7 `useAccess` signature; expensive generation calls wrapped in
   the P8 `useEntitlement` capability check (permissive stub until P8's backend lands).
 
+**IN — competitive mandates (added 2026-07-07 from the market research)**
+- **Depth on demand:** tiered generation — rote recall → applied → exam/clinical depth — as a
+  first-class config on every generation path, plus a per-item "make this deeper" action. (Gizmo/
+  StudyFetch/NotebookLM are all hated for shallow "X is Y" items; the med/law cohort hand-edits
+  every AI card today. This wins them.)
+- **Free-response is first-class, not an afterthought:** short-answer + written-response graded
+  on meaning via P0's grade-on-meaning verdict shape (NotebookLM's wedge-exposing weakness is
+  MCQ-recognition-only; Knowt's is exact-string grading). AI-graded FRQs are also what P6's exam
+  hub serves — keep the grading path reusable.
+- **TrustEnvelope compliance (P0):** every generated item carries citations to its source
+  deck/material; explanations cite; grading feedback is grounded.
+- **Exam-hub contract (publish early for P6):** exam-type metadata is first-class on assessments
+  (AP Bio, SAT, …) and mock-exam generation is exposed as a service (config in → assessment out)
+  so P6's free exam hub can serve mocks without reaching into your internals.
+
 **OUT**
 - Analytics dashboards (P5 reads your data). The tutor (P2). Sharing internals (consume P7).
-  Billing internals (consume P8). Canvas `quiz_sessions`. Standardized-exam curated content
-  libraries (later wave — but don't preclude them: keep exam-type as assessment metadata).
+  Billing internals (consume P8). Canvas `quiz_sessions`. Curated exam content libraries and the
+  exam hub surface itself (P6 — you provide the engine + contract).
 
 ## Deliverables / Definition of done
 
@@ -84,9 +99,11 @@ delta." It also replaces two of the six placeholder tools with real product.
 ## Dependencies & contracts
 
 - Study spine ✅, agent-execution pipeline ✅, content model pattern ✅ — all live, copy flashcards.
-- **Publishes:** the learning-gain contract (day 1, in this brief's feature doc) → P5.
-- **Consumes:** P7 `useAccess` signature; P8 `useEntitlement` signature (both published day 1).
-- **Exposes for P4:** quiz generation behind the converter contract
+- **Publishes:** the learning-gain contract (day 1, in this brief's feature doc) → P5; the
+  exam-hub/mock-exam service contract → P6 (early, before the engine is finished).
+- **Consumes:** P7 `useAccess` signature; P8 `useEntitlement` signature; P0 TrustEnvelope +
+  grade-on-meaning verdict shape (all published day 1).
+- **Exposes for P4/P9:** quiz generation behind the converter contract
   (`convertContent({source, targetKind: 'quiz'})`).
 
 ## Build guidance

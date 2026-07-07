@@ -149,17 +149,21 @@ describe("shareable_resource_registry: TS ↔ DB parity", () => {
     }
   });
 
-  it("table_name appears at most once across the registry (no duplicate canonicals)", () => {
+  it("schema-qualified physical table appears at most once (no duplicate canonicals)", () => {
+    // Post-2026-canonicalization, the same physical NAME legitimately exists in
+    // multiple schemas (e.g. `definition` in agent/app/skill/workflow), so
+    // uniqueness is on `schema.table`, not the bare table name.
     const seen = new Map<string, string>();
     for (const entry of Object.values(SHAREABLE_RESOURCE_REGISTRY)) {
-      const prior = seen.get(entry.tableName);
+      const qualified = `${entry.schemaName ?? "public"}.${entry.tableName}`;
+      const prior = seen.get(qualified);
       if (prior) {
         throw new Error(
-          `Duplicate canonical table_name "${entry.tableName}" — used by both ` +
-            `"${prior}" and "${entry.resourceType}". Only one alias may map to a given table.`,
+          `Duplicate canonical table "${qualified}" — used by both "${prior}" ` +
+            `and "${entry.resourceType}". Only one token may map to a physical table.`,
         );
       }
-      seen.set(entry.tableName, entry.resourceType);
+      seen.set(qualified, entry.resourceType);
     }
   });
 });

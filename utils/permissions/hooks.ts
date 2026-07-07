@@ -241,6 +241,7 @@ export function useSharing(
   resourceType: ResourceType,
   resourceId: string,
   enabled: boolean = true,
+  resourceName?: string,
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -280,6 +281,7 @@ export function useSharing(
           resourceId,
           userId,
           permissionLevel,
+          resourceName,
         });
 
         if (!result.success) {
@@ -297,7 +299,7 @@ export function useSharing(
         setLoading(false);
       }
     },
-    [resourceType, resourceId, refresh],
+    [resourceType, resourceId, resourceName, refresh],
   );
 
   const handleShareWithOrg = useCallback(

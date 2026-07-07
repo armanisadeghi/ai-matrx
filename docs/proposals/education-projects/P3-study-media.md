@@ -53,10 +53,23 @@ production-grade); mind-maps is the lighter, weaker-reuse half. Ship audio to do
 - Sharing + entitlement call sites per the P7/P8 day-1 signatures (audio generation is one of the
   most expensive metered capabilities — wrap it first).
 
+**IN — competitive mandates (added 2026-07-07 from the market research)**
+- **NotebookLM-grade naturalness is the floor, not the target.** Audio Overview went viral on
+  SoundStorm-level naturalness (17M MAU, 43% students) — evaluate our generated output against it
+  honestly at kickoff; if the gap is material, that's an aidream escalation (voice/model config),
+  not something to ship under.
+- **Adaptive audio — the thing NotebookLM structurally can't do:** debates/panels that *target
+  the listener's weak areas* (read `item_mastery` when composing the brief for the generation
+  agent) and audio review sessions scheduled from the FSRS due queue. Their audio is a one-shot
+  summary; ours is part of the study loop.
+- **TrustEnvelope (P0):** audio scripts are generated content — grounded in the source deck/notes
+  with the source list visible on the artifact page.
+
 **OUT**
 - Audio pipeline internals (aidream-owned; you consume). Diagram render primitives (content-IR
   owned). Study songs / musical mnemonics (vision "coming soon" — Wave 2). The tutor itself (P2).
-  Notes conversion UI (P4 calls your generator via the converter contract).
+  Notes conversion UI (P4 calls your generator via the converter contract). "Talk to the hosts"
+  interactive audio (Wave-2 — flag it in the feature doc as the known NotebookLM follow-on).
 
 ## Deliverables / Definition of done
 

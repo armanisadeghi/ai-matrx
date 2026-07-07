@@ -312,29 +312,6 @@ export async function copyNote(id: string): Promise<Note> {
   return await createNote(copy);
 }
 
-/**
- * Accept a shared note. Canonical sharing lives in the `permissions` table
- * (granted at share time), so accepting is simply resolving the note the link
- * points to — RLS grants the recipient read access via the permission grant.
- * The legacy `shared_with` JSONB column has been dropped.
- */
-export async function acceptSharedNote(
-  noteId: string,
-  _userId: string,
-): Promise<Note> {
-  const { data: note, error } = await supabase
-    .schema("workbench").from("notes")
-    .select("*")
-    .eq("id", noteId)
-    .maybeSingle();
-
-  if (error || !note) {
-    console.error("Error accepting shared note:", error);
-    throw error || new Error("Note not found");
-  }
-
-  return note;
-}
 
 /**
  * Get all unique folder names for the current user

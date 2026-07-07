@@ -7,6 +7,7 @@ import { Globe, AlertTriangle, Lock } from 'lucide-react';
 import { ResourceType, Permission, ShareActionResult } from '@/utils/permissions';
 import { PublicBadge } from '../PermissionBadge';
 import { useToast } from '@/components/ui/use-toast';
+import { ShareLinkPanel } from '../ShareLinkPanel';
 
 interface PublicAccessTabProps {
   /** Whether is_public = true on the resource row */
@@ -17,6 +18,7 @@ interface PublicAccessTabProps {
   onMakePublic: () => Promise<ShareActionResult>;
   onRevokePublic: () => Promise<ShareActionResult>;
   resourceType: ResourceType;
+  resourceId: string;
   resourceName: string;
 }
 
@@ -34,6 +36,7 @@ export function PublicAccessTab({
   onMakePublic,
   onRevokePublic,
   resourceType,
+  resourceId,
   resourceName,
 }: PublicAccessTabProps) {
   const [loading, setLoading] = useState(false);
@@ -68,6 +71,13 @@ export function PublicAccessTab({
 
   return (
     <div className="space-y-3">
+      {/* Anyone with the link — no-login token sharing (canonical) */}
+      <ShareLinkPanel
+        resourceType={resourceType}
+        resourceId={resourceId}
+        isOwner={isOwner}
+      />
+
       <div className="flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-lg border">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

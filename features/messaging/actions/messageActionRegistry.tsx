@@ -12,13 +12,17 @@
 
 "use client";
 
-import { FileChartColumn, Search } from "lucide-react";
+import { ExternalLink, FileChartColumn, Search } from "lucide-react";
 import Link from "next/link";
 import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
 import type {
   AgentDriftActionPayload,
   MessageActionData,
+  ResourceSharedActionPayload,
 } from "@/features/messaging/types";
+import { getResourceSharePath } from "@/utils/permissions/registry";
+import { getResourceIcon } from "@/features/sharing/resourceIcons";
+import { EntityCard } from "@/features/tool-call-visualization/renderers/_shared-entity/EntityCard";
 
 interface ChipRenderContext {
   isOwn: boolean;
@@ -58,8 +62,35 @@ function AgentDriftChips({ data, isOwn }: { data: MessageActionData; isOwn: bool
   );
 }
 
+/**
+ * `resource_shared` — a full clickable card for a resource shared with the
+ * recipient. Uses the shared EntityCard primitive + registry icon/URL so it
+ * works for every shareable type, and opens the resource in the app.
+ */
+function ResourceSharedCard({ data }: { data: MessageActionData }) {
+  const p = data.payload as ResourceSharedActionPayload;
+  if (!p?.resource_type || !p?.resource_id) return null;
+  const href = getResourceSharePath(p.resource_type, p.resource_id);
+  const Icon = getResourceIcon(p.resource_type);
+  const subtitle = p.sharer_name
+    ? `${p.resource_label} · shared by ${p.sharer_name}`
+    : p.resource_label;
+  return (
+    <div className="mt-1 w-full max-w-sm">
+      <EntityCard
+        icon={Icon}
+        title={p.resource_title || p.resource_label || "Shared item"}
+        subtitle={subtitle}
+        actionLabel="Open"
+        actions={[{ label: "Open", icon: ExternalLink, href }]}
+      />
+    </div>
+  );
+}
+
 const RENDERERS: Record<string, ChipRenderer> = {
   agent_drift: (data, ctx) => <AgentDriftChips data={data} isOwn={ctx.isOwn} />,
+  resource_shared: (data) => <ResourceSharedCard data={data} />,
 };
 
 /** Render the chips for a message's action_data, or null if none/unknown. */

@@ -100,6 +100,10 @@ share/collaborate vision.
 - **Coordination:** the flashcards agent (Wave-5 hand-off, README flag 6); whoever authored the
   uncommitted diff (README flag 7); P1 (new assessment tables must register in the registry —
   provide the recipe).
+- **Downstream you unblock (added 2026-07-07):** P6's Phase-C community library (public browse,
+  living shared decks, suggest-edit) and P10's shared game rooms are built directly on your
+  primitives — the public viewer + duplicate-to-edit are what turn sharing into the community
+  flywheel, so their quality bar is "product surface," not "compliance checkbox."
 
 ## Build guidance
 

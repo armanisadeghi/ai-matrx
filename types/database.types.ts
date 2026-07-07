@@ -18720,6 +18720,60 @@ export type Database = {
         }
         Relationships: []
       }
+      share_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          last_used_at: string | null
+          max_uses: number | null
+          metadata: Json
+          organization_id: string | null
+          permission_level: Database["public"]["Enums"]["permission_level"]
+          resource_id: string
+          resource_type: string
+          token: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_used_at?: string | null
+          max_uses?: number | null
+          metadata?: Json
+          organization_id?: string | null
+          permission_level?: Database["public"]["Enums"]["permission_level"]
+          resource_id: string
+          resource_type: string
+          token: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          last_used_at?: string | null
+          max_uses?: number | null
+          metadata?: Json
+          organization_id?: string | null
+          permission_level?: Database["public"]["Enums"]["permission_level"]
+          resource_id?: string
+          resource_type?: string
+          token?: string
+          use_count?: number
+        }
+        Relationships: []
+      }
       shareable_resource_registry: {
         Row: {
           content_role: string | null
@@ -24258,6 +24312,17 @@ export type Database = {
         }
         Returns: Json
       }
+      create_share_link: {
+        Args: {
+          p_expires_at?: string
+          p_label?: string
+          p_max_uses?: number
+          p_permission_level?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
       create_shortcut_from_agent_surface: {
         Args: {
           p_agent_surface_id: string
@@ -26537,6 +26602,21 @@ export type Database = {
         }
         Returns: Json
       }
+      list_share_links: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: {
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          label: string
+          last_used_at: string
+          max_uses: number
+          permission_level: string
+          token: string
+          use_count: number
+        }[]
+      }
       list_table_columns: { Args: { ref: Json }; Returns: Json }
       list_table_rows: {
         Args: {
@@ -27251,6 +27331,7 @@ export type Database = {
         }
         Returns: Json
       }
+      resolve_share_token: { Args: { p_token: string }; Returns: Json }
       resolve_shareable_resource: {
         Args: { p_resource_type: string }
         Returns: {
@@ -27309,6 +27390,7 @@ export type Database = {
         }
         Returns: Json
       }
+      revoke_share_link: { Args: { p_link_id: string }; Returns: Json }
       rs_topic_append_output: {
         Args: { p_asset: Json; p_kind: string; p_topic_id: string }
         Returns: Json
@@ -27459,6 +27541,10 @@ export type Database = {
           p_target_user_id: string
         }
         Returns: Json
+      }
+      shareable_owner_column: {
+        Args: { p_registry_owner: string; p_schema: string; p_table: string }
+        Returns: string
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

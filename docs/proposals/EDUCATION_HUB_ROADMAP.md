@@ -313,6 +313,10 @@ waiting. Priority ordering *within* the wave (by vision impact):
    one surface. Confirm the hand-off.
 
 ## Change log
+- **2026-07-07 (later)** — Competitive research merged into the execution set: the master plan in
+  [`education-projects/README.md`](./education-projects/README.md) now supersedes this doc's §4–§6
+  (waves/priorities) as well — 11 projects (P0 TRUST, P9 ONBOARD, P10 ENGAGE added; P6 expanded
+  with the exam hub + community library; P8 reframed as billing integrity and moved up; P5 elevated).
 - **2026-07-07** — Execution briefs created in [`education-projects/`](./education-projects/README.md)
   after a fresh live re-audit. §6 flag 1 RESOLVED: `quiz_sessions` is the canvas artifact quiz store
   (`features/canvas/artifact-types/persistence/quiz-adapter.ts`) — P1 builds new canonical tables.

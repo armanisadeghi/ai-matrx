@@ -15,7 +15,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { ResourceType } from "./registry";
-import { resolveTableName } from "./registry";
+import { resolveResourceToken } from "./registry";
 
 export interface OrgSharedResourceRef {
   resourceId: string;
@@ -34,7 +34,7 @@ export async function countOrgSharedResources(
   resourceType: ResourceType,
 ): Promise<number> {
   if (!orgId) return 0;
-  const canonicalType = resolveTableName(resourceType);
+  const canonicalType = resolveResourceToken(resourceType);
   const { count, error } = await supabase
     .schema("iam").from("permissions")
     .select("resource_id", { count: "exact", head: true })
@@ -60,7 +60,7 @@ export async function listOrgSharedResources(
   resourceType: ResourceType,
 ): Promise<OrgSharedResourceRef[]> {
   if (!orgId) return [];
-  const canonicalType = resolveTableName(resourceType);
+  const canonicalType = resolveResourceToken(resourceType);
   const { data, error } = await supabase
     .schema("iam").from("permissions")
     .select("id, resource_id, permission_level, created_at")

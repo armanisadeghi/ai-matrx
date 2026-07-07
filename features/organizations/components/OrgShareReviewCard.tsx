@@ -95,8 +95,7 @@ export function OrgShareReviewCard({
         // `agent.definition`. The registry knows every resource type's home.
         const shareable = getShareableResource(table);
         const schema = shareable?.schemaName ?? null;
-        const physicalTable =
-          shareable?.physicalTable ?? shareable?.tableName ?? table;
+        const physicalTable = shareable?.tableName ?? table;
         const titleCol = entry.titleColumn;
         const db = (
           schema && schema !== "public"

@@ -100,7 +100,7 @@ export function OrgResourceList({
           // read `files.files` (not `public.file`). Falls back to the
           // `tableName` prop for any unregistered type.
           const entry = getShareableResource(resourceType);
-          const physicalTable = entry?.physicalTable ?? tableName;
+          const physicalTable = entry?.tableName ?? tableName;
           const base = (
             entry?.schemaName ? supabase.schema(entry.schemaName as never) : supabase
           ) as ReturnType<typeof supabase.schema>;
