@@ -48,7 +48,16 @@ export const CameraView = React.forwardRef<unknown, CameraProps & { variant?: "f
                         show={permissionDenied}
                     />
                     <video
-                        className="absolute inset-0 z-0 h-full w-full object-contain"
+                        className="absolute inset-0 z-0"
+                        // Inline styles, deliberately: globals.css has an
+                        // UNLAYERED mobile rule `img, video, iframe { height:
+                        // auto }` (@media max-width:768px) that beats every
+                        // Tailwind utility — with height:auto the video takes
+                        // its intrinsic aspect at full width and the container
+                        // clips the bottom, so the live view silently showed
+                        // less than the captured frame (the scanner's finger
+                        // test). Inline style wins over any stylesheet rule.
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
                         ref={playerRef}
                         id="video"
                         muted={true}

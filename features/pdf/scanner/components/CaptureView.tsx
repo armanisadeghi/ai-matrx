@@ -49,8 +49,12 @@ export function CaptureView(props: CaptureViewProps) {
     <CameraProvider
       videoConstraints={{
         facingMode: { ideal: "environment" },
-        width: { ideal: 3840 },
-        height: { ideal: 2160 },
+        // Square over-ask: the UA clamps each axis to the sensor max, so we
+        // get the camera's NATIVE aspect (typically 4:3) at full resolution.
+        // Asking 3840x2160 biased streams toward a 16:9 crop, which turned
+        // portrait captures unnaturally tall and narrow.
+        width: { ideal: 4096 },
+        height: { ideal: 4096 },
         aspectRatio: undefined,
       }}
       photoQuality={0.92}
