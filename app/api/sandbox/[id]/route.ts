@@ -246,8 +246,11 @@ export async function DELETE(
 
     if (["creating", "starting", "ready", "running"].includes(lookup.status)) {
       try {
+        // purge=true: the orchestrator also soft-deletes the row (sets
+        // deleted_at) atomically with the destroy, so the box disappears
+        // from every default list even if our own DB update below fails.
         const resp = await fetch(
-          `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}?graceful=false`,
+          `${lookup.orchestrator.url}/sandboxes/${lookup.sandboxId}?graceful=false&purge=true`,
           {
             method: "DELETE",
             headers: orchestratorJsonHeaders(lookup.orchestrator),
