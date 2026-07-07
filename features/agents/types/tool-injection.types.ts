@@ -58,12 +58,20 @@ export type ToolSpec = ToolSpecRegistered | ToolSpecInline | ToolSpecAgent;
  * - `editor-state`:   payload is `IdeState`. Auto-brings `vsc_get_state` online.
  * - `sandbox-fs`:     payload is `{sandbox_id, base_url, access_token, root_path}`.
  *                     Brings no tools online — fs/shell tools detect at runtime.
+ * - `agent-fs`:       STATELESS (no payload). Arms `fs_*` + `shell_execute`
+ *                     against the user's durable `code.code_files`-backed VFS
+ *                     with NO sandbox attached — files persist to Code Snippets.
+ *                     Declared in `capabilities[]` with no `state` entry (the
+ *                     backend capability has `payload_model=None`). Manual,
+ *                     default-OFF, per-conversation toggle — see the `agent-fs`
+ *                     provider and the "Chat Options → Settings" toggle.
  *
  * Unknown capability names cause the backend to return 422.
  */
 export type ClientCapabilityName =
   | "editor-state"
-  | "sandbox-fs";
+  | "sandbox-fs"
+  | "agent-fs";
 
 /**
  * Per-capability payload shape. Keep this in sync with the backend's
@@ -73,6 +81,10 @@ export type ClientCapabilityName =
 export interface ClientCapabilityPayloads {
   "editor-state": IdeState;
   "sandbox-fs": components["schemas"]["SandboxBindingRequest"];
+  // Stateless capability — carries no payload. Its provider returns an empty
+  // object as an "active" sentinel and is marked `stateless`, so the builder
+  // declares it in `capabilities[]` without writing a `state` entry.
+  "agent-fs": Record<string, never>;
 }
 
 /**

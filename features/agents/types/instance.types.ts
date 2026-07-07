@@ -57,90 +57,153 @@ export type InstanceOrigin =
   | "test" // Created as part of parallel testing
   | "sub-agent"; // Spawned by a parent request
 
+/**
+ * Which product surface created this conversation — stamped on `cx_conversation.source_feature`.
+ *
+ * ## Naming rule (read before adding a value)
+ *
+ * **Module first, then narrower.** Slugs are `{module}-…` where `module` is the
+ * owning feature area (`agent`, `chat`, `education`, `pdf`, `transcripts`, …)
+ * and the suffix names the *specific* UI surface or action — not a vibe word.
+ *
+ *   ✅ `education-flashcards-help`   — module `education`, surface `flashcards`, lane `help`
+ *   ✅ `agent-run-window`            — module `agent`, chrome `run-window`
+ *   ✅ `task-create`                 — module `task`, panel `create`
+ *   ❌ `demo`                        — WHICH demo? Name the route/component.
+ *   ❌ `programmatic`                — NOT a surface. Hooks/helpers pick the real caller.
+ *
+ * One literal per `ui_surface` / mount point (UnifiedAgentContextMenu, ProTextarea,
+ * ProInput, window panel, route). Never borrow a "closest" feature name — traces
+ * must identify the real caller. Add new values under the matching module group below.
+ *
+ * Registry labels/icons/grouping: `features/agents/redux/conversation-history/source-registry.ts`
+ */
 export type SourceFeature =
+  // ── Agents (`agent-*`) ───────────────────────────────────────────────────
   | "agent-builder"
   | "agent-runner"
   | "agent-tester"
   | "agent-launcher-sidebar"
   | "agent-creator-panel"
   | "agent-generator"
-  | "chat-interface"
-  /**
-   * @deprecated The context menu is a shared UI, not a feature. Pass the
-   * real mounting surface (e.g. "notes", "code-editor", "agent-builder",
-   * "demo") so traces identify the caller.
-   */
-  | "context-menu"
-  | "prompt-app"
-  | "agent-app"
-  | "research"
-  | "chat-route"
-  /** Pop-over Quick Chat from the Quick Access menu (`QuickChatSheet`). */
-  | "quick-chat"
-  | "code-editor"
-  | "notes"
   | "agent-advanced-editor-window"
   | "agent-content-window"
-  | "transcription-cleanup"
-  | "transcripts"
-  | "transcript-studio"
-  | "dictionary"
   | "agent-run-window"
   | "agent-run-history-window"
   | "agent-runs-sidebar"
-  // Surface mounts (UnifiedAgentContextMenu / ProTextarea / ProInput): one
-  // attribution literal per ui_surface so traces identify the real caller
-  // instead of borrowing a "closest" feature name.
+  /** Multi-agent side-by-side comparison page (`/agents/battle`). */
+  | "agent-comparison"
+
+  // ── Chat (`chat-*`, conversation chrome) ─────────────────────────────────
+  | "chat-route"
+  | "chat-interface"
+  /** Pop-over Quick Chat from the Quick Access menu (`QuickChatSheet`). */
+  | "quick-chat"
+  /** Right-click context menu on rendered assistant markdown (MarkdownStream). */
+  | "assistant-message"
+
+  // ── Agent apps & legacy prompt apps ──────────────────────────────────────
+  | "agent-app"
+  | "prompt-app"
+
+  // ── Research ─────────────────────────────────────────────────────────────
+  | "research"
+
+  // ── Code editor ──────────────────────────────────────────────────────────
+  | "code-editor"
+
+  // ── Notes ────────────────────────────────────────────────────────────────
+  | "notes"
+
+  // ── Transcripts (`transcript*`, `transcription-*`) ───────────────────────
+  | "transcripts"
+  | "transcript-studio"
+  | "transcription-cleanup"
+
+  // ── Dictionary ───────────────────────────────────────────────────────────
+  | "dictionary"
+
+  // ── Tasks & projects ─────────────────────────────────────────────────────
   | "tasks"
-  | "scraper"
-  | "files"
+  /** "Use AI" tab of the create-task panel (`TaskCreatePanel`). */
+  | "task-create"
   | "projects"
+  /** "Use AI" tab of the create-project panel (`ProjectCreatePanel`). */
+  | "project-create"
+
+  // ── Scraper ──────────────────────────────────────────────────────────────
+  | "scraper"
+
+  // ── Files ────────────────────────────────────────────────────────────────
+  | "files"
+
+  // ── Documents & conversation scratch surfaces ────────────────────────────
   | "documents"
   /** The per-conversation collaborative working document (agent reads + writes). */
   | "working-document"
   /** The user's private scratchpad (a local/menu agent edits it; the cloud agent only reads). */
   | "scratchpad"
-  | "data-tables"
-  | "lists"
+
+  // ── UDT (user-defined tables) ────────────────────────────────────────────
+  | "udt-data-tables"
+  | "udt-picklists"
+
+  // ── Messages ─────────────────────────────────────────────────────────────
   | "messages"
+
+  // ── Canvas & diagrams ────────────────────────────────────────────────────
   | "canvas"
-  | "ai-results"
-  | "content-extractor"
-  | "pdf-widgets"
-  /** Demo / test harness (routes under /demos, example pages). */
-  | "demo"
-  /** Triggered directly from application code (hook / helper / automation). */
-  | "programmatic"
-  /** AI Describe runs from the Image Studio (`/image-studio/convert`). */
-  | "image-studio"
-  /** Multi-agent side-by-side comparison page (`/agents/battle`). */
-  | "agent-comparison"
-  /** Right-click context menu on rendered assistant markdown (MarkdownStream). */
-  | "assistant-message"
   /** "Edit with AI" inside the Mermaid Workbench (canvas diagram editor). */
   | "mermaid-workbench"
-  /** "Use AI" tab of the create-project panel (`ProjectCreatePanel`). */
-  | "project-create"
-  /** "Use AI" tab of the create-task panel (`TaskCreatePanel`). */
-  | "task-create"
+
+  // ── AI results ───────────────────────────────────────────────────────────
+  | "ai-results"
+
+  // ── Content extraction ───────────────────────────────────────────────────
+  | "content-extractor"
+
+  // ── PDF (`pdf-*`) ────────────────────────────────────────────────────────
+  | "pdf-widgets"
+  /** PDF Extractor studio + floating workspace (`/tools/pdf-extractor`, pdfExtractorWindow). */
+  | "pdf-extractor"
+
+  // ── Image studio ─────────────────────────────────────────────────────────
+  /** AI Describe runs from the Image Studio (`/image-studio/convert`). */
+  | "image-studio"
+
+  // ── RAG ──────────────────────────────────────────────────────────────────
   /** "Agent Chat" tab of the RAG Search Lab (`/rag/search`, `RagSearchExperience`). */
   | "rag-search"
+
+  // ── Official components (reusable AI chrome) ─────────────────────────────
+  /** Agent panel mounted inside `<ProTextarea>` (`ProTextareaAgentPanel`). */
+  | "pro-textarea"
+
+  // ── Tool call visualization (admin) ──────────────────────────────────────
+  /** Admin tool UI component generator (`useToolComponentAgent`). */
+  | "tool-call-visualization"
+
+  // ── Education (`education-*`) ────────────────────────────────────────────
   /** Flashcards + FastFire study tools (`/education/flashcards`, `/education/fastfire`). */
-  | "flashcards"
+  | "education-flashcards"
   /** Fast Fire background AI runs — kept out of normal chats via the source
    *  registry. Persistent stopgap until ephemeral runs are rebuilt
    *  (docs/EPHEMERAL_AGENT_RUNS_SPEC.md). */
-  | "fastfire-grade"
-  | "fastfire-help"
-  | "fastfire-review"
-  | "fastfire-tts"
+  | "education-fastfire-grade"
+  | "education-fastfire-help"
+  | "education-fastfire-review"
+  | "education-fastfire-tts"
   /** Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
    *  fc_help_live / fc_review_batch agents Fast Fire uses, generalized to
    *  every study surface (classic set study, adaptive due review, weak-area
    *  drill). See features/flashcards/data/tutor/. */
-  | "flashcards-help"
-  | "flashcards-review"
-  | "flashcards-coach";
+  | "education-flashcards-help"
+  | "education-flashcards-review"
+  | "education-flashcards-coach";
+
+// Anti-patterns — never add these. Name the actual surface instead.
+// | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).
+// | "programmatic" — NOT a feature surface. Pick the real caller's slug.
 
 export const SOURCE_APP = "matrx-admin" as const;
 
@@ -575,6 +638,32 @@ export interface BuilderAdvancedSettings {
    * one conversation. Value may be given with or without a leading slash.
    */
   manualEndpointOverride?: string | null;
+
+  /**
+   * MANUAL, default-OFF, THIS conversation only: arm the `agent-fs` client
+   * capability. When true, `buildToolInjection` adds `"agent-fs"` to
+   * `client.capabilities` (stateless — no `state` entry), which tells the
+   * backend to bring `fs_*` + `shell_execute` online against the user's
+   * durable `code.code_files`-backed VFS even with NO sandbox attached. Files
+   * persist to the user's Code Snippets under `/home/agent/...`.
+   *
+   * Not rolled out — kept behind an explicit toggle in "Chat Options →
+   * Settings" until deliberately shipped. Default: false. NEVER auto-enable.
+   */
+  agentFs?: boolean;
+
+  /**
+   * Creator/admin-only, THIS conversation only: a raw JSON object shallow-
+   * merged onto the outbound request body just before POST — the "add anything
+   * I want to the request for testing" escape hatch. Top-level keys override
+   * the assembled payload (e.g. `{"debug":true,"client":{...},"foo":1}`). The
+   * backend allows extra keys (`extra="allow"`) and warns on unrecognized ones.
+   *
+   * Stored as the raw text the user typed so an in-progress edit round-trips;
+   * parsed at send time. Invalid JSON is skipped loudly (toast) — the request
+   * still goes without the override. null/empty → no override.
+   */
+  requestOverrides?: string | null;
 }
 
 export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
@@ -589,6 +678,8 @@ export const DEFAULT_BUILDER_ADVANCED_SETTINGS: BuilderAdvancedSettings = {
   addedTools: [],
   addedSkills: [],
   manualEndpointOverride: null,
+  agentFs: false,
+  requestOverrides: null,
 };
 
 // =============================================================================

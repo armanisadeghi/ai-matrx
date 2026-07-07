@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, FileText, PanelRight, Wand2, Route } from "lucide-react";
+import {
+  Brain,
+  FileText,
+  PanelRight,
+  Wand2,
+  Route,
+  HardDrive,
+  Braces,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -41,6 +50,7 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
+import { parseRequestOverrides } from "@/features/agents/redux/execution-system/utils/request-overrides";
 import { SurfaceSimulatorSelect } from "./SurfaceSimulatorSelect";
 import { SystemInstructionModal } from "../builder/message-builders/system-instructions/SystemInstructionModal";
 import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
@@ -110,6 +120,10 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
   const isV2 = aiApiVersion === "v2";
   const [sysModalOpen, setSysModalOpen] = useState(false);
   const openSystemInstructionWindow = useOpenSystemInstructionWindow();
+
+  // Inline validation for the raw request-override escape hatch — same parser
+  // the send thunks use, so what the editor accepts is exactly what ships.
+  const overridesError = parseRequestOverrides(settings.requestOverrides).error;
 
   const openMemoryInspector = () =>
     dispatch(
@@ -317,6 +331,34 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
             <div className="px-0.5 pt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
               Admin
             </div>
+
+            {/* ── Experimental capabilities (manual, not rolled out) ───────── */}
+            <div className="flex items-center gap-1.5 px-0.5 pb-0.5 pt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              <HardDrive className="w-3 h-3" />
+              Experimental capabilities
+            </div>
+            <SettingRow
+              id={`agent-fs-${conversationId}`}
+              label="Agent filesystem (agent-fs)"
+              checked={settings.agentFs ?? false}
+              onChange={(v) =>
+                dispatch(
+                  setBuilderAdvancedSettings({
+                    conversationId,
+                    changes: { agentFs: v },
+                  }),
+                )
+              }
+            />
+            <p className="px-0.5 pb-1 text-[10px] leading-snug text-muted-foreground/70">
+              Arms <code className="font-mono">fs_*</code> +{" "}
+              <code className="font-mono">shell_execute</code> against a durable
+              filesystem backed by your Code Snippets — no sandbox needed. Files
+              persist under <code className="font-mono">/home/agent/…</code>.
+              Manual + off by default; not rolled out.
+            </p>
+
+            <Separator className="!my-1.5" />
             <SettingRow
               id={`block-mode-${conversationId}`}
               label="Block mode (block_mode)"
@@ -452,6 +494,42 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                 Clear all API overrides
               </Button>
             )}
+
+            {/* ── Raw request overrides (test escape hatch) ───────────────── */}
+            <Separator className="!my-1.5" />
+            <div className="flex items-center gap-1.5 px-0.5 pb-0.5 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+              <Braces className="w-3 h-3" />
+              Request overrides (test)
+            </div>
+            <div className="py-1 space-y-1">
+              <Textarea
+                id={`request-overrides-${conversationId}`}
+                value={settings.requestOverrides ?? ""}
+                onChange={(e) =>
+                  dispatch(
+                    setBuilderAdvancedSettings({
+                      conversationId,
+                      changes: { requestOverrides: e.target.value || null },
+                    }),
+                  )
+                }
+                placeholder={'{ "client": { "capabilities": ["agent-fs"] } }'}
+                spellCheck={false}
+                rows={4}
+                className="text-xs font-mono leading-snug"
+              />
+              {overridesError ? (
+                <p className="text-[10px] leading-snug text-destructive">
+                  Invalid JSON — {overridesError}
+                </p>
+              ) : (
+                <p className="text-[10px] leading-snug text-muted-foreground/70">
+                  Raw JSON object shallow-merged onto the request body just
+                  before POST — top-level keys override the assembled payload.
+                  For testing arbitrary request fields. Empty = no override.
+                </p>
+              )}
+            </div>
 
             {/* ── Observational Memory (admin-gated, per-conversation) ───── */}
             <Separator className="!my-1.5" />

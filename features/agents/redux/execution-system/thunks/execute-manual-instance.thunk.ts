@@ -141,6 +141,7 @@ import {
   finishRequest as finishNetRequest,
 } from "@/lib/redux/net/netRequestsSlice";
 import { buildToolInjection } from "../utils/build-tool-injection";
+import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { ToolSpec } from "@/features/agents/types/tool-injection.types";
 import { isUiGateKey } from "@/lib/redux/slices/agent-settings/ui-gates";
@@ -482,6 +483,24 @@ export async function assembleManualRequest(
   if (!isSyntheticAgentId(agent.id)) {
     request.agent_id = agent.parentAgentId ?? agent.id;
     request.is_version = agent.isVersion;
+  }
+
+  // Manual request-override escape hatch ("Chat Options → Settings"). A raw
+  // JSON object the user typed is shallow-merged onto the final body — for
+  // testing arbitrary request fields. Top-level keys override. Invalid JSON is
+  // skipped loudly; the request still goes without it. Applied last so it can
+  // override anything assembled above.
+  {
+    const { overrides, error } = resolveRequestOverrides(state, conversationId);
+    if (error) {
+      toast.error(`Request overrides ignored — ${error}`);
+    } else if (overrides) {
+      Object.assign(request as Record<string, unknown>, overrides);
+      console.warn(
+        "[Matrx] Applied manual request overrides:",
+        Object.keys(overrides),
+      );
+    }
   }
 
   return request;

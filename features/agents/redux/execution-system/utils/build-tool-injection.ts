@@ -192,7 +192,9 @@ export async function buildToolInjection(
   const resolved = await Promise.all(
     providers.map(async (p) => {
       const payload = await p.selectPayload(state, conversationId);
-      return payload == null ? null : { name: p.name, payload };
+      return payload == null
+        ? null
+        : { name: p.name, payload, stateless: p.stateless ?? false };
     }),
   );
 
@@ -202,6 +204,10 @@ export async function buildToolInjection(
   for (const entry of resolved) {
     if (!entry) continue;
     activeCapabilities.push(entry.name);
+    // Stateless capabilities (e.g. agent-fs, payload_model=None) are declared
+    // in `capabilities[]` only — no `state` entry. This matches the
+    // verified-good wire shape and avoids sending a meaningless empty payload.
+    if (entry.stateless) continue;
     // Cast here is safe — registry is keyed on ClientCapabilityName and the
     // payload type is matched per provider via the discriminated registry
     // generic. The runtime check is the !=null guard above.

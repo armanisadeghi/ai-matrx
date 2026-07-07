@@ -22,6 +22,15 @@ export interface ClientCapabilityProvider<
 > {
   name: TName;
   /**
+   * Stateless capability — carries no per-turn payload. When true,
+   * `buildToolInjection` declares the capability in `client.capabilities` but
+   * writes NO `client.state` entry for it (the backend capability has
+   * `payload_model=None`; an empty state entry is unnecessary and diverges
+   * from the verified-good wire shape). `selectPayload` still gates
+   * activation: return a non-null sentinel (`{}`) to activate, `null` to skip.
+   */
+  stateless?: boolean;
+  /**
    * Returns the payload for this capability when active for the given
    * conversation, or `null` when inactive. Returning `null` keeps the
    * capability out of the request envelope entirely — no false declaration.

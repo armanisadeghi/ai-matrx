@@ -26,7 +26,9 @@ import type {
   AssembledAgentStartRequest,
   UserOverrides,
 } from "@/features/agents/types/request.types";
+import { toast } from "sonner";
 import { buildToolInjection } from "../utils/build-tool-injection";
+import { resolveRequestOverrides } from "../utils/request-overrides";
 import { attachSkillConfigFromState } from "../utils/build-skill-config-for-request";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { Json } from "@/types/database.types";
@@ -655,6 +657,26 @@ export const executeInstance = createAsyncThunk<
           ...(isEphemeral && { store: false }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
         } as Record<string, unknown>;
+      }
+
+      // Manual request-override escape hatch ("Chat Options → Settings"). A raw
+      // JSON object the user typed is shallow-merged onto the final body — for
+      // testing arbitrary request fields. Top-level keys override. Invalid JSON
+      // is skipped loudly; the request still goes without it.
+      {
+        const { overrides, error } = resolveRequestOverrides(
+          state,
+          conversationId,
+        );
+        if (error) {
+          toast.error(`Request overrides ignored — ${error}`);
+        } else if (overrides) {
+          Object.assign(routedPayload, overrides);
+          console.warn(
+            "[Matrx] Applied manual request overrides:",
+            Object.keys(overrides),
+          );
+        }
       }
 
       // Stamp the active scope selections onto the conversation's tags
