@@ -962,7 +962,17 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       return (
         <BlockComponents.StructuredPlanBlock
           key={index}
-          content={block.content}
+          // Kind-routed blocks (structured_info) deliver the projected
+          // markdown as serverData { content } - a JSON __kind arrival has
+          // JSON text in block.content, so the bridge output is the only
+          // renderable text for that path. Fence arrivals keep block.content.
+          content={
+            typeof (
+              block.serverData as { content?: unknown } | null | undefined
+            )?.content === "string"
+              ? (block.serverData as { content: string }).content
+              : block.content
+          }
         />
       );
 

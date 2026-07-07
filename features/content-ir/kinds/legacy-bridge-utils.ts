@@ -30,7 +30,7 @@ import { KIND_KEY } from "../core/kind-schema.types";
 import {
   reconstructRegionValue,
   stripKindDeep,
-} from "../redux/render-block-envelope";
+} from "../core/envelope-value";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

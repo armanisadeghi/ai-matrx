@@ -53,8 +53,30 @@ import {
   schemaProposalMarkdownFromValue,
 } from "../kinds/schema-proposal";
 import { itemPresentationMarkdownFromValue } from "../kinds/item-presentation";
+import { MERMAID_DIAGRAM_KIND_DEFINITION } from "../kinds/mermaid-diagram";
+import { TASK_LIST_KIND_DEFINITIONS } from "../kinds/task-list";
+import { RESOURCE_COLLECTION_KIND_DEFINITIONS } from "../kinds/resource-collection";
+import { PROGRESS_TRACKER_KIND_DEFINITIONS } from "../kinds/progress-tracker";
+import { TIMELINE_KIND_DEFINITIONS } from "../kinds/timeline";
+import { STRUCTURED_INFO_KIND_DEFINITIONS } from "../kinds/structured-info";
+import { TRANSCRIPT_KIND_DEFINITIONS } from "../kinds/transcript";
+import { TROUBLESHOOTING_KIND_DEFINITIONS } from "../kinds/troubleshooting-guide";
+import { COOKING_RECIPE_KIND_DEFINITIONS } from "../kinds/cooking-recipe";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
+  // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
+  // renderables — each definition lives in kinds/<slug>.ts with its bridge.
+  // kinds/ modules are cycle-free by construction (core/envelope-value) so
+  // these consts are always defined here regardless of import entry point.
+  MERMAID_DIAGRAM_KIND_DEFINITION,
+  ...TASK_LIST_KIND_DEFINITIONS,
+  ...RESOURCE_COLLECTION_KIND_DEFINITIONS,
+  ...PROGRESS_TRACKER_KIND_DEFINITIONS,
+  ...TIMELINE_KIND_DEFINITIONS,
+  ...STRUCTURED_INFO_KIND_DEFINITIONS,
+  ...TRANSCRIPT_KIND_DEFINITIONS,
+  ...TROUBLESHOOTING_KIND_DEFINITIONS,
+  ...COOKING_RECIPE_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",

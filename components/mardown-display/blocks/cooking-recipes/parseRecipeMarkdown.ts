@@ -1,15 +1,15 @@
-interface Ingredient {
+export interface Ingredient {
   amount: string;
   item: string;
 }
 
-interface RecipeStep {
+export interface RecipeStep {
   action: string;
   description: string;
   time?: string;
 }
 
-interface RecipeData {
+export interface RecipeData {
   title: string;
   yields: string;
   totalTime: string;

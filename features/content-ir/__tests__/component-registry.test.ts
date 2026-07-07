@@ -60,7 +60,7 @@ describe("compiled bootstrap (system-components)", () => {
     }
   });
 
-  it("covers the 9 known bridges by name", () => {
+  it("covers every known bridge by name", () => {
     const byKind = new Map(
       SYSTEM_COMPONENT_ENTRIES.map((e) => [e.kind, e.componentKey]),
     );
@@ -74,6 +74,16 @@ describe("compiled bootstrap (system-components)", () => {
       math_problem: "math_problem",
       item_presentation: "item_presentation",
       schema_proposal: "schema_proposal",
+      // Gold-mine sweep
+      mermaid_diagram: "mermaid",
+      task_list: "tasks",
+      resource_collection: "resources",
+      progress_tracker: "progress_tracker",
+      timeline: "timeline",
+      structured_info: "structured_info",
+      transcript: "transcript",
+      troubleshooting_guide: "troubleshooting",
+      cooking_recipe: "cooking_recipe",
     });
   });
 });

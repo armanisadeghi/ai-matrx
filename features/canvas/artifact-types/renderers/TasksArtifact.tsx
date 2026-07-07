@@ -40,7 +40,16 @@ export default function TasksArtifact({
   artifactId,
   conversationId,
 }: ArtifactRendererProps) {
-  const content = typeof data === "string" ? data : raw;
+  // Kind-routed blocks (task_list) deliver the checklist markdown as
+  // serverData `{ content }` — a JSON __kind arrival has JSON in `raw`, so the
+  // bridge output is the only renderable text for that path.
+  const bridgedContent =
+    typeof data === "object" &&
+    data !== null &&
+    typeof (data as { content?: unknown }).content === "string"
+      ? (data as { content: string }).content
+      : null;
+  const content = bridgedContent ?? (typeof data === "string" ? data : raw);
   if (!content) return null;
 
   // Pre-materialization (streaming / inline): there is no persisted artifact to
