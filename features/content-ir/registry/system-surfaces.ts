@@ -135,4 +135,11 @@ export const SYSTEM_SURFACE_ENTRIES: KindSurfaceEntry[] = [
     parserStrategy: "cooking_recipe_legacy_text",
     streaming: true,
   },
+  {
+    surfaceType: "xml_tag",
+    token: "research",
+    kind: "research_report",
+    parserStrategy: "research_legacy_text",
+    streaming: true,
+  },
 ];
