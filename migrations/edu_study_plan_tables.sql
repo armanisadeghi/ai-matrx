@@ -150,3 +150,9 @@ grant select, insert, update, delete on
   education.study_plan, education.study_plan_day, education.study_plan_block to authenticated;
 grant all on
   education.study_plan, education.study_plan_day, education.study_plan_block to service_role;
+
+-- Force PostgREST to pick up the new tables + their grants immediately. Without
+-- a schema-cache reload, a freshly-created table 401s the `authenticated` role
+-- with "permission denied (42501)" until PostgREST next refreshes — even though
+-- the grant is live. (Verified: this was the one live bug during P5 rollout.)
+notify pgrst, 'reload schema';
