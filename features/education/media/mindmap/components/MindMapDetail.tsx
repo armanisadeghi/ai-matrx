@@ -102,7 +102,13 @@ export function MindMapDetail({ mediaId }: { mediaId: string }) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push(`/education/mind-maps/new?source=deck&deck=${media.source_id ?? ""}`)}
+              onClick={() =>
+                router.push(
+                  media.source_kind === "topic"
+                    ? "/education/mind-maps/new?source=topic"
+                    : `/education/mind-maps/new?source=deck&deck=${media.source_id ?? ""}`,
+                )
+              }
               aria-label="Regenerate"
             >
               <RefreshCw className="h-4 w-4 text-muted-foreground" />

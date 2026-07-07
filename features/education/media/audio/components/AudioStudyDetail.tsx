@@ -21,6 +21,7 @@ import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SessionAudio } from "@/features/education/study/components/SessionAudio";
+import { podcastService } from "@/features/podcasts/service";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
@@ -36,6 +37,57 @@ const FORMAT_LABEL: Record<string, string> = {
   panel: "Panel",
   review: "Audio review",
 };
+
+/**
+ * Durable audio playback for a finished study. Prefers the re-mintable `file_id`
+ * (best); falls back to the produced episode's durable public audio URL — the
+ * path that matters when the run completed while the tab was closed, so no
+ * live `audio_stream_end` file_id was ever captured (recovery).
+ */
+function AudioPlayback({
+  fileId,
+  episodeId,
+}: {
+  fileId: string | null;
+  episodeId: string | null;
+}) {
+  const [episodeUrl, setEpisodeUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (fileId || !episodeId) return;
+    let active = true;
+    podcastService.fetchEpisodeById(episodeId).then((ep) => {
+      if (active) setEpisodeUrl(ep?.audio_url ?? null);
+    });
+    return () => {
+      active = false;
+    };
+  }, [fileId, episodeId]);
+
+  if (fileId) return <SessionAudio fileId={fileId} className="h-10 w-full" />;
+  if (episodeUrl) {
+    // Episode audio_url is a durable public/CDN URL (episodes are share-ready).
+    return (
+      <audio src={episodeUrl} controls preload="none" className="h-10 w-full">
+        <track kind="captions" />
+      </audio>
+    );
+  }
+  return (
+    <div className="flex h-10 items-center gap-2 text-xs text-muted-foreground">
+      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading audio…
+    </div>
+  );
+}
+
+/** Build the "generate a new version" link, preserving the original source kind. */
+function regenerateHref(media: StudyMediaRow): string {
+  const format = media.audio_format ?? "overview";
+  if (media.source_kind === "topic") {
+    return `/education/audio-study/new?source=topic&format=${format}`;
+  }
+  return `/education/audio-study/new?source=deck&deck=${media.source_id ?? ""}&format=${format}`;
+}
 
 export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
   const router = useRouter();
@@ -78,7 +130,9 @@ export function AudioStudyDetail({ mediaId }: { mediaId: string }) {
     );
   }
 
-  const isReady = media.status === "ready" && Boolean(media.audio_file_id);
+  const isReady =
+    media.status === "ready" &&
+    Boolean(media.audio_file_id || media.episode_id);
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
@@ -160,14 +214,14 @@ function ReadyAudioView({ media }: { media: StudyMediaRow }) {
         <Headphones className="h-4 w-4 text-primary" />
         Listen
       </div>
-      <SessionAudio fileId={media.audio_file_id} className="h-10 w-full" />
+      <AudioPlayback fileId={media.audio_file_id} episodeId={media.episode_id} />
       {isOwner && (
         <div className="flex items-center gap-2 pt-1">
           <Button
             variant="outline"
             size="sm"
             className="gap-1.5"
-            onClick={() => router.push(`/education/audio-study/new?source=deck&deck=${media.source_id ?? ""}&format=${media.audio_format ?? "overview"}`)}
+            onClick={() => router.push(regenerateHref(media))}
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Generate a new version
@@ -196,7 +250,9 @@ function LiveAudioRun({
   useEffect(() => {
     if (state.status !== "done" || persistedRef.current) return;
     const fileId = state.audioFileId ?? fileIdFromUserFilesUrl(state.audioUrl ?? "");
-    if (!fileId) return; // wait for a durable file before flipping to ready
+    // A durable anchor is either the re-mintable file_id (live path) OR the
+    // produced episode (recovery path — no live file_id was ever captured).
+    if (!fileId && !state.episodeId) return;
     persistedRef.current = true;
     void (async () => {
       const res = await studyMediaService.update(media.id, {
@@ -229,7 +285,7 @@ function LiveAudioRun({
     );
   }
 
-  const audioReady = Boolean(state.audioFileId);
+  const audioReady = Boolean(state.audioFileId || state.episodeId);
 
   return (
     <div className="space-y-4">
@@ -254,7 +310,7 @@ function LiveAudioRun({
             <Headphones className="h-4 w-4 text-primary" />
             Listen
           </div>
-          <SessionAudio fileId={state.audioFileId} className="h-10 w-full" />
+          <AudioPlayback fileId={state.audioFileId} episodeId={state.episodeId} />
         </div>
       )}
 
