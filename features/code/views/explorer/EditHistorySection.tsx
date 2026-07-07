@@ -27,6 +27,7 @@ import {
 } from "../../redux/codeEditHistorySlice";
 import { loadCodeEditHistoryThunk } from "../../redux/codeEditHistoryHydration";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
+import { codeWorkspaceSurfaceKey } from "../../chat/begin-fresh-code-chat";
 import { openTab, setActiveTab } from "../../redux/tabsSlice";
 import {
   buildHistoryTripleTabId,
@@ -53,7 +54,9 @@ export const EditHistorySection: React.FC = () => {
   const urlConversationId = searchParams.get("conversationId");
   const agentId = searchParams.get("agentId");
   const focusedConversationId = useAppSelector(
-    agentId ? selectFocusedConversation(`agent-runner:${agentId}`) : () => null,
+    agentId
+      ? selectFocusedConversation(codeWorkspaceSurfaceKey(agentId))
+      : () => null,
   );
   const fallbackConversationId = useAppSelector((s) => {
     const byConv = s.codeEditHistory?.byConversation ?? {};

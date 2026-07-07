@@ -24,7 +24,11 @@ import {
   selectActiveSandboxProxyUrl,
 } from "../redux/codeWorkspaceSlice";
 import { setResponseDensity } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { beginFreshCodeChat } from "./begin-fresh-code-chat";
+import {
+  beginFreshCodeChat,
+  codeWorkspaceSurfaceKey,
+} from "./begin-fresh-code-chat";
+import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 
 interface ChatPanelSlotProps {
   /** Base path used by header controls inside the runner. Defaults to the
@@ -85,15 +89,21 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   const { filter } = useCodeWorkspaceHistory();
   const farRightOpen = useAppSelector(selectFarRightOpen);
   const freshSessionKey = useAppSelector(selectCodeWorkspaceFreshSessionNonce);
+  const isFreshRoute = !!agentId && !conversationIdFromUrl;
+  const surfaceKey = agentId ? codeWorkspaceSurfaceKey(agentId) : "";
 
-  // The runner registers itself with surfaceKey `agent-runner:${agentId}` —
-  // mirror that string here so we can read the focused conversation directly
-  // from Redux. The URL only catches up after the runner finishes its
-  // pendingNavigation → router.replace handshake, which is too late for
-  // the bridge to seed context for the FIRST message of a fresh chat.
-  const focusSurfaceKey = agentId ? `agent-runner:${agentId}` : "";
+  // Fresh-start guard — same contract as `ChatRoomClient` on `/chat/a/[agentId]`.
+  // The focus slice retains the last conversation per surface; without this,
+  // returning to `/code?agentId=…` revives the agent's old chat.
+  useEffect(() => {
+    if (!isFreshRoute || !surfaceKey) return;
+    dispatch(clearFocus(surfaceKey));
+  }, [isFreshRoute, surfaceKey, dispatch]);
+
+  // Mirror the runner's `code-route:<agentId>` focus key so editor bridges
+  // read the live conversation before `?conversationId=` catches up.
   const focusedConversationId = useAppSelector(
-    focusSurfaceKey ? selectFocusedConversation(focusSurfaceKey) : () => null,
+    surfaceKey ? selectFocusedConversation(surfaceKey) : () => null,
   );
   const conversationId = focusedConversationId ?? conversationIdFromUrl;
 
@@ -192,12 +202,13 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
           <AgentRunnerPage
             agentId={agentId}
             sourceFeature="code-editor"
-            surfaceKey={`agent-runner:${agentId}`}
+            surfaceKey={surfaceKey}
             basePath={basePath}
             backHref={basePath}
             buildConversationUrl={buildConversationUrl}
-            preferFresh
-            freshSessionKey={freshSessionKey}
+            preferFresh={isFreshRoute}
+            freshSessionKey={isFreshRoute ? freshSessionKey : 0}
+            retainOnUnmount
           />
         ) : (
           <AgentPicker

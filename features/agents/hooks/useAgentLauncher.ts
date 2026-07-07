@@ -184,7 +184,9 @@ export function useAgentLauncher(
     }
   }
   const conversationId = isManagedHook
-    ? (focusedConversationId ?? mintedIdRef.current)
+    ? preferFresh && mintedIdRef.current
+      ? mintedIdRef.current
+      : (focusedConversationId ?? mintedIdRef.current)
     : focusedConversationId;
 
   // ── Imperative methods (always created) ──────────────────────────────────

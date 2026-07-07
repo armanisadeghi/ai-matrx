@@ -32,7 +32,13 @@
  *                 that predate per-page persistence.
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Loader2,
   Copy,
@@ -40,7 +46,6 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
-  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -55,6 +60,17 @@ import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const DEFAULT_PAGES_PER_SECTION = "10";
+
+function formatFullPageRange(maxPage: number): string {
+  return maxPage <= 1 ? "1" : `1-${maxPage}`;
+}
+
+function getFlatPages(doc: PdfDocument, source: "raw" | "clean"): string[] {
+  const flat = (source === "clean" ? doc.cleanContent : doc.content) ?? "";
+  return flat.split("\f");
+}
 
 /**
  * Parse "1-5,7,10-12" into a sorted, deduped array of 1-based page numbers
@@ -134,6 +150,190 @@ function buildSectionText(
   return header + blocks.join("\n");
 }
 
+function buildPageSections(
+  pageRange: string,
+  pagesPerSection: string,
+  maxPage: number,
+  doc: PdfDocument,
+  pageRows: PdfPageRow[],
+  source: "raw" | "clean",
+): { sections: PageSection[] } | { error: string } {
+  const selectedPages = parsePageRange(pageRange, maxPage);
+  if (selectedPages.length === 0) {
+    return { error: "No valid pages in the given range." };
+  }
+
+  const chunkN = parseInt(pagesPerSection.trim(), 10);
+  const chunkSize = isNaN(chunkN) || chunkN <= 0 ? 0 : chunkN;
+  const flatPages = getFlatPages(doc, source);
+  const chunks = chunkArray(selectedPages, chunkSize);
+
+  const sections: PageSection[] = chunks.map((chunk, i) => {
+    const first = chunk[0];
+    const last = chunk[chunk.length - 1];
+    const label =
+      chunks.length === 1
+        ? chunk.length === 1
+          ? `Page ${first}`
+          : `Pages ${first}–${last}`
+        : `Section ${i + 1} · pages ${first}–${last}`;
+    const text = buildSectionText(
+      doc.id,
+      doc.name,
+      chunk,
+      pageRows,
+      flatPages,
+      source,
+      true,
+    );
+    return { label, pages: chunk, text, charCount: text.length };
+  });
+
+  return { sections };
+}
+
+const TABLE_COLS =
+  "grid-cols-[3.5rem_minmax(5rem,max-content)_minmax(4.25rem,5rem)_minmax(3.75rem,4.5rem)_minmax(0,1fr)_minmax(3.25rem,auto)]";
+
+function formatCopyButtonChars(charCount: number): string {
+  if (charCount < 10_000) return charCount.toLocaleString();
+  if (charCount < 1_000_000) {
+    const compact = charCount / 1000;
+    return compact >= 100
+      ? `${Math.round(compact)}k`
+      : `${compact.toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  const compact = charCount / 1_000_000;
+  return `${compact.toFixed(1).replace(/\.0$/, "")}M`;
+}
+
+function CopyCharButton({
+  charCount,
+  copied,
+  onClick,
+  title,
+}: {
+  charCount: number;
+  copied: boolean;
+  onClick: () => void;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={cn(
+        "justify-self-end inline-flex items-center gap-1 min-w-[4rem] h-7 px-1.5 rounded border transition-colors",
+        copied
+          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          : "border-border bg-background hover:bg-accent text-foreground",
+      )}
+    >
+      {copied ? (
+        <Check className="w-3 h-3 shrink-0" />
+      ) : (
+        <>
+          <Copy className="w-3 h-3 shrink-0" />
+          <span className="text-[9px] font-semibold tabular-nums leading-none">
+            {formatCopyButtonChars(charCount)}
+          </span>
+        </>
+      )}
+    </button>
+  );
+}
+
+function formatPageSpan(pageNums: number[]): string {
+  if (pageNums.length === 0) return "—";
+  if (pageNums.length === 1) return String(pageNums[0]);
+  const first = pageNums[0];
+  const last = pageNums[pageNums.length - 1];
+  if (pageNums.length === last - first + 1) return `${first}–${last}`;
+  return pageNums.join(", ");
+}
+
+function getCharCountTier(charCount: number): {
+  accuracy: string;
+  notes: string;
+  className: string;
+} {
+  if (charCount < 20_000) {
+    return {
+      accuracy: "95–100%",
+      notes: "Excellent",
+      className: "text-blue-600 dark:text-blue-400",
+    };
+  }
+  if (charCount < 50_000) {
+    return {
+      accuracy: "90–100%",
+      notes: "Very good",
+      className: "text-emerald-600 dark:text-emerald-400",
+    };
+  }
+  if (charCount < 100_000) {
+    return {
+      accuracy: "70–90%",
+      notes: "Slight losses",
+      className: "text-yellow-600 dark:text-yellow-400",
+    };
+  }
+  if (charCount < 400_000) {
+    return {
+      accuracy: "50–70%",
+      notes: "Full coverage unlikely",
+      className: "text-orange-600 dark:text-orange-400",
+    };
+  }
+  if (charCount < 1_000_000) {
+    return {
+      accuracy: "30–50%",
+      notes: "Point extraction only",
+      className: "text-red-600 dark:text-red-400",
+    };
+  }
+  if (charCount < 3_000_000) {
+    return {
+      accuracy: "15–30%",
+      notes: "Significant degradation",
+      className: "text-red-800 dark:text-red-500",
+    };
+  }
+  return {
+    accuracy: "<15%",
+    notes: "Not recommended",
+    className: "text-foreground",
+  };
+}
+
+function buildCombinedSectionsText(
+  sections: PageSection[],
+  docId: string,
+  docName: string,
+  pageRows: PdfPageRow[],
+  flatPages: string[],
+  source: "raw" | "clean",
+): string {
+  if (sections.length === 0) return "";
+  if (sections.length === 1) return sections[0].text;
+  return (
+    `File ID: ${docId}\nDocument: ${docName}\n` +
+    sections
+      .map(
+        (s) =>
+          `\n${"=".repeat(60)}\n${s.label}\n${"=".repeat(60)}\n` +
+          s.pages
+            .map((n) => {
+              const text = getPageText(n, pageRows, flatPages, source);
+              return `\n<page number="${n}">\n${text.trim()}\n</page>`;
+            })
+            .join("\n"),
+      )
+      .join("\n")
+  );
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PageSection {
@@ -162,8 +362,11 @@ export function CopyPagesOverlay({
   pagesLoading = false,
 }: CopyPagesOverlayProps) {
   const [pageRange, setPageRange] = useState("");
-  const [pagesPerSection, setPagesPerSection] = useState("");
-  const [source, setSource] = useState<"raw" | "clean">("raw");
+  const [pagesPerSection, setPagesPerSection] = useState(
+    DEFAULT_PAGES_PER_SECTION,
+  );
+  const [source, setSource] = useState<"raw" | "clean">("clean");
+  const initializedForOpenRef = useRef<string | null>(null);
   const [sections, setSections] = useState<PageSection[]>([]);
   const [generated, setGenerated] = useState(false);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -172,10 +375,10 @@ export function CopyPagesOverlay({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Flat-content fallback: split by form-feed (\f), the standard PDF page sep
-  const flatPages = useMemo(() => {
-    const flat = (source === "clean" ? doc.cleanContent : doc.content) ?? "";
-    return flat.split("\f");
-  }, [source, doc.cleanContent, doc.content]);
+  const flatPages = useMemo(
+    () => getFlatPages(doc, source),
+    [source, doc.cleanContent, doc.content],
+  );
 
   const maxPage = useMemo(() => {
     if (pages.length > 0) return pages[pages.length - 1].pageNumber;
@@ -193,44 +396,99 @@ export function CopyPagesOverlay({
 
   const isBatchMode = chunkSize > 0;
 
-  // ── Generate / Copy ───────────────────────────────────────────────────────
-
-  const handleGenerate = useCallback(() => {
-    setErrorMsg(null);
-    const selectedPages = parsePageRange(pageRange, maxPage);
-    if (selectedPages.length === 0) {
-      setErrorMsg("No valid pages in the given range.");
-      return;
-    }
-
-    const chunks = chunkArray(selectedPages, chunkSize);
-    const built: PageSection[] = chunks.map((chunk, i) => {
-      const first = chunk[0];
-      const last = chunk[chunk.length - 1];
-      const label =
-        chunks.length === 1
-          ? chunk.length === 1
-            ? `Page ${first}`
-            : `Pages ${first}–${last}`
-          : `Section ${i + 1} · pages ${first}–${last}`;
-      const text = buildSectionText(
+  const copyAllCharCount = useMemo(
+    () =>
+      buildCombinedSectionsText(
+        sections,
         doc.id,
         doc.name,
-        chunk,
         pages,
         flatPages,
         source,
-        true,
-      );
-      return { label, pages: chunk, text, charCount: text.length };
-    });
+      ).length,
+    [sections, doc.id, doc.name, pages, flatPages, source],
+  );
 
-    setSections(built);
-    setGenerated(true);
+  const allPageSpan = useMemo(() => {
+    const pageNums = [
+      ...new Set(sections.flatMap((section) => section.pages)),
+    ].sort((a, b) => a - b);
+    return formatPageSpan(pageNums);
+  }, [sections]);
+
+  const copyAllTier = getCharCountTier(copyAllCharCount);
+
+  // ── Generate / Copy ───────────────────────────────────────────────────────
+
+  const regenerateSections = useCallback(
+    (nextSource?: "raw" | "clean") => {
+      const activeSource = nextSource ?? source;
+      if (nextSource) setSource(nextSource);
+
+      setErrorMsg(null);
+      const result = buildPageSections(
+        pageRange,
+        pagesPerSection,
+        maxPage,
+        doc,
+        pages,
+        activeSource,
+      );
+      if ("error" in result) {
+        setErrorMsg(result.error);
+        setSections([]);
+        setGenerated(false);
+        return;
+      }
+
+      setSections(result.sections);
+      setGenerated(true);
+      setExpandedIdx(null);
+      setCopiedIdx(null);
+      setCopiedAll(false);
+    },
+    [source, pageRange, pagesPerSection, maxPage, doc, pages],
+  );
+
+  const handleGenerate = regenerateSections;
+
+  useEffect(() => {
+    if (!open) {
+      initializedForOpenRef.current = null;
+      return;
+    }
+    if (pagesLoading || initializedForOpenRef.current === doc.id) return;
+
+    initializedForOpenRef.current = doc.id;
+    const defaultSource: "raw" | "clean" = hasClean ? "clean" : "raw";
+    const defaultRange = formatFullPageRange(maxPage);
+
+    setSource(defaultSource);
+    setPageRange(defaultRange);
+    setPagesPerSection(DEFAULT_PAGES_PER_SECTION);
+    setErrorMsg(null);
     setExpandedIdx(null);
     setCopiedIdx(null);
     setCopiedAll(false);
-  }, [pageRange, maxPage, chunkSize, doc, pages, flatPages, source]);
+
+    const result = buildPageSections(
+      defaultRange,
+      DEFAULT_PAGES_PER_SECTION,
+      maxPage,
+      doc,
+      pages,
+      defaultSource,
+    );
+    if ("error" in result) {
+      setErrorMsg(result.error);
+      setSections([]);
+      setGenerated(false);
+      return;
+    }
+
+    setSections(result.sections);
+    setGenerated(true);
+  }, [open, pagesLoading, doc, pages, maxPage, hasClean]);
 
   const handleCopySection = useCallback(
     async (idx: number) => {
@@ -247,22 +505,14 @@ export function CopyPagesOverlay({
 
   const handleCopyAll = useCallback(async () => {
     if (sections.length === 0) return;
-    const combined =
-      sections.length === 1
-        ? sections[0].text
-        : `File ID: ${doc.id}\nDocument: ${doc.name}\n` +
-          sections
-            .map(
-              (s) =>
-                `\n${"=".repeat(60)}\n${s.label}\n${"=".repeat(60)}\n` +
-                s.pages
-                  .map((n) => {
-                    const text = getPageText(n, pages, flatPages, source);
-                    return `\n<page number="${n}">\n${text.trim()}\n</page>`;
-                  })
-                  .join("\n"),
-            )
-            .join("\n");
+    const combined = buildCombinedSectionsText(
+      sections,
+      doc.id,
+      doc.name,
+      pages,
+      flatPages,
+      source,
+    );
     try {
       await navigator.clipboard.writeText(combined);
       setCopiedAll(true);
@@ -278,7 +528,8 @@ export function CopyPagesOverlay({
     (isOpen: boolean) => {
       if (!isOpen) {
         setPageRange("");
-        setPagesPerSection("");
+        setPagesPerSection(DEFAULT_PAGES_PER_SECTION);
+        setSource("clean");
         setSections([]);
         setGenerated(false);
         setExpandedIdx(null);
@@ -299,38 +550,12 @@ export function CopyPagesOverlay({
         <DialogHeader className="shrink-0 px-5 pt-5 pb-3 border-b border-border">
           <DialogTitle className="flex items-center gap-2 text-sm">
             <ClipboardList className="w-4 h-4 text-primary" />
-            Copy Pages to Clipboard
+            Copy Pages from {doc.name}
           </DialogTitle>
         </DialogHeader>
 
         {/* ── Config area ─────────────────────────────────────────────── */}
         <div className="shrink-0 px-5 py-3 space-y-3 border-b border-border">
-          {/* Doc info */}
-          <div className="px-2.5 py-2 bg-muted/40 border border-border rounded-md grid grid-cols-2 gap-x-4 gap-y-0.5">
-            <p className="text-[10px] text-muted-foreground font-mono truncate col-span-2">
-              <span className="text-muted-foreground/60">ID: </span>
-              {doc.id}
-            </p>
-            <p className="text-[10px] text-foreground/80 truncate">
-              <span className="text-muted-foreground/60">Doc: </span>
-              {doc.name}
-            </p>
-            <p className="text-[10px] text-muted-foreground/60 text-right">
-              {pagesLoading ? (
-                <span className="flex items-center justify-end gap-1">
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                  loading…
-                </span>
-              ) : pages.length > 0 ? (
-                `${maxPage} pages`
-              ) : doc.totalPages ? (
-                `${doc.totalPages} pages (legacy)`
-              ) : (
-                "page count unknown"
-              )}
-            </p>
-          </div>
-
           {/* Source + range + chunk size — three controls in one row */}
           <div className="flex items-end gap-2">
             {/* Source toggle */}
@@ -342,8 +567,7 @@ export function CopyPagesOverlay({
                 <button
                   type="button"
                   onClick={() => {
-                    setSource("raw");
-                    setGenerated(false);
+                    if (source !== "raw") regenerateSections("raw");
                   }}
                   className={cn(
                     "px-2.5 py-1.5 text-[11px] font-medium rounded border transition-colors",
@@ -357,11 +581,10 @@ export function CopyPagesOverlay({
                 <button
                   type="button"
                   onClick={() => {
-                    setSource("clean");
-                    setGenerated(false);
+                    if (source !== "clean") regenerateSections("clean");
                   }}
                   disabled={!hasClean}
-                  title={hasClean ? "AI Cleaned" : "Run AI Cleanup first"}
+                  title={hasClean ? "Cleaned text" : "Run cleanup first"}
                   className={cn(
                     "px-2.5 py-1.5 text-[11px] font-medium rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
                     source === "clean"
@@ -369,7 +592,7 @@ export function CopyPagesOverlay({
                       : "bg-background text-muted-foreground border-border hover:bg-accent",
                   )}
                 >
-                  AI Clean
+                  Clean
                 </button>
               </div>
             </div>
@@ -378,9 +601,6 @@ export function CopyPagesOverlay({
             <div className="flex-1">
               <label className="block text-[10px] font-medium text-muted-foreground mb-1">
                 Page range
-                <span className="ml-1 font-normal opacity-60">
-                  (blank = all)
-                </span>
               </label>
               <Input
                 value={pageRange}
@@ -389,7 +609,7 @@ export function CopyPagesOverlay({
                   setGenerated(false);
                   setErrorMsg(null);
                 }}
-                placeholder={`1–${maxPage}`}
+                placeholder={`1-${maxPage}`}
                 className="h-8 text-xs font-mono"
               />
             </div>
@@ -398,7 +618,6 @@ export function CopyPagesOverlay({
             <div className="w-36 shrink-0">
               <label className="block text-[10px] font-medium text-muted-foreground mb-1">
                 Pages / section
-                <span className="ml-1 font-normal opacity-60">(blank = 1)</span>
               </label>
               <Input
                 value={pagesPerSection}
@@ -406,7 +625,7 @@ export function CopyPagesOverlay({
                   setPagesPerSection(e.target.value);
                   setGenerated(false);
                 }}
-                placeholder="e.g. 5"
+                placeholder="10"
                 className="h-8 text-xs font-mono"
                 type="number"
                 min="1"
@@ -432,99 +651,147 @@ export function CopyPagesOverlay({
         {/* ── Sections list ───────────────────────────────────────────────── */}
         {generated && sections.length > 0 && (
           <div className="flex-1 min-h-0 flex flex-col">
-            {/* List header */}
-            <div className="shrink-0 flex items-center justify-between px-5 py-2 border-b border-border bg-muted/20">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                {sections.length} section{sections.length !== 1 ? "s" : ""} ·{" "}
-                {sections.reduce((a, s) => a + s.pages.length, 0)} pages
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyAll}
-                className={cn(
-                  "flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded border transition-colors",
-                  copiedAll
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : "border-border bg-background hover:bg-accent text-foreground",
-                )}
-              >
-                {copiedAll ? (
-                  <>
-                    <Check className="w-3 h-3" />
-                    Copied All!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3 h-3" />
-                    Copy All Sections
-                  </>
-                )}
-              </button>
-            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="px-5 py-2">
+                <div
+                  className={cn(
+                    "grid items-center gap-x-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2",
+                    TABLE_COLS,
+                  )}
+                >
+                  <span>Sections</span>
+                  <span>Pages</span>
+                  <span className="text-right tabular-nums">Characters</span>
+                  <span className="text-right tabular-nums">Accuracy</span>
+                  <span>Expected Quality</span>
+                  <span className="sr-only">Copy</span>
+                </div>
 
-            {/* Scrollable section rows */}
-            <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-border">
-              {sections.map((sec, idx) => {
-                const isExpanded = expandedIdx === idx;
-                const isCopied = copiedIdx === idx;
-                return (
-                  <div key={idx} className="group">
-                    {/* Row header */}
-                    <div className="flex items-center gap-2 px-5 py-2.5 hover:bg-muted/30 transition-colors">
-                      <button
-                        type="button"
-                        onClick={() => setExpandedIdx(isExpanded ? null : idx)}
-                        className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
-                        ) : (
-                          <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                        )}
-                        <FileText className="w-3 h-3 text-primary/60 shrink-0" />
-                        <span className="text-[11px] font-medium truncate">
-                          {sec.label}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/60 shrink-0 ml-1">
-                          {sec.charCount.toLocaleString()} chars
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleCopySection(idx)}
-                        className={cn(
-                          "shrink-0 flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors",
-                          isCopied
-                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            : "border-border bg-background hover:bg-accent text-foreground opacity-0 group-hover:opacity-100",
-                        )}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="w-2.5 h-2.5" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-2.5 h-2.5" />
-                            Copy
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Expanded content preview */}
-                    {isExpanded && (
-                      <div className="px-5 pb-3">
-                        <pre className="text-[10px] font-mono text-foreground/70 whitespace-pre-wrap leading-relaxed bg-muted/30 border border-border rounded-md p-2.5 max-h-48 overflow-y-auto scrollbar-thin">
-                          {sec.text}
-                        </pre>
-                      </div>
+                <div
+                  className={cn(
+                    "grid items-center gap-x-3 py-2 border-b border-border bg-muted/20",
+                    TABLE_COLS,
+                  )}
+                >
+                  <span className="text-xs font-medium">All</span>
+                  <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                    {allPageSpan}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm font-semibold tabular-nums text-right",
+                      copyAllTier.className,
                     )}
-                  </div>
-                );
-              })}
+                  >
+                    {copyAllCharCount.toLocaleString()}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-medium tabular-nums text-right",
+                      copyAllTier.className,
+                    )}
+                  >
+                    {copyAllTier.accuracy}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs leading-snug",
+                      copyAllTier.notes
+                        ? copyAllTier.className
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {copyAllTier.notes || "—"}
+                  </span>
+                  <CopyCharButton
+                    charCount={copyAllCharCount}
+                    copied={copiedAll}
+                    onClick={handleCopyAll}
+                    title="Copy all sections"
+                  />
+                </div>
+
+                {sections.map((sec, idx) => {
+                  const isExpanded = expandedIdx === idx;
+                  const isCopied = copiedIdx === idx;
+                  const tier = getCharCountTier(sec.charCount);
+                  return (
+                    <div
+                      key={idx}
+                      className="border-b border-border last:border-b-0"
+                    >
+                      <div
+                        className={cn(
+                          "grid items-center gap-x-3 py-2 hover:bg-muted/30 transition-colors",
+                          TABLE_COLS,
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedIdx(isExpanded ? null : idx)
+                          }
+                          className="flex items-center gap-0.5 min-w-0 w-full text-left"
+                        >
+                          <span className="text-xs font-medium truncate flex-1 min-w-0">
+                            {sections.length === 1
+                              ? "Single"
+                              : `Sec ${idx + 1}`}
+                          </span>
+                          {isExpanded ? (
+                            <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                          )}
+                        </button>
+                        <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                          {formatPageSpan(sec.pages)}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-sm font-semibold tabular-nums text-right",
+                            tier.className,
+                          )}
+                        >
+                          {sec.charCount.toLocaleString()}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-xs font-medium tabular-nums text-right",
+                            tier.className,
+                          )}
+                        >
+                          {tier.accuracy}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-xs leading-snug",
+                            tier.notes
+                              ? tier.className
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {tier.notes || "—"}
+                        </span>
+                        <CopyCharButton
+                          charCount={sec.charCount}
+                          copied={isCopied}
+                          onClick={() => void handleCopySection(idx)}
+                          title={`Copy section ${idx + 1}`}
+                        />
+                      </div>
+
+                      {isExpanded && (
+                        <div className="pb-3">
+                          <pre className="text-[10px] font-mono text-foreground/70 whitespace-pre-wrap leading-relaxed bg-muted/30 border border-border rounded-md p-2.5 max-h-48 overflow-y-auto scrollbar-thin">
+                            {sec.text}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -532,12 +799,20 @@ export function CopyPagesOverlay({
         {/* Empty state when not yet generated */}
         {!generated && (
           <div className="flex-1 flex flex-col items-center justify-center gap-2 py-8 text-center">
-            <ClipboardList className="w-8 h-8 text-muted-foreground/20" />
-            <p className="text-xs text-muted-foreground">
-              Configure options above, then click{" "}
-              <span className="font-medium">Generate</span> to build your
-              sections.
-            </p>
+            {pagesLoading ? (
+              <>
+                <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+                <p className="text-xs text-muted-foreground">Loading pages…</p>
+              </>
+            ) : (
+              <>
+                <ClipboardList className="w-8 h-8 text-muted-foreground/20" />
+                <p className="text-xs text-muted-foreground">
+                  Adjust options above, then click{" "}
+                  <span className="font-medium">Generate</span>.
+                </p>
+              </>
+            )}
           </div>
         )}
       </DialogContent>

@@ -25,6 +25,7 @@ import { useDiagnosticHoverActions } from "../agent-context/useDiagnosticHoverAc
 import { selectDiagnosticsByTabId } from "../redux/diagnosticsSlice";
 import { CodeWorkspaceContextMenu } from "../agent-context/CodeWorkspaceContextMenu";
 import { CodeReadonlyContextMenu } from "../agent-context/CodeReadonlyContextMenu";
+import { codeWorkspaceSurfaceKey } from "../chat/begin-fresh-code-chat";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import type { RootState } from "@/lib/redux/store";
 import { useEnvironmentForActiveTab } from "./monaco-environments";
@@ -71,7 +72,9 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   // editor sends context to the right chat even before the URL catches up
   // after `useAgentLauncher` creates a fresh instance.
   const focusedConversationId = useAppSelector(
-    agentId ? selectFocusedConversation(`agent-runner:${agentId}`) : () => null,
+    agentId
+      ? selectFocusedConversation(codeWorkspaceSurfaceKey(agentId))
+      : () => null,
   );
   const conversationId = focusedConversationId ?? conversationIdFromUrl;
 
@@ -338,15 +341,24 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           ) : activeTab.kind === "binary-preview" ? (
             <BinaryFileViewer key={activeTab.id} tab={activeTab} />
           ) : activeTab.kind === "history-triple" ? (
-            <CodeReadonlyContextMenu key={activeTab.id} className="h-full w-full">
+            <CodeReadonlyContextMenu
+              key={activeTab.id}
+              className="h-full w-full"
+            >
               <TripleDiffView tab={activeTab} />
             </CodeReadonlyContextMenu>
           ) : activeTab.kind === "render-preview" ? (
-            <CodeReadonlyContextMenu key={activeTab.id} className="h-full w-full">
+            <CodeReadonlyContextMenu
+              key={activeTab.id}
+              className="h-full w-full"
+            >
               <RenderPreviewView tab={activeTab} />
             </CodeReadonlyContextMenu>
           ) : activeTabHasPending ? (
-            <CodeReadonlyContextMenu key={activeTab.id} className="h-full w-full">
+            <CodeReadonlyContextMenu
+              key={activeTab.id}
+              className="h-full w-full"
+            >
               <TabDiffView tab={activeTab} />
             </CodeReadonlyContextMenu>
           ) : (

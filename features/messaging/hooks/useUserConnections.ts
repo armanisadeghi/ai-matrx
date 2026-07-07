@@ -17,6 +17,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { useConversations } from "@/hooks/useSupabaseMessaging";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { invitationsService } from "@/features/organizations/service/invitationsService";
 import type { UserBasicInfo } from "../types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 
@@ -149,28 +150,26 @@ export function useUserConnections(): UseUserConnectionsReturn {
           }
         });
 
-        // Fetch pending invitations for this org
-        // Note: Invitations are by email, we'll try to match to existing users
-        const { data: invitations, error: invError } = await supabase
-          .schema("iam")
-          .from("invitations")
-          .select("email, created_by")
-          .eq("organization_id", org.id)
-          .eq("target_type", "organization")
-          .eq("status", "pending")
-          .is("deleted_at", null)
-          .gt("expires_at", new Date().toISOString());
-
-        if (invError) {
+        // Pending org invitations — via inv_list RPC (no direct grant on iam.invitations).
+        const invResult = await invitationsService.listForTarget(
+          "organization",
+          org.id,
+        );
+        if (!invResult.ok) {
           console.error(
             `Error fetching invitations for org ${org.id}:`,
-            invError,
+            invResult.error.message,
           );
           continue;
         }
+        const nowIso = new Date().toISOString();
+        const pendingInvites = invResult.data.invitations.filter(
+          (inv) =>
+            inv.status === "pending" && inv.expiresAt > nowIso && inv.email,
+        );
 
         // For invitations, we can try to look up if these emails belong to existing users
-        for (const invite of invitations || []) {
+        for (const invite of pendingInvites) {
           if (!invite.email) continue;
 
           // Try to find user by email using lookup

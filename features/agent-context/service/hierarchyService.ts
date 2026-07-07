@@ -605,7 +605,7 @@ export const hierarchyService = {
         .from("organizations")
         .select(nameCol)
         .eq("id", id)
-        .single();
+        .maybeSingle();
     } else {
       const table =
         type === "project" ? ("projects" as const) : ("tasks" as const);
@@ -613,7 +613,7 @@ export const hierarchyService = {
         .from(table)
         .select(nameCol)
         .eq("id", id)
-        .single();
+        .maybeSingle();
     }
     if (row.error) return null;
     return (row.data as any)?.[nameCol] ?? null;
@@ -632,7 +632,7 @@ export const hierarchyService = {
         .select("title, project_id")
         .is("deleted_at", null)
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (task) {
         chain.unshift({ type: "task", id, name: task.title });
         if (task.project_id) {

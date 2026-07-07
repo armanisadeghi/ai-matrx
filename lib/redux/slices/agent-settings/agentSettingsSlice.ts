@@ -46,8 +46,13 @@ import { VARIABLE_COMPONENT_TYPES } from "@/features/agents/types/agent-definiti
 /** Type predicate so `type` narrows into a real `VariableCustomComponent`, not just a runtime check. */
 function isCustomComponentShape(
   value: Record<string, unknown>,
-): value is Record<string, unknown> & { type: (typeof VARIABLE_COMPONENT_TYPES)[number] } {
-  return typeof value.type === "string" && (VARIABLE_COMPONENT_TYPES as readonly string[]).includes(value.type);
+): value is Record<string, unknown> & {
+  type: (typeof VARIABLE_COMPONENT_TYPES)[number];
+} {
+  return (
+    typeof value.type === "string" &&
+    (VARIABLE_COMPONENT_TYPES as readonly string[]).includes(value.type)
+  );
 }
 
 /**
@@ -59,7 +64,9 @@ function isCustomComponentShape(
 function parseCustomComponent(raw: unknown): AgentVariable["customComponent"] {
   if (!isJsonObject(raw)) return undefined;
   const cc = raw as Record<string, unknown>;
-  return isCustomComponentShape(cc) ? (cc as AgentVariable["customComponent"]) : undefined;
+  return isCustomComponentShape(cc)
+    ? (cc as AgentVariable["customComponent"])
+    : undefined;
 }
 
 /**
@@ -76,7 +83,8 @@ function parseAgentVariables(raw: unknown): AgentVariable[] {
     if (typeof item.name !== "string") continue;
     result.push({
       name: item.name,
-      defaultValue: typeof item.defaultValue === "string" ? item.defaultValue : "",
+      defaultValue:
+        typeof item.defaultValue === "string" ? item.defaultValue : "",
       required: typeof item.required === "boolean" ? item.required : undefined,
       helpText: typeof item.helpText === "string" ? item.helpText : undefined,
       // customComponent is a deep, mostly-optional shape (picklist/toggle/min/max/etc.) —
@@ -130,7 +138,8 @@ export const fetchAvailableTools = createAsyncThunk(
     try {
       const supabase = createClient();
       const { data, error } = await supabase
-        .schema("tool").from("definition")
+        .schema("tool")
+        .from("definition")
         .select("id, name, description, category, icon")
         .is("deleted_at", null)
         .eq("is_active", true)
@@ -171,7 +180,11 @@ export const loadAgentSettings = createAsyncThunk(
     try {
       const supabase = createClient();
 
-      let data: { id: string; settings: unknown; variable_defaults: unknown } | null = null;
+      let data: {
+        id: string;
+        settings: unknown;
+        variable_defaults: unknown;
+      } | null = null;
       let error: { message: string } | null = null;
 
       if (source === "builtin") {
@@ -183,13 +196,15 @@ export const loadAgentSettings = createAsyncThunk(
           .select("id, settings, variable_definitions")
           .is("deleted_at", null)
           .eq("id", agentId)
-          .single();
+          .maybeSingle();
         error = result.error;
-        data = result.data ? {
-          id: result.data.id,
-          settings: result.data.settings,
-          variable_defaults: result.data.variable_definitions,
-        } : null;
+        data = result.data
+          ? {
+              id: result.data.id,
+              settings: result.data.settings,
+              variable_defaults: result.data.variable_definitions,
+            }
+          : null;
       } else {
         // user prompts migrated 1:1 to agent.definition (agent_type='user'), same UUIDs.
         // agent.definition uses `variable_definitions` instead of `variable_defaults`.
@@ -200,17 +215,20 @@ export const loadAgentSettings = createAsyncThunk(
           .is("deleted_at", null)
           .eq("id", agentId)
           .eq("agent_type", "user")
-          .single();
+          .maybeSingle();
         error = result.error;
-        data = result.data ? {
-          id: result.data.id,
-          settings: result.data.settings,
-          variable_defaults: result.data.variable_definitions,
-        } : null;
+        data = result.data
+          ? {
+              id: result.data.id,
+              settings: result.data.settings,
+              variable_defaults: result.data.variable_definitions,
+            }
+          : null;
       }
 
       if (error) throw error;
-      if (!data) throw new Error(`Agent ${agentId} not found (source: ${source})`);
+      if (!data)
+        throw new Error(`Agent ${agentId} not found (source: ${source})`);
 
       const rawSettings = data.settings as AgentSettings;
       // `variable_defaults` is a JSONB column (typed `Json | null` by Supabase).

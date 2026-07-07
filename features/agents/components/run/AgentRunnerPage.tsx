@@ -48,10 +48,9 @@ interface AgentRunnerPageProps {
    */
   sourceFeature?: SourceFeature;
   /**
-   * Focus-registry key for this surface. Defaults to
-   * `${sourceFeature ?? "agent-runner"}:${agentId}`. The code workspace keeps
-   * the legacy `agent-runner:${agentId}` key so editor bridges and history
-   * slots stay aligned while `sourceFeature` is `"code-editor"`.
+   * Focus-registry key for this surface. The `/code` workspace passes
+   * `code-route:<agentId>` (see `codeWorkspaceSurfaceKey`). Standalone
+   * `/agents/.../run` defaults to `${sourceFeature}:${agentId}`.
    */
   surfaceKey?: string;
   /** Back-link target shown in the run header. Defaults to `/agents`. */
@@ -76,6 +75,11 @@ interface AgentRunnerPageProps {
   /** Drives launcher remint when `preferFresh` is active. Pass the code
    *  workspace fresh-session nonce (or 0 to disable). */
   freshSessionKey?: number;
+  /**
+   * Keep started conversations alive across unmount (chat route uses this so
+   * URL promotion does not clobber an in-flight stream).
+   */
+  retainOnUnmount?: boolean;
 }
 
 export function AgentRunnerPage({
@@ -87,6 +91,7 @@ export function AgentRunnerPage({
   buildConversationUrl,
   preferFresh = false,
   freshSessionKey = 0,
+  retainOnUnmount = false,
 }: AgentRunnerPageProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -180,10 +185,11 @@ export function AgentRunnerPage({
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature,
-    ready: !isInitializing,
+    ready: !isInitializing && (!preferFresh || isFreshRoute),
     preferFresh: isFreshRoute,
     freshSessionKey: isFreshRoute ? freshSessionKey : 0,
     config: preferFresh ? { responseDensity: "compact" } : undefined,
+    retainOnUnmount,
   });
 
   // Completely unrelated to the normal run.

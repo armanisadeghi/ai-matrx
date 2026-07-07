@@ -5,9 +5,12 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { bumpFreshSession } from "../redux/codeWorkspaceSlice";
 
-/** Focus-registry key for the code workspace chat runner. */
+/** Focus-registry prefix — mirrors `chat-route` on `/chat`. */
+export const CODE_WORKSPACE_ROUTE = "code-route" as const;
+
+/** Focus-registry key for the `/code` workspace chat surface. */
 export function codeWorkspaceSurfaceKey(agentId: string): string {
-  return `agent-runner:${agentId}`;
+  return `${CODE_WORKSPACE_ROUTE}:${agentId}`;
 }
 
 /** Start a brand-new chat in the code workspace: drop stale surface focus,

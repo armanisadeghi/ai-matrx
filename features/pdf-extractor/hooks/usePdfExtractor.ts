@@ -191,7 +191,8 @@ async function fetchProcessedDocument(
   const promise = (async () => {
     try {
       const { data, error } = await (supabase as any)
-        .schema("docproc").from("processed_documents")
+        .schema("docproc")
+        .from("processed_documents")
         .select("*")
         .is("deleted_at", null)
         .eq("id", docId)
@@ -199,7 +200,7 @@ async function fetchProcessedDocument(
         // so the planner can use the (owner_id, source_kind, source_id, …)
         // unique index when present.
         .eq("owner_id", userId)
-        .single();
+        .maybeSingle();
       if (error || !data) return null;
       return docFromApi(data as unknown as Record<string, unknown>);
     } catch (err) {
@@ -299,7 +300,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     setHistoryLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .schema("docproc").from("processed_documents")
+        .schema("docproc")
+        .from("processed_documents")
         // Metadata-only projection. We deliberately do NOT pull `content`,
         // `clean_content`, or `structured_json` here — those columns can be
         // megabytes per row and were causing the workspace to take 2+ minutes
@@ -396,218 +398,219 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   const extractFiles = useCallback(
     async (opts: ExtractFilesOptions = {}): Promise<string[]> => {
-    if (selectedFiles.length === 0) return [];
+      if (selectedFiles.length === 0) return [];
 
-    setBatchStatus("extracting");
-    firstCompletedTabRef.current = null;
-    const completedDocIds: string[] = [];
-    let firstDocIdFired = false;
+      setBatchStatus("extracting");
+      firstCompletedTabRef.current = null;
+      const completedDocIds: string[] = [];
+      let firstDocIdFired = false;
 
-    // Create placeholder tabs for each file
-    const placeholderTabs: ExtractionTab[] = selectedFiles.map((file, i) => ({
-      id: `pending-${Date.now()}-${i}`,
-      filename: file.name,
-      status: "extracting" as const,
-      error: null,
-      document: null,
-    }));
+      // Create placeholder tabs for each file
+      const placeholderTabs: ExtractionTab[] = selectedFiles.map((file, i) => ({
+        id: `pending-${Date.now()}-${i}`,
+        filename: file.name,
+        status: "extracting" as const,
+        error: null,
+        document: null,
+      }));
 
-    setTabs((prev) => [...prev, ...placeholderTabs]);
-    // Switch to first extracting tab
-    setActiveTabId(placeholderTabs[0].id);
+      setTabs((prev) => [...prev, ...placeholderTabs]);
+      // Switch to first extracting tab
+      setActiveTabId(placeholderTabs[0].id);
 
-    try {
-      const headers = await getAuthHeaders();
-      const formData = new FormData();
-      selectedFiles.forEach((file) => formData.append("files", file));
+      try {
+        const headers = await getAuthHeaders();
+        const formData = new FormData();
+        selectedFiles.forEach((file) => formData.append("files", file));
 
-      const response = await fetch(
-        `${backendUrl}${ENDPOINTS.pdf.batchExtract}?max_concurrent=3`,
-        {
-          method: "POST",
-          headers,
-          body: formData,
-        },
-      );
+        const response = await fetch(
+          `${backendUrl}${ENDPOINTS.pdf.batchExtract}?max_concurrent=3`,
+          {
+            method: "POST",
+            headers,
+            body: formData,
+          },
+        );
 
-      if (!response.ok) {
-        // Canonical error parsing — extracts the backend envelope's
-        // user_message instead of dumping the raw body into the tab.
-        const apiError = await parseHttpError(response);
+        if (!response.ok) {
+          // Canonical error parsing — extracts the backend envelope's
+          // user_message instead of dumping the raw body into the tab.
+          const apiError = await parseHttpError(response);
+          setTabs((prev) =>
+            prev.map((tab) =>
+              placeholderTabs.some((p) => p.id === tab.id)
+                ? {
+                    ...tab,
+                    status: "error" as const,
+                    error: apiError.userMessage,
+                  }
+                : tab,
+            ),
+          );
+          setBatchStatus("idle");
+          return [];
+        }
+
+        // Track which placeholder index we're on (results arrive in completion order)
+        let resultIndex = 0;
+
+        const { events } = parseNdjsonStream(response);
+        for await (const event of events) {
+          if (event.event === "info") {
+            if (event.data.code === "pdf_page_progress") {
+              // Update progress on the currently extracting tab
+              const msg = event.data.user_message ?? "";
+              setTabs((prev) =>
+                prev.map((tab) => {
+                  if (
+                    placeholderTabs.some((p) => p.id === tab.id) &&
+                    tab.status === "extracting"
+                  ) {
+                    return { ...tab, progressMessage: msg };
+                  }
+                  return tab;
+                }),
+              );
+            }
+          }
+
+          if (event.event === "data") {
+            // Batch-extract sends untyped row-per-file results — narrow once.
+            const evtData = event.data as Record<string, unknown>;
+            const docId = evtData.doc_id as string | null;
+            const filename = evtData.filename as string;
+            const status = evtData.status as string;
+            const error = evtData.error as string | null;
+
+            // Find the matching placeholder by filename, or use resultIndex
+            const placeholderIdx = placeholderTabs.findIndex(
+              (p, idx) =>
+                idx >= resultIndex &&
+                p.filename === filename &&
+                p.status === "extracting",
+            );
+            const targetPlaceholder =
+              placeholderIdx >= 0
+                ? placeholderTabs[placeholderIdx]
+                : placeholderTabs[resultIndex];
+            resultIndex++;
+
+            if (!targetPlaceholder) continue;
+
+            if (status === "done" && docId) {
+              // Hand the id off IMMEDIATELY — before the detail fetch — so the
+              // studio can route to the new doc the moment it exists. The
+              // reader loads the row itself; blocking navigation on the fetch
+              // below (which can momentarily miss) is what stranded the user
+              // on the upload screen after a successful extraction.
+              completedDocIds.push(docId);
+              if (!firstDocIdFired) {
+                firstDocIdFired = true;
+                opts.onFirstDocId?.(docId);
+              }
+
+              // Fetch the full document (hydrates the open tab; the route's own
+              // fetch shares this via the in-flight dedup).
+              const doc = await fetchDocument(docId);
+              const newTabId = docId;
+
+              setTabs((prev) =>
+                prev.map((tab) =>
+                  tab.id === targetPlaceholder.id
+                    ? {
+                        ...tab,
+                        id: newTabId,
+                        filename: doc?.name ?? filename,
+                        status: "done" as const,
+                        error: null,
+                        document: doc,
+                        progressMessage: undefined,
+                      }
+                    : tab,
+                ),
+              );
+
+              // Update activeTabId if it was pointing to the placeholder
+              setActiveTabId((prev) =>
+                prev === targetPlaceholder.id ? newTabId : prev,
+              );
+
+              if (!firstCompletedTabRef.current) {
+                firstCompletedTabRef.current = newTabId;
+              }
+            } else if (status === "error") {
+              setTabs((prev) =>
+                prev.map((tab) =>
+                  tab.id === targetPlaceholder.id
+                    ? {
+                        ...tab,
+                        status: "error" as const,
+                        error: error ?? "Extraction failed",
+                        progressMessage: undefined,
+                      }
+                    : tab,
+                ),
+              );
+            }
+          }
+
+          if (event.event === "end") {
+            break;
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Extraction failed";
+        // Mark remaining extracting placeholders as error
         setTabs((prev) =>
           prev.map((tab) =>
-            placeholderTabs.some((p) => p.id === tab.id)
+            placeholderTabs.some((p) => p.id === tab.id) &&
+            tab.status === "extracting"
+              ? { ...tab, status: "error" as const, error: msg }
+              : tab,
+          ),
+        );
+      } finally {
+        // Stream ended (or threw). Sweep any placeholders still stuck in
+        // "extracting" — the server didn't send a per-file result for them.
+        // Without this sweep, those tabs spin forever and the user has to
+        // close them manually.
+        setTabs((prev) =>
+          prev.map((tab) =>
+            placeholderTabs.some((p) => p.id === tab.id) &&
+            tab.status === "extracting"
               ? {
                   ...tab,
                   status: "error" as const,
-                  error: apiError.userMessage,
+                  error:
+                    "No result received from server before the stream ended. Try this file on its own.",
+                  progressMessage: undefined,
                 }
               : tab,
           ),
         );
+
         setBatchStatus("idle");
-        return [];
-      }
+        clearFiles();
+        // Refresh history
+        loadHistory();
 
-      // Track which placeholder index we're on (results arrive in completion order)
-      let resultIndex = 0;
-
-      const { events } = parseNdjsonStream(response);
-      for await (const event of events) {
-        if (event.event === "info") {
-          if (event.data.code === "pdf_page_progress") {
-            // Update progress on the currently extracting tab
-            const msg = event.data.user_message ?? "";
-            setTabs((prev) =>
-              prev.map((tab) => {
-                if (
-                  placeholderTabs.some((p) => p.id === tab.id) &&
-                  tab.status === "extracting"
-                ) {
-                  return { ...tab, progressMessage: msg };
-                }
-                return tab;
-              }),
-            );
-          }
-        }
-
-        if (event.event === "data") {
-          // Batch-extract sends untyped row-per-file results — narrow once.
-          const evtData = event.data as Record<string, unknown>;
-          const docId = evtData.doc_id as string | null;
-          const filename = evtData.filename as string;
-          const status = evtData.status as string;
-          const error = evtData.error as string | null;
-
-          // Find the matching placeholder by filename, or use resultIndex
-          const placeholderIdx = placeholderTabs.findIndex(
-            (p, idx) =>
-              idx >= resultIndex &&
-              p.filename === filename &&
-              p.status === "extracting",
-          );
-          const targetPlaceholder =
-            placeholderIdx >= 0
-              ? placeholderTabs[placeholderIdx]
-              : placeholderTabs[resultIndex];
-          resultIndex++;
-
-          if (!targetPlaceholder) continue;
-
-          if (status === "done" && docId) {
-            // Hand the id off IMMEDIATELY — before the detail fetch — so the
-            // studio can route to the new doc the moment it exists. The
-            // reader loads the row itself; blocking navigation on the fetch
-            // below (which can momentarily miss) is what stranded the user
-            // on the upload screen after a successful extraction.
-            completedDocIds.push(docId);
-            if (!firstDocIdFired) {
-              firstDocIdFired = true;
-              opts.onFirstDocId?.(docId);
-            }
-
-            // Fetch the full document (hydrates the open tab; the route's own
-            // fetch shares this via the in-flight dedup).
-            const doc = await fetchDocument(docId);
-            const newTabId = docId;
-
-            setTabs((prev) =>
-              prev.map((tab) =>
-                tab.id === targetPlaceholder.id
-                  ? {
-                      ...tab,
-                      id: newTabId,
-                      filename: doc?.name ?? filename,
-                      status: "done" as const,
-                      error: null,
-                      document: doc,
-                      progressMessage: undefined,
-                    }
-                  : tab,
-              ),
-            );
-
-            // Update activeTabId if it was pointing to the placeholder
-            setActiveTabId((prev) =>
-              prev === targetPlaceholder.id ? newTabId : prev,
-            );
-
-            if (!firstCompletedTabRef.current) {
-              firstCompletedTabRef.current = newTabId;
-            }
-          } else if (status === "error") {
-            setTabs((prev) =>
-              prev.map((tab) =>
-                tab.id === targetPlaceholder.id
-                  ? {
-                      ...tab,
-                      status: "error" as const,
-                      error: error ?? "Extraction failed",
-                      progressMessage: undefined,
-                    }
-                  : tab,
-              ),
-            );
-          }
-        }
-
-        if (event.event === "end") {
-          break;
+        // Switch to first completed tab
+        if (firstCompletedTabRef.current) {
+          setActiveTabId(firstCompletedTabRef.current);
         }
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Extraction failed";
-      // Mark remaining extracting placeholders as error
-      setTabs((prev) =>
-        prev.map((tab) =>
-          placeholderTabs.some((p) => p.id === tab.id) &&
-          tab.status === "extracting"
-            ? { ...tab, status: "error" as const, error: msg }
-            : tab,
-        ),
-      );
-    } finally {
-      // Stream ended (or threw). Sweep any placeholders still stuck in
-      // "extracting" — the server didn't send a per-file result for them.
-      // Without this sweep, those tabs spin forever and the user has to
-      // close them manually.
-      setTabs((prev) =>
-        prev.map((tab) =>
-          placeholderTabs.some((p) => p.id === tab.id) &&
-          tab.status === "extracting"
-            ? {
-                ...tab,
-                status: "error" as const,
-                error:
-                  "No result received from server before the stream ended. Try this file on its own.",
-                progressMessage: undefined,
-              }
-            : tab,
-        ),
-      );
 
-      setBatchStatus("idle");
-      clearFiles();
-      // Refresh history
-      loadHistory();
-
-      // Switch to first completed tab
-      if (firstCompletedTabRef.current) {
-        setActiveTabId(firstCompletedTabRef.current);
-      }
-    }
-
-    return completedDocIds;
-  },
-  [
-    selectedFiles,
-    backendUrl,
-    getAuthHeaders,
-    fetchDocument,
-    clearFiles,
-    loadHistory,
-  ]);
+      return completedDocIds;
+    },
+    [
+      selectedFiles,
+      backendUrl,
+      getAuthHeaders,
+      fetchDocument,
+      clearFiles,
+      loadHistory,
+    ],
+  );
 
   // ── Open a document from history (sidebar click) ───────────────────────────
   //

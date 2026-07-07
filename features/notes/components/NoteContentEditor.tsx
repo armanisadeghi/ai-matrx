@@ -125,10 +125,11 @@ export function NoteContentEditor({
     }
     // Fetch fresh remote content
     supabase
-      .schema("workbench").from("notes")
+      .schema("workbench")
+      .from("notes")
       .select("content")
       .eq("id", noteId)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data?.content != null) {
           setConflictRemote(data.content);
@@ -424,9 +425,8 @@ export function NoteContentEditor({
     });
     if (!ok) return;
     try {
-      const { permanentlyDeleteNote } = await import(
-        "@/features/notes/service/notesService"
-      );
+      const { permanentlyDeleteNote } =
+        await import("@/features/notes/service/notesService");
       await permanentlyDeleteNote(noteId);
       dispatch(markTabInteraction({ instanceId }));
       dispatch(removeInstanceTab({ instanceId, noteId }));

@@ -1214,7 +1214,7 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
         .select("preferences")
         .eq("user_id", identity.userId)
         .abortSignal(signal)
-        .single();
+        .maybeSingle();
       if (error || !data) return null;
       return data.preferences as Partial<UserPreferencesState>;
     },
