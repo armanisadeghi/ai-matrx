@@ -31,6 +31,8 @@ import {
 import {
   presentationServerDataFromEnvelope,
   presentationMarkdownFromValue,
+  presentationDeckKindSchema,
+  presentationSlideKindSchema,
 } from "../kinds/presentation-deck";
 import {
   decisionTreeServerDataFromEnvelope,
@@ -224,50 +226,15 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
     toMarkdown: presentationMarkdownFromValue,
     artifact: { canvasType: "presentation" },
     persistence: { persistStructured: true },
-    schema: {
-      kind: "presentation_deck",
-      fields: {
-        title: { type: "string" },
-        slides: {
-          type: "array",
-          itemKinds: ["presentation_slide"],
-          required: true,
-        },
-        theme: {
-          type: "inline_object",
-          fields: {
-            primaryColor: { type: "string" },
-            secondaryColor: { type: "string" },
-            accentColor: { type: "string" },
-            backgroundColor: { type: "string" },
-            textColor: { type: "string" },
-            variant: { type: "string" },
-            font: { type: "string" },
-          },
-        },
-        additionalDetails: { type: "inline_object", fields: {} },
-      },
-    },
+    // Schema is the single source of truth in kinds/presentation-deck.ts —
+    // referenced (not re-declared) so the floor never drifts from the DB row.
+    schema: presentationDeckKindSchema,
   },
   {
     kind: "presentation_slide",
     schemaSource: "system",
     tier: "eager",
-    schema: {
-      kind: "presentation_slide",
-      fields: {
-        type: { type: "string" },
-        layout: { type: "string" },
-        title: { type: "string" },
-        subtitle: { type: "string" },
-        description: { type: "string" },
-        bullets: { type: "string[]" },
-        quote: { type: "string" },
-        author: { type: "string" },
-        image_url: { type: "string" },
-        notes: { type: "string" },
-      },
-    },
+    schema: presentationSlideKindSchema,
   },
 
   // ── decision tree (legacy root key `decision_tree`) ─────────────────────
