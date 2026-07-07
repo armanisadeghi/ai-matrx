@@ -9,9 +9,15 @@
 // it never drifts from /chat's list behavior.
 
 import Link from "next/link";
-import { GraduationCap, Plus, ShieldCheck, Sparkles } from "lucide-react";
+import { GraduationCap, Plus, Settings2, ShieldCheck, Sparkles } from "lucide-react";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
+import { TutorSettingsPanel } from "./TutorSettingsPanel";
 
 export function TutorHome() {
   return (
@@ -42,7 +48,7 @@ export function TutorHome() {
               Remembers your progress
             </span>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <Link
               href="/education/tutor/new"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
@@ -50,6 +56,20 @@ export function TutorHome() {
               <Plus className="h-4 w-4" aria-hidden />
               New tutor session
             </Link>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Settings2 className="h-4 w-4" aria-hidden />
+                  Tutor style
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72">
+                <TutorSettingsPanel />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
