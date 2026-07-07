@@ -1,0 +1,19 @@
+-- Security fix (2026-07-07): public.current_user_is_admin was a SECURITY DEFINER
+-- view named "am I an admin?" that SELECTed the whole admin.admins roster (every
+-- admin's user_id + level) with NO auth.uid() filter, granted to anon+authenticated
+-- in a PostgREST-exposed schema → the full admin roster leaked to anyone incl. anon,
+-- defeating the protected-resources hardening on admin.admins. Flip to
+-- security_invoker so it runs as the caller and admin.admins' own RLS
+-- (user_id = auth.uid() OR is_super_admin()) filters: a caller sees only their own
+-- admin row (supers see all), anon sees none — intended semantics, no roster leak.
+-- Applied live + verified (reloptions = {security_invoker=on}). Idempotent.
+--
+-- Found by a SECURITY DEFINER view audit (SECDEF_VIEW_AUDIT.md) that flagged 19 of
+-- 22 definer views as cross-user leaks. This is the single highest-confidence,
+-- lowest-app-risk fix (reads only admin.admins, which I verified is granted +
+-- self/super-RLS). The other 18 (incl. CRITICAL public.pdf_unified_pages — every
+-- user's PDF text — and 6 RAG/KG per-user-content views) have exact `security_invoker
+-- = on` remediations in SECDEF_VIEW_AUDIT.md but need app-verification before flipping
+-- (they feed core UI: menus/suggestions/PDF) and pdf_unified_pages's grant path
+-- conflicts with the deliberate files.files SELECT revoke — flag for Arman to batch-apply + test.
+alter view public.current_user_is_admin set (security_invoker = on);
