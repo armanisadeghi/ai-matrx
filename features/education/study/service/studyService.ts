@@ -22,6 +22,7 @@ import {
   retrievability as fsrsRetrievability,
 } from "@/lib/srs/fsrs";
 import { masteryToFsrsState } from "../utils/masteryFsrs";
+import { describeError, fail, isTransientStatus } from "./serviceError";
 import type {
   StudyResult,
   StudySessionRow,
@@ -45,72 +46,8 @@ import type {
 
 const EDU = () => supabase.schema("education");
 
-function fail<T>(context: string, error: unknown): StudyResult<T> {
-  const message = describeError(error);
-  // Log the DESCRIBED message in the string itself — passing the raw error object
-  // as a console arg serializes to a useless "[object Object]" in the Error
-  // Inspector. Keep the raw object as a trailing arg for devtools drill-down.
-  console.error(`[studyService] ${context}: ${message}`, error);
-  return { data: null, error: `${context}: ${message}` };
-}
-
-/**
- * Surface PostgREST/DB errors loudly (message + details + hint + code), never a
- * bare "[object Object]" or an opaque "Unknown error". Supabase PostgREST errors
- * are plain objects (not `Error` instances) carrying `{ message, details, hint,
- * code }`; some failures (auth, network, fetch) arrive in other shapes — so when
- * none of the known fields are present we dump the raw object rather than hide it.
- */
-function describeError(error: unknown): string {
-  if (error == null) return "Unknown error";
-  if (error instanceof Error) return error.message || error.name || "Error";
-  if (typeof error === "string") return error;
-  if (typeof error === "object") {
-    const e = error as {
-      message?: string;
-      details?: string;
-      hint?: string;
-      code?: string;
-    };
-    const parts = [
-      e.message,
-      e.details,
-      e.hint && `hint: ${e.hint}`,
-      e.code && `(${e.code})`,
-    ].filter(Boolean);
-    if (parts.length) return parts.join(" — ");
-    // No recognizable PostgREST fields — serialize the raw shape so the real
-    // cause is never swallowed (an empty `{}` still beats "[object Object]").
-    try {
-      const json = JSON.stringify(error);
-      if (json && json !== "{}") return json;
-    } catch {
-      /* circular / non-serializable — fall through */
-    }
-  }
-  return "Unknown error";
-}
-
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * A transient HTTP status worth retrying — a server / edge / gateway / network
- * hiccup, NOT a real DB rejection (4xx like 401/403/409 are deterministic and
- * must surface, not loop). PostgREST auto-retries idempotent GETs on transient
- * 5xx/520/503 but NEVER POSTs (its RETRYABLE_METHODS is GET/HEAD/OPTIONS only),
- * so a transient hiccup on an INSERT would otherwise surface as a hard failure —
- * exactly the message-less edge error that the old logging hid as "Unknown error".
- */
-function isTransientStatus(status: number | undefined): boolean {
-  return (
-    status === undefined ||
-    status === 0 ||
-    status === 408 ||
-    status === 429 ||
-    status >= 500
-  );
-}
 
 /** Shape the `study_record_attempt` RPC returns: `{ attempt_id, mastery }`. */
 interface RecordAttemptRpcResult {
