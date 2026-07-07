@@ -81,8 +81,34 @@ const SECRET_HINTS = [
   "created_by",
 ];
 
+// Exact column names that are sensitive but don't match a substring hint —
+// the "secret sauce" columns the seeded allowlists deliberately exclude
+// (agent prompt/config, app source, chat instructions, quiz answer key, …).
+const SECRET_EXACT = new Set([
+  "messages",
+  "system_instruction",
+  "config",
+  "variables",
+  "overrides",
+  "settings",
+  "tools",
+  "custom_tools",
+  "tool_config",
+  "mcp_servers",
+  "skill_config",
+  "component_code",
+  "slot_code",
+  "state",
+  "ciphertext",
+  "nonce",
+  "webhook_secret",
+  "input",
+  "output",
+]);
+
 function isSecretLookingColumn(name: string): boolean {
   const n = name.toLowerCase();
+  if (SECRET_EXACT.has(n)) return true;
   return SECRET_HINTS.some((hint) => n.includes(hint));
 }
 
@@ -136,7 +162,15 @@ export default function SharingPolicyPage() {
       }
       setDenied(false);
       setError(null);
-      setRows(sortPolicies((data as SharePolicyRow[]) ?? []));
+      // Normalize: the RPC returns all_columns = null for inactive rows whose
+      // physical table is gone (deactivated types). Guarantee arrays so the
+      // render never dereferences null.
+      const normalized = ((data as SharePolicyRow[]) ?? []).map((r) => ({
+        ...r,
+        all_columns: r.all_columns ?? [],
+        public_columns: r.public_columns ?? null,
+      }));
+      setRows(sortPolicies(normalized));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load share policies");
       setRows([]);
@@ -245,7 +279,7 @@ export default function SharingPolicyPage() {
     async (row: SharePolicyRow) => {
       const key = policyKey(row);
       const draft = draftColumns[key] ?? new Set(row.public_columns ?? []);
-      const selected = row.all_columns.filter((c) => draft.has(c));
+      const selected = (row.all_columns ?? []).filter((c) => draft.has(c));
       const previous = new Set(row.public_columns ?? []);
       const added = selected.filter((c) => !previous.has(c));
       const newlyExposedSecrets = added.filter(isSecretLookingColumn);
@@ -402,7 +436,7 @@ export default function SharingPolicyPage() {
                       const busy = !!rowBusy[key];
                       const isOpen = expanded === key;
                       const publicCount = (row.public_columns ?? []).length;
-                      const totalCount = row.all_columns.length;
+                      const totalCount = (row.all_columns ?? []).length;
                       const draft =
                         draftColumns[key] ?? new Set(row.public_columns ?? []);
                       return (
@@ -559,7 +593,7 @@ function ColumnEditor({
   onCancel: () => void;
 }) {
   const previous = new Set(row.public_columns ?? []);
-  const selectedCount = row.all_columns.filter((c) => draft.has(c)).length;
+  const selectedCount = (row.all_columns ?? []).filter((c) => draft.has(c)).length;
   const dirty = useMemo(() => {
     if (draft.size !== previous.size) return true;
     for (const c of draft) if (!previous.has(c)) return true;
@@ -579,7 +613,7 @@ function ColumnEditor({
       </div>
 
       <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3 lg:grid-cols-4">
-        {row.all_columns.map((column) => {
+        {(row.all_columns ?? []).map((column) => {
           const checked = draft.has(column);
           const secretLooking = isSecretLookingColumn(column);
           return (
@@ -616,7 +650,7 @@ function ColumnEditor({
 
       <div className="flex items-center justify-between border-t border-border pt-3">
         <span className="text-xs text-muted-foreground">
-          {selectedCount} of {row.all_columns.length} columns selected
+          {selectedCount} of {(row.all_columns ?? []).length} columns selected
           {dirty && (
             <span className="ml-2 text-amber-600 dark:text-amber-400">
               (unsaved)

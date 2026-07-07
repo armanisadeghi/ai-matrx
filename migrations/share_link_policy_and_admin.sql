@@ -50,7 +50,9 @@ BEGIN
       ('fc_set',            ARRAY['id','name','description','topic','lesson','difficulty','created_at']),
       ('fc_card',           ARRAY['id','front','back','card_kind','difficulty','topic','lesson','dynamic_content','created_at']),
       ('flashcard_data',    ARRAY['id','topic','lesson','difficulty','front','back','example','detailed_explanation','created_at']),
-      ('quiz_sessions',     ARRAY['id','title','state','quiz_content_hash','quiz_metadata','category','is_completed','completed_at','created_at']),
+      -- NOTE: `state` deliberately EXCLUDED — it holds correctAnswer/answer keys.
+      -- Sharing a quiz link exposes a results summary, never the answer key.
+      ('quiz_sessions',     ARRAY['id','title','quiz_content_hash','quiz_metadata','category','is_completed','completed_at','created_at']),
       ('transcript',        ARRAY['id','title','description','segments','tags','folder_name','source_type','created_at']),
       ('studio_session',    ARRAY['id','title','status','started_at','ended_at','total_duration_ms','created_at']),
       ('conversation',      ARRAY['id','title','description','keywords','created_at']),
@@ -211,7 +213,7 @@ BEGIN
          EXISTS(SELECT 1 FROM information_schema.columns c
            WHERE c.table_schema=r.schema_name AND c.table_name=r.table_name AND c.column_name IN ('visibility','card_visibility'))
            OR (r.is_public_column IS NOT NULL) AS supports_public,
-         (SELECT array_agg(c.column_name ORDER BY c.ordinal_position)
+         (SELECT array_agg(c.column_name::text ORDER BY c.ordinal_position)
             FROM information_schema.columns c
            WHERE c.table_schema=r.schema_name AND c.table_name=r.table_name) AS all_columns
   FROM platform.shareable_resource_registry r
