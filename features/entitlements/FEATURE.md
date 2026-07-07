@@ -104,13 +104,16 @@ aidream spend re-check lands (`enforced` flips in `billing.capability`).
       capability_limit, usage_ledger) + `entitlement_check` / `entitlement_snapshot` /
       `entitlement_consume` resolver RPCs. Multi-window metering. Verified live.
 - [x] Approved free-tier matrix encoded (enforcement OFF).
-- [x] Boot hydration wired (`DeferredSingletons` idle task → `fetchEntitlementSnapshot`).
-- [ ] Stripe: SDK, checkout, customer portal, webhooks (`app/api/stripe/**`), lifecycle sync.
-- [ ] Metering + per-capability enforcement flip; aidream-side spend re-check.
-- [ ] `/pricing` (DB-backed) + billing-integrity pledge + comparison pages.
-- [ ] Paywall surfaces wired to real state (`UsageLimitDialog` / `UpgradeModal`).
-- [ ] Trial start/reminder/downgrade + pre-renewal reminder email.
-- [ ] Free-tier matrix approved by Arman; admin usage read surface.
+- [x] Boot hydration wired (`DeferredSingletons`, keyed on user id — refetch on login, clear on logout).
+- [x] Consume hardening: additive-quantity cap check, concurrency lock, `check_id` idempotency (verified live).
+- [x] Paywall + usage-meter primitives (`EntitlementMeter`, `useEntitlementGuard`, `CapabilityPaywallDialog`).
+- [x] `/pricing` + `/pricing/pledge` + `/pricing/compare` (verified rendering).
+- [x] Admin usage read surface (`/administration/entitlements`, super-admin) + `usage_admin_summary` / `usage_my_summary` (P5).
+- [x] Stripe machinery: SDK, checkout, customer portal (one-click cancel), webhooks, lifecycle sync, idempotency + ordering guard.
+- [ ] **Blocked on Arman:** Stripe TEST keys + `STRIPE_WEBHOOK_SECRET` (`.env.local` has LIVE keys) → then verify checkout→webhook→sub→entitlement end-to-end.
+- [ ] Seed `billing.product`/`price` with the real Premium price (product decision) → swap `/pricing` to DB-backed.
+- [ ] aidream-side spend re-check per capability → then flip `enforced` per capability.
+- [ ] Trial pre-renewal reminder email (wire the platform email path).
 
 ## Change Log
 
