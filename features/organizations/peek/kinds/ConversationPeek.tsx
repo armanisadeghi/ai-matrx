@@ -29,6 +29,7 @@ export default function ConversationPeek({ id, open, onClose }: PeekProps) {
       const { data } = await supabase
         .schema("chat").from("conversation")
         .select("title, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

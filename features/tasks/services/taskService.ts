@@ -108,6 +108,7 @@ export async function getUserTasks(): Promise<DatabaseTask[]> {
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .eq("created_by", userId)
       .order("created_at", { ascending: false });
 
@@ -133,6 +134,7 @@ export async function getProjectTasks(
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
 
@@ -163,6 +165,7 @@ export async function getTopLevelProjectTasks(
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .eq("project_id", projectId)
       .is("parent_task_id", null)
       .order("created_at", { ascending: true });
@@ -468,6 +471,7 @@ export async function getTaskById(
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", taskId)
       .single();
 
@@ -587,6 +591,7 @@ export async function getSubtasks(taskId: string): Promise<DatabaseTask[]> {
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .eq("parent_task_id", taskId)
       .order("created_at", { ascending: true });
 
@@ -674,6 +679,7 @@ export async function getSharedWithMeTasks(): Promise<DatabaseTask[]> {
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .in("id", taskIds)
       .neq("created_by", user.id)
       .order("updated_at", { ascending: false });
@@ -887,6 +893,7 @@ async function sendTaskCommentNotification(
     const { data: task } = await workspaceDb(supabase)
       .from("tasks")
       .select("id, title, created_by")
+      .is("deleted_at", null)
       .eq("id", taskId)
       .single();
 

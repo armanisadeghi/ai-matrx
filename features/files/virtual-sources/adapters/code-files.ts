@@ -199,6 +199,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
     const { data, error } = await supabase
       .schema("code").from("code_files")
       .select(`${FILE_LIST_COLUMNS},content`)
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
     if (error || !data) {

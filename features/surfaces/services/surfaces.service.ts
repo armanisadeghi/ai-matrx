@@ -56,8 +56,12 @@ export async function listSurfacesWithStats(): Promise<SurfaceWithStats[]> {
       .schema("tool")
       .from("surface_defaults")
       .select("surface_name, always_include_tools, always_include_bundles"),
-    c.schema("tool").from("bundle").select("id, name"),
-    c.schema("agent").from("agent_surface").select("surface_name"),
+    c.schema("tool").from("bundle").select("id, name").is("deleted_at", null),
+    c
+      .schema("agent")
+      .from("agent_surface")
+      .select("surface_name")
+      .is("deleted_at", null),
     c.schema("ui").from("ui_surface_value").select("surface_name"),
   ]);
   if (surfacesRes.error) throw surfacesRes.error;
@@ -335,6 +339,7 @@ export async function getSurfaceUsage(
       .schema("agent")
       .from("agent_surface")
       .select("agent:definition(id, name)")
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName),
     c
       .schema("tool")
@@ -355,6 +360,7 @@ export async function getSurfaceUsage(
         .schema("tool")
         .from("definition")
         .select("id, name, description, is_active")
+        .is("deleted_at", null)
         .in("name", defaultsRes.data.always_include_tools);
       if (error) throw error;
       for (const t of directTools ?? []) {
@@ -366,6 +372,7 @@ export async function getSurfaceUsage(
         .schema("tool")
         .from("bundle")
         .select("id, name")
+        .is("deleted_at", null)
         .in("name", defaultsRes.data.always_include_bundles);
       if (bErr) throw bErr;
       const bundleList = bundleRows ?? [];
@@ -384,6 +391,7 @@ export async function getSurfaceUsage(
             .schema("tool")
             .from("definition")
             .select("id, name, description, is_active")
+            .is("deleted_at", null)
             .in("id", memberToolIds);
           if (tErr) throw tErr;
           const toolById = new Map((toolRows ?? []).map((t) => [t.id, t]));
@@ -506,6 +514,7 @@ export async function listAgentBindings(surfaceName: string) {
     .select(
       "id, agent_id, user_id, organization_id, project_id, task_id, value_mappings",
     )
+    .is("deleted_at", null)
     .eq("surface_name", surfaceName)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -540,6 +549,7 @@ export async function listToolBindings(surfaceName: string) {
     .schema("tool")
     .from("definition")
     .select("id, name, category, is_active")
+    .is("deleted_at", null)
     .in("name", toolNames);
   if (toolsRes.error) throw toolsRes.error;
 

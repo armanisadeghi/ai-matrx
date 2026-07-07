@@ -16,6 +16,7 @@ export async function fetchTemplates(): Promise<ResearchTemplate[]> {
     .schema("research")
     .from("rs_template")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to fetch templates: ${error.message}`);
@@ -29,6 +30,7 @@ export async function fetchTemplateById(
     .schema("research")
     .from("rs_template")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
 
@@ -137,6 +139,7 @@ export async function fetchPromptBuiltins(): Promise<PromptBuiltinRef[]> {
     .schema("agent")
     .from("definition")
     .select("id, name, is_active")
+    .is("deleted_at", null)
     .eq("agent_type", "builtin")
     .eq("is_active", true)
     .order("name", { ascending: true });
@@ -154,6 +157,7 @@ export async function fetchPromptBuiltinById(
     .schema("agent")
     .from("definition")
     .select("id, name, is_active")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
 
@@ -174,6 +178,7 @@ export async function resolveBuiltinNames(
     .schema("agent")
     .from("definition")
     .select("id, name")
+    .is("deleted_at", null)
     .in("id", ids);
 
   if (error)
@@ -204,6 +209,7 @@ export async function fetchResearchTopics(): Promise<
     .select(
       "id, project_id, name, status, template_id, agent_config, autonomy_level, created_at",
     )
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(50);
 

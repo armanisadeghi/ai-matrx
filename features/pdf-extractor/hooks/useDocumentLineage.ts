@@ -68,6 +68,7 @@ async function walkProcessingAncestors(
       .select(
         "id, name, derivation_kind, derivation_metadata, parent_processed_id, created_at",
       )
+      .is("deleted_at", null)
       .eq("id", cursor)
       .maybeSingle();
     if (error || !data) break;

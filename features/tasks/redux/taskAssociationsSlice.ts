@@ -45,7 +45,7 @@ export interface TaskAssociationsBundle {
     preview: string;
     created_at: string;
   }[];
-  /** AI chat messages from `cx_message` */
+  /** AI chat messages (`chat.message`, edge token `message`) — bundle key kept as `cx_messages` for RPC parity */
   cx_messages: {
     id: string;
     conversation_id: string;
@@ -54,9 +54,12 @@ export interface TaskAssociationsBundle {
     created_at: string;
   }[];
   conversations: { id: string; name: string; type: string }[];
-  /** AI chat conversations from `cx_conversation` */
+  /** AI chat conversations (`chat.conversation`, edge token `conversation`) — bundle key kept as `cx_conversations` for RPC parity */
   cx_conversations: { id: string; title: string }[];
   agent_conversations: { id: string; title: string | null }[];
+  /** DEAD (KNOWN_DEFECTS D27): `chat_block` was never a registered token, so
+   *  this bucket is permanently empty. Block-level attaches are `message`
+   *  edges with `metadata.block_index`. Kept only for RPC shape parity. */
   blocks: {
     id: string;
     message_id: string;

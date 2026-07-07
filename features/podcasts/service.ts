@@ -21,6 +21,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_shows")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map(mapPcShowRow);
@@ -69,6 +70,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map((row) => mapPcEpisodeWithShowRow(row));
@@ -78,6 +80,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*")
+      .is("deleted_at", null)
       .eq("show_id", showId)
       .order("episode_number", { ascending: true, nullsFirst: false });
     if (error) throw error;
@@ -88,6 +91,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
+      .is("deleted_at", null)
       .eq("show_id", showId)
       .order("episode_number", { ascending: true, nullsFirst: false });
     if (error) throw error;
@@ -98,6 +102,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
+      .is("deleted_at", null)
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -108,6 +113,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_shows")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
     if (error) return null;
@@ -118,6 +124,7 @@ export const podcastService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
     if (error) return null;
@@ -174,6 +181,7 @@ export const podcastService = {
       .select(
         "*, show:pc_shows(id, slug, title, description, image_url, author, is_published, created_at, updated_at)",
       )
+      .is("deleted_at", null)
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .single();
 
@@ -185,6 +193,7 @@ export const podcastService = {
     const { data: show } = await supabase
       .schema("podcast").from("pc_shows")
       .select("*")
+      .is("deleted_at", null)
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .single();
 

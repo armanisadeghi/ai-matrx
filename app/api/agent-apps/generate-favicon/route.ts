@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
       .schema("app")
       .from("definition")
       .select("id, user_id")
+      .is("deleted_at", null)
       .eq("id", appId)
       .single();
 

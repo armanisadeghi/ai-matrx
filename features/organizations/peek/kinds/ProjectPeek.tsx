@@ -32,6 +32,7 @@ export default function ProjectPeek({ id, open, onClose }: PeekProps) {
       const { data } = await workspaceDb(supabase)
         .from("projects")
         .select("name, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

@@ -107,6 +107,7 @@ export async function listExtractionCatalog(opts?: {
           .schema("docproc")
           .from("processed_documents")
           .select("id, name, total_pages")
+          .is("deleted_at", null)
           .in("id", docIds)
       : Promise.resolve({ data: [], error: null }),
     runIds.length

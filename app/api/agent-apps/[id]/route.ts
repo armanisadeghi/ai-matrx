@@ -22,6 +22,7 @@ export async function GET(
       .schema("app")
       .from("definition")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 
@@ -116,6 +117,7 @@ export async function DELETE(
       .schema("app")
       .from("definition")
       .select("id, user_id, created_by")
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
 

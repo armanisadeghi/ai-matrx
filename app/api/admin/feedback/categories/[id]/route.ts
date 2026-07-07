@@ -47,6 +47,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       .schema("platform")
       .from("categories")
       .select(FEEDBACK_CATEGORY_SELECT)
+      .is("deleted_at", null)
       .eq("dimension", "feedback")
       .eq("id", id)
       .single();
@@ -104,6 +105,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         .schema("platform")
         .from("categories")
         .select("metadata")
+        .is("deleted_at", null)
         .eq("id", id)
         .eq("dimension", "feedback")
         .single();
@@ -163,6 +165,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       .schema("users")
       .from("user_feedback")
       .select("id", { count: "exact", head: true })
+      .is("deleted_at", null)
       .eq("category_id", id);
 
     if (countError) {

@@ -14,6 +14,7 @@ export async function GET() {
             .schema("ai")
             .from("model_definition")
             .select("*")
+            .is("deleted_at", null)
             .eq("is_deprecated", false)
             .order("common_name", { ascending: true });
 

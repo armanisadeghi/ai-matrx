@@ -17,6 +17,7 @@ export async function GET() {
     const { data, error } = await supabase
         .schema('users').from('user_feedback')
         .select('id, description, feedback_type, status')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .limit(500);
 

@@ -31,6 +31,7 @@ export default function SkillPeek({ id, open, onClose }: PeekProps) {
         .schema("skill")
         .from("definition")
         .select("label, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

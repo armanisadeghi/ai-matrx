@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppletCardProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 
 
 const ModernAppletCard: React.FC<AppletCardProps> = ({
@@ -66,11 +66,15 @@ const ModernAppletCard: React.FC<AppletCardProps> = ({
       {/* Preview image section */}
       <div className="h-32 w-full relative overflow-hidden bg-gray-100 dark:bg-gray-700">
         {applet.imageUrl ? (
-          <Image
-            src={applet.imageUrl}
+          /* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */
+          <InlineMediaRef
+            ref={applet.imageUrl}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            fallback={null}
             alt={`${applet.name} preview`}
-            fill
-            className="object-cover transform group-hover:scale-105 transition-transform duration-500"
+            className="absolute inset-0 transform group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">

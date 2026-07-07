@@ -44,6 +44,7 @@ export async function POST(
     const bundleRes = await supabase
       .schema("tool").from("bundle")
       .select("organization_id")
+      .is("deleted_at", null)
       .eq("id", bundleId)
       .single();
     if (bundleRes.error) {

@@ -928,6 +928,42 @@ export default [
         },
     },
     {
+        // Media durability fence #2 — agent-app / applet display surfaces
+        // (KNOWN_DEFECTS.md D1 residual, closed 2026-07-07). These render OUR
+        // OWN media columns (custom_app_configs.image_url / aga_apps
+        // preview media) — all appImageUrl / applet.imageUrl renders were
+        // migrated to <InlineMediaRef>, so a raw <img>/<video> here is a
+        // regression. Re-lists the global syntax bans because flat-config
+        // replaces (not merges) the rule per file.
+        files: ['features/applet/home/**/*.{ts,tsx}'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...storageUriEradicationBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                ...appContextWriteSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
+                ...contentIrChokepointSyntaxRestrictions,
+                ...canonicalMenuStaticImportBan,
+                ...contextMenuV3StaticImportBan,
+                ...heavyImplStaticImportBan,
+                ...reactFlowStaticImportBan,
+                {
+                    selector: "JSXOpeningElement[name.name='img']",
+                    message:
+                        "Raw <img> is banned in features/applet/home — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                },
+                {
+                    selector: "JSXOpeningElement[name.name='video']",
+                    message:
+                        "Raw <video> is banned in features/applet/home — render via <InlineMediaRef as=\"video\"> from @/features/files (it supports ambient autoPlay/loop/muted/playsInline/preload). A raw <video> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                },
+            ],
+        },
+    },
+    {
         files: ['features/window-panels/windows/**/*'],
         rules: {
             'no-restricted-imports': 'off',

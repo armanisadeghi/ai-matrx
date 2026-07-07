@@ -51,7 +51,6 @@ const DEMO_IDS = {
   message: "00000000-0000-0000-0000-000000000002",
   file: "00000000-0000-0000-0000-000000000003",
   agentConversation: "00000000-0000-0000-0000-000000000004",
-  chatBlock: "00000000-0000-0000-0000-000000000005",
 };
 
 const SAMPLE_TASKS_MARKDOWN = `
@@ -168,7 +167,7 @@ export default function TasksWidgetsDemo() {
         <Demo label="Menu item — inside a dropdown">
           <div className="w-56 rounded-md border border-border bg-card p-1">
             <AssociateTaskButton
-              entityType="user_file"
+              entityType="file"
               entityId={DEMO_IDS.file}
               label="report.pdf"
               variant="menu-item"
@@ -254,7 +253,7 @@ export default function TasksWidgetsDemo() {
             <Paperclip className="w-4 h-4 text-muted-foreground" />
             <span className="flex-1 text-sm">launch-plan.pdf</span>
             <TaskChipRow
-              entityType="user_file"
+              entityType="file"
               entityId={DEMO_IDS.file}
               label="launch-plan.pdf"
               size="xs"
@@ -327,8 +326,11 @@ export default function TasksWidgetsDemo() {
             onOpenChange={setPreviewOpen}
             parsedItems={parsedItems}
             source={{
-              entity_type: "chat_block",
-              entity_id: DEMO_IDS.chatBlock,
+              // A "chat block" is a slice of a chat message — the canonical
+              // edge is `message` + metadata.block_index. `chat_block` was a
+              // phantom (unregistered) token — KNOWN_DEFECTS D27.
+              entity_type: "message",
+              entity_id: DEMO_IDS.message,
               metadata: { block_index: 0, demo: true },
             }}
           />
@@ -338,7 +340,7 @@ export default function TasksWidgetsDemo() {
       {/* Section: TaskAttachmentsPanel (live) */}
       <Section
         title="TaskAttachmentsPanel"
-        summary="Shown inside TaskEditor. Collapsible sections per entity type — notes, files, messages, conversations, chat blocks. Powered by one RPC (get_task_associations)."
+        summary="Shown inside TaskEditor. Collapsible sections per entity type — notes, files, messages, conversations. Powered by one RPC (get_task_associations)."
       >
         {firstTaskId ? (
           <div className="rounded-lg border border-border bg-card p-3">
@@ -369,7 +371,7 @@ export default function TasksWidgetsDemo() {
         <div className="font-semibold text-foreground">Drop-in recipes</div>
         <pre className="font-mono bg-muted/40 rounded p-3 text-[11px] whitespace-pre-wrap leading-relaxed">
           {`// Attach anything to a task
-<AssociateTaskButton entityType="user_file" entityId={file.id} label={file.filename} />
+<AssociateTaskButton entityType="file" entityId={file.id} label={file.filename} />
 
 // Show everything this entity is linked to
 <TaskChipRow entityType="conversation" entityId={conversation.id} />
@@ -382,7 +384,7 @@ export default function TasksWidgetsDemo() {
 
 // Bulk preview for AI task lists
 <TaskPreviewWindow open={open} onOpenChange={setOpen} parsedItems={items}
-  source={{ entity_type: "chat_block", entity_id: messageId }} />`}
+  source={{ entity_type: "message", entity_id: messageId, metadata: { block_index: 0 } }} />`}
         </pre>
       </footer>
     </div>

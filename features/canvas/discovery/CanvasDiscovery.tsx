@@ -36,6 +36,7 @@ export function CanvasDiscovery() {
             let query = supabase
                 .schema('canvas').from('shared_canvas_items')
                 .select('*')
+                .is('deleted_at', null)
                 .eq('visibility', 'public');
 
             // Apply type filter

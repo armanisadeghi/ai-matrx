@@ -35,6 +35,7 @@ async function resolveAgentAppMetadata(
     .schema("app")
     .from("definition")
     .select("name, tagline, description, preview_image_url, favicon_url")
+    .is("deleted_at", null)
     .eq(column, slug)
     .eq("status", "published")
     .eq("visibility", "public")

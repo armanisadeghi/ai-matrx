@@ -212,4 +212,7 @@ export const defaultUserPreferences: UserPreferences = {
   scratchpad: {
     activeId: null,
   },
+  siteWorkbench: {
+    bookmarks: [],
+  },
 };

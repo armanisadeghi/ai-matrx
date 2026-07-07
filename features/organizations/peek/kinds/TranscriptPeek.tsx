@@ -31,6 +31,7 @@ export default function TranscriptPeek({ id, open, onClose }: PeekProps) {
         .schema("transcripts")
         .from("transcripts")
         .select("title, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

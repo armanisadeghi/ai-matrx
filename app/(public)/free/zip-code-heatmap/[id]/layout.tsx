@@ -15,6 +15,7 @@ export async function generateMetadata({
     const { data } = await supabase
       .from("heatmap_saves")
       .select("title, description")
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
 

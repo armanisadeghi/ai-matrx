@@ -19,6 +19,7 @@ export async function fetchAckedSuggestionIds(
   const { data, error } = await supabase
     .schema("rag").from("kg_suggestion_ack")
     .select("suggestion_id")
+    .is("deleted_at", null)
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
   return new Set((data ?? []).map((r) => r.suggestion_id));

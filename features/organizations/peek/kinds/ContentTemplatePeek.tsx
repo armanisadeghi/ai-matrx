@@ -29,6 +29,7 @@ export default function ContentTemplatePeek({ id, open, onClose }: PeekProps) {
       const { data } = await supabase
         .from("content_template")
         .select("label, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

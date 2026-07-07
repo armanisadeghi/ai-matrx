@@ -62,6 +62,7 @@ export async function GET(
     const { data, error } = await admin
       .from("sandbox_instances")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 
@@ -108,6 +109,7 @@ export async function PUT(
     const { data: instance, error: fetchError } = await admin
       .from("sandbox_instances")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 
@@ -220,6 +222,7 @@ export async function DELETE(
     const { data: instance, error: fetchError } = await admin
       .from("sandbox_instances")
       .select("sandbox_id, status")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 
@@ -291,6 +294,7 @@ export async function POST(
     const { data: instance, error: fetchError } = await admin
       .from("sandbox_instances")
       .select("sandbox_id, status")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 

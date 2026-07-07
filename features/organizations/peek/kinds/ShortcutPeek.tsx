@@ -32,6 +32,7 @@ export default function ShortcutPeek({ id, open, onClose }: PeekProps) {
         .schema("agent")
         .from("shortcut")
         .select("label, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

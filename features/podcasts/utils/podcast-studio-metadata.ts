@@ -17,6 +17,7 @@ export async function createPodcastStudioRunMetadata(
     const { data } = await supabase
       .schema("podcast").from("pc_studio_runs")
       .select("title, description")
+      .is("deleted_at", null)
       .eq("id", runId)
       .maybeSingle();
 

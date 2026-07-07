@@ -39,6 +39,7 @@ export const getNote = cache(async (id: string): Promise<Note> => {
     const { data, error } = await supabase
         .schema("workbench").from("notes")
         .select("*")
+        .is("deleted_at", null)
         .eq("id", id)
         .single();
 

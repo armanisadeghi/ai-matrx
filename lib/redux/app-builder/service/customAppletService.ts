@@ -237,6 +237,7 @@ export const getAllCustomAppletConfigs = async (): Promise<
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("user_id", userId);
   if (error) {
     console.error("Error fetching custom applet configs:", error);
@@ -254,6 +255,7 @@ export const getCustomAppletConfigById = async (
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
   if (error) {
@@ -385,6 +387,7 @@ export const getPublicCustomAppletConfigs = async (): Promise<
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("is_public", true);
   if (error) {
     console.error("Error fetching public custom applet configs:", error);
@@ -419,6 +422,7 @@ export const getCustomAppletConfigBySlug = async (
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("slug", slug)
     .single();
   if (error) {
@@ -440,6 +444,7 @@ export const getCustomAppletConfigsBySubcategory = async (
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("subcategory_id", subcategoryId);
   if (error) {
     console.error(
@@ -460,6 +465,7 @@ export const getCustomAppletConfigsByCompiledRecipe = async (
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("compiled_recipe_id", compiledRecipeId);
   if (error) {
     console.error(
@@ -719,6 +725,7 @@ export const getAppletById = async (
     const { data, error } = await supabase
       .from("custom_applet_configs")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 
@@ -749,6 +756,7 @@ export const getAllApplets = async (): Promise<CustomAppletConfig[]> => {
     const { data, error } = await supabase
       .from("custom_applet_configs")
       .select("*")
+      .is("deleted_at", null)
       .eq("user_id", userId);
 
     if (error) {
@@ -772,6 +780,7 @@ export const getCustomAppletConfigsByAppId = async (
   const { data, error } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("app_id", appId);
   if (error) {
     console.error("Error fetching custom applet configs by app ID:", error);

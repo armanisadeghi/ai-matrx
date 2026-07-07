@@ -16,6 +16,7 @@ export const articleService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_articles")
       .select("*")
+      .is("deleted_at", null)
       .eq("episode_id", episodeId)
       .order("updated_at", { ascending: false });
     if (error) throw error;
@@ -30,6 +31,7 @@ export const articleService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_articles")
       .select("*")
+      .is("deleted_at", null)
       .eq("episode_id", episodeId)
       .eq("kind", kind)
       .maybeSingle();
@@ -42,6 +44,7 @@ export const articleService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_articles")
       .select("*")
+      .is("deleted_at", null)
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle();

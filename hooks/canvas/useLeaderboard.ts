@@ -14,6 +14,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
       const { data: scores, error } = await supabase
         .schema("canvas").from("canvas_scores")
         .select("*")
+        .is("deleted_at", null)
         .eq("canvas_id", canvasId)
         .order("score", { ascending: false })
         .order("time_taken", { ascending: true }) // Tiebreaker: faster time
@@ -42,6 +43,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
           const { data: userScore } = await supabase
             .schema("canvas").from("canvas_scores")
             .select("score")
+            .is("deleted_at", null)
             .eq("canvas_id", canvasId)
             .eq("user_id", userId)
             .order("score", { ascending: false })
@@ -53,6 +55,7 @@ export function useLeaderboard(canvasId: string, limit: number = 10) {
             const { count } = await supabase
               .schema("canvas").from("canvas_scores")
               .select("*", { count: "exact", head: true })
+              .is("deleted_at", null)
               .eq("canvas_id", canvasId)
               .gt("score", userScore.score);
 

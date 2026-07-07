@@ -18,6 +18,7 @@ export default async function AgentTemplateDetailPage({
     .schema("agent")
     .from("template")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
 

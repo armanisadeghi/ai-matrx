@@ -169,6 +169,7 @@ export const scopesService = {
       const projectsP = workspaceDb(supabase)
         .from("projects")
         .select("id, organization_id, name, slug")
+        .is("deleted_at", null)
         .order("name", { ascending: true });
 
       const [orgsRes, scopeTypesRes, scopesRes, projectsRes] =
@@ -276,6 +277,7 @@ export const scopesService = {
         const { data, error } = await workspaceDb(supabase)
           .from("tasks")
           .select("id")
+          .is("deleted_at", null)
           .eq("project_id", id);
         if (error) return err(...mapPgErrorPair(error));
         taskIds = (data ?? []).map((row) => row.id);
@@ -298,6 +300,7 @@ export const scopesService = {
       const { data: taskRows, error: taskErr } = await workspaceDb(supabase)
         .from("tasks")
         .select("id, title, status, project_id, organization_id, updated_at")
+        .is("deleted_at", null)
         .in("id", taskIds);
       if (taskErr) return err(...mapPgErrorPair(taskErr));
 
@@ -333,6 +336,7 @@ export const scopesService = {
       const { data: projectRows, error: projErr } = await workspaceDb(supabase)
         .from("projects")
         .select("id, organization_id, name, slug")
+        .is("deleted_at", null)
         .eq("organization_id", orgId);
       if (projErr) return err(...mapPgErrorPair(projErr));
 

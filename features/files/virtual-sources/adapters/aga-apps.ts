@@ -83,6 +83,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     const { data, error } = await supabase
       .schema("app").from("definition")
       .select(COLUMNS)
+      .is("deleted_at", null)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(args.limit ?? 200);
@@ -110,6 +111,7 @@ const agaAppsAdapter: VirtualSourceAdapter = {
     const { data, error } = await supabase
       .schema("app").from("definition")
       .select(COLUMNS)
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
     if (error || !data) throw new Error(`Agent App not found: ${id}`);

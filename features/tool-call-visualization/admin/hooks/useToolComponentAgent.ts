@@ -163,7 +163,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
 
         await launchAgent(agentId, {
           surfaceKey: "tool-component-generator",
-          sourceFeature: "programmatic",
+          sourceFeature: "tool-call-visualization",
           // Direct mode — no overlay; this hook owns the streaming UI via
           // the consumer components. autoRun fires execution immediately;
           // allowChat false because this is single-shot generation.

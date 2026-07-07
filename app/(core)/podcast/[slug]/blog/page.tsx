@@ -27,7 +27,8 @@ const resolveBlog = cache(async (slug: string) => {
     .schema("podcast").from("pc_episodes")
     .select(
       "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
-    );
+    )
+    .is("deleted_at", null);
   const { data: episode } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
     : await episodeQuery.eq("slug", slug).single();
@@ -38,6 +39,7 @@ const resolveBlog = cache(async (slug: string) => {
   const { data: article } = await supabase
     .schema("podcast").from("pc_articles")
     .select("*")
+    .is("deleted_at", null)
     .eq("episode_id", mappedEpisode.id)
     .eq("kind", "blog")
     .eq("status", "published")

@@ -3,6 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
+import { InlineMediaRef } from '@/features/files';
 
 const BannerAppDisplay: React.FC<AppDisplayProps> = ({
   appName,
@@ -14,19 +15,31 @@ const BannerAppDisplay: React.FC<AppDisplayProps> = ({
   primaryColor,
   isMobile
 }) => {
-  // Define a background class based on whether we have an image or use color
-  const bgClass = appImageUrl 
-    ? `bg-cover bg-center` 
+  // Color-only background when there is no image; the image itself renders as
+  // an absolutely-positioned <InlineMediaRef> layer (not a CSS background) so
+  // the URL stays durable and self-heals (KNOWN_DEFECTS.md D1).
+  const bgClass = appImageUrl
+    ? ''
     : (primaryColor ? `bg-[${primaryColor}]` : 'bg-gray-100 dark:bg-gray-800');
-  
+
   const textColorClass = appImageUrl ? 'text-gray-100' : 'text-gray-900 dark:text-gray-100';
   const textDescriptionClass = appImageUrl ? 'text-gray-200' : 'text-gray-600 dark:text-gray-300';
-  
+
   return (
-    <div 
-      className={`w-full relative mb-12 rounded-xl overflow-hidden ${bgClass}`}
-      style={appImageUrl ? { backgroundImage: `url(${appImageUrl})` } : {}}
-    >
+    <div className={`w-full relative mb-12 rounded-xl overflow-hidden ${bgClass}`}>
+      {/* Banner image backdrop — decorative, durable via the file handler. */}
+      {appImageUrl && (
+        <InlineMediaRef
+          ref={appImageUrl}
+          size="fill"
+          fit="cover"
+          rounded="none"
+          fallback={null}
+          errorFallback={null}
+          className="absolute inset-0"
+          alt=""
+        />
+      )}
       {/* Overlay gradient when image is present */}
       {appImageUrl && (
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-gray-900/30"></div>

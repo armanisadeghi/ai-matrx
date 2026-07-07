@@ -86,7 +86,11 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
       <div className="shell-sidebar-footer">
         <AdminSidebarSection />
         <SidebarWindowToggleIsland />
-        <NavItem item={settingsItem} />
+        {settingsItem.children ? (
+          <NavFlyoutGroup item={settingsItem} />
+        ) : (
+          <NavItem item={settingsItem} />
+        )}
       </div>
     </aside>
   );

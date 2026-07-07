@@ -64,6 +64,7 @@ export function ProjectManage() {
         const { data } = await workspaceDb(supabase)
           .from("projects")
           .select("id")
+          .is("deleted_at", null)
           .eq("slug", projectParam)
           .limit(1)
           .maybeSingle();

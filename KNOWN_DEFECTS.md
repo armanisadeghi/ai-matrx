@@ -71,11 +71,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 ### D23 — Task attachments not persisted (data loss on reload) — RESOLVED 2026-06-29 (commit `c4a639ca9`)
 **Severity was: medium.** Triage found the canonical write path was already built and live (the "association cutover" note was stale for tasks): `taskService.uploadTaskAttachment`/`deleteTaskAttachment` → `associationsService` over the `assoc_add`/`assoc_remove`/`get_task_associations` SECURITY DEFINER RPCs (persisting a durable `file_id`, not a signed URL), already consumed by three sibling surfaces. `TaskDetails.tsx` was simply an **orphaned legacy variant** (local-state-only, with a latent `r.file.name` bug). **Fixed** by replacing its hand-rolled attachments block with the canonical `<TaskAttachmentsPanel taskId={task.id} />` (matching `TaskDetailPage`/`TaskDetailsPanel`/`TaskEditorBody`) — one canonical path, durable refs, survives reload.
 
-### D22 — Auth-action open-redirect + PII-log hardening — RESOLVED 2026-06-27 (residual: trusted `x-forwarded-host`)
-**Severity was: high (open-redirect) + medium. Closed below; one infra-mitigated defense-in-depth item left open.**
+### D22 — Auth-action open-redirect + PII-log hardening — FULLY RESOLVED 2026-07-07
+**Severity was: high (open-redirect) + medium. Closed; residual `x-forwarded-host` trust closed 2026-07-07.**
 
 - **FIXED (2026-06-27, this wave).** The open-redirect CLASS is killed by one shared primitive `safeRelativePath` (`utils/auth/safe-redirect.ts`), applied at every sink that follows a user-supplied `redirectTo`/`callbackUrl`: `actions/auth.actions.ts` (signUp/signIn), `app/(auth-pages)/login/actions.ts` (login/signup), `app/auth/confirm/route.ts`, and `app/auth/callback/route.ts` (the `${baseUrl}${redirectTo}` concat). OAuth *provider* redirects (`redirect(data.url)`) are intentionally left untouched (commented). `resetPasswordAction` now `return`s before each `encodedRedirect`. PII logs (emails) gated behind `NODE_ENV==='development'` across all five files. Guard rejects `https://`, `//`, `/\`, `/%2F`/`/%5C`, `@evil`, and whitespace-after-slash vectors.
-- **OPEN (low, defense-in-depth):** `app/auth/callback/route.ts` still trusts `x-forwarded-host` to build `baseUrl`, so a spoofed header would defeat the guard — but on Vercel the edge overwrites this header (a browser can't inject it), so it's infra-mitigated. A host-allowlist check is the durable fix; deferred to avoid breaking preview-branch OAuth with a blind allowlist.
+- **RESIDUAL FIXED (2026-07-07).** The spoofable `x-forwarded-host` trust is closed by a second primitive `safeForwardedHost` (`utils/auth/safe-redirect.ts`, next to `safeRelativePath`): the header is followed only if it matches a host allowlist — the `NEXT_PUBLIC_SITE_URL` host, Vercel's system-env hosts (`VERCEL_URL` / `VERCEL_BRANCH_URL` / `VERCEL_PROJECT_PRODUCTION_URL`), or any `*.vercel.app` host (so preview-branch OAuth keeps working — the reason a blind allowlist was originally deferred). Comma-chained headers use the first entry; anything with a slash/`@`/whitespace is rejected structurally. On mismatch it falls back to the request's own origin and `console.error`s loudly (spoof attempt or missing allowlist entry — both must be seen). Applied in both forwarded-host consumers: `app/auth/callback/route.ts` and `app/auth/callback/admin/route.ts` (`app/auth/confirm/route.ts` never used the header — relative redirects only).
 
 ### D21 — AI Runs feature read the graveyarded `ai_runs` table — RESOLVED 2026-06-29 (commit `b4092df3b`)
 **Severity was: high.** The "repoint to `public.ai_runs_summary`" the prior note suggested was a dead end (that view itself reads `graveyard.ai_runs`). Triage found the `ai_runs` half was **dead code** — no route mounts it, nothing imports it, and its only consumers (the prompt-runner / matrx-actions modal) were deleted with the prompts system. **Deleted** the ai_runs components/hooks/service/utils, both dead server-action twins, the stale `/ai/runs` favicon entry, and the obsolete status docs. **Kept** the still-live `ai_tasks` half (`useAiTasks` / `ai-tasks-service`, used by `/administration/ai-tasks` + the public apps-response route) — that half reads `graveyard.ai_tasks` through the deprecated shim and belongs to the applet system being rebuilt (D25), so it was left intact. D19's "ai_runs Realtime conversion" is now MOOT (feature gone).
@@ -322,11 +322,19 @@ URLs and work fine; the new pipeline regressed.
   and were internal test data — deleted them + cleared their `mtx_media_heal_queue`
   entries. `pending` heal-queue backlog is now **0**; 12 durable runs + the 27
   `healed` audit rows kept. No expiring URL remains anywhere in the podcast data.
-- **Public pages still use raw `<img>`** — DONE for podcasts. Remaining sweep:
-  agent-app `appImageUrl` renders (`features/applet/home/**`, `Banner.tsx`) and the
-  `/p/[slug]` public app surfaces — their source columns are already guarded
-  (`aga_apps.preview_image_url`), so this is render-polish, not a durability gap.
-  (Not covered by the podcast ESLint fence — a future fence could extend to these.)
+- **Public pages still use raw `<img>` — RESOLVED (2026-07-07).** DONE for podcasts
+  (2026-06); the remaining sweep is now done too: every `appImageUrl` /
+  `applet.imageUrl` render under `features/applet/home/**` (all `app-display/*`
+  incl. `Banner.tsx`'s CSS `background-image`, `applet-card/*`, `main-layout/*`)
+  now renders via `<InlineMediaRef>`, and the ESLint raw-`<img>`/`<video>` fence
+  is extended to `features/applet/home/**` (`eslint.config.mjs`, second media-
+  durability block). The `/p/[slug]` public app surface has NO media renders
+  (its `preview_image_url` is used only in OG/twitter `generateMetadata` —
+  correct usage, nothing to migrate). Two justified leftovers: `GlassContainer`
+  (`components/ui/GlassContainer.tsx`) still takes a `backgroundImage` CSS prop
+  (shared generic UI primitive, consumed by `applet-card/Glass.tsx` +
+  `app-display/ModernGlass.tsx` shells) — its source columns are DB-guarded, so
+  this is residual render-polish only.
 
 **Fences that fully landed (2026-06-08).**
 - **Lint enforcement** — DONE. `eslint.config.mjs` bans raw `<img>`/`<video>` in

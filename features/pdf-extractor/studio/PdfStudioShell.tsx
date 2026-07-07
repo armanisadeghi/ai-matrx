@@ -520,10 +520,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       try {
         await triggerShortcut(shortcutId, {
           scope: { selection: docText },
-          sourceFeature: "programmatic",
-          // Never open a blocking modal over the PDF reader / extractions
-          // stream — chunk output lives in the Extractions pane.
-          config: { displayMode: "background", autoRun: true },
+          sourceFeature: "pdf-extractor",
         });
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Run failed");

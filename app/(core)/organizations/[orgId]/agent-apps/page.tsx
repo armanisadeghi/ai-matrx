@@ -15,6 +15,7 @@ const fetchOwned = async (orgId: string) => {
   const res = await appDb(supabase)
     .from("definition")
     .select(SELECT_COLS)
+    .is("deleted_at", null)
     .eq("organization_id", orgId)
     .order("updated_at", { ascending: false });
   return (res.data ?? []) as Array<Record<string, unknown>>;

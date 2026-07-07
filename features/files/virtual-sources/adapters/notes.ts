@@ -167,6 +167,7 @@ const notesAdapter: VirtualSourceAdapter = {
     const { data, error } = await supabase
       .schema("workbench").from("notes")
       .select("id, label, content, updated_at")
+      .is("deleted_at", null)
       .eq("id", id)
       .eq("created_by", userId)
       .maybeSingle();

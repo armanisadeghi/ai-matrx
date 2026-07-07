@@ -87,12 +87,17 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
           responseAudioFileId,
           ...(args.rubric ? { rubric: args.rubric } : {}),
           surfaceKey: `${surface}-grade`,
-          sourceFeature: "fastfire-grade",
+          sourceFeature: "education-fastfire-grade",
         }),
       );
 
       if (!grade) {
-        await maybeRecord(args, responseAudioFileId, null, config.graderAgentId);
+        await maybeRecord(
+          args,
+          responseAudioFileId,
+          null,
+          config.graderAgentId,
+        );
         return {
           status: "error",
           responseAudioFileId,
@@ -108,7 +113,9 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
         status: "error",
         responseAudioFileId: null,
         error:
-          err instanceof Error ? err.message : "Something went wrong grading that answer.",
+          err instanceof Error
+            ? err.message
+            : "Something went wrong grading that answer.",
       };
     }
   };

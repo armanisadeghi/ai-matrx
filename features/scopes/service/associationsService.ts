@@ -30,6 +30,7 @@ import {
   checkUuid,
   checkUuidArray,
   firstError,
+  normalizeEntityToken,
 } from "@/features/scopes/service/associationGuards";
 import type {
   AssociationEdge,
@@ -140,11 +141,13 @@ export const associationsService = {
    * ("incoming"), org-filtered by RLS inside the RPC. One round-trip.
    */
   async listForEntity(
-    type: string,
+    rawType: string,
     id: string,
   ): Promise<ScopesRpcResult<{ edges: AssociationEdge[] }>> {
     try {
       requireUserId();
+      // Legacy-alias recovery (loud) — see normalizeEntityToken / D27.
+      const type = normalizeEntityToken(rawType);
       const bad = firstError(checkToken("type", type), checkUuid("id", id));
       if (bad) return { ok: false, error: bad };
       const { data, error } = await supabase.rpc("assoc_for_entity", {
@@ -171,11 +174,12 @@ export const associationsService = {
    * `targetId` so callers can group results back by container.
    */
   async listForTargets(
-    targetType: string,
+    rawTargetType: string,
     targetIds: string[],
   ): Promise<ScopesRpcResult<{ edges: AssociationTargetEdge[] }>> {
     try {
       requireUserId();
+      const targetType = normalizeEntityToken(rawTargetType);
       const ids = Array.from(new Set(targetIds));
       if (ids.length === 0) return ok({ edges: [] });
       const bad = firstError(
@@ -209,12 +213,15 @@ export const associationsService = {
    * so callers can group results back by source.
    */
   async listForSources(
-    sourceType: string,
+    rawSourceType: string,
     sourceIds: string[],
-    targetType?: string,
+    rawTargetType?: string,
   ): Promise<ScopesRpcResult<{ edges: AssociationSourceEdge[] }>> {
     try {
       requireUserId();
+      const sourceType = normalizeEntityToken(rawSourceType);
+      const targetType =
+        rawTargetType != null ? normalizeEntityToken(rawTargetType) : undefined;
       const ids = Array.from(new Set(sourceIds));
       if (ids.length === 0) return ok({ edges: [] });
       const bad = firstError(
@@ -259,18 +266,21 @@ export const associationsService = {
   }): Promise<ScopesRpcResult<{ id: string }>> {
     try {
       requireUserId();
+      // Legacy-alias recovery (loud) — see normalizeEntityToken / D27.
+      const sourceType = normalizeEntityToken(args.sourceType);
+      const targetType = normalizeEntityToken(args.targetType);
       const bad = firstError(
-        checkToken("sourceType", args.sourceType),
+        checkToken("sourceType", sourceType),
         checkUuid("sourceId", args.sourceId),
-        checkToken("targetType", args.targetType),
+        checkToken("targetType", targetType),
         checkUuid("targetId", args.targetId),
         args.orgId != null ? checkUuid("orgId", args.orgId) : null,
       );
       if (bad) return { ok: false, error: bad };
       const { data, error } = await supabase.rpc("assoc_add", {
-        p_source_type: args.sourceType,
+        p_source_type: sourceType,
         p_source_id: args.sourceId,
-        p_target_type: args.targetType,
+        p_target_type: targetType,
         p_target_id: args.targetId,
         p_org_id: args.orgId,
         p_label: args.label,
@@ -306,17 +316,20 @@ export const associationsService = {
   }): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
+      // Legacy-alias recovery (loud) — see normalizeEntityToken / D27.
+      const sourceType = normalizeEntityToken(args.sourceType);
+      const targetType = normalizeEntityToken(args.targetType);
       const bad = firstError(
-        checkToken("sourceType", args.sourceType),
+        checkToken("sourceType", sourceType),
         checkUuid("sourceId", args.sourceId),
-        checkToken("targetType", args.targetType),
+        checkToken("targetType", targetType),
         checkUuid("targetId", args.targetId),
       );
       if (bad) return { ok: false, error: bad };
       const { error } = await supabase.rpc("assoc_remove", {
-        p_source_type: args.sourceType,
+        p_source_type: sourceType,
         p_source_id: args.sourceId,
-        p_target_type: args.targetType,
+        p_target_type: targetType,
         p_target_id: args.targetId,
         p_role: args.role,
       });
@@ -346,19 +359,22 @@ export const associationsService = {
   }): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
+      // Legacy-alias recovery (loud) — see normalizeEntityToken / D27.
+      const sourceType = normalizeEntityToken(args.sourceType);
+      const targetType = normalizeEntityToken(args.targetType);
       const target = Array.from(new Set(args.targetIds));
       const bad = firstError(
-        checkToken("sourceType", args.sourceType),
+        checkToken("sourceType", sourceType),
         checkUuid("sourceId", args.sourceId),
-        checkToken("targetType", args.targetType),
+        checkToken("targetType", targetType),
         checkUuidArray("targetIds", target),
         args.orgId != null ? checkUuid("orgId", args.orgId) : null,
       );
       if (bad) return { ok: false, error: bad };
       const { error } = await supabase.rpc("assoc_set_targets", {
-        p_source_type: args.sourceType,
+        p_source_type: sourceType,
         p_source_id: args.sourceId,
-        p_target_type: args.targetType,
+        p_target_type: targetType,
         p_target_ids: target,
         p_org_id: args.orgId,
         p_role: args.role,
@@ -381,11 +397,13 @@ export const associationsService = {
    * membership/content edge would otherwise point at a deleted entity).
    */
   async removeForEntity(
-    type: string,
+    rawType: string,
     id: string,
   ): Promise<ScopesRpcResult<null>> {
     try {
       requireUserId();
+      // Legacy-alias recovery (loud) — see normalizeEntityToken / D27.
+      const type = normalizeEntityToken(rawType);
       const bad = firstError(checkToken("type", type), checkUuid("id", id));
       if (bad) return { ok: false, error: bad };
       const { error } = await supabase.rpc("assoc_remove_for_entity", {

@@ -85,6 +85,7 @@ export const fetchTask = createAsyncThunk(
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, created_by, visibility",
       )
+      .is("deleted_at", null)
       .eq("id", taskId)
       .single();
     if (error) throw error;
@@ -95,6 +96,7 @@ export const fetchTask = createAsyncThunk(
       const { data: proj } = await workspaceDb(supabase)
         .from("projects")
         .select("organization_id")
+        .is("deleted_at", null)
         .eq("id", (data as { project_id: string }).project_id)
         .single();
       organization_id =
@@ -120,6 +122,7 @@ export const fetchProjectTasks = createAsyncThunk(
       .select(
         "id, title, project_id, parent_task_id, status, priority, due_date, assignee_id",
       )
+      .is("deleted_at", null)
       .eq("project_id", params.projectId)
       .neq("status", "completed")
       .order("created_at", { ascending: false });

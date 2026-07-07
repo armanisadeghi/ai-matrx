@@ -394,6 +394,12 @@ export const primaryNavItems: ShellNavItem[] = [
         profileMenu: true,
         dashboard: true,
       },
+      {
+        label: "Pick Lists Window",
+        href: "/lists",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-pick-lists-panel",
+      },
       // Actions — collected at the bottom below a divider.
       {
         label: "New Table",
@@ -738,6 +744,12 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: NAV_WINDOW_PANEL_ICON,
         panelAction: "open-files-panel",
       },
+      {
+        label: "File Upload Window",
+        href: "/files/all",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-file-upload-panel",
+      },
     ],
   },
   {
@@ -798,6 +810,12 @@ export const primaryNavItems: ShellNavItem[] = [
         href: "/tools/pdf-extractor",
         iconName: NAV_WINDOW_PANEL_ICON,
         panelAction: "open-site-workbench-panel",
+      },
+      {
+        label: "JSON Truncator Window",
+        href: "/free/data-truncator",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-json-truncator-panel",
       },
       {
         label: "Markdown Studio",
@@ -1186,15 +1204,41 @@ export const primaryNavItems: ShellNavItem[] = [
     // Hidden from guests — DMs and team threads have no meaningful guest
     // experience. Direct-URL access still renders the marketing landing
     // via the page-level server-side auth branch.
-    label: "Messages",
+    label: "Communication",
     href: "/messages",
     iconName: "Mail",
     section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Direct messages and conversations",
+    profileMenu: false,
+    dashboard: false,
+    description: "Direct messages, email, and messaging windows",
     color: "pink",
     guestHidden: true,
+    children: [
+      {
+        label: "Messages",
+        href: "/messages",
+        iconName: "MessageSquare",
+        description: "Direct messages and conversations",
+        color: "pink",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: "Email Window",
+        href: "/messages",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-email-panel",
+        guestHidden: true,
+      },
+      {
+        label: "Messages Window",
+        href: "/messages",
+        iconName: NAV_WINDOW_PANEL_ICON,
+        panelAction: "open-messages-panel",
+        guestHidden: true,
+      },
+    ],
   },
   {
     label: "Workflows",
@@ -1424,6 +1468,23 @@ export const settingsItem: ShellNavItem = {
   dashboard: false,
   description: "Manage your account and preferences",
   color: "slate",
+  children: [
+    {
+      label: "Settings",
+      href: "/settings",
+      iconName: "Settings",
+      description: "Manage your account and preferences",
+      color: "slate",
+      profileMenu: true,
+      exact: true,
+    },
+    {
+      label: "Preferences Window",
+      href: "/settings",
+      iconName: NAV_WINDOW_PANEL_ICON,
+      panelAction: "open-preferences-panel",
+    },
+  ],
 };
 
 export const iconColorMap: Record<string, string> = {

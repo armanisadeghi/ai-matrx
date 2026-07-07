@@ -114,23 +114,62 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   // Fast Fire background AI runs (grading / tutor / session review). These are
   // automation-like one-shot runs, NOT user chats — system-marked so they group
   // as automations and stay out of the /chat sidebar (not in its allow-list).
-  "fastfire-grade": { label: "Fast Fire Grading", icon: GraduationCap, system: true },
-  "fastfire-help": { label: "Fast Fire Tutor", icon: GraduationCap, system: true },
-  "fastfire-review": { label: "Fast Fire Review", icon: GraduationCap, system: true },
-  "fastfire-tts": { label: "Fast Fire Speech", icon: GraduationCap, system: true },
+  "education-fastfire-grade": {
+    label: "Fast Fire Grading",
+    icon: GraduationCap,
+    system: true,
+  },
+  "education-fastfire-help": {
+    label: "Fast Fire Tutor",
+    icon: GraduationCap,
+    system: true,
+  },
+  "education-fastfire-review": {
+    label: "Fast Fire Review",
+    icon: GraduationCap,
+    system: true,
+  },
+  "education-fastfire-tts": {
+    label: "Fast Fire Speech",
+    icon: GraduationCap,
+    system: true,
+  },
 
   // Mode-agnostic flashcards AI tutor lanes (Phase 4 parity push) — the SAME
   // fc_help_live / fc_review_batch agents Fast Fire uses, generalized to every
   // study surface (classic set study, adaptive due review, weak-area drill).
-  "flashcards-help": { label: "Flashcards Tutor", icon: GraduationCap, system: true },
-  "flashcards-review": { label: "Flashcards Review", icon: GraduationCap, system: true },
-  "flashcards-coach": { label: "Flashcards Micro-Coach", icon: GraduationCap, system: true },
+  "education-flashcards": {
+    label: "Flashcards",
+    icon: GraduationCap,
+  },
+  "education-flashcards-help": {
+    label: "Flashcards Tutor",
+    icon: GraduationCap,
+    system: true,
+  },
+  "education-flashcards-review": {
+    label: "Flashcards Review",
+    icon: GraduationCap,
+    system: true,
+  },
+  "education-flashcards-coach": {
+    label: "Flashcards Micro-Coach",
+    icon: GraduationCap,
+    system: true,
+  },
 
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
   research: { label: "Research", icon: Globe },
   dictionary: { label: "Dictionary", icon: Tag },
   "image-studio": { label: "Image Studio", icon: Image },
+  "pdf-extractor": { label: "PDF Extractor", icon: FileText },
+  "pro-textarea": { label: "ProTextarea", icon: PencilRuler },
+  "tool-call-visualization": {
+    label: "Tool UI Generator",
+    icon: Hammer,
+    system: true,
+  },
   "voice-agent": { label: "Voice Agent", icon: Mic },
   "mermaid-workbench": { label: "Diagram Workbench", icon: PencilRuler },
 
@@ -192,13 +231,22 @@ export const FEATURE_GROUPS: FeatureGroup[] = [
     id: "fastfire",
     label: "Fast Fire",
     icon: GraduationCap,
-    features: ["fastfire-grade", "fastfire-help", "fastfire-review", "fastfire-tts"],
+    features: [
+      "education-fastfire-grade",
+      "education-fastfire-help",
+      "education-fastfire-review",
+      "education-fastfire-tts",
+    ],
   },
   {
     id: "flashcards-tutor",
     label: "Flashcards AI Tutor",
     icon: GraduationCap,
-    features: ["flashcards-help", "flashcards-review", "flashcards-coach"],
+    features: [
+      "education-flashcards-help",
+      "education-flashcards-review",
+      "education-flashcards-coach",
+    ],
   },
 ];
 

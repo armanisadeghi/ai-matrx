@@ -28,6 +28,7 @@ export async function GET(
     const { data, error } = await supabase
       .schema("tool").from("definition")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 

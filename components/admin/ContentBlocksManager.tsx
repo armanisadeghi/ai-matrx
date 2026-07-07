@@ -419,6 +419,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
       const { data: blockData, error: blockError } = await supabase
         .from("content_blocks")
         .select("*")
+        .is("deleted_at", null)
         .order("sort_order", { ascending: true });
 
       if (blockError) throw blockError;

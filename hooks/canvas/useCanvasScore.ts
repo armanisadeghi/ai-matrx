@@ -24,6 +24,7 @@ export function useCanvasScore(canvasId: string) {
       const { data } = await supabase
         .schema("canvas").from("canvas_scores")
         .select("*")
+        .is("deleted_at", null)
         .eq("canvas_id", canvasId)
         .eq("user_id", userId)
         .order("score", { ascending: false })
@@ -45,6 +46,7 @@ export function useCanvasScore(canvasId: string) {
       const { count } = await supabase
         .schema("canvas").from("canvas_scores")
         .select("*", { count: "exact", head: true })
+        .is("deleted_at", null)
         .eq("canvas_id", canvasId)
         .eq("user_id", userId);
 
@@ -75,6 +77,7 @@ export function useCanvasScore(canvasId: string) {
       const { count: rankCount } = await supabase
         .schema("canvas").from("canvas_scores")
         .select("*", { count: "exact", head: true })
+        .is("deleted_at", null)
         .eq("canvas_id", canvasId)
         .gt("score", request.score);
 
@@ -84,6 +87,7 @@ export function useCanvasScore(canvasId: string) {
       const { data: canvas } = await supabase
         .schema("canvas").from("shared_canvas_items")
         .select("high_score")
+        .is("deleted_at", null)
         .eq("id", canvasId)
         .single();
 

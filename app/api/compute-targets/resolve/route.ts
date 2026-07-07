@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     const { data: row, error } = await supabase
       .from("sandbox_instances")
       .select("id, sandbox_id, status, tier")
+      .is("deleted_at", null)
       .eq("id", id)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -138,6 +139,7 @@ export async function POST(request: Request) {
       .select(
         "id, instance_id, tunnel_active, tunnel_url, last_seen, is_active",
       )
+      .is("deleted_at", null)
       .eq("id", id)
       .eq("user_id", user.id)
       .maybeSingle();

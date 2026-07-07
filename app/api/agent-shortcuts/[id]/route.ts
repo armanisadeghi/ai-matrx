@@ -66,6 +66,7 @@ export async function GET(
       .schema("agent")
       .from("shortcut")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
 

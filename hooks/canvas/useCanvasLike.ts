@@ -19,6 +19,7 @@ export function useCanvasLike(canvasId: string) {
             const { data } = await supabase
                 .schema('canvas').from('canvas_likes')
                 .select('id')
+                .is('deleted_at', null)
                 .eq('canvas_id', canvasId)
                 .eq('user_id', userId)
                 .maybeSingle();

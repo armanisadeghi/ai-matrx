@@ -271,6 +271,7 @@ export const canvasItemsService = {
       let query = supabase
         .schema("canvas").from("canvas_items")
         .select("*")
+        .is("deleted_at", null)
         .eq("user_id", userId);
 
       // Apply filters
@@ -317,6 +318,7 @@ export const canvasItemsService = {
       const { data, error } = await supabase
         .schema("canvas").from("canvas_items")
         .select("*")
+        .is("deleted_at", null)
         .eq("id", id)
         .eq("user_id", userId)
         .single();
@@ -349,6 +351,7 @@ export const canvasItemsService = {
       const { data, error } = await supabase
         .schema("canvas").from("canvas_items")
         .select("*")
+        .is("deleted_at", null)
         .eq("user_id", userId)
         .eq("task_id", taskId)
         .single();
@@ -462,6 +465,7 @@ export const canvasItemsService = {
       const { data, error } = await supabase
         .schema("canvas").from("canvas_items")
         .select("*")
+        .is("deleted_at", null)
         .eq("share_token", shareToken)
         .eq("is_public", true)
         .single();
@@ -529,6 +533,7 @@ export const canvasItemsService = {
       const { data, error } = await supabase
         .schema("canvas").from("canvas_items")
         .select("type, is_favorited, is_archived")
+        .is("deleted_at", null)
         .eq("user_id", userId);
 
       if (error || !data) {

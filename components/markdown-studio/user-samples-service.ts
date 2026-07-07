@@ -26,6 +26,7 @@ export async function listUserSamples(): Promise<UserMarkdownSample[]> {
   const { data, error } = await supabase
     .schema("users").from("user_markdown_samples")
     .select("*")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return data ?? [];

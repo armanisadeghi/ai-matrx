@@ -8,7 +8,6 @@ import {
   MessageSquare,
   MessagesSquare,
   Brain,
-  Layers,
   X,
   ExternalLink,
   Loader2,
@@ -254,7 +253,7 @@ export default function TaskAttachmentsPanel({
               onRemove: () => handleRemove("file", f.id),
             }))}
           />
-          {/* AI messages from cx_message — linked back to the conversation */}
+          {/* AI messages from chat.message — linked back to the conversation */}
           <Section
             icon={Star}
             label="AI Messages"
@@ -264,10 +263,10 @@ export default function TaskAttachmentsPanel({
               primary: m.preview || "AI message",
               secondary: `${m.role ?? "message"} · ${new Date(m.created_at).toLocaleString()}`,
               href: `/demos/chat/c/${m.conversation_id}#m-${m.id}`,
-              onRemove: () => handleRemove("cx_message", m.id),
+              onRemove: () => handleRemove("message", m.id),
             }))}
           />
-          {/* AI conversations from cx_conversation */}
+          {/* AI conversations from chat.conversation */}
           <Section
             icon={MessagesSquare}
             label="AI Conversations"
@@ -276,7 +275,7 @@ export default function TaskAttachmentsPanel({
               key: c.id,
               primary: c.title,
               href: `/demos/chat/c/${c.id}`,
-              onRemove: () => handleRemove("cx_conversation", c.id),
+              onRemove: () => handleRemove("conversation", c.id),
             }))}
           />
           {/* Generic messages (other messaging systems) */}
@@ -312,17 +311,14 @@ export default function TaskAttachmentsPanel({
               onRemove: () => handleRemove("agent_conversation", a.id),
             }))}
           />
-          <Section
-            icon={Layers}
-            label="Chat Blocks"
-            count={bundle.blocks.length}
-            items={bundle.blocks.map((b) => ({
-              key: b.id,
-              primary: b.preview || "Chat block",
-              secondary: `Block #${b.block_index}`,
-              onRemove: () => handleRemove("chat_block", b.message_id),
-            }))}
-          />
+          {/* DEAD PATH REMOVED (KNOWN_DEFECTS D27): the "Chat Blocks" section
+              read `bundle.blocks`, which the `get_task_associations` RPC fills
+              from `source_type='chat_block'` — a token that was NEVER
+              registered in `platform.entity_types`, so no such edge can exist
+              and the bucket is permanently empty. A "chat block" is a slice of
+              a chat message: any future block-level attach must write a
+              canonical `message` edge with `metadata.block_index` (it then
+              surfaces in "AI Messages" above). Do not resurrect `chat_block`. */}
           {bundle.other.length > 0 && (
             <Section
               icon={PlusCircle}

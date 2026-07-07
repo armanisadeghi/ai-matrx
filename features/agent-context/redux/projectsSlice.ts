@@ -69,6 +69,7 @@ export const fetchProject = createAsyncThunk(
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
+      .is("deleted_at", null)
       .eq("id", projectId)
       .single();
     if (error) throw error;
@@ -100,6 +101,7 @@ export const fetchOrgProjects = createAsyncThunk(
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
+      .is("deleted_at", null)
       .eq("organization_id", orgId)
       .order("name");
     if (error) throw error;

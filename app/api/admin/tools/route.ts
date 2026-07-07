@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .schema("tool").from("definition")
       .select("*")
+      .is("deleted_at", null)
       .order("category", { ascending: true })
       .order("name", { ascending: true });
 

@@ -51,6 +51,7 @@ export async function PATCH(
     const { data: invitationRequest, error: fetchError } = await adminSupabase
       .schema("users").from("invitation_requests")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", params.id)
       .single();
 
@@ -220,6 +221,7 @@ export async function GET(
     const { data: invitationRequest, error } = await adminSupabase
       .schema("users").from("invitation_requests")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", params.id)
       .single();
 

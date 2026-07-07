@@ -97,7 +97,8 @@ interface ImperativeMethods {
   launchShortcut: (
     shortcutId: string,
     applicationScope: ApplicationScope,
-    options?: Partial<ManagedAgentOptions>,
+    options: Partial<ManagedAgentOptions> &
+      Pick<ManagedAgentOptions, "sourceFeature">,
   ) => Promise<LaunchResult>;
 
   launchChat: (options?: ManagedAgentOptions) => Promise<LaunchResult>;
@@ -214,7 +215,8 @@ export function useAgentLauncher(
     async (
       shortcutId: string,
       applicationScope: ApplicationScope,
-      opts?: Partial<ManagedAgentOptions>,
+      opts: Partial<ManagedAgentOptions> &
+        Pick<ManagedAgentOptions, "sourceFeature">,
     ): Promise<LaunchResult> => {
       // The shortcut's persisted AgentExecutionConfig is loaded by
       // createInstanceFromShortcut. We forward only:
@@ -228,7 +230,7 @@ export function useAgentLauncher(
       const payload: ManagedAgentOptions = {
         shortcutId,
         surfaceKey: opts?.surfaceKey ?? `shortcut:${shortcutId}`,
-        sourceFeature: opts?.sourceFeature ?? "context-menu",
+        sourceFeature: opts.sourceFeature,
         config: opts?.config,
         runtime,
         apiEndpointMode: opts?.apiEndpointMode,

@@ -14,6 +14,7 @@ export default async function AgentTemplatesPage() {
     .select(
       "id, name, description, category, is_featured, use_count, created_at, updated_at",
     )
+    .is("deleted_at", null)
     .eq("is_archived", false)
     .order("is_featured", { ascending: false })
     .order("use_count", { ascending: false });

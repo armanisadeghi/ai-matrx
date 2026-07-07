@@ -101,6 +101,7 @@ export async function fetchToolsFromDatabase(): Promise<ToolDefinition[]> {
   const { data, error } = await supabase
     .schema("tool").from("definition")
     .select("*")
+    .is("deleted_at", null)
     .eq("is_active", true)
     .order("category", { ascending: true })
     .order("name", { ascending: true });

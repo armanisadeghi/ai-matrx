@@ -29,6 +29,7 @@ export default function QuizPeek({ id, open, onClose }: PeekProps) {
         .schema("education")
         .from("quiz_sessions")
         .select("title, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

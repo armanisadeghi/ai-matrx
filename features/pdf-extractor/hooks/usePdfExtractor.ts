@@ -193,6 +193,7 @@ async function fetchProcessedDocument(
       const { data, error } = await (supabase as any)
         .schema("docproc").from("processed_documents")
         .select("*")
+        .is("deleted_at", null)
         .eq("id", docId)
         // RLS already restricts to the owner, but include the predicate
         // so the planner can use the (owner_id, source_kind, source_id, …)

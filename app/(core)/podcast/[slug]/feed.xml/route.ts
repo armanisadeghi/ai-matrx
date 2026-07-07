@@ -82,7 +82,7 @@ export async function GET(
     const supabase = await createClient();
 
     // Resolve show by id (UUID) or slug.
-    const showQuery = supabase.schema('podcast').from('pc_shows').select('*');
+    const showQuery = supabase.schema('podcast').from('pc_shows').select('*').is('deleted_at', null);
     const { data: showRow } = isUUID(slug)
         ? await showQuery.eq('id', slug).single()
         : await showQuery.eq('slug', slug).single();
@@ -100,6 +100,7 @@ export async function GET(
     const { data: episodeRows } = await supabase
         .schema('podcast').from('pc_episodes')
         .select('*')
+        .is('deleted_at', null)
         .eq('show_id', show.id)
         .eq('is_published', true)
         .order('episode_number', { ascending: false, nullsFirst: false })

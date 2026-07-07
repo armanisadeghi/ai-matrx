@@ -69,7 +69,6 @@ export default function BrowserWorkbenchWindow({
   return (
     <BrowserWorkbenchWindowInner
       onClose={onClose}
-      initialBookmarks={initialBookmarks}
       initialTabs={initialTabs}
       initialActiveTabId={initialActiveTabId}
     />

@@ -34,6 +34,7 @@ export default function NotePeek({ id, open, onClose }: PeekProps) {
       const { data } = await supabase
         .schema("workbench").from("notes")
         .select("label, content, tags, updated_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

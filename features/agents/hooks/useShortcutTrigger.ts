@@ -34,11 +34,10 @@ export interface TriggerShortcutOptions {
   surfaceKey?: string;
 
   /**
-   * Tag recorded for telemetry / attribution. Default: `"programmatic"`.
-   * If you're launching from a known feature (e.g. code-editor, chat-route)
-   * set this explicitly so downstream filters keep working.
+   * Required — which surface launched this run (`code-editor`, `pdf-extractor`, …).
+   * Never use vague fallbacks like `"programmatic"` or `"context-menu"`.
    */
-  sourceFeature?: SourceFeature;
+  sourceFeature: SourceFeature;
 
   /**
    * Caller-supplied overrides layered on top of the shortcut's persisted
@@ -85,7 +84,10 @@ export interface TriggerShortcutOptions {
  *
  * ```tsx
  * const trigger = useShortcutTrigger();
- * await trigger("863b28c4-...", { scope: { selection: "hello" } });
+ * await trigger("863b28c4-...", {
+ *   scope: { selection: "hello" },
+ *   sourceFeature: "notes",
+ * });
  * ```
  *
  * Under the hood this dispatches `launchAgentExecution`, which handles:
@@ -100,7 +102,7 @@ export function useShortcutTrigger() {
   const dispatch = useAppDispatch();
 
   return useCallback(
-    (shortcutId: string, options: TriggerShortcutOptions = {}) => {
+    (shortcutId: string, options: TriggerShortcutOptions) => {
       const {
         scope,
         surfaceKey,
@@ -123,7 +125,7 @@ export function useShortcutTrigger() {
       const payload: ManagedAgentOptions = {
         shortcutId,
         surfaceKey: surfaceKey ?? `shortcut:${shortcutId}`,
-        sourceFeature: sourceFeature ?? "programmatic",
+        sourceFeature,
         ...(config ? { config } : {}),
         ...(mergedRuntime ? { runtime: mergedRuntime } : {}),
         ...(onConversationCreated ? { onConversationCreated } : {}),
@@ -142,13 +144,13 @@ export function useShortcutTrigger() {
  *
  * ```tsx
  * const runExplain = useShortcut("863b28c4-...");
- * <button onClick={() => runExplain({ scope: { selection: text } })}>Explain</button>
+ * <button onClick={() => runExplain({ scope: { selection: text }, sourceFeature: "notes" })}>Explain</button>
  * ```
  */
 export function useShortcut(shortcutId: string) {
   const trigger = useShortcutTrigger();
   return useCallback(
-    (options: TriggerShortcutOptions = {}) => trigger(shortcutId, options),
+    (options: TriggerShortcutOptions) => trigger(shortcutId, options),
     [trigger, shortcutId],
   );
 }

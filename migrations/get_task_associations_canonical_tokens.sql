@@ -1,0 +1,7 @@
+-- D27: get_task_associations read filters used phantom tokens (user_file/cx_message/
+-- cx_conversation/chat_block) that platform.entity_types never registered — the FK on
+-- platform.associations.source_type means NO row can carry them, so those buckets were
+-- permanently empty. Repoint to canonical tokens: file / message / conversation.
+-- Message BLOCKS are encoded as source_type='message' + metadata.block_index (the RPC
+-- already treated the block edge's source_id as a message id).
+-- Canonical body applied via MCP 2026-07-07; see migration of the same name in the ledger.

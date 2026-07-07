@@ -29,6 +29,7 @@ export default function CanvasPeek({ id, open, onClose }: PeekProps) {
       const { data } = await supabase
         .schema("canvas").from("canvas_items")
         .select("title, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

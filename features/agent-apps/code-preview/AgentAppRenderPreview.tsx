@@ -27,6 +27,7 @@ export function AgentAppRenderPreview({ rowId, code }: RenderPreviewerProps) {
     void appDb(supabase)
       .from("definition")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", rowId)
       .single()
       .then(({ data, error: err }) => {

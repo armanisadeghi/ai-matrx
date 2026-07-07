@@ -182,6 +182,7 @@ export async function GET(request: NextRequest) {
         .schema("ai")
         .from("provider")
         .select("id, name, provider_models_cache")
+        .is("deleted_at", null)
         .eq("id", providerId)
         .single();
       if (error) throw error;
@@ -193,6 +194,7 @@ export async function GET(request: NextRequest) {
       .schema("ai")
       .from("provider")
       .select("id, name, provider_models_cache")
+      .is("deleted_at", null)
       .order("name");
     if (error) throw error;
 

@@ -42,6 +42,7 @@ export async function GET() {
       .schema("platform")
       .from("categories")
       .select(FEEDBACK_CATEGORY_SELECT)
+      .is("deleted_at", null)
       .eq("dimension", "feedback")
       .order("position", { ascending: true });
 

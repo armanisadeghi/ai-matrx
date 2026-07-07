@@ -27,7 +27,8 @@ export interface TriggerShortcutArgs {
   shortcutId: string;
   scope?: ApplicationScope;
   surfaceKey?: string;
-  sourceFeature?: SourceFeature;
+  /** Required — name the calling surface (`pdf-extractor`, `code-editor`, …). */
+  sourceFeature: SourceFeature;
   config?: Partial<AgentExecutionConfig>;
   runtime?: Omit<AgentExecutionRuntime, "applicationScope"> & {
     applicationScope?: ApplicationScope;
@@ -43,7 +44,11 @@ export interface TriggerShortcutArgs {
  *
  * ```ts
  * // In a thunk:
- * await triggerShortcut(dispatch, { shortcutId, scope: { selection } });
+ * await triggerShortcut(dispatch, {
+ *   shortcutId,
+ *   scope: { selection },
+ *   sourceFeature: "notes",
+ * });
  *
  * // Anywhere (will lazy-import the store):
  * import { getStore } from "@/lib/redux/store-singleton";
@@ -79,7 +84,7 @@ export function triggerShortcut(
   const payload: ManagedAgentOptions = {
     shortcutId,
     surfaceKey: surfaceKey ?? `shortcut:${shortcutId}`,
-    sourceFeature: sourceFeature ?? "programmatic",
+    sourceFeature,
     ...(config ? { config } : {}),
     ...(mergedRuntime ? { runtime: mergedRuntime } : {}),
     ...(jsonExtraction ? { jsonExtraction } : {}),

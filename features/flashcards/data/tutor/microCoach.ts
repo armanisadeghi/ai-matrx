@@ -66,7 +66,7 @@ export function microCoach(ctx: MicroCoachContext) {
         launchAgentExecution({
           agentId,
           surfaceKey: "flashcards-micro-coach",
-          sourceFeature: "flashcards-coach",
+          sourceFeature: "education-flashcards-coach",
           isEphemeral: false,
           runtime: {
             variables: {

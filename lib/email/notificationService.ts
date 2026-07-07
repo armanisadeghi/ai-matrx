@@ -100,6 +100,7 @@ async function getUserDetails(
       .schema("users")
       .from("profiles")
       .select("display_name")
+      .is("deleted_at", null)
       .eq("id", userId)
       .maybeSingle();
 

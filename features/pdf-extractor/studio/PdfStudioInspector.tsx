@@ -401,10 +401,8 @@ function AiActionsPanel({
     try {
       await trigger(shortcutId, {
         scope: applicationScope,
-        sourceFeature: "programmatic",
+        sourceFeature: "pdf-extractor",
         runtime: { surfaceName: "matrx-user/pdf-widgets" },
-        // Keep the PDF + Extractions stream visible — no blocking modal.
-        config: { displayMode: "background", autoRun: true },
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not run agent");

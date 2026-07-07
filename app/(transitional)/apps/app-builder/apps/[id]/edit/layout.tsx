@@ -14,6 +14,7 @@ export async function generateMetadata({
   const { data } = await supabase
     .from("custom_app_configs")
     .select("name, description")
+    .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
 

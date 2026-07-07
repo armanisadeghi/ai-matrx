@@ -225,11 +225,16 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   ] = await Promise.all([
     sb.schema("ui").from("ui_surface_value").select("*"),
     sb.schema("ui").from("ui_surface_agent_role").select("*"),
-    sb.schema("ui").from("ui_surface_config").select("namespace"),
+    sb
+      .schema("ui")
+      .from("ui_surface_config")
+      .select("namespace")
+      .is("deleted_at", null),
     sb
       .schema("agent")
       .from("agent_surface")
       .select("id, surface_name, value_mappings")
+      .is("deleted_at", null)
       .neq("value_mappings", "{}"),
   ]);
 
@@ -560,6 +565,7 @@ export async function remediateBrokenMapping(
     .schema("agent")
     .from("agent_surface")
     .select("id, value_mappings")
+    .is("deleted_at", null)
     .eq("id", bindingId)
     .single();
   if (readErr) throw readErr;

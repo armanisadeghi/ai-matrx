@@ -95,6 +95,7 @@ export async function getTopicsForProject(
     .schema("research")
     .from("rs_topic")
     .select("*")
+    .is("deleted_at", null)
     .eq("project_id", projectId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -109,6 +110,7 @@ export async function getTopicsForProjects(
     .schema("research")
     .from("rs_topic")
     .select("*")
+    .is("deleted_at", null)
     .in("project_id", projectIds)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -125,6 +127,7 @@ export async function getAllTopics(): Promise<ResearchTopic[]> {
     .schema("research")
     .from("rs_topic")
     .select("*")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as ResearchTopic[];
@@ -135,6 +138,7 @@ export async function getTopic(topicId: string): Promise<ResearchTopic | null> {
     .schema("research")
     .from("rs_topic")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", topicId)
     .single();
   if (error) {
@@ -1036,6 +1040,7 @@ export async function getTemplates(): Promise<ResearchTemplate[]> {
     .schema("research")
     .from("rs_template")
     .select("*")
+    .is("deleted_at", null)
     .order("name", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -1048,6 +1053,7 @@ export async function getTemplate(
     .schema("research")
     .from("rs_template")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", templateId)
     .single();
   if (error) {

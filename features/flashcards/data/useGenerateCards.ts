@@ -279,7 +279,7 @@ export function useGenerateCards(): GenerateCardsResult {
             ? "flashcards-create-from-source"
             : "flashcards-create-from-topic",
           agentId,
-          sourceFeature: "flashcards",
+          sourceFeature: "education-flashcards",
           // The agent already has its response schema baked in — extraction is
           // enabled here so the streaming JSON tracker captures the object (the
           // direct-agentId launch path does NOT inherit extraction from the

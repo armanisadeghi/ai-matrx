@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 
 const SideBySideAppDisplay: React.FC<AppDisplayProps> = ({
   appName,
@@ -77,12 +77,15 @@ const SideBySideAppDisplay: React.FC<AppDisplayProps> = ({
         <div className="w-3/4 px-4">
           {appImageUrl ? (
             <div className="rounded-xl overflow-hidden shadow-md aspect-video relative">
-              <Image 
-                src={appImageUrl} 
-                alt={`${appName} preview`} 
-                fill
-                sizes="(max-width: 768px) 100vw, 65vw"
-                className="object-cover"
+              {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+              <InlineMediaRef
+                ref={appImageUrl}
+                size="fill"
+                fit="cover"
+                rounded="none"
+                fallback={null}
+                alt={`${appName} preview`}
+                className="absolute inset-0"
               />
             </div>
           ) : (

@@ -2,7 +2,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 
 
 const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
@@ -57,12 +57,15 @@ const MinimalAppDisplay: React.FC<AppDisplayProps> = ({
         {appImageUrl && (
           <div className="w-full sm:w-2/3">
             <div className="w-full h-36 rounded-md overflow-hidden shadow-sm relative">
-              <Image 
-                src={appImageUrl} 
-                alt={`${appName} thumbnail`} 
-                fill
-                sizes="(max-width: 640px) 100vw, 50vw"
-                className="object-cover"
+              {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+              <InlineMediaRef
+                ref={appImageUrl}
+                size="fill"
+                fit="cover"
+                rounded="none"
+                fallback={null}
+                alt={`${appName} thumbnail`}
+                className="absolute inset-0"
               />
             </div>
           </div>

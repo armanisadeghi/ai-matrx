@@ -161,6 +161,7 @@ export async function getAgentApp(idOrSlug: string): Promise<AgentApp> {
     .schema("app")
     .from("definition")
     .select("*")
+    .is("deleted_at", null)
     .eq(column, idOrSlug)
     .single();
 

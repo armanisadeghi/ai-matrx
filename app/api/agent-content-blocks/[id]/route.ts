@@ -43,6 +43,7 @@ export async function GET(
     const { data, error } = await supabase
       .from("content_blocks")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
 

@@ -131,6 +131,7 @@ export async function fetchSurfaceBindingLayers(
     .select(
       "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
     )
+    .is("deleted_at", null)
     .eq("agent_id", agentId)
     .eq("surface_name", surfaceName);
   if (error) throw error;
@@ -186,6 +187,7 @@ export async function listAgentSurfaceBindings(
     .select(
       "id, agent_id, surface_name, user_id, organization_id, project_id, task_id, value_mappings, created_at",
     )
+    .is("deleted_at", null)
     .eq("agent_id", agentId)
     .order("created_at", { ascending: false });
   if (error) throw error;

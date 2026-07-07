@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       .schema("platform")
       .from("categories")
       .select(PLATFORM_CATEGORY_SELECT)
+      .is("deleted_at", null)
       .eq("dimension", "shortcut");
 
     if (scope === "global") {

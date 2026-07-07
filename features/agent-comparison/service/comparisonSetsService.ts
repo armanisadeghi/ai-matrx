@@ -72,6 +72,7 @@ export async function listComparisonSets(
   const { data, error } = await supabase()
     .schema("agent").from("cmp_comparison_sets")
     .select("*")
+    .is("deleted_at", null)
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -89,6 +90,7 @@ export async function loadComparisonSet(
     client
       .schema("agent").from("cmp_comparison_sets")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", setId)
       .single(),
     client

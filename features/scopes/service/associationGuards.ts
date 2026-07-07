@@ -60,6 +60,46 @@ export function checkUuidArray(
   return null;
 }
 
+/**
+ * Canonical replacements for legacy/phantom entity-type tokens (KNOWN_DEFECTS
+ * D27). These aliases were never registered in `platform.entity_types` —
+ * writes with them always FK-failed — but they leaked into association
+ * callsites and persisted UI state. `normalizeEntityToken` maps them to the
+ * registered canonical token so the whole class of failure is structurally
+ * impossible, and it SCREAMS (console.error) when it fires, because an alias
+ * reaching this chokepoint means a callsite is still emitting a dead token.
+ *
+ * Do NOT add entries casually: the fix for a new unregistered token is to
+ * register it (or use the right one at the callsite), not to alias it here.
+ */
+const LEGACY_ENTITY_TOKEN_ALIASES: Record<string, string> = {
+  cx_message: "message", // chat.message
+  cx_conversation: "conversation", // chat.conversation
+  user_file: "file", // files.files (mirrors war-room entityToSource)
+  agent_app: "app", // app.definition
+  // chat_block: a "block" is a slice of a chat message — the edge's id IS the
+  // message id (metadata.block_index carries the slice), so it maps to message.
+  chat_block: "message",
+};
+
+/**
+ * Map a legacy/phantom token to its registered canonical token. Pass-through
+ * for anything not in the alias table. Loud by doctrine — the alias firing is
+ * a bug at the callsite, recovered here, and must never be silent.
+ */
+export function normalizeEntityToken(value: string): string {
+  const canonical = LEGACY_ENTITY_TOKEN_ALIASES[value];
+  if (canonical) {
+    console.error(
+      `[associations] phantom entity token ${JSON.stringify(value)} mapped to ` +
+        `canonical ${JSON.stringify(canonical)} — fix the callsite to emit the ` +
+        `canonical token (KNOWN_DEFECTS D27)`,
+    );
+    return canonical;
+  }
+  return value;
+}
+
 /** A type token must be registered in `platform.entity_types`. */
 export function checkToken(
   field: string,

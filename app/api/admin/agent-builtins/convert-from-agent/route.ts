@@ -61,6 +61,7 @@ export async function POST(request: Request) {
         .schema("agent")
         .from("definition")
         .select("*")
+        .is("deleted_at", null)
         .eq("id", agent_id)
         .single();
 
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
         .schema("agent")
         .from("definition")
         .select("id, agent_type, source_agent_id")
+        .is("deleted_at", null)
         .eq("id", system_agent_id)
         .single();
 

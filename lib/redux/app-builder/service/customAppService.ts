@@ -139,6 +139,7 @@ export const getAllCustomAppConfigs = async (): Promise<CustomAppConfig[]> => {
   const { data, error } = await supabase
     .from("custom_app_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("user_id", userId);
   if (error) {
     console.error("Error fetching custom app configs:", error);
@@ -161,6 +162,7 @@ export const getAllCustomAppConfigsWithApplets = async (): Promise<
   const { data: appsData, error: appsError } = await supabase
     .from("custom_app_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("user_id", userId);
 
   if (appsError) {
@@ -179,6 +181,7 @@ export const getAllCustomAppConfigsWithApplets = async (): Promise<
   const { data: appletsData, error: appletsError } = await supabase
     .from("custom_applet_configs")
     .select("*")
+    .is("deleted_at", null)
     .in("app_id", appIds);
 
   if (appletsError) {
@@ -222,6 +225,7 @@ export const getCustomAppConfigById = async (
   const { data, error } = await supabase
     .from("custom_app_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
   if (error) {
@@ -244,6 +248,7 @@ export const getCustomAppConfigBySlug = async (
   const { data, error } = await supabase
     .from("custom_app_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("slug", slug)
     .single();
   if (error) {
@@ -384,6 +389,7 @@ export const getPublicCustomAppConfigs = async (): Promise<
   const { data, error } = await supabase
     .from("custom_app_configs")
     .select("*")
+    .is("deleted_at", null)
     .eq("is_public", true);
   if (error) {
     console.error("Error fetching public custom app configs:", error);

@@ -21,9 +21,7 @@ import {
 import Link from "next/link";
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
-// TODO(prompts-deletion): ModelSettingsDialog was removed with features/prompts.
-// The "Review Settings" step is temporarily disabled. Re-implement using
-// features/agents/components/settings-management/AgentSettingsModal (needs agentId wiring).
+import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 interface ModelUsageAuditProps {
@@ -319,49 +317,25 @@ export default function ModelUsageAudit({
         </div>
       )}
 
-      {/* Step 2: Settings review — TODO(prompts-deletion): ModelSettingsDialog removed.
-          Re-implement via AgentSettingsModal. Currently falls back to quick replace. */}
+      {/* Step 2: Settings review — catalogue-driven rows for the replacement
+          model via the shared ModelSettingsReviewDialog. */}
       {step === "review-settings" && replacementId && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-card rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
-            <p className="text-sm font-medium">
-              Apply replacement without settings review?
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {model.common_name || model.name} →{" "}
-              {selectedReplacement?.common_name || selectedReplacement?.name}
-              <br />
-              Settings editor is temporarily unavailable. Click Apply to replace
-              model IDs only.
-            </p>
-            {replaceError && (
-              <p className="text-xs text-destructive">{replaceError}</p>
-            )}
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleCancel}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1"
-                disabled={replacing}
-                onClick={handleApplyWithSettings}
-              >
-                {replacing ? (
-                  <RefreshCcw className="h-3 w-3 animate-spin" />
-                ) : (
-                  <ArrowRightLeft className="h-3 w-3" />
-                )}
-                Apply Replacement
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ModelSettingsReviewDialog
+          open
+          replacementModelId={replacementId}
+          fromLabel={model.common_name || model.name}
+          toLabel={
+            selectedReplacement?.common_name ||
+            selectedReplacement?.name ||
+            replacementId
+          }
+          value={pendingSettings}
+          onChange={setPendingSettings}
+          onApply={handleApplyWithSettings}
+          onCancel={handleCancel}
+          applying={replacing}
+          error={replaceError}
+        />
       )}
     </div>
   );

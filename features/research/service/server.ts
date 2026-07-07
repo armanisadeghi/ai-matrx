@@ -6,6 +6,7 @@ export async function getTopicServer(topicId: string): Promise<ResearchTopic | n
     const { data, error } = await supabase
         .schema('research').from('rs_topic')
         .select('*')
+        .is('deleted_at', null)
         .eq('id', topicId)
         .single();
     if (error) {

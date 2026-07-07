@@ -31,6 +31,7 @@ export default function TaskPeek({ id, open, onClose }: PeekProps) {
       const { data } = await workspaceDb(supabase)
         .from("tasks")
         .select("title, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

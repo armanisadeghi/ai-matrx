@@ -17,6 +17,7 @@ export async function generateMetadata({
     const { data } = await workspaceDb(supabase)
       .from("war_rooms")
       .select("title, description")
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
 

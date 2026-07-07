@@ -157,6 +157,7 @@ export function ProjectsHub({
         .select(
           "id, name, slug, description, organization_id, created_by, updated_at, status, priority, start_date, target_date",
         )
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false });
       if (cancelled) return;
       if (error) {
@@ -218,6 +219,7 @@ export function ProjectsHub({
       const { data } = await workspaceDb(supabase)
         .from("tasks")
         .select("id, project_id, status, parent_task_id, title")
+        .is("deleted_at", null)
         .in("project_id", ids);
       if (cancelled) return;
       const m = new Map<string, Stat>();

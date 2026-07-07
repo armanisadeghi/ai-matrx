@@ -101,6 +101,7 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
     const { data: createdProjects, error: createdError } = await workspaceDb(supabase)
       .from("projects")
       .select("*")
+      .is("deleted_at", null)
       .eq("created_by", userId)
       .order("created_at", { ascending: false });
 
@@ -120,6 +121,7 @@ export async function getUserProjects(): Promise<DatabaseProject[]> {
     const { data, error } = await workspaceDb(supabase)
       .from("projects")
       .select("*")
+      .is("deleted_at", null)
       .in("id", Array.from(allIds))
       .order("created_at", { ascending: false });
 
@@ -151,6 +153,7 @@ export async function getProjectsWithTasks(): Promise<ProjectWithTasks[]> {
     let query = workspaceDb(supabase)
       .from("projects")
       .select(`*, tasks(*)`)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (memberProjectIds.length > 0) {

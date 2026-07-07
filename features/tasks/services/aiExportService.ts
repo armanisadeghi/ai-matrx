@@ -104,6 +104,7 @@ async function buildTaskExportNode(
     workspaceDb(supabase)
       .from("tasks")
       .select("*")
+      .is("deleted_at", null)
       .eq("parent_task_id", task.id)
       .order("created_at", { ascending: true })
       .then(({ data, error }) => {
@@ -198,6 +199,7 @@ export async function fetchTaskExportBundle(
   const { data: task, error } = await workspaceDb(supabase)
     .from("tasks")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", taskId)
     .maybeSingle();
 

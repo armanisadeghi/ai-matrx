@@ -19,6 +19,7 @@ export const canvasItemStateService = {
       const { data, error } = await supabase
         .schema("canvas").from("canvas_item_state")
         .select("state")
+        .is("deleted_at", null)
         .eq("canvas_id", canvasId)
         .eq("user_id", userId)
         .maybeSingle();

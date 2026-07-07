@@ -37,9 +37,7 @@ import {
 } from "lucide-react";
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
-// TODO(prompts-deletion): ModelSettingsDialog was removed with features/prompts.
-// The "Review Settings" step is temporarily disabled. Re-implement using
-// features/agents/components/settings-management/AgentSettingsModal (needs agentId wiring).
+import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 
 interface DeprecatedModelsAuditProps {
@@ -945,38 +943,33 @@ export default function DeprecatedModelsAudit({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* ── Settings review dialog ──────────────────────────────────────── */}
-      {/* TODO(prompts-deletion): ModelSettingsDialog removed. Re-implement via AgentSettingsModal. */}
+      {/* ── Settings review dialog — catalogue-driven rows for the
+             replacement model via the shared ModelSettingsReviewDialog. ── */}
       {settingsTarget && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-card rounded-lg shadow-xl max-w-sm w-full mx-4 p-6 space-y-4">
-            <p className="text-sm font-medium">
-              Apply replacement without settings review?
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Settings editor is temporarily unavailable. Click Apply to replace
-              model IDs only.
-            </p>
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setSettingsTarget(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1"
-                onClick={handleApplyWithSettings}
-              >
-                <ArrowRightLeft className="h-3 w-3" />
-                Apply Replacement
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ModelSettingsReviewDialog
+          open
+          replacementModelId={settingsTarget.entry.replacementId}
+          fromLabel={
+            settingsTarget.entry.model.common_name ||
+            settingsTarget.entry.model.name
+          }
+          toLabel={(() => {
+            const r = allModels.find(
+              (m) => m.id === settingsTarget.entry.replacementId,
+            );
+            return r?.common_name || r?.name || settingsTarget.entry.replacementId;
+          })()}
+          value={settingsTarget.settings}
+          onChange={(next) =>
+            setSettingsTarget((prev) =>
+              prev ? { ...prev, settings: next } : prev,
+            )
+          }
+          onApply={handleApplyWithSettings}
+          onCancel={() => setSettingsTarget(null)}
+          applying={settingsTarget.entry.replacing}
+          error={settingsTarget.entry.error}
+        />
       )}
     </div>
   );

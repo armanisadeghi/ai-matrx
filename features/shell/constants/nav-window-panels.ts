@@ -36,7 +36,13 @@ export type ShellNavPanelActionId =
   | "open-ai-voice-panel"
   | "open-transcription-cleanup-panel"
   | "open-import-agent-panel"
-  | "open-site-workbench-panel";
+  | "open-site-workbench-panel"
+  | "open-file-upload-panel"
+  | "open-email-panel"
+  | "open-messages-panel"
+  | "open-pick-lists-panel"
+  | "open-preferences-panel"
+  | "open-json-truncator-panel";
 
 export interface NavWindowPanelActionDef {
   tileId: string;
@@ -205,6 +211,42 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     label: "Site Workbench Window",
     iconName: NAV_WINDOW_PANEL_ICON,
     href: "/tools/pdf-extractor",
+  },
+  "open-file-upload-panel": {
+    tileId: "tile.file-upload",
+    label: "File Upload Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/files/all",
+  },
+  "open-email-panel": {
+    tileId: "tile.email",
+    label: "Email Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/messages",
+  },
+  "open-messages-panel": {
+    tileId: "tile.messages",
+    label: "Messages Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/messages",
+  },
+  "open-pick-lists-panel": {
+    tileId: "tile.pick-lists",
+    label: "Pick Lists Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/lists",
+  },
+  "open-preferences-panel": {
+    tileId: "tile.preferences",
+    label: "Preferences Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/settings",
+  },
+  "open-json-truncator-panel": {
+    tileId: "tile.json-truncator",
+    label: "JSON Truncator Window",
+    iconName: NAV_WINDOW_PANEL_ICON,
+    href: "/free/data-truncator",
   },
 };
 

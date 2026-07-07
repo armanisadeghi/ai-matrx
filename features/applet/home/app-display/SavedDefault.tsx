@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 
 const AppDisplay: React.FC<AppDisplayProps> = ({
   appName,
@@ -73,12 +73,15 @@ const AppDisplay: React.FC<AppDisplayProps> = ({
         <div 
           className="mt-8 w-full rounded-xl overflow-hidden shadow-lg aspect-[21/9] relative border-2 border-teal-500"
         >
-          <Image 
-            src={appImageUrl} 
-            alt={`${appName} banner`} 
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 80vw"
-            className="object-cover border-2 border-cyan-500"
+          {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+          <InlineMediaRef
+            ref={appImageUrl}
+            size="fill"
+            fit="cover"
+            rounded="none"
+            fallback={null}
+            alt={`${appName} banner`}
+            className="absolute inset-0 border-2 border-cyan-500"
           />
         </div>
       )}

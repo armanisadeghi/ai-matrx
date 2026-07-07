@@ -108,6 +108,7 @@ export function PdfManipulationWorkbench({
           const { data, error } = await filesDb(supabase)
             .from("files")
             .select("file_name")
+            .is("deleted_at", null)
             .eq("id", fileId)
             .maybeSingle();
           if (error) throw error;

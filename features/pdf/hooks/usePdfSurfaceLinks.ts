@@ -55,6 +55,7 @@ async function resolveIds(opts: {
     const { data: bridge } = await filesDb(supabase)
       .from("files")
       .select("canonical_processed_document_id")
+      .is("deleted_at", null)
       .eq("id", fileId)
       .maybeSingle();
     processedDocumentId = bridge?.canonical_processed_document_id ?? null;
@@ -62,6 +63,7 @@ async function resolveIds(opts: {
       const { data: doc } = await (supabase as any)
         .schema("docproc").from("processed_documents")
         .select("id")
+        .is("deleted_at", null)
         .eq("source_kind", "cld_file")
         .eq("source_id", fileId)
         .is("archived_at", null)
@@ -74,6 +76,7 @@ async function resolveIds(opts: {
     const { data: doc } = await (supabase as any)
       .schema("docproc").from("processed_documents")
       .select("source_kind, source_id")
+      .is("deleted_at", null)
       .eq("id", processedDocumentId)
       .maybeSingle();
     if (doc?.source_kind === "cld_file" && doc.source_id) {

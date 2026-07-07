@@ -19,6 +19,7 @@ async function resolveAgentName(agentId: string): Promise<string | null> {
     .schema("agent")
     .from("definition")
     .select("name")
+    .is("deleted_at", null)
     .eq("id", agentId)
     .maybeSingle();
   if (error || !data) return null;

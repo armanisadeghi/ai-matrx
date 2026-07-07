@@ -62,6 +62,7 @@ export async function POST(
       .schema("app")
       .from("definition")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .single();
 

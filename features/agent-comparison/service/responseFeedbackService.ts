@@ -59,6 +59,7 @@ export async function fetchLatestFeedback(
   const { data, error } = await supabase()
     .schema("agent").from("cmp_response_feedback")
     .select("*")
+    .is("deleted_at", null)
     .eq("user_id", userId)
     .eq("conversation_id", conversationId)
     .order("updated_at", { ascending: false });
@@ -79,6 +80,7 @@ export async function fetchFeedbackBySet(
   const { data, error } = await supabase()
     .schema("agent").from("cmp_response_feedback")
     .select("*")
+    .is("deleted_at", null)
     .eq("user_id", userId)
     .eq("comparison_set_id", comparisonSetId)
     .order("updated_at", { ascending: false });

@@ -11,6 +11,7 @@ export default async function PodcastsIndexPage() {
     const { data: shows } = await supabase
         .schema('podcast').from('pc_shows')
         .select('*')
+        .is('deleted_at', null)
         .eq('is_published', true)
         .order('created_at', { ascending: false });
 

@@ -40,7 +40,8 @@ const resolveSlug = cache(async (slug: string) => {
     .schema("podcast").from("pc_episodes")
     .select(
       "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
-    );
+    )
+    .is("deleted_at", null);
 
   const { data: episode } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
@@ -51,7 +52,7 @@ const resolveSlug = cache(async (slug: string) => {
   }
 
   // Try show (slug or UUID)
-  const showQuery = supabase.schema("podcast").from("pc_shows").select("*");
+  const showQuery = supabase.schema("podcast").from("pc_shows").select("*").is("deleted_at", null);
 
   const { data: show } = isUUID(slug)
     ? await showQuery.eq("id", slug).single()
@@ -154,6 +155,7 @@ export default async function PodcastPage({
     const { data: articles } = await supabase
       .schema("podcast").from("pc_articles")
       .select("*")
+      .is("deleted_at", null)
       .eq("episode_id", result.data.id)
       .eq("status", "published");
     return (
@@ -169,6 +171,7 @@ export default async function PodcastPage({
   const { data: episodes } = await supabase
     .schema("podcast").from("pc_episodes")
     .select("*")
+    .is("deleted_at", null)
     .eq("show_id", result.data.id)
     .eq("is_published", true)
     .order("episode_number", { ascending: true, nullsFirst: false });

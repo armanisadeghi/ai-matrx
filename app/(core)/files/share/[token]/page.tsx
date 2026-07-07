@@ -52,6 +52,7 @@ export default async function AuthedSharePage({ params }: PageProps) {
     const { data: folder } = await filesDb(supabase)
       .from("folders")
       .select("folder_path")
+      .is("deleted_at", null)
       .eq("id", data.resource_id)
       .maybeSingle();
     const path = folder?.folder_path ?? "";

@@ -38,6 +38,7 @@ export default function SandboxPeek({ id, open, onClose }: PeekProps) {
       const { data } = await supabase
         .from("sandbox_instances")
         .select("sandbox_id, status, tier, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

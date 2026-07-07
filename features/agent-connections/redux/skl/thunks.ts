@@ -115,6 +115,7 @@ export const fetchRenderDefinitions = createAsyncThunk(
         .schema("skill")
         .from("render_definition")
         .select("*")
+        .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("label", { ascending: true });
       query = applyScopeFilter(query, args, userId);
@@ -206,7 +207,8 @@ export const fetchRenderComponents = createAsyncThunk(
     const { data, error } = await supabase
       .schema("skill")
       .from("render_component")
-      .select("*");
+      .select("*")
+      .is("deleted_at", null);
     if (error) throw error;
     const rows = (data ?? []).map(rowToSklRenderComponent);
     dispatch(sklActions.renderComponentsReceived(rows));

@@ -211,7 +211,7 @@ export function RunTruthInspector({
     try {
       const [agentRunRes, stagesRes, studioRunRes, episodeRes] = await Promise.all([
         agentRunId
-          ? supabase.schema("chat").from("agent_run").select("*").eq("id", agentRunId).maybeSingle()
+          ? supabase.schema("chat").from("agent_run").select("*").eq("id", agentRunId).maybeSingle() // intentionally includes soft-deleted
           : Promise.resolve({ data: null, error: null }),
         agentRunId
           ? supabase
@@ -220,9 +220,9 @@ export function RunTruthInspector({
               .eq("run_id", agentRunId)
               .order("started_at", { ascending: true, nullsFirst: true })
           : Promise.resolve({ data: [], error: null }),
-        supabase.schema("podcast").from("pc_studio_runs").select("*").eq("id", studioRunId).maybeSingle(),
+        supabase.schema("podcast").from("pc_studio_runs").select("*").eq("id", studioRunId).maybeSingle(), // intentionally includes soft-deleted
         episodeId
-          ? supabase.schema("podcast").from("pc_episodes").select("*").eq("id", episodeId).maybeSingle()
+          ? supabase.schema("podcast").from("pc_episodes").select("*").eq("id", episodeId).maybeSingle() // intentionally includes soft-deleted
           : Promise.resolve({ data: null, error: null }),
       ]);
       const firstErr =

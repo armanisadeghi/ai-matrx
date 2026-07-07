@@ -46,6 +46,7 @@ export async function GET(request: Request) {
     const { data: tasks, error } = await workspaceDb(supabase)
       .from('tasks')
       .select('id, title, created_by, due_date, assignee_id')
+      .is('deleted_at', null)
       .eq('status', 'incomplete')
       .not('due_date', 'is', null)
       .lte('due_date', dayAfterTomorrow.toISOString())

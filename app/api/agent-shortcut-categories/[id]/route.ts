@@ -29,6 +29,7 @@ export async function GET(
       .schema("platform")
       .from("categories")
       .select(PLATFORM_CATEGORY_SELECT)
+      .is("deleted_at", null)
       .eq("dimension", "shortcut")
       .eq("id", id)
       .maybeSingle();
@@ -150,6 +151,7 @@ export async function PATCH(
         .schema("platform")
         .from("categories")
         .select("metadata")
+        .is("deleted_at", null)
         .eq("dimension", "shortcut")
         .eq("id", id)
         .maybeSingle();

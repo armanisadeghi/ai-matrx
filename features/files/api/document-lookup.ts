@@ -82,6 +82,7 @@ export async function lookupFileDocument(
         .select(
           "id, derivation_kind, total_pages, updated_at, clean_content_completed_at",
         )
+        .is("deleted_at", null)
         .eq("source_kind", "cld_file")
         .eq("source_id", fileId)
         .is("archived_at", null)

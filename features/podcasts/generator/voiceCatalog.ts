@@ -50,6 +50,7 @@ export async function fetchVoices(): Promise<Voice[]> {
   const { data, error } = await supabase
     .schema("ai").from("voices")
     .select(SELECT_COLS)
+    .is("deleted_at", null)
     .eq("enabled", true)
     .order("quality_score", { ascending: false, nullsFirst: false })
     .order("sort_order", { ascending: true })

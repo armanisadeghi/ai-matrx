@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIcon } from '@/features/applet/styles/StyledComponents';
 import { AppletCardProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 import GlassContainer from '@/components/ui/GlassContainer';
 
 const EnhancedAppletCard: React.FC<AppletCardProps> = ({
@@ -35,12 +35,15 @@ const EnhancedAppletCard: React.FC<AppletCardProps> = ({
         {/* Card image/banner section - CRISP and CLEAR */}
         <div className="h-40 w-full bg-gray-200 dark:bg-gray-700 relative flex-shrink-0">
           {applet.imageUrl ? (
-            <Image
-              src={applet.imageUrl}
+            /* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */
+            <InlineMediaRef
+              ref={applet.imageUrl}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallback={null}
               alt={applet.name}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover"
+              className="absolute inset-0"
             />
           ) : (
             <div className={`w-full h-full flex items-center justify-center bg-${primaryColor}-500 dark:bg-${primaryColor}-600`}>

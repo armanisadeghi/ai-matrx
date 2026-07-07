@@ -156,7 +156,7 @@ function ProTextareaAgentRunner({
 
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
-    sourceFeature: "programmatic",
+    sourceFeature: "pro-textarea",
     apiEndpointMode: "agent",
     autoClearConversation: false,
     config: {

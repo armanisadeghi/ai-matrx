@@ -51,6 +51,7 @@ export async function POST(
       .schema("platform")
       .from("categories")
       .select(PLATFORM_CATEGORY_SELECT)
+      .is("deleted_at", null)
       .eq("dimension", "shortcut")
       .eq("id", id)
       .maybeSingle();

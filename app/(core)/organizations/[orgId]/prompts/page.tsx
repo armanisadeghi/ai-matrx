@@ -24,6 +24,7 @@ const fetchOwned = async (orgId: string) => {
     .schema("agent")
     .from("definition")
     .select(SELECT_COLS)
+    .is("deleted_at", null)
     .eq("organization_id", orgId)
     .eq("is_archived", false)
     .order("updated_at", { ascending: false });

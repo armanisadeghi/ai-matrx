@@ -69,6 +69,7 @@ async function fetchMessageDisplayText(
   const { data, error } = await supabase
     .schema("chat").from("message")
     .select("content")
+    .is("deleted_at", null)
     .eq("id", messageId)
     .maybeSingle();
   if (error || !data) return null;

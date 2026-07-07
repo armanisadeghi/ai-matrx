@@ -91,6 +91,7 @@ export const hierarchyService = {
       .schema("users")
       .from("profiles")
       .select("display_name")
+      .is("deleted_at", null)
       .eq("id", userId)
       .maybeSingle();
 
@@ -138,6 +139,7 @@ export const hierarchyService = {
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
+      .is("deleted_at", null)
       .order("name");
 
     if (opts.orgId) {
@@ -157,6 +159,7 @@ export const hierarchyService = {
       .select(
         "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
+      .is("deleted_at", null)
       .eq("created_by", userId)
       .order("name");
 
@@ -170,6 +173,7 @@ export const hierarchyService = {
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
       )
+      .is("deleted_at", null)
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
 
@@ -185,6 +189,7 @@ export const hierarchyService = {
       .select(
         "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, created_by",
       )
+      .is("deleted_at", null)
       .is("project_id", null)
       .eq("created_by", userId)
       .order("created_at", { ascending: false });
@@ -625,6 +630,7 @@ export const hierarchyService = {
       const { data: task } = await workspaceDb(supabase)
         .from("tasks")
         .select("title, project_id")
+        .is("deleted_at", null)
         .eq("id", id)
         .single();
       if (task) {
@@ -641,6 +647,7 @@ export const hierarchyService = {
       const { data: proj } = await workspaceDb(supabase)
         .from("projects")
         .select("name, organization_id")
+        .is("deleted_at", null)
         .eq("id", id)
         .single();
       if (proj) {

@@ -204,6 +204,7 @@ export async function fetchCodeFolders(): Promise<CodeFolder[]> {
     .schema("code")
     .from("code_file_folders")
     .select("*")
+    .is("deleted_at", null)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
     .order("name", { ascending: true });

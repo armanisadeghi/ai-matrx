@@ -208,6 +208,7 @@ export async function updateAgentAppCategory(
     const { data: current, error: readError } = await supabase
       .schema("platform").from("categories")
       .select("metadata")
+      .is("deleted_at", null)
       .eq("id", input.id)
       .eq("dimension", "app")
       .single();
@@ -254,6 +255,7 @@ export async function fetchAgentAppsAdmin(filters?: {
   let query = supabase
     .schema("app").from("definition")
     .select("*")
+    .is("deleted_at", null)
     .order("updated_at", { ascending: false });
 
   if (filters?.status) query = query.eq("status", filters.status);
@@ -303,6 +305,7 @@ export async function getAgentAppById(
   const { data, error } = await supabase
     .schema("app").from("definition")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
   if (error) {

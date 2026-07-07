@@ -2,7 +2,6 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { MainLayoutProps } from '@/features/applet/home/types';
-import Image from 'next/image';
 import { LoadingSpinner } from '@/components/ui/spinner';
 import AppDisplay from '@/features/applet/home/app-display/Default';
 import ModernAppletCard from '@/features/applet/home/applet-card/Modern';

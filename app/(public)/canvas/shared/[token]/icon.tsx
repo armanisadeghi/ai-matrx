@@ -17,6 +17,7 @@ export default async function Icon({ params }: Props) {
     const { data: canvas } = await supabase
         .schema('canvas').from('shared_canvas_items')
         .select('canvas_type')
+        .is('deleted_at', null)
         .eq('share_token', token)
         .single();
 

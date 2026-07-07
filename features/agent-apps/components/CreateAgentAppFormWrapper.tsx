@@ -138,11 +138,16 @@ export function CreateAgentAppFormWrapper({
         type AgentRowQuery = {
           from: (t: string) => {
             select: (s: string) => {
-              eq: (
+              is: (
                 c: string,
-                v: string,
+                v: null,
               ) => {
-                single: () => Promise<{ data: any; error: any }>;
+                eq: (
+                  c: string,
+                  v: string,
+                ) => {
+                  single: () => Promise<{ data: any; error: any }>;
+                };
               };
             };
           };
@@ -155,6 +160,7 @@ export function CreateAgentAppFormWrapper({
           .schema("agent")
           .from("definition")
           .select("*")
+          .is("deleted_at", null)
           .eq("id", id)
           .single();
         if (error) {

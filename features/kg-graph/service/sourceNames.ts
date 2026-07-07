@@ -29,6 +29,7 @@ export async function fetchSourceNames(
     const { data } = await supabase
       .schema("workbench").from("notes")
       .select("id,label")
+      .is("deleted_at", null)
       .in("id", noteIds);
     for (const row of data ?? []) {
       const id = row?.id as string | undefined;

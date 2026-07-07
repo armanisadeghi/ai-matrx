@@ -148,6 +148,7 @@ export async function listKgSuggestions(
       .schema("rag")
       .from("scope_item_value_suggestions")
       .select("*")
+      .is("deleted_at", null)
       .eq("target_context_item_id", filter.scopeItemId)
       .order("confidence", { ascending: false });
     if (status !== "all") q = q.eq("status", status);
@@ -163,10 +164,12 @@ export async function listKgSuggestions(
 
   let assocQ = supabase
     .schema("rag").from("scope_association_suggestions")
-    .select("*");
+    .select("*")
+    .is("deleted_at", null);
   let valueQ = supabase
     .schema("rag").from("scope_item_value_suggestions")
-    .select("*");
+    .select("*")
+    .is("deleted_at", null);
   if (status !== "all") {
     assocQ = assocQ.eq("status", status);
     valueQ = valueQ.eq("status", status);

@@ -51,8 +51,8 @@ import {
   Check,
   Copy,
 } from "lucide-react";
-// TODO(prompts-deletion): PromptEditorContextMenu removed with features/prompts.
-// Re-implement with features/context-menu-v3/EditableContextMenu or a new content-block picker.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   ContentTemplateDB,
   CreateContentTemplateInput,
@@ -475,8 +475,13 @@ export function ContentTemplateManager({
   };
 
   const handleDeleteTemplate = async (template: ContentTemplateDB) => {
-    if (!confirm(`Are you sure you want to delete "${template.label}"?`))
-      return;
+    const ok = await confirm({
+      title: `Delete "${template.label}"?`,
+      description: "This template will be permanently deleted.",
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!ok) return;
 
     try {
       await deleteTemplate(template.id);
@@ -966,32 +971,42 @@ export function ContentTemplateManager({
                   <CardContent>
                     {/* Editor-only */}
                     {previewMode === "editor" && (
-                      <AutoResizeTextarea
-                        ref={editTextareaRef}
-                        value={editData.content || ""}
-                        onChange={(e) =>
-                          handleEditChange("content", e.target.value)
-                        }
-                        placeholder="Enter the template content..."
-                        className="font-mono text-sm"
-                        minHeight={300}
-                      />
+                      <EditableContextMenu
+                        sourceFeature="messages"
+                        getTextarea={() => editTextareaRef.current}
+                      >
+                        <AutoResizeTextarea
+                          ref={editTextareaRef}
+                          value={editData.content || ""}
+                          onChange={(e) =>
+                            handleEditChange("content", e.target.value)
+                          }
+                          placeholder="Enter the template content..."
+                          className="font-mono text-sm"
+                          minHeight={300}
+                        />
+                      </EditableContextMenu>
                     )}
 
                     {/* Editor + client-side preview */}
                     {previewMode === "preview" && (
                       <div className="flex flex-col lg:flex-row gap-4 items-stretch">
                         <div className="flex-1 min-w-0">
-                          <AutoResizeTextarea
-                            ref={editTextareaRef}
-                            value={editData.content || ""}
-                            onChange={(e) =>
-                              handleEditChange("content", e.target.value)
-                            }
-                            placeholder="Enter the template content..."
-                            className="font-mono text-sm h-full"
-                            minHeight={300}
-                          />
+                          <EditableContextMenu
+                            sourceFeature="messages"
+                            getTextarea={() => editTextareaRef.current}
+                          >
+                            <AutoResizeTextarea
+                              ref={editTextareaRef}
+                              value={editData.content || ""}
+                              onChange={(e) =>
+                                handleEditChange("content", e.target.value)
+                              }
+                              placeholder="Enter the template content..."
+                              className="font-mono text-sm h-full"
+                              minHeight={300}
+                            />
+                          </EditableContextMenu>
                         </div>
                         <div className="flex-1 min-w-0 min-h-[300px] border border-border rounded-lg p-4 bg-textured overflow-auto">
                           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 pb-2 border-b border-border">
@@ -1008,16 +1023,21 @@ export function ContentTemplateManager({
                     {(previewMode === "json" || previewMode === "stream") && (
                       <div className="flex flex-col lg:flex-row gap-4 items-stretch">
                         <div className="flex-1 min-w-0">
-                          <AutoResizeTextarea
-                            ref={editTextareaRef}
-                            value={editData.content || ""}
-                            onChange={(e) =>
-                              handleEditChange("content", e.target.value)
-                            }
-                            placeholder="Enter the template content..."
-                            className="font-mono text-sm h-full"
-                            minHeight={300}
-                          />
+                          <EditableContextMenu
+                            sourceFeature="messages"
+                            getTextarea={() => editTextareaRef.current}
+                          >
+                            <AutoResizeTextarea
+                              ref={editTextareaRef}
+                              value={editData.content || ""}
+                              onChange={(e) =>
+                                handleEditChange("content", e.target.value)
+                              }
+                              placeholder="Enter the template content..."
+                              className="font-mono text-sm h-full"
+                              minHeight={300}
+                            />
+                          </EditableContextMenu>
                         </div>
                         <div className="flex-1 min-w-0 min-h-[300px] border border-border rounded-lg bg-textured overflow-auto relative">
                           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-0 px-4 pt-3 pb-2 border-b border-border flex items-center justify-between">
@@ -1209,20 +1229,25 @@ export function ContentTemplateManager({
 
             <div>
               <Label htmlFor="create-content">Content</Label>
-              <AutoResizeTextarea
-                ref={createTextareaRef}
-                id="create-content"
-                value={createFormData.content || ""}
-                onChange={(e) =>
-                  setCreateFormData({
-                    ...createFormData,
-                    content: e.target.value,
-                  })
-                }
-                placeholder="Enter the template content..."
-                className="font-mono"
-                minHeight={200}
-              />
+              <EditableContextMenu
+                sourceFeature="messages"
+                getTextarea={() => createTextareaRef.current}
+              >
+                <AutoResizeTextarea
+                  ref={createTextareaRef}
+                  id="create-content"
+                  value={createFormData.content || ""}
+                  onChange={(e) =>
+                    setCreateFormData({
+                      ...createFormData,
+                      content: e.target.value,
+                    })
+                  }
+                  placeholder="Enter the template content..."
+                  className="font-mono"
+                  minHeight={200}
+                />
+              </EditableContextMenu>
             </div>
 
             <div className="flex items-center justify-between">

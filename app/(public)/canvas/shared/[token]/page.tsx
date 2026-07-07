@@ -25,6 +25,7 @@ export async function generateMetadata({
     .select(
       "title, description, thumbnail_url, canvas_type, creator_username, creator_display_name, tags",
     )
+    .is("deleted_at", null)
     .eq("share_token", token)
     .single();
 

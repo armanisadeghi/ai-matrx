@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 
 
 const QuarterThreeQuarters: React.FC<AppDisplayProps> = ({
@@ -61,12 +61,15 @@ const QuarterThreeQuarters: React.FC<AppDisplayProps> = ({
         {appImageUrl && (
           <div className="w-3/4">
             <div className="w-full rounded-xl overflow-hidden shadow-md aspect-[16/9] relative">
-              <Image 
-                src={appImageUrl} 
-                alt={`${appName} banner`} 
-                fill
-                sizes="(max-width: 768px) 100vw, 75vw"
-                className="object-cover"
+              {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+              <InlineMediaRef
+                ref={appImageUrl}
+                size="fill"
+                fit="cover"
+                rounded="none"
+                fallback={null}
+                alt={`${appName} banner`}
+                className="absolute inset-0"
               />
             </div>
           </div>

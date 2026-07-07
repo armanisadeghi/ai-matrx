@@ -13,6 +13,7 @@ async function fetchTool(toolId: string) {
   const { data, error } = await supabase
     .schema("tool").from("definition")
     .select("id, name")
+    .is("deleted_at", null)
     .eq("id", toolId)
     .single();
   if (error || !data) return null;

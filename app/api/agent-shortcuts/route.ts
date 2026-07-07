@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     const placementType = searchParams.get("placement_type");
     const isActive = searchParams.get("is_active");
 
-    let query = supabase.schema("agent").from("shortcut").select("*");
+    let query = supabase.schema("agent").from("shortcut").select("*").is("deleted_at", null);
 
     if (scope === "global") {
       query = query
@@ -217,6 +217,7 @@ async function filterByPlacementType(
     .schema("platform")
     .from("categories")
     .select("id, placement_type")
+    .is("deleted_at", null)
     .eq("dimension", "shortcut")
     .in("id", categoryIds)
     .eq("placement_type", placementType);

@@ -156,12 +156,14 @@ export async function fetchSurfaceConfigBundle(
       .select(
         "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at",
       )
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName),
     client
       .schema("ui").from("ui_surface_config")
       .select(
         "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at",
       )
+      .is("deleted_at", null)
       .eq("surface_name", surfaceName),
   ]);
   if (rolesRes.error) throw rolesRes.error;

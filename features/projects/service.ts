@@ -220,6 +220,7 @@ export async function getProject(projectId: string): Promise<Project | null> {
     const { data, error } = await workspaceDb(supabase)
       .from("projects")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", projectId)
       .single();
     if (error) throw pgErrorToError(error);
@@ -244,6 +245,7 @@ export async function getProjectBySlug(
     const base = workspaceDb(supabase)
       .from("projects")
       .select("*")
+      .is("deleted_at", null)
       .eq("organization_id", organizationId);
 
     const query = UUID_PATTERN.test(slugOrId)
@@ -269,6 +271,7 @@ export async function getPersonalProjectBySlug(
     const base = workspaceDb(supabase)
       .from("projects")
       .select("*")
+      .is("deleted_at", null)
       .eq("organization_id", organizationId)
       .eq("created_by", userId);
 
@@ -318,6 +321,7 @@ async function loadUserProjectsWithRole(): Promise<ProjectWithRole[]> {
   )
     .from("projects")
     .select(`*`)
+    .is("deleted_at", null)
     .in("id", projectIds);
 
   if (projectsError) {
@@ -410,6 +414,7 @@ export async function isProjectSlugAvailable(
     let query = workspaceDb(supabase)
       .from("projects")
       .select("id")
+      .is("deleted_at", null)
       .eq("slug", slug);
     query = query.eq("organization_id", orgId);
     const { data } = await query.single();

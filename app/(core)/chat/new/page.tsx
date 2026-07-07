@@ -18,6 +18,7 @@ async function resolveDefaultAgentName(): Promise<string | null> {
     .schema("agent")
     .from("definition")
     .select("name")
+    .is("deleted_at", null)
     .eq("id", DEFAULT_NEW_CHAT_AGENT_ID)
     .maybeSingle();
   if (error || !data) return null;

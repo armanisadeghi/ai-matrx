@@ -360,6 +360,7 @@ export const canvasArtifactService = {
             const { data, error } = await supabase
                 .schema("canvas").from("canvas_items")
                 .select("*")
+                .is("deleted_at", null)
                 .eq("id", canvasId)
                 .maybeSingle();
 
@@ -510,6 +511,7 @@ export const canvasArtifactService = {
                 const { data: conversation, error: conversationErr } = await supabase
                     .schema("chat").from("conversation")
                     .select("organization_id, project_id, task_id")
+                    .is("deleted_at", null)
                     .eq("id", input.conversationId)
                     .maybeSingle();
 

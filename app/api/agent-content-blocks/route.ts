@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get("category_id");
     const isActive = searchParams.get("is_active");
 
-    let query = supabase.from("content_blocks").select("*");
+    let query = supabase.from("content_blocks").select("*").is("deleted_at", null);
 
     if (scope === "global") {
       query = query

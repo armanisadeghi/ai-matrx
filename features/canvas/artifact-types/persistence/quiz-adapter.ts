@@ -77,6 +77,7 @@ async function findSessionByArtifactId(
     .schema("education")
     .from("quiz_sessions")
     .select("id, state, is_completed, completed_at")
+    .is("deleted_at", null)
     .eq("user_id", userId)
     .contains("quiz_metadata", { artifact_id: artifactId })
     .order("created_at", { ascending: false })

@@ -87,6 +87,7 @@ export async function listPageRunsForRun(
   const { data, error } = await docproc
     .from("page_extraction_page_runs")
     .select("*")
+    .is("deleted_at", null)
     .eq("run_id", runId)
     .order("chunk_index", { ascending: true });
   if (error) throw error;

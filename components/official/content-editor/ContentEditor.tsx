@@ -31,8 +31,7 @@ import type { ContentEditorProps, EditorMode, EditorModeConfig } from "./types";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 import { CopyDropdownButton } from "./CopyDropdownButton.lazy";
 import { ContentManagerMenu } from "./ContentManagerMenu.lazy";
-// TODO(prompts-deletion): PromptEditorContextMenu removed with features/prompts.
-// Re-implement with features/context-menu-v3/EditableContextMenu.
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 // Dynamic import for TUI editor
 const TuiEditorContent = dynamic(
@@ -419,26 +418,31 @@ export function ContentEditor({
               : undefined
           }
         >
-          {/* Plain Text Mode */}
+          {/* Plain Text Mode — right-click: universal menu incl. content-block insert */}
           {currentMode === "plain" && (
-            <Textarea
-              ref={plainTextareaRef}
-              value={localContent}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder={placeholder}
-              className="w-full min-h-[300px] border-none rounded-none resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3"
-              style={{
-                height: "auto",
-                minHeight: "300px",
-                maxHeight: "none",
-              }}
-              rows={Math.max(
-                12,
-                Math.ceil(localContent.length / 80) +
-                  localContent.split("\n").length +
-                  2,
-              )}
-            />
+            <EditableContextMenu
+              sourceFeature="documents"
+              getTextarea={() => plainTextareaRef.current}
+            >
+              <Textarea
+                ref={plainTextareaRef}
+                value={localContent}
+                onChange={(e) => handleContentChange(e.target.value)}
+                placeholder={placeholder}
+                className="w-full min-h-[300px] border-none rounded-none resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3"
+                style={{
+                  height: "auto",
+                  minHeight: "300px",
+                  maxHeight: "none",
+                }}
+                rows={Math.max(
+                  12,
+                  Math.ceil(localContent.length / 80) +
+                    localContent.split("\n").length +
+                    2,
+                )}
+              />
+            </EditableContextMenu>
           )}
 
           {/* WYSIWYG Mode */}

@@ -210,6 +210,7 @@ export async function getKindSchemaBySlugFromTables(
       .schema("content_ir")
       .from("kind_definition")
       .select("id, kind")
+      .is("deleted_at", null)
       .in("id", childIds);
     if (childErr) {
       throw new KindTablesError(

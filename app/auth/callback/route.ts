@@ -9,7 +9,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { extractErrorMessage } from "@/utils/errors";
-import { safeRelativePath } from "@/utils/auth/safe-redirect";
+import { safeForwardedHost, safeRelativePath } from "@/utils/auth/safe-redirect";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -110,7 +110,13 @@ export async function GET(request: Request) {
         }
       }
 
-      const forwardedHost = request.headers.get("x-forwarded-host");
+      // D22 residual fix: only follow x-forwarded-host when it passes the
+      // host allowlist (prod host from NEXT_PUBLIC_SITE_URL, Vercel system
+      // hosts, *.vercel.app previews). On mismatch safeForwardedHost screams
+      // and we fall back to the request's own origin — never a spoofed host.
+      const forwardedHost = safeForwardedHost(
+        request.headers.get("x-forwarded-host"),
+      );
       const isLocalEnv = process.env.NODE_ENV === "development";
 
       let baseUrl: string;

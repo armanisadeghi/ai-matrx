@@ -43,6 +43,7 @@ export const flashcardPersistenceService = {
         const { data: existing } = await supabase
           .schema("users").from("user_flashcard_sets")
           .select("*")
+          .is("deleted_at", null)
           .eq("user_id", userId)
           .eq("message_id", input.message_id)
           .single();
@@ -87,6 +88,7 @@ export const flashcardPersistenceService = {
       let query = supabase
         .schema("users").from("user_flashcard_sets")
         .select("*")
+        .is("deleted_at", null)
         .eq("user_id", userId);
 
       if (filters?.conversation_id) {
@@ -119,6 +121,7 @@ export const flashcardPersistenceService = {
       const { data, error } = await supabase
         .schema("users").from("user_flashcard_sets")
         .select("*")
+        .is("deleted_at", null)
         .eq("id", setId)
         .eq("user_id", userId)
         .single();
@@ -140,6 +143,7 @@ export const flashcardPersistenceService = {
       const { data, error } = await supabase
         .schema("users").from("user_flashcard_sets")
         .select("*")
+        .is("deleted_at", null)
         .eq("user_id", userId)
         .eq("message_id", messageId)
         .single();
@@ -243,6 +247,7 @@ export const flashcardPersistenceService = {
       const { data, error } = await supabase
         .schema("users").from("user_flashcard_reviews")
         .select("*")
+        .is("deleted_at", null)
         .eq("user_id", userId)
         .eq("set_id", setId)
         .order("reviewed_at", { ascending: true });

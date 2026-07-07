@@ -51,6 +51,7 @@ export default function SharedHeatmapPage() {
       const { data, error: fetchError } = await supabase
         .from('heatmap_saves')
         .select('*')
+        .is('deleted_at', null)
         .eq('id', heatmapId)
         .single();
 

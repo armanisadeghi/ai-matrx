@@ -132,6 +132,7 @@ export const fetchAvailableTools = createAsyncThunk(
       const { data, error } = await supabase
         .schema("tool").from("definition")
         .select("id, name, description, category, icon")
+        .is("deleted_at", null)
         .eq("is_active", true)
         .order("category", { ascending: true })
         .order("name", { ascending: true });
@@ -180,6 +181,7 @@ export const loadAgentSettings = createAsyncThunk(
           .schema("agent")
           .from("definition")
           .select("id, settings, variable_definitions")
+          .is("deleted_at", null)
           .eq("id", agentId)
           .single();
         error = result.error;
@@ -195,6 +197,7 @@ export const loadAgentSettings = createAsyncThunk(
           .schema("agent")
           .from("definition")
           .select("id, settings, variable_definitions")
+          .is("deleted_at", null)
           .eq("id", agentId)
           .eq("agent_type", "user")
           .single();

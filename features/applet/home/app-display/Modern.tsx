@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 
 const ModernAppDisplay: React.FC<AppDisplayProps> = ({
   appName,
@@ -77,12 +77,15 @@ const ModernAppDisplay: React.FC<AppDisplayProps> = ({
           {appImageUrl && (
             <div className="md:w-2/5 relative">
               <div className="h-full">
-                <Image 
-                  src={appImageUrl} 
-                  alt={`${appName} preview`} 
-                  fill
-                  sizes="(max-width: 768px) 100vw, 40vw"
-                  className="object-cover"
+                {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+                <InlineMediaRef
+                  ref={appImageUrl}
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback={null}
+                  alt={`${appName} preview`}
+                  className="absolute inset-0"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-white dark:from-gray-800 md:via-transparent to-transparent opacity-30 md:opacity-0"></div>
               </div>

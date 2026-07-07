@@ -33,6 +33,7 @@ export default function AgentAppPeek({ id, open, onClose }: PeekProps) {
       const { data } = await appDb(supabase)
         .from("definition")
         .select("name, description, created_at")
+        .is("deleted_at", null)
         .eq("id", id)
         .maybeSingle();
       if (!cancelled) {

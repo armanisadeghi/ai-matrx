@@ -148,11 +148,78 @@ export default function MobileSideSheet({
 
             {/* Settings */}
             <div className="shell-mobile-section-divider" />
-            <MobileSheetNavLink
-              href={settingsItem.href}
-              iconName={settingsItem.iconName}
-              label={settingsItem.label}
-            />
+            {settingsItem.children && settingsItem.children.length > 0 ? (
+              (() => {
+                const { sections, panels, actions } = partitionNavChildren(
+                  settingsItem.children,
+                );
+                return (
+                  <div
+                    className="shell-mobile-nav-group"
+                    data-nav-group={settingsItem.href}
+                  >
+                    <MobileSheetNavLink
+                      href={settingsItem.href}
+                      iconName={settingsItem.iconName}
+                      label={settingsItem.label}
+                    />
+                    <div className="shell-mobile-nav-children">
+                      {sections.map((section) => (
+                        <div key={section.label ?? section.items[0]?.href}>
+                          {section.items.map((child) => (
+                            <MobileSheetNavLink
+                              key={child.href}
+                              href={child.href}
+                              iconName={child.iconName}
+                              label={child.label}
+                              isChild
+                            />
+                          ))}
+                        </div>
+                      ))}
+                      {panels.length > 0 ? (
+                        <>
+                          {sections.length > 0 ? (
+                            <div className="shell-mobile-section-divider" />
+                          ) : null}
+                          {panels.map((child) => (
+                            <MobileSheetNavLink
+                              key={child.panelAction ?? child.href}
+                              href={child.href}
+                              iconName={NAV_WINDOW_PANEL_ICON}
+                              label={child.label}
+                              isChild
+                            />
+                          ))}
+                        </>
+                      ) : null}
+                      {actions.length > 0 ? (
+                        <>
+                          {sections.length > 0 || panels.length > 0 ? (
+                            <div className="shell-mobile-section-divider" />
+                          ) : null}
+                          {actions.map((child) => (
+                            <MobileSheetNavLink
+                              key={child.action ?? child.href}
+                              href={child.href}
+                              iconName={child.iconName}
+                              label={child.label}
+                              isChild
+                            />
+                          ))}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <MobileSheetNavLink
+                href={settingsItem.href}
+                iconName={settingsItem.iconName}
+                label={settingsItem.label}
+              />
+            )}
 
             {/* Admin section — single "Administration" entry, self-gated by
                 selectIsAdmin (client component) */}

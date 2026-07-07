@@ -59,6 +59,7 @@ export function useAppInstances() {
             const { data, error: err } = await supabase
                 .from('app_instances')
                 .select('id,instance_id,instance_name,platform,os_version,hostname,username,cpu_model,cpu_cores,ram_total_gb,is_active,last_seen,created_at,updated_at,tunnel_url,tunnel_active,tunnel_updated_at,tunnel_ws_url')
+                .is('deleted_at', null)
                 .order('last_seen', { ascending: false });
 
             if (err) throw new Error(err.message);

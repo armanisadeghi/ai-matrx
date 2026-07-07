@@ -140,6 +140,7 @@ export async function getUserFeedback(): Promise<{
     const { data, error } = await supabase
       .schema("users").from("user_feedback")
       .select("*")
+      .is("deleted_at", null)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -183,6 +184,7 @@ export async function updateUserOwnFeedback(
     const { data: existing, error: fetchError } = await supabase
       .schema("users").from("user_feedback")
       .select("id, user_id, status")
+      .is("deleted_at", null)
       .eq("id", feedbackId)
       .single();
 
@@ -639,6 +641,7 @@ export async function getAllFeedback(): Promise<{
     const { data, error } = await supabase
       .schema("users").from("user_feedback")
       .select("*")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -689,6 +692,7 @@ export async function updateFeedback(
       const { data: priorRow } = await supabase
         .schema("users").from("user_feedback")
         .select("assigned_to")
+        .is("deleted_at", null)
         .eq("id", feedbackId)
         .single();
       previousAssignedTo = priorRow?.assigned_to ?? null;
@@ -775,6 +779,7 @@ export async function getFeedbackById(
     const { data, error } = await supabase
       .schema("users").from("user_feedback")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", feedbackId)
       .single();
 

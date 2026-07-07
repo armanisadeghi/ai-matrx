@@ -315,6 +315,7 @@ async function resolveTitlesForKind(
       const { data } = await (supabase as any)
         .schema("docproc").from("processed_documents")
         .select("source_id, name, parent_processed_id, updated_at")
+        .is("deleted_at", null)
         .eq("source_kind", "cld_file")
         .in("source_id", ids)
         .is("archived_at", null);
@@ -343,6 +344,7 @@ async function resolveTitlesForKind(
       const { data } = await supabase
         .schema("workbench").from("notes")
         .select("id, label")
+        .is("deleted_at", null)
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.label);
       return;
@@ -351,6 +353,7 @@ async function resolveTitlesForKind(
       const { data } = await workspaceDb(supabase)
         .from("tasks")
         .select("id, title")
+        .is("deleted_at", null)
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
       return;
@@ -359,6 +362,7 @@ async function resolveTitlesForKind(
       const { data } = await workspaceDb(supabase)
         .from("projects")
         .select("id, name")
+        .is("deleted_at", null)
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.name);
       return;
@@ -368,6 +372,7 @@ async function resolveTitlesForKind(
         .schema("transcripts")
         .from("transcripts")
         .select("id, title")
+        .is("deleted_at", null)
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
       return;
@@ -378,6 +383,7 @@ async function resolveTitlesForKind(
         .schema("chat")
         .from("conversation")
         .select("id, title")
+        .is("deleted_at", null)
         .in("id", ids);
       for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
       return;
@@ -386,6 +392,7 @@ async function resolveTitlesForKind(
       const { data } = await supabase
         .schema("code").from("code_files")
         .select("id, name, path")
+        .is("deleted_at", null)
         .in("id", ids);
       for (const r of data ?? [])
         setTitle(kind, r.id as string, r.name || r.path);
@@ -421,6 +428,7 @@ async function fetchProcessedDocument(
     .select(
       "name, mime_type, clean_content, content, total_pages, updated_at, parent_processed_id",
     )
+    .is("deleted_at", null)
     .eq("source_kind", kind)
     .eq("source_id", id)
     .is("archived_at", null)
@@ -444,6 +452,7 @@ async function loadNote(id: string): Promise<SourcePreviewDoc> {
   const { data } = await supabase
     .schema("workbench").from("notes")
     .select("label, content, updated_at")
+    .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
   if (!data) return { ...doc, notFound: true };
@@ -466,6 +475,7 @@ async function loadTask(id: string): Promise<SourcePreviewDoc> {
   const { data } = await workspaceDb(supabase)
     .from("tasks")
     .select("title, description, created_at")
+    .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
   if (!data) return { ...doc, notFound: true };
@@ -486,6 +496,7 @@ async function loadProject(id: string): Promise<SourcePreviewDoc> {
   const { data } = await workspaceDb(supabase)
     .from("projects")
     .select("name, description, created_at")
+    .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
   if (!data) return { ...doc, notFound: true };
@@ -594,6 +605,7 @@ async function loadCodeFile(id: string): Promise<SourcePreviewDoc> {
   const { data } = await supabase
     .schema("code").from("code_files")
     .select("name, path, content, language, updated_at")
+    .is("deleted_at", null)
     .eq("id", id)
     .maybeSingle();
   if (!data) return { ...doc, notFound: true };

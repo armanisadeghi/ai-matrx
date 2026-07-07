@@ -82,6 +82,7 @@ export function SurfaceRolesSection({
         .schema("agent")
         .from("definition")
         .select("id, name")
+        .is("deleted_at", null)
         .in("id", missing);
       if (error || !data) return;
       setAgentNames((prev) => ({

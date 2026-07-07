@@ -69,7 +69,7 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
         launchAgentExecution({
           agentId,
           surfaceKey: "flashcards-quiz-items",
-          sourceFeature: "flashcards-review",
+          sourceFeature: "education-flashcards-review",
           isEphemeral: false,
           runtime: {
             variables: {

@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       .select(
         "id, name, description, category, tags, version, source_agent_id, source_snapshot_at, created_at, updated_at, variable_definitions",
       )
+      .is("deleted_at", null)
       .eq("agent_type", "builtin")
       .eq("source_agent_id", sourceAgentId)
       .order("created_at", { ascending: false });

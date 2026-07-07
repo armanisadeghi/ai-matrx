@@ -29,7 +29,7 @@ import {
   ExternalLink,
   Zap,
   RefreshCw,
-  ClipboardList
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -183,7 +183,7 @@ export function PdfExtractorFloatingWorkspace({
       try {
         await triggerShortcut(shortcutId, {
           scope: { selection: docText },
-          sourceFeature: "programmatic",
+          sourceFeature: "pdf-extractor",
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Could not run agent";

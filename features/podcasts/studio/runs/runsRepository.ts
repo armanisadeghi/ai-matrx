@@ -309,6 +309,7 @@ export async function fetchPodcastRuns({
   let query = supabase
     .schema("chat").from("agent_run")
     .select(RUN_SELECT)
+    .is("deleted_at", null)
     .eq("kind", "podcast")
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -328,6 +329,7 @@ export async function fetchPodcastRunDetail(
   const { data, error } = await supabase
     .schema("chat").from("agent_run")
     .select(RUN_DETAIL_SELECT)
+    .is("deleted_at", null)
     .eq("id", runId)
     .eq("kind", "podcast")
     .maybeSingle();
@@ -395,6 +397,7 @@ export async function fetchPodcastRunStatus(
     .select(
       "id,status,episode_id,last_heartbeat_at,updated_at,created_at,agent_run_stage(status,started_at,finished_at)",
     )
+    .is("deleted_at", null)
     .eq("id", runId)
     .eq("kind", "podcast")
     .maybeSingle();

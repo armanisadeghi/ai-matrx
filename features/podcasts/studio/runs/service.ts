@@ -67,6 +67,7 @@ export const studioRunsService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_studio_runs")
       .select("*")
+      .is("deleted_at", null)
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -81,6 +82,7 @@ export const studioRunsService = {
     const { data, error } = await supabase
       .schema("podcast").from("pc_studio_runs")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .maybeSingle();
     if (error) return null;

@@ -14,6 +14,7 @@ export function useSharedCanvas(shareToken: string | null) {
             const { data, error } = await supabase
                 .schema('canvas').from('shared_canvas_items')
                 .select('*')
+                .is('deleted_at', null)
                 .eq('share_token', shareToken)
                 .single();
 
@@ -45,6 +46,7 @@ async function trackView(shareToken: string) {
         const { data: canvas } = await supabase
             .schema('canvas').from('shared_canvas_items')
             .select('id, organization_id')
+            .is('deleted_at', null)
             .eq('share_token', shareToken)
             .single();
 

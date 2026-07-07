@@ -61,6 +61,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
     const { data, error } = await supabase
       .schema("app").from("definition")
       .select(COLUMNS)
+      .is("deleted_at", null)
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
       .limit(200);
@@ -88,6 +89,7 @@ export const agaAppsAdapter: LibrarySourceAdapter = {
     const { data, error } = await supabase
       .schema("app").from("definition")
       .select(COLUMNS)
+      .is("deleted_at", null)
       .eq("id", rowId)
       .single();
 

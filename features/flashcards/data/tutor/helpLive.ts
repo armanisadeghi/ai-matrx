@@ -86,10 +86,11 @@ export function helpLive(ctx: HelpLiveContext) {
           surfaceKey: "flashcards-help-live",
           // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
           // normal chats via a distinct system source_feature (source-registry.ts).
-          sourceFeature: "flashcards-help",
+          sourceFeature: "education-flashcards-help",
           isEphemeral: false,
           runtime: {
-            userInput: ctx.question?.trim() || "I'm confused — help me with this card.",
+            userInput:
+              ctx.question?.trim() || "I'm confused — help me with this card.",
             variables: {
               front: ctx.front,
               back: ctx.back,
@@ -122,7 +123,9 @@ export function helpLive(ctx: HelpLiveContext) {
       const answer = typeof r.answer === "string" ? r.answer : "";
       if (!answer) return null;
       const hintLevel =
-        r.hint_level === "nudge" || r.hint_level === "partial" || r.hint_level === "full"
+        r.hint_level === "nudge" ||
+        r.hint_level === "partial" ||
+        r.hint_level === "full"
           ? r.hint_level
           : "partial";
       return {

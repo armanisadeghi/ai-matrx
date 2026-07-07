@@ -3,7 +3,7 @@
 import React from 'react';
 import { getAppIconWithBg, getAppIcon, COLOR_VARIANTS, getColorClasses } from '@/features/applet/styles/StyledComponents';
 import { AppDisplayProps } from '@/features/applet/home/types';
-import Image from 'next/image';
+import { InlineMediaRef } from '@/features/files';
 import GlassContainer from '@/components/ui/GlassContainer';
 
 const ModernGlassAppDisplay: React.FC<AppDisplayProps> = ({
@@ -95,12 +95,15 @@ const ModernGlassAppDisplay: React.FC<AppDisplayProps> = ({
                   
                   {/* App preview image with glass frame */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] rounded-xl overflow-hidden border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-sm">
-                    <Image 
-                      src={appImageUrl} 
-                      alt={`${appName} preview`} 
-                      fill
-                      sizes="(max-width: 768px) 100vw, 40vw"
-                      className="object-cover"
+                    {/* Durable, self-healing render — re-mints owned file URLs (KNOWN_DEFECTS.md D1). */}
+                    <InlineMediaRef
+                      ref={appImageUrl}
+                      size="fill"
+                      fit="cover"
+                      rounded="none"
+                      fallback={null}
+                      alt={`${appName} preview`}
+                      className="absolute inset-0"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                   </div>

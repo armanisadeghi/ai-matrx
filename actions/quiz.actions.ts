@@ -41,6 +41,7 @@ export async function findExistingQuizByHash(
       .schema("education")
       .from("quiz_sessions")
       .select("*")
+      .is("deleted_at", null)
       .eq("user_id", user.id)
       .eq("quiz_content_hash", contentHash)
       .eq("is_completed", false)
@@ -211,6 +212,7 @@ export async function getQuizSession(
       .schema("education")
       .from("quiz_sessions")
       .select("*")
+      .is("deleted_at", null)
       .eq("id", id)
       .eq("user_id", user.id)
       .single();
@@ -256,6 +258,7 @@ export async function getUserQuizSessions(options?: {
       .schema("education")
       .from("quiz_sessions")
       .select("*")
+      .is("deleted_at", null)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 

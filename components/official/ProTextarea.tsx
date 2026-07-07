@@ -406,6 +406,7 @@ export const ProTextarea = React.forwardRef<
           .schema("agent")
           .from("definition")
           .select("name")
+          .is("deleted_at", null)
           .eq("id", selectedAgent)
           .maybeSingle();
         if (!cancelled) setSelectedAgentName(data?.name ?? null);

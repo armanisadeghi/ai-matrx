@@ -11,6 +11,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { exchangeCodeForTokens, fetchUserInfo } from "@/lib/auth/aimatrx-oauth";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { safeForwardedHost } from "@/utils/auth/safe-redirect";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -103,7 +104,13 @@ export async function GET(request: NextRequest) {
     // 5. Establish a session by verifying the magic link OTP.
     //    Cookies are written onto the redirect response.
     // -----------------------------------------------------------------------
-    const forwardedHost = request.headers.get("x-forwarded-host");
+    // D22 residual fix: only follow x-forwarded-host when it passes the
+    // host allowlist (prod host from NEXT_PUBLIC_SITE_URL, Vercel system
+    // hosts, *.vercel.app previews). On mismatch safeForwardedHost screams
+    // and we fall back to the request's own origin — never a spoofed host.
+    const forwardedHost = safeForwardedHost(
+      request.headers.get("x-forwarded-host"),
+    );
     const isLocalEnv = process.env.NODE_ENV === "development";
 
     let baseUrl: string;

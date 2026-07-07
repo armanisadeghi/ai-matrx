@@ -56,6 +56,7 @@ export const getAgent = cache(async (id: string): Promise<AgentDefinition> => {
     .schema("agent")
     .from("definition")
     .select("*")
+    .is("deleted_at", null)
     .eq("id", id)
     .single();
   if (error || !data) notFound();
@@ -110,6 +111,7 @@ export const getAppsForAgent = cache(
       .select(
         "id, slug, name, tagline, description, category, tags, preview_image_url, favicon_url, status, is_public, is_featured, total_executions, last_execution_at, agent_id, agent_version_id, use_latest, created_at, updated_at",
       )
+      .is("deleted_at", null)
       .eq("agent_id", agentId)
       .order("updated_at", { ascending: false });
     if (error) throw error;
