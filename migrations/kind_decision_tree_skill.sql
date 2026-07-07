@@ -27,13 +27,11 @@ INSERT INTO skill.definition (
     body,
     icon_name,
     platform_targets,
-    version,
+    semver,
     category_id,
     is_active,
     is_system,
-    is_public,
     sort_order,
-    user_id,
     organization_id,
     project_id,
     task_id,
@@ -151,16 +149,14 @@ $BODY$,
     '49c845cb-9314-485c-88ed-a7ace4f286ca',
     true,
     true,
-    true,
     0,
-    NULL,
     '39c38960-d30c-4840-b0c1-c9960de95582',
     NULL,
     NULL,
     'public'::platform.visibility
 WHERE NOT EXISTS (
     SELECT 1 FROM skill.definition
-    WHERE skill_id = 'decision-tree' AND user_id IS NULL
+    WHERE skill_id = 'decision-tree' AND created_by IS NULL
 );
 
 -- ---------------------------------------------------------------------------

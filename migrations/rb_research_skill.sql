@@ -187,8 +187,8 @@ $BODY$::text AS body;
 -- Composite unique is (skill_id, user_id, organization_id, project_id) — guard, not ON CONFLICT.
 INSERT INTO skill.definition (
   skill_id, label, description, skill_type, body, icon_name,
-  platform_targets, version, category_id,
-  is_active, is_system, is_public, visibility,
+  platform_targets, semver, category_id,
+  is_active, is_system, visibility,
   organization_id, sort_order
 )
 SELECT
@@ -201,33 +201,14 @@ SELECT
   '["web"]'::jsonb,
   '1.0.0',
   '49c845cb-9314-485c-88ed-a7ace4f286ca',
-  true, true, true, 'public',
+  true, true, 'public',
   '39c38960-d30c-4840-b0c1-c9960de95582',
   0
 FROM _rb_research_skill s
 WHERE NOT EXISTS (
   SELECT 1 FROM skill.definition
-  WHERE skill_id = 'research-analysis' AND user_id IS NULL
+  WHERE skill_id = 'research-analysis' AND created_by IS NULL
 );
-
--- Re-apply: refresh the global row's body/metadata from the SAME source text.
-UPDATE skill.definition d SET
-  label            = 'Research Analysis',
-  description      = s.description,
-  skill_type       = 'render_block'::public.skl_skill_type,
-  body             = s.body,
-  icon_name        = 'BookOpen',
-  platform_targets = '["web"]'::jsonb,
-  version          = '1.0.0',
-  category_id      = '49c845cb-9314-485c-88ed-a7ace4f286ca',
-  is_active        = true,
-  is_system        = true,
-  is_public        = true,
-  visibility       = 'public'
-FROM _rb_research_skill s
-WHERE d.skill_id = 'research-analysis'
-  AND d.user_id IS NULL
-  AND d.organization_id = '39c38960-d30c-4840-b0c1-c9960de95582';
 
 -- ============================================================================
 -- 2. CONTENT BLOCK  →  public.content_blocks

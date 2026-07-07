@@ -24,8 +24,8 @@ BEGIN;
 -- 1. The skill definition (global render_block).
 INSERT INTO skill.definition (
   skill_id, label, description, body, skill_type, icon_name,
-  platform_targets, version, is_system, is_public, is_active,
-  visibility, organization_id, user_id, project_id, task_id
+  platform_targets, semver, is_system, is_active,
+  visibility, organization_id, project_id, task_id
 )
 SELECT
   'diagram-spec',
@@ -167,16 +167,14 @@ $BODY$,
   '1.0.0',
   true,
   true,
-  true,
   'public',
   '39c38960-d30c-4840-b0c1-c9960de95582',
-  NULL,
   NULL,
   NULL
 WHERE NOT EXISTS (
   SELECT 1 FROM skill.definition
   WHERE skill_id = 'diagram-spec'
-    AND user_id IS NULL
+    AND created_by IS NULL
     AND organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'
     AND project_id IS NULL
 );

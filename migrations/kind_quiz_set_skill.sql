@@ -31,8 +31,8 @@ BEGIN;
 -- ---------------------------------------------------------------------------
 INSERT INTO skill.definition
   (skill_id, label, description, skill_type, body, icon_name,
-   platform_targets, version, category_id, is_system, is_public, is_active,
-   visibility, organization_id, user_id, project_id, task_id, sort_order)
+   platform_targets, semver, category_id, is_system, is_active,
+   visibility, organization_id, project_id, task_id, sort_order)
 SELECT
   'quiz-set',
   'Quiz',
@@ -180,16 +180,14 @@ $BODY$,
   '49c845cb-9314-485c-88ed-a7ace4f286ca',
   true,
   true,
-  true,
   'public',
   '39c38960-d30c-4840-b0c1-c9960de95582',
-  NULL,
   NULL,
   NULL,
   0
 WHERE NOT EXISTS (
   SELECT 1 FROM skill.definition
-  WHERE skill_id = 'quiz-set' AND user_id IS NULL
+  WHERE skill_id = 'quiz-set' AND created_by IS NULL
 );
 
 -- ---------------------------------------------------------------------------

@@ -22,9 +22,9 @@ BEGIN;
 -- ---------------------------------------------------------------------------
 INSERT INTO skill.definition (
   skill_id, label, description, skill_type, body, icon_name,
-  platform_targets, version, category_id,
-  is_active, is_system, is_public, sort_order,
-  user_id, organization_id, project_id, task_id, visibility
+  platform_targets, semver, category_id,
+  is_active, is_system, sort_order,
+  organization_id, project_id, task_id, visibility
 )
 SELECT
   'presentation-deck-kind',
@@ -167,12 +167,12 @@ $BODY$,
   '["web"]'::jsonb,
   '1.0.0',
   '49c845cb-9314-485c-88ed-a7ace4f286ca',
-  true, true, true, 41,
-  NULL, '39c38960-d30c-4840-b0c1-c9960de95582', NULL, NULL, 'public'
+  true, true, 41,
+  '39c38960-d30c-4840-b0c1-c9960de95582', NULL, NULL, 'public'
 WHERE NOT EXISTS (
   SELECT 1 FROM skill.definition
   WHERE skill_id = 'presentation-deck-kind'
-    AND user_id IS NULL
+    AND created_by IS NULL
     AND organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'
     AND project_id IS NULL
 );

@@ -41,8 +41,8 @@ BEGIN;
 
 INSERT INTO skill.definition
   (skill_id, label, description, skill_type, body, icon_name,
-   is_active, is_system, is_public, visibility,
-   category_id, sort_order, version, platform_targets, organization_id)
+   is_active, is_system, visibility,
+   category_id, sort_order, semver, platform_targets, organization_id)
 SELECT
   'tasks-block',
   'Tasks',
@@ -185,28 +185,15 @@ When asked to modify a task list (yours or one provided as context):
 ```
 $SKILL_BODY$,
   'ListChecks',
-  true, true, true, 'public',
+  true, true, 'public',
   '49c845cb-9314-485c-88ed-a7ace4f286ca',  -- platform.categories: dimension 'skill', name 'Render Blocks'
   30, '1.0.0', '["web"]'::jsonb,
   '39c38960-d30c-4840-b0c1-c9960de95582'
 WHERE NOT EXISTS (
   SELECT 1 FROM skill.definition
   WHERE skill_id = 'tasks-block'
-    AND user_id IS NULL AND project_id IS NULL AND task_id IS NULL
+    AND created_by IS NULL AND project_id IS NULL AND task_id IS NULL
 );
-
--- Keep the body/metadata fresh on re-apply (the guard above only inserts once).
-UPDATE skill.definition SET
-  label = 'Tasks',
-  description = 'How and when to emit a ```tasks render block: the GitHub-style markdown checklist syntax (sections, tasks, subtasks, bold), the whitespace/checkbox rules that prevent dropped or unchecked items, sizing guidance, and editing etiquette.',
-  skill_type = 'render_block',
-  icon_name = 'ListChecks',
-  is_active = true, is_system = true, is_public = true, visibility = 'public',
-  category_id = '49c845cb-9314-485c-88ed-a7ace4f286ca',
-  version = '1.0.0', platform_targets = '["web"]'::jsonb,
-  updated_at = now()
-WHERE skill_id = 'tasks-block'
-  AND user_id IS NULL AND project_id IS NULL AND task_id IS NULL;
 
 -- ── 2. Content blocks (condensed prompt snippets) ───────────────────────────
 -- One primary block for the fence + one section-organized variant. Human labels

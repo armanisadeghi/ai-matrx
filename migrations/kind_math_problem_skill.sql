@@ -32,9 +32,9 @@ BEGIN;
 
 INSERT INTO skill.definition (
     skill_id, label, description, skill_type, body, icon_name,
-    platform_targets, version, category_id,
-    is_system, is_public, is_active, disable_auto_invocation, sort_order,
-    organization_id, user_id, project_id, task_id, visibility
+    platform_targets, semver, category_id,
+    is_system, is_active, disable_auto_invocation, sort_order,
+    organization_id, project_id, task_id, visibility
 )
 SELECT
     'math-problem',
@@ -193,40 +193,19 @@ $BODY$,
     '1.0.0',
     '49c845cb-9314-485c-88ed-a7ace4f286ca',  -- platform.categories: dimension 'skill', "Render Blocks"
     true,   -- is_system
-    true,   -- is_public
     true,   -- is_active
     false,  -- disable_auto_invocation
     10,     -- sort_order
     '39c38960-d30c-4840-b0c1-c9960de95582',  -- system org
-    NULL, NULL, NULL,                         -- user/project/task = global
+    NULL, NULL,                               -- project/task = global
     'public'
 WHERE NOT EXISTS (
     SELECT 1 FROM skill.definition
     WHERE skill_id = 'math-problem'
-      AND user_id IS NULL
+      AND created_by IS NULL
       AND organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'
       AND project_id IS NULL
 );
-
--- Refresh the mutable teaching columns on re-apply (keeps the row current
--- without duplicating; matches the composite-unique scope above).
-UPDATE skill.definition SET
-    label            = 'Math Problems',
-    description      = 'How and when to emit a {"__kind":"math_problem"} render block: the flat problem/solution/step structure, the split KaTeX equation-vs-prose rules that prevent render failures, JSON backslash escaping, sizing guidance, and editing etiquette.',
-    skill_type       = 'render_block',
-    icon_name        = 'Sigma',
-    platform_targets = '["web"]'::jsonb,
-    version          = '1.0.0',
-    category_id      = '49c845cb-9314-485c-88ed-a7ace4f286ca',
-    is_system        = true,
-    is_public        = true,
-    is_active        = true,
-    visibility       = 'public',
-    updated_at       = now()
-WHERE skill_id = 'math-problem'
-  AND user_id IS NULL
-  AND organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'
-  AND project_id IS NULL;
 
 -- ===========================================================================
 -- 2. CONTENT BLOCK — public.content_blocks (block_id = 'math-problem-kind')
