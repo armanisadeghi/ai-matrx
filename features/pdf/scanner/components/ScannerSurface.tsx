@@ -38,6 +38,7 @@ import { UploadContextPrompt } from "@/features/scopes/components/context-assign
 
 import { createScanPdf, detectDocument } from "../api";
 import {
+  fetchPageAnalysis,
   fetchProcessingStatus,
   fetchRawTextPreview,
   verifyCleanContentReady,
@@ -46,7 +47,11 @@ import type { Quad, ScanItem, ScanPdfResult, ScanRotation } from "../types";
 import { useScanSession } from "../useScanSession";
 import { CaptureView } from "./CaptureView";
 import { CropSheet } from "./CropSheet";
-import { ProcessingView, type ProcessingState } from "./ProcessingView";
+import {
+  ProcessingView,
+  type ProcessingPageRow,
+  type ProcessingState,
+} from "./ProcessingView";
 import { ReviewList } from "./ReviewList";
 import { SaveSheet } from "./SaveSheet";
 
@@ -190,8 +195,11 @@ export default function ScannerSurface() {
       stopPolling();
       pollStartedAtRef.current = Date.now();
       pollTimerRef.current = window.setInterval(() => {
-        void fetchProcessingStatus(docId)
-          .then((status) => {
+        void Promise.all([
+          fetchProcessingStatus(docId),
+          fetchPageAnalysis(docId).catch(() => null),
+        ])
+          .then(([status, analysis]) => {
             setProcessing((p) => {
               if (!p) return p;
               const allCleaned =
@@ -203,7 +211,31 @@ export default function ScannerSurface() {
                   : allCleaned
                     ? "entities"
                     : "clean";
-              return { ...p, status, active: p.active === "done" ? "done" : active };
+              // Enrich the live ledger with the AI's per-page analysis
+              // (section titles/kinds land page-by-page as the clean
+              // pipeline works through the document).
+              let pages = p.pages;
+              if (analysis && analysis.length > 0) {
+                const byPage = new Map(pages.map((row) => [row.page, row]));
+                pages = analysis.map((a): ProcessingPageRow => {
+                  const existing = byPage.get(a.pageNumber);
+                  return {
+                    page: a.pageNumber,
+                    chars: existing?.chars ?? a.rawChars,
+                    method: existing?.method ?? (a.usedOcr ? "ocr" : "native"),
+                    preview: existing?.preview,
+                    title: a.title,
+                    kind: a.kind,
+                    cleaned: a.cleaned,
+                  };
+                });
+              }
+              return {
+                ...p,
+                status,
+                pages,
+                active: p.active === "done" ? "done" : active,
+              };
             });
             if (status.runStatus === "completed") finalize(docId);
           })
@@ -238,6 +270,7 @@ export default function ScannerSurface() {
       pageCount: null,
       rawPreview: null,
       status: null,
+      pages: [],
       finalizing: false,
     });
 
@@ -263,6 +296,46 @@ export default function ScannerSurface() {
           return { ...p, buildDetail: message };
         });
       },
+      onExtractStarted: (totalPages) => {
+        setProcessing((p) =>
+          p
+            ? {
+                ...p,
+                active: "ocr",
+                pageCount: totalPages || p.pageCount,
+                ocrDetail: totalPages
+                  ? `Reading ${totalPages} page${totalPages === 1 ? "" : "s"}…`
+                  : p.ocrDetail,
+              }
+            : p,
+        );
+      },
+      onPageExtracted: (page) => {
+        setProcessing((p) => {
+          if (!p) return p;
+          const row: ProcessingPageRow = {
+            page: page.pageNumber,
+            chars: page.charCount,
+            method: page.extractionMethod,
+            preview: page.preview,
+            title: null,
+            kind: null,
+            cleaned: false,
+          };
+          const pages = [
+            ...p.pages.filter((r) => r.page !== page.pageNumber),
+            row,
+          ].sort((a, b) => a.page - b.page);
+          return {
+            ...p,
+            active: "ocr",
+            pages,
+            ocrDetail: `Read page ${page.pageNumber} of ${page.totalPages || "?"}`,
+            rawPreview:
+              p.rawPreview ?? (page.preview.trim() ? page.preview.slice(0, 220) : null),
+          };
+        });
+      },
     });
     savePromiseRef.current = promise;
 
@@ -279,9 +352,12 @@ export default function ScannerSurface() {
             : p,
         );
         const docId = result.doc_id as string;
+        // Fallback only — the per-page stream normally set this already.
         void fetchRawTextPreview(docId).then((preview) => {
           if (preview)
-            setProcessing((p) => (p ? { ...p, rawPreview: preview } : p));
+            setProcessing((p) =>
+              p && !p.rawPreview ? { ...p, rawPreview: preview } : p,
+            );
         });
         startPolling(docId);
       })

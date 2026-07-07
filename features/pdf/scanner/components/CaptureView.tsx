@@ -18,7 +18,7 @@
  */
 
 import React, { useCallback, useRef, useState } from "react";
-import { Camera as CameraIcon, Check, SwitchCamera, Trash2, X } from "lucide-react";
+import { Camera as CameraIcon, SwitchCamera, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -199,7 +199,6 @@ function CaptureViewInner({
               className="h-11 whitespace-nowrap rounded-full px-5"
               onClick={handleDone}
             >
-              <Check className="mr-1 h-4 w-4" />
               Done
             </Button>
           </div>

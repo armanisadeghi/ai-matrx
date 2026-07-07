@@ -38,11 +38,15 @@ export async function fetchProcessingStatus(
       .from("processed_document_pages")
       .select("id", { count: "exact", head: true })
       .eq("processed_document_id", docId),
+    // cleaned_text is NOT NULL (default '') — "is not null" counted every
+    // page as cleaned the moment the row landed, which made the clean step
+    // look instantly complete. cleaned_char_count is 0 until the LLM
+    // cleanup actually writes the page.
     db
       .from("processed_document_pages")
       .select("id", { count: "exact", head: true })
       .eq("processed_document_id", docId)
-      .not("cleaned_text", "is", null),
+      .gt("cleaned_char_count", 0),
     db
       .from("processed_documents")
       .select("id", { count: "exact", head: true })
@@ -64,6 +68,40 @@ export async function fetchProcessingStatus(
     entities: current?.entities ?? null,
     chunks: current?.chunks ?? null,
   };
+}
+
+/**
+ * Per-page analysis rows for the live ledger: as the detached clean
+ * pipeline works, each page gains an AI section title/kind and a cleaned
+ * char count. Polled alongside fetchProcessingStatus during the clean step.
+ */
+export interface PageAnalysisRow {
+  pageNumber: number;
+  title: string | null;
+  kind: string | null;
+  rawChars: number;
+  cleaned: boolean;
+  usedOcr: boolean;
+}
+
+export async function fetchPageAnalysis(
+  docId: string,
+): Promise<PageAnalysisRow[]> {
+  const { data } = await docprocDb(supabase)
+    .from("processed_document_pages")
+    .select(
+      "page_number, section_title, section_kind, cleaned_char_count, raw_char_count, used_ocr",
+    )
+    .eq("processed_document_id", docId)
+    .order("page_number", { ascending: true });
+  return (data ?? []).map((row) => ({
+    pageNumber: row.page_number,
+    title: row.section_title,
+    kind: row.section_kind,
+    rawChars: row.raw_char_count,
+    cleaned: (row.cleaned_char_count ?? 0) > 0,
+    usedOcr: row.used_ocr,
+  }));
 }
 
 /** First page's raw text — the "here's what OCR read" peek. */
@@ -90,7 +128,7 @@ export async function verifyCleanContentReady(docId: string): Promise<boolean> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const status = await fetchProcessingStatus(docId);
-      if (status.cleanContentReady || status.pagesCleaned > 0) return true;
+      if (status.cleanContentReady) return true;
       console.error(
         `[scanner] clean content not ready for doc ${docId} ` +
           `(attempt ${attempt}/3, run=${status.runStatus ?? "unknown"}, ` +

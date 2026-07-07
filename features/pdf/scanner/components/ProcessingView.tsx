@@ -36,6 +36,21 @@ import type { ProcessingStatus } from "../processing";
 
 export type ProcessingStepId = "build" | "ocr" | "clean" | "entities";
 
+/**
+ * One row of the live page ledger. Born when the extraction stream emits
+ * the page's raw text (chars/method/preview), enriched by the clean-step
+ * poll with the AI's section title/kind and cleaned flag.
+ */
+export interface ProcessingPageRow {
+  page: number;
+  chars: number;
+  method: string; // "native" | "ocr"
+  preview?: string;
+  title: string | null;
+  kind: string | null;
+  cleaned: boolean;
+}
+
 export interface ProcessingState {
   /** Highest step currently in progress. */
   active: ProcessingStepId | "done";
@@ -44,6 +59,7 @@ export interface ProcessingState {
   pageCount: number | null;
   rawPreview: string | null;
   status: ProcessingStatus | null;
+  pages: ProcessingPageRow[];
   /** Set while the verified fetch gate runs after completion. */
   finalizing: boolean;
 }
@@ -167,6 +183,22 @@ export function ProcessingView({
               </div>
             )}
           </StepRow>
+          {state.pages.length > 0 && (
+            <div className="rounded-lg border border-border/70 bg-card/50 px-3 py-2 animate-in fade-in duration-500">
+              <p className="pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Pages
+              </p>
+              <div className="max-h-44 space-y-0.5 overflow-y-auto">
+                {state.pages.map((row) => (
+                  <PageLedgerRow
+                    key={row.page}
+                    row={row}
+                    cleanActive={stepPhase("clean", state.active) === "active"}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           <StepRow
             phase={stepPhase("entities", state.active)}
             icon={Tags}
@@ -201,6 +233,53 @@ export function ProcessingView({
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * One page in the live ledger. Shows raw-extraction facts the moment the
+ * page streams in; swaps to the AI's section title (rich per-page
+ * metadata) as the clean pipeline finishes each page.
+ */
+function PageLedgerRow({
+  row,
+  cleanActive,
+}: {
+  row: ProcessingPageRow;
+  cleanActive: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded px-1 py-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
+      <span className="flex h-5 w-7 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-medium tabular-nums text-muted-foreground">
+        {row.page}
+      </span>
+      <div className="min-w-0 flex-1">
+        {row.title ? (
+          <p className="truncate text-[12px] font-medium leading-tight animate-in fade-in duration-500">
+            {row.title}
+          </p>
+        ) : (
+          <p className="truncate text-[12px] leading-tight text-muted-foreground">
+            {row.chars.toLocaleString()} characters
+            {row.method === "ocr" ? " · OCR" : ""}
+          </p>
+        )}
+        {row.title && row.kind && (
+          <p className="truncate text-[10px] capitalize text-muted-foreground">
+            {row.kind.replace(/_/g, " ")}
+          </p>
+        )}
+      </div>
+      <span className="shrink-0">
+        {row.cleaned ? (
+          <Check className="h-3.5 w-3.5 text-emerald-600 animate-in zoom-in-50 duration-300 dark:text-emerald-400" />
+        ) : cleanActive ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground/60" />
+        ) : (
+          <span className="block h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+        )}
+      </span>
     </div>
   );
 }

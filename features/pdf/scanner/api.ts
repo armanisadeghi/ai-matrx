@@ -95,7 +95,19 @@ function quadFromCorners(p: ImageDocumentDetectedData): Quad | null {
 export interface CreateScanPdfCallbacks {
   /** Progress line from the server ("Combining 4 items…", "Extracting…"). */
   onProgress?: (message: string) => void;
+  /** Extraction opened the assembled PDF — page count is known. */
+  onExtractStarted?: (totalPages: number) => void;
+  /** One page's raw text finished (live, in page order). */
+  onPageExtracted?: (page: ScanPageExtracted) => void;
   signal?: AbortSignal;
+}
+
+export interface ScanPageExtracted {
+  pageNumber: number;
+  totalPages: number;
+  extractionMethod: string;
+  charCount: number;
+  preview: string;
 }
 
 /**
@@ -104,7 +116,12 @@ export interface CreateScanPdfCallbacks {
  */
 export async function createScanPdf(
   payload: ScanPdfRequest,
-  { onProgress, signal }: CreateScanPdfCallbacks = {},
+  {
+    onProgress,
+    onExtractStarted,
+    onPageExtracted,
+    signal,
+  }: CreateScanPdfCallbacks = {},
 ): Promise<ScanPdfResult> {
   const { headers } = await buildHeaders({}, true);
   const response = await fetch(
@@ -129,6 +146,23 @@ export async function createScanPdf(
       if (msg) onProgress?.(msg);
     }
     if (event.event === "data") {
+      const d = event.data as unknown as Record<string, unknown>;
+      // Typed mid-stream events (per-page extraction) carry a `type`
+      // discriminant; the terminal ScanPdfResult does not (status/doc_id).
+      if (d && typeof d === "object" && "type" in d) {
+        if (d.type === "pdf_extract_started") {
+          onExtractStarted?.(Number(d.total_pages ?? 0));
+        } else if (d.type === "pdf_page_extracted") {
+          onPageExtracted?.({
+            pageNumber: Number(d.page_number ?? 0),
+            totalPages: Number(d.total_pages ?? 0),
+            extractionMethod: String(d.extraction_method ?? ""),
+            charCount: Number(d.char_count ?? 0),
+            preview: String(d.preview ?? ""),
+          });
+        }
+        continue;
+      }
       result = event.data as unknown as ScanPdfResult;
     }
   }
