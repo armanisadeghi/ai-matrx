@@ -6,6 +6,7 @@ import { GraduationCap, Upload, Sparkles, Trophy, ArrowRight } from "lucide-reac
 import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
+import { StudyTodayCard } from "../../study/dashboard/StudyTodayCard";
 import { EduHero } from "../sections/EduHero";
 import { SectionRenderer } from "../sections/SectionRenderer";
 import {
@@ -69,6 +70,10 @@ export function EducationHub() {
         workspaceHref={EDU_WORKSPACE_HREF}
         workspaceLabel={EDU_WORKSPACE_LABEL}
       />
+      {/* P5 — the authenticated "what to study next" centerpiece. Self-fetches
+          and renders nothing for anon / brand-new users, so the marketing hub
+          below is untouched for newcomers. */}
+      <StudyTodayCard />
       <EduHero
         eyebrow="AI Matrx Education"
         eyebrowIcon={GraduationCap}
