@@ -29586,7 +29586,6 @@ export type Database = {
           confidence_avg: number | null
           created_at: string
           embedding: string | null
-          embedding_oai_small: string | null
           id: string
           importance: number | null
           is_concept: boolean | null
@@ -29603,7 +29602,6 @@ export type Database = {
           confidence_avg?: number | null
           created_at?: string
           embedding?: string | null
-          embedding_oai_small?: string | null
           id?: string
           importance?: number | null
           is_concept?: boolean | null
@@ -29620,7 +29618,6 @@ export type Database = {
           confidence_avg?: number | null
           created_at?: string
           embedding?: string | null
-          embedding_oai_small?: string | null
           id?: string
           importance?: number | null
           is_concept?: boolean | null
