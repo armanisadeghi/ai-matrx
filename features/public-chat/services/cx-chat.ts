@@ -152,6 +152,11 @@ export async function getCxMessages(
     .select("*")
     .eq("conversation_id", conversationId)
     .is("deleted_at", null)
+    // Hide model-plumbing rows (e.g. an agent-handoff tool_use/tool_result pair):
+    // they carry is_visible_to_user=false and must never render as chat bubbles.
+    // Column is NOT NULL DEFAULT true, so .eq(true) is exact (matches the main-chat
+    // read path: get_cx_conversation_bundle RPC + conversation-bundle fallback).
+    .eq("is_visible_to_user", true)
     .order("position", { ascending: true });
 
   if (error) {

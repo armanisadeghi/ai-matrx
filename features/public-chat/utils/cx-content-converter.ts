@@ -150,6 +150,10 @@ export function processDbMessagesForDisplay(
 
   for (const msg of dbMessages) {
     if (msg.status === "summary" || msg.status === "deleted") continue;
+    // Belt layer (matches the backend's two-layer model-visibility enforcement):
+    // never render a model-plumbing row (e.g. an agent-handoff tool_use bubble),
+    // even if an unfiltered caller feeds it in. The query already excludes these.
+    if (msg.is_visible_to_user === false) continue;
     const isCondensed = msg.status === "condensed";
     if (msg.role === "tool") continue;
 
