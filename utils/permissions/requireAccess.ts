@@ -16,13 +16,14 @@
  */
 import "server-only";
 import { redirect } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import {
-  getResourceAccess,
+  resolveResourceAccess,
   accessSatisfies,
   type AccessLevel,
   type ResourceAccess,
-} from "./access";
+} from "./access-core";
 
 export interface RequireAccessOptions {
   /**
@@ -43,7 +44,11 @@ export async function resolveAccess(
   resourceId: string,
 ): Promise<ResourceAccess> {
   const supabase = await createClient();
-  return getResourceAccess(resourceType, resourceId, supabase);
+  return resolveResourceAccess(
+    supabase as unknown as SupabaseClient,
+    resourceType,
+    resourceId,
+  );
 }
 
 /**

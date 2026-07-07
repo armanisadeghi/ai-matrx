@@ -1,100 +1,47 @@
+"use client";
+
 /**
- * useAccess / getResourceAccess — the P7 view-vs-edit access gate.
+ * useAccess — the CLIENT half of the P7 view-vs-edit access gate.
  *
- * ONE resolver for "what can THIS user do with THIS resource" as a single value:
- *   { level: 'none' | 'view' | 'edit' | 'admin', isOwner, exists, loading }
+ *   const { level, isOwner, loading } = useAccess("fc_set", setId);
+ *   if (!loading && level === "view") // offer duplicate-to-edit
  *
  * This is the UX layer — it decides which surface to show (view vs edit),
  * whether to offer "Make a copy", and what to disable. **RLS is still the
- * security boundary**; a bypassed check here is never a privilege escalation.
+ * security boundary.** Server components use `requireAccess`
+ * (./requireAccess) instead of this hook.
  *
- * Backed by the `public.get_resource_access` SECURITY DEFINER RPC, which is
- * registry-driven and resolves the SAME model RLS enforces (owner, grants, org,
- * membership, reachability, public). Works for every shareable resource type and
- * for anonymous callers (public rows resolve to `view`), so the same primitive
- * powers the signed-out `/p/e` public viewer and the in-app gate.
- *
- * Consumers (P1–P5, flashcards, notes, …) import from `@/utils/permissions`:
- *   const { level, isOwner, loading } = useAccess("fc_set", setId);
- *   if (!loading && level === "view") // offer duplicate-to-edit
- * Server components use `requireAccess` (./requireAccess) instead.
+ * The pure resolver + types + helpers live in `./access-core` (isomorphic, no
+ * React) so the server guard can share them without a client boundary. This file
+ * re-exports them for client consumers who import from `@/utils/permissions`.
  */
 import { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolveResourceAccess, NO_ACCESS, type ResourceAccess } from "./access-core";
 
-/** The four access tiers, ordered `none < view < edit < admin`. */
-export type AccessLevel = "none" | "view" | "edit" | "admin";
-
-export interface ResourceAccess {
-  /** Highest capability the current caller has on the resource. */
-  level: AccessLevel;
-  /** True when the caller owns the resource row (`created_by`/owner column). */
-  isOwner: boolean;
-  /** False when the resource id doesn't exist or the type isn't registered. */
-  exists: boolean;
-}
-
-const ACCESS_RANK: Record<AccessLevel, number> = {
-  none: 0,
-  view: 1,
-  edit: 2,
-  admin: 3,
-};
-
-/** True when `level` meets or exceeds `required` (none < view < edit < admin). */
-export function accessSatisfies(level: AccessLevel, required: AccessLevel): boolean {
-  return ACCESS_RANK[level] >= ACCESS_RANK[required];
-}
-
-/** Convenience: can this level edit? (edit or admin). */
-export function canEditAccess(level: AccessLevel): boolean {
-  return accessSatisfies(level, "edit");
-}
-
-/** Convenience: can this level at least view? (view, edit, or admin). */
-export function canViewAccess(level: AccessLevel): boolean {
-  return accessSatisfies(level, "view");
-}
-
-function parseAccess(data: unknown): ResourceAccess {
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    const o = data as Record<string, unknown>;
-    const level = o.level;
-    if (level === "view" || level === "edit" || level === "admin" || level === "none") {
-      return {
-        level,
-        isOwner: o.is_owner === true,
-        exists: o.exists !== false,
-      };
-    }
-  }
-  return { level: "none", isOwner: false, exists: false };
-}
-
-const NO_ACCESS: ResourceAccess = { level: "none", isOwner: false, exists: false };
+export {
+  accessSatisfies,
+  canEditAccess,
+  canViewAccess,
+  NO_ACCESS,
+  type AccessLevel,
+  type ResourceAccess,
+} from "./access-core";
 
 /**
- * Resolve the current caller's access to a resource. Isomorphic — pass a server
- * client from a Server Component (`requireAccess` does this), or omit it to use
- * the browser client. Never throws; failures resolve to no-access.
+ * Resolve the current caller's access to a resource using the browser client.
+ * Prefer `useAccess` in components; this is for imperative one-off checks.
  */
 export async function getResourceAccess(
   resourceType: string,
   resourceId: string,
-  client: SupabaseClient = supabase as unknown as SupabaseClient,
 ): Promise<ResourceAccess> {
-  if (!resourceType || !resourceId) return NO_ACCESS;
-  try {
-    const { data, error } = await client.rpc("get_resource_access", {
-      p_resource_type: resourceType,
-      p_resource_id: resourceId,
-    });
-    if (error) return NO_ACCESS;
-    return parseAccess(data);
-  } catch {
-    return NO_ACCESS;
-  }
+  return resolveResourceAccess(
+    supabase as unknown as SupabaseClient,
+    resourceType,
+    resourceId,
+  );
 }
 
 /**
