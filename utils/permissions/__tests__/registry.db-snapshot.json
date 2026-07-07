@@ -55,13 +55,46 @@
     "is_active": true
   },
   {
-    "resource_type": "canvas_items",
+    "resource_type": "canvas_item",
     "table_name": "canvas_items",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
-    "display_label": "Canvas",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Canvas Item",
     "url_path_template": "/canvas/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "code_file",
+    "table_name": "code_files",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Code File",
+    "url_path_template": "/code/files/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "code_folder",
+    "table_name": "code_file_folders",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Code Folder",
+    "url_path_template": "/code/folders/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "code_repository",
+    "table_name": "code_repositories",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Code Repository",
+    "url_path_template": "/code/repos/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -70,7 +103,7 @@
     "table_name": "content_template",
     "id_column": "id",
     "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "is_public_column": null,
     "display_label": "Content Template",
     "url_path_template": "/settings/content-templates/{id}",
     "rls_uses_has_permission": true,
@@ -80,10 +113,54 @@
     "resource_type": "conversation",
     "table_name": "conversation",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Conversation",
     "url_path_template": "/chat/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "dm_conversation",
+    "table_name": "dm_conversations",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Direct Conversation",
+    "url_path_template": "/messages/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "fc_card",
+    "table_name": "fc_card",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Flashcard",
+    "url_path_template": "/education/flashcards/card/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "fc_set",
+    "table_name": "fc_set",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Flashcard Set",
+    "url_path_template": "/education/flashcards/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "feature_doc",
+    "table_name": "feature_docs",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Feature Doc",
+    "url_path_template": "/admin/docs/{slug}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -179,10 +256,21 @@
     "resource_type": "note",
     "table_name": "notes",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Note",
     "url_path_template": "/notes/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "note_folder",
+    "table_name": "note_folders",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Note Folder",
+    "url_path_template": "/notes?folder={id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -198,6 +286,17 @@
     "is_active": true
   },
   {
+    "resource_type": "project",
+    "table_name": "projects",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Project",
+    "url_path_template": "/projects/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "prompt",
     "table_name": "prompts",
     "id_column": "id",
@@ -206,7 +305,7 @@
     "display_label": "Prompt",
     "url_path_template": "/ai/prompts/edit/{id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "prompt_actions",
@@ -217,7 +316,7 @@
     "display_label": "Action",
     "url_path_template": "/ai/prompts/actions/{id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "quiz_sessions",
@@ -242,6 +341,28 @@
     "is_active": true
   },
   {
+    "resource_type": "research_template",
+    "table_name": "rs_template",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Research Template",
+    "url_path_template": "/research/templates/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "research_topic",
+    "table_name": "rs_topic",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Research Topic",
+    "url_path_template": "/research/topics/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "sandbox_instances",
     "table_name": "sandbox_instances",
     "id_column": "id",
@@ -253,7 +374,7 @@
     "is_active": true
   },
   {
-    "resource_type": "scope_association_suggestions",
+    "resource_type": "scope_association_suggestion",
     "table_name": "scope_association_suggestions",
     "id_column": "id",
     "owner_column": "user_id",
@@ -264,7 +385,7 @@
     "is_active": true
   },
   {
-    "resource_type": "scope_item_value_suggestions",
+    "resource_type": "scope_item_value_suggestion",
     "table_name": "scope_item_value_suggestions",
     "id_column": "id",
     "owner_column": "user_id",
@@ -330,6 +451,17 @@
     "is_active": true
   },
   {
+    "resource_type": "studio_session",
+    "table_name": "studio_sessions",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Audio Session",
+    "url_path_template": "/transcripts/studio?session={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "task",
     "table_name": "tasks",
     "id_column": "id",
@@ -341,11 +473,22 @@
     "is_active": true
   },
   {
+    "resource_type": "thread",
+    "table_name": "threads",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Thread",
+    "url_path_template": "/war-room/all",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "transcript",
     "table_name": "transcripts",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Transcript",
     "url_path_template": "/transcripts/{id}",
     "rls_uses_has_permission": true,
@@ -407,6 +550,28 @@
     "is_active": true
   },
   {
+    "resource_type": "war_room",
+    "table_name": "war_rooms",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "War Room",
+    "url_path_template": "/war-room/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "wc_claim",
+    "table_name": "wc_claim",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "WC Claim",
+    "url_path_template": "/legal/wc/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "wf_definition",
     "table_name": "wf_definition",
     "id_column": "id",
@@ -443,8 +608,8 @@
     "resource_type": "workflow",
     "table_name": "definition",
     "id_column": "id",
-    "owner_column": "user_id",
-    "is_public_column": "is_public",
+    "owner_column": "created_by",
+    "is_public_column": null,
     "display_label": "Workflow",
     "url_path_template": "/workflows/{id}",
     "rls_uses_has_permission": true,

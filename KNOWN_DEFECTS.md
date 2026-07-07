@@ -17,6 +17,20 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D30 — Shareable-resource TS mirror is badly drifted from the DB registry (parity test 38 pre-existing failures)
+**Severity: medium — recorded 2026-07-07 while fixing note sharing.** `utils/permissions/registry.ts` (the FE mirror of `platform.shareable_resource_registry`) is significantly out of sync with the live DB registry. The DB-side sharing RPCs were fixed and hardened (see `features/sharing/FEATURE.md` 2026-07-07 + `migrations/sharing_registry_canonical_owner_column_fix.sql`), so **sharing works regardless of the mirror** — the mirror only feeds FE helpers (`getShareableResource` / `resolveTableName` / `getResourceSharePath` / the FE `isResourceOwner` override). This entry is the mirror-reconciliation backlog only.
+
+**What.** After regenerating the snapshot from the live DB (`pnpm tsx scripts/regen-shareable-registry-snapshot.ts`), `pnpm test:unit utils/permissions` shows 38 parity failures:
+- **Rows in the DB but missing from the mirror:** `code_file`, `code_folder`, `code_repository`, `fc_card`, `fc_set`, `dm_conversation`, `project`, `thread`, `war_room`, `research_template`, `research_topic`, `note_folder`, `agent_card`, `feature_doc`, `studio_session`, `wc_claim` (each needs its FE-only `schemaName`/`physicalTable`).
+- **Wrong mirror key:** `canvas_items` should be `canvas_item` (owner→`created_by`, is_public→null).
+- **Stale mirror rows** for genuinely-deactivated DB rows (tables dropped / graveyarded): `prompt`, `prompt_actions`, plus `wf_definition`/`wf_run`/`wf_trigger` whose tokens don't match the DB.
+- **Key/plural mismatches** on the 5 moved tables re-pointed by `sharing_registry_repoint_moved_tables.sql` (now active in the DB again): DB `scope_association_suggestion`/`scope_item_value_suggestion` (singular) vs FE `scope_association_suggestions`/`scope_item_value_suggestions` (plural); `pdf_redaction_audits`/`redaction_mapping`/`user_analysis_preferences` keys match but reconcile owner/schema fields.
+- **Physical-table drift:** several rows carry `tableName`/`schemaName` that no longer match the DB (`agent`/`agent_app`/`workflow` all map to a `definition` table in different schemas — the parity "no duplicate table_name" check is itself outdated for the canonical world).
+
+**Why it happened.** The 2026 schema reorg + canonicalization moved/renamed many tables and updated the DB registry, but the hand-maintained TS mirror was only partially kept in sync. `note`/`conversation`/`workflow` were reconciled in the 2026-07-07 fix; the rest remain.
+
+**Fence.** The parity test (`registry.parity.test.ts`) is the forcing function and is (correctly) red; it is non-blocking (not in pre-commit / not gating). **What's open:** a full mirror reconciliation pass — for each drifted row, mirror the DB row's 8 fields exactly and add the FE-only `schemaName`/`physicalTable` from the live schema, delete stale rows, fix the `canvas_item` key at all call sites, then verify each type's ShareModal end-to-end.
+
 ### D29 — Working-document sync model: accepted post-re-read design + two deferred gaps (cross-ref D9)
 **Severity: low — recorded 2026-07-05 during the scratchpad-goes-global build.** The working-document round-trip is deliberately a **post-event re-read** model: `context_changed`/`context_persisted` carry no content, so the editor slice updates only after `syncWorkingDocumentFromAgentThunk` re-reads the row (plus doc-id-filtered realtime). The tool-viz diff (`PatchDiffInline`) applies its patch optimistically for DISPLAY only and never writes the slice — making it a slice writer would race the re-read and the user's version-guarded commit. This is the accepted design until aidream ships mid-stream deltas (D9). Two deferred gaps, both data-safe:
 1. **Mid-typing invisibility.** `useWorkingDocument` refuses to merge remote/agent content into the visible draft while the user is actively typing (`editingRef` guard — it protects the draft); the agent's edit surfaces as a **conflict** on the next commit instead of live-merging. Proper fix is a 3-way merge, D9-adjacent.

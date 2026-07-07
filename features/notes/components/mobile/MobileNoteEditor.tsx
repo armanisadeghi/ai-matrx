@@ -295,6 +295,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
       {/* ── Fixed bottom dock ────────────────────────────────────────────────── */}
       <NoteEditorDock
         noteId={note.id}
+        noteLabel={note.label}
         folder={localFolder}
         tags={localTags}
         content={localContent}

@@ -42,12 +42,11 @@ import {
   selectInstanceTabs,
 } from "../redux/selectors";
 import { saveNote, copyNote, deleteNote } from "../redux/thunks";
-import { ShareModal } from "@/features/sharing/components/ShareModal";
+import { NoteShareModal } from "./NoteShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 import { useNoteDelete } from "../hooks/useNoteDelete";
-import { useIsOwner } from "@/utils/permissions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
@@ -83,7 +82,6 @@ const actionBtnClass =
 export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const dispatch = useAppDispatch();
 
-  const { isOwner } = useIsOwner("note", noteId);
 
   // ── Redux state ────────────────────────────────────────────────────
   const label = useAppSelector(selectNoteLabel(noteId)) ?? "Untitled";
@@ -477,13 +475,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       )}
 
       {/* Share modal */}
-      <ShareModal
-        isOpen={shareOpen}
-        onClose={() => setShareOpen(false)}
-        resourceType="note"
-        resourceId={noteId}
-        resourceName={label}
-        isOwner={isOwner}
+      <NoteShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        noteId={noteId}
+        noteLabel={label}
       />
 
       {/* Delete confirmation — overlay and content must exceed window panel z-index (~1000) */}

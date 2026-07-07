@@ -133,14 +133,14 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   note: {
     resourceType: "note",
     tableName: "notes",
-    // 2026 reorg: notes moved public→workbench. Reached via .schema('workbench').
-    // (FE-only; not part of the DB-registry parity comparison.) note is in
-    // VISIBILITY_ENUM_RESOURCE_TYPES so ownership reads created_by; the mirrored
-    // owner/public columns below stay DB-registry-aligned for the parity test.
+    // 2026 reorg: notes canonicalized + moved public→workbench (reached via
+    // .schema('workbench')). Live workbench.notes has created_by + visibility
+    // only (no user_id / is_public) — the DB registry row now matches, so owner
+    // reads created_by and public is driven by the visibility enum (no bool col).
     schemaName: "workbench",
     idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
     displayLabel: "Note",
     urlPathTemplate: "/notes/{id}",
     rlsUsesHasPermission: true,
@@ -157,10 +157,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
   },
   workflow: {
     resourceType: "workflow",
-    tableName: "workflow",
+    // DB `shareable_resource_registry` row: resource_type='workflow',
+    // table_name='definition', schema_name='workflow'. Physical table is
+    // `workflow.definition`, reached via `.schema('workflow')`.
+    tableName: "definition",
+    schemaName: "workflow",
+    physicalTable: "definition",
     idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
+    // DB canonical: workflow.definition has created_by + visibility (no user_id /
+    // is_public). Registry row matches — owner reads created_by; public via enum.
+    ownerColumn: "created_by",
+    isPublicColumn: null,
     displayLabel: "Workflow",
     urlPathTemplate: "/workflows/{id}",
     rlsUsesHasPermission: true,
@@ -174,8 +181,10 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     schemaName: "chat",
     physicalTable: "conversation",
     idColumn: "id",
-    ownerColumn: "user_id",
-    isPublicColumn: "is_public",
+    // DB canonical: chat.conversation has created_by + visibility (no user_id /
+    // is_public). Registry row matches — owner reads created_by; public via enum.
+    ownerColumn: "created_by",
+    isPublicColumn: null,
     displayLabel: "Conversation",
     urlPathTemplate: "/chat/{id}",
     rlsUsesHasPermission: true,

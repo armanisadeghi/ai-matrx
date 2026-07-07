@@ -55,8 +55,7 @@ import { FindReplaceBar } from "./FindReplaceBar";
 import { FindMatchOverlay } from "./FindMatchOverlay";
 import { RecentChangeOverlay } from "./RecentChangeOverlay";
 import { MoveNoteDialog } from "./MoveNoteDialog";
-import { ShareModal } from "@/features/sharing/components/ShareModal";
-import { useIsOwner } from "@/utils/permissions";
+import { NoteShareModal } from "./NoteShareModal";
 import { selectFindReplaceState } from "../redux/selectors";
 import { computeMatches } from "../utils/findMatches";
 import { usePreviewFindHighlight } from "../hooks/usePreviewFindHighlight";
@@ -108,7 +107,6 @@ export function NoteContentEditor({
 
   const saveState = useAppSelector(selectNoteSaveState(noteId));
 
-  const { isOwner } = useIsOwner("note", noteId);
   const findReplaceState = useAppSelector(selectFindReplaceState(instanceId));
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -645,13 +643,11 @@ export function NoteContentEditor({
         availableFolders={allFolders}
       />
 
-      <ShareModal
-        isOpen={shareDialogOpen}
-        onClose={() => setShareDialogOpen(false)}
-        resourceType="note"
-        resourceId={noteId}
-        resourceName={noteLabel}
-        isOwner={isOwner}
+      <NoteShareModal
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        noteId={noteId}
+        noteLabel={noteLabel}
       />
     </>
   );

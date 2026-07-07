@@ -35,7 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ShareNoteDialog } from "../components/ShareNoteDialog";
+import { NoteShareModal } from "../components/NoteShareModal";
 import { useToastManager } from "@/hooks/useToastManager";
 import { cn } from "@/lib/utils";
 
@@ -375,9 +375,9 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
         />
       </div>
 
-      {/* Share Note Dialog */}
+      {/* Canonical sharing UI (user search + email lookup, org, public) */}
       {shareNoteId && (
-        <ShareNoteDialog
+        <NoteShareModal
           open={shareNoteId !== null}
           onOpenChange={(open) => !open && setShareNoteId(null)}
           noteId={shareNoteId}

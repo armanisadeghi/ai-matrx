@@ -12,7 +12,7 @@ import { NotesSidebar } from "./NotesSidebar";
 import { NoteEditor } from "./NoteEditor";
 import { NoteTabs } from "./NoteTabs";
 import { CreateFolderDialog } from "./CreateFolderDialog";
-import { ShareNoteDialog } from "./ShareNoteDialog";
+import { NoteShareModal } from "./NoteShareModal";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
 import { PHANTOM_NOTE_ID, createPhantomNote } from "../utils/phantomNote";
@@ -452,9 +452,9 @@ export function NotesLayout({
           existingFolders={existingFolders}
         />
 
-        {/* Share Note Dialog */}
+        {/* Canonical sharing UI (user search + email lookup, org, public) */}
         {shareNoteId && (
-          <ShareNoteDialog
+          <NoteShareModal
             open={shareNoteId !== null}
             onOpenChange={(open) => !open && setShareNoteId(null)}
             noteId={shareNoteId}

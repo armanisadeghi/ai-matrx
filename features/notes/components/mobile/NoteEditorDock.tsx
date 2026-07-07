@@ -34,11 +34,13 @@ import { NoteContextSection } from "../NoteContextSection";
 import { useToastManager } from "@/hooks/useToastManager";
 import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowledgePanel";
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
+import { NoteShareModal } from "../NoteShareModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface NoteEditorDockProps {
   noteId: string;
+  noteLabel?: string;
   folder: string;
   tags: string[];
   content: string;
@@ -59,6 +61,7 @@ const PILL_INSET_Y = 4;
 
 export function NoteEditorDock({
   noteId,
+  noteLabel = "Note",
   folder,
   tags,
   content,
@@ -75,6 +78,7 @@ export function NoteEditorDock({
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  const [shareOpen, setShareOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [pill, setPill] = useState<{
     x: number;
@@ -327,16 +331,13 @@ export function NoteEditorDock({
             </button>
             <button
               onClick={() => {
-                toast.info("Sharing coming soon");
                 setSheetOpen(null);
+                setShareOpen(true);
               }}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
             >
               <Share2 className="h-5 w-5 text-muted-foreground" />
               Share
-              <span className="ml-auto text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-normal">
-                Soon
-              </span>
             </button>
             <div className="h-px bg-border/40 my-1" />
             <button
@@ -357,6 +358,15 @@ export function NoteEditorDock({
           </div>
         </BottomSheetBody>
       </BottomSheet>
+
+      {shareOpen && (
+        <NoteShareModal
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+          noteId={noteId}
+          noteLabel={noteLabel}
+        />
+      )}
     </>
   );
 }

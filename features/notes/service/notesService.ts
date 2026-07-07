@@ -313,15 +313,6 @@ export async function copyNote(id: string): Promise<Note> {
 }
 
 /**
- * Generate a shareable link for a note
- * Returns a URL that users can visit to accept the share
- */
-export function generateShareLink(noteId: string): string {
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  return `${baseUrl}/notes/share/${noteId}`;
-}
-
-/**
  * Accept a shared note. Canonical sharing lives in the `permissions` table
  * (granted at share time), so accepting is simply resolving the note the link
  * points to — RLS grants the recipient read access via the permission grant.
@@ -343,39 +334,6 @@ export async function acceptSharedNote(
   }
 
   return note;
-}
-
-/**
- * Fetch notes explicitly shared with the current user via the permissions table.
- * Does not include notes accessible via project/workspace/org hierarchy —
- * those appear in the normal fetchNotes() query via RLS.
- * The old shared_with JSONB column approach is superseded by the permissions system.
- */
-export async function fetchSharedNotes(userId: string): Promise<Note[]> {
-  const { data: grants, error: grantsError } = await supabase
-    .schema("iam").from("permissions")
-    .select("resource_id")
-    .eq("resource_type", "notes")
-    .eq("granted_to_user_id", userId);
-
-  if (grantsError || !grants || grants.length === 0) return [];
-
-  const noteIds = grants.map((g) => g.resource_id);
-
-  const { data, error } = await supabase
-    .schema("workbench").from("notes")
-    .select("*")
-    .in("id", noteIds)
-    .neq("created_by", userId)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    console.error("Error fetching shared notes:", error);
-    return [];
-  }
-
-  return data ?? [];
 }
 
 /**
