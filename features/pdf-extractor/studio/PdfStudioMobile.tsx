@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Webhook,
   Lightbulb,
   Layers,
   Loader2,
@@ -257,7 +258,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       try {
         await triggerShortcut(shortcutId, {
           scope: { selection: docText },
-          sourceFeature: "programmatic",
+          sourceFeature: "pdf-extractor",
         });
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Run failed");
@@ -269,9 +270,13 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
   const total = activeDoc?.totalPages ?? pages.length;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
-      {/* Header */}
-      <header className="shrink-0 border-b border-border bg-card/40 px-2 py-1.5 flex items-center gap-2">
+    // pt clears the fixed transparent shell header — without it the studio's
+    // own header renders UNDERNEATH the shell chrome (hamburger over the doc
+    // title, avatar over the inspector button, which made the inspector
+    // untappable on mobile).
+    <div className="flex h-full min-h-0 flex-col bg-background pt-[var(--shell-header-h)]">
+      {/* Header — pr-12 keeps the last button clear of the fixed avatar */}
+      <header className="shrink-0 border-b border-border bg-card/40 px-2 py-1.5 pr-12 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setDrawer("docs")}
@@ -410,16 +415,20 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
         )}
       </div>
 
-      {/* Bottom pager — pb-safe respects iOS home indicator */}
-      {activeDoc && total > 0 && (
+      {/* Bottom bar: pager + the agent-engagement entry point. pb-safe
+          respects the iOS home indicator. "Agents" opens the inspector
+          (AI actions / pipeline / metadata) — the mobile counterpart of
+          the desktop right side, promoted out of the kebab so it's a
+          first-class action instead of a hidden menu. */}
+      {activeDoc && (
         <div className="shrink-0 border-t border-border bg-card/60 px-2 py-1.5 pb-safe flex items-center gap-2">
           <button
             type="button"
             onClick={() =>
               activePage && setActivePage(Math.max(1, activePage - 1))
             }
-            disabled={!activePage || activePage <= 1}
-            className="h-9 w-9 rounded-md border border-border bg-background hover:bg-accent disabled:opacity-50 flex items-center justify-center"
+            disabled={!activePage || activePage <= 1 || total === 0}
+            className="h-10 w-10 rounded-md border border-border bg-background hover:bg-accent disabled:opacity-50 flex items-center justify-center"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -430,11 +439,19 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           </div>
           <button
             type="button"
+            onClick={() => setDrawer("inspector")}
+            className="h-10 rounded-md border border-primary/40 bg-primary/10 px-3 text-primary hover:bg-primary/15 flex items-center justify-center gap-1.5 text-xs font-medium"
+          >
+            <Webhook className="w-4 h-4" />
+            Agents
+          </button>
+          <button
+            type="button"
             onClick={() =>
               activePage && setActivePage(Math.min(total, activePage + 1))
             }
-            disabled={!activePage || activePage >= total}
-            className="h-9 w-9 rounded-md border border-border bg-background hover:bg-accent disabled:opacity-50 flex items-center justify-center"
+            disabled={!activePage || activePage >= total || total === 0}
+            className="h-10 w-10 rounded-md border border-border bg-background hover:bg-accent disabled:opacity-50 flex items-center justify-center"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -587,6 +604,14 @@ function MobileTextScroller({
 }) {
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const anchorMap = React.useRef<Map<number, HTMLElement>>(new Map());
+  // Pager-click and scroll-observation must not fight: a programmatic
+  // smooth scroll fires the IntersectionObserver on every page it passes,
+  // which used to reset activePage mid-flight and scroll BACK (the "page
+  // navigation doesn't work" bug). While a pager-driven scroll is in
+  // flight the observer is ignored; observer-driven updates are recorded
+  // so they never trigger a re-scroll.
+  const programmaticUntilRef = React.useRef(0);
+  const lastObservedRef = React.useRef<number | null>(null);
 
   // True when every per-page row in the active field is empty. Same rule
   // as the desktop reader — per-page `cleaned_text` is only populated by
@@ -609,12 +634,16 @@ function MobileTextScroller({
     if (!root) return undefined;
     const observer = new IntersectionObserver(
       (entries) => {
+        if (Date.now() < programmaticUntilRef.current) return;
         const visible = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (!visible) return;
         const page = Number(visible.target.getAttribute("data-page") ?? 0);
-        if (page) onActivePage(page);
+        if (page) {
+          lastObservedRef.current = page;
+          onActivePage(page);
+        }
       },
       { root, threshold: [0.4] },
     );
@@ -623,10 +652,15 @@ function MobileTextScroller({
   }, [pages.length, onActivePage, streaming, allEmpty]);
 
   // Programmatic scroll on activePage change (driven by bottom pager).
+  // Skipped when the change came from the observer itself — re-scrolling
+  // to a page the user just scrolled to fights their finger.
   React.useEffect(() => {
     if (activePage == null) return;
+    if (activePage === lastObservedRef.current) return;
     const el = anchorMap.current.get(activePage);
-    el?.scrollIntoView({ block: "start", behavior: "smooth" });
+    if (!el) return;
+    programmaticUntilRef.current = Date.now() + 1000;
+    el.scrollIntoView({ block: "start", behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePage]);
 
