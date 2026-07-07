@@ -37,12 +37,22 @@ import HeaderBack from "@/features/shell/components/header/variants/shared/Heade
 import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 
 import { createScanPdf, detectDocument } from "../api";
+import {
+  fetchProcessingStatus,
+  fetchRawTextPreview,
+  verifyCleanContentReady,
+} from "../processing";
 import type { Quad, ScanItem, ScanPdfResult, ScanRotation } from "../types";
 import { useScanSession } from "../useScanSession";
 import { CaptureView } from "./CaptureView";
 import { CropSheet } from "./CropSheet";
+import { ProcessingView, type ProcessingState } from "./ProcessingView";
 import { ReviewList } from "./ReviewList";
 import { SaveSheet } from "./SaveSheet";
+
+/** Stop polling for pipeline progress after this long and move on. */
+const PROCESSING_POLL_TIMEOUT_MS = 4 * 60 * 1000;
+const PROCESSING_POLL_INTERVAL_MS = 2000;
 
 function defaultLabel(): string {
   const now = new Date();
@@ -63,8 +73,7 @@ export default function ScannerSurface() {
   const [capturing, setCapturing] = useState(false);
   const [cropItem, setCropItem] = useState<ScanItem | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [progressMessage, setProgressMessage] = useState<string | null>(null);
+  const [processing, setProcessing] = useState<ProcessingState | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [navigating, setNavigating] = useState(false);
 
@@ -148,15 +157,89 @@ export default function ScannerSurface() {
     setSaveOpen(true);
   }, [session]);
 
+  // ── Post-save processing orchestration ─────────────────────────────────
+  const pollTimerRef = useRef<number | null>(null);
+  const pollStartedAtRef = useRef(0);
+  const finalizeStartedRef = useRef(false);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current !== null) {
+      window.clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, []);
+  useEffect(() => stopPolling, [stopPolling]);
+
+  /** Completion gate: verified fetch (3×2s, loud misses) → navigate. */
+  const finalize = useCallback(
+    (docId: string) => {
+      if (finalizeStartedRef.current) return;
+      finalizeStartedRef.current = true;
+      stopPolling();
+      setProcessing((p) => (p ? { ...p, active: "done", finalizing: true } : p));
+      void verifyCleanContentReady(docId).then(() => {
+        pendingDocIdRef.current = docId;
+        maybeNavigate();
+      });
+    },
+    [stopPolling, maybeNavigate],
+  );
+
+  const startPolling = useCallback(
+    (docId: string) => {
+      stopPolling();
+      pollStartedAtRef.current = Date.now();
+      pollTimerRef.current = window.setInterval(() => {
+        void fetchProcessingStatus(docId)
+          .then((status) => {
+            setProcessing((p) => {
+              if (!p) return p;
+              const allCleaned =
+                status.pagesTotal > 0 &&
+                status.pagesCleaned >= status.pagesTotal;
+              const active =
+                status.runStatus === "completed"
+                  ? "done"
+                  : allCleaned
+                    ? "entities"
+                    : "clean";
+              return { ...p, status, active: p.active === "done" ? "done" : active };
+            });
+            if (status.runStatus === "completed") finalize(docId);
+          })
+          .catch(() => {
+            // Transient read failure — next tick retries.
+          });
+        if (Date.now() - pollStartedAtRef.current > PROCESSING_POLL_TIMEOUT_MS) {
+          console.error(
+            `[scanner] processing poll timed out for doc ${docId} — navigating anyway`,
+          );
+          finalize(docId);
+        }
+      }, PROCESSING_POLL_INTERVAL_MS);
+    },
+    [stopPolling, finalize],
+  );
+
   const handleSave = useCallback(() => {
     const uploaded = session.items.filter((i) => i.fileId);
-    if (uploaded.length === 0 || saving) return;
+    if (uploaded.length === 0 || processing) return;
 
-    setSaving(true);
-    setProgressMessage(null);
     pendingDocIdRef.current = null;
+    finalizeStartedRef.current = false;
+    contextDoneRef.current = true; // prompt is opt-in from the processing view
     const labelAtSave = session.label.trim() || defaultLabel();
     setSavedLabel(labelAtSave);
+    setSaveOpen(false);
+    setProcessing({
+      active: "build",
+      buildDetail: `Cropping and combining ${uploaded.length} item${uploaded.length === 1 ? "" : "s"}…`,
+      ocrDetail: null,
+      pageCount: null,
+      rawPreview: null,
+      status: null,
+      finalizing: false,
+    });
 
     const payload = {
       items: uploaded.map((i) => ({
@@ -170,25 +253,37 @@ export default function ScannerSurface() {
     };
 
     const promise = createScanPdf(payload, {
-      onProgress: setProgressMessage,
+      onProgress: (message) => {
+        setProcessing((p) => {
+          if (!p) return p;
+          // The stream's two phases: assemble → extract.
+          if (/extract/i.test(message)) {
+            return { ...p, active: "ocr", ocrDetail: message };
+          }
+          return { ...p, buildDetail: message };
+        });
+      },
     });
     savePromiseRef.current = promise;
-
-    // Let the user assign org/scope WHILE the PDF builds — the canonical
-    // upload-time pattern. Navigation waits for both to finish.
-    contextDoneRef.current = false;
-    setContextPromptOpen(true);
 
     promise
       .then((result) => {
         session.clearAfterSave();
-        toast.success(
-          `Scan saved${result.page_count ? ` — ${result.page_count} page${result.page_count === 1 ? "" : "s"}` : ""}`,
+        setProcessing((p) =>
+          p
+            ? {
+                ...p,
+                active: "clean",
+                pageCount: result.page_count,
+              }
+            : p,
         );
-        if (result.doc_id) {
-          pendingDocIdRef.current = result.doc_id;
-          maybeNavigate();
-        }
+        const docId = result.doc_id as string;
+        void fetchRawTextPreview(docId).then((preview) => {
+          if (preview)
+            setProcessing((p) => (p ? { ...p, rawPreview: preview } : p));
+        });
+        startPolling(docId);
       })
       .catch((err: unknown) => {
         const fileId = (err as { fileId?: string | null })?.fileId;
@@ -200,15 +295,11 @@ export default function ScannerSurface() {
             ? `${message} — the PDF was still saved to your Scans folder.`
             : message,
         );
+        setProcessing(null); // back to the review grid, items intact
         setContextPromptOpen(false);
         contextDoneRef.current = true;
-      })
-      .finally(() => {
-        setSaving(false);
-        setSaveOpen(false);
-        setProgressMessage(null);
       });
-  }, [session, saving, maybeNavigate]);
+  }, [session, processing, startPolling]);
 
   const handleContextPromptChange = useCallback(
     (open: boolean) => {
@@ -343,7 +434,7 @@ export default function ScannerSurface() {
         </div>
         <Button
           className="mb-2 h-11 w-full"
-          disabled={!session.allUploaded || saving || navigating}
+          disabled={!session.allUploaded || Boolean(processing) || navigating}
           onClick={openSave}
         >
           {navigating ? (
@@ -405,10 +496,19 @@ export default function ScannerSurface() {
         label={session.label}
         onLabelChange={session.setLabel}
         itemCount={session.items.length}
-        saving={saving}
-        progressMessage={progressMessage}
         onSave={handleSave}
       />
+
+      {processing && (
+        <ProcessingView
+          label={savedLabel || "Scanned document"}
+          state={processing}
+          onAssignContext={() => {
+            contextDoneRef.current = false;
+            setContextPromptOpen(true);
+          }}
+        />
+      )}
 
       <UploadContextPrompt
         open={contextPromptOpen}
