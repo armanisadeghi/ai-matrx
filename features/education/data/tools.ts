@@ -158,14 +158,14 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "AI day-by-day study schedule from exam dates + mastery + available time, re-planning automatically.",
     icon: CalendarClock,
     letter: "Pl",
-    status: "live", // v1 shipped (study_goal CRUD + heuristic); AI schedule/calendar/re-plan = P5 in the roadmap
+    status: "live", // P5 — AI day-by-day plan (Study Planner agent → heuristic fallback), calendar agenda, adaptive re-plan, anti-burnout load-smoothing; + goals CRUD
     accessTier: "trial",
     visionRef: "VISION §12 Personalized Study Planner",
     capabilities: [
-      "Day-by-day plan from exam dates + per-subject mastery + daily time",
-      "Exam calendar integration",
-      "Adaptive re-planning on new performance data",
-      "Reuse features/scheduling where it fits",
+      "AI day-by-day plan from exam date + per-topic mastery (FSRS) + daily time",
+      "Calendar / agenda view with per-day load and block-level deep links",
+      "Adaptive re-planning on new performance data (re-plan in place)",
+      "Anti-burnout: honored rest days, gentle daily caps, tapered practice-test finish",
     ],
   },
 ];

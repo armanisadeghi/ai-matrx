@@ -497,6 +497,31 @@ Reference retrofits: `fc_generate_from_source` (real citations) + `fc_help_live`
 
 ---
 
+## P5 — Study Intelligence agents (LIVE, authored 2026-07-07)
+
+Both gemini-flash-class, authored via `agent_author` + verified with `agent_run`. Ids in
+`features/education/study/planner/agents.ts` (`STUDY_AGENTS`). Wired with the standard
+`launchAgentExecution({ jsonExtraction:{enabled:true}, config:{autoRun:true, displayMode:"direct"} })`
++ `selectFirstExtractedObject` pattern (`usePlannerAgent` / `useAnalyticsNarrative`).
+
+### `Study Planner` — anti-burnout day-by-day schedule  (id `49d3c256-…`)
+**Variables (builder-shaped):** `goal_title`, `start_date`, `exam_date`, `daily_minutes`,
+`rest_days` (comma-separated weekday NAMES, e.g. "Sunday"), `study_snapshot` (formatted text —
+see `coercePlan.buildStudySnapshot`; due/weak/studied counts + weak topics).
+**Output:** `{ overall_rationale, days:[{ day_date, is_rest_day, rationale, blocks:[{ target_kind
+(review|learn|weak_area|quiz|practice_test|rest|custom), label, estimated_minutes, estimated_items,
+topic, method, rationale }] }] }`. Coerced to a generator-agnostic `PlanDraft` (`coercePlanDraft`);
+deterministic `buildPlan.ts` is the offline fallback that emits the SAME shape.
+
+### `Study Analytics Narrator` — the narrative over the numbers  (id `13c31086-…`)
+**Variables:** `item_label`, `accuracy_pct`, `mastered_count`, `learning_count`, `struggling_count`,
+`due_count`, `accuracy_trend` (JSON), `topic_breakdown` (JSON), `total_minutes`, `current_streak`.
+**Output:** `{ headline, insights:[{title,detail,severity: good|watch|urgent}],
+recommendations:[{action, why, target_kind, topic}] }`. Grounded in the supplied numbers only
+(never invents a figure); coerced by `analytics/narrative.ts`.
+
+---
+
 > **Adaptive next-batch selection is NOT an agent** — it's an FSRS algorithm + query over `item_mastery`
 > (due/struggle) + `study_goal` topics + the dimension graph. See `lib/srs/fsrs.ts`.
 
