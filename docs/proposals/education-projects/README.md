@@ -121,15 +121,17 @@ NotebookLM's "features without a system" gap is demonstrably closed.
 (P5+P7), LMS embed (LTI 1.3/OneRoster), FERPA/COPPA, exportable reports (P5), certified/community
 library at scale (P6-C), live classroom mode (P10 fan-out).
 
-**Wave 2 fan-out (unlocked by B):** per-class hub (scopes-native — vision ADD pending approval),
-class/group social rooms, study songs/mnemonics, talk-to-the-hosts audio, offline mode + browser
-extension clipper, native mobile parity, standards alignment, grade-adaptive theming (K-5).
+**Wave 2 fan-out (unlocked by B):** **per-class hub** (scopes-native; approved + documented in
+[`W2-class-hub.md`](./W2-class-hub.md) — assign first among Wave-2 items), class/group social
+rooms, study songs/mnemonics, talk-to-the-hosts audio, offline mode + browser extension clipper,
+native mobile parity, standards alignment, grade-adaptive theming (K-5).
 
 ## 8. Flags — DECISIONS RECORDED (Arman, 2026-07-07)
 
-1. **Vision additions**: pending Arman's direct answer (asked in-session 2026-07-07); the six
-   competitive additions are baked into the briefs regardless — the open question is only
-   whether `VISION-education-hub.md` gets amended and whether per-class hub enters this wave.
+1. **Vision additions: APPROVED + DONE** — the six pillars are amended into
+   `VISION-education-hub.md` (and its `features/education/ARMAN_VISION.md` mirror). Per-class
+   hub: **Wave 2, fully documented now** in [`W2-class-hub.md`](./W2-class-hub.md) (Arman: "the
+   scopes model here is a massive win") — assign after Convergence B.
 2. **Free-tier generosity: APPROVED** ("we need to be competitive and a generous free tier is
    fine"). P8 designs the matrix on that mandate; exact numbers get one FYI-with-veto look.
 3. **Public viewer: DECIDED — two lanes.** The just-built `/s/[token]` (token links, noindex)

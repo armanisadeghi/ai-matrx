@@ -30,6 +30,7 @@ The AI layer adapts vocabulary complexity, question difficulty, interaction styl
 
 - **Manual card creation** — full rich-text editor on both sides of every card; supports text, images, audio, video, LaTeX, charts, SVGs, embedded YouTube, and any web-embeddable media
 - **AI flashcard generation** — generates high-quality, curriculum-aligned flashcards from any uploaded or ingested content: notes, PDFs, slides, images, video, audio, live lectures, or a typed prompt; no competitor matches the breadth of our ingestion-to-card pipeline
+- **Depth on demand** — every AI generation path supports tiered depth (rote recall → applied → exam/clinical level) plus a per-item "make this deeper" action; built for the advanced cohorts (med, law, engineering) who reject shallow auto-generated cards
 - **Rich media cards** — images, diagrams, LaTeX (full MathJax), charts, graphs, SVGs, audio clips, embedded YouTube/video, interactive elements; cards are not limited to text — they are full mini-documents
 - **Bulk import** — CSV, plain text paste, and direct Quizlet import; students migrate entire existing libraries in seconds
 - **Set organization** — folders, subfolders, courses, classes, and custom tags; full hierarchical structure
@@ -186,6 +187,7 @@ The platform generates broadcast-quality audio study content from any ingested m
 - **Exam calendar integration** — students enter upcoming test dates; the system builds and continuously adapts the study plan around those dates as mastery levels change
 - **Session recommendations** — each time the student opens the app, the dashboard tells them exactly what to study, for how long, and why — based on algorithm, not guesswork
 - **Adaptive re-planning** — if a student falls behind or scores unexpectedly on a practice test, the plan updates automatically; it is a living document, not a static schedule
+- **Anti-burnout review intelligence** — daily load smoothing with gentle caps and overflow redistribution, guilt-free rest days that don't wreck the schedule, and a "recovery plan" that triages the backlog after an absence; the review queue never becomes the 500-cards-due wall that burns students out of other spaced-repetition tools
 
 ---
 
@@ -198,6 +200,7 @@ The platform generates broadcast-quality audio study content from any ingested m
 - **Timed Match / Race game** — highest engagement-per-minute of any study mode; drives daily active usage and sharing
 - **Live classroom quiz mode** — teacher or student hosts a live session; all participants join on any device, answers are scored in real time, results shown on a shared leaderboard
 - **Grade-appropriate reward systems** — younger students get stickers and animated celebrations; older students get performance metrics and ranking; the system adapts the motivational layer to the age group
+- **Healthy by design ("anti-Duolingo")** — streak forgiveness (freezes and rest days), opt-in leagues scored on mastery gain rather than raw speed, private and team leaderboards instead of public shame screens, and no guilt algorithms or fabricated peer pressure; engagement mechanics reward learning outcomes, never anxiety
 
 ---
 
@@ -209,6 +212,7 @@ The platform generates broadcast-quality audio study content from any ingested m
 - **Real-time co-study sessions** — two or more students study together with a shared AI tutor facilitating; the AI can address questions from either student and track both their performance
 - **Card-level discussion threads** — students and teachers comment on individual cards or flag them for review
 - **LMS connection** — Google Classroom and Canvas integration; LTI 1.3 / OneRoster integration is in the roadmap for full institutional deployment
+- **Certified content tier + community library** — editorially verified decks carry a Certified mark; living community decks improve over time through an ethical contribution flywheel (suggest-edits to deck owners, enrich your own or your class's corpus) — explicitly never an answer marketplace
 
 ---
 
@@ -220,6 +224,7 @@ The platform generates broadcast-quality audio study content from any ingested m
 - **Browser extension** — clips content from any webpage, Canvas assignment, Moodle course, or article directly into a study set
 - **Accessibility** — dyslexia-friendly fonts, high-contrast mode, screen reader support, audio descriptions for visual content, read-aloud mode for younger students and low-vision users
 - **Multilingual support** — content ingested in any language; AI tutor responds in the student's preferred language
+- **Never lose your work; own your data** — autosave and version restore on study content, full per-deck and account-level export (CSV, Anki-compatible, Markdown, JSON); the student's data is theirs, with no lock-in, ever
 
 ---
 
@@ -307,3 +312,4 @@ Capabilities the platform has the infrastructure to deliver and is actively buil
 6. **All-in-one ecosystem** — students currently use 4–6 apps to accomplish what our platform does in one place; every time they stay in our ecosystem instead of switching to ChatGPT or Notion, we win
 7. **Measurable learning gain** — we don't optimize for streaks and screen time; we optimize for the pre/post test delta; this is both better for students and the key unlock for institutional sales
 8. **Every grade, every format, every learning style** — from a 2nd grader doing picture flashcards with read-aloud to a medical student doing oral exam prep with a context-aware AI; the platform adapts to all of them
+9. **Integrity-positive** — the tool a professor would endorse: grounded in the student's own materials, no answer marketplace, no scraped copyrighted content, no cheating-adjacent stigma; better for students and the unlock for teacher and institutional adoption
