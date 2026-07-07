@@ -74,6 +74,12 @@ export interface RagSearchRequest {
   multi_query?: number;
   use_hyde?: boolean;
   use_mmr?: boolean;
+  /**
+   * Canonical cluster expansion: also surface chunks about same-cluster entities
+   * (KG canonical concept expansion). Recall-broadening — default off. Cross-spelling
+   * (alias) matches work regardless of this flag.
+   */
+  expand_entity_clusters?: boolean;
   filters?: RagSearchFilters;
   /**
    * Restrict hits to sources tagged with these scope ids. Mirrors

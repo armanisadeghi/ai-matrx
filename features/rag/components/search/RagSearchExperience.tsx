@@ -153,6 +153,7 @@ function useScopeControls(initialStoreId: string | null = null) {
   const [rerank, setRerank] = useState(true);
   const [multiQuery, setMultiQuery] = useState(1);
   const [useHyde, setUseHyde] = useState(false);
+  const [expandClusters, setExpandClusters] = useState(false);
 
   const sourceKinds = useMemo<string[] | undefined>(() => {
     if (kindFilter === "all") return undefined;
@@ -174,6 +175,8 @@ function useScopeControls(initialStoreId: string | null = null) {
     setMultiQuery,
     useHyde,
     setUseHyde,
+    expandClusters,
+    setExpandClusters,
   };
 }
 
@@ -664,6 +667,16 @@ function ScopeSidebar({
           />
           <span>HyDE expansion</span>
         </label>
+        <label
+          className="flex items-center gap-2 text-xs cursor-pointer"
+          title="Also surface chunks about entities that share a knowledge-graph cluster with your query's matched entities (canonical concept expansion). Broadens recall — the reranker filters. Cross-spelling matches (e.g. 'HTN' → 'hypertension') work regardless of this toggle."
+        >
+          <Checkbox
+            checked={scope.expandClusters}
+            onCheckedChange={(v) => scope.setExpandClusters(v === true)}
+          />
+          <span>Expand entity clusters</span>
+        </label>
         <label className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">Multi-query</span>
           <input
@@ -947,6 +960,7 @@ function SearchTab({ scope }: { scope: Scope }) {
         use_hyde: scope.useHyde,
         multi_query: scope.multiQuery,
         use_mmr: true,
+        expand_entity_clusters: scope.expandClusters || undefined,
         only_children: true,
         data_store_id: scope.storeId ?? undefined,
         admin_bypass_acl: scope.adminBypass || undefined,
@@ -1464,6 +1478,7 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         use_hyde: scope.useHyde,
         rerank: scope.rerank,
         use_mmr: true,
+        expand_entity_clusters: scope.expandClusters || undefined,
         scope_ids: scopeIds,
         organization_id: orgOverride,
       });
@@ -1611,6 +1626,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
       use_hyde: scope.useHyde,
       rerank: scope.rerank,
       use_mmr: true,
+      expand_entity_clusters: scope.expandClusters || undefined,
       only_children: true,
       source_kinds: scope.sourceKinds,
       data_store_id: scope.storeId ?? null,
