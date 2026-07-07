@@ -220,6 +220,26 @@ export default function DeferredSingletons() {
     }
   });
 
+  // Hydrate entitlement state once at boot (like adminLevel). Cheap resolver
+  // RPC; fails soft to the free permissive snapshot for guests / pre-billing
+  // sessions. Kept out of this file's static graph via await import().
+  useIdleTask("hydrate-entitlements", 6, async () => {
+    const [{ fetchEntitlementSnapshot }, slice] = await Promise.all([
+      import("@/features/entitlements/service"),
+      import("@/features/entitlements/state/entitlementsSlice"),
+    ]);
+    try {
+      const snapshot = await fetchEntitlementSnapshot();
+      dispatch(slice.setEntitlementSnapshot(snapshot));
+    } catch (err) {
+      dispatch(
+        slice.setEntitlementsError(
+          err instanceof Error ? err.message : "entitlement hydration failed",
+        ),
+      );
+    }
+  });
+
   const ready = useIdleReady();
 
   if (!ready) return null;
