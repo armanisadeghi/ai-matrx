@@ -57,7 +57,7 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Persistent tutor present at every surface, grounded in the student's own materials via RAG, Socratic by default.",
     icon: GraduationCap,
     letter: "Tu",
-    status: "coming-soon",
+    status: "live", // P2 shipped: grounded, memory-carrying conversational tutor
     accessTier: "trial",
     visionRef: "VISION §4 AI Tutor",
     capabilities: [
