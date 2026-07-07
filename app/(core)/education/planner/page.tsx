@@ -1,12 +1,12 @@
-// /education/planner — real study_goal CRUD (Phase 6 of the flashcards
-// competitive parity push). Server shell → the mode-agnostic StudyPlanner
-// client island.
+// /education/planner — the AI Study Planner (P5). Server shell → the
+// PlannerWorkspace client island: an AI day-by-day plan (generate + calendar
+// agenda + adaptive re-plan) plus the goals list that seeds it.
 import type { Metadata } from "next";
 import { toolMetadata } from "@/features/education/route-helpers";
-import { StudyPlanner } from "@/features/education/study/components/StudyPlanner";
+import { PlannerWorkspace } from "@/features/education/study/planner/components/PlannerWorkspace";
 
 export const metadata: Metadata = toolMetadata("planner");
 
 export default function PlannerToolPage() {
-  return <StudyPlanner backHref="/education" />;
+  return <PlannerWorkspace backHref="/education" />;
 }

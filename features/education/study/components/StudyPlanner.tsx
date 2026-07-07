@@ -148,7 +148,15 @@ interface GoalFormState {
 
 const EMPTY_FORM: GoalFormState = { title: "", targetDate: "", topic: "" };
 
-export function StudyPlanner({ backHref }: { backHref?: string }) {
+export function StudyPlanner({
+  backHref,
+  embedded = false,
+}: {
+  backHref?: string;
+  /** When embedded in the PlannerWorkspace, drop the standalone page chrome
+   *  (bg-textured wrapper, back button, outer padding) — the host supplies it. */
+  embedded?: boolean;
+}) {
   const router = useRouter();
   const isMobile = useIsMobile();
 
@@ -316,23 +324,29 @@ export function StudyPlanner({ backHref }: { backHref?: string }) {
   );
 
   return (
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4 h-8 px-2 text-xs text-muted-foreground"
-          onClick={() => (backHref ? router.push(backHref) : router.back())}
-        >
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back
-        </Button>
+    <div className={cn(!embedded && "min-h-full w-full bg-textured")}>
+      <div
+        className={cn(
+          !embedded && "mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8",
+        )}
+      >
+        {!embedded && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+            onClick={() => (backHref ? router.push(backHref) : router.back())}
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        )}
 
         <div className="mb-5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold text-foreground">
-              Study planner
+              {embedded ? "Your goals" : "Study planner"}
             </h1>
           </div>
           <Button size="sm" className="gap-1.5" onClick={openCreate}>
