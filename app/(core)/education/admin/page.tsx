@@ -116,10 +116,32 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/education/tutor",
-      label: "AI Tutor",
-      description: "App tool — placeholder.",
+      label: "AI Tutor (home / list)",
+      description:
+        "App tool — LIVE. Grounded, memory-carrying conversational tutor. List view: start a session or resume past ones. See features/education/tutor/FEATURE.md.",
       filePath: "app/(core)/education/tutor/page.tsx",
-      status: "Coming soon",
+      status: "Live",
+      notes: [
+        "Sub-routes: /new (fresh session), /[conversationId] (resume)",
+        "Built on the agent-execution + conversation infra (education-tutor source_feature)",
+        "AskTutor side-panel reachable from flashcard study (StudyDeck)",
+      ],
+    },
+    {
+      url: "/education/tutor/new",
+      label: "AI Tutor — new session",
+      description:
+        "Fresh grounded conversation: injects learner memory + own study material as launch grounding, promotes URL to /education/tutor/[conversationId] after first message.",
+      filePath: "app/(core)/education/tutor/new/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/tutor/[conversationId]",
+      label: "AI Tutor — conversation",
+      description:
+        "Resume a single tutor conversation (view-gated shareable transcript).",
+      filePath: "app/(core)/education/tutor/[conversationId]/page.tsx",
+      status: "Live",
     },
     {
       url: "/education/quizzes",
@@ -138,16 +160,34 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/education/audio-study",
       label: "Audio Study",
-      description: "App tool — placeholder.",
+      description:
+        "P3 — generate overview/debate/panel audio from a deck or topic (reuses the podcast pipeline + agent_run recovery); weak-area-adaptive; audio review spoken quiz → study spine. Persists to education.study_media.",
       filePath: "app/(core)/education/audio-study/page.tsx",
-      status: "Coming soon",
+      status: "Live",
+      notes: [
+        "Sub-routes: /new (generate), /[id] (player + live gen + recovery), /[id]/edit (owner controls), /review (spoken audio-review session, method 'audio_review')",
+        "Feature: features/education/media/audio/**",
+      ],
     },
     {
       url: "/education/mind-maps",
       label: "Mind Maps",
-      description: "App tool — placeholder.",
+      description:
+        "P3 — AI concept maps from a deck or topic via a diagram_spec agent, rendered with InteractiveDiagramBlock (clickable nodes + inline explanations). Persists to education.study_media.",
       filePath: "app/(core)/education/mind-maps/page.tsx",
-      status: "Coming soon",
+      status: "Live",
+      notes: [
+        "Sub-routes: /new (generate), /[id] (view), /[id]/edit (owner controls)",
+        "Feature: features/education/media/mindmap/** · agent d13184d4-6a46-4b08-aff4-a95b7be93fc5",
+      ],
+    },
+    {
+      url: "/education/media/[id]",
+      label: "Study Media (shared viewer)",
+      description:
+        "P3 — the canonical shareable viewer every study_media share link resolves to; dispatches to the audio or mind-map surface by kind. noindex.",
+      filePath: "app/(core)/education/media/[id]/page.tsx",
+      status: "Live",
     },
     {
       url: "/education/notes",
@@ -160,8 +200,32 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/planner",
       label: "Study Planner",
       description:
-        "App tool — LIVE. Real study_goal CRUD, heuristic-ranked by urgency + struggle count.",
+        "App tool — LIVE (P5). AI day-by-day plan (Study Planner agent → heuristic fallback) with calendar agenda, adaptive re-plan, anti-burnout load-smoothing; plus the goals tab (study_goal CRUD).",
       filePath: "app/(core)/education/planner/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/progress",
+      label: "Progress dashboard",
+      description:
+        "App tool — LIVE (P5). Unified cross-mode analytics: outcome-first stats, mastery, per-mode breakdown, highest-leverage weak areas, AI narrative, learning-gain teaser, trends.",
+      filePath: "app/(core)/education/progress/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/progress/learning-gain",
+      label: "Learning-gain report",
+      description:
+        "App tool — LIVE (P5). Pre/post improvement report + print/save-as-PDF. Reads P1's learning-gain contract (seed fixtures until P1's table lands).",
+      filePath: "app/(core)/education/progress/learning-gain/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/flashcards/progress",
+      label: "Flashcards progress (redirect)",
+      description:
+        "Redirects to /education/progress — progress was promoted cross-mode (P5).",
+      filePath: "app/(core)/education/flashcards/progress/page.tsx",
       status: "Live",
     },
   ],
@@ -224,24 +288,56 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "StudyProgress",
-      filePath: "features/education/study/components/StudyProgress.tsx",
+      name: "StudyAnalyticsDashboard",
+      filePath:
+        "features/education/study/analytics/components/StudyAnalyticsDashboard.tsx",
       description:
-        "Mode-agnostic progress dashboard over the study spine — mastery, accuracy, due count, streak, + StudyTrends.",
+        "P5 — the unified cross-mode progress dashboard (/education/progress): outcome-first stats, mastery, per-mode breakdown, weak areas, AI narrative, learning-gain teaser, reuses StudyTrends.",
+      tier: "official",
+    },
+    {
+      name: "NarrativeCard",
+      filePath:
+        "features/education/study/analytics/components/NarrativeCard.tsx",
+      description:
+        "P5 — renders the Study Analytics Narrator output (headline + insights + deep-linked recommendations).",
       tier: "official",
     },
     {
       name: "StudyTrends",
       filePath: "features/education/study/components/StudyTrends.tsx",
       description:
-        "Phase 6 — accuracy-over-time + weekly time-studied charts and per-topic mastery breakdown, embedded in StudyProgress.",
+        "Accuracy-over-time + weekly time-studied charts + per-topic mastery breakdown; reused inside StudyAnalyticsDashboard.",
+      tier: "official",
+    },
+    {
+      name: "PlannerWorkspace / StudyPlanView / PlanAgenda",
+      filePath:
+        "features/education/study/planner/components/PlannerWorkspace.tsx",
+      description:
+        "P5 — the AI planner surface: generate (agent → heuristic), calendar agenda, adaptive re-plan, anti-burnout load bar + block deep-links.",
       tier: "official",
     },
     {
       name: "StudyPlanner",
       filePath: "features/education/study/components/StudyPlanner.tsx",
       description:
-        "Phase 6 — real study_goal CRUD (create/edit/achieve/archive/delete), heuristic-ranked goal list.",
+        "study_goal CRUD (create/edit/achieve/archive/delete); the Goals tab of PlannerWorkspace (embedded).",
+      tier: "official",
+    },
+    {
+      name: "StudyTodayCard",
+      filePath: "features/education/study/dashboard/StudyTodayCard.tsx",
+      description:
+        "P5 — the authenticated 'what to study next' centerpiece on the education home (plan-of-day + due + weak + goals + streak).",
+      tier: "official",
+    },
+    {
+      name: "LearningGainReportView",
+      filePath:
+        "features/education/study/learning-gain/components/LearningGainReportView.tsx",
+      description:
+        "P5 — pre/post learning-gain report + print/PDF export (reads P1's contract; seed fixtures until it lands).",
       tier: "official",
     },
   ],
