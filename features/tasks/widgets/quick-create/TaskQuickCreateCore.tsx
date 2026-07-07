@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import * as icons from "lucide-react";
 import {
@@ -84,6 +85,13 @@ export interface TaskQuickCreateCoreProps {
   onSaved?: (taskId: string, action: PostSaveAction) => void;
   onCancel?: () => void;
   className?: string;
+  /**
+   * When the host chrome (WindowPanel) provides a footer slot element, the
+   * Cancel / Create and post-save action buttons portal into it — they act on
+   * the whole window, so they belong in the window footer, not the body.
+   * Falls back to rendering inline at the bottom of the body when omitted.
+   */
+  footerHost?: HTMLElement | null;
 }
 
 type LinkScope = "message" | "conversation" | "both";
@@ -114,6 +122,7 @@ export function TaskQuickCreateCore({
   onSaved,
   onCancel,
   className,
+  footerHost,
 }: TaskQuickCreateCoreProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -533,16 +542,20 @@ export function TaskQuickCreateCore({
         </div>
       )}
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
-      <div className="shrink-0 flex items-center justify-end gap-2 pt-1">
-        {savedTaskId ? (
+      {/* ── Footer actions — window-level, so they portal into the host
+             chrome's footer slot when one is provided ──────────────────── */}
+      {(() => {
+        const btnClass = footerHost
+          ? "h-7 px-2 text-xs gap-1.5 rounded-md"
+          : "h-8 text-xs gap-1.5 rounded-md";
+        const footerActions = savedTaskId ? (
           <>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => handlePostSaveAction("newTab")}
-              className="h-8 text-xs gap-1.5 rounded-md"
+              className={btnClass}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New tab</span>
@@ -552,7 +565,7 @@ export function TaskQuickCreateCore({
               variant="outline"
               size="sm"
               onClick={() => handlePostSaveAction("openWindow")}
-              className="h-8 text-xs gap-1.5 rounded-md"
+              className={btnClass}
             >
               <LayoutPanelLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Window</span>
@@ -562,7 +575,7 @@ export function TaskQuickCreateCore({
               variant="outline"
               size="sm"
               onClick={() => handlePostSaveAction("navigate")}
-              className="h-8 text-xs gap-1.5 rounded-md"
+              className={btnClass}
             >
               <ArrowRight className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Go to task</span>
@@ -571,7 +584,7 @@ export function TaskQuickCreateCore({
               type="button"
               size="sm"
               onClick={() => handlePostSaveAction("none")}
-              className="h-8 text-xs rounded-md"
+              className={btnClass}
             >
               Done
             </Button>
@@ -585,7 +598,7 @@ export function TaskQuickCreateCore({
                 size="sm"
                 onClick={onCancel}
                 disabled={isBusy}
-                className="h-8 text-xs gap-1.5 rounded-md"
+                className={btnClass}
               >
                 <X className="h-3.5 w-3.5" />
                 Cancel
@@ -596,7 +609,7 @@ export function TaskQuickCreateCore({
               size="sm"
               onClick={handleSave}
               disabled={!canSave}
-              className="h-8 text-xs gap-1.5 rounded-md"
+              className={btnClass}
             >
               {isBusy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -610,8 +623,20 @@ export function TaskQuickCreateCore({
                 : (saveLabel ?? (source ? "Create & attach" : "Create task"))}
             </Button>
           </>
-        )}
-      </div>
+        );
+
+        if (footerHost) {
+          return createPortal(
+            <div className="flex items-center gap-2">{footerActions}</div>,
+            footerHost,
+          );
+        }
+        return (
+          <div className="shrink-0 flex items-center justify-end gap-2 pt-1">
+            {footerActions}
+          </div>
+        );
+      })()}
     </div>
   );
 }

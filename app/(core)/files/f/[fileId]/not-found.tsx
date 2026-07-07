@@ -7,7 +7,7 @@ import { FileQuestion } from "lucide-react";
 
 export default function CloudFileNotFound() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-background">
+    <div className="flex h-full items-center justify-center bg-background">
       <div className="max-w-md w-full rounded-lg border bg-card p-6 shadow-sm space-y-4 text-center">
         <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-muted">
           <FileQuestion

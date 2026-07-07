@@ -34,8 +34,7 @@ import {
   BottomSheetBody,
 } from "@/components/official/bottom-sheet/BottomSheet";
 import { INPUT_BUTTON_IDLE_TINT } from "./InputActionButtons";
-import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
-import { ActiveContextLayersPanel } from "@/features/scopes/components/active-context/ActiveContextLayersPanel";
+import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
 import {
   selectActiveScratchpadId,
@@ -184,20 +183,23 @@ function ScratchRow({
       <NotebookPen className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
+          {/* FEATURE exposure, not a document: the title is always the fixed
+              feature name. Which scratchpad(s) are shared is chosen per-doc
+              in the canvas/workspace. */}
           <span className="text-sm font-medium text-foreground">
-            {title?.trim() || "My scratchpad"}
+            Scratchpad
           </span>
           <span className="inline-flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground">
             <Lock className="h-2.5 w-2.5" />
             Read-only to agent
           </span>
         </div>
-        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+        <p className="mt-0.5 truncate text-[11px] leading-snug text-muted-foreground">
           {enabled
             ? hasContent
-              ? "Attached to this chat — the agent can read it for context."
-              : "Attached to this chat — empty, so nothing is sent yet."
-            : "Off for this chat — the agent never sees your scratchpad here."}
+              ? `Sharing "${title?.trim() || "Untitled"}" — pick which ones in the canvas.`
+              : "On — your scratchpad is empty, so nothing is sent yet."
+            : "Off for this chat — the agent never sees your scratchpads here."}
         </p>
         {enabled && (
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -251,12 +253,8 @@ function ContextDocsMenuBody({
       <div className="border-t border-border px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         Context
       </div>
-      <ActiveContextPanel checkboxVariant="standard" sectionHeight={200} />
-      <div className="border-t border-border px-3 py-2">
-        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Selected context
-        </div>
-        <ActiveContextLayersPanel />
+      <div className="px-2 pb-2">
+        <ActiveContextTree />
       </div>
     </>
   );

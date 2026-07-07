@@ -440,6 +440,44 @@ function PdfPane({
   );
 }
 
+/** PDF viewer + crop/reorder overlays — shared by PdfStudioReader and PdfManipulationWorkbench. */
+export interface PdfManipulationViewerProps {
+  doc: PdfDocument;
+  activePage: number | null;
+  onActivePage: (page: number | null) => void;
+  editMode: PdfPaneEditMode;
+  cropPagesInput: string;
+  onEditModeCancel: () => void;
+  onOpenUpload?: () => void;
+  className?: string;
+}
+
+export function PdfManipulationViewer({
+  doc,
+  activePage,
+  onActivePage,
+  editMode,
+  cropPagesInput,
+  onEditModeCancel,
+  onOpenUpload,
+  className,
+}: PdfManipulationViewerProps) {
+  return (
+    <div className={cn("flex h-full min-h-0 flex-col", className)}>
+      <PdfPane
+        doc={doc}
+        activePage={activePage}
+        onActivePage={onActivePage}
+        onTogglePane={() => undefined}
+        onOpenUpload={onOpenUpload ?? (() => undefined)}
+        editMode={editMode}
+        cropPagesInput={cropPagesInput}
+        onEditModeCancel={onEditModeCancel}
+      />
+    </div>
+  );
+}
+
 // ── Shared save helpers — thin adapters over the canonical
 // features/pdf saveDerivative service (ONE persist path for every surface).
 

@@ -26,7 +26,21 @@ import { cn } from "@/lib/utils";
 import { NotePickerPopover } from "@/features/notes/components/NotePickerPopover";
 import { useWorkingDocument } from "@/features/agents/hooks/useWorkingDocument";
 import { DocumentLinkPicker } from "./DocumentLinkPicker";
-import type { WorkingDocumentKind } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  scratchDocIdFromScope,
+  type WorkingDocumentKind,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
+import {
+  selectActiveScratchpadId,
+  selectAttachedScratchpadIds,
+  selectWorkingDocEnabled,
+} from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import {
+  attachScratchpadToConversationThunk,
+  detachScratchpadFromConversationThunk,
+  setScratchpadGateThunk,
+} from "@/features/agents/redux/execution-system/instance-working-document/scratchpad.thunks";
 import { RichDocumentActionProvider } from "@/features/rich-document/RichDocumentActionProvider";
 import { RichDocumentActionSurface } from "@/features/rich-document/RichDocumentActionSurface";
 import type { ContentSource } from "@/features/rich-document/types";
@@ -89,6 +103,14 @@ interface WorkingDocumentPanelProps {
    * supplies it; defaults to deriving from `conversationId`.
    */
   surfaceContext?: WorkingDocumentSurfaceContext;
+  /**
+   * SCRATCH ONLY: the CHAT conversation this panel should offer a per-document
+   * "Share with this chat" toggle for. Scratch panels mount at the sp:<docId>
+   * scope (no chat of their own), so the host that knows the chat — the
+   * workspace, the canvas payload — threads it in. Absent = no share toggle
+   * (e.g. the global quick panel, which has no chat context).
+   */
+  gateConversationId?: string;
 }
 
 export function WorkingDocumentPanel({
@@ -101,7 +123,9 @@ export function WorkingDocumentPanel({
   showHeaderTitle = true,
   showSourceControls = true,
   surfaceContext,
+  gateConversationId,
 }: WorkingDocumentPanelProps) {
+  const dispatch = useAppDispatch();
   const {
     enabled,
     title,
@@ -143,6 +167,48 @@ export function WorkingDocumentPanel({
   const isScratch = kind === "scratch";
   const docNoun = isScratch ? "scratchpad" : "working document";
   const docTitleFallback = isScratch ? "Scratchpad" : "Working document";
+
+  // ── Per-document "Share with this chat" (scratch only). The active
+  // scratchpad shares via the conversation GATE; any other scratchpad shares
+  // via an attach edge. Only offered when the host threaded in the chat id. ──
+  const scratchDocId = isScratch ? scratchDocIdFromScope(conversationId) : null;
+  const activeScratchId = useAppSelector(selectActiveScratchpadId);
+  const scratchGateOn = useAppSelector(
+    selectWorkingDocEnabled(gateConversationId ?? "", "scratch"),
+  );
+  const attachedScratchIds = useAppSelector(
+    selectAttachedScratchpadIds(gateConversationId ?? ""),
+  );
+  const showScratchShare = isScratch && !!gateConversationId && !!scratchDocId;
+  const scratchShared =
+    showScratchShare &&
+    scratchDocId !== null &&
+    (scratchDocId === activeScratchId
+      ? scratchGateOn
+      : attachedScratchIds.includes(scratchDocId));
+  const setScratchShared = (share: boolean) => {
+    if (!gateConversationId || !scratchDocId) return;
+    if (scratchDocId === activeScratchId) {
+      void dispatch(
+        setScratchpadGateThunk({
+          conversationId: gateConversationId,
+          enabled: share,
+        }),
+      );
+      return;
+    }
+    void dispatch(
+      share
+        ? attachScratchpadToConversationThunk({
+            conversationId: gateConversationId,
+            documentId: scratchDocId,
+          })
+        : detachScratchpadFromConversationThunk({
+            conversationId: gateConversationId,
+            documentId: scratchDocId,
+          }),
+    );
+  };
 
   useEffect(() => {
     patchWorkingDocViewState(conversationId, { hasUnseenChange, saving });
@@ -260,6 +326,18 @@ export function WorkingDocumentPanel({
               onCheckedChange={setEnabled}
               aria-label="Toggle working document"
             />
+          )}
+          {showScratchShare && (
+            <label className="flex shrink-0 cursor-pointer items-center gap-1.5">
+              <span className="text-[11px] font-medium text-muted-foreground">
+                Share
+              </span>
+              <Switch
+                checked={scratchShared}
+                onCheckedChange={setScratchShared}
+                aria-label="Share this scratchpad with this chat"
+              />
+            </label>
           )}
         </div>
       )}

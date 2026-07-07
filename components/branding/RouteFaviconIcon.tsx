@@ -65,3 +65,11 @@ export function createRouteFaviconLucideIcon(route: string): LucideIcon {
 
 /** Notes route badge — amber `#d97706` letter "N" from `/notes` favicon data. */
 export const NotesRouteIcon = createRouteFaviconLucideIcon("/notes");
+/** Tasks route badge — letter "T" from `/tasks` favicon data. */
+export const TasksRouteIcon = createRouteFaviconLucideIcon("/tasks");
+/** Documents route badge — letter "U" from `/documents` favicon data. */
+export const DocumentsRouteIcon = createRouteFaviconLucideIcon("/documents");
+/** Files route badge — letter "F" from `/files` favicon data. */
+export const FilesRouteIcon = createRouteFaviconLucideIcon("/files");
+/** Code route badge — letter "K" from `/code` favicon data. */
+export const CodeRouteIcon = createRouteFaviconLucideIcon("/code");

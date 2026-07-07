@@ -1,5 +1,6 @@
 // components/database/DatabaseAdminDashboard.jsx
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Database, Key, SquareFunction } from "lucide-react";
 import { useDatabaseAdmin } from "@/features/administration/hooks/use-database-admin";
@@ -51,11 +52,28 @@ function toDatabaseFunctions(data: unknown): DatabaseFunction[] {
 // Started: https://claude.ai/chat/ca16ca5d-adc0-4e6b-b81c-5347948fd86d (Brains)
 // Cleanup: https://claude.ai/chat/aec2fe7a-e732-4162-a679-e7d05f303374
 
+const VALID_TABS = ["functions", "permissions", "sql"] as const;
+type AdminTab = (typeof VALID_TABS)[number];
+
+function isAdminTab(value: string): value is AdminTab {
+  return (VALID_TABS as readonly string[]).includes(value);
+}
+
+function tabFromSearchParams(searchParams: URLSearchParams | null): AdminTab {
+  const tab = searchParams?.get("tab");
+  if (tab && isAdminTab(tab)) return tab;
+  return "functions";
+}
+
 const DatabaseAdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("functions");
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<AdminTab>(() =>
+    tabFromSearchParams(searchParams),
+  );
   const [functions, setFunctions] = useState<DatabaseFunction[]>([]);
   const [permissions, setPermissions] = useState<DatabasePermission[]>([]);
-  const [selectedFunction, setSelectedFunction] = useState<DatabaseFunction | null>(null);
+  const [selectedFunction, setSelectedFunction] =
+    useState<DatabaseFunction | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -63,6 +81,10 @@ const DatabaseAdminDashboard = () => {
 
   const { loading, error, fetchFunctions, fetchPermissions, executeQuery } =
     useDatabaseAdmin();
+
+  useEffect(() => {
+    setActiveTab(tabFromSearchParams(searchParams));
+  }, [searchParams]);
 
   // Functions is the default tab — load it on mount. Permissions is loaded
   // lazily the first time its tab is opened (below), not eagerly on mount:
@@ -129,6 +151,10 @@ const DatabaseAdminDashboard = () => {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    if (isAdminTab(value)) setActiveTab(value);
+  };
+
   return (
     <div className="space-y-6 p-6">
       <FunctionDetails
@@ -137,7 +163,7 @@ const DatabaseAdminDashboard = () => {
         onOpenChange={setIsDetailsOpen}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="functions" className="flex items-center gap-2">
             <SquareFunction className="h-4 w-4" />

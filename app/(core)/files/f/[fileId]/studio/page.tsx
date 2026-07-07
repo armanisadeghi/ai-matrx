@@ -38,7 +38,7 @@ export default async function AnalysisStudioPage({ params }: PageProps) {
   // clear message instead.
   if (data.mime_type !== "application/pdf") {
     return (
-      <div className="flex h-dvh w-full flex-col items-center justify-center gap-3 bg-textured px-6 text-center">
+      <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-textured px-6 text-center">
         <FileText className="h-10 w-10 text-muted-foreground" />
         <h1 className="text-base font-semibold text-foreground">
           Analysis Studio is for PDF documents

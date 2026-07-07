@@ -269,7 +269,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
   const total = activeDoc?.totalPages ?? pages.length;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-2.5rem)] min-h-0 bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       {/* Header */}
       <header className="shrink-0 border-b border-border bg-card/40 px-2 py-1.5 flex items-center gap-2">
         <button

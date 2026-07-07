@@ -203,6 +203,13 @@ function renderContent(content: CanvasContent): React.ReactNode {
             showHeader
             showHeaderTitle={false}
             showOpenInWindow={false}
+            // The chat this canvas was opened from (when the opener knew it) —
+            // unlocks the per-document "Share with this chat" toggle.
+            gateConversationId={
+              typeof data.gateConversationId === "string"
+                ? data.gateConversationId
+                : undefined
+            }
             className="h-full"
           />
         );

@@ -58,6 +58,9 @@ function TaskQuickCreateWindowInner({
   prePopulate?: TaskPrePopulate;
   instanceId?: string;
 }) {
+  // Footer slot: the core portals its window-level actions (Cancel /
+  // Create & attach / post-save row) into the WindowPanel footer.
+  const [footerHost, setFooterHost] = React.useState<HTMLElement | null>(null);
   const windowId = instanceId
     ? `${BASE_WINDOW_ID}-${instanceId}`
     : BASE_WINDOW_ID;
@@ -90,6 +93,7 @@ function TaskQuickCreateWindowInner({
       maxHeight={maxHeight}
       position="center"
       onClose={onClose}
+      footerRight={<div ref={setFooterHost} className="flex items-center" />}
     >
       <div className="h-full min-h-0 p-3">
         <TaskCreatePanel
@@ -97,6 +101,7 @@ function TaskQuickCreateWindowInner({
           prePopulate={prePopulate}
           onSaved={handleSaved}
           onCancel={onClose}
+          footerHost={footerHost}
         />
       </div>
     </WindowPanel>

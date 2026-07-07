@@ -2201,6 +2201,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/utilities/pdf/from-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pdf From Images */
+        post: operations["pdf_from_images_utilities_pdf_from_images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilities/pdf/clean-content/{doc_id}": {
         parameters: {
             query?: never;
@@ -11122,6 +11139,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/images/detect-document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Detect Document
+         * @description Detect the outer boundary of a photographed document.
+         *
+         *     Pure-data endpoint — nothing is persisted. Returns an ordered quad
+         *     (TL/TR/BR/BL) in post-EXIF-transpose pixel coordinates plus a 0..1
+         *     confidence. ``found=false`` (quad null) means no plausible document
+         *     boundary — the FE defaults to a full-frame quad.
+         */
+        post: operations["detect_document_images_detect_document_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/images/edit": {
         parameters: {
             query?: never;
@@ -19004,6 +19046,23 @@ export interface components {
              */
             rag_boost: number;
         };
+        /** DetectDocumentRequest */
+        DetectDocumentRequest: {
+            /** Source Id */
+            source_id: string;
+        };
+        /** DetectDocumentResponse */
+        DetectDocumentResponse: {
+            /** Found */
+            found: boolean;
+            quad: components["schemas"]["DocumentQuad"] | null;
+            /** Confidence */
+            confidence: number;
+            /** Image Width */
+            image_width: number;
+            /** Image Height */
+            image_height: number;
+        };
         /** DetectRepeatedRegionsRequest */
         DetectRepeatedRegionsRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -19483,6 +19542,34 @@ export interface components {
             found: boolean;
             /** Name */
             name?: string | null;
+        };
+        /**
+         * DocumentQuad
+         * @description Ordered document corners in post-EXIF-transpose pixel coordinates —
+         *     the orientation a browser displays, and the exact space the
+         *     ``perspective_crop`` op consumes.
+         */
+        DocumentQuad: {
+            /** Top Left */
+            top_left: [
+                number,
+                number
+            ];
+            /** Top Right */
+            top_right: [
+                number,
+                number
+            ];
+            /** Bottom Right */
+            bottom_right: [
+                number,
+                number
+            ];
+            /** Bottom Left */
+            bottom_left: [
+                number,
+                number
+            ];
         };
         /** DocumentRecord */
         DocumentRecord: {
@@ -24648,6 +24735,56 @@ export interface components {
             /** Markdown */
             markdown: string;
         };
+        /** PdfFromImagesItem */
+        PdfFromImagesItem: {
+            media?: components["schemas"]["MediaRef"] | null;
+            /** File */
+            file?: {
+                [key: string]: unknown;
+            } | null;
+            /** Url */
+            url?: string | null;
+            /** Local Path */
+            local_path?: string | null;
+            /**
+             * Kind
+             * @default image
+             * @enum {string}
+             */
+            kind: "image" | "pdf";
+            quad?: components["schemas"]["ScanQuad"] | null;
+            /**
+             * Rotation
+             * @default 0
+             * @enum {integer}
+             */
+            rotation: 0 | 90 | 180 | 270;
+        };
+        /** PdfFromImagesRequest */
+        PdfFromImagesRequest: {
+            /** Items */
+            items: components["schemas"]["PdfFromImagesItem"][];
+            /**
+             * Filename
+             * @default scanned.pdf
+             */
+            filename: string;
+            /**
+             * Folder Path
+             * @default Scans
+             */
+            folder_path: string;
+            /**
+             * Force Ocr
+             * @default false
+             */
+            force_ocr: boolean;
+            /**
+             * Use Ocr Threshold
+             * @default 100
+             */
+            use_ocr_threshold: number;
+        };
         /** PdfFullPipelineRequest */
         PdfFullPipelineRequest: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -27689,6 +27826,34 @@ export interface components {
             description?: string | null;
             /** Url Params */
             url_params?: string | null;
+        };
+        /**
+         * ScanQuad
+         * @description Document corners in post-EXIF-transpose pixel coordinates — the
+         *     space ``/images/detect-document`` returns and ``perspective_crop``
+         *     consumes. TL/TR/BR/BL order.
+         */
+        ScanQuad: {
+            /** Top Left */
+            top_left: [
+                number,
+                number
+            ];
+            /** Top Right */
+            top_right: [
+                number,
+                number
+            ];
+            /** Bottom Right */
+            bottom_right: [
+                number,
+                number
+            ];
+            /** Bottom Left */
+            bottom_left: [
+                number,
+                number
+            ];
         };
         /** ScanSummary */
         ScanSummary: {
@@ -35489,6 +35654,39 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_batch_extract_utilities_pdf_batch_extract_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pdf_from_images_utilities_pdf_from_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PdfFromImagesRequest"];
             };
         };
         responses: {
@@ -51915,6 +52113,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImageOpsCatalog"];
+                };
+            };
+        };
+    };
+    detect_document_images_detect_document_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetectDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetectDocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

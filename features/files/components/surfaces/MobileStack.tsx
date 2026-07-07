@@ -115,7 +115,7 @@ export function MobileStack({
   return (
     <div
       className={cn(
-        "relative h-[calc(100dvh-var(--header-height))] w-full overflow-hidden bg-background",
+        "relative h-full w-full overflow-hidden bg-background",
         className,
       )}
     >

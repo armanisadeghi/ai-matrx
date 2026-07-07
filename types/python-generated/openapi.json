@@ -4936,6 +4936,45 @@
         }
       }
     },
+    "/utilities/pdf/from-images": {
+      "post": {
+        "tags": [
+          "Utilities"
+        ],
+        "summary": "Pdf From Images",
+        "operationId": "pdf_from_images_utilities_pdf_from_images_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfFromImagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utilities/pdf/clean-content/{doc_id}": {
       "post": {
         "tags": [
@@ -30150,6 +30189,48 @@
         }
       }
     },
+    "/images/detect-document": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Detect Document",
+        "description": "Detect the outer boundary of a photographed document.\n\nPure-data endpoint — nothing is persisted. Returns an ordered quad\n(TL/TR/BR/BL) in post-EXIF-transpose pixel coordinates plus a 0..1\nconfidence. ``found=false`` (quad null) means no plausible document\nboundary — the FE defaults to a full-frame quad.",
+        "operationId": "detect_document_images_detect_document_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetectDocumentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectDocumentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/images/edit": {
       "post": {
         "tags": [
@@ -53182,6 +53263,60 @@
         ],
         "title": "DerivativeRequest"
       },
+      "DetectDocumentRequest": {
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_id"
+        ],
+        "title": "DetectDocumentRequest"
+      },
+      "DetectDocumentResponse": {
+        "properties": {
+          "found": {
+            "type": "boolean",
+            "title": "Found"
+          },
+          "quad": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentQuad"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "image_width": {
+            "type": "integer",
+            "title": "Image Width"
+          },
+          "image_height": {
+            "type": "integer",
+            "title": "Image Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "found",
+          "quad",
+          "confidence",
+          "image_width",
+          "image_height"
+        ],
+        "title": "DetectDocumentResponse"
+      },
       "DetectRepeatedRegionsRequest": {
         "properties": {
           "media": {
@@ -54456,6 +54591,76 @@
           "found"
         ],
         "title": "DocumentLookupResult"
+      },
+      "DocumentQuad": {
+        "properties": {
+          "top_left": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Top Left"
+          },
+          "top_right": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Top Right"
+          },
+          "bottom_right": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Bottom Right"
+          },
+          "bottom_left": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Bottom Left"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "top_left",
+          "top_right",
+          "bottom_right",
+          "bottom_left"
+        ],
+        "title": "DocumentQuad",
+        "description": "Ordered document corners in post-EXIF-transpose pixel coordinates —\nthe orientation a browser displays, and the exact space the\n``perspective_crop`` op consumes."
       },
       "DocumentRecord": {
         "properties": {
@@ -68930,6 +69135,123 @@
         "title": "PdfExtractedTable",
         "description": "One table detected on one page."
       },
+      "PdfFromImagesItem": {
+        "properties": {
+          "media": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MediaRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "local_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Local Path"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "pdf"
+            ],
+            "title": "Kind",
+            "default": "image"
+          },
+          "quad": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScanQuad"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rotation": {
+            "type": "integer",
+            "enum": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "title": "Rotation",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "PdfFromImagesItem"
+      },
+      "PdfFromImagesRequest": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PdfFromImagesItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename",
+            "default": "scanned.pdf"
+          },
+          "folder_path": {
+            "type": "string",
+            "title": "Folder Path",
+            "default": "Scans"
+          },
+          "force_ocr": {
+            "type": "boolean",
+            "title": "Force Ocr",
+            "default": false
+          },
+          "use_ocr_threshold": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Use Ocr Threshold",
+            "default": 100
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "PdfFromImagesRequest"
+      },
       "PdfFullPipelineRequest": {
         "properties": {
           "media": {
@@ -76830,6 +77152,75 @@
         },
         "type": "object",
         "title": "SavedViewUpdate"
+      },
+      "ScanQuad": {
+        "properties": {
+          "top_left": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Top Left"
+          },
+          "top_right": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Top Right"
+          },
+          "bottom_right": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Bottom Right"
+          },
+          "bottom_left": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Bottom Left"
+          }
+        },
+        "type": "object",
+        "required": [
+          "top_left",
+          "top_right",
+          "bottom_right",
+          "bottom_left"
+        ],
+        "title": "ScanQuad",
+        "description": "Document corners in post-EXIF-transpose pixel coordinates — the\nspace ``/images/detect-document`` returns and ``perspective_crop``\nconsumes. TL/TR/BR/BL order."
       },
       "ScanSummary": {
         "properties": {

@@ -142,7 +142,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
   );
 
   return (
-    <div className="flex h-[100dvh] w-full flex-col bg-background">
+    <div className="flex h-full w-full flex-col bg-background">
       {/* Top bar */}
       <div className="flex shrink-0 items-center gap-2 matrx-glass-thin-border px-3 py-2 pr-12">
         <Button
@@ -157,7 +157,11 @@ export function StudioShell({ fileId }: StudioShellProps) {
           {file?.meta.fileName ?? "Document"}{" "}
           <span className="text-muted-foreground">— Analysis Studio</span>
         </h1>
-        <PdfSurfaceSwitcher current="analysis-studio" fileId={fileId} size="sm" />
+        <PdfSurfaceSwitcher
+          current="analysis-studio"
+          fileId={fileId}
+          size="sm"
+        />
         {annotationPages.length ? (
           <button
             type="button"
@@ -172,7 +176,9 @@ export function StudioShell({ fileId }: StudioShellProps) {
             className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20"
           >
             <span className="tabular-nums">{annotations.length}</span>
-            <span className="uppercase tracking-wider">annotation{annotations.length === 1 ? "" : "s"}</span>
+            <span className="uppercase tracking-wider">
+              annotation{annotations.length === 1 ? "" : "s"}
+            </span>
             <span className="text-emerald-600/70 dark:text-emerald-300/70">
               · pages {annotationPages.join(", ")}
             </span>
@@ -216,8 +222,8 @@ export function StudioShell({ fileId }: StudioShellProps) {
        */}
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:grid md:overflow-visible md:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.4fr)] lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1.4fr)] xl:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.5fr)]">
         {/* Left rail — thumbnails. Annotation counts surface as green
-          * badges on each thumbnail so the user can scan + jump to pages
-          * with pinned data. */}
+         * badges on each thumbnail so the user can scan + jump to pages
+         * with pinned data. */}
         <aside className="hidden min-w-0 overflow-hidden border-r border-border bg-card/40 md:block">
           <ThumbnailStrip
             fileId={fileId}
@@ -250,8 +256,8 @@ export function StudioShell({ fileId }: StudioShellProps) {
             onBackgroundClick={() => handleSelectAnnotation(null)}
           />
           {/* Active-mode banner — concrete instructions so the user always
-            * knows what's clickable. Floats inside the canvas so it doesn't
-            * eat layout space. */}
+           * knows what's clickable. Floats inside the canvas so it doesn't
+           * eat layout space. */}
           <div
             className={cn(
               "pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white shadow transition-opacity",

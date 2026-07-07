@@ -83,7 +83,9 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
       : capitalize(change.entity);
   const eyebrow = `${meta.label} ${change.entity}`;
   const autoNoun = change.autoApprove?.noun;
-  const pending = ask.status === "pending";
+  // AgentCardShell dims when `pending` is true — pass true only once resolved
+  // (matches AskCard / BatchAskCard; inverted here was blocking all clicks).
+  const resolved = ask.status !== "pending";
 
   function resolve(response: Parameters<typeof resolveAskByCallId>[1]) {
     resolveAskByCallId(ask.callId, response);
@@ -207,7 +209,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
       eyebrow={eyebrow}
       title={headline}
       onDismiss={dismiss}
-      pending={pending}
+      pending={resolved}
       footer={footer}
       aria-label={`${eyebrow}: ${headline}`}
     >

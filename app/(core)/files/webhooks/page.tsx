@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Webhooks | Files" };
 
 export default function FilesWebhooksPage() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] overflow-y-auto bg-textured">
+    <div className="h-full overflow-y-auto bg-textured">
       <WebhooksManager />
     </div>
   );

@@ -762,7 +762,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Database Tools Hub",
         description:
-          "Landing page for SQL editor, workbench, functions, and enum management.",
+          "Unified hub for all database admin tools — SQL editors, legacy dashboard, canonicalization workflow, and schema visualizers (duplicates marked Dup).",
         iconName: "DatabaseZap",
         link: "/administration/database",
       },

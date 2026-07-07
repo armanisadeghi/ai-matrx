@@ -291,6 +291,13 @@ Optional FKs for future "elevate to project / task" UX:
 
 ## Change Log
 
+- `2026-07-06` — **Fix ApprovalCard unreachable while awaiting user action.**
+  `<ApprovalCard>` passed `pending={ask.status === "pending"}` to
+  `<AgentCardShell>`, but that prop dims + disables once *resolved* (same contract
+  as `<AskCard>` / `<BatchAskCard>`). Inverted logic made every live approval
+  card `opacity-50 pointer-events-none` — Approve/Decline/Respond were visible but
+  unclickable (War Room HITL gate). Fixed to `pending={ask.status !== "pending"}`.
+
 - `2026-07-01` — **On-deck submit guard + animated reopen pill.** Two related
   polish items for the pending-ask flow:
   - **Submit never dangles a delegated tool.** New `resolvePendingAsksWithInput`

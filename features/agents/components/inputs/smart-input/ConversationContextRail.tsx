@@ -250,7 +250,9 @@ export function ConversationContextRail({
     dispatch(
       openCanvas({
         type: kind === "scratch" ? "scratchpad" : "working_document",
-        data: { conversationId: scope, kind },
+        // gateConversationId: the CHAT this pill lives in — lets the canvas
+        // scratch panel offer its per-document "Share with this chat" toggle.
+        data: { conversationId: scope, kind, gateConversationId: conversationId },
         metadata: {
           title:
             (kind === "scratch" ? scratchTitle : workingDocTitle)?.trim() ||

@@ -19,6 +19,7 @@ import { FileText, Lock, PanelLeftOpen, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
+  isScratchScope,
   scratchScopeId,
   type WorkingDocumentKind,
 } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
@@ -376,6 +377,11 @@ export function DocumentsWorkspace({
             surfaceContext={
               active.conversationId === conversationId
                 ? surfaceContext
+                : undefined
+            }
+            gateConversationId={
+              active.kind === "scratch" && !isScratchScope(conversationId)
+                ? conversationId
                 : undefined
             }
             className="h-full"
