@@ -749,6 +749,21 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Sharing & Access",
+    iconName: "Share2",
+    iconColor: "text-sky-600",
+    features: [
+      {
+        title: "Sharing Policy",
+        description:
+          "Control the no-login share-link policy for every shareable resource type: toggle whether a type offers an 'Anyone with the link' panel, and manage the default-deny allowlist of columns exposed to anonymous viewers.",
+        iconName: "Link2",
+        link: "/administration/sharing",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Database",
     iconName: "Database",
     iconColor: "text-blue-600",

@@ -43,6 +43,35 @@ export interface ResolvedShareToken {
   resource?: Record<string, unknown>;
 }
 
+export interface ShareCapabilities {
+  /** Whether the resource type can be made public (has a visibility/public column). */
+  supportsPublic: boolean;
+  /** Whether the resource type offers no-login share links (admin policy). */
+  isLinkShareable: boolean;
+}
+
+/**
+ * What share affordances this resource type supports — drives which controls the
+ * ShareModal shows (never render a toggle that would error on click). Admin-
+ * editable, so read at runtime (not from the static registry mirror).
+ */
+export async function getShareCapabilities(
+  resourceType: ResourceType,
+): Promise<ShareCapabilities> {
+  try {
+    const { data } = await supabase.rpc("get_share_capabilities", {
+      p_resource_type: resourceType,
+    });
+    const r = (data ?? {}) as { supports_public?: boolean; is_link_shareable?: boolean };
+    return {
+      supportsPublic: !!r.supports_public,
+      isLinkShareable: !!r.is_link_shareable,
+    };
+  } catch {
+    return { supportsPublic: false, isLinkShareable: false };
+  }
+}
+
 interface CreateShareLinkOptions {
   resourceType: ResourceType;
   resourceId: string;

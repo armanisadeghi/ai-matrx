@@ -19,6 +19,8 @@ interface ShareLinkPanelProps {
   resourceType: ResourceType;
   resourceId: string;
   isOwner: boolean;
+  /** Whether this resource type offers no-login links (admin policy). Hidden when false. */
+  enabled?: boolean;
 }
 
 /**
@@ -33,6 +35,7 @@ export function ShareLinkPanel({
   resourceType,
   resourceId,
   isOwner,
+  enabled = true,
 }: ShareLinkPanelProps) {
   const { toast } = useToast();
   const [links, setLinks] = useState<ShareLink[]>([]);
@@ -96,7 +99,7 @@ export function ShareLinkPanel({
     }
   }, [revokeTarget, refresh, toast]);
 
-  if (!isOwner) return null;
+  if (!isOwner || !enabled) return null;
 
   return (
     <div className="space-y-2.5 p-3 bg-muted/30 rounded-lg border">

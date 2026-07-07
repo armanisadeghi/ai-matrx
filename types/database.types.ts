@@ -18781,10 +18781,12 @@ export type Database = {
           display_label: string
           id_column: string
           is_active: boolean
+          is_link_shareable: boolean
           is_public_column: string | null
           is_scopeable: boolean
           notes: string | null
           owner_column: string
+          public_columns: string[] | null
           resource_type: string
           rls_uses_has_permission: boolean
           schema_name: string
@@ -18798,10 +18800,12 @@ export type Database = {
           display_label: string
           id_column?: string
           is_active?: boolean
+          is_link_shareable?: boolean
           is_public_column?: string | null
           is_scopeable?: boolean
           notes?: string | null
           owner_column?: string
+          public_columns?: string[] | null
           resource_type: string
           rls_uses_has_permission?: boolean
           schema_name?: string
@@ -18815,10 +18819,12 @@ export type Database = {
           display_label?: string
           id_column?: string
           is_active?: boolean
+          is_link_shareable?: boolean
           is_public_column?: string | null
           is_scopeable?: boolean
           notes?: string | null
           owner_column?: string
+          public_columns?: string[] | null
           resource_type?: string
           rls_uses_has_permission?: boolean
           schema_name?: string
@@ -23015,6 +23021,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_list_share_policies: {
+        Args: never
+        Returns: {
+          all_columns: string[]
+          display_label: string
+          is_active: boolean
+          is_link_shareable: boolean
+          public_columns: string[]
+          resource_type: string
+          rls_uses_has_permission: boolean
+          schema_name: string
+          supports_public: boolean
+          table_name: string
+        }[]
+      }
       admin_list_tables: {
         Args: never
         Returns: {
@@ -23133,6 +23154,14 @@ export type Database = {
       }
       admin_set_scope_type_system: {
         Args: { p_is_system: boolean; p_scope_type_id: string }
+        Returns: Json
+      }
+      admin_set_share_policy: {
+        Args: {
+          p_is_link_shareable: boolean
+          p_public_columns: string[]
+          p_resource_type: string
+        }
         Returns: Json
       }
       admin_unregistered_pairs: {
@@ -26151,6 +26180,10 @@ export type Database = {
         Returns: Json
       }
       get_sensitive_item_value: { Args: { p_item_id: string }; Returns: string }
+      get_share_capabilities: {
+        Args: { p_resource_type: string }
+        Returns: Json
+      }
       get_ssr_agent_shell_data: { Args: { p_user_id: string }; Returns: Json }
       get_ssr_shell_data: { Args: { p_user_id: string }; Returns: Json }
       get_storage_object: {

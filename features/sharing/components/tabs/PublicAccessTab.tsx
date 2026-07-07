@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Globe, AlertTriangle, Lock } from 'lucide-react';
@@ -8,6 +8,7 @@ import { ResourceType, Permission, ShareActionResult } from '@/utils/permissions
 import { PublicBadge } from '../PermissionBadge';
 import { useToast } from '@/components/ui/use-toast';
 import { ShareLinkPanel } from '../ShareLinkPanel';
+import { getShareCapabilities, type ShareCapabilities } from '@/utils/permissions/shareLinks';
 
 interface PublicAccessTabProps {
   /** Whether is_public = true on the resource row */
@@ -40,7 +41,21 @@ export function PublicAccessTab({
   resourceName,
 }: PublicAccessTabProps) {
   const [loading, setLoading] = useState(false);
+  const [caps, setCaps] = useState<ShareCapabilities>({
+    supportsPublic: true,
+    isLinkShareable: false,
+  });
   const { toast } = useToast();
+
+  useEffect(() => {
+    let active = true;
+    getShareCapabilities(resourceType).then((c) => {
+      if (active) setCaps(c);
+    });
+    return () => {
+      active = false;
+    };
+  }, [resourceType]);
 
   const handleToggle = async (checked: boolean) => {
     if (!isOwner) return;
@@ -76,8 +91,19 @@ export function PublicAccessTab({
         resourceType={resourceType}
         resourceId={resourceId}
         isOwner={isOwner}
+        enabled={caps.isLinkShareable}
       />
 
+      {!caps.supportsPublic ? (
+        <div className="p-3 bg-muted/30 rounded-lg border flex items-center gap-2">
+          <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            Public visibility isn&rsquo;t available for this item type. Use a
+            share link or invite specific people.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="flex items-start justify-between gap-3 p-3 bg-muted/30 rounded-lg border">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -132,6 +158,8 @@ export function PublicAccessTab({
             </p>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
