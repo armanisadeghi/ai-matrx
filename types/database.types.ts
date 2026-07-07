@@ -2322,6 +2322,302 @@ export type Database = {
       [_ in never]: never
     }
   }
+  billing: {
+    Tables: {
+      capability: {
+        Row: {
+          capability: string
+          enforced: boolean
+          min_tier: Database["billing"]["Enums"]["tier"]
+          period: Database["billing"]["Enums"]["meter_period"] | null
+          updated_at: string
+        }
+        Insert: {
+          capability: string
+          enforced?: boolean
+          min_tier?: Database["billing"]["Enums"]["tier"]
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          updated_at?: string
+        }
+        Update: {
+          capability?: string
+          enforced?: boolean
+          min_tier?: Database["billing"]["Enums"]["tier"]
+          period?: Database["billing"]["Enums"]["meter_period"] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      capability_limit: {
+        Row: {
+          capability: string
+          limit_value: number | null
+          tier: Database["billing"]["Enums"]["tier"]
+        }
+        Insert: {
+          capability: string
+          limit_value?: number | null
+          tier: Database["billing"]["Enums"]["tier"]
+        }
+        Update: {
+          capability?: string
+          limit_value?: number | null
+          tier?: Database["billing"]["Enums"]["tier"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capability_limit_capability_fkey"
+            columns: ["capability"]
+            isOneToOne: false
+            referencedRelation: "capability"
+            referencedColumns: ["capability"]
+          },
+        ]
+      }
+      customer: {
+        Row: {
+          created_at: string
+          stripe_customer_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          stripe_customer_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          stripe_customer_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      price: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          id: string
+          interval: string | null
+          interval_count: number
+          metadata: Json
+          product_id: string
+          stripe_price_id: string | null
+          trial_period_days: number | null
+          unit_amount: number | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string | null
+          interval_count?: number
+          metadata?: Json
+          product_id: string
+          stripe_price_id?: string | null
+          trial_period_days?: number | null
+          unit_amount?: number | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          id?: string
+          interval?: string | null
+          interval_count?: number
+          metadata?: Json
+          product_id?: string
+          stripe_price_id?: string | null
+          trial_period_days?: number | null
+          unit_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          stripe_product_id: string | null
+          tier: Database["billing"]["Enums"]["tier"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          stripe_product_id?: string | null
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          stripe_product_id?: string | null
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription: {
+        Row: {
+          cancel_at_period_end: boolean
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          metadata: Json
+          org_id: string | null
+          price_id: string | null
+          status: Database["billing"]["Enums"]["subscription_status"]
+          stripe_subscription_id: string | null
+          tier: Database["billing"]["Enums"]["tier"]
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string | null
+          price_id?: string | null
+          status: Database["billing"]["Enums"]["subscription_status"]
+          stripe_subscription_id?: string | null
+          tier?: Database["billing"]["Enums"]["tier"]
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string | null
+          price_id?: string | null
+          status?: Database["billing"]["Enums"]["subscription_status"]
+          stripe_subscription_id?: string | null
+          tier?: Database["billing"]["Enums"]["tier"]
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_price_id_fkey"
+            columns: ["price_id"]
+            isOneToOne: false
+            referencedRelation: "price"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_ledger: {
+        Row: {
+          capability: string
+          check_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          capability: string
+          check_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          capability?: string
+          check_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      entitlement_check: { Args: { p_capability: string }; Returns: Json }
+      entitlement_consume: {
+        Args: { p_capability: string; p_check_id?: string; p_quantity?: number }
+        Returns: Json
+      }
+      entitlement_snapshot: { Args: never; Returns: Json }
+      period_reset: {
+        Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
+        Returns: string
+      }
+      period_start: {
+        Args: { p_period: Database["billing"]["Enums"]["meter_period"] }
+        Returns: string
+      }
+      resolve_capability: {
+        Args: { p_capability: string; p_user: string }
+        Returns: Json
+      }
+      resolve_tier: {
+        Args: { p_user: string }
+        Returns: Database["billing"]["Enums"]["tier"]
+      }
+    }
+    Enums: {
+      meter_period: "day" | "week" | "month" | "lifetime"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "incomplete"
+        | "incomplete_expired"
+        | "unpaid"
+        | "paused"
+      tier: "free" | "trial" | "premium"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   canvas: {
     Tables: {
       canvas_comment_likes: {
@@ -40203,6 +40499,22 @@ export const Constants = {
   },
   app: {
     Enums: {},
+  },
+  billing: {
+    Enums: {
+      meter_period: ["day", "week", "month", "lifetime"],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "incomplete",
+        "incomplete_expired",
+        "unpaid",
+        "paused",
+      ],
+      tier: ["free", "trial", "premium"],
+    },
   },
   canvas: {
     Enums: {},

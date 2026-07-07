@@ -41,6 +41,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAccess, canEditAccess } from "@/utils/permissions";
+import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
@@ -142,6 +144,13 @@ export function SetDetailView({ setId }: { setId: string }) {
     "study" | "learn" | "test" | "match" | "write" | "fastfire" | "edit" | "sessions" | null
   >(null);
 
+  // View-vs-edit gate (P7). Owner/editor get the full authoring surface; a
+  // view-only sharee (shared read-only, or a public deck they don't own) gets a
+  // "Make a copy" offer instead of Edit / visibility controls that would fail.
+  const access = useAccess("fc_set", setId);
+  const canEdit = access.isOwner || canEditAccess(access.level);
+  const viewOnly = !access.loading && !canEdit;
+
   const exportCsv = () => {
     if (!data) return;
     downloadSetCsv(data.set, data.cards);
@@ -241,19 +250,40 @@ export function SetDetailView({ setId }: { setId: string }) {
                       {data.set.description}
                     </p>
                   ) : null}
-                  <div className="mt-2">
-                    <SetVisibilityControl
-                      setId={setId}
-                      visibility={data.set.visibility}
-                      onChange={(v) =>
-                        setData((prev) =>
-                          prev
-                            ? { ...prev, set: { ...prev.set, visibility: v } }
-                            : prev,
-                        )
-                      }
-                    />
-                  </div>
+                  {canEdit && (
+                    <div className="mt-2">
+                      <SetVisibilityControl
+                        setId={setId}
+                        visibility={data.set.visibility}
+                        onChange={(v) =>
+                          setData((prev) =>
+                            prev
+                              ? { ...prev, set: { ...prev.set, visibility: v } }
+                              : prev,
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                  {viewOnly && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground">
+                      <BookOpen className="h-3.5 w-3.5" />
+                      Shared with you — view only. Make a copy to edit or track your own progress.
+                    </div>
+                  )}
+                  {data.set.visibility === "public" && (
+                    <div className="mt-2">
+                      <a
+                        href={`/p/e/fc_set/${setId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                      >
+                        <Expand className="h-3.5 w-3.5" />
+                        View public page
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Action row — the hub: every path you can take with this set.
@@ -318,15 +348,27 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <Zap className="mr-1.5 h-4 w-4" />
                   Fast Fire
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("edit", `${EDU_BASE}/${setId}/edit`)}
-                  disabled={isPending}
-                  className={cn(pendingAction === "edit" && "opacity-70")}
-                >
-                  <Pencil className="mr-1.5 h-4 w-4" />
-                  Edit
-                </Button>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate("edit", `${EDU_BASE}/${setId}/edit`)}
+                    disabled={isPending}
+                    className={cn(pendingAction === "edit" && "opacity-70")}
+                  >
+                    <Pencil className="mr-1.5 h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+                {viewOnly && (
+                  <DuplicateToEditButton
+                    resourceType="fc_set"
+                    resourceId={setId}
+                    returnPath={`${EDU_BASE}/${setId}`}
+                    label="Make a copy"
+                    size="default"
+                    variant="default"
+                  />
+                )}
                 <Button
                   variant="outline"
                   onClick={() =>

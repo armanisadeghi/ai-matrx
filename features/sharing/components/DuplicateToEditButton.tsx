@@ -9,32 +9,50 @@ import { createClient } from "@/utils/supabase/client";
 import { forkSharedResource } from "@/utils/permissions/shareLinks";
 
 /**
- * "Save a copy & use it" for a shared resource. If the viewer is signed in it
- * forks the resource into their account and opens their copy; if not, it sends
- * them to sign-up and returns them here afterward (new-user acquisition — the
- * whole point of no-login sharing).
+ * Duplicate-to-edit — the canonical "Make a copy & use it" action for a resource
+ * the viewer can SEE but not edit (a view-only sharee, a public deck, an anon
+ * visitor). It forks the resource into the caller's own account and drops them
+ * into their editable copy. If the viewer isn't signed in, it routes them to
+ * sign-up and returns them here to finish the copy (the acquisition flywheel P7
+ * unblocks for P6-C's community library and P10's shared rooms).
+ *
+ * ONE component for every surface: the /s/[token] link viewer, the /p/e public
+ * viewer, and any in-app view where `useAccess` returns `view`. The fork is a
+ * SECURITY DEFINER RPC per resource family (utils/permissions/shareLinks
+ * #forkSharedResource) that gates on the resource actually being shared/public —
+ * you can only copy what you were allowed to see.
  */
-export function ForkAndUseButton({
+export function DuplicateToEditButton({
   resourceType,
   resourceId,
   returnPath,
+  label,
+  size = "lg",
+  variant = "default",
+  className,
 }: {
   resourceType: string;
   resourceId: string;
-  /** The /s/[token] path to return to after sign-up. */
+  /** Where to return the viewer after sign-up (they finish the copy here). */
   returnPath: string;
+  /** Override the default per-type verb ("Study these flashcards", …). */
+  label?: string;
+  size?: "sm" | "default" | "lg";
+  variant?: "default" | "outline" | "secondary";
+  className?: string;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
-  const label =
-    resourceType === "conversation"
+  const resolvedLabel =
+    label ??
+    (resourceType === "conversation"
       ? "Continue this chat"
       : resourceType === "fc_set"
         ? "Study these flashcards"
         : resourceType === "quiz_sessions"
           ? "Take this quiz"
-          : "Save a copy";
+          : "Make a copy");
 
   const Icon =
     resourceType === "conversation"
@@ -52,7 +70,6 @@ export function ForkAndUseButton({
         data: { user },
       } = await createClient().auth.getUser();
       if (!user) {
-        // Sign up, then come back here to finish saving the copy.
         router.push(`/sign-up?redirectTo=${encodeURIComponent(returnPath)}`);
         return;
       }
@@ -71,13 +88,13 @@ export function ForkAndUseButton({
   };
 
   return (
-    <Button size="lg" onClick={onClick} disabled={busy}>
+    <Button size={size} variant={variant} onClick={onClick} disabled={busy} className={className}>
       {busy ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
         <Icon className="mr-2 h-4 w-4" />
       )}
-      {label}
+      {resolvedLabel}
     </Button>
   );
 }

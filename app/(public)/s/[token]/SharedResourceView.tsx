@@ -8,7 +8,7 @@ import { ArrowUpRight, ExternalLink, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { isForkable, type ResolvedShareToken } from "@/utils/permissions/shareLinks";
-import { ForkAndUseButton } from "./ForkAndUseButton";
+import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 
 function str(resource: Record<string, unknown> | undefined, key: string): string {
   const v = resource?.[key];
@@ -163,7 +163,7 @@ export function SharedResourceView({
         </Link>
         <div className="flex items-center gap-2">
           {forkable && result.resourceType && result.resourceId && (
-            <ForkAndUseButton
+            <DuplicateToEditButton
               resourceType={result.resourceType}
               resourceId={result.resourceId}
               returnPath={`/s/${token}`}
