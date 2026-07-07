@@ -1,57 +1,40 @@
 /**
- * StreamingSpeakerButton — Single play/pause toggle, streaming variant
+ * StreamingSpeakerButton — single play/pause "read this aloud" button.
  *
- * ─── Lifecycle ──────────────────────────────────────────────────────────────
+ * ─── Why it routes through the unified queue ─────────────────────────────────
  *
- *  Pre-click:   Renders ONE static <Volume2TapButton onClick=engage>.
- *               Zero hooks, zero SDK, zero network. The entire bundle impact
- *               at page load is this file + the tap-buttons icon module.
+ * This button speaks a COMPLETE piece of text (a finished assistant message, a
+ * document, a selection). It enqueues onto the app-wide `playbackQueue`
+ * singleton via `useTtsSpeak` rather than owning a Cartesia WebPlayer in a React
+ * hook.
  *
- *  On click:    Sets engaged=true and kicks off a single dynamic
- *               import('./StreamingSpeakerLive'). The module reference is
- *               cached at module scope, so subsequent clicks across any
- *               instance of this component don't refetch the chunk.
+ * That is the whole point: the queue lives OUTSIDE React (module scope), so
+ * audio NEVER cuts off when this button unmounts — switching a war-room tab,
+ * navigating to another route, or collapsing the message group keeps the audio
+ * playing to completion. New utterances line up BEHIND the current one instead
+ * of interrupting it (the queue is the single ordered playback path). The
+ * Cartesia SDK chunk is lazy-loaded inside the queue's adapter on first use, so
+ * there is still zero SDK cost until someone actually clicks play.
  *
- *  While chunk loads: Renders the EXACT SAME icon as StreamingSpeakerLive's
- *               first render — a disabled Volume2TapButton with ariaLabel
- *               "Connecting…". Because both renders produce the identical
- *               host element (same type, same variant, same disabled, same
- *               aria), React reconciles to the same DOM node: no flicker,
- *               no unmount, no re-layout.
+ * The button reflects only the status of ITS OWN queued utterance
+ * (queued / loading / playing / paused) and drives pause/resume on the queue.
  *
- *  Module loaded: <StreamingSpeakerLive> takes over. Its first render (while
- *               the hook is in `initialLoading: true` → phase "fetching-token")
- *               still shows the same disabled "Connecting…" icon. Then it
- *               transitions through "sending" → "playing" naturally.
- *
- * ─── Design ─────────────────────────────────────────────────────────────────
- *
- * No React.lazy, no Suspense, no next/dynamic wrapper. The shell manages the
- * dynamic import itself via a module-scoped ref + useState. This keeps the
- * render tree flat and predictable:
- *
- *     pre-click            →  <Volume2TapButton onClick=engage>
- *     click (module miss)  →  <Volume2TapButton disabled aria="Connecting…">
- *     chunk loaded         →  <StreamingSpeakerLive> → <Volume2TapButton disabled aria="Connecting…">
- *     playing              →  <StreamingSpeakerLive> → <PauseTapButton>
- *
- * Because the outermost host element is always a tap-button of the same
- * variant, React reconciliation keeps the DOM stable across all four phases.
+ * Dictionary pronunciation follows the single global active context by default
+ * (resolved in the queue's cartesia adapter); pass `dictionarySurfaceKey` only
+ * to scope it to a specific surface.
  *
  * ─── Voice preferences ──────────────────────────────────────────────────────
  *
- * The underlying hook reads voiceId / language / speed from the Redux
- * `userPreferences.voice` slice via three primitive selectors, so the user's
- * selected voice is always used when available; the hook falls back to a
- * sensible default otherwise.
+ * `useTtsSpeak` resolves voiceId / language / speed from the Redux
+ * `userPreferences.voice` slice, so the user's selected voice is always used.
  */
 
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { Volume2TapButton } from '@/components/icons/tap-buttons';
+import React, { useCallback } from 'react';
+import { Volume2TapButton, PauseTapButton } from '@/components/icons/tap-buttons';
+import { useTtsSpeak } from '@/features/audio/playback/useTtsSpeak';
 import type { SpeakerVariant } from '../types';
-import type { StreamingSpeakerLiveProps } from './StreamingSpeakerLive';
 
 export interface StreamingSpeakerButtonProps {
   text: string;
@@ -67,24 +50,10 @@ export interface StreamingSpeakerButtonProps {
   variant?: SpeakerVariant;
   className?: string;
   disabled?: boolean;
-}
-
-// Module-scoped cache: once the first instance loads the Live module, every
-// subsequent instance mounts it synchronously. The Cartesia SDK chunk only
-// ever fetches once per page load.
-type LiveModule = typeof import('./StreamingSpeakerLive');
-let cachedModule: LiveModule | null = null;
-let inflightPromise: Promise<LiveModule> | null = null;
-
-function loadLiveModule(): Promise<LiveModule> {
-  if (cachedModule) return Promise.resolve(cachedModule);
-  if (!inflightPromise) {
-    inflightPromise = import('./StreamingSpeakerLive').then((m) => {
-      cachedModule = m;
-      return m;
-    });
-  }
-  return inflightPromise;
+  /** Short human label for the Audio panel queue row. */
+  label?: string;
+  /** Override the dictionary surface; defaults to the global active context. */
+  dictionarySurfaceKey?: string;
 }
 
 export function StreamingSpeakerButton({
@@ -94,75 +63,71 @@ export function StreamingSpeakerButton({
   variant,
   className,
   disabled = false,
+  label,
+  dictionarySurfaceKey,
 }: StreamingSpeakerButtonProps) {
-  const [engaged, setEngaged] = useState(false);
-  // Captured once at engage-time — the selection is gone by the time the
-  // Live component mounts, so it must be snapshotted on click.
-  const [overrideText, setOverrideText] = useState<string | null>(null);
-  const [Live, setLive] = useState<
-    React.ComponentType<StreamingSpeakerLiveProps> | null
-  >(() => cachedModule?.StreamingSpeakerLive ?? null);
+  const { speak, pause, resume, status } = useTtsSpeak({
+    processMarkdown,
+    label,
+    dictionarySurfaceKey,
+  });
 
-  useEffect(() => {
-    if (!engaged || Live) return undefined;
-    let cancelled = false;
-    loadLiveModule().then((m) => {
-      if (!cancelled) setLive(() => m.StreamingSpeakerLive);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [engaged, Live]);
+  // `status` is THIS surface's own utterance status (null once done / never
+  // spoken). Only the currently-playing queue item can be "playing"/"paused",
+  // so these map 1:1 to whether our utterance owns the queue right now.
+  const isPlaying = status === 'playing';
+  const isPaused = status === 'paused';
+  const isBusy = status === 'loading' || status === 'queued';
+  const hasText = text.trim().length > 0;
 
-  const handleEngage = useCallback(() => {
-    if (disabled || !text.trim()) return;
+  const handleClick = useCallback(() => {
+    if (isPlaying) {
+      pause();
+      return;
+    }
+    if (isPaused) {
+      resume();
+      return;
+    }
+    if (disabled || !hasText) return;
     const override = getTextOverride?.()?.trim() || null;
-    setOverrideText(override);
-    setEngaged(true);
-  }, [disabled, text, getTextOverride]);
+    speak(override ?? text);
+  }, [isPlaying, isPaused, disabled, hasText, pause, resume, speak, text, getTextOverride]);
 
-  // Pre-click: clickable idle icon. The mousedown guard keeps any live text
-  // selection intact so `getTextOverride` can still read it on click.
-  if (!engaged) {
+  const button = isPlaying ? (
+    <PauseTapButton
+      variant={variant}
+      onClick={handleClick}
+      disabled={disabled}
+      ariaLabel="Pause"
+      className={className}
+    />
+  ) : (
+    <Volume2TapButton
+      variant={variant}
+      onClick={handleClick}
+      disabled={disabled || !hasText}
+      ariaLabel={
+        isBusy
+          ? status === 'queued'
+            ? 'Queued…'
+            : 'Connecting…'
+          : isPaused
+            ? 'Resume'
+            : 'Play audio (reads your selection when text is selected)'
+      }
+      className={className}
+    />
+  );
+
+  // Preserve any live text selection so getTextOverride can read it on click
+  // (mousedown default would otherwise clear the selection before onClick).
+  if (getTextOverride) {
     return (
-      <span
-        onMouseDown={
-          getTextOverride ? (e) => e.preventDefault() : undefined
-        }
-        className="contents"
-      >
-        <Volume2TapButton
-          variant={variant}
-          onClick={handleEngage}
-          disabled={disabled || !text.trim()}
-          ariaLabel="Play audio (reads your selection when text is selected)"
-          className={className}
-        />
+      <span onMouseDown={(e) => e.preventDefault()} className="contents">
+        {button}
       </span>
     );
   }
-
-  // Engaged but chunk still loading: disabled "Connecting…" icon. This is
-  // the exact same element Live renders on its first frame, so swapping to
-  // the live component below is a no-op for the DOM.
-  if (!Live) {
-    return (
-      <Volume2TapButton
-        variant={variant}
-        disabled
-        ariaLabel="Connecting…"
-        className={className}
-      />
-    );
-  }
-
-  return (
-    <Live
-      text={overrideText ?? text}
-      processMarkdown={processMarkdown}
-      variant={variant}
-      className={className}
-      disabled={disabled}
-    />
-  );
+  return button;
 }

@@ -7,7 +7,7 @@ import {
   type PdfSourceState,
 } from "@/features/pdf-demo/components/PdfSourcePicker";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { PdfResult } from "@/features/pdf-extractor/types";
+import type { PdfTablesReport } from "@/features/pdf-extractor/types";
 
 const FORMATS = ["csv", "json"] as const;
 
@@ -16,7 +16,7 @@ export default function ExtractTablesDemo() {
   const [source, setSource] = useState<PdfSourceState>(EMPTY_PDF_SOURCE);
   const [fmt, setFmt] = useState<(typeof FORMATS)[number]>("csv");
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<PdfResult | null>(null);
+  const [result, setResult] = useState<PdfTablesReport | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function run() {
@@ -24,7 +24,7 @@ export default function ExtractTablesDemo() {
     setError(null);
     setResult(null);
     try {
-      const json = await api.postJson<PdfResult>("extractTables", {
+      const json = await api.postJson<PdfTablesReport>("extractTables", {
         ...source.payload,
         output_format: fmt,
       });

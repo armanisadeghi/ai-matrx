@@ -13,7 +13,12 @@
  */
 
 import { fingerprintText } from "./fingerprint";
-import { IR_VERSION, type CanonicalBlockIR, type IrStructuredNode } from "./ir-types";
+import {
+  IR_VERSION,
+  type CanonicalBlockIR,
+  type IrDiscriminator,
+  type IrStructuredNode,
+} from "./ir-types";
 import { KIND_KEY, type KindSchema } from "./kind-schema.types";
 import { IrTree } from "./ir-tree";
 import {
@@ -57,16 +62,30 @@ export interface NormalizeJsonRegionOptions {
   existing?: unknown;
 }
 
+export interface CompleteValueEnvelopeOptions {
+  /**
+   * Wire discriminator recorded on the root node — which syntax established
+   * the kind. Defaults to the JSON `__kind` key; XML surfaces converging at
+   * region finalize pass `xmlDiscriminator(tag)` so round-trip serializers
+   * know the original arrival format.
+   */
+  discriminator?: IrDiscriminator;
+}
+
 /**
  * Build a resolved, complete envelope directly from an already-structured
- * value (a persisted artifact's `content.data` object). This is the
- * zero-reprocessing rehydration path: the stored value IS the reconstructed
- * region value (schema fields + residue extras merged at persist time), so no
- * tokenizer/parser run is needed — the envelope wraps it verbatim.
+ * value (a persisted artifact's `content.data` object, or a completed XML
+ * region's strategy output). This is the zero-reprocessing rehydration path:
+ * the value IS the reconstructed region value (schema fields + residue extras
+ * merged at persist time), so no tokenizer/parser run is needed — the
+ * envelope wraps it verbatim. The fingerprint hashes the canonical value
+ * serialization, so any two paths producing the same value produce the SAME
+ * envelope (stream ≡ static by construction).
  */
 export function envelopeFromCompleteValue(
   value: Record<string, unknown>,
   kind: string,
+  options?: CompleteValueEnvelopeOptions,
 ): CanonicalBlockIR {
   return {
     v: IR_VERSION,
@@ -76,7 +95,7 @@ export function envelopeFromCompleteValue(
       role: "structured",
       kind,
       kindState: "resolved",
-      discriminator: { format: "json", key: KIND_KEY },
+      discriminator: options?.discriminator ?? { format: "json", key: KIND_KEY },
       path: [],
       status: "complete",
       value,

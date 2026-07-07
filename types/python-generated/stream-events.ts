@@ -456,6 +456,17 @@ export interface ConversationLabeledData {
   keywords?: string[];
 }
 
+export interface DictionaryPublishCompleteData {
+  type?: "dictionary_publish_complete";
+  status: string;
+  level: string;
+  owner_id?: string | null;
+  external_id?: string | null;
+  version_id?: string | null;
+  rule_count?: number;
+  rules_hash?: string | null;
+}
+
 export interface QuestionnaireQuestion {
   id: string;
   prompt: string;
@@ -474,6 +485,32 @@ export interface QuestionnaireDisplayData {
   questions?: QuestionnaireQuestion[];
 }
 
+export interface ExtractionIndexCompleteData {
+  type?: "extraction_index_complete";
+  run_id: string;
+  job_id: string;
+  derivative_id: string;
+  derivative_outcome: string;
+  results_total: number;
+  chunks_written: number;
+  chunks_skipped: number;
+  priority_applied: number;
+  agent_id?: string | null;
+  embedding_model: string;
+}
+
+export interface ExtractionIndexProgressData {
+  type?: "extraction_index_progress";
+  run_id: string;
+  stage: string;
+  message?: string;
+  results_total?: number;
+  chunks_built?: number;
+  chunks_skipped?: number;
+  embedded?: number;
+  total_to_embed?: number;
+}
+
 export interface FetchResultItem {
   url?: string;
   title?: string;
@@ -487,6 +524,82 @@ export interface FetchResultsData {
   results?: FetchResultItem[];
 }
 
+export interface FileAnalysisCompleteData {
+  type?: "file_analysis_complete";
+  file_id: string;
+  status: string;
+  results_count?: number;
+  failures?: string[];
+  elapsed_ms?: number;
+  head?: Record<string, unknown>;
+  results?: Record<string, unknown>[];
+}
+
+export interface FileAnalysisStartedData {
+  type?: "file_analysis_started";
+  file_id: string;
+  mime_type?: string | null;
+  total_detectors: number;
+}
+
+export interface FileDetectorCompletedData {
+  type?: "file_detector_completed";
+  file_id: string;
+  detector_kind: string;
+  tier: string;
+  status: string;
+  elapsed_ms?: number;
+  error?: string | null;
+  complete: number;
+  total: number;
+}
+
+export interface FileSearchBboxItem {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface FileSearchHitItem {
+  page_number: number;
+  page_id?: string | null;
+  bbox: FileSearchBboxItem;
+  snippet: string;
+  matched_text: string;
+  char_start?: number | null;
+  char_end?: number | null;
+}
+
+export interface FileSearchCompleteData {
+  type?: "file_search_complete";
+  file_id: string;
+  query: string;
+  regex?: boolean;
+  case_sensitive?: boolean;
+  hits?: FileSearchHitItem[];
+  truncated?: boolean;
+  pages_scanned?: number;
+  total_pages?: number;
+}
+
+export interface FileSearchPageData {
+  type?: "file_search_page";
+  page_number: number;
+  total_pages: number;
+  hits?: FileSearchHitItem[];
+  total_hits?: number;
+}
+
+export interface FileSearchStartedData {
+  type?: "file_search_started";
+  file_id: string;
+  query: string;
+  regex?: boolean;
+  case_sensitive?: boolean;
+  total_pages: number;
+}
+
 export interface FunctionResultData {
   type?: "function_result";
   function_name: string;
@@ -494,6 +607,34 @@ export interface FunctionResultData {
   result?: unknown;
   error?: string | null;
   duration_ms?: number | null;
+}
+
+export interface ImageDocumentDetectedData {
+  type?: "image_document_detected";
+  found: boolean;
+  top_left?: unknown[] | null;
+  top_right?: unknown[] | null;
+  bottom_right?: unknown[] | null;
+  bottom_left?: unknown[] | null;
+  confidence?: number;
+  image_width?: number;
+  image_height?: number;
+}
+
+export interface ImageEditCompleteData {
+  type?: "image_edit_complete";
+  op: string;
+  file_id?: string | null;
+  asset?: Record<string, unknown>;
+}
+
+export interface ImageOpStageData {
+  type?: "image_op_stage";
+  op: string;
+  stage: string;
+  detail?: string | null;
+  source_id?: string | null;
+  mask_id?: string | null;
 }
 
 export interface ImageOutputData {
@@ -504,6 +645,88 @@ export interface ImageOutputData {
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;
+}
+
+export interface ImageStudioCommitCompleteData {
+  type?: "image_studio_commit_complete";
+  job_id: string;
+  folder_path: string;
+  saved_count?: number;
+  failed_count?: number;
+  result?: Record<string, unknown>;
+}
+
+export interface ImageStudioCommitItemData {
+  type?: "image_studio_commit_item";
+  job_id: string;
+  preset_id: string;
+  status: string;
+  file_id?: string | null;
+  filename?: string | null;
+  file_path?: string | null;
+  size?: number | null;
+  public_url?: string | null;
+  error?: string | null;
+  completed?: number;
+  total?: number;
+}
+
+export interface ImageStudioProcessCompleteData {
+  type?: "image_studio_process_complete";
+  job_id: string;
+  result?: Record<string, unknown>;
+}
+
+export interface ImageStudioVariantData {
+  type?: "image_studio_variant";
+  job_id: string;
+  preset_id: string;
+  filename?: string | null;
+  format?: string | null;
+  width?: number | null;
+  height?: number | null;
+  quality?: number | null;
+  size?: number | null;
+  signed_url?: string | null;
+  expires_in?: number | null;
+  compression_ratio?: number | null;
+  notes?: string[];
+  error?: string | null;
+  completed?: number;
+  total?: number;
+}
+
+export interface LegalSyncEventData {
+  type?: "legal_sync_event";
+  phase: string;
+  run_id?: string | null;
+  resource?: string | null;
+  resources?: string[] | null;
+  court_id?: string | null;
+  court_ids?: string[] | null;
+  cluster_id?: number | null;
+  cluster_count?: number | null;
+  rows?: number | null;
+  court_rows?: number | null;
+  total_rows?: number | null;
+  rows_pumped?: number | null;
+  rows_inserted?: number | null;
+  bytes_received?: number | null;
+  s3_key?: string | null;
+  size_bytes?: number | null;
+  dump_date?: string | null;
+  bucket?: string | null;
+  table?: string | null;
+  target?: string | null;
+  batch_size?: number | null;
+  last_id?: number | null;
+  reason?: string | null;
+  per_court_counts?: Record<string, number> | null;
+  per_court_errors?: Record<string, string> | null;
+  per_cluster_errors?: Record<string, string> | null;
+  per_resource_rows?: Record<string, number> | null;
+  per_resource_errors?: Record<string, string> | null;
+  error?: string | null;
 }
 
 export interface AudioBlock {
@@ -700,20 +923,289 @@ export interface PartialImageData {
   mime_type?: string;
 }
 
-export interface PodcastCompleteData {
-  type?: "podcast_complete";
-  show_id: string;
-  success: boolean;
-  episode_count?: number;
+export interface PdfPageClassificationItem {
+  page_number: number;
+  page_class: string;
+  confidence: number;
+  indicators?: string[];
+}
+
+export interface PdfClassifyCompleteData {
+  type?: "pdf_classify_complete";
+  page_count: number;
+  pages?: PdfPageClassificationItem[];
+  classifier_version?: string;
+}
+
+export interface PdfExtractCompleteData {
+  type?: "pdf_extract_complete";
+  filename?: string | null;
+  page_count: number;
+  ocr_pages: number;
+  total_chars: number;
+  text_content: string;
+  file_id?: string | null;
+}
+
+export interface PdfExtractStartedData {
+  type?: "pdf_extract_started";
+  filename?: string | null;
+  total_pages: number;
+}
+
+export interface PdfPageClassifiedData {
+  type?: "pdf_page_classified";
+  page_number: number;
+  total_pages: number;
+  page_class: string;
+  confidence: number;
+  indicators?: string[];
+}
+
+export interface PdfPageExtractedData {
+  type?: "pdf_page_extracted";
+  page_number: number;
+  total_pages: number;
+  extraction_method: string;
+  char_count: number;
+  preview?: string;
+}
+
+export interface PdfPipelineResultData {
+  type?: "pdf_pipeline_result";
+  raw_text?: string | null;
+  page_count?: number;
+  chunks?: string[] | null;
+  ai_processed?: Record<string, unknown>[] | null;
+  cloud_uri?: string | null;
+  supabase_url?: string | null;
+  file_id?: string | null;
+}
+
+export interface PdfReadingOrderBlockItem {
+  block_index: number;
+  column_index: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  text: string;
+}
+
+export interface PdfReadingOrderPageItem {
+  page_number: number;
+  column_count: number;
+  blocks_in_order?: PdfReadingOrderBlockItem[];
+}
+
+export interface PdfReadingOrderCompleteData {
+  type?: "pdf_reading_order_complete";
+  page_count: number;
+  pages?: PdfReadingOrderPageItem[];
+}
+
+export interface PdfReadingOrderPageData {
+  type?: "pdf_reading_order_page";
+  page_number: number;
+  total_pages: number;
+  column_count: number;
+  block_count: number;
+  preview?: string;
+}
+
+export interface PdfRepeatedRegionBboxItem {
+  page_number: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  raw_text?: string;
+}
+
+export interface PdfRepeatedRegionItem {
+  region_id: string;
+  kind: string;
+  text_template: string;
+  pages?: number[];
+  bbox_per_page?: PdfRepeatedRegionBboxItem[];
+  confidence: number;
+}
+
+export interface PdfRepeatedRegionsCompleteData {
+  type?: "pdf_repeated_regions_complete";
+  page_count: number;
+  regions?: PdfRepeatedRegionItem[];
+  detector_version?: string;
+}
+
+export interface PdfRepeatedRegionsProgressData {
+  type?: "pdf_repeated_regions_progress";
+  stage: "detect" | "extract_text" | "strip";
+  page_number: number;
+  total_pages: number;
+}
+
+export interface PdfRepeatedRegionsStripCompleteData {
+  type?: "pdf_repeated_regions_strip_complete";
+  page_count: number;
+  pages_text?: string[];
+  regions?: PdfRepeatedRegionItem[];
+  detector_version?: string;
+  stripped_region_ids?: string[];
+}
+
+export interface PdfTableExtractedData {
+  type?: "pdf_table_extracted";
+  page_number: number;
+  total_pages: number;
+  table_index: number;
+  row_count: number;
+  column_count: number;
+  markdown_preview?: string;
+}
+
+export interface PdfExtractedTableItem {
+  page_number: number;
+  table_index: number;
+  bbox: PdfTableBboxItem;
+  row_count: number;
+  column_count: number;
+  header?: (string | null)[];
+  rows?: (string | null)[][];
+  markdown?: string;
+}
+
+export interface PdfTableBboxItem {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface PdfTablesCompleteData {
+  type?: "pdf_tables_complete";
+  page_count: number;
+  table_count: number;
+  tables?: PdfExtractedTableItem[];
+  detector?: string;
+  detector_version?: string;
+}
+
+export interface PdfTablesPageData {
+  type?: "pdf_tables_page";
+  page_number: number;
+  total_pages: number;
+  tables_found: number;
+}
+
+export interface PdfTablesStartedData {
+  type?: "pdf_tables_started";
+  filename?: string | null;
+  total_pages: number;
+}
+
+export interface PodcastAssetEvent {
+  type?: "podcast_asset";
+  asset_kind: "image" | "video";
+  index: number;
+  url?: string;
+  prompt?: string;
+  success?: boolean;
+  error?: string | null;
+  note?: string | null;
+}
+
+export interface PodcastAssetGenStartedEvent {
+  type?: "podcast_asset_gen_started";
+  run_id: string;
+  asset_kind: "image" | "video";
+  slot: number;
+  prompt?: string;
+  model_alias?: string | null;
+  is_manual?: boolean;
+}
+
+export interface PodcastAssetResultEvent {
+  type?: "podcast_asset_result";
+  run_id: string;
+  asset_id?: string | null;
+  asset_kind: "image" | "video";
+  slot: number;
+  status: string;
+  url?: string | null;
+  file_id?: string | null;
+  prompt?: string | null;
+  model_alias?: string | null;
+  is_manual?: boolean;
   error?: string | null;
 }
 
-export interface PodcastStageData {
+export interface PodcastCompleteEvent {
+  type?: "podcast_complete";
+  show_id: string;
+  success: boolean;
+  episode_id?: string | null;
+  episode_slug?: string | null;
+  script?: string;
+  audio_url?: string;
+  title?: string;
+  description?: string;
+  image_urls?: string[];
+  video_urls?: string[];
+  official_video_url?: string;
+  official_video_error?: string;
+  host_count?: number;
+  speakers?: Record<string, unknown>[];
+  error?: string | null;
+}
+
+export interface PodcastMetadataEvent {
+  type?: "podcast_metadata";
+  title?: string;
+  description?: string;
+  image_descriptions?: string[];
+  video_descriptions?: string[];
+}
+
+export interface PodcastOfficialVideoEvent {
+  type?: "podcast_official_video";
+  url?: string;
+  success?: boolean;
+  error?: string | null;
+}
+
+export interface PodcastRunEvent {
+  type?: "podcast_run";
+  run_id?: string;
+  total?: number;
+}
+
+export interface PodcastStageEvent {
   type?: "podcast_stage";
   stage: string;
+  label?: string;
   success: boolean;
+  output?: string;
   error?: string | null;
-  result_keys?: string[];
+  step?: number;
+  total?: number;
+}
+
+export interface PodcastStageStartedEvent {
+  type?: "podcast_stage_started";
+  stage: string;
+  label?: string;
+  step?: number;
+  total?: number;
+}
+
+export interface PodcastTickEvent {
+  type?: "podcast_tick";
+  stage: string;
+  label?: string;
+  elapsed_seconds?: number;
+  step?: number;
+  total?: number;
 }
 
 export interface ScrapeBatchCompleteData {
@@ -780,9 +1272,26 @@ export type TypedDataPayload =
   | ContextPersistedData
   | ConversationIdData
   | ConversationLabeledData
+  | DictionaryPublishCompleteData
+  | ExtractionIndexCompleteData
+  | ExtractionIndexProgressData
   | FetchResultsData
+  | FileAnalysisCompleteData
+  | FileAnalysisStartedData
+  | FileDetectorCompletedData
+  | FileSearchCompleteData
+  | FileSearchPageData
+  | FileSearchStartedData
   | FunctionResultData
+  | ImageDocumentDetectedData
+  | ImageEditCompleteData
+  | ImageOpStageData
   | ImageOutputData
+  | ImageStudioCommitCompleteData
+  | ImageStudioCommitItemData
+  | ImageStudioProcessCompleteData
+  | ImageStudioVariantData
+  | LegalSyncEventData
   | MediaBlockData
   | MediaNoticeData
   | MemoryBufferSpawnedData
@@ -791,8 +1300,31 @@ export type TypedDataPayload =
   | MemoryObserverCompletedData
   | MemoryReflectorCompletedData
   | PartialImageData
-  | PodcastCompleteData
-  | PodcastStageData
+  | PdfClassifyCompleteData
+  | PdfExtractCompleteData
+  | PdfExtractStartedData
+  | PdfPageClassifiedData
+  | PdfPageExtractedData
+  | PdfPipelineResultData
+  | PdfReadingOrderCompleteData
+  | PdfReadingOrderPageData
+  | PdfRepeatedRegionsCompleteData
+  | PdfRepeatedRegionsProgressData
+  | PdfRepeatedRegionsStripCompleteData
+  | PdfTableExtractedData
+  | PdfTablesCompleteData
+  | PdfTablesPageData
+  | PdfTablesStartedData
+  | PodcastAssetEvent
+  | PodcastAssetGenStartedEvent
+  | PodcastAssetResultEvent
+  | PodcastCompleteEvent
+  | PodcastMetadataEvent
+  | PodcastOfficialVideoEvent
+  | PodcastRunEvent
+  | PodcastStageEvent
+  | PodcastStageStartedEvent
+  | PodcastTickEvent
   | QuestionnaireDisplayData
   | ScrapeBatchCompleteData
   | SearchErrorData

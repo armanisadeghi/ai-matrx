@@ -22,6 +22,7 @@ import {
   openParseSession,
 } from "../session/session-manager";
 import { kindRegistry } from "../registry/kind-registry";
+import { componentRegistry } from "../registry/component-registry";
 import { useIrNode } from "./useIrNode";
 import type { IrTreeNode } from "../core/ir-tree";
 import type { CanonicalBlockIR } from "../core/ir-types";
@@ -60,6 +61,7 @@ export function useLiveJsonRegion(
       fedLenRef.current = 0;
       startedRef.current = false;
       void kindRegistry.ensureWarm();
+      void componentRegistry.ensureWarm();
       try {
         openParseSession({
           identity,

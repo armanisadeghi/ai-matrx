@@ -195,7 +195,10 @@ export const ENDPOINTS = {
      * `X-Compression-Cap-Satisfied` so the caller can see what actually ran.
      */
     compress: "/utilities/pdf/compress" as const,
-    /** POST — Single-file text extraction (stateless, legacy multipart). Returns `{ filename, text_content }`. */
+    /** POST — Single-file text extraction (stateless multipart, NDJSON streaming).
+     * Emits `pdf_extract_started` / `pdf_page_extracted` / `pdf_extract_complete`
+     * data events; the complete event carries the old `{ filename, text_content }`
+     * body. Consume via `streamPdfExtractText` (features/pdf-extractor/service/streamPdf.ts). */
     extractText: "/utilities/pdf/extract-text" as const,
     /** POST — Batch extraction with NDJSON streaming (saves to DB + storage). */
     batchExtract: "/utilities/pdf/batch-extract" as const,
@@ -208,7 +211,8 @@ export const ENDPOINTS = {
     fromImages: "/utilities/pdf/from-images" as const,
 
     // ── New `MediaRef`-based JSON endpoints (matrx-utils) ─────────────────
-    /** POST — Text extraction from a remote source (MediaRef / url / cld_id). Returns `PdfResult`. */
+    /** POST — Text extraction from a remote source (MediaRef / url; NDJSON streaming,
+     * same events as `extractText`). Consume via `streamPdfExtractTextRemote`. */
     extractTextRemote: "/utilities/pdf/extract-text-remote" as const,
     /** POST — Table extraction. Returns `PdfResult`. */
     extractTables: "/utilities/pdf/extract-tables" as const,

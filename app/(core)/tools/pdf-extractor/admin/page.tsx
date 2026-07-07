@@ -256,7 +256,8 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/utilities/pdf/extract-text",
       method: "POST",
-      description: "Single-file stateless text extraction (legacy multipart).",
+      description:
+        "Single-file stateless text extraction (multipart, NDJSON streaming — pdf_extract_started / pdf_page_extracted / pdf_extract_complete).",
       filePath: "lib/api/endpoints.ts",
     },
     {
@@ -277,7 +278,8 @@ const PDF_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/utilities/pdf/extract-text-remote",
       method: "POST",
-      description: "Text extraction from a remote source (MediaRef / url).",
+      description:
+        "Text extraction from a remote source (MediaRef / url; NDJSON streaming — same per-page events as extract-text).",
       filePath: "lib/api/endpoints.ts",
     },
     {

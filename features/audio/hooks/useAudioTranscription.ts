@@ -35,15 +35,27 @@ export function useAudioTranscription() {
         if (options?.language) {
           formData.append("language", options.language);
         }
-        // Explicit prompt wins; otherwise apply Custom Dictionary biasing when the
-        // caller opted in via dictionarySurfaceKey. Best-effort, never blocks.
+        // Explicit prompt wins; otherwise apply Custom Dictionary biasing. By
+        // default the bias follows the ONE global active context; a caller may
+        // scope it to a specific surface via dictionarySurfaceKey. Best-effort,
+        // never blocks.
         let prompt = options?.prompt ?? "";
-        if (!prompt && options?.dictionarySurfaceKey) {
-          const { resolveDictionarySttPrompt } =
-            await import("@/features/dictionary/sttBridge");
-          prompt = await resolveDictionarySttPrompt(
-            options.dictionarySurfaceKey,
-          );
+        if (!prompt) {
+          try {
+            if (options?.dictionarySurfaceKey) {
+              const { resolveDictionarySttPrompt } =
+                await import("@/features/dictionary/sttBridge");
+              prompt = await resolveDictionarySttPrompt(
+                options.dictionarySurfaceKey,
+              );
+            } else {
+              const { resolveActiveContextSttPrompt } =
+                await import("@/features/dictionary/activeContextBridge");
+              prompt = await resolveActiveContextSttPrompt();
+            }
+          } catch {
+            prompt = "";
+          }
         }
         if (prompt) {
           formData.append("prompt", prompt);

@@ -123,6 +123,7 @@ interface Report {
   coercions: Finding[]; // `as any` and `as unknown as X` introductions
   parallelSlices: Finding[]; // `createSlice(` in unexpected paths (ESLint catches imports, this catches usage)
   frozenUrlCaptures: Finding[]; // capturing Asset.primary_url (freeze a URL that rots) without the file_id
+  frozenDetectorEdits: Finding[]; // edits to the frozen content-detection literal sets (Shape System)
 }
 
 const COMPONENT_FILE_RE = /(?:^|\/)[A-Z][A-Za-z0-9]+\.tsx$/;
@@ -140,6 +141,106 @@ const PRIMARY_URL_CAPTURE_RE = /\.primary_url\b/;
 // The file subsystem legitimately defines/maps primary_url; exempt it.
 const FILE_INFRA_RE =
   /^(features\/files\/|components\/official\/Image(Asset|Crop))/;
+
+// ─── Frozen detector sets (Shape System) ────────────────────────────────────
+// The literal content-detection lists below are FROZEN until Phase 7 of the
+// Shape System roadmap (features/content-ir/docs/SHAPE_SYSTEM.md): a new
+// content type enters through a content_ir.kind_surface row, never through
+// these hardcoded literals. The check extracts each literal's text from the
+// diff's before/after file versions and flags when it changed. check-doctrine
+// has no suppression mechanism, so the flag is unconditional (advisory unless
+// --strict) like every other detector here; the repo-wide
+// `// MATRX-EXCEPTION: <reason>` comment (TYPESCRIPT_STANDARDS.md) is how a
+// sanctioned change is annotated for review.
+
+const FROZEN_DETECTOR_MESSAGE =
+  "Frozen until Phase 7 — new content types are Shapes: see .claude/skills/shape-system (kind_surface row, never a literal). MATRX-EXCEPTION comment required to proceed.";
+
+interface FrozenLiteral {
+  name: string;
+  extract: (content: string) => string | null;
+}
+
+function setLiteralExtractor(name: string): (content: string) => string | null {
+  return (content) =>
+    new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\)`).exec(content)?.[1] ?? null;
+}
+
+// Extraction regexes mirror scripts/shape/check-shapes.ts (the detector census).
+const FROZEN_DETECTOR_FILES: Record<string, FrozenLiteral[]> = {
+  "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts":
+    [
+      {
+        name: "JSON_BLOCK_PATTERNS",
+        extract: (c) =>
+          /const JSON_BLOCK_PATTERNS = \{([\s\S]*?)\n\} as const;/.exec(c)?.[1] ?? null,
+      },
+      {
+        name: "ATTRIBUTE_XML_BLOCKS",
+        extract: (c) => /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(c)?.[1] ?? null,
+      },
+    ],
+  "features/agents/redux/execution-system/utils/stream-block-accumulator.ts": [
+    { name: "SIMPLE_XML_TAGS", extract: setLiteralExtractor("SIMPLE_XML_TAGS") },
+    { name: "ATTR_XML_TAGS", extract: setLiteralExtractor("ATTR_XML_TAGS") },
+  ],
+};
+
+/** Like git(), but a missing object (e.g. file absent in HEAD) returns null
+ * instead of aborting the whole check. */
+function tryGit(cmd: string): string | null {
+  try {
+    return execSync(cmd, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: 256 * 1024 * 1024,
+    });
+  } catch {
+    return null;
+  }
+}
+
+let mergeBaseCache: string | null = null;
+
+/** Before/after content of a file for the diff being scanned (staged: HEAD →
+ * index; branch: merge-base → HEAD — the same sides listChangedFiles diffs). */
+function fileVersions(args: Args, file: string): { before: string; after: string } {
+  if (args.mode === "staged") {
+    return {
+      before: tryGit(`git show HEAD:"${file}"`) ?? "",
+      after: tryGit(`git show :0:"${file}"`) ?? "",
+    };
+  }
+  if (mergeBaseCache === null) {
+    mergeBaseCache = git(`git merge-base ${args.branch} HEAD`).trim();
+  }
+  return {
+    before: tryGit(`git show ${mergeBaseCache}:"${file}"`) ?? "",
+    after: tryGit(`git show HEAD:"${file}"`) ?? "",
+  };
+}
+
+/** Whitespace-insensitive compare — reflowing the list is fine; changing its
+ * contents (tokens, keys, comments inside the literal) flags. */
+function normalizeFrozenLiteral(text: string | null): string {
+  return (text ?? "").replace(/\s+/g, " ").trim();
+}
+
+function scanFrozenDetectors(args: Args, file: string, report: Report): void {
+  const literals = FROZEN_DETECTOR_FILES[file];
+  if (!literals) return;
+  const { before, after } = fileVersions(args, file);
+  for (const literal of literals) {
+    const b = normalizeFrozenLiteral(literal.extract(before));
+    const a = normalizeFrozenLiteral(literal.extract(after));
+    if (b !== a) {
+      report.frozenDetectorEdits.push({
+        file,
+        detail: `\`${literal.name}\` changed — ${FROZEN_DETECTOR_MESSAGE}`,
+      });
+    }
+  }
+}
 
 const ALLOWED_SLICE_GLOBS = [
   /^lib\/redux\//,
@@ -220,11 +321,14 @@ function scan(args: Args, files: ChangedFile[]): Report {
     coercions: [],
     parallelSlices: [],
     frozenUrlCaptures: [],
+    frozenDetectorEdits: [],
   };
 
   for (const { status, path: file } of files) {
     if (!shouldScan(file)) continue;
     if (status === "D") continue;
+
+    scanFrozenDetectors(args, file, report);
 
     // Whole-file scans for ADDED files
     if (status === "A") {
@@ -306,7 +410,8 @@ function hasAnyFindings(r: Report): boolean {
       r.newTypes.length +
       r.coercions.length +
       r.parallelSlices.length +
-      r.frozenUrlCaptures.length >
+      r.frozenUrlCaptures.length +
+      r.frozenDetectorEdits.length >
     0
   );
 }
@@ -343,7 +448,8 @@ function main() {
     report.newTypes.length +
     report.coercions.length +
     report.parallelSlices.length +
-    report.frozenUrlCaptures.length;
+    report.frozenUrlCaptures.length +
+    report.frozenDetectorEdits.length;
 
   process.stdout.write(
     `\n${WARN_TAG}Doctrine: ${total} new primitive(s)/flag(s) — confirm none duplicate an existing one.\n\n`,
@@ -355,6 +461,7 @@ function main() {
   section("Coercions", report.coercions);
   section("Slices", report.parallelSlices);
   section("Frozen URLs", report.frozenUrlCaptures);
+  section("Frozen sets", report.frozenDetectorEdits);
 
   if (args.strict) {
     process.stdout.write(

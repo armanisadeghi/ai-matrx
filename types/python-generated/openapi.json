@@ -666,9 +666,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PublishResult"
-                }
+                "schema": {}
               }
             }
           },
@@ -3544,13 +3542,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Extract Text From Pdf Utilities Pdf Extract Text Post"
-                }
+                "schema": {}
               }
             }
           },
@@ -4241,7 +4233,7 @@
           "Utilities"
         ],
         "summary": "Detect Repeated Regions Endpoint",
-        "description": "Find headers / footers / watermarks / repeated margins.\n\nThe returned report is deterministic for a given PDF + parameters. A\nfollow-up call to ``/pdf/strip-repeated-regions`` with a subset of the\nreturned ``region_id`` values removes the chosen regions from per-page\ntext — useful as a RAG ingestion pre-pass.",
+        "description": "Find headers / footers / watermarks / repeated margins.\n\nStreams per-page scan progress (``pdf_repeated_regions_progress``) and a\nterminal ``pdf_repeated_regions_complete`` carrying the deterministic\nreport. A follow-up call to ``/pdf/strip-repeated-regions`` with a subset\nof the returned ``region_id`` values removes the chosen regions from\nper-page text — useful as a RAG ingestion pre-pass.",
         "operationId": "detect_repeated_regions_endpoint_utilities_pdf_detect_repeated_regions_post",
         "requestBody": {
           "content": {
@@ -4258,9 +4250,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RepeatedRegionsReport"
-                }
+                "schema": {}
               }
             }
           },
@@ -4283,7 +4273,7 @@
           "Utilities"
         ],
         "summary": "Strip Repeated Regions Endpoint",
-        "description": "Detect + strip repeated regions from per-page text in one call.\n\nReturns the post-strip per-page text alongside the original detector\nreport so the caller can audit what was removed.",
+        "description": "Detect + strip repeated regions from per-page text in one call.\n\nStreams per-page progress through the detect and text-extraction stages\n(``pdf_repeated_regions_progress``) and a terminal\n``pdf_repeated_regions_strip_complete`` carrying the post-strip per-page\ntext alongside the original detector report so the caller can audit what\nwas removed.",
         "operationId": "strip_repeated_regions_endpoint_utilities_pdf_strip_repeated_regions_post",
         "requestBody": {
           "content": {
@@ -4300,9 +4290,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StripRepeatedRegionsResultSchema"
-                }
+                "schema": {}
               }
             }
           },
@@ -4325,7 +4313,7 @@
           "Utilities"
         ],
         "summary": "Classify Pages Endpoint",
-        "description": "Assign a ``PageClass`` label (cover / TOC / body / exhibit / billing / ...) to every page.",
+        "description": "Assign a ``PageClass`` label (cover / TOC / body / exhibit / billing / ...)\nto every page. Streams one ``pdf_page_classified`` per page and a terminal\n``pdf_classify_complete`` carrying the full report.",
         "operationId": "classify_pages_endpoint_utilities_pdf_classify_pages_post",
         "requestBody": {
           "content": {
@@ -4342,9 +4330,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LayoutClassificationReport"
-                }
+                "schema": {}
               }
             }
           },
@@ -4367,7 +4353,7 @@
           "Utilities"
         ],
         "summary": "Extract Reading Order Endpoint",
-        "description": "Per-page reading-order blocks with multi-column clustering.",
+        "description": "Per-page reading-order blocks with multi-column clustering. Streams one\n``pdf_reading_order_page`` per page and a terminal\n``pdf_reading_order_complete`` carrying the full block lists.",
         "operationId": "extract_reading_order_endpoint_utilities_pdf_extract_reading_order_post",
         "requestBody": {
           "content": {
@@ -4384,9 +4370,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReadingOrderReport"
-                }
+                "schema": {}
               }
             }
           },
@@ -4723,9 +4707,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PdfResult"
-                }
+                "schema": {}
               }
             }
           },
@@ -4748,7 +4730,7 @@
           "Utilities"
         ],
         "summary": "Extract Tables",
-        "description": "Detect every table on every page via PyMuPDF's native\n``page.find_tables()``. No Java / tabula dependency.\n\nReturns a structured ``PdfTablesReport`` with per-table bbox, header,\nrows, and a markdown rendering so the FE can display tables inline\nwithout re-fetching a file artifact.",
+        "description": "Detect every table on every page via PyMuPDF's native\n``page.find_tables()``. No Java / tabula dependency.\n\nStreams one ``pdf_tables_page`` per scanned page, one\n``pdf_table_extracted`` per detected table, and a terminal\n``pdf_tables_complete`` carrying the full structured ``PdfTablesReport``\ncontent (per-table bbox, header, rows, markdown) so the FE can display\ntables inline without re-fetching a file artifact.",
         "operationId": "extract_tables_utilities_pdf_extract_tables_post",
         "requestBody": {
           "content": {
@@ -4765,9 +4747,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PdfTablesReport"
-                }
+                "schema": {}
               }
             }
           },
@@ -15690,7 +15670,7 @@
           "Page Extraction"
         ],
         "summary": "Index Run Into Rag",
-        "description": "Materialize a completed extraction run's results into RAG as\nagent-derivative chunks. Idempotent (safe to call multiple times —\nreuses the derivative row and rewrites the chunks).\n\nThis is the manual counterpart to the auto-hook in ``_finalize_run``.\nUse it to:\n  * Retry indexing for runs that failed during auto-indexing\n  * Backfill runs that completed before the auto-hook was enabled\n  * Force a re-index after tuning the embedding model\n\nOwnership: caller must own the parent job. The check happens before\nwe kick off any embedding work so a misbehaving FE can't trigger a\npaid run on someone else's data.",
+        "description": "Materialize a completed extraction run's results into RAG as\nagent-derivative chunks, STREAMING chunk/embed progress live\n(stream-everything mandate — this replaced the old blocking JSON shape).\nIdempotent (safe to call multiple times — reuses the derivative row and\nrewrites the chunks).\n\nEvents: ``extraction_index_progress`` (stages ``loaded`` → ``chunked`` →\n``embedding`` per batch → ``writing``) then a terminal\n``extraction_index_complete`` carrying the legacy response body's fields.\n\nThis is the manual counterpart to the auto-hook in ``_finalize_run``.\nUse it to:\n  * Retry indexing for runs that failed during auto-indexing\n  * Backfill runs that completed before the auto-hook was enabled\n  * Force a re-index after tuning the embedding model\n\nOwnership: caller must own the parent job. The check happens before\nwe kick off any embedding work so a misbehaving FE can't trigger a\npaid run on someone else's data.",
         "operationId": "index_run_into_rag_page_extraction_runs__run_id__index_post",
         "parameters": [
           {
@@ -18426,6 +18406,7 @@
           "RAG"
         ],
         "summary": "Rag Search Endpoint",
+        "description": "Streaming search (stream-everything mandate, 2026-07-06). Identical\nbehavior to ``POST /search/stream`` — that route stays as an alias; this\nis the canonical path. Emits ``rag.citation`` events per hit as retrieval\nfuses, then one consolidated ``RagSearchResult``.",
         "operationId": "rag_search_endpoint_rag_search_post",
         "requestBody": {
           "content": {
@@ -18442,9 +18423,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SearchResponseOut"
-                }
+                "schema": {}
               }
             }
           },
@@ -18546,6 +18525,7 @@
           "RAG"
         ],
         "summary": "Rag Ingest Endpoint",
+        "description": "Streaming ingest (stream-everything mandate, 2026-07-06). Identical\nbehavior to ``POST /ingest/stream`` — that route stays as an alias; this\nis the canonical path. The FE \"Process for RAG\" button hits this endpoint;\nit now watches fetch → extract → cleanup → chunk → embed → NER live and\nreads the terminal ``RagIngestResult`` event as the old response body.\n\nEverything the blocking variant guaranteed still holds inside\n``_run_ingest_stream``: the universal auto-ingest funnel (effective-org\nresolution, budget shield, model-visibility gates, post-ingest suggestion\npass; actor=\"manual\" bypasses enable toggles, never budget/visibility) and\nthe cld_file anti-duplication lock (open → run holds a 'processing' row so\na concurrent sweeper claim loses the CAS — kg_032; a live run streams a\n``run_in_progress`` result, never a second ingest).",
         "operationId": "rag_ingest_endpoint_rag_ingest_post",
         "requestBody": {
           "content": {
@@ -18562,9 +18542,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IngestResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -18587,7 +18565,7 @@
           "RAG"
         ],
         "summary": "Rag Ingest Conversation",
-        "description": "Ingest a conversation into the knowledge graph by conversation id.\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and returns a clean \"source_not_found\"\nresponse rather than an error or a cross-tenant leak.\n\nThe effective org is resolved (personal-org fallback) before the ingest\ncall so the written kg_chunks are always org-scoped (non-NULL invariant).",
+        "description": "Streaming conversation ingest (stream-everything mandate, 2026-07-06).\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and streams a clean \"source_not_found\"\nresult rather than an error or a cross-tenant leak.\n\nThe effective org is resolved (personal-org fallback) before the ingest\ncall so the written kg_chunks are always org-scoped (non-NULL invariant).",
         "operationId": "rag_ingest_conversation_rag_conversations__conversation_id__ingest_post",
         "parameters": [
           {
@@ -18618,9 +18596,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IngestResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -22956,7 +22932,7 @@
           "Workflow"
         ],
         "summary": "Test Single Node",
-        "description": "Run ONE node in isolation against user-supplied inputs.\n\nNo run row, no checkpoint, no scheduler — just resolve the executor\nfrom the registry and call its ``execute()`` once with the supplied\ninputs and the node's saved (or overridden) config. Returns the\ntyped output, the duration, and any error.\n\nUseful for:\n  - Trying a different prompt / model / temperature without editing\n    and saving the whole workflow.\n  - Debugging a failing node by iterating on inputs.\n  - Smoke-testing a brand-new node config before wiring it into the\n    full graph.\n\nNever writes to wf_run / wf_checkpoint / wf_node_outcome. The\ninvocation IS logged to ``wf_node_events`` with run_id set to the\ntest marker so you can grep the audit trail if needed.",
+        "description": "Run ONE node in isolation against user-supplied inputs — STREAMING.\n\nNo run row, no checkpoint, no scheduler — just resolve the executor\nfrom the registry and call its ``execute()`` once with the supplied\ninputs and the node's saved (or overridden) config.\n\nThe node executes with the live request emitter installed, so an\nagent/LLM node's tokens (``chunk``), reasoning, phases, and tool\nevents flow straight to the client in real time. The stream ends\nwith ONE terminal ``data`` event, ``workflow_node_test_result``,\ncarrying exactly what the old blocking JSON response carried\n(success / duration_ms / output / error_type / error_message).\n\nNever writes to wf_run / wf_checkpoint / wf_node_outcome.",
         "operationId": "test_single_node_workflows__definition_id__nodes__node_id__test_post",
         "parameters": [
           {
@@ -22993,9 +22969,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TestNodeResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -29331,7 +29305,7 @@
           "Files"
         ],
         "summary": "Ingest File For Rag",
-        "description": "On-demand RAG ingest for a file.\n\nRuns through ``auto_ingest`` (budget + visibility + the 8-agent\nscope-suggestion orchestrator) via the ``cld_file_rag_jobs`` lifecycle:\nit ADOPTS any deferred auto-RAG job (so the file is never double-run) and\n409s if a run is already in progress. Already-ingested + not ``force`` →\n409 ``rag_already_complete`` (use ``/refresh`` to re-run). Requires write\naccess — a read-only grantee must not kick off paid derived work.",
+        "description": "Streaming on-demand RAG ingest for a file (stream-everything mandate,\n2026-07-06 — identical behavior to ``/ingest/stream``, which stays as an\nalias; this is the canonical path).\n\nRuns through ``auto_ingest`` (budget + visibility + the 8-agent\nscope-suggestion orchestrator) via the ``cld_file_rag_jobs`` lifecycle:\nit ADOPTS any deferred auto-RAG job (so the file is never double-run) and\n409s if a run is already in progress. Already-ingested + not ``force`` →\n409 ``rag_already_complete`` (use ``/refresh`` to re-run). Requires write\naccess — a read-only grantee must not kick off paid derived work. The\nguards fire as normal HTTP 409s BEFORE the stream opens; the terminal\n``RagIngestResult`` event carries what the old JSON response did.",
         "operationId": "ingest_file_for_rag_files__file_id__ingest_post",
         "parameters": [
           {
@@ -29359,9 +29333,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileIngestResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -30014,6 +29986,7 @@
           "Images"
         ],
         "summary": "Process Image",
+        "description": "Render + stage every requested variant — streamed.\n\nStreams ``image_op_stage`` prep events, one ``image_studio_variant``\nevent per variant as it finishes rendering + staging (or fails), then a\nterminal ``image_studio_process_complete`` whose ``result`` is the same\nProcessResponse body the legacy blocking response returned.",
         "operationId": "process_image_images_studio_process_post",
         "parameters": [
           {
@@ -30048,9 +30021,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProcessResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -30073,6 +30044,7 @@
           "Images"
         ],
         "summary": "Commit Job",
+        "description": "Commit staged variants to permanent cld_files rows — streamed.\n\nStreams one ``image_studio_commit_item`` event per committed (or failed)\nvariant/source, then a terminal ``image_studio_commit_complete`` whose\n``result`` is the legacy CommitResponse body minus the server-only\n``storage_uri`` fields.",
         "operationId": "commit_job_images_studio_commit_post",
         "parameters": [
           {
@@ -30107,9 +30079,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommitResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -30195,7 +30165,7 @@
           "Images"
         ],
         "summary": "Detect Document",
-        "description": "Detect the outer boundary of a photographed document.\n\nPure-data endpoint — nothing is persisted. Returns an ordered quad\n(TL/TR/BR/BL) in post-EXIF-transpose pixel coordinates plus a 0..1\nconfidence. ``found=false`` (quad null) means no plausible document\nboundary — the FE defaults to a full-frame quad.",
+        "description": "Detect the outer boundary of a photographed document — streamed.\n\nPure-data operation — nothing is persisted. Streams ``image_op_stage``\nevents (loading_source → detecting) then a terminal\n``image_document_detected`` event with an ordered quad (TL/TR/BR/BL) in\npost-EXIF-transpose pixel coordinates plus a 0..1 confidence.\n``found=false`` (corners null) means no plausible document boundary —\nthe FE defaults to a full-frame quad.",
         "operationId": "detect_document_images_detect_document_post",
         "requestBody": {
           "content": {
@@ -30212,9 +30182,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DetectDocumentResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -30237,7 +30205,7 @@
           "Images"
         ],
         "summary": "Edit Image",
-        "description": "Run any registered image op against a cloud file.\n\nProduces a NEW cld_files row tagged with derivation metadata. The\nsource row is never modified. Optional ``mask_id`` restricts the\nop's effect to the masked region (where supported).",
+        "description": "Run any registered image op against a cloud file — streamed.\n\nStreams ``image_op_stage`` events (loading_source → running_op →\npersisting → rendering_variants) then a terminal ``image_edit_complete``\nevent whose ``asset`` is the same Asset envelope the legacy blocking\nresponse returned. Produces a NEW cld_files row tagged with derivation\nmetadata; the source row is never modified. Optional ``mask_id``\nrestricts the op's effect to the masked region (where supported).",
         "operationId": "edit_image_images_edit_post",
         "parameters": [
           {
@@ -30272,9 +30240,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Asset"
-                }
+                "schema": {}
               }
             }
           },
@@ -30297,7 +30263,7 @@
           "Images"
         ],
         "summary": "Bg Remove",
-        "description": "Foreground extraction via rembg.\n\nWhen ``mask_id`` is supplied, the mask is OR'd into the rembg alpha\noutput — pixels marked in the mask stay opaque even if rembg would\nhave removed them (\"definitely foreground, never strip\").",
+        "description": "Foreground extraction via rembg — streamed (see /images/edit).\n\nWhen ``mask_id`` is supplied, the mask is OR'd into the rembg alpha\noutput — pixels marked in the mask stay opaque even if rembg would\nhave removed them (\"definitely foreground, never strip\").",
         "operationId": "bg_remove_images_bg_remove_post",
         "parameters": [
           {
@@ -30332,9 +30298,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Asset"
-                }
+                "schema": {}
               }
             }
           },
@@ -30357,7 +30321,7 @@
           "Images"
         ],
         "summary": "Inpaint",
-        "description": "Content-aware fill within the mask region (OpenCV Telea / NS).\n\nFor Wave 2 this endpoint will accept the same wire shape but route\ndiffusion-based inpainting to a GPU microservice when ``method`` is\nset to one of those backends.",
+        "description": "Content-aware fill within the mask region (OpenCV Telea / NS) —\nstreamed (see /images/edit).\n\nFor Wave 2 this endpoint will accept the same wire shape but route\ndiffusion-based inpainting to a GPU microservice when ``method`` is\nset to one of those backends.",
         "operationId": "inpaint_images_inpaint_post",
         "parameters": [
           {
@@ -30392,9 +30356,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Asset"
-                }
+                "schema": {}
               }
             }
           },
@@ -31628,7 +31590,7 @@
           "Podcast"
         ],
         "summary": "Regenerate Asset",
-        "description": "Re-render one image/video in place with a chosen model (or custom prompt).",
+        "description": "Re-render one image/video in place with a chosen model (or custom prompt).\n\nStreams: podcast_asset_gen_started → provider progress → record_update /\nresource_changed → podcast_asset_result (terminal, carries the asset row).",
         "operationId": "regenerate_asset_podcast_runs__run_id__assets_regenerate_post",
         "parameters": [
           {
@@ -31656,9 +31618,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunAsset"
-                }
+                "schema": {}
               }
             }
           },
@@ -31681,7 +31641,7 @@
           "Podcast"
         ],
         "summary": "Add Asset",
-        "description": "Add a brand-new asset from the user's own description (also how you go\nbeyond the default 5 images / 2 videos).",
+        "description": "Add a brand-new asset from the user's own description (also how you go\nbeyond the default 5 images / 2 videos).\n\nStreams the same event sequence as /assets/regenerate.",
         "operationId": "add_asset_podcast_runs__run_id__assets_add_post",
         "parameters": [
           {
@@ -31709,9 +31669,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RunAsset"
-                }
+                "schema": {}
               }
             }
           },
@@ -36598,6 +36556,7 @@
           "File Analysis"
         ],
         "summary": "Refresh Analysis",
+        "description": "Re-run the detector pipeline and STREAM per-detector progress live\n(stream-everything mandate — this replaced the old 202 + FE-poll shape).\n\nEvents: ``file_analysis_started`` → N × ``file_detector_completed`` →\nterminal ``file_analysis_complete`` (same head+results payload as\n``GET /files/{file_id}/analysis``, so the client never re-fetches).",
         "operationId": "refresh_analysis_files__file_id__analysis_refresh_post",
         "parameters": [
           {
@@ -36621,13 +36580,11 @@
           }
         },
         "responses": {
-          "202": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalyzeRefreshResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -38061,9 +38018,7 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SearchResponse"
-                }
+                "schema": {}
               }
             }
           },
@@ -41841,25 +41796,6 @@
         "type": "object",
         "title": "AnalyzeRefreshBody"
       },
-      "AnalyzeRefreshResponse": {
-        "properties": {
-          "file_id": {
-            "type": "string",
-            "title": "File Id"
-          },
-          "status": {
-            "type": "string",
-            "const": "accepted",
-            "title": "Status"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file_id",
-          "status"
-        ],
-        "title": "AnalyzeRefreshResponse"
-      },
       "AnalyzeRequest": {
         "properties": {
           "agent_type": {
@@ -43110,7 +43046,7 @@
                 ]
               },
               {
-                "$ref": "#/components/schemas/matrx_utils__file_handling__asset_envelope__FocalPoint"
+                "$ref": "#/components/schemas/FocalPoint"
               },
               {
                 "type": "null"
@@ -49293,24 +49229,6 @@
         "title": "CommitChoiceRequest",
         "description": "Mode A — explicit (non-streaming) commit of the side-by-side\nwinner. Returns the updated session."
       },
-      "CommitFailure": {
-        "properties": {
-          "preset_id": {
-            "type": "string",
-            "title": "Preset Id"
-          },
-          "error": {
-            "type": "string",
-            "title": "Error"
-          }
-        },
-        "type": "object",
-        "required": [
-          "preset_id",
-          "error"
-        ],
-        "title": "CommitFailure"
-      },
       "CommitRequest": {
         "properties": {
           "job_id": {
@@ -49398,138 +49316,6 @@
           "job_id"
         ],
         "title": "CommitRequest"
-      },
-      "CommitResponse": {
-        "properties": {
-          "folder_path": {
-            "type": "string",
-            "title": "Folder Path"
-          },
-          "saved": {
-            "items": {
-              "$ref": "#/components/schemas/CommittedVariant"
-            },
-            "type": "array",
-            "title": "Saved"
-          },
-          "failed": {
-            "items": {
-              "$ref": "#/components/schemas/CommitFailure"
-            },
-            "type": "array",
-            "title": "Failed"
-          },
-          "source": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CommittedSource"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "type": "object",
-        "required": [
-          "folder_path",
-          "saved",
-          "failed"
-        ],
-        "title": "CommitResponse"
-      },
-      "CommittedSource": {
-        "properties": {
-          "file_id": {
-            "type": "string",
-            "title": "File Id"
-          },
-          "filename": {
-            "type": "string",
-            "title": "Filename"
-          },
-          "file_path": {
-            "type": "string",
-            "title": "File Path"
-          },
-          "storage_uri": {
-            "type": "string",
-            "title": "Storage Uri"
-          },
-          "size": {
-            "type": "integer",
-            "title": "Size"
-          },
-          "public_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file_id",
-          "filename",
-          "file_path",
-          "storage_uri",
-          "size"
-        ],
-        "title": "CommittedSource"
-      },
-      "CommittedVariant": {
-        "properties": {
-          "preset_id": {
-            "type": "string",
-            "title": "Preset Id"
-          },
-          "file_id": {
-            "type": "string",
-            "title": "File Id"
-          },
-          "filename": {
-            "type": "string",
-            "title": "Filename"
-          },
-          "file_path": {
-            "type": "string",
-            "title": "File Path"
-          },
-          "storage_uri": {
-            "type": "string",
-            "title": "Storage Uri"
-          },
-          "size": {
-            "type": "integer",
-            "title": "Size"
-          },
-          "public_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Public Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "preset_id",
-          "file_id",
-          "filename",
-          "file_path",
-          "storage_uri",
-          "size"
-        ],
-        "title": "CommittedVariant"
       },
       "CompactTurnsRequest": {
         "properties": {
@@ -53268,6 +53054,15 @@
           "source_id": {
             "type": "string",
             "title": "Source Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "relaxed"
+            ],
+            "title": "Mode",
+            "default": "standard"
           }
         },
         "additionalProperties": false,
@@ -53276,46 +53071,6 @@
           "source_id"
         ],
         "title": "DetectDocumentRequest"
-      },
-      "DetectDocumentResponse": {
-        "properties": {
-          "found": {
-            "type": "boolean",
-            "title": "Found"
-          },
-          "quad": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DocumentQuad"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "confidence": {
-            "type": "number",
-            "title": "Confidence"
-          },
-          "image_width": {
-            "type": "integer",
-            "title": "Image Width"
-          },
-          "image_height": {
-            "type": "integer",
-            "title": "Image Height"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "found",
-          "quad",
-          "confidence",
-          "image_width",
-          "image_height"
-        ],
-        "title": "DetectDocumentResponse"
       },
       "DetectRepeatedRegionsRequest": {
         "properties": {
@@ -54591,76 +54346,6 @@
           "found"
         ],
         "title": "DocumentLookupResult"
-      },
-      "DocumentQuad": {
-        "properties": {
-          "top_left": {
-            "prefixItems": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2,
-            "title": "Top Left"
-          },
-          "top_right": {
-            "prefixItems": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2,
-            "title": "Top Right"
-          },
-          "bottom_right": {
-            "prefixItems": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2,
-            "title": "Bottom Right"
-          },
-          "bottom_left": {
-            "prefixItems": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2,
-            "title": "Bottom Left"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "top_left",
-          "top_right",
-          "bottom_right",
-          "bottom_left"
-        ],
-        "title": "DocumentQuad",
-        "description": "Ordered document corners in post-EXIF-transpose pixel coordinates —\nthe orientation a browser displays, and the exact space the\n``perspective_crop`` op consumes."
       },
       "DocumentRecord": {
         "properties": {
@@ -58258,99 +57943,6 @@
         "type": "object",
         "title": "FileIngestRequest"
       },
-      "FileIngestResponse": {
-        "properties": {
-          "source_kind": {
-            "type": "string",
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "field_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Id"
-          },
-          "chunks_written": {
-            "type": "integer",
-            "title": "Chunks Written",
-            "default": 0
-          },
-          "chunks_reused": {
-            "type": "integer",
-            "title": "Chunks Reused",
-            "default": 0
-          },
-          "embeddings_written": {
-            "type": "integer",
-            "title": "Embeddings Written",
-            "default": 0
-          },
-          "skipped_unchanged": {
-            "type": "boolean",
-            "title": "Skipped Unchanged",
-            "default": false
-          },
-          "embedding_model": {
-            "type": "string",
-            "title": "Embedding Model",
-            "default": ""
-          },
-          "skipped_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Skipped Reason"
-          },
-          "suggestions_created": {
-            "type": "integer",
-            "title": "Suggestions Created",
-            "default": 0
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          },
-          "job_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Job Id"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "source_kind",
-          "source_id"
-        ],
-        "title": "FileIngestResponse"
-      },
       "FileLineageSummary": {
         "properties": {
           "parent_file_id": {
@@ -59689,7 +59281,7 @@
         "type": "object",
         "title": "FlattenAnnotationsRequest"
       },
-      "FocalPoint-Input": {
+      "FocalPoint": {
         "properties": {
           "x": {
             "type": "number",
@@ -61497,84 +61089,6 @@
           "skills"
         ],
         "title": "IngestReport"
-      },
-      "IngestResponse": {
-        "properties": {
-          "source_kind": {
-            "type": "string",
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "field_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Id"
-          },
-          "chunks_written": {
-            "type": "integer",
-            "title": "Chunks Written"
-          },
-          "chunks_reused": {
-            "type": "integer",
-            "title": "Chunks Reused",
-            "default": 0
-          },
-          "embeddings_written": {
-            "type": "integer",
-            "title": "Embeddings Written"
-          },
-          "skipped_unchanged": {
-            "type": "boolean",
-            "title": "Skipped Unchanged"
-          },
-          "embedding_model": {
-            "type": "string",
-            "title": "Embedding Model"
-          },
-          "skipped_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Skipped Reason"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "source_kind",
-          "source_id",
-          "field_id",
-          "chunks_written",
-          "embeddings_written",
-          "skipped_unchanged",
-          "embedding_model"
-        ],
-        "title": "IngestResponse"
       },
       "InitialIterationRequest": {
         "properties": {
@@ -64305,32 +63819,6 @@
         "type": "object",
         "title": "LabelRequest"
       },
-      "LayoutClassificationReport": {
-        "properties": {
-          "page_count": {
-            "type": "integer",
-            "title": "Page Count"
-          },
-          "pages": {
-            "items": {
-              "$ref": "#/components/schemas/PageClassification"
-            },
-            "type": "array",
-            "title": "Pages"
-          },
-          "classifier_version": {
-            "type": "string",
-            "title": "Classifier Version",
-            "default": "v1"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_count",
-          "pages"
-        ],
-        "title": "LayoutClassificationReport"
-      },
       "LegalSearchRequest": {
         "properties": {
           "query": {
@@ -65720,35 +65208,6 @@
           "document_id"
         ],
         "title": "LineageTree"
-      },
-      "LinkedEntityOut": {
-        "properties": {
-          "entity_id": {
-            "type": "string",
-            "title": "Entity Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "kind": {
-            "type": "string",
-            "title": "Kind"
-          },
-          "weight": {
-            "type": "number",
-            "title": "Weight"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "entity_id",
-          "name",
-          "kind",
-          "weight"
-        ],
-        "title": "LinkedEntityOut"
       },
       "ListConversationsResponse": {
         "properties": {
@@ -68636,52 +68095,6 @@
         ],
         "title": "OverridePageTextBody"
       },
-      "PageClassification": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "minimum": 1,
-            "title": "Page Number"
-          },
-          "page_class": {
-            "type": "string",
-            "enum": [
-              "blank",
-              "cover",
-              "toc",
-              "body",
-              "exhibit",
-              "billing",
-              "signature",
-              "appendix",
-              "footer-only",
-              "image-only",
-              "unknown"
-            ],
-            "title": "Page Class"
-          },
-          "confidence": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "Confidence"
-          },
-          "indicators": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Indicators"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "page_class",
-          "confidence"
-        ],
-        "title": "PageClassification"
-      },
       "PageDetail": {
         "properties": {
           "page_index": {
@@ -69062,79 +68475,6 @@
         ],
         "title": "PdfCropBox"
       },
-      "PdfExtractedTable": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "minimum": 1,
-            "title": "Page Number"
-          },
-          "table_index": {
-            "type": "integer",
-            "minimum": 0,
-            "title": "Table Index"
-          },
-          "bbox": {
-            "$ref": "#/components/schemas/PdfTableBbox"
-          },
-          "row_count": {
-            "type": "integer",
-            "title": "Row Count"
-          },
-          "column_count": {
-            "type": "integer",
-            "title": "Column Count"
-          },
-          "header": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Header"
-          },
-          "rows": {
-            "items": {
-              "items": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "type": "array"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "markdown": {
-            "type": "string",
-            "title": "Markdown"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "table_index",
-          "bbox",
-          "row_count",
-          "column_count",
-          "header",
-          "rows",
-          "markdown"
-        ],
-        "title": "PdfExtractedTable",
-        "description": "One table detected on one page."
-      },
       "PdfFromImagesItem": {
         "properties": {
           "media": {
@@ -69364,131 +68704,6 @@
         ],
         "title": "PdfPageRange"
       },
-      "PdfPageSpan": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "title": "Page Number"
-          },
-          "page_index": {
-            "type": "integer",
-            "title": "Page Index"
-          },
-          "page_char_start": {
-            "type": "integer",
-            "title": "Page Char Start"
-          },
-          "page_char_end": {
-            "type": "integer",
-            "title": "Page Char End"
-          },
-          "chunk_char_start": {
-            "type": "integer",
-            "title": "Chunk Char Start"
-          },
-          "chunk_char_end": {
-            "type": "integer",
-            "title": "Chunk Char End"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "page_index",
-          "page_char_start",
-          "page_char_end",
-          "chunk_char_start",
-          "chunk_char_end"
-        ],
-        "title": "PdfPageSpan"
-      },
-      "PdfPageText": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "title": "Page Number"
-          },
-          "page_index": {
-            "type": "integer",
-            "title": "Page Index"
-          },
-          "width": {
-            "type": "number",
-            "title": "Width"
-          },
-          "height": {
-            "type": "number",
-            "title": "Height"
-          },
-          "rotation": {
-            "type": "integer",
-            "title": "Rotation"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "extraction_method": {
-            "type": "string",
-            "title": "Extraction Method"
-          },
-          "char_count": {
-            "type": "integer",
-            "title": "Char Count"
-          },
-          "source_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Path"
-          },
-          "blocks": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PdfTextBlock"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Blocks"
-          },
-          "words": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PdfTextWord"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Words"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "page_index",
-          "width",
-          "height",
-          "rotation",
-          "text",
-          "extraction_method",
-          "char_count"
-        ],
-        "title": "PdfPageText"
-      },
       "PdfPipelineOptions": {
         "properties": {
           "extract_text": {
@@ -69692,135 +68907,6 @@
         "type": "object",
         "title": "PdfRequest"
       },
-      "PdfResult": {
-        "properties": {
-          "raw_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Raw Text"
-          },
-          "pages": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PdfPageText"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pages"
-          },
-          "chunks": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Chunks"
-          },
-          "chunk_records": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/PdfTextChunk"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Chunk Records"
-          },
-          "ai_processed": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ai Processed"
-          },
-          "tables_path": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tables Path"
-          },
-          "cloud_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cloud Uri"
-          },
-          "supabase_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Supabase Url"
-          },
-          "file_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Id"
-          },
-          "storage_uri": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Storage Uri"
-          }
-        },
-        "type": "object",
-        "title": "PdfResult"
-      },
       "PdfStudioBundleSchema": {
         "properties": {
           "id": {
@@ -69994,260 +69080,6 @@
           "output_kind"
         ],
         "title": "PdfStudioPresetSchema"
-      },
-      "PdfTableBbox": {
-        "properties": {
-          "x0": {
-            "type": "number",
-            "title": "X0"
-          },
-          "y0": {
-            "type": "number",
-            "title": "Y0"
-          },
-          "x1": {
-            "type": "number",
-            "title": "X1"
-          },
-          "y1": {
-            "type": "number",
-            "title": "Y1"
-          }
-        },
-        "type": "object",
-        "required": [
-          "x0",
-          "y0",
-          "x1",
-          "y1"
-        ],
-        "title": "PdfTableBbox",
-        "description": "Bbox of a detected table on the page (PDF coordinates)."
-      },
-      "PdfTablesReport": {
-        "properties": {
-          "page_count": {
-            "type": "integer",
-            "title": "Page Count"
-          },
-          "tables": {
-            "items": {
-              "$ref": "#/components/schemas/PdfExtractedTable"
-            },
-            "type": "array",
-            "title": "Tables"
-          },
-          "detector": {
-            "type": "string",
-            "title": "Detector",
-            "default": "pymupdf.find_tables"
-          },
-          "detector_version": {
-            "type": "string",
-            "title": "Detector Version",
-            "default": "v1"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_count",
-          "tables"
-        ],
-        "title": "PdfTablesReport",
-        "description": "Wire shape for ``POST /utilities/pdf/extract-tables``."
-      },
-      "PdfTextBlock": {
-        "properties": {
-          "block_number": {
-            "type": "integer",
-            "title": "Block Number"
-          },
-          "block_type": {
-            "type": "integer",
-            "title": "Block Type"
-          },
-          "x0": {
-            "type": "number",
-            "title": "X0"
-          },
-          "y0": {
-            "type": "number",
-            "title": "Y0"
-          },
-          "x1": {
-            "type": "number",
-            "title": "X1"
-          },
-          "y1": {
-            "type": "number",
-            "title": "Y1"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "block_number",
-          "block_type",
-          "x0",
-          "y0",
-          "x1",
-          "y1",
-          "text"
-        ],
-        "title": "PdfTextBlock"
-      },
-      "PdfTextChunk": {
-        "properties": {
-          "chunk_id": {
-            "type": "string",
-            "title": "Chunk Id"
-          },
-          "chunk_index": {
-            "type": "integer",
-            "title": "Chunk Index"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "document_char_start": {
-            "type": "integer",
-            "title": "Document Char Start"
-          },
-          "document_char_end": {
-            "type": "integer",
-            "title": "Document Char End"
-          },
-          "char_count": {
-            "type": "integer",
-            "title": "Char Count"
-          },
-          "page_numbers": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Page Numbers"
-          },
-          "page_spans": {
-            "items": {
-              "$ref": "#/components/schemas/PdfPageSpan"
-            },
-            "type": "array",
-            "title": "Page Spans"
-          },
-          "overlap_previous_chars": {
-            "type": "integer",
-            "title": "Overlap Previous Chars",
-            "default": 0
-          },
-          "overlap_next_chars": {
-            "type": "integer",
-            "title": "Overlap Next Chars",
-            "default": 0
-          },
-          "previous_overlap_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previous Overlap Text"
-          },
-          "next_overlap_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Overlap Text"
-          },
-          "token_estimate": {
-            "type": "integer",
-            "title": "Token Estimate"
-          },
-          "source_document": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Document"
-          }
-        },
-        "type": "object",
-        "required": [
-          "chunk_id",
-          "chunk_index",
-          "text",
-          "document_char_start",
-          "document_char_end",
-          "char_count",
-          "page_numbers",
-          "page_spans",
-          "token_estimate"
-        ],
-        "title": "PdfTextChunk"
-      },
-      "PdfTextWord": {
-        "properties": {
-          "word": {
-            "type": "string",
-            "title": "Word"
-          },
-          "x0": {
-            "type": "number",
-            "title": "X0"
-          },
-          "y0": {
-            "type": "number",
-            "title": "Y0"
-          },
-          "x1": {
-            "type": "number",
-            "title": "X1"
-          },
-          "y1": {
-            "type": "number",
-            "title": "Y1"
-          },
-          "block_number": {
-            "type": "integer",
-            "title": "Block Number"
-          },
-          "line_number": {
-            "type": "integer",
-            "title": "Line Number"
-          },
-          "word_number": {
-            "type": "integer",
-            "title": "Word Number"
-          }
-        },
-        "type": "object",
-        "required": [
-          "word",
-          "x0",
-          "y0",
-          "x1",
-          "y1",
-          "block_number",
-          "line_number",
-          "word_number"
-        ],
-        "title": "PdfTextWord"
       },
       "PendingBatchListResponse": {
         "properties": {
@@ -71769,7 +70601,7 @@
                 ]
               },
               {
-                "$ref": "#/components/schemas/FocalPoint-Input"
+                "$ref": "#/components/schemas/FocalPoint"
               }
             ],
             "title": "Position",
@@ -71914,31 +70746,6 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ProcessContentBody"
-      },
-      "ProcessResponse": {
-        "properties": {
-          "job_id": {
-            "type": "string",
-            "title": "Job Id"
-          },
-          "source": {
-            "$ref": "#/components/schemas/StudioSourceOut"
-          },
-          "variants": {
-            "items": {
-              "$ref": "#/components/schemas/StudioVariantOut"
-            },
-            "type": "array",
-            "title": "Variants"
-          }
-        },
-        "type": "object",
-        "required": [
-          "job_id",
-          "source",
-          "variants"
-        ],
-        "title": "ProcessResponse"
       },
       "ProjectionResponse": {
         "properties": {
@@ -72391,78 +71198,6 @@
         ],
         "title": "PublicationStatus"
       },
-      "PublishResult": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status",
-            "description": "unchanged | published | updated | cleared | empty"
-          },
-          "level": {
-            "type": "string",
-            "title": "Level"
-          },
-          "owner_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Owner Id"
-          },
-          "external_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Id"
-          },
-          "version_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version Id"
-          },
-          "rule_count": {
-            "type": "integer",
-            "title": "Rule Count"
-          },
-          "rules_hash": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rules Hash"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status",
-          "level",
-          "owner_id",
-          "external_id",
-          "version_id",
-          "rule_count",
-          "rules_hash"
-        ],
-        "title": "PublishResult"
-      },
       "QuickScrapeRequest": {
         "properties": {
           "get_organized_data": {
@@ -72555,99 +71290,6 @@
           "urls"
         ],
         "title": "QuickScrapeRequest"
-      },
-      "ReadingOrderBlock": {
-        "properties": {
-          "block_index": {
-            "type": "integer",
-            "title": "Block Index"
-          },
-          "column_index": {
-            "type": "integer",
-            "minimum": 0,
-            "title": "Column Index"
-          },
-          "x0": {
-            "type": "number",
-            "title": "X0"
-          },
-          "y0": {
-            "type": "number",
-            "title": "Y0"
-          },
-          "x1": {
-            "type": "number",
-            "title": "X1"
-          },
-          "y1": {
-            "type": "number",
-            "title": "Y1"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "block_index",
-          "column_index",
-          "x0",
-          "y0",
-          "x1",
-          "y1",
-          "text"
-        ],
-        "title": "ReadingOrderBlock"
-      },
-      "ReadingOrderPage": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "minimum": 1,
-            "title": "Page Number"
-          },
-          "column_count": {
-            "type": "integer",
-            "minimum": 1,
-            "title": "Column Count"
-          },
-          "blocks_in_order": {
-            "items": {
-              "$ref": "#/components/schemas/ReadingOrderBlock"
-            },
-            "type": "array",
-            "title": "Blocks In Order"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "column_count",
-          "blocks_in_order"
-        ],
-        "title": "ReadingOrderPage"
-      },
-      "ReadingOrderReport": {
-        "properties": {
-          "page_count": {
-            "type": "integer",
-            "title": "Page Count"
-          },
-          "pages": {
-            "items": {
-              "$ref": "#/components/schemas/ReadingOrderPage"
-            },
-            "type": "array",
-            "title": "Pages"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_count",
-          "pages"
-        ],
-        "title": "ReadingOrderReport"
       },
       "RealtimeTool": {
         "properties": {
@@ -74347,129 +72989,6 @@
         ],
         "title": "ReorderPagesRequest"
       },
-      "RepeatedRegion": {
-        "properties": {
-          "region_id": {
-            "type": "string",
-            "title": "Region Id"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "header",
-              "footer",
-              "watermark",
-              "side-margin",
-              "logo",
-              "page-number",
-              "running-title",
-              "unknown"
-            ],
-            "title": "Kind"
-          },
-          "text_template": {
-            "type": "string",
-            "title": "Text Template"
-          },
-          "pages": {
-            "items": {
-              "type": "integer"
-            },
-            "type": "array",
-            "title": "Pages"
-          },
-          "bbox_per_page": {
-            "items": {
-              "$ref": "#/components/schemas/RepeatedRegionBbox"
-            },
-            "type": "array",
-            "title": "Bbox Per Page"
-          },
-          "confidence": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "Confidence"
-          }
-        },
-        "type": "object",
-        "required": [
-          "region_id",
-          "kind",
-          "text_template",
-          "pages",
-          "bbox_per_page",
-          "confidence"
-        ],
-        "title": "RepeatedRegion",
-        "description": "A pattern detected across multiple pages.\n\nStable across detector runs given the same input — the *region_id* is\ndeterministic from the (kind, y_band, x_band, normalized_text_template)\nquadruple so consumers can reference a region by id when applying\naccept/reject decisions."
-      },
-      "RepeatedRegionBbox": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "minimum": 1,
-            "title": "Page Number"
-          },
-          "x0": {
-            "type": "number",
-            "title": "X0"
-          },
-          "y0": {
-            "type": "number",
-            "title": "Y0"
-          },
-          "x1": {
-            "type": "number",
-            "title": "X1"
-          },
-          "y1": {
-            "type": "number",
-            "title": "Y1"
-          },
-          "raw_text": {
-            "type": "string",
-            "title": "Raw Text"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "x0",
-          "y0",
-          "x1",
-          "y1",
-          "raw_text"
-        ],
-        "title": "RepeatedRegionBbox",
-        "description": "One occurrence of a repeated region on a single page."
-      },
-      "RepeatedRegionsReport": {
-        "properties": {
-          "page_count": {
-            "type": "integer",
-            "title": "Page Count"
-          },
-          "regions": {
-            "items": {
-              "$ref": "#/components/schemas/RepeatedRegion"
-            },
-            "type": "array",
-            "title": "Regions"
-          },
-          "detector_version": {
-            "type": "string",
-            "title": "Detector Version",
-            "default": "v1"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_count",
-          "regions"
-        ],
-        "title": "RepeatedRegionsReport"
-      },
       "ReplaceRequest": {
         "properties": {
           "selector": {
@@ -75827,82 +74346,6 @@
           "data"
         ],
         "title": "RowUpdate"
-      },
-      "RunAsset": {
-        "properties": {
-          "asset_kind": {
-            "type": "string",
-            "enum": [
-              "image",
-              "video"
-            ],
-            "title": "Asset Kind"
-          },
-          "slot": {
-            "type": "integer",
-            "title": "Slot"
-          },
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Url"
-          },
-          "file_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Id"
-          },
-          "prompt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Prompt"
-          },
-          "model_alias": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model Alias"
-          },
-          "is_manual": {
-            "type": "boolean",
-            "title": "Is Manual",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "asset_kind",
-          "slot",
-          "status"
-        ],
-        "title": "RunAsset"
       },
       "RunBatchDeleteRequest": {
         "properties": {
@@ -77745,110 +76188,6 @@
         ],
         "title": "SearchAndScrapeRequest"
       },
-      "SearchBboxOut": {
-        "properties": {
-          "x0": {
-            "type": "number",
-            "title": "X0"
-          },
-          "y0": {
-            "type": "number",
-            "title": "Y0"
-          },
-          "x1": {
-            "type": "number",
-            "title": "X1"
-          },
-          "y1": {
-            "type": "number",
-            "title": "Y1"
-          }
-        },
-        "type": "object",
-        "required": [
-          "x0",
-          "y0",
-          "x1",
-          "y1"
-        ],
-        "title": "SearchBboxOut"
-      },
-      "SearchEntityOut": {
-        "properties": {
-          "entity_id": {
-            "type": "string",
-            "title": "Entity Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "kind": {
-            "type": "string",
-            "title": "Kind"
-          },
-          "mention_count": {
-            "type": "integer",
-            "title": "Mention Count"
-          },
-          "artifact_count": {
-            "type": "integer",
-            "title": "Artifact Count"
-          },
-          "source_kind_counts": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
-            "title": "Source Kind Counts"
-          },
-          "top_chunk_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Top Chunk Id"
-          },
-          "importance": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Importance"
-          },
-          "is_concept": {
-            "type": "boolean",
-            "title": "Is Concept",
-            "default": false
-          },
-          "linked": {
-            "items": {
-              "$ref": "#/components/schemas/LinkedEntityOut"
-            },
-            "type": "array",
-            "title": "Linked"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "entity_id",
-          "name",
-          "kind",
-          "mention_count",
-          "artifact_count",
-          "source_kind_counts"
-        ],
-        "title": "SearchEntityOut"
-      },
       "SearchExamplesResponse": {
         "properties": {
           "query": {
@@ -77985,115 +76324,6 @@
         },
         "type": "object",
         "title": "SearchRequestFilters"
-      },
-      "SearchResponse": {
-        "properties": {
-          "file_id": {
-            "type": "string",
-            "title": "File Id"
-          },
-          "query": {
-            "type": "string",
-            "title": "Query"
-          },
-          "regex": {
-            "type": "boolean",
-            "title": "Regex"
-          },
-          "case_sensitive": {
-            "type": "boolean",
-            "title": "Case Sensitive"
-          },
-          "hits": {
-            "items": {
-              "$ref": "#/components/schemas/aidream__api__routers__file_search__SearchHitOut"
-            },
-            "type": "array",
-            "title": "Hits"
-          },
-          "truncated": {
-            "type": "boolean",
-            "title": "Truncated"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file_id",
-          "query",
-          "regex",
-          "case_sensitive",
-          "hits",
-          "truncated"
-        ],
-        "title": "SearchResponse"
-      },
-      "SearchResponseOut": {
-        "properties": {
-          "query": {
-            "type": "string",
-            "title": "Query"
-          },
-          "hits": {
-            "items": {
-              "$ref": "#/components/schemas/aidream__api__routers__rag__SearchHitOut"
-            },
-            "type": "array",
-            "title": "Hits"
-          },
-          "total_candidates": {
-            "type": "integer",
-            "title": "Total Candidates"
-          },
-          "embedding_model": {
-            "type": "string",
-            "title": "Embedding Model"
-          },
-          "reranker_model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reranker Model"
-          },
-          "latency_ms": {
-            "type": "integer",
-            "title": "Latency Ms"
-          },
-          "entity_map": {
-            "items": {
-              "$ref": "#/components/schemas/SearchEntityOut"
-            },
-            "type": "array",
-            "title": "Entity Map"
-          },
-          "matched_entities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Matched Entities"
-          },
-          "rerank_status": {
-            "type": "string",
-            "title": "Rerank Status",
-            "default": "off"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "query",
-          "hits",
-          "total_candidates",
-          "embedding_model",
-          "reranker_model",
-          "latency_ms"
-        ],
-        "title": "SearchResponseOut"
       },
       "SearchSourceRef": {
         "properties": {
@@ -80573,35 +78803,6 @@
         "type": "object",
         "title": "StripRepeatedRegionsRequest"
       },
-      "StripRepeatedRegionsResultSchema": {
-        "properties": {
-          "pages_text": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Pages Text"
-          },
-          "regions": {
-            "$ref": "#/components/schemas/RepeatedRegionsReport"
-          },
-          "stripped_region_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Stripped Region Ids"
-          }
-        },
-        "type": "object",
-        "required": [
-          "pages_text",
-          "regions",
-          "stripped_region_ids"
-        ],
-        "title": "StripRepeatedRegionsResultSchema",
-        "description": "Wire shape for ``POST /utilities/pdf/strip-repeated-regions``."
-      },
       "StuckRow": {
         "properties": {
           "primary_key": {
@@ -80760,206 +78961,6 @@
         },
         "type": "object",
         "title": "StudioRenderRequest"
-      },
-      "StudioSourceOut": {
-        "properties": {
-          "width": {
-            "type": "integer",
-            "title": "Width"
-          },
-          "height": {
-            "type": "integer",
-            "title": "Height"
-          },
-          "size": {
-            "type": "integer",
-            "title": "Size"
-          },
-          "format": {
-            "type": "string",
-            "title": "Format"
-          },
-          "signed_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Signed Url"
-          },
-          "expires_in": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Expires In"
-          },
-          "file_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Id"
-          },
-          "staged": {
-            "type": "boolean",
-            "title": "Staged"
-          }
-        },
-        "type": "object",
-        "required": [
-          "width",
-          "height",
-          "size",
-          "format",
-          "staged"
-        ],
-        "title": "StudioSourceOut"
-      },
-      "StudioVariantOut": {
-        "properties": {
-          "preset_id": {
-            "type": "string",
-            "title": "Preset Id"
-          },
-          "filename": {
-            "type": "string",
-            "title": "Filename"
-          },
-          "format": {
-            "type": "string",
-            "enum": [
-              "jpeg",
-              "png",
-              "webp",
-              "avif"
-            ],
-            "title": "Format"
-          },
-          "width": {
-            "type": "integer",
-            "title": "Width"
-          },
-          "height": {
-            "type": "integer",
-            "title": "Height"
-          },
-          "quality": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quality"
-          },
-          "size": {
-            "type": "integer",
-            "title": "Size"
-          },
-          "signed_url": {
-            "type": "string",
-            "title": "Signed Url"
-          },
-          "expires_in": {
-            "type": "integer",
-            "title": "Expires In"
-          },
-          "compression_ratio": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Compression Ratio"
-          },
-          "fit": {
-            "type": "string",
-            "enum": [
-              "cover",
-              "contain",
-              "inside"
-            ],
-            "title": "Fit"
-          },
-          "position": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "center",
-                  "top",
-                  "bottom",
-                  "left",
-                  "right",
-                  "top-left",
-                  "top-right",
-                  "bottom-left",
-                  "bottom-right",
-                  "entropy",
-                  "attention"
-                ]
-              },
-              {
-                "$ref": "#/components/schemas/aidream__api__routers__image_studio__FocalPoint"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position"
-          },
-          "notes": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Notes"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          }
-        },
-        "type": "object",
-        "required": [
-          "preset_id",
-          "filename",
-          "format",
-          "width",
-          "height",
-          "quality",
-          "size",
-          "signed_url",
-          "expires_in",
-          "compression_ratio",
-          "fit",
-          "position"
-        ],
-        "title": "StudioVariantOut"
       },
       "SubOpError": {
         "properties": {
@@ -82650,69 +80651,6 @@
         },
         "type": "object",
         "title": "TestNodeRequest"
-      },
-      "TestNodeResponse": {
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "title": "Success"
-          },
-          "duration_ms": {
-            "type": "integer",
-            "title": "Duration Ms"
-          },
-          "node_id": {
-            "type": "string",
-            "title": "Node Id"
-          },
-          "spec_type": {
-            "type": "string",
-            "title": "Spec Type"
-          },
-          "output": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output"
-          },
-          "error_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Type"
-          },
-          "error_message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error Message"
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "success",
-          "duration_ms",
-          "node_id",
-          "spec_type"
-        ],
-        "title": "TestNodeResponse"
       },
       "ToolDetail": {
         "properties": {
@@ -88487,66 +86425,6 @@
         ],
         "title": "RestoreResponse"
       },
-      "aidream__api__routers__file_search__SearchHitOut": {
-        "properties": {
-          "page_number": {
-            "type": "integer",
-            "title": "Page Number"
-          },
-          "page_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Page Id"
-          },
-          "bbox": {
-            "$ref": "#/components/schemas/SearchBboxOut"
-          },
-          "snippet": {
-            "type": "string",
-            "title": "Snippet"
-          },
-          "matched_text": {
-            "type": "string",
-            "title": "Matched Text"
-          },
-          "char_start": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Char Start"
-          },
-          "char_end": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Char End"
-          }
-        },
-        "type": "object",
-        "required": [
-          "page_number",
-          "bbox",
-          "snippet",
-          "matched_text"
-        ],
-        "title": "SearchHitOut"
-      },
       "aidream__api__routers__file_search__SearchRequest": {
         "properties": {
           "query": {
@@ -88582,28 +86460,6 @@
           "query"
         ],
         "title": "SearchRequest"
-      },
-      "aidream__api__routers__image_studio__FocalPoint": {
-        "properties": {
-          "x": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "X"
-          },
-          "y": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "Y"
-          }
-        },
-        "type": "object",
-        "required": [
-          "x",
-          "y"
-        ],
-        "title": "FocalPoint"
       },
       "aidream__api__routers__rag__IngestRequest": {
         "properties": {
@@ -88656,140 +86512,6 @@
           "source_id"
         ],
         "title": "IngestRequest"
-      },
-      "aidream__api__routers__rag__SearchHitOut": {
-        "properties": {
-          "chunk_id": {
-            "type": "string",
-            "title": "Chunk Id"
-          },
-          "source_kind": {
-            "type": "string",
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "field_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Id"
-          },
-          "parent_chunk_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent Chunk Id"
-          },
-          "chunk_kind": {
-            "type": "string",
-            "title": "Chunk Kind"
-          },
-          "snippet": {
-            "type": "string",
-            "title": "Snippet"
-          },
-          "score": {
-            "type": "number",
-            "title": "Score"
-          },
-          "vector_rank": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Vector Rank"
-          },
-          "lexical_rank": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Lexical Rank"
-          },
-          "rerank_score": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rerank Score"
-          },
-          "metadata": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Metadata"
-          },
-          "source_ref": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Ref"
-          },
-          "entities": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Entities"
-          },
-          "entity_rank": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Entity Rank"
-          }
-        },
-        "type": "object",
-        "required": [
-          "chunk_id",
-          "source_kind",
-          "source_id",
-          "field_id",
-          "parent_chunk_id",
-          "chunk_kind",
-          "snippet",
-          "score",
-          "vector_rank",
-          "lexical_rank",
-          "rerank_score",
-          "metadata"
-        ],
-        "title": "SearchHitOut"
       },
       "aidream__api__routers__rag__SearchRequest": {
         "properties": {
@@ -89138,31 +86860,6 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
-      },
-      "matrx_utils__file_handling__asset_envelope__FocalPoint": {
-        "properties": {
-          "x": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "X",
-            "description": "0=left, 1=right"
-          },
-          "y": {
-            "type": "number",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "Y",
-            "description": "0=top, 1=bottom"
-          }
-        },
-        "type": "object",
-        "required": [
-          "x",
-          "y"
-        ],
-        "title": "FocalPoint",
-        "description": "Continuous focal point — normalized [0..1] coordinates from the\ntop-left of the source. Used with fit='cover' to crop around a\nuser-chosen point of interest rather than a named anchor."
       }
     }
   }

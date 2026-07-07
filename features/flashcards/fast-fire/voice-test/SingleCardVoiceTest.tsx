@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
-import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {
   startContinuousCapture,
   startCardClip,
@@ -104,7 +103,6 @@ export function SingleCardVoiceTest({
   } = useCartesiaSpeaker({
     processMarkdown: true,
     purpose: "assistant",
-    dictionarySurfaceKey: READ_ALOUD_DICTIONARY_SURFACE,
   });
   const [phase, setPhase] = useState<Phase>("setup");
   const [starting, setStarting] = useState(false);

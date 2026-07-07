@@ -37,6 +37,8 @@ import {
   mightBeOurFileUrl,
 } from "@/lib/media/our-file-sources";
 import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
+import { envelopeForCompletedXmlRegion } from "@/features/content-ir/surfaces/xml-finalize";
+import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1869,10 +1871,26 @@ export const splitContentIntoBlocksV2 = (
         lines,
       );
 
+      // XML-surface convergence (THE KEYSTONE) — the one-shot mirror of the
+      // accumulator's region-close hook: a COMPLETED region whose tag
+      // resolves through the surface registry carries the canonical kind
+      // envelope on `metadata.__ir`, so DB reloads route through the same
+      // kind pipeline the live stream does. Complete-only; loud fail-open.
+      let xmlMetadata = extraction.metadata;
+      if (xmlMetadata?.isComplete === true) {
+        const xmlEnvelope = envelopeForCompletedXmlRegion(
+          xmlMatch.matchedTag.slice(1, -1),
+          extraction.content,
+        );
+        if (xmlEnvelope) {
+          xmlMetadata = { ...xmlMetadata, [IR_ENVELOPE_KEY]: xmlEnvelope };
+        }
+      }
+
       blocks.push({
         type: xmlMatch.type as SplitterBlockType,
         content: extraction.content,
-        metadata: extraction.metadata,
+        metadata: xmlMetadata,
       });
 
       i = extraction.nextIndex;

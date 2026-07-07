@@ -19050,6 +19050,12 @@ export interface components {
         DetectDocumentRequest: {
             /** Source Id */
             source_id: string;
+            /**
+             * Mode
+             * @default standard
+             * @enum {string}
+             */
+            mode: "standard" | "relaxed";
         };
         /** DetectDocumentResponse */
         DetectDocumentResponse: {
@@ -24828,46 +24834,6 @@ export interface components {
             /** End */
             end: number;
         };
-        /** PdfPageSpan */
-        PdfPageSpan: {
-            /** Page Number */
-            page_number: number;
-            /** Page Index */
-            page_index: number;
-            /** Page Char Start */
-            page_char_start: number;
-            /** Page Char End */
-            page_char_end: number;
-            /** Chunk Char Start */
-            chunk_char_start: number;
-            /** Chunk Char End */
-            chunk_char_end: number;
-        };
-        /** PdfPageText */
-        PdfPageText: {
-            /** Page Number */
-            page_number: number;
-            /** Page Index */
-            page_index: number;
-            /** Width */
-            width: number;
-            /** Height */
-            height: number;
-            /** Rotation */
-            rotation: number;
-            /** Text */
-            text: string;
-            /** Extraction Method */
-            extraction_method: string;
-            /** Char Count */
-            char_count: number;
-            /** Source Path */
-            source_path?: string | null;
-            /** Blocks */
-            blocks?: components["schemas"]["PdfTextBlock"][] | null;
-            /** Words */
-            words?: components["schemas"]["PdfTextWord"][] | null;
-        };
         /** PdfPipelineOptions */
         PdfPipelineOptions: {
             /**
@@ -25000,31 +24966,6 @@ export interface components {
              */
             options: components["schemas"]["PdfPipelineOptions"];
         };
-        /** PdfResult */
-        PdfResult: {
-            /** Raw Text */
-            raw_text?: string | null;
-            /** Pages */
-            pages?: components["schemas"]["PdfPageText"][] | null;
-            /** Chunks */
-            chunks?: string[] | null;
-            /** Chunk Records */
-            chunk_records?: components["schemas"]["PdfTextChunk"][] | null;
-            /** Ai Processed */
-            ai_processed?: {
-                [key: string]: unknown;
-            }[] | null;
-            /** Tables Path */
-            tables_path?: string | null;
-            /** Cloud Uri */
-            cloud_uri?: string | null;
-            /** Supabase Url */
-            supabase_url?: string | null;
-            /** File Id */
-            file_id?: string | null;
-            /** Storage Uri */
-            storage_uri?: string | null;
-        };
         /** PdfStudioBundleSchema */
         PdfStudioBundleSchema: {
             /** Id */
@@ -25119,79 +25060,6 @@ export interface components {
              * @default v1
              */
             detector_version: string;
-        };
-        /** PdfTextBlock */
-        PdfTextBlock: {
-            /** Block Number */
-            block_number: number;
-            /** Block Type */
-            block_type: number;
-            /** X0 */
-            x0: number;
-            /** Y0 */
-            y0: number;
-            /** X1 */
-            x1: number;
-            /** Y1 */
-            y1: number;
-            /** Text */
-            text: string;
-        };
-        /** PdfTextChunk */
-        PdfTextChunk: {
-            /** Chunk Id */
-            chunk_id: string;
-            /** Chunk Index */
-            chunk_index: number;
-            /** Text */
-            text: string;
-            /** Document Char Start */
-            document_char_start: number;
-            /** Document Char End */
-            document_char_end: number;
-            /** Char Count */
-            char_count: number;
-            /** Page Numbers */
-            page_numbers: number[];
-            /** Page Spans */
-            page_spans: components["schemas"]["PdfPageSpan"][];
-            /**
-             * Overlap Previous Chars
-             * @default 0
-             */
-            overlap_previous_chars: number;
-            /**
-             * Overlap Next Chars
-             * @default 0
-             */
-            overlap_next_chars: number;
-            /** Previous Overlap Text */
-            previous_overlap_text?: string | null;
-            /** Next Overlap Text */
-            next_overlap_text?: string | null;
-            /** Token Estimate */
-            token_estimate: number;
-            /** Source Document */
-            source_document?: string | null;
-        };
-        /** PdfTextWord */
-        PdfTextWord: {
-            /** Word */
-            word: string;
-            /** X0 */
-            x0: number;
-            /** Y0 */
-            y0: number;
-            /** X1 */
-            x1: number;
-            /** Y1 */
-            y1: number;
-            /** Block Number */
-            block_number: number;
-            /** Line Number */
-            line_number: number;
-            /** Word Number */
-            word_number: number;
         };
         /** PendingBatchListResponse */
         PendingBatchListResponse: {
@@ -34664,9 +34532,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -35527,7 +35393,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PdfResult"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

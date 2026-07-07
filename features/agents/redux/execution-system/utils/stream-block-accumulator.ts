@@ -44,6 +44,7 @@ import {
   type CanonicalBlockIR,
 } from "@/features/content-ir/core/ir-types";
 import { envelopeMatchesParsedSource } from "@/features/content-ir/redux/render-block-envelope";
+import { envelopeForCompletedXmlRegion } from "@/features/content-ir/surfaces/xml-finalize";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 // ============================================================================
@@ -1080,6 +1081,24 @@ export class StreamBlockAccumulator {
       }
       this.irEnvelope = null;
       return;
+    }
+    // XML-surface convergence (THE KEYSTONE): a COMPLETED simple-XML region
+    // whose tag resolves through the surface registry converges to its
+    // canonical kind here — the envelope rides the same complete emit JSON
+    // regions use, and streaming emits stay envelope-free (today's per-tag
+    // skeleton until complete). Completion = the literal closing tag: a
+    // region cut off mid-stream (tool break / stream death) keeps today's
+    // behavior untouched. Failure inside the hook is loud + fail-open.
+    if (
+      this.subState.kind === "xml_tag" &&
+      !this.subState.isAttrXml &&
+      this.currentBlockContent.includes(this.subState.closingTag)
+    ) {
+      const xmlEnvelope = envelopeForCompletedXmlRegion(
+        this.subState.tagName,
+        this.currentBlockContent,
+      );
+      if (xmlEnvelope) this.irEnvelope = xmlEnvelope;
     }
     this.emitCurrentBlock(dispatch, "complete");
     this.irEnvelope = null;

@@ -14,7 +14,6 @@ import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectVoicePreferences } from '@/lib/redux/preferences/userPreferenceSelectors';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
-import { READ_ALOUD_DICTIONARY_SURFACE } from '@/features/dictionary/constants';
 import {
   buildGenerationConfig,
   CARTESIA_API_VERSION,
@@ -41,10 +40,10 @@ export interface UseCartesiaSpeakerOptions {
   purpose?: VoicePurpose;
   /**
    * Custom Dictionary surface whose resolved pronunciations rewrite the spoken
-   * text before synthesis. Defaults to the shared read-aloud surface (the
-   * user's personal + global dictionary), so ALL read-aloud playback applies
-   * pronunciations automatically. Pass a specific surface key to scope it (e.g.
-   * the Scribe). See features/dictionary/ttsBridge.ts.
+   * text before synthesis. When omitted (the default), pronunciations follow the
+   * ONE global active context (personal + global + active org/scopes). Pass a
+   * specific surface key only to scope it to that surface's own selection.
+   * See features/dictionary/activeContextBridge.ts.
    */
   dictionarySurfaceKey?: string;
 }
@@ -52,7 +51,7 @@ export interface UseCartesiaSpeakerOptions {
 export function useCartesiaSpeaker({
   processMarkdown = true,
   purpose = 'assistant',
-  dictionarySurfaceKey = READ_ALOUD_DICTIONARY_SURFACE,
+  dictionarySurfaceKey,
 }: UseCartesiaSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>('idle');
   // Last spoken text — labels this utterance's row in the Audio panel.
@@ -128,9 +127,16 @@ export function useCartesiaSpeaker({
   const speak = useCallback(async (inputText: string) => {
     setLastText(inputText);
     let pronunciations: Awaited<ReturnType<typeof import('@/features/dictionary/ttsBridge').resolveDictionaryTtsAliases>> = [];
-    if (dictionarySurfaceKey) {
-      const { resolveDictionaryTtsAliases } = await import('@/features/dictionary/ttsBridge');
-      pronunciations = await resolveDictionaryTtsAliases(dictionarySurfaceKey);
+    try {
+      if (dictionarySurfaceKey) {
+        const { resolveDictionaryTtsAliases } = await import('@/features/dictionary/ttsBridge');
+        pronunciations = await resolveDictionaryTtsAliases(dictionarySurfaceKey);
+      } else {
+        const { resolveActiveContextTtsAliases } = await import('@/features/dictionary/activeContextBridge');
+        pronunciations = await resolveActiveContextTtsAliases();
+      }
+    } catch {
+      pronunciations = [];
     }
     const processed = processMarkdown
       ? parseMarkdownToText(inputText, pronunciations.length ? { pronunciations } : undefined)

@@ -18244,6 +18244,57 @@ export type Database = {
         }
         Relationships: []
       }
+      association_types: {
+        Row: {
+          container_side: string
+          conveys_max: Database["public"]["Enums"]["permission_level"]
+          created_at: string
+          is_active: boolean
+          label: string | null
+          notes: string | null
+          source_type: string
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          container_side?: string
+          conveys_max?: Database["public"]["Enums"]["permission_level"]
+          created_at?: string
+          is_active?: boolean
+          label?: string | null
+          notes?: string | null
+          source_type: string
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          container_side?: string
+          conveys_max?: Database["public"]["Enums"]["permission_level"]
+          created_at?: string
+          is_active?: boolean
+          label?: string | null
+          notes?: string | null
+          source_type?: string
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_types_source_type_fkey"
+            columns: ["source_type"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+          {
+            foreignKeyName: "association_types_target_type_fkey"
+            columns: ["target_type"]
+            isOneToOne: false
+            referencedRelation: "entity_types"
+            referencedColumns: ["token"]
+          },
+        ]
+      }
       associations: {
         Row: {
           created_at: string
@@ -18633,6 +18684,36 @@ export type Database = {
           },
         ]
       }
+      reachability: {
+        Row: {
+          container_id: string
+          container_type: string
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+          refreshed_at: string
+        }
+        Insert: {
+          container_id: string
+          container_type: string
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+          refreshed_at?: string
+        }
+        Update: {
+          container_id?: string
+          container_type?: string
+          depth?: number
+          item_id?: string
+          item_type?: string
+          max_level?: Database["public"]["Enums"]["permission_level"]
+          refreshed_at?: string
+        }
+        Relationships: []
+      }
       shareable_resource_registry: {
         Row: {
           content_role: string | null
@@ -18728,6 +18809,16 @@ export type Database = {
       }
     }
     Views: {
+      containment_edges: {
+        Row: {
+          container_id: string | null
+          container_type: string | null
+          conveys_max: Database["public"]["Enums"]["permission_level"] | null
+          item_id: string | null
+          item_type: string | null
+        }
+        Relationships: []
+      }
       v_deprecated_table_access: {
         Row: {
           calls: number | null
@@ -18801,6 +18892,15 @@ export type Database = {
         }
         Returns: string
       }
+      derive_reachability: {
+        Args: { p_container_id: string; p_container_type: string }
+        Returns: {
+          depth: number
+          item_id: string
+          item_type: string
+          max_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
       log_activity:
         | {
             Args: {
@@ -18833,6 +18933,28 @@ export type Database = {
           needs_approval: boolean
           scopeable: boolean
         }[]
+      }
+      reachability_ancestors: {
+        Args: { p_id: string; p_type: string }
+        Returns: {
+          container_id: string
+          container_type: string
+        }[]
+      }
+      reachability_touch: {
+        Args: {
+          p_label: string
+          p_source_id: string
+          p_source_type: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: undefined
+      }
+      rebuild_reachability: { Args: never; Returns: number }
+      refresh_reachability: {
+        Args: { p_container_id: string; p_container_type: string }
+        Returns: undefined
       }
       retrofit_entity: {
         Args: {
@@ -21462,6 +21584,21 @@ export type Database = {
         }
         Relationships: []
       }
+      schema_migrations: {
+        Row: {
+          applied_at: string
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       schema_templates: {
         Row: {
           created_at: string | null
@@ -21780,6 +21917,36 @@ export type Database = {
           ran_by?: string | null
           status?: string
           tsconfig?: string
+        }
+        Relationships: []
+      }
+      user_memory: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          labels: Json | null
+          path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          labels?: Json | null
+          path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          labels?: Json | null
+          path?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

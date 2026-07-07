@@ -2,10 +2,12 @@
  * PDF Extractor — canonical streaming service.
  *
  * Thin wrapper around `consumeStream` from `@/lib/api/stream-parser` (the
- * platform-wide NDJSON consumer). Two endpoints, one shape:
+ * platform-wide NDJSON consumer). Four endpoints, one shape:
  *
- *   - `streamPdfClean(...)`        → POST `/utilities/pdf/clean-content/{id}`
- *   - `streamPdfFullPipeline(...)` → POST `/utilities/pdf/full-pipeline`
+ *   - `streamPdfClean(...)`             → POST `/utilities/pdf/clean-content/{id}`
+ *   - `streamPdfFullPipeline(...)`      → POST `/utilities/pdf/full-pipeline`
+ *   - `streamPdfExtractText(...)`       → POST `/utilities/pdf/extract-text` (multipart)
+ *   - `streamPdfExtractTextRemote(...)` → POST `/utilities/pdf/extract-text-remote` (JSON)
  *
  * Every PDF-extractor caller (the hook, the studio shell, the mobile shell,
  * the floating workspace) goes through these two functions. The previous
@@ -37,6 +39,16 @@
  *        on this endpoint today — the dump itself carries the new id.)
  *     3. `end`.
  *
+ *   /pdf/extract-text (multipart) + /pdf/extract-text-remote (JSON) — pure
+ *   per-page text extraction, converted from blocking JSON 2026-07:
+ *     1. `data` `pdf_extract_started` — `{ filename, total_pages }`.
+ *     2. `data` `pdf_page_extracted` per page — `{ page_number, total_pages,
+ *        extraction_method: "native"|"ocr", char_count, preview }` (preview
+ *        capped ~400 chars server-side).
+ *     3. `data` `pdf_extract_complete` — the old blocking response body
+ *        (`text_content`, `file_id`, counts). Treat it as THE result.
+ *     4. `end`.
+ *
  * NOTE: this service does NOT do DB refetches itself — the hook owns that so
  * the `invalidateProcessedDocumentCache` + `fetchDocument` finalize stays in
  * one place. We just return the typed signals.
@@ -48,6 +60,11 @@ import type {
   InfoPayload,
   RecordUpdatePayload,
 } from "@/lib/api/types";
+import type {
+  PdfExtractCompleteData,
+  PdfExtractStartedData,
+  PdfPageExtractedData,
+} from "@/types/python-generated/stream-events";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
@@ -296,4 +313,131 @@ export async function streamPdfFullPipeline(opts: {
   if (firstErrorMessage) throw new Error(firstErrorMessage);
 
   return { childDocId, accumulatedText };
+}
+
+// ─── /pdf/extract-text + /pdf/extract-text-remote ────────────────────────────
+
+export interface StreamPdfExtractTextCallbacks {
+  /** Fires for every `info` event with a `user_message` / `system_message`. */
+  onProgress?: (message: string) => void;
+  /** Fires on `pdf_extract_started` — filename + total page count. */
+  onStarted?: (data: PdfExtractStartedData) => void;
+  /**
+   * Fires on every `pdf_page_extracted` — page N / M, native-vs-OCR method,
+   * char count, and a ~400-char preview of the page text.
+   */
+  onPageExtracted?: (data: PdfPageExtractedData) => void;
+}
+
+/**
+ * Shared consumer for both extract-text streams. Resolves with the terminal
+ * `pdf_extract_complete` payload — the exact body the old blocking JSON
+ * response carried (`text_content`, `file_id`, counts). Throws on a stream
+ * `error` event or a stream that ends without a complete event.
+ */
+async function consumePdfExtractTextStream(
+  response: Response,
+  callbacks: StreamPdfExtractTextCallbacks,
+  signal?: AbortSignal,
+): Promise<PdfExtractCompleteData> {
+  let complete: PdfExtractCompleteData | null = null;
+  let firstErrorMessage: string | null = null;
+
+  await consumeStream(
+    response,
+    {
+      onInfo: (data) => {
+        const msg = extractProgressMessage(data);
+        if (msg) callbacks.onProgress?.(msg);
+      },
+      onData: (data) => {
+        if (!data || typeof data !== "object") return;
+        const type = (data as { type?: string }).type;
+        if (type === "pdf_extract_started") {
+          callbacks.onStarted?.(data as PdfExtractStartedData);
+        } else if (type === "pdf_page_extracted") {
+          callbacks.onPageExtracted?.(data as PdfPageExtractedData);
+        } else if (type === "pdf_extract_complete") {
+          complete = data as PdfExtractCompleteData;
+        }
+      },
+      onError: (data) => {
+        firstErrorMessage =
+          data.user_message ?? data.message ?? "PDF extraction stream emitted an error";
+      },
+    },
+    signal,
+  );
+
+  if (firstErrorMessage) throw new Error(firstErrorMessage);
+  if (!complete) {
+    throw new Error(
+      "PDF extraction stream ended without a pdf_extract_complete event",
+    );
+  }
+  return complete;
+}
+
+/**
+ * POST `/utilities/pdf/extract-text` — multipart upload (PDF or image).
+ * `headers` must be auth-only; the browser sets the multipart boundary.
+ */
+export async function streamPdfExtractText(opts: {
+  file: File;
+  baseUrl: string;
+  headers: Record<string, string>;
+  callbacks?: StreamPdfExtractTextCallbacks;
+  signal?: AbortSignal;
+}): Promise<PdfExtractCompleteData> {
+  const { file, baseUrl, headers, callbacks = {}, signal } = opts;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${baseUrl}${ENDPOINTS.pdf.extractText}`, {
+    method: "POST",
+    headers,
+    body: formData,
+    signal,
+  });
+  await throwOnNotOk(response, "PDF text extraction failed");
+
+  return consumePdfExtractTextStream(response, callbacks, signal);
+}
+
+/** Mirrors `ExtractTextRequest` on the Python side (SourceMixin + knobs). */
+export interface PdfExtractTextRemoteBody {
+  /** Canonical MediaRef source — build with `buildPdfSource`. */
+  media?: { file_id: string } | { url: string };
+  /** Legacy top-level URL — still accepted, prefer `media`. */
+  url?: string;
+  force_ocr?: boolean;
+  use_ocr_threshold?: number;
+  include_page_markers?: boolean;
+  include_page_metadata?: boolean;
+  include_block_metadata?: boolean;
+  include_word_metadata?: boolean;
+  persist?: boolean;
+  document_name?: string | null;
+}
+
+/** POST `/utilities/pdf/extract-text-remote` — JSON body (MediaRef / url). */
+export async function streamPdfExtractTextRemote(opts: {
+  body: PdfExtractTextRemoteBody;
+  baseUrl: string;
+  headers: Record<string, string>;
+  callbacks?: StreamPdfExtractTextCallbacks;
+  signal?: AbortSignal;
+}): Promise<PdfExtractCompleteData> {
+  const { body, baseUrl, headers, callbacks = {}, signal } = opts;
+
+  const response = await fetch(`${baseUrl}${ENDPOINTS.pdf.extractTextRemote}`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+  await throwOnNotOk(response, "PDF text extraction failed");
+
+  return consumePdfExtractTextStream(response, callbacks, signal);
 }

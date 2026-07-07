@@ -13,7 +13,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Headphones } from 'lucide-react';
 import SpeakerGroupCore from '@/features/tts/components/SpeakerGroupCore';
-import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { cn } from "@/lib/utils";
 
 interface AudioModalProps {
@@ -37,7 +36,7 @@ const AudioModal: React.FC<AudioModalProps> = ({
     description = "Listen to the audio explanation.",
     hideText = false,
     className,
-    dictionarySurfaceKey = READ_ALOUD_DICTIONARY_SURFACE,
+    dictionarySurfaceKey,
 }) => {
     return (
         <Credenza open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>

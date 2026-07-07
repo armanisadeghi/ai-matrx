@@ -3594,22 +3594,74 @@
     "title": "CategorizationResultData",
     "type": "object"
   },
-  "PodcastStageData": {
+  "FileAnalysisStartedData": {
     "additionalProperties": false,
+    "description": "Detector pipeline began — the runnable (detector, tier) count is known.",
     "properties": {
       "type": {
-        "const": "podcast_stage",
-        "default": "podcast_stage",
+        "const": "file_analysis_started",
+        "default": "file_analysis_started",
         "title": "Type",
         "type": "string"
       },
-      "stage": {
-        "title": "Stage",
+      "file_id": {
+        "title": "File Id",
         "type": "string"
       },
-      "success": {
-        "title": "Success",
-        "type": "boolean"
+      "mime_type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Mime Type"
+      },
+      "total_detectors": {
+        "title": "Total Detectors",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "file_id",
+      "total_detectors"
+    ],
+    "title": "FileAnalysisStartedData",
+    "type": "object"
+  },
+  "FileDetectorCompletedData": {
+    "additionalProperties": false,
+    "description": "One (detector, tier) settled — success, skipped, or failed.",
+    "properties": {
+      "type": {
+        "const": "file_detector_completed",
+        "default": "file_detector_completed",
+        "title": "Type",
+        "type": "string"
+      },
+      "file_id": {
+        "title": "File Id",
+        "type": "string"
+      },
+      "detector_kind": {
+        "title": "Detector Kind",
+        "type": "string"
+      },
+      "tier": {
+        "title": "Tier",
+        "type": "string"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "elapsed_ms": {
+        "default": 0,
+        "title": "Elapsed Ms",
+        "type": "integer"
       },
       "error": {
         "anyOf": [
@@ -3623,23 +3675,272 @@
         "default": null,
         "title": "Error"
       },
-      "result_keys": {
+      "complete": {
+        "title": "Complete",
+        "type": "integer"
+      },
+      "total": {
+        "title": "Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "file_id",
+      "detector_kind",
+      "tier",
+      "status",
+      "complete",
+      "total"
+    ],
+    "title": "FileDetectorCompletedData",
+    "type": "object"
+  },
+  "FileAnalysisCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal analysis result — carries the same head+results payload that\n``GET /files/{file_id}/analysis`` returns, so a migrating client reads this\none event as the old fetch response and never needs to poll.",
+    "properties": {
+      "type": {
+        "const": "file_analysis_complete",
+        "default": "file_analysis_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "file_id": {
+        "title": "File Id",
+        "type": "string"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "results_count": {
+        "default": 0,
+        "title": "Results Count",
+        "type": "integer"
+      },
+      "failures": {
         "items": {
           "type": "string"
         },
-        "title": "Result Keys",
+        "title": "Failures",
         "type": "array"
+      },
+      "elapsed_ms": {
+        "default": 0,
+        "title": "Elapsed Ms",
+        "type": "integer"
+      },
+      "head": {
+        "additionalProperties": true,
+        "title": "Head",
+        "type": "object"
+      },
+      "results": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Results",
+        "type": "array"
+      }
+    },
+    "required": [
+      "file_id",
+      "status"
+    ],
+    "title": "FileAnalysisCompleteData",
+    "type": "object"
+  },
+  "ExtractionIndexProgressData": {
+    "additionalProperties": false,
+    "description": "Progress while a page-extraction run is materialized into RAG chunks.",
+    "properties": {
+      "type": {
+        "const": "extraction_index_progress",
+        "default": "extraction_index_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "message": {
+        "default": "",
+        "title": "Message",
+        "type": "string"
+      },
+      "results_total": {
+        "default": 0,
+        "title": "Results Total",
+        "type": "integer"
+      },
+      "chunks_built": {
+        "default": 0,
+        "title": "Chunks Built",
+        "type": "integer"
+      },
+      "chunks_skipped": {
+        "default": 0,
+        "title": "Chunks Skipped",
+        "type": "integer"
+      },
+      "embedded": {
+        "default": 0,
+        "title": "Embedded",
+        "type": "integer"
+      },
+      "total_to_embed": {
+        "default": 0,
+        "title": "Total To Embed",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "run_id",
+      "stage"
+    ],
+    "title": "ExtractionIndexProgressData",
+    "type": "object"
+  },
+  "ExtractionIndexCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal indexing result — same fields the legacy blocking JSON body\nof ``POST /page-extraction/runs/{run_id}/index`` carried.",
+    "properties": {
+      "type": {
+        "const": "extraction_index_complete",
+        "default": "extraction_index_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "derivative_id": {
+        "title": "Derivative Id",
+        "type": "string"
+      },
+      "derivative_outcome": {
+        "title": "Derivative Outcome",
+        "type": "string"
+      },
+      "results_total": {
+        "title": "Results Total",
+        "type": "integer"
+      },
+      "chunks_written": {
+        "title": "Chunks Written",
+        "type": "integer"
+      },
+      "chunks_skipped": {
+        "title": "Chunks Skipped",
+        "type": "integer"
+      },
+      "priority_applied": {
+        "title": "Priority Applied",
+        "type": "integer"
+      },
+      "agent_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Agent Id"
+      },
+      "embedding_model": {
+        "title": "Embedding Model",
+        "type": "string"
+      }
+    },
+    "required": [
+      "run_id",
+      "job_id",
+      "derivative_id",
+      "derivative_outcome",
+      "results_total",
+      "chunks_written",
+      "chunks_skipped",
+      "priority_applied",
+      "embedding_model"
+    ],
+    "title": "ExtractionIndexCompleteData",
+    "type": "object"
+  },
+  "PodcastStageEvent": {
+    "additionalProperties": false,
+    "description": "A pipeline stage finished (success or failure).\n\nMerged with the legacy ``PodcastStageData`` (same ``podcast_stage`` wire\ntype) — this richer shape is what the generator actually emits; the old\n``result_keys`` shape never had an emitter.",
+    "properties": {
+      "type": {
+        "const": "podcast_stage",
+        "default": "podcast_stage",
+        "title": "Type",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "label": {
+        "default": "",
+        "title": "Label",
+        "type": "string"
+      },
+      "success": {
+        "title": "Success",
+        "type": "boolean"
+      },
+      "output": {
+        "default": "",
+        "title": "Output",
+        "type": "string"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "step": {
+        "default": 0,
+        "title": "Step",
+        "type": "integer"
+      },
+      "total": {
+        "default": 0,
+        "title": "Total",
+        "type": "integer"
       }
     },
     "required": [
       "stage",
       "success"
     ],
-    "title": "PodcastStageData",
+    "title": "PodcastStageEvent",
     "type": "object"
   },
-  "PodcastCompleteData": {
+  "PodcastCompleteEvent": {
     "additionalProperties": false,
+    "description": "Terminal event of a full podcast generation.\n\nMerged with the legacy ``PodcastCompleteData`` (same ``podcast_complete``\nwire type) — this richer shape is what the generator actually emits; the\nold ``episode_count`` shape never had an emitter.",
     "properties": {
       "type": {
         "const": "podcast_complete",
@@ -3655,10 +3956,86 @@
         "title": "Success",
         "type": "boolean"
       },
-      "episode_count": {
-        "default": 0,
-        "title": "Episode Count",
+      "episode_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Episode Id"
+      },
+      "episode_slug": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Episode Slug"
+      },
+      "script": {
+        "default": "",
+        "title": "Script",
+        "type": "string"
+      },
+      "audio_url": {
+        "default": "",
+        "title": "Audio Url",
+        "type": "string"
+      },
+      "title": {
+        "default": "",
+        "title": "Title",
+        "type": "string"
+      },
+      "description": {
+        "default": "",
+        "title": "Description",
+        "type": "string"
+      },
+      "image_urls": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Image Urls",
+        "type": "array"
+      },
+      "video_urls": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Video Urls",
+        "type": "array"
+      },
+      "official_video_url": {
+        "default": "",
+        "title": "Official Video Url",
+        "type": "string"
+      },
+      "official_video_error": {
+        "default": "",
+        "title": "Official Video Error",
+        "type": "string"
+      },
+      "host_count": {
+        "default": 2,
+        "title": "Host Count",
         "type": "integer"
+      },
+      "speakers": {
+        "items": {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        "title": "Speakers",
+        "type": "array"
       },
       "error": {
         "anyOf": [
@@ -3677,7 +4054,425 @@
       "show_id",
       "success"
     ],
-    "title": "PodcastCompleteData",
+    "title": "PodcastCompleteEvent",
+    "type": "object"
+  },
+  "PodcastRunEvent": {
+    "additionalProperties": false,
+    "description": "The resumable run id, streamed first. The client keeps it so a failed\ngeneration can be resumed (POST /podcast/resume/{run_id}) — completed stages\nreplay from the checkpoint and only the missing tail re-runs.",
+    "properties": {
+      "type": {
+        "const": "podcast_run",
+        "default": "podcast_run",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "default": "",
+        "title": "Run Id",
+        "type": "string"
+      },
+      "total": {
+        "default": 0,
+        "title": "Total",
+        "type": "integer"
+      }
+    },
+    "title": "PodcastRunEvent",
+    "type": "object"
+  },
+  "PodcastStageStartedEvent": {
+    "additionalProperties": false,
+    "description": "A pipeline stage just began. Render a live \"running\" row so the UI is\nnever silent during long stages (research, audio, each image/video).",
+    "properties": {
+      "type": {
+        "const": "podcast_stage_started",
+        "default": "podcast_stage_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "label": {
+        "default": "",
+        "title": "Label",
+        "type": "string"
+      },
+      "step": {
+        "default": 0,
+        "title": "Step",
+        "type": "integer"
+      },
+      "total": {
+        "default": 0,
+        "title": "Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "stage"
+    ],
+    "title": "PodcastStageStartedEvent",
+    "type": "object"
+  },
+  "PodcastTickEvent": {
+    "additionalProperties": false,
+    "description": "Periodic 'still working' pulse during long, otherwise-silent stages\n(research / script / audio / each media render). The UI binds ``label`` +\n``elapsed_seconds`` to a live counter so it never looks frozen.",
+    "properties": {
+      "type": {
+        "const": "podcast_tick",
+        "default": "podcast_tick",
+        "title": "Type",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "label": {
+        "default": "",
+        "title": "Label",
+        "type": "string"
+      },
+      "elapsed_seconds": {
+        "default": 0,
+        "title": "Elapsed Seconds",
+        "type": "number"
+      },
+      "step": {
+        "default": 0,
+        "title": "Step",
+        "type": "integer"
+      },
+      "total": {
+        "default": 0,
+        "title": "Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "stage"
+    ],
+    "title": "PodcastTickEvent",
+    "type": "object"
+  },
+  "PodcastMetadataEvent": {
+    "additionalProperties": false,
+    "description": "Structured metadata, streamed the instant it parses — the UI renders the\ntitle/description and lays out the image/video slots from the prompts long\nbefore any media has rendered.",
+    "properties": {
+      "type": {
+        "const": "podcast_metadata",
+        "default": "podcast_metadata",
+        "title": "Type",
+        "type": "string"
+      },
+      "title": {
+        "default": "",
+        "title": "Title",
+        "type": "string"
+      },
+      "description": {
+        "default": "",
+        "title": "Description",
+        "type": "string"
+      },
+      "image_descriptions": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Image Descriptions",
+        "type": "array"
+      },
+      "video_descriptions": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Video Descriptions",
+        "type": "array"
+      }
+    },
+    "title": "PodcastMetadataEvent",
+    "type": "object"
+  },
+  "PodcastAssetEvent": {
+    "additionalProperties": false,
+    "description": "One image or video landed during full generation. ``index`` maps 1:1 to\nthe matching prompt in the metadata event's image_descriptions /\nvideo_descriptions.",
+    "properties": {
+      "type": {
+        "const": "podcast_asset",
+        "default": "podcast_asset",
+        "title": "Type",
+        "type": "string"
+      },
+      "asset_kind": {
+        "enum": [
+          "image",
+          "video"
+        ],
+        "title": "Asset Kind",
+        "type": "string"
+      },
+      "index": {
+        "title": "Index",
+        "type": "integer"
+      },
+      "url": {
+        "default": "",
+        "title": "Url",
+        "type": "string"
+      },
+      "prompt": {
+        "default": "",
+        "title": "Prompt",
+        "type": "string"
+      },
+      "success": {
+        "default": true,
+        "title": "Success",
+        "type": "boolean"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "note": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Note"
+      }
+    },
+    "required": [
+      "asset_kind",
+      "index"
+    ],
+    "title": "PodcastAssetEvent",
+    "type": "object"
+  },
+  "PodcastOfficialVideoEvent": {
+    "additionalProperties": false,
+    "description": "The composed \"official\" slideshow video landed — a single crossfaded\nvideo stitched from all generated clips + stills. This is the episode's\nprimary, share-ready video.",
+    "properties": {
+      "type": {
+        "const": "podcast_official_video",
+        "default": "podcast_official_video",
+        "title": "Type",
+        "type": "string"
+      },
+      "url": {
+        "default": "",
+        "title": "Url",
+        "type": "string"
+      },
+      "success": {
+        "default": true,
+        "title": "Success",
+        "type": "boolean"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      }
+    },
+    "title": "PodcastOfficialVideoEvent",
+    "type": "object"
+  },
+  "PodcastAssetGenStartedEvent": {
+    "additionalProperties": false,
+    "description": "A single-asset (re)generation began (POST /podcast/runs/{run_id}/assets/\nregenerate | add). Render a live \"rendering\" state on the slot; provider\nprogress (``partial_image`` / ``media_block``) streams in between this and\nthe terminal ``podcast_asset_result``.",
+    "properties": {
+      "type": {
+        "const": "podcast_asset_gen_started",
+        "default": "podcast_asset_gen_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "asset_kind": {
+        "enum": [
+          "image",
+          "video"
+        ],
+        "title": "Asset Kind",
+        "type": "string"
+      },
+      "slot": {
+        "title": "Slot",
+        "type": "integer"
+      },
+      "prompt": {
+        "default": "",
+        "title": "Prompt",
+        "type": "string"
+      },
+      "model_alias": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model Alias"
+      },
+      "is_manual": {
+        "default": false,
+        "title": "Is Manual",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "run_id",
+      "asset_kind",
+      "slot"
+    ],
+    "title": "PodcastAssetGenStartedEvent",
+    "type": "object"
+  },
+  "PodcastAssetResultEvent": {
+    "additionalProperties": false,
+    "description": "Terminal event of a single-asset regenerate/add — carries the recorded\npc_studio_run_assets row (everything the legacy blocking JSON response\ncarried, plus ``run_id`` / ``asset_id`` / ``error``).",
+    "properties": {
+      "type": {
+        "const": "podcast_asset_result",
+        "default": "podcast_asset_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "asset_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Asset Id"
+      },
+      "asset_kind": {
+        "enum": [
+          "image",
+          "video"
+        ],
+        "title": "Asset Kind",
+        "type": "string"
+      },
+      "slot": {
+        "title": "Slot",
+        "type": "integer"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Url"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Id"
+      },
+      "prompt": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Prompt"
+      },
+      "model_alias": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model Alias"
+      },
+      "is_manual": {
+        "default": false,
+        "title": "Is Manual",
+        "type": "boolean"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      }
+    },
+    "required": [
+      "run_id",
+      "asset_kind",
+      "slot",
+      "status"
+    ],
+    "title": "PodcastAssetResultEvent",
     "type": "object"
   },
   "WorkflowStepData": {
@@ -4426,6 +5221,2378 @@
       "conversation_id"
     ],
     "title": "MemoryErrorData",
+    "type": "object"
+  },
+  "LegalSyncEventData": {
+    "additionalProperties": false,
+    "description": "One progress event from a legal-data sync or bulk-load run.\n\n``phase`` is the discriminator within the stream. API-sync phases:\n``started | progress | court_started | court_done | court_errored |\ncluster_done | cluster_errored | done | error``. Bulk-load phases:\n``started | manifest_lookup | manifest_ready | resource_started |\nresource_skipped | resource_errored | resource_done | download_started |\ndownload_progress | download_done | copy_started | copy_progress |\ncopy_done | insert_started | insert_done | split_started |\nsplit_progress | done | error``. Every other field is optional and\npopulated per phase; ``done`` carries the run summary.",
+    "properties": {
+      "type": {
+        "const": "legal_sync_event",
+        "default": "legal_sync_event",
+        "title": "Type",
+        "type": "string"
+      },
+      "phase": {
+        "title": "Phase",
+        "type": "string"
+      },
+      "run_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Run Id"
+      },
+      "resource": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Resource"
+      },
+      "resources": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Resources"
+      },
+      "court_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Court Id"
+      },
+      "court_ids": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Court Ids"
+      },
+      "cluster_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Cluster Id"
+      },
+      "cluster_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Cluster Count"
+      },
+      "rows": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rows"
+      },
+      "court_rows": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Court Rows"
+      },
+      "total_rows": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Rows"
+      },
+      "rows_pumped": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rows Pumped"
+      },
+      "rows_inserted": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rows Inserted"
+      },
+      "bytes_received": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bytes Received"
+      },
+      "s3_key": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "S3 Key"
+      },
+      "size_bytes": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Size Bytes"
+      },
+      "dump_date": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Dump Date"
+      },
+      "bucket": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bucket"
+      },
+      "table": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Table"
+      },
+      "target": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Target"
+      },
+      "batch_size": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Batch Size"
+      },
+      "last_id": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Last Id"
+      },
+      "reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Reason"
+      },
+      "per_court_counts": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Per Court Counts"
+      },
+      "per_court_errors": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Per Court Errors"
+      },
+      "per_cluster_errors": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Per Cluster Errors"
+      },
+      "per_resource_rows": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Per Resource Rows"
+      },
+      "per_resource_errors": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Per Resource Errors"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      }
+    },
+    "required": [
+      "phase"
+    ],
+    "title": "LegalSyncEventData",
+    "type": "object"
+  },
+  "FileSearchStartedData": {
+    "additionalProperties": false,
+    "description": "Search began — the document is open and the page count is known.",
+    "properties": {
+      "type": {
+        "const": "file_search_started",
+        "default": "file_search_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "file_id": {
+        "title": "File Id",
+        "type": "string"
+      },
+      "query": {
+        "title": "Query",
+        "type": "string"
+      },
+      "regex": {
+        "default": false,
+        "title": "Regex",
+        "type": "boolean"
+      },
+      "case_sensitive": {
+        "default": false,
+        "title": "Case Sensitive",
+        "type": "boolean"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "file_id",
+      "query",
+      "total_pages"
+    ],
+    "title": "FileSearchStartedData",
+    "type": "object"
+  },
+  "FileSearchPageData": {
+    "$defs": {
+      "FileSearchBboxItem": {
+        "additionalProperties": false,
+        "properties": {
+          "x0": {
+            "title": "X0",
+            "type": "number"
+          },
+          "y0": {
+            "title": "Y0",
+            "type": "number"
+          },
+          "x1": {
+            "title": "X1",
+            "type": "number"
+          },
+          "y1": {
+            "title": "Y1",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "FileSearchBboxItem",
+        "type": "object"
+      },
+      "FileSearchHitItem": {
+        "additionalProperties": false,
+        "description": "One search hit — identical shape to the legacy SearchHitOut.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page Id"
+          },
+          "bbox": {
+            "$ref": "#/$defs/FileSearchBboxItem"
+          },
+          "snippet": {
+            "title": "Snippet",
+            "type": "string"
+          },
+          "matched_text": {
+            "title": "Matched Text",
+            "type": "string"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "char_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          }
+        },
+        "required": [
+          "page_number",
+          "bbox",
+          "snippet",
+          "matched_text"
+        ],
+        "title": "FileSearchHitItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "A page finished scanning. Emitted for every page that has hits, plus\nperiodic zero-hit progress markers so long documents show live progress.\n``total_hits`` is the running count of kept hits so far.",
+    "properties": {
+      "type": {
+        "const": "file_search_page",
+        "default": "file_search_page",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      },
+      "hits": {
+        "items": {
+          "$ref": "#/$defs/FileSearchHitItem"
+        },
+        "title": "Hits",
+        "type": "array"
+      },
+      "total_hits": {
+        "default": 0,
+        "title": "Total Hits",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "page_number",
+      "total_pages"
+    ],
+    "title": "FileSearchPageData",
+    "type": "object"
+  },
+  "FileSearchCompleteData": {
+    "$defs": {
+      "FileSearchBboxItem": {
+        "additionalProperties": false,
+        "properties": {
+          "x0": {
+            "title": "X0",
+            "type": "number"
+          },
+          "y0": {
+            "title": "Y0",
+            "type": "number"
+          },
+          "x1": {
+            "title": "X1",
+            "type": "number"
+          },
+          "y1": {
+            "title": "Y1",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "FileSearchBboxItem",
+        "type": "object"
+      },
+      "FileSearchHitItem": {
+        "additionalProperties": false,
+        "description": "One search hit — identical shape to the legacy SearchHitOut.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "page_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page Id"
+          },
+          "bbox": {
+            "$ref": "#/$defs/FileSearchBboxItem"
+          },
+          "snippet": {
+            "title": "Snippet",
+            "type": "string"
+          },
+          "matched_text": {
+            "title": "Matched Text",
+            "type": "string"
+          },
+          "char_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char Start"
+          },
+          "char_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Char End"
+          }
+        },
+        "required": [
+          "page_number",
+          "bbox",
+          "snippet",
+          "matched_text"
+        ],
+        "title": "FileSearchHitItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal search result — carries the full legacy SearchResponse body.",
+    "properties": {
+      "type": {
+        "const": "file_search_complete",
+        "default": "file_search_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "file_id": {
+        "title": "File Id",
+        "type": "string"
+      },
+      "query": {
+        "title": "Query",
+        "type": "string"
+      },
+      "regex": {
+        "default": false,
+        "title": "Regex",
+        "type": "boolean"
+      },
+      "case_sensitive": {
+        "default": false,
+        "title": "Case Sensitive",
+        "type": "boolean"
+      },
+      "hits": {
+        "items": {
+          "$ref": "#/$defs/FileSearchHitItem"
+        },
+        "title": "Hits",
+        "type": "array"
+      },
+      "truncated": {
+        "default": false,
+        "title": "Truncated",
+        "type": "boolean"
+      },
+      "pages_scanned": {
+        "default": 0,
+        "title": "Pages Scanned",
+        "type": "integer"
+      },
+      "total_pages": {
+        "default": 0,
+        "title": "Total Pages",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "file_id",
+      "query"
+    ],
+    "title": "FileSearchCompleteData",
+    "type": "object"
+  },
+  "ImageOpStageData": {
+    "additionalProperties": false,
+    "description": "A stage transition inside an image operation.\n\n``stage``: ``started | loading_source | running_op | detecting |\nencoding | persisting | rendering_variants | staging | committing``.",
+    "properties": {
+      "type": {
+        "const": "image_op_stage",
+        "default": "image_op_stage",
+        "title": "Type",
+        "type": "string"
+      },
+      "op": {
+        "title": "Op",
+        "type": "string"
+      },
+      "stage": {
+        "title": "Stage",
+        "type": "string"
+      },
+      "detail": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Detail"
+      },
+      "source_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source Id"
+      },
+      "mask_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Mask Id"
+      }
+    },
+    "required": [
+      "op",
+      "stage"
+    ],
+    "title": "ImageOpStageData",
+    "type": "object"
+  },
+  "ImageDocumentDetectedData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /images/detect-document — same fields as the\nlegacy DetectDocumentResponse. Corner tuples are ``[x, y]`` in\npost-EXIF-transpose pixel coordinates (TL/TR/BR/BL); all four are null\nwhen ``found`` is false.",
+    "properties": {
+      "type": {
+        "const": "image_document_detected",
+        "default": "image_document_detected",
+        "title": "Type",
+        "type": "string"
+      },
+      "found": {
+        "title": "Found",
+        "type": "boolean"
+      },
+      "top_left": {
+        "anyOf": [
+          {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Top Left"
+      },
+      "top_right": {
+        "anyOf": [
+          {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Top Right"
+      },
+      "bottom_right": {
+        "anyOf": [
+          {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bottom Right"
+      },
+      "bottom_left": {
+        "anyOf": [
+          {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Bottom Left"
+      },
+      "confidence": {
+        "default": 0,
+        "title": "Confidence",
+        "type": "number"
+      },
+      "image_width": {
+        "default": 0,
+        "title": "Image Width",
+        "type": "integer"
+      },
+      "image_height": {
+        "default": 0,
+        "title": "Image Height",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "found"
+    ],
+    "title": "ImageDocumentDetectedData",
+    "type": "object"
+  },
+  "ImageEditCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of an image edit — ``asset`` is the SAME Asset\nenvelope the legacy blocking response returned (the OpenAPI ``Asset``\nschema); a migrating client reads this one event as the old response\nbody.",
+    "properties": {
+      "type": {
+        "const": "image_edit_complete",
+        "default": "image_edit_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "op": {
+        "title": "Op",
+        "type": "string"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Id"
+      },
+      "asset": {
+        "additionalProperties": true,
+        "title": "Asset",
+        "type": "object"
+      }
+    },
+    "required": [
+      "op"
+    ],
+    "title": "ImageEditCompleteData",
+    "type": "object"
+  },
+  "ImageStudioVariantData": {
+    "additionalProperties": false,
+    "description": "One Image Studio variant finished (rendered + staged) or failed —\nsame per-variant shape as the legacy StudioVariantOut entries.\n``completed``/``total`` are running per-item counters.",
+    "properties": {
+      "type": {
+        "const": "image_studio_variant",
+        "default": "image_studio_variant",
+        "title": "Type",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "preset_id": {
+        "title": "Preset Id",
+        "type": "string"
+      },
+      "filename": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Filename"
+      },
+      "format": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Format"
+      },
+      "width": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Width"
+      },
+      "height": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Height"
+      },
+      "quality": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quality"
+      },
+      "size": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Size"
+      },
+      "signed_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Signed Url"
+      },
+      "expires_in": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Expires In"
+      },
+      "compression_ratio": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Compression Ratio"
+      },
+      "notes": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Notes",
+        "type": "array"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "completed": {
+        "default": 0,
+        "title": "Completed",
+        "type": "integer"
+      },
+      "total": {
+        "default": 0,
+        "title": "Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "job_id",
+      "preset_id"
+    ],
+    "title": "ImageStudioVariantData",
+    "type": "object"
+  },
+  "ImageStudioProcessCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /images/studio/process — ``result`` is the\nfull legacy ProcessResponse body (OpenAPI ``ProcessResponse`` schema).",
+    "properties": {
+      "type": {
+        "const": "image_studio_process_complete",
+        "default": "image_studio_process_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "result": {
+        "additionalProperties": true,
+        "title": "Result",
+        "type": "object"
+      }
+    },
+    "required": [
+      "job_id"
+    ],
+    "title": "ImageStudioProcessCompleteData",
+    "type": "object"
+  },
+  "ImageStudioCommitItemData": {
+    "additionalProperties": false,
+    "description": "One staged Image Studio variant (or the source) committed or failed.\n``preset_id`` is ``\"source\"`` for the source image.",
+    "properties": {
+      "type": {
+        "const": "image_studio_commit_item",
+        "default": "image_studio_commit_item",
+        "title": "Type",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "preset_id": {
+        "title": "Preset Id",
+        "type": "string"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Id"
+      },
+      "filename": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Filename"
+      },
+      "file_path": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Path"
+      },
+      "size": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Size"
+      },
+      "public_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Public Url"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "completed": {
+        "default": 0,
+        "title": "Completed",
+        "type": "integer"
+      },
+      "total": {
+        "default": 0,
+        "title": "Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "job_id",
+      "preset_id",
+      "status"
+    ],
+    "title": "ImageStudioCommitItemData",
+    "type": "object"
+  },
+  "ImageStudioCommitCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /images/studio/commit — ``result`` is the\nlegacy CommitResponse body (OpenAPI ``CommitResponse`` schema) minus the\nserver-only ``storage_uri`` fields, which never reach a client.",
+    "properties": {
+      "type": {
+        "const": "image_studio_commit_complete",
+        "default": "image_studio_commit_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "folder_path": {
+        "title": "Folder Path",
+        "type": "string"
+      },
+      "saved_count": {
+        "default": 0,
+        "title": "Saved Count",
+        "type": "integer"
+      },
+      "failed_count": {
+        "default": 0,
+        "title": "Failed Count",
+        "type": "integer"
+      },
+      "result": {
+        "additionalProperties": true,
+        "title": "Result",
+        "type": "object"
+      }
+    },
+    "required": [
+      "job_id",
+      "folder_path"
+    ],
+    "title": "ImageStudioCommitCompleteData",
+    "type": "object"
+  },
+  "DictionaryPublishCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /dictionary/publish — same fields as the\nlegacy PublishResult response.",
+    "properties": {
+      "type": {
+        "const": "dictionary_publish_complete",
+        "default": "dictionary_publish_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "level": {
+        "title": "Level",
+        "type": "string"
+      },
+      "owner_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Owner Id"
+      },
+      "external_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "External Id"
+      },
+      "version_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Version Id"
+      },
+      "rule_count": {
+        "default": 0,
+        "title": "Rule Count",
+        "type": "integer"
+      },
+      "rules_hash": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rules Hash"
+      }
+    },
+    "required": [
+      "status",
+      "level"
+    ],
+    "title": "DictionaryPublishCompleteData",
+    "type": "object"
+  },
+  "PdfExtractStartedData": {
+    "additionalProperties": false,
+    "description": "Extraction began — the document is open and the page count is known.",
+    "properties": {
+      "type": {
+        "const": "pdf_extract_started",
+        "default": "pdf_extract_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "filename": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Filename"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "total_pages"
+    ],
+    "title": "PdfExtractStartedData",
+    "type": "object"
+  },
+  "PdfPageExtractedData": {
+    "additionalProperties": false,
+    "description": "One page finished extracting (native text or OCR fallback).\n\n``preview`` is a capped slice of the page text so the UI can show live\ncontent without shipping the full document twice — the complete event\ncarries the full ``text_content``.",
+    "properties": {
+      "type": {
+        "const": "pdf_page_extracted",
+        "default": "pdf_page_extracted",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      },
+      "extraction_method": {
+        "title": "Extraction Method",
+        "type": "string"
+      },
+      "char_count": {
+        "title": "Char Count",
+        "type": "integer"
+      },
+      "preview": {
+        "default": "",
+        "title": "Preview",
+        "type": "string"
+      }
+    },
+    "required": [
+      "page_number",
+      "total_pages",
+      "extraction_method",
+      "char_count"
+    ],
+    "title": "PdfPageExtractedData",
+    "type": "object"
+  },
+  "PdfExtractCompleteData": {
+    "additionalProperties": false,
+    "description": "Terminal extraction result — the full text plus summary counters.\n\nCarries the same content the legacy blocking JSON response did, so a\nmigrating client reads this one event as the old response body.",
+    "properties": {
+      "type": {
+        "const": "pdf_extract_complete",
+        "default": "pdf_extract_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "filename": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Filename"
+      },
+      "page_count": {
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "ocr_pages": {
+        "title": "Ocr Pages",
+        "type": "integer"
+      },
+      "total_chars": {
+        "title": "Total Chars",
+        "type": "integer"
+      },
+      "text_content": {
+        "title": "Text Content",
+        "type": "string"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Id"
+      }
+    },
+    "required": [
+      "page_count",
+      "ocr_pages",
+      "total_chars",
+      "text_content"
+    ],
+    "title": "PdfExtractCompleteData",
+    "type": "object"
+  },
+  "PdfTablesStartedData": {
+    "additionalProperties": false,
+    "description": "Table detection began — the document is open, page count known.",
+    "properties": {
+      "type": {
+        "const": "pdf_tables_started",
+        "default": "pdf_tables_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "filename": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Filename"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "total_pages"
+    ],
+    "title": "PdfTablesStartedData",
+    "type": "object"
+  },
+  "PdfTablesPageData": {
+    "additionalProperties": false,
+    "description": "One page scanned for tables (fires even when the page has none).",
+    "properties": {
+      "type": {
+        "const": "pdf_tables_page",
+        "default": "pdf_tables_page",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      },
+      "tables_found": {
+        "title": "Tables Found",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "page_number",
+      "total_pages",
+      "tables_found"
+    ],
+    "title": "PdfTablesPageData",
+    "type": "object"
+  },
+  "PdfTableExtractedData": {
+    "additionalProperties": false,
+    "description": "One table detected. ``markdown_preview`` is capped; the complete\nevent carries every full table.",
+    "properties": {
+      "type": {
+        "const": "pdf_table_extracted",
+        "default": "pdf_table_extracted",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      },
+      "table_index": {
+        "title": "Table Index",
+        "type": "integer"
+      },
+      "row_count": {
+        "title": "Row Count",
+        "type": "integer"
+      },
+      "column_count": {
+        "title": "Column Count",
+        "type": "integer"
+      },
+      "markdown_preview": {
+        "default": "",
+        "title": "Markdown Preview",
+        "type": "string"
+      }
+    },
+    "required": [
+      "page_number",
+      "total_pages",
+      "table_index",
+      "row_count",
+      "column_count"
+    ],
+    "title": "PdfTableExtractedData",
+    "type": "object"
+  },
+  "PdfTablesCompleteData": {
+    "$defs": {
+      "PdfExtractedTableItem": {
+        "description": "One detected table — mirrors matrx-utils ``PdfExtractedTable``.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "table_index": {
+            "title": "Table Index",
+            "type": "integer"
+          },
+          "bbox": {
+            "$ref": "#/$defs/PdfTableBboxItem"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "column_count": {
+            "title": "Column Count",
+            "type": "integer"
+          },
+          "header": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Header",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "markdown": {
+            "default": "",
+            "title": "Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_number",
+          "table_index",
+          "bbox",
+          "row_count",
+          "column_count"
+        ],
+        "title": "PdfExtractedTableItem",
+        "type": "object"
+      },
+      "PdfTableBboxItem": {
+        "description": "Bbox of a detected table on its page (PDF coordinates).",
+        "properties": {
+          "x0": {
+            "title": "X0",
+            "type": "number"
+          },
+          "y0": {
+            "title": "Y0",
+            "type": "number"
+          },
+          "x1": {
+            "title": "X1",
+            "type": "number"
+          },
+          "y1": {
+            "title": "Y1",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "PdfTableBboxItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal — the same content the legacy blocking ``PdfTablesReport``\nresponse carried, so a migrating client reads this one event as the old\nresponse body.",
+    "properties": {
+      "type": {
+        "const": "pdf_tables_complete",
+        "default": "pdf_tables_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_count": {
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "table_count": {
+        "title": "Table Count",
+        "type": "integer"
+      },
+      "tables": {
+        "items": {
+          "$ref": "#/$defs/PdfExtractedTableItem"
+        },
+        "title": "Tables",
+        "type": "array"
+      },
+      "detector": {
+        "default": "pymupdf.find_tables",
+        "title": "Detector",
+        "type": "string"
+      },
+      "detector_version": {
+        "default": "v1",
+        "title": "Detector Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "page_count",
+      "table_count"
+    ],
+    "title": "PdfTablesCompleteData",
+    "type": "object"
+  },
+  "PdfPageClassifiedData": {
+    "additionalProperties": false,
+    "description": "One page classified (cover / toc / body / exhibit / billing / ...).",
+    "properties": {
+      "type": {
+        "const": "pdf_page_classified",
+        "default": "pdf_page_classified",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      },
+      "page_class": {
+        "title": "Page Class",
+        "type": "string"
+      },
+      "confidence": {
+        "title": "Confidence",
+        "type": "number"
+      },
+      "indicators": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Indicators",
+        "type": "array"
+      }
+    },
+    "required": [
+      "page_number",
+      "total_pages",
+      "page_class",
+      "confidence"
+    ],
+    "title": "PdfPageClassifiedData",
+    "type": "object"
+  },
+  "PdfClassifyCompleteData": {
+    "$defs": {
+      "PdfPageClassificationItem": {
+        "description": "One page's layout classification — mirrors matrx-utils ``PageClassification``.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "page_class": {
+            "title": "Page Class",
+            "type": "string"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "indicators": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Indicators",
+            "type": "array"
+          }
+        },
+        "required": [
+          "page_number",
+          "page_class",
+          "confidence"
+        ],
+        "title": "PdfPageClassificationItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal — the legacy ``LayoutClassificationReport`` response body.",
+    "properties": {
+      "type": {
+        "const": "pdf_classify_complete",
+        "default": "pdf_classify_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_count": {
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "pages": {
+        "items": {
+          "$ref": "#/$defs/PdfPageClassificationItem"
+        },
+        "title": "Pages",
+        "type": "array"
+      },
+      "classifier_version": {
+        "default": "v1",
+        "title": "Classifier Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "page_count"
+    ],
+    "title": "PdfClassifyCompleteData",
+    "type": "object"
+  },
+  "PdfReadingOrderPageData": {
+    "additionalProperties": false,
+    "description": "One page's reading order resolved. ``preview`` is a capped slice of\nthe ordered text; the complete event carries the full block lists.",
+    "properties": {
+      "type": {
+        "const": "pdf_reading_order_page",
+        "default": "pdf_reading_order_page",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      },
+      "column_count": {
+        "title": "Column Count",
+        "type": "integer"
+      },
+      "block_count": {
+        "title": "Block Count",
+        "type": "integer"
+      },
+      "preview": {
+        "default": "",
+        "title": "Preview",
+        "type": "string"
+      }
+    },
+    "required": [
+      "page_number",
+      "total_pages",
+      "column_count",
+      "block_count"
+    ],
+    "title": "PdfReadingOrderPageData",
+    "type": "object"
+  },
+  "PdfReadingOrderCompleteData": {
+    "$defs": {
+      "PdfReadingOrderBlockItem": {
+        "description": "One text block in reading order — mirrors matrx-utils ``ReadingOrderBlock``.",
+        "properties": {
+          "block_index": {
+            "title": "Block Index",
+            "type": "integer"
+          },
+          "column_index": {
+            "title": "Column Index",
+            "type": "integer"
+          },
+          "x0": {
+            "title": "X0",
+            "type": "number"
+          },
+          "y0": {
+            "title": "Y0",
+            "type": "number"
+          },
+          "x1": {
+            "title": "X1",
+            "type": "number"
+          },
+          "y1": {
+            "title": "Y1",
+            "type": "number"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "block_index",
+          "column_index",
+          "x0",
+          "y0",
+          "x1",
+          "y1",
+          "text"
+        ],
+        "title": "PdfReadingOrderBlockItem",
+        "type": "object"
+      },
+      "PdfReadingOrderPageItem": {
+        "description": "One page's ordered blocks — mirrors matrx-utils ``ReadingOrderPage``.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "column_count": {
+            "title": "Column Count",
+            "type": "integer"
+          },
+          "blocks_in_order": {
+            "items": {
+              "$ref": "#/$defs/PdfReadingOrderBlockItem"
+            },
+            "title": "Blocks In Order",
+            "type": "array"
+          }
+        },
+        "required": [
+          "page_number",
+          "column_count"
+        ],
+        "title": "PdfReadingOrderPageItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal — the legacy ``ReadingOrderReport`` response body.",
+    "properties": {
+      "type": {
+        "const": "pdf_reading_order_complete",
+        "default": "pdf_reading_order_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_count": {
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "pages": {
+        "items": {
+          "$ref": "#/$defs/PdfReadingOrderPageItem"
+        },
+        "title": "Pages",
+        "type": "array"
+      }
+    },
+    "required": [
+      "page_count"
+    ],
+    "title": "PdfReadingOrderCompleteData",
+    "type": "object"
+  },
+  "PdfRepeatedRegionsProgressData": {
+    "additionalProperties": false,
+    "description": "Per-page progress through a repeated-regions stage (detect scan /\nper-page text extraction / strip).",
+    "properties": {
+      "type": {
+        "const": "pdf_repeated_regions_progress",
+        "default": "pdf_repeated_regions_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "stage": {
+        "enum": [
+          "detect",
+          "extract_text",
+          "strip"
+        ],
+        "title": "Stage",
+        "type": "string"
+      },
+      "page_number": {
+        "title": "Page Number",
+        "type": "integer"
+      },
+      "total_pages": {
+        "title": "Total Pages",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "stage",
+      "page_number",
+      "total_pages"
+    ],
+    "title": "PdfRepeatedRegionsProgressData",
+    "type": "object"
+  },
+  "PdfRepeatedRegionsCompleteData": {
+    "$defs": {
+      "PdfRepeatedRegionBboxItem": {
+        "description": "Per-page bbox of a repeated region — mirrors matrx-utils ``RepeatedRegionBbox``.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "x0": {
+            "title": "X0",
+            "type": "number"
+          },
+          "y0": {
+            "title": "Y0",
+            "type": "number"
+          },
+          "x1": {
+            "title": "X1",
+            "type": "number"
+          },
+          "y1": {
+            "title": "Y1",
+            "type": "number"
+          },
+          "raw_text": {
+            "default": "",
+            "title": "Raw Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_number",
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "PdfRepeatedRegionBboxItem",
+        "type": "object"
+      },
+      "PdfRepeatedRegionItem": {
+        "description": "One repeated region — mirrors matrx-utils ``RepeatedRegion``.",
+        "properties": {
+          "region_id": {
+            "title": "Region Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text_template": {
+            "title": "Text Template",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "bbox_per_page": {
+            "items": {
+              "$ref": "#/$defs/PdfRepeatedRegionBboxItem"
+            },
+            "title": "Bbox Per Page",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          }
+        },
+        "required": [
+          "region_id",
+          "kind",
+          "text_template",
+          "confidence"
+        ],
+        "title": "PdfRepeatedRegionItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal for detect-repeated-regions — the legacy\n``RepeatedRegionsReport`` response body.",
+    "properties": {
+      "type": {
+        "const": "pdf_repeated_regions_complete",
+        "default": "pdf_repeated_regions_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_count": {
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "regions": {
+        "items": {
+          "$ref": "#/$defs/PdfRepeatedRegionItem"
+        },
+        "title": "Regions",
+        "type": "array"
+      },
+      "detector_version": {
+        "default": "v1",
+        "title": "Detector Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "page_count"
+    ],
+    "title": "PdfRepeatedRegionsCompleteData",
+    "type": "object"
+  },
+  "PdfRepeatedRegionsStripCompleteData": {
+    "$defs": {
+      "PdfRepeatedRegionBboxItem": {
+        "description": "Per-page bbox of a repeated region — mirrors matrx-utils ``RepeatedRegionBbox``.",
+        "properties": {
+          "page_number": {
+            "title": "Page Number",
+            "type": "integer"
+          },
+          "x0": {
+            "title": "X0",
+            "type": "number"
+          },
+          "y0": {
+            "title": "Y0",
+            "type": "number"
+          },
+          "x1": {
+            "title": "X1",
+            "type": "number"
+          },
+          "y1": {
+            "title": "Y1",
+            "type": "number"
+          },
+          "raw_text": {
+            "default": "",
+            "title": "Raw Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "page_number",
+          "x0",
+          "y0",
+          "x1",
+          "y1"
+        ],
+        "title": "PdfRepeatedRegionBboxItem",
+        "type": "object"
+      },
+      "PdfRepeatedRegionItem": {
+        "description": "One repeated region — mirrors matrx-utils ``RepeatedRegion``.",
+        "properties": {
+          "region_id": {
+            "title": "Region Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text_template": {
+            "title": "Text Template",
+            "type": "string"
+          },
+          "pages": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Pages",
+            "type": "array"
+          },
+          "bbox_per_page": {
+            "items": {
+              "$ref": "#/$defs/PdfRepeatedRegionBboxItem"
+            },
+            "title": "Bbox Per Page",
+            "type": "array"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          }
+        },
+        "required": [
+          "region_id",
+          "kind",
+          "text_template",
+          "confidence"
+        ],
+        "title": "PdfRepeatedRegionItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal for strip-repeated-regions — the legacy\n``StripRepeatedRegionsResult`` body, flattened (the nested report's\n``page_count``/``detector_version`` are lifted to the top level).",
+    "properties": {
+      "type": {
+        "const": "pdf_repeated_regions_strip_complete",
+        "default": "pdf_repeated_regions_strip_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "page_count": {
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "pages_text": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Pages Text",
+        "type": "array"
+      },
+      "regions": {
+        "items": {
+          "$ref": "#/$defs/PdfRepeatedRegionItem"
+        },
+        "title": "Regions",
+        "type": "array"
+      },
+      "detector_version": {
+        "default": "v1",
+        "title": "Detector Version",
+        "type": "string"
+      },
+      "stripped_region_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Stripped Region Ids",
+        "type": "array"
+      }
+    },
+    "required": [
+      "page_count"
+    ],
+    "title": "PdfRepeatedRegionsStripCompleteData",
+    "type": "object"
+  },
+  "PdfPipelineResultData": {
+    "additionalProperties": false,
+    "description": "Terminal result of the PDF AI / full-pipeline streams — the typed\nreplacement for the raw ``PdfResult.model_dump()``. Per-page payloads and\nserver-only fields (``storage_uri``, ``tables_path``) are NOT shipped;\n``file_id`` addresses the persisted row.",
+    "properties": {
+      "type": {
+        "const": "pdf_pipeline_result",
+        "default": "pdf_pipeline_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "raw_text": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Raw Text"
+      },
+      "page_count": {
+        "default": 0,
+        "title": "Page Count",
+        "type": "integer"
+      },
+      "chunks": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Chunks"
+      },
+      "ai_processed": {
+        "anyOf": [
+          {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Ai Processed"
+      },
+      "cloud_uri": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Cloud Uri"
+      },
+      "supabase_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Supabase Url"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Id"
+      }
+    },
+    "title": "PdfPipelineResultData",
     "type": "object"
   },
   "ToolStartedData": {

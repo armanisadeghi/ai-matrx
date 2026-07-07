@@ -27,10 +27,12 @@
  *      "Connecting…" button on the very first frame, avoiding a flash of the
  *      idle play icon before the speak() effect fires.
  *
- * Bundle cost: this hook is expected to live inside a dynamically-imported
- * module (see StreamingSpeakerLive). The @cartesia/cartesia-js SDK is imported
- * statically here — it's pulled in with the code-split chunk the consumer
- * already has to lazy-load, so there's no second roundtrip.
+ * Used by the genuine token-by-token streaming path (Scribe voice-out via
+ * `useAutoVoiceResponse`), where audio must start before the LLM finishes. For
+ * speaking COMPLETE text (the read-aloud "Speak" buttons) use the unified
+ * playback queue (`useTtsSpeak` / `StreamingSpeakerButton`) instead — it lives
+ * outside React so audio survives navigation. The @cartesia/cartesia-js SDK is
+ * imported statically here; it ships with the consumer's code-split chunk.
  */
 
 "use client";
@@ -39,7 +41,6 @@ import { useEffect, useId, useRef, useCallback, useState } from "react";
 import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
-import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { toast } from "sonner";
 import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
 import {
@@ -84,11 +85,11 @@ export interface UseCartesiaStreamingSpeakerOptions {
   nextChunkMax?: number;
   /**
    * Custom Dictionary surface whose resolved pronunciations rewrite the spoken
-   * text. Defaults to the shared read-aloud surface (personal + global
-   * dictionary) so ALL streaming read-aloud applies pronunciations; pass a
-   * specific surface key to scope it. Aliases are resolved once per stream;
-   * single-word terms substitute reliably, multi-word terms in the live
-   * (incremental) path may occasionally straddle a flush boundary.
+   * text. When omitted (the default), pronunciations follow the ONE global
+   * active context; pass a specific surface key only to scope it. Aliases are
+   * resolved once per stream; single-word terms substitute reliably, multi-word
+   * terms in the live (incremental) path may occasionally straddle a flush
+   * boundary.
    */
   dictionarySurfaceKey?: string;
 }
@@ -108,7 +109,7 @@ export function useCartesiaStreamingSpeaker({
   initialLoading = false,
   firstChunkMax,
   nextChunkMax,
-  dictionarySurfaceKey = READ_ALOUD_DICTIONARY_SURFACE,
+  dictionarySurfaceKey,
 }: UseCartesiaStreamingSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>(
     initialLoading ? "fetching-token" : "idle",
@@ -143,15 +144,18 @@ export function useCartesiaStreamingSpeaker({
   // Custom Dictionary pronunciation pairs, resolved once per stream/speak.
   const pronunciationsRef = useRef<{ from: string; to: string }[]>([]);
   const loadPronunciations = useCallback(async () => {
-    if (!dictionarySurfaceKey) {
-      pronunciationsRef.current = [];
-      return;
-    }
     try {
-      const { resolveDictionaryTtsAliases } = await import(
-        "@/features/dictionary/ttsBridge"
-      );
-      pronunciationsRef.current = await resolveDictionaryTtsAliases(dictionarySurfaceKey);
+      if (dictionarySurfaceKey) {
+        const { resolveDictionaryTtsAliases } = await import(
+          "@/features/dictionary/ttsBridge"
+        );
+        pronunciationsRef.current = await resolveDictionaryTtsAliases(dictionarySurfaceKey);
+      } else {
+        const { resolveActiveContextTtsAliases } = await import(
+          "@/features/dictionary/activeContextBridge"
+        );
+        pronunciationsRef.current = await resolveActiveContextTtsAliases();
+      }
     } catch {
       pronunciationsRef.current = [];
     }

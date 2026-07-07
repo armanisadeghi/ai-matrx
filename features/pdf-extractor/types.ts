@@ -52,26 +52,18 @@ export type SplitPdfRequest = Schemas["SplitPdfRequest"];
 export type PdfPipelineOptions = Schemas["PdfPipelineOptions"];
 
 /**
- * Canonical result for `extract-text-remote` and `extract-tables`.
- * Carries the raw text plus optional per-page / per-block / per-word
- * metadata when the corresponding `include_*_metadata` flags are set.
+ * NOTE (2026-07): `extract-text` / `extract-text-remote` stream NDJSON now —
+ * the old blocking `PdfResult` (and its `PdfPageText` / `PdfTextBlock` /
+ * `PdfTextWord` / `PdfTextChunk` / `PdfPageSpan` satellites) no longer appear
+ * in the OpenAPI schema. Per-page shapes arrive as typed stream events
+ * (`PdfExtractStartedData` / `PdfPageExtractedData` / `PdfExtractCompleteData`
+ * from `@/types/python-generated/stream-events`), consumed via
+ * `streamPdfExtractText(Remote)` in `features/pdf-extractor/service/streamPdf.ts`.
  */
-export type PdfResult = Schemas["PdfResult"];
 
-/** Per-page text + bounding-box metadata. */
-export type PdfPageText = Schemas["PdfPageText"];
-
-/** Block-level (paragraph / heading) bounding box on a page. */
-export type PdfTextBlock = Schemas["PdfTextBlock"];
-
-/** Word-level bounding box on a page. */
-export type PdfTextWord = Schemas["PdfTextWord"];
-
-/** A chunk produced by the pipeline (text + page span). */
-export type PdfTextChunk = Schemas["PdfTextChunk"];
-
-/** Page span attached to a chunk so the UI can resolve back to source pages. */
-export type PdfPageSpan = Schemas["PdfPageSpan"];
+/** Structured report returned by `extract-tables` (per-table bbox, header, rows, markdown). */
+export type PdfTablesReport = Schemas["PdfTablesReport"];
+export type PdfExtractedTable = Schemas["PdfExtractedTable"];
 
 // ── Phase 2 — render & advanced page ops ────────────────────────────────────
 

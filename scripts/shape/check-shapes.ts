@@ -42,6 +42,12 @@ import {
   type ShapeDoctorReport,
   type ShapeFinding,
 } from "../../features/content-ir/registry/shape-doctor";
+import {
+  artifactKindSlugsFromText,
+  compiledKindSlugsFromText,
+  extractDetectorTokensFromTexts,
+  type DetectorExtractFailure,
+} from "../../features/content-ir/registry/shape-doctor-extract";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SYSTEM_KINDS_PATH = resolve(
@@ -82,104 +88,29 @@ function box(lines: string[], color: string): void {
   console.error(`${color}${C.bold}╚${bar}╝${C.reset}`);
 }
 
-// ─── Detector-literal extraction (text-level, the lists are frozen) ─────────
-
-interface ExtractFailure {
-  literal: string;
-  file: string;
-}
-
-function extractQuotedStrings(blob: string): string[] {
-  return [...blob.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-}
+// ─── Code-derived inputs (shared pure extraction; this side only reads files) ─
+//
+// The extraction itself (frozen detector literals, system-kinds bridge facets,
+// artifact-registry `kinds:` facades — and WHY it is text-level, not imports)
+// lives in features/content-ir/registry/shape-doctor-extract.ts, shared with
+// the server-side admin board.
 
 function extractDetectorTokens(): {
   tokens: DoctorDetectorToken[];
-  failures: ExtractFailure[];
+  failures: DetectorExtractFailure[];
 } {
-  const tokens: DoctorDetectorToken[] = [];
-  const failures: ExtractFailure[] = [];
-
-  const accumulator = readFileSync(ACCUMULATOR_PATH, "utf8");
-  const splitter = readFileSync(SPLITTER_PATH, "utf8");
-
-  const setLiteral = (
-    text: string,
-    name: string,
-    file: string,
-    surfaceType: string,
-  ): void => {
-    const match = new RegExp(`const ${name} = new Set\\(\\[([\\s\\S]*?)\\]\\)`).exec(text);
-    const items = match ? extractQuotedStrings(match[1]) : [];
-    if (items.length === 0) {
-      failures.push({ literal: name, file });
-      return;
-    }
-    for (const token of items) tokens.push({ token, surfaceType, source: `${file}#${name}` });
-  };
-
-  setLiteral(accumulator, "SIMPLE_XML_TAGS", "stream-block-accumulator.ts", "xml_tag");
-  setLiteral(accumulator, "ATTR_XML_TAGS", "stream-block-accumulator.ts", "xml_tag");
-
-  const attrBlocks = /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(splitter);
-  const attrItems = attrBlocks ? extractQuotedStrings(attrBlocks[1]) : [];
-  if (attrItems.length === 0) {
-    failures.push({ literal: "ATTRIBUTE_XML_BLOCKS", file: "content-splitter-v2.ts" });
-  } else {
-    for (const token of attrItems) {
-      tokens.push({ token, surfaceType: "xml_tag", source: "content-splitter-v2.ts#ATTRIBUTE_XML_BLOCKS" });
-    }
-  }
-
-  const jsonPatterns = /const JSON_BLOCK_PATTERNS = \{([\s\S]*?)\n\} as const;/.exec(splitter);
-  const jsonKeys = jsonPatterns
-    ? [...jsonPatterns[1].matchAll(/^\s{2}([a-z_][a-z0-9_]*):\s*\{/gm)].map((m) => m[1])
-    : [];
-  if (jsonKeys.length === 0) {
-    failures.push({ literal: "JSON_BLOCK_PATTERNS", file: "content-splitter-v2.ts" });
-  } else {
-    for (const token of jsonKeys) {
-      tokens.push({ token, surfaceType: "json_root", source: "content-splitter-v2.ts#JSON_BLOCK_PATTERNS" });
-    }
-  }
-
-  return { tokens, failures };
+  return extractDetectorTokensFromTexts({
+    accumulatorText: readFileSync(ACCUMULATOR_PATH, "utf8"),
+    splitterText: readFileSync(SPLITTER_PATH, "utf8"),
+  });
 }
 
-// ─── Code render paths ──────────────────────────────────────────────────────
-
 function compiledKindSlugs(): string[] {
-  // system-kinds.ts is NOT import-safe from a CLI entry: its bridge imports
-  // transitively reach kind-registry.ts, which imports system-kinds back — a
-  // require cycle that TDZ-crashes when entered from this side (verified).
-  // So, like the artifact registry, scan its TEXT: each definition object
-  // opens with `kind: "<slug>"`; a `legacyBlockType:` / `component:` facet
-  // after it (and before the next def's `kind:`) marks a compiled render
-  // path. Nested `schema.kind` re-states the SAME slug, so "nearest
-  // preceding kind:" stays correct.
-  const text = readFileSync(SYSTEM_KINDS_PATH, "utf8");
-  const slugs = new Set<string>();
-  const kindPositions: Array<{ index: number; slug: string }> = [];
-  for (const m of text.matchAll(/kind: "([a-z0-9_]+)"/g)) {
-    kindPositions.push({ index: m.index ?? 0, slug: m[1] });
-  }
-  for (const m of text.matchAll(/\n\s+(?:legacyBlockType|component): /g)) {
-    const at = m.index ?? 0;
-    const owner = [...kindPositions].reverse().find((k) => k.index < at);
-    if (owner) slugs.add(owner.slug);
-  }
-  return [...slugs].sort();
+  return compiledKindSlugsFromText(readFileSync(SYSTEM_KINDS_PATH, "utf8"));
 }
 
 function artifactRegistryKindSlugs(): string[] {
-  // artifact-type-registry lazy-imports React components — NEVER import it
-  // here. Regex-scan its text for the `kinds: ["…"]` facade entries.
-  const text = readFileSync(ARTIFACT_REGISTRY_PATH, "utf8");
-  const slugs = new Set<string>();
-  for (const match of text.matchAll(/kinds:\s*\[([^\]]*)\]/g)) {
-    for (const slug of extractQuotedStrings(match[1])) slugs.add(slug);
-  }
-  return [...slugs].sort();
+  return artifactKindSlugsFromText(readFileSync(ARTIFACT_REGISTRY_PATH, "utf8"));
 }
 
 // ─── DB reads (service key, read-only) ──────────────────────────────────────

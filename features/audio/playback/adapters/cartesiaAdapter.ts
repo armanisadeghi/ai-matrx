@@ -20,7 +20,6 @@ import {
   TTS_PLAYBACK_BUFFER_SEC,
 } from "@/lib/cartesia/config";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
-import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import type {
   ActivePlayback,
   PlaybackAdapter,
@@ -32,15 +31,23 @@ async function resolveText(item: PlaybackItem): Promise<string> {
   let pronunciations: Awaited<
     ReturnType<typeof import("@/features/dictionary/ttsBridge").resolveDictionaryTtsAliases>
   > = [];
-  // Default to the shared read-aloud surface (personal + global dictionary) so
-  // EVERY queued playback applies the user's pronunciations, even when the
-  // caller didn't specify a surface. A caller can scope it by passing its own.
-  const surfaceKey = item.dictionarySurfaceKey ?? READ_ALOUD_DICTIONARY_SURFACE;
-  if (surfaceKey) {
-    const { resolveDictionaryTtsAliases } = await import(
-      "@/features/dictionary/ttsBridge"
-    );
-    pronunciations = await resolveDictionaryTtsAliases(surfaceKey);
+  // Dictionary follows the ONE global active context by default (personal +
+  // global + the active org/scopes). A caller may pass an explicit surface key
+  // to scope it to a specific surface's selection instead. Best-effort.
+  try {
+    if (item.dictionarySurfaceKey) {
+      const { resolveDictionaryTtsAliases } = await import(
+        "@/features/dictionary/ttsBridge"
+      );
+      pronunciations = await resolveDictionaryTtsAliases(item.dictionarySurfaceKey);
+    } else {
+      const { resolveActiveContextTtsAliases } = await import(
+        "@/features/dictionary/activeContextBridge"
+      );
+      pronunciations = await resolveActiveContextTtsAliases();
+    }
+  } catch {
+    pronunciations = [];
   }
   const processMarkdown = item.processMarkdown ?? true;
   return processMarkdown

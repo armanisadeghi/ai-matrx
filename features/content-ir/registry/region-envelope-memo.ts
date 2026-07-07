@@ -26,6 +26,7 @@ import { isIrEnvelopeCache } from "../core/envelope-cache";
 import { fingerprintText } from "../core/fingerprint";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { kindRegistry } from "./kind-registry";
+import { componentRegistry } from "./component-registry";
 
 const memo = new Map<string, CanonicalBlockIR>();
 const MEMO_CAP = 200;
@@ -117,9 +118,11 @@ export function memoizedRegionEnvelope(
   const cached = memo.get(source);
   if (cached) return cached;
 
-  // Kick the warm tier once (memoized, non-blocking) so user kinds resolve
+  // Kick the warm tiers once (memoized, non-blocking) so user kinds — and
+  // their kind_component resolver rows (the render gate's DB tier) — resolve
   // on subsequent splits; system kinds are always available synchronously.
   void kindRegistry.ensureWarm();
+  void componentRegistry.ensureWarm();
 
   // `existing` is the persisted-envelope fast path: when a seeded envelope's
   // fingerprint exactly matches this region source, normalizeJsonRegion
