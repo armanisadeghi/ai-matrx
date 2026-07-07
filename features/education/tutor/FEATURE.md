@@ -50,12 +50,19 @@ promote with the stale-focus guard), extracted from `ChatRoomClient`. `/chat` ca
 
 ## How grounding works (load-bearing)
 
-The tutor is a streaming TEXT chat agent (`46b7b357-…`). Grounding rides **launch variables**,
-not the per-turn `context` channel (which the model only sees via `ctx_get`). On a fresh
-conversation, `EducationTutorClient` assembles memory + material and dispatches
-`setUserVariableValues` before the first send; `assembleRequest` reads them on turn 1 and they
-persist in the system prompt across the conversation. The agent's prompt has
-`{learner_memory}` / `{study_material}` / `{teaching_mode}` / `{personality_style}` slots.
+The tutor is a streaming TEXT chat agent (`d80cc27e-…`) with **zero user-facing variables** (so
+the chat composer stays clean) and **four declared CONTEXT SLOTS**: `learner_memory`,
+`study_material`, `teaching_mode`, `personality_style` (each with a `max_inline_chars` ceiling —
+content ≤ that is inlined into the model's view, capped at 5000). Grounding is **context, not
+input**: `EducationTutorClient` assembles memory + material (`grounding.ts`) and dispatches
+`setContextEntries({conversationId, entries:[…]})` → the instance-context slice → `request.context`,
+which is **re-sent on every turn** (including continuations), so grounding stays live for the whole
+conversation and never shows in the composer. The agent also carries platform **data tools** and
+queries the learner's notes/flashcards/quiz live when the injected material is thin.
+
+> **Why not variables:** passing this as agent variables rendered them as an awkward editable
+> strip in the chat composer ("Study Material: Paste the student's own content here…"). Grounding
+> data is context, not user input — hence context slots. (Arman, 2026-07-07.)
 
 ## Trust (P0)
 
