@@ -549,3 +549,17 @@ Model name: gemini-3.5-flash
 
 
 
+
+---
+
+## P0 Trust agents (2026-07-07)
+
+The grounded-AI trust layer. Contract + primitives live in `features/education/trust/`
+(see its `FEATURE.md`). IDs are wired in `features/flashcards/data/agents.ts`.
+
+| Key (`FC_AGENTS.*`) | Agent id | Contract |
+|---|---|---|
+| `generateFromSource` (retrofit v6) | `f728ac6b-8504-4b8c-83fc-5f9df947d6a9` | per-card `trust` w/ real citations + `grounded` confidence |
+| `helpLive` (retrofit v6) | `9035ed6e-a936-488d-9e9b-582cc6effb7d` | `trust` + honest `not_in_material` refusal |
+| `verifyAgainstSource` | `90b49ead-0b82-4773-a961-234688197e0a` | `{status: verified\|drifted\|unverifiable, explanation, suggested_fix}` |
+| `gradeTypedAnswer` | `b39183d1-3d66-467a-ab5b-36f5cf508c45` | `GradeVerdict {correct, partial, misconception, explanation}` (grade-on-meaning) |

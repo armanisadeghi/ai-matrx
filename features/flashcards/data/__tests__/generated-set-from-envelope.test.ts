@@ -200,6 +200,61 @@ describe("generatedSetFromEnvelope", () => {
     expect(generatedSetFromEnvelope(envelope)?.cards).toHaveLength(1);
   });
 
+  it("carries the P0 TrustEnvelope + source lineage through to the persisted cards", () => {
+    // The primary save path previously DROPPED per-card source/trust. A
+    // source-grounded card must arrive with its citations (confidence +
+    // grounded passage) and its lineage intact so the card viewer can render
+    // <SourceCitations/> and the fc_card → file source edge can be written.
+    const envelope = envelopeFor(
+      JSON.stringify({
+        title: "Cell Biology",
+        cards: [
+          {
+            __kind: "flashcard",
+            front: "What organelle makes most ATP?",
+            back: "The mitochondrion.",
+            difficulty: "easy",
+            source: {
+              processed_document_id: "doc-1",
+              chunk_id: "chunk-a1",
+              page: 2,
+            },
+            trust: {
+              citations: [
+                {
+                  sourceId: "chunk-a1",
+                  sourceKind: "chunk",
+                  locator: "p. 2",
+                  excerpt: "The mitochondrion produces most of the cell's ATP.",
+                  title: "Mitochondrion",
+                },
+              ],
+              confidence: "grounded",
+              groundedIn: "Cell Biology",
+            },
+          },
+        ],
+      }),
+    );
+
+    const set = generatedSetFromEnvelope(envelope);
+    const card = set?.cards[0];
+    expect(card?.trust?.confidence).toBe("grounded");
+    expect(card?.trust?.groundedIn).toBe("Cell Biology");
+    expect(card?.trust?.citations).toHaveLength(1);
+    expect(card?.trust?.citations[0]).toEqual({
+      sourceId: "chunk-a1",
+      sourceKind: "chunk",
+      locator: "p. 2",
+      excerpt: "The mitochondrion produces most of the cell's ATP.",
+      title: "Mitochondrion",
+    });
+    // Lineage survives (file_id blank — the from-source caller backfills it).
+    expect(card?.source?.chunk_id).toBe("chunk-a1");
+    expect(card?.source?.processed_document_id).toBe("doc-1");
+    expect(card?.source?.page).toBe(2);
+  });
+
   it("returns null for a non-flashcard_set root", () => {
     const envelope = normalizeJsonRegion(
       JSON.stringify({ __kind: "quiz_set", title: "Nope", questions: [] }),
