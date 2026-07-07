@@ -152,6 +152,69 @@ export async function revokeShareLink(
   return { success: !!res?.success, error: res?.error };
 }
 
+export interface ForkResult {
+  success: boolean;
+  error?: string;
+  /** Path to open the caller's new copy in the app. */
+  path?: string;
+}
+
+/**
+ * "Save a copy & use it" — fork a SHARED resource into the current user's own
+ * account so a recipient can continue/use it (chat takeover, study a set, take a
+ * quiz). Requires auth. The DB RPCs gate on the resource actually being shared,
+ * so you can only fork what was shared with you. Returns the path to the copy.
+ */
+export async function forkSharedResource(
+  resourceType: string,
+  resourceId: string,
+): Promise<ForkResult> {
+  try {
+    if (resourceType === "conversation") {
+      const { data, error } = await supabase.rpc("fork_shared_conversation", {
+        p_conversation_id: resourceId,
+      });
+      if (error) return { success: false, error: error.message };
+      const r = data as { success: boolean; error?: string; conversation_id?: string };
+      return r?.success
+        ? { success: true, path: `/chat/${r.conversation_id}` }
+        : { success: false, error: r?.error };
+    }
+    if (resourceType === "fc_set") {
+      const { data, error } = await supabase.rpc("fork_shared_flashcard_set", {
+        p_set_id: resourceId,
+      });
+      if (error) return { success: false, error: error.message };
+      const r = data as { success: boolean; error?: string; set_id?: string };
+      return r?.success
+        ? { success: true, path: `/education/flashcards/${r.set_id}` }
+        : { success: false, error: r?.error };
+    }
+    if (resourceType === "quiz_sessions") {
+      const { data, error } = await supabase.rpc("fork_shared_quiz", {
+        p_quiz_id: resourceId,
+      });
+      if (error) return { success: false, error: error.message };
+      const r = data as { success: boolean; error?: string; quiz_id?: string };
+      return r?.success
+        ? { success: true, path: `/quizzes/${r.quiz_id}` }
+        : { success: false, error: r?.error };
+    }
+    return { success: false, error: "This type can't be copied yet" };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Failed to save copy" };
+  }
+}
+
+/** Whether a resource type supports "save a copy & use it" (fork). */
+export function isForkable(resourceType: string | undefined): boolean {
+  return (
+    resourceType === "conversation" ||
+    resourceType === "fc_set" ||
+    resourceType === "quiz_sessions"
+  );
+}
+
 /**
  * Resolve a share token to its resource. Anon-safe. Pass a server client from a
  * Server Component (public `/s/[token]` route); defaults to the browser client.

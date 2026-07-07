@@ -53,5 +53,5 @@ export default async function SharedTokenPage({ params }: PageProps) {
     return <ShareLinkError message={result.message} />;
   }
 
-  return <SharedResourceView result={result} />;
+  return <SharedResourceView result={result} token={token} />;
 }

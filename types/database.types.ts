@@ -3314,6 +3314,7 @@ export type Database = {
       }
       artifact: {
         Row: {
+          artifact_index: number | null
           artifact_type: Database["public"]["Enums"]["artifact_type"]
           canvas_item_id: string | null
           conversation_id: string | null
@@ -3341,6 +3342,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          artifact_index?: number | null
           artifact_type: Database["public"]["Enums"]["artifact_type"]
           canvas_item_id?: string | null
           conversation_id?: string | null
@@ -3368,6 +3370,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          artifact_index?: number | null
           artifact_type?: Database["public"]["Enums"]["artifact_type"]
           canvas_item_id?: string | null
           conversation_id?: string | null
@@ -25385,6 +25388,12 @@ export type Database = {
         Args: { p_source_id: string }
         Returns: string
       }
+      fork_shared_conversation: {
+        Args: { p_conversation_id: string }
+        Returns: Json
+      }
+      fork_shared_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
+      fork_shared_quiz: { Args: { p_quiz_id: string }; Returns: Json }
       generate_canvas_content_hash: {
         Args: { content_data: Json }
         Returns: string
@@ -29576,6 +29585,7 @@ export type Database = {
           cluster_id: string | null
           confidence_avg: number | null
           created_at: string
+          embedding: string | null
           embedding_oai_small: string | null
           id: string
           importance: number | null
@@ -29592,6 +29602,7 @@ export type Database = {
           cluster_id?: string | null
           confidence_avg?: number | null
           created_at?: string
+          embedding?: string | null
           embedding_oai_small?: string | null
           id?: string
           importance?: number | null
@@ -29608,6 +29619,7 @@ export type Database = {
           cluster_id?: string | null
           confidence_avg?: number | null
           created_at?: string
+          embedding?: string | null
           embedding_oai_small?: string | null
           id?: string
           importance?: number | null
@@ -39407,6 +39419,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      worker_heartbeat: {
+        Row: {
+          hostname: string | null
+          last_seen_at: string
+          meta: Json
+          pid: number | null
+          role: string
+          started_at: string
+          worker_id: string
+        }
+        Insert: {
+          hostname?: string | null
+          last_seen_at?: string
+          meta?: Json
+          pid?: number | null
+          role?: string
+          started_at?: string
+          worker_id: string
+        }
+        Update: {
+          hostname?: string | null
+          last_seen_at?: string
+          meta?: Json
+          pid?: number | null
+          role?: string
+          started_at?: string
+          worker_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

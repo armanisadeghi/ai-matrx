@@ -7,7 +7,8 @@ import remarkGfm from "remark-gfm";
 import { ArrowUpRight, ExternalLink, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getResourceSharePath } from "@/utils/permissions/registry";
-import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
+import { isForkable, type ResolvedShareToken } from "@/utils/permissions/shareLinks";
+import { ForkAndUseButton } from "./ForkAndUseButton";
 
 function str(resource: Record<string, unknown> | undefined, key: string): string {
   const v = resource?.[key];
@@ -144,7 +145,14 @@ function renderBody(result: ResolvedShareToken): React.ReactNode {
   }
 }
 
-export function SharedResourceView({ result }: { result: ResolvedShareToken }) {
+export function SharedResourceView({
+  result,
+  token,
+}: {
+  result: ResolvedShareToken;
+  token: string;
+}) {
+  const forkable = isForkable(result.resourceType) && !!result.resourceId;
   return (
     <div className="min-h-dvh bg-textured flex flex-col">
       {/* Brand bar — subtle acquisition CTA for logged-out viewers */}
@@ -153,12 +161,21 @@ export function SharedResourceView({ result }: { result: ResolvedShareToken }) {
           <Sparkles className="h-5 w-5 text-primary" />
           AI Matrx
         </Link>
-        <Button asChild size="sm" variant="outline">
-          <Link href="/sign-up">
-            Create your own
-            <ArrowUpRight className="ml-1 h-4 w-4" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {forkable && result.resourceType && result.resourceId && (
+            <ForkAndUseButton
+              resourceType={result.resourceType}
+              resourceId={result.resourceId}
+              returnPath={`/s/${token}`}
+            />
+          )}
+          <Button asChild size="sm" variant="outline">
+            <Link href="/sign-up">
+              Create your own
+              <ArrowUpRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <main className="flex-1 px-4 sm:px-6 py-8 sm:py-12">
