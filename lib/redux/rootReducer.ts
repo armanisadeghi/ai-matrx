@@ -21,6 +21,7 @@ import layoutReducer from "./slices/layoutSlice";
 // userProfile uses boot-critical preset (userMetadata persists for first paint).
 import userAuthReducer from "./slices/userAuthSlice";
 import userProfileReducer from "./slices/userProfileSlice";
+import entitlementsReducer from "@/features/entitlements/state/entitlementsSlice";
 
 import userPreferencesReducer from "./preferences/userPreferencesSlice";
 import flashcardChatReducer from "./slices/flashcardChatSlice";
@@ -194,6 +195,7 @@ const moduleReducers = Object.keys(moduleSchemas).reduce<
 export const slimReducerMap = {
   userAuth: userAuthReducer,
   userProfile: userProfileReducer,
+  entitlements: entitlementsReducer,
   userPreferences: userPreferencesReducer,
 
   adminDebug: adminDebugReducer,

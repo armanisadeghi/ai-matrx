@@ -1,0 +1,85 @@
+# Entitlements & Billing Integrity (P8)
+
+> **Status:** Day-1 contract shipped 2026-07-07 · backend + Stripe landing incrementally.
+> **Spec:** [`docs/proposals/education-projects/P8-entitlements-billing.md`](../../docs/proposals/education-projects/P8-entitlements-billing.md).
+> **The contract is live and permissive.** Every capability ships `enforced: false` — nothing
+> is capped until Arman approves the free-tier matrix AND the backend limit + server re-check
+> both exist for that capability.
+
+## What this is
+
+The monetization layer AND the integrity stance as one product. The billing *experience* is a
+marketed differentiator: a generous free tier, limits visible up front (never a mid-workflow
+ambush), one-click cancel, pre-charge reminders, and comparison pages that weaponize the
+incumbents' paywall resentment (Chegg's $7.5M FTC settlement, Quizlet's 1.4★).
+
+## The contract (day 1) — what other projects consume
+
+```ts
+import { useEntitlement } from "@/features/entitlements/hooks";
+
+const cards = useEntitlement("education.generate_cards");
+// Show the limit BEFORE the action (TRUST mandate — no surprise caps):
+cards.remaining;   // number | null (null = unlimited)
+cards.limit;       // number | null
+cards.tier;        // 'free' | 'trial' | 'premium'
+cards.reason;      // 'allowed' | 'permissive_stub' | 'cap_reached' | 'tier_locked' | ...
+cards.allowed;     // the one boolean to gate on
+
+// Before SPENDING, await the server-truth re-check (never mid-generation ambush):
+const verdict = await cards.check();
+if (!verdict.allowed) return openPaywall(verdict);
+await generate();
+```
+
+`useEntitlement` is REACTIVE (reads the boot-hydrated snapshot in Redux). `check()` is the
+imperative, server-truth path — call it immediately before an action that spends.
+
+### Adding a metered capability
+
+1. Add an entry to `CAPABILITY_REGISTRY` in [`registry.ts`](./registry.ts) (`enforced: false`).
+2. Consumers call `useEntitlement("<your.capability>")`. Done — permissive until enforcement.
+3. To ENFORCE: land the `billing.capability_limit` row + the aidream-side spend re-check, get
+   the free-tier number approved, THEN flip `enforced: true`. Never flip without both.
+
+## Files
+
+| Path | Role |
+|---|---|
+| [`types.ts`](./types.ts) | The verdict shape (`EntitlementResult`), tiers, reasons. Stable contract. |
+| [`registry.ts`](./registry.ts) | Capability registry — the single source of truth for metered/gated actions. |
+| [`hooks.ts`](./hooks.ts) | `useEntitlement(capability)` — the published day-1 hook. |
+| [`service.ts`](./service.ts) | `checkEntitlement` (server-truth pre-action) + `fetchEntitlementSnapshot` (boot). |
+| [`state/entitlementsSlice.ts`](./state/entitlementsSlice.ts) | Session-boot state (tier + usage). Volatile, never persisted. |
+| [`state/selectors.ts`](./state/selectors.ts) | Per-capability memoized verdict selectors. |
+
+## Invariants
+
+- **Features never read plan/subscription/usage tables directly.** They ask the resolver
+  (`useEntitlement` / `checkEntitlement`). One central resolver, modeled on `iam.has_access`.
+- **Server re-check is truth on every enforced action.** UI reads may fail open; the spend path
+  fails closed (see `checkEntitlement`).
+- **Entitlement state hydrates ONCE at session boot** (like `adminLevel`), never persisted.
+- **Every metered action shows `remaining` BEFORE the cap.** The cap check happens before the
+  action starts — mid-generation ambush is a defect (README §6).
+- **Billing tables are protected resources** — RLS deny-by-default; writes only via webhooks /
+  `SECURITY DEFINER` RPCs. (Backend, landing next.)
+
+## Roadmap (this project)
+
+- [x] Day-1 contract: `useEntitlement` + capability registry + Redux slice + selectors (permissive).
+- [ ] DB layer: `billing` schema (products/prices, subscriptions, customers, capability_limit,
+      usage_ledger, trials) + `entitlement_check` / `entitlement_snapshot` resolver RPCs.
+- [ ] Boot hydration wired into the SSR layout chain (fill `fetchEntitlementSnapshot`).
+- [ ] Stripe: SDK, checkout, customer portal, webhooks (`app/api/stripe/**`), lifecycle sync.
+- [ ] Metering + per-capability enforcement flip; aidream-side spend re-check.
+- [ ] `/pricing` (DB-backed) + billing-integrity pledge + comparison pages.
+- [ ] Paywall surfaces wired to real state (`UsageLimitDialog` / `UpgradeModal`).
+- [ ] Trial start/reminder/downgrade + pre-renewal reminder email.
+- [ ] Free-tier matrix approved by Arman; admin usage read surface.
+
+## Change Log
+
+- **2026-07-07** — Day-1 contract shipped: `features/entitlements/` (types, registry, hook,
+  service, slice, selectors), registered `entitlements` reducer, permissive stub for all 10
+  capabilities. Unblocks P1–P5/P9/P10.
