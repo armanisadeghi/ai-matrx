@@ -107,12 +107,18 @@ export async function loadPublicResource(
     : data["visibility"] === "public";
   if (!isPublic) return null;
 
+  // Project ONLY display-safe fields to the client — never dump the whole row
+  // (metadata jsonb, org/owner ids, file paths, hashes) to a public page.
+  const safeRow: Record<string, unknown> = {};
+  const content = firstString(data, ["content", "body", "text"]);
+  if (content) safeRow.content = content;
+
   return {
     resourceType: entry.resourceType,
     resourceId: id,
     displayLabel: entry.displayLabel,
     title: firstString(data, ["name", "title", "label"]) ?? entry.displayLabel,
     description: firstString(data, ["description", "summary", "tagline"]),
-    row: data,
+    row: safeRow,
   };
 }
