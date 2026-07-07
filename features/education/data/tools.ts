@@ -75,13 +75,14 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Generate MC, T/F, fill-in-blank, short-answer, and written-response questions from any deck or upload.",
     icon: ListChecks,
     letter: "Qz",
-    status: "coming-soon",
+    status: "live", // P1 — 5 question types, depth-on-demand, grade-on-meaning, grounded citations, spine-recorded, learning gain
     accessTier: "free",
     visionRef: "VISION §2 Test/Quiz mode",
     capabilities: [
-      "Five question types auto-generated from source",
-      "Per-item explanations and feedback",
-      "Quiz session state persisted (education.quiz_sessions)",
+      "Five question types auto-generated from a topic, deck, or document",
+      "Depth-on-demand (recall → applied → exam) + per-item 'make deeper'",
+      "Grade-on-meaning for free-response; grounded, cited questions (TrustEnvelope)",
+      "Every answer feeds the study spine (FSRS mastery + weak-area review)",
     ],
   },
   {
@@ -91,14 +92,14 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Configurable, timed, full-length practice exams with detailed post-test analysis and pre/post learning-gain.",
     icon: FileCheck2,
     letter: "Pt",
-    status: "coming-soon",
+    status: "live", // P1 — timed full-length tests reusing the assessment engine; detailed post-test analysis + learning gain
     accessTier: "trial",
     visionRef: "VISION §8 Practice Tests & Exam Prep",
     capabilities: [
       "Configurable question mix, difficulty, count, time limits",
-      "Item-level feedback + explanations",
-      "Pre/post testing → measured learning gain",
-      "Standardized-exam formats (SAT/ACT/AP/MCAT/…)",
+      "Timed taker with auto-submit; detailed item-level post-test analysis",
+      "Pre/post testing → persisted, measured learning gain",
+      "Standardized-exam formats (SAT/ACT/AP/MCAT/…) via exam-type config",
     ],
   },
   {

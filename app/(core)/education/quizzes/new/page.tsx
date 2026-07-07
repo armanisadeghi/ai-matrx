@@ -1,9 +1,11 @@
+// /education/quizzes/new — generate a quiz (topic / deck / document).
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { AssessmentCreate } from "@/features/education/assessment/components/create/AssessmentCreate";
+import { QUIZ_CONFIG } from "@/features/education/assessment/components/kindConfig";
 
 export const metadata: Metadata = toolMetadata("quizzes");
 
 export default function QuizNewPage() {
-  return <EduToolComingSoon slug="quizzes" surface={{ label: "Create a quiz", gate: "auth" }} />;
+  return <AssessmentCreate config={QUIZ_CONFIG} />;
 }
