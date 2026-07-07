@@ -20,6 +20,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `ShareButton.tsx` — self-contained button that opens `ShareModal`; shows Private/Shared/Public status
 - `ShareModal.tsx` — three-tab dialog (Users / Organizations / Public), the only UI surface owners need
 - `ShareLinkPanel.tsx` — "Anyone with the link" no-login token links (mint / copy / revoke / view-count), rendered in the Public tab
+- `DuplicateToEditButton.tsx` — canonical **"Make a copy & use it"** for a view-only sharee / public / anon viewer; forks the resource into the caller's account (signed-out → sign-up → finish). Shared by `/s/[token]`, `/p/e`, and in-app view surfaces
 - `resourceIcons.ts` — token → Lucide icon map for share cards/previews (fallback: `Share2`)
 - `PermissionsList.tsx` — list of current grants with inline level edit + revoke
 - `PermissionBadge.tsx` — visual permission-level badge (viewer / editor / admin)
@@ -33,11 +34,16 @@ One RLS-backed permissions system that makes any resource type shareable with us
 - `useIsOwner(resourceType, resourceId)` — ownership check from the resource row
 - `useCanEdit(resourceType, resourceId)` / `useCanAdmin(...)` — level gating for UX
 - `usePermissionCheck({ resourceType, resourceId, requiredLevel })` — generic gate
+- **`useAccess(resourceType, id)`** (`utils/permissions/access.ts`) — the **view-vs-edit gate**. One resolver → `{ level: 'none'|'view'|'edit'|'admin', isOwner, exists, loading }` over the `get_resource_access` RPC (owner/grants/org/membership/reachability/public, resolving the same model RLS enforces; anon sees public as `view`). Helpers `accessSatisfies` / `canEditAccess` / `canViewAccess` + isomorphic core in `access-core.ts`. **Every study tool + feature gates on this — don't roll a bespoke owner/edit check.** See "View-vs-edit access gate" below.
 - `useSharedWithMe(resourceType?)` — resources directly granted to the current user (no hierarchy)
 - `usePermissions(...)` / `useResourcePermissions(...)` — raw permission lists
 
+**Server guard**
+- `utils/permissions/requireAccess.ts` (`server-only`) — `requireAccess(resourceType, id, level, { redirectTo })` gates a Server Component: a sharee below `level` is redirected (e.g. `[id]/edit` → `[id]`), never dropped into an editor whose RLS writes silently fail. `resolveAccess(...)` returns the level without redirecting. Server twin of `useAccess`.
+
 **Services**
 - `utils/permissions/service.ts` — all DB calls; every write routes through a `SECURITY DEFINER` RPC
+- `utils/permissions/shareLinks.ts` — no-login link tokens (mint/list/revoke/`resolveShareToken`) + `forkSharedResource` / `isForkable` (duplicate-to-edit fork RPCs)
 - `features/sharing/emailService.ts` — client-side resource-shared notification (legacy; prefer server route)
 - `lib/email/exportService.ts` → `emailShareLink()` — email-link-to-self helper
 
@@ -174,6 +180,24 @@ If you find yourself editing `service.ts`, the share RPCs, `ShareModal.getShareU
 
 ---
 
+## View-vs-edit access gate, public lanes & duplicate-to-edit (P7)
+
+The product layer over the plumbing: shared content works like Google Docs/Quizlet — a view-sharee gets a great read-only experience + a fork button, never an RLS error.
+
+**The gate.** `useAccess(resourceType, id)` (client) / `requireAccess(resourceType, id, level, {redirectTo})` (server) both read `public.get_resource_access(p_resource_type, p_resource_id)` → `{level, is_owner, exists}`. That RPC is **registry-driven** (`resolve_shareable_resource`): canonical entity_types tokens resolve via `iam.has_access` (full model), legacy tables via `has_permission`, and **anon sees a public row as `view`** (owner → `admin`+`is_owner`). It resolves the same access RLS enforces — this is the UX layer, **RLS is still the boundary**.
+
+- Wire it once per tool per ROUTING.md §2: `[id]` view-gated, `[id]/edit` edit-gated (`requireAccess(..., 'edit', {redirectTo:'[id]'})`). Reference: `app/(core)/education/flashcards/[setId]/edit/page.tsx` + `SetDetailView` (hides Edit/visibility for view-only sharees, shows `DuplicateToEditButton`).
+
+**Two public lanes (don't merge them):**
+- **`/s/[token]`** — token-authorized, **noindex**. The token is the authorization (`resolve_share_token`, anon). Any registered type.
+- **`/p/e/[resourceType]/[id]`** — id-addressed, **indexable** (`robots: index`), for `visibility='public'` only. Anon RLS `pub_read` is the authorization (no token). Server loader `app/(public)/p/e/loadPublicResource.ts`: flashcard sets get rich cards via the anon `get_public_flashcard_set` SECURITY DEFINER RPC; other types read the base row generically. Private/missing → `notFound()`. This is the SEO/community-library lane (P6-C).
+
+**Duplicate-to-edit.** `DuplicateToEditButton` → `forkSharedResource(type, id)` (per-family `fork_shared_*` SECURITY DEFINER RPCs, gated on the resource actually being shared/public). Surfaced automatically where `useAccess` returns `view` on an editable surface. Forkable today: `conversation`, `fc_set`, `quiz_sessions` — extend `forkSharedResource` + `isForkable` + add a `fork_shared_<type>` RPC for a new family.
+
+**Adopting the gate in a new tool:** register the type (Key flow #6), then `requireAccess` on `[id]/edit`, `useAccess` in the `[id]` view surface, and drop `DuplicateToEditButton` where level is `view`. Zero new code in `utils/permissions` — proven unchanged on `note` (generic public path) after `fc_set` (rich path).
+
+---
+
 ## Invariants & gotchas
 
 - **One permissions table. Always.** Never create a per-resource permissions/ACL table. The entire system collapses without the shared shape.
@@ -205,14 +229,15 @@ If you find yourself editing `service.ts`, the share RPCs, `ShareModal.getShareU
 
 ## Current work / migration state
 
-Stable. Active areas:
-- **RLS rollout** (highest priority follow-up). The `rls_uses_has_permission` column flags four tables (`agx_agent`, `prompts`, `notes`, `ctx_tasks`) whose RLS policies don't yet call `has_permission()`. Direct grants on these tables succeed at the RPC layer but are ignored by RLS. Each policy needs to be amended with `OR has_permission('<canonical>', id, '<level>')` and tested. Track per-table progress by flipping the registry column to `true` once the policy is updated.
+Stable. Grants **really grant**: every table on canonical RLS (`iam.apply_rls`) resolves grants via token-agnostic `iam.has_access` (verified live for `note`, `fc_set` 2026-07-07), so `rls_uses_has_permission=true` for all canonicalized types. The flag now only marks genuinely-legacy rows whose own RLS model doesn't call the grant path (`analysis_recipes`, `auto_ingest_batch`, `file_*` satellites, `scraper_*`) — a known state, not a TODO. Active areas:
 - `features/sharing/emailService.ts` is on a slow deprecation path — prefer the `/api/sharing/notify` server route for all new notification paths.
+- The TS registry mirror (`utils/permissions/registry.ts`) is reconciled with the DB and the parity test is green (2026-07-07).
 
 ---
 
 ## Change log
 
+- `2026-07-07` — **P7: view-vs-edit access gate + indexable public lane + duplicate-to-edit** (`migrations/access_gate_get_resource_access.sql`, `public_flashcard_set_read.sql`). New `public.get_resource_access(type,id)` resolver (registry-driven; canonical→`iam.has_access`, legacy→`has_permission`, anon→public-as-view) behind `useAccess` (client, `access.ts`/isomorphic `access-core.ts`) + `requireAccess` (server guard, `requireAccess.ts`). Second public lane `app/(public)/p/e/[resourceType]/[id]` — id-addressed, **indexable**, `visibility='public'` only, anon `pub_read` (the token lane `/s/[token]` stays noindex); flashcard sets get cards via anon `get_public_flashcard_set` RPC, other types read generically (`loadPublicResource.ts`); private/missing 404. `DuplicateToEditButton` (extracted from the `/s` fork button) is the shared "Make a copy" surfaced wherever `useAccess` returns `view`. Flashcards is the reference: `[setId]/edit` requireAccess-gated, `SetDetailView` hides Edit/visibility + offers Make-a-copy for view-only sharees + links public sets to `/p/e`. `note` adopts the primitive unchanged (generic public path). Verified live (owner→admin, sharee→view redirect, anon public 52-card viewer, private 404). See "View-vs-edit access gate" section. Also cleaned the stale RLS-rollout note (grants really grant since 2026-06-26).
 - `2026-07-07` — **Guest takeover: fork-a-shared-resource into your own account.** Three SECURITY DEFINER RPCs (applied direct-in-DB, not migration files) let a recipient copy a shared resource to their personal org and use it — the "share it and they use it" model: `fork_shared_conversation` (chat + messages + tool_calls → continue chatting), `fork_shared_flashcard_set` (set + member cards + fc_detail + membership edges → study with own progress), `fork_shared_quiz` (copy with progress/results reset → take it fresh). Each gates on the resource actually being shared (`is_link_shareable` + active share_link / public·link visibility / `has_access`), assigns `created_by`=caller + personal org, and is `authenticated`-only. Verified live (guest-owned copies, 20-card set, non-shared rejected). FE: `forkSharedResource()` + `ForkAndUseButton` on `/s/[token]` ("Continue this chat" / "Study these flashcards" / "Take this quiz"); logged-out → `/sign-up?redirectTo=/s/[token]` then finish the fork (acquisition). Remaining guest-use work (agent run-as-guest, agent-app SEO indexing, read-only child views for chat/set/quiz) tracked in [`docs/handoffs/SHARING_GUEST_FEATURES_HANDOFF.md`](../../docs/handoffs/SHARING_GUEST_FEATURES_HANDOFF.md).
 - `2026-07-07` — **Share-link policy model + admin control panel + broad enablement (`migrations/share_link_policy_and_admin.sql`).** Made "what is publicly link-shareable, and which columns anon sees" an admin-editable policy, not a code constant:
   - Registry gains `is_link_shareable` (bool — offers the no-login link AND a per-type kill switch: false stops `resolve_share_token` serving even already-minted tokens) alongside `public_columns` (the anon allowlist). `resolve_share_token` + `create_share_link` both honor it.

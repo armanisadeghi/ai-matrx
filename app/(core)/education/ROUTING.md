@@ -65,10 +65,10 @@ are **gated differently**, which is what makes sharing clean:
   they can see).
 - **Library (`/`) + `/new` → require sign-in** (your own stuff).
 
-Gate with the canonical access resolver — `iam.has_access(<resource>, '<action>')` via the
-permissions registry (`utils/permissions/registry.ts`) and the sharing system
-(`features/sharing/FEATURE.md`). **Do not roll a bespoke check.** The point of the separate
-`/edit` segment is that the gate is one guard at one route, not scattered through a component.
+Gate with the P7 access primitive — **`requireAccess(type, id, level, {redirectTo})`** on the
+server route (`[id]/edit` → redirect view-sharees to `[id]`) and **`useAccess(type, id)`** in the
+view surface (to show "Make a copy" where level is `view`). Backed by `get_resource_access` over
+`iam.has_access`; **do not roll a bespoke check.** Recipe: [`features/sharing/FEATURE.md`](../../../features/sharing/FEATURE.md) "View-vs-edit access gate". The point of the separate `/edit` segment is that the gate is one guard at one route, not scattered through a component.
 
 > Coming-soon placeholders do **not** gate yet (no resource/permission to check). They reserve the
 > route and document the surface + its gate via `<EduToolComingSoon slug surface={{label, gate}} />`.
@@ -78,7 +78,7 @@ permissions registry (`utils/permissions/registry.ts`) and the sharing system
 
 | Tool (flat slug) | Library | Create | View/use `[id]` | Edit | Use-modes |
 |---|---|---|---|---|---|
-| `flashcards` ✅ built | ✓ | `/new` ✓ | `/[setId]` ✓ | **`/[setId]/edit`** ⚠️ *missing* | `/[setId]/study` ✓ |
+| `flashcards` ✅ built | ✓ | `/new` ✓ | `/[setId]` ✓ (VIEW-gated) | `/[setId]/edit` ✓ (EDIT-gated) | `/[setId]/study` ✓ |
 | `fastfire` ✅ built | launcher (`?set=`) | — | — (consumes sets) | — | — |
 | `quizzes` | ✓ | `/new` | `/[id]` (take) | `/[id]/edit` | `/[id]/results` |
 | `practice-tests` | ✓ | `/new` | `/[id]` (take) | `/[id]/edit` | `/[id]/results` |
@@ -91,9 +91,10 @@ permissions registry (`utils/permissions/registry.ts`) and the sharing system
 Everything except the built flashcards/fastfire surfaces is a **coming-soon placeholder** today —
 the route exists, is self-documenting (shows its surface + gate), and graduates in place.
 
-> ⚠️ **`flashcards/[setId]/edit` is the one gap in the built tool** — flashcards shipped
-> library/new/`[setId]`/study but no dedicated edit surface. The flashcards agent should add
-> `education/flashcards/[setId]/edit` (EDIT-gated) so sharing a deck read-only works cleanly.
+> ✅ **`flashcards/[setId]/edit` is built + EDIT-gated** (P7, 2026-07-07): `requireAccess("fc_set",
+> setId, "edit", { redirectTo })` redirects a view-only sharee to the view page, which offers
+> "Make a copy" (`DuplicateToEditButton`). This is the reference wiring — gate every tool the same
+> way with `useAccess` / `requireAccess` (see [`features/sharing/FEATURE.md`](../../../features/sharing/FEATURE.md) "View-vs-edit access gate").
 
 ---
 
@@ -162,6 +163,10 @@ app/(core)/education/
 ---
 
 ## Change log
+- **2026-07-07** — P7: the view/edit gate is real. `flashcards/[setId]/edit` is EDIT-gated via
+  `requireAccess`; `[setId]` view surface offers duplicate-to-edit for view-only sharees. Gating
+  primitive is `useAccess`/`requireAccess` (`utils/permissions`); indexable public resources live
+  at `/p/e/[resourceType]/[id]`.
 - **2026-06-29** — Created. Established marketing-nested vs app-flat; the canonical view/edit/use
   flow with VIEW-vs-EDIT permission gating (the previously-missing fundamental); stubbed the
   per-tool placeholder routes; flagged `flashcards/[setId]/edit` as the one gap in the built tool.
