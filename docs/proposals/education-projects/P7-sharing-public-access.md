@@ -15,6 +15,15 @@ must work like Google Docs/Quizlet: a view-sharee gets a great read-only experie
 button, not an RLS error. This was the #1 gap in the flashcards audit and it blocks the entire
 share/collaborate vision.
 
+> **⚠️ KICKOFF ADDENDUM (2026-07-07, late):** a concurrent session landed a **canonical
+> share-links system** in commit `3d02a42ad` — `migrations/share_links_canonical_system.sql`,
+> `utils/permissions/shareLinks.ts`, `features/sharing/components/ShareLinkPanel.tsx`, and a
+> generic public viewer at `app/(public)/s/[token]/**` (it also deleted the bespoke
+> `app/(core)/notes/share/[id]` page). **Audit this FIRST** — it likely closes the
+> `link`-visibility public-viewer case generically. Reconcile before building anything in the
+> public-viewer scope below; the remaining gaps are then the view/edit gate, duplicate-to-edit,
+> and the `visibility='public'` (no-token) browse case.
+
 ## Current state (verified 2026-07-07 — significantly moved since the roadmap)
 
 - **The plumbing now works.** Token unification (2026-06-26) + the registry/owner-column fix
