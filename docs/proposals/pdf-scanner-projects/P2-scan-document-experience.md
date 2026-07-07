@@ -52,13 +52,8 @@ tabs made true, not just mapped in a comment.
 - Share/export: canonical share of a scanned file + PDF download from the extractor surface
   verified for scan-born docs.
 - **Design parity** (source: [`design/Photo-to-PDF Desktop.dc.html`](./design/Photo-to-PDF%20Desktop.dc.html)
-  — read the HTML directly; these are in the prototype and missing from the build):
-  - Per-page rename in Review: each grid card / list row has an editable label input
-    (design lines ~355, ~394). Today `DesktopReview` renders `item.fileName` statically —
-    add `label` to `ScanItem` + the session manifest; labels become PDF bookmark/section
-    names if the backend supports it, else FE-only display.
-  - "View all" link on the RECENT SCANS header (design ~269) → route to the full recents
-    view you build (or `/files` Scans folder — your call, note it).
+  — read the HTML directly; these are in the prototype and missing from the build). Already
+  built 2026-07-07 (not yours): per-page rename, View all recents, 50 MB limit. Remaining:
   - Results-surface details the extractor must deliver for scan-born docs: header
     Download + Share buttons, "Indexed for RAG" pill, Extracted-text stat line
     ("N words · M% confidence") + Copy text button, Ask tab's suggested-questions grid
@@ -66,8 +61,6 @@ tabs made true, not just mapped in a comment.
   - Enhance modes at capture/crop time: Auto / Original / Grayscale / B&W (design confirm
     screen ~131-141). Needs an aidream per-item color-mode op applied at build time
     (like `perspective_crop` — original never mutated); FE picker in the crop sheet.
-  - Dropzone copy: "up to 50 MB each" size hint (design ~248) — add and enforce the limit
-    client-side with a loud toast.
 
 **OUT**
 - Device/prod certification matrix — **P1** (they re-run over your thumbnails at
@@ -90,9 +83,9 @@ tabs made true, not just mapped in a comment.
 4. Ask verified: screenshot of a correct, content-grounded answer about a scanned doc, desktop
    + mobile; the entry affordance shipped.
 5. Share link to a scanned file opens for the grantee; PDF download works.
-6. Design parity closed: per-page rename round-trips the manifest; enhance modes produce
-   visibly different PDF output (grayscale scan verified); results surface shows the stat
-   line, Copy text, suggested questions, Download/Share; 50 MB limit enforced loudly.
+6. Design parity closed: enhance modes produce visibly different PDF output (grayscale scan
+   verified); results surface shows the stat line, Copy text, suggested questions,
+   Download/Share.
 7. `features/pdf/FEATURE.md` updated (parts table if you add a primitive; change log always).
 
 ## Surfaces touched

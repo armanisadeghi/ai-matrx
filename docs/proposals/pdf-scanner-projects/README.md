@@ -125,14 +125,19 @@ Tiers are staffing order, NOT sequencing — all Wave-1 projects run in parallel
   → P2; capture-overlay parity (Auto/Manual chips, live "Page detected" badge) → P1. The
   design's in-scanner Results screen remains deliberately mapped onto the extractor (one
   canonical surface) — P2 must make that surface deliver everything the Results screen shows.
-- **F2 — Competitive research never ran** for this domain (Adobe Scan, Microsoft Lens,
-  SwiftScan, CamScanner, Apple/Google native scan). Run the 8-pass research + visual capture
-  before assigning Wave 2? — **PENDING**
-- **F3 — Org visibility of scans:** recents are now owner-only (org-member RLS would have shown
-  teammates' scans). Should a future "Team scans" view exist, or are scans personal-by-default
-  until explicitly shared? — **PENDING**
-- **F4 — P4 internal priority:** figures-for-RAG first (feeds retrieval) or searchable-PDF
-  first (user-visible)? Brief defaults to figures-first. — **PENDING**
+- **F2 — Competitive research:** — **DECIDED 2026-07-07 (Arman): no research for this one.**
+- **F3 — Org visibility of scans:** — **DECIDED 2026-07-07 (Arman): "Absolutely not. No
+  different than anything else. Don't override that stuff."** Scans behave exactly like every
+  other resource — personal by default, shared via the canonical sharing system. No special
+  team views, no scanner-specific visibility rules, ever.
+- **F4 — P4 internal priority:** — **DECIDED 2026-07-07 (Arman): "do whatever is right"** —
+  figures-first default stands.
+- **F5 — Scope framing (Arman, 2026-07-07): the feature is built and fully functional; the
+  active work is UI-tied only.** P1 (certification of what exists) and P2's design-parity +
+  payoff items are the live scope. P3/P4 are functionality *expansions* — documented so they
+  aren't lost, but **assign only on Arman's explicit request**, never as a default wave.
+  (Pure-UI parity items — per-page rename, View all, 50 MB limit — were built directly on
+  2026-07-07 rather than briefed.)
 
 ## Change log
 - 2026-07-07 — v1. Created post desktop-ship (`af0f7609f`) + hardening (`077b2fd1e`); all

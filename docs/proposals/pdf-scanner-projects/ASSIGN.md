@@ -6,8 +6,8 @@ One fresh session per project. Paste the prompt, swapping the `{...}` line.
 |---|---|---|---|
 | P1 | Production Certification & Device Hardening | `P1-production-certification.md` | — |
 | P2 | Scan Document Experience (C1 owner) | `P2-scan-document-experience.md` | — |
-| P3 | Large-Document Scale (C3 owner) | `P3-large-document-scale.md` | — |
-| P4 | Document Intelligence Expansion | `P4-document-intelligence.md` | — (Wave 2) |
+| P3 | Large-Document Scale (C3 owner) | `P3-large-document-scale.md` | HOLD — functionality expansion; assign only on Arman's explicit request (F5) |
+| P4 | Document Intelligence Expansion | `P4-document-intelligence.md` | HOLD — functionality expansion; assign only on Arman's explicit request (F5) |
 | W2 | Redaction Escrow | `W2-redaction-escrow.md` | GATED on KMS — do not assign |
 
 ```
