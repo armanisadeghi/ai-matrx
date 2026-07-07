@@ -12,12 +12,15 @@
 import { useEffect, useState } from "react";
 import { studyService } from "../service/studyService";
 import { computeAnalytics, type StudyAnalytics } from "./computeAnalytics";
+import type { ItemMasteryRow } from "../types";
 
 const TREND_WEEKS = 4;
 const MS_PER_WEEK = 7 * 86_400_000;
 
 export interface UseStudyAnalyticsResult {
   analytics: StudyAnalytics | null;
+  /** Raw mastery rows (all item types) — reused by StudyTrends without refetch. */
+  mastery: ItemMasteryRow[];
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -25,6 +28,7 @@ export interface UseStudyAnalyticsResult {
 
 export function useStudyAnalytics(): UseStudyAnalyticsResult {
   const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null);
+  const [mastery, setMastery] = useState<ItemMasteryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -51,11 +55,12 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
         return;
       }
 
-      const mastery = masteryRes.data ?? [];
+      const masteryRows = masteryRes.data ?? [];
+      setMastery(masteryRows);
       // Resolve fc_card topics for the weak-topic breakdown (dynamic import so
       // this stays mode-agnostic infrastructure).
       let topicsById: Record<string, string | null> | undefined;
-      const fcIds = mastery
+      const fcIds = masteryRows
         .filter((m) => m.item_type === "fc_card")
         .map((m) => m.item_id);
       if (fcIds.length > 0) {
@@ -70,7 +75,7 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
       setAnalytics(
         computeAnalytics(
           {
-            mastery,
+            mastery: masteryRows,
             attempts: attemptsRes.data ?? [],
             sessions: sessionsRes.data ?? [],
             currentStreak: streakRes.data?.current_streak ?? 0,
@@ -88,6 +93,7 @@ export function useStudyAnalytics(): UseStudyAnalyticsResult {
 
   return {
     analytics,
+    mastery,
     loading,
     error,
     reload: () => setNonce((n) => n + 1),

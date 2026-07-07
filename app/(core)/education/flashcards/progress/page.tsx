@@ -1,21 +1,9 @@
-// /education/flashcards/progress — the learner's study progress overview
-// (VISION §16: mastery distribution, accuracy, what's due, activity). Server shell
-// → the mode-agnostic StudyProgress client island over the shared study spine.
-import type { Metadata } from "next";
-import { toolMetadata } from "@/features/education/route-helpers";
-import { StudyProgress } from "@/features/education/study/components/StudyProgress";
-
-export const metadata: Metadata = toolMetadata("flashcards");
+// /education/flashcards/progress — redirects to the unified cross-mode progress
+// dashboard (P5). Progress was promoted out of flashcards to /education/progress
+// (mastery/accuracy/weak-areas/trends now span every study mode, not just cards);
+// this keeps the old flashcards entry point alive as a redirect.
+import { redirect } from "next/navigation";
 
 export default function FlashcardProgressPage() {
-  return (
-    <StudyProgress
-      itemType="fc_card"
-      title="Your flashcard progress"
-      backHref="/education/flashcards"
-      reviewHref="/education/flashcards/review"
-      weakAreaHref="/education/flashcards/weak-areas"
-      topicSource="fc_card"
-    />
-  );
+  redirect("/education/progress");
 }
