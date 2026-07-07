@@ -14,11 +14,16 @@ export const EDU_TUTOR_AGENTS = {
   /**
    * The persistent, memory-carrying, RAG-grounded conversational tutor. A
    * streaming TEXT agent (markdown out), grounded in the learner's own material
-   * (injected per-turn via the request `context` channel), Socratic-capable
-   * (`teaching_mode` variable), personality-tunable (`personality_style`), and
-   * honest about the boundary of the material (refuses rather than fabricates).
+   * (injected at launch via the `study_material` variable), carries
+   * cross-session memory (`learner_memory`), Socratic-capable (`teaching_mode`),
+   * personality-tunable (`personality_style`), and honest about the boundary of
+   * the material (refuses rather than fabricates). Grounding + memory + citation
+   * behavior live-verified via agent_run 2026-07-07.
+   *
+   * Variables (all optional, substituted into the system prompt at launch):
+   *   learner_memory · study_material · teaching_mode · personality_style
    */
-  tutor: "df4a4142-214a-4ca6-bf8b-81293fdc8235",
+  tutor: "46b7b357-6d45-44cd-9c12-1b647d94d5ee",
 } as const;
 
 export type EduTutorAgentKey = keyof typeof EDU_TUTOR_AGENTS;
