@@ -14,6 +14,7 @@
  */
 
 import type { Json } from "@/types/database.types";
+import { isJsonObject, type JsonObject } from "@/types/json";
 
 async function getSupabase() {
   const { supabase } = await import("@/utils/supabase/client");
