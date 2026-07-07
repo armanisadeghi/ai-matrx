@@ -462,6 +462,17 @@
     "is_active": true
   },
   {
+    "resource_type": "study_media",
+    "table_name": "study_media",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Study Media",
+    "url_path_template": "/education/media/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "task",
     "table_name": "tasks",
     "id_column": "id",

@@ -519,6 +519,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/transcripts/studio?session={id}",
     rlsUsesHasPermission: true,
   },
+  study_media: {
+    resourceType: "study_media",
+    tableName: "study_media",
+    schemaName: "education",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Study Media",
+    urlPathTemplate: "/education/media/{id}",
+    rlsUsesHasPermission: true,
+  },
   task: {
     resourceType: "task",
     tableName: "tasks",

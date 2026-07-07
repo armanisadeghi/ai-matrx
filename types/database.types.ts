@@ -8683,6 +8683,93 @@ export type Database = {
         }
         Relationships: []
       }
+      study_media: {
+        Row: {
+          audio_file_id: string | null
+          audio_format: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          diagram_kind: string | null
+          duration_seconds: number | null
+          episode_id: string | null
+          id: string
+          ir_envelope: Json | null
+          media_kind: string
+          metadata: Json
+          organization_id: string
+          run_id: string | null
+          source_id: string | null
+          source_kind: string | null
+          source_title: string | null
+          status: string
+          title: string
+          trust: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audio_file_id?: string | null
+          audio_format?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          diagram_kind?: string | null
+          duration_seconds?: number | null
+          episode_id?: string | null
+          id?: string
+          ir_envelope?: Json | null
+          media_kind: string
+          metadata?: Json
+          organization_id: string
+          run_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          source_title?: string | null
+          status?: string
+          title: string
+          trust?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audio_file_id?: string | null
+          audio_format?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          diagram_kind?: string | null
+          duration_seconds?: number | null
+          episode_id?: string | null
+          id?: string
+          ir_envelope?: Json | null
+          media_kind?: string
+          metadata?: Json
+          organization_id?: string
+          run_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          source_title?: string | null
+          status?: string
+          title?: string
+          trust?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       study_plan: {
         Row: {
           config: Json
@@ -26351,6 +26438,7 @@ export type Database = {
           variable_defaults: Json
         }[]
       }
+      get_public_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
       get_published_app_with_prompt: {
         Args: { p_app_id?: string; p_slug?: string }
         Returns: {
