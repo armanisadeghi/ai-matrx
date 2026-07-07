@@ -209,6 +209,10 @@ A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days lat
 
 Track bugs/gaps you can't fully fix in [KNOWN_DEFECTS.md](./KNOWN_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur.
 
+## Handoffs
+
+`docs/handoffs/` holds forward-looking work orders (shared system with aidream — one doc per piece of work). **Invoke the `handoffs` skill** before writing one, taking one over, or ending any turn that progressed work a handoff covers — completed tasks collapse to one bullet, finished handoffs get deleted. Rot backstop: `/handoff-cleanup`.
+
 ---
 
 ## Feature Documentation
