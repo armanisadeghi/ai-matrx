@@ -25,7 +25,9 @@ shared primitives:
 | Contract (types + coercers) | [`types.ts`](./types.ts) | `TrustEnvelope`, `SourceCitation`, `TrustConfidence`, `GradeVerdict`, `VerifyResult` + non-throwing coercers. THE source of truth. |
 | Contract doc | [`TRUST_ENVELOPE.md`](./TRUST_ENVELOPE.md) | Consumer-facing contract (P1–P4, P6, P9). |
 | `<ConfidenceBadge/>` | [`components/ConfidenceBadge.tsx`](./components/ConfidenceBadge.tsx) | The honest-confidence chip. |
-| `<SourceCitations/>` | [`components/SourceCitations.tsx`](./components/SourceCitations.tsx) | Tappable citation chips → exact passage popover. |
+| `<SourceCitations/>` | [`components/SourceCitations.tsx`](./components/SourceCitations.tsx) | Tappable citation chips → exact passage popover + **"Open full source"** (opens the real file/PDF/web page). |
+| Open-source resolver | [`open-source.ts`](./open-source.ts) | `openCitationSource` → canonical `openFilePreview(fileId)` / new-tab url. |
+| Grounding backfill | [`grounding.ts`](./grounding.ts) | `attachSourceRefs` — source-agnostic durable-ref backfill (RAG / uploads / chat). |
 | `<RefusalNotice/>` | [`components/RefusalNotice.tsx`](./components/RefusalNotice.tsx) | Honest-refusal callout + explicit general-knowledge opt-in. |
 | `<CardTrustFooter/>` | [`components/CardTrustFooter.tsx`](./components/CardTrustFooter.tsx) | One-line drop-in: badge + citations + Verify action. |
 | `useVerifyAgainstSource` | [`useVerifyAgainstSource.ts`](./useVerifyAgainstSource.ts) | Re-checks a card against its cited passage; flags drift. |
@@ -50,6 +52,23 @@ IDs are wired in [`features/flashcards/data/agents.ts`](../../flashcards/data/ag
 `flashcard`/`enhanced_flashcard` kinds declare `trust.confidence` + `trust.groundedIn`
 first-class; `trust.citations[]` rides the zero-loss residue channel (the same mechanism the
 bridge already uses for every undeclared card field — proven in the envelope test).
+
+## Source-agnostic grounding + opening the real source
+
+Grounding is not RAG-specific and citations open the actual source, not just an excerpt:
+- **Backfill:** every creation surface calls `attachSourceRefs(env, {fileId, documentId, url,
+  pageForCitation})` at persist time, stamping durable openable refs onto each citation.
+  Wired in `CreateFromSource` (RAG: `docDetail.source_id` file + per-chunk `page_numbers`) and
+  the chat/canvas `flashcards-canonical-adapter` (carries the envelope through). Uploaded /
+  attached files ground identically once their `fileId` is passed in.
+- **Open:** `<SourceCitations/>` shows **"Open full source"** for any citation with a
+  `fileId`/`url` → `openCitationSource` opens the canonical file-preview window
+  (`openFilePreview`) or the web page. The user sees the whole document, not a snippet.
+- **Page deep-link (follow-up):** `SourceCitation.page` is captured and persisted; landing the
+  file viewer ON that page needs `pageNumber` threaded through
+  `openFilePreview → filePreviewWindow overlay → PreviewPane → FileTabsBody → FilePreview →
+  PdfPreview` (the `PdfPreview`/`PdfDocumentRenderer` already accept a controlled `pageNumber`).
+  Opening the full file works today; page-precise landing is the next increment.
 
 ## Verification (real, no mocks)
 
@@ -78,14 +97,25 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 
 ## Open / follow-ups
 
+- **Page-precise deep-link:** thread `pageNumber` through the file-preview stack so a citation
+  lands the PDF on its cited page (wiring path documented above). Opening the full file works now.
+- **Chat attachment → citation file:** the legacy chat store (`users.user_flashcard_sets` via
+  `flashcardPersistenceService`) doesn't thread the attached file's `file_id`, so a deck saved
+  through THAT path can't backfill an openable file ref. The canonical `fc_*` materialization
+  path (adapter) carries the envelope; for chat attachments the generating agent should emit the
+  `fileId`/`url` in each citation (or the save path should backfill it from the attachment).
+- Non-RAG plain uploads: `CreateFromSource` is RAG-library-only; a "generate from an uploaded
+  file not yet indexed" entry point would reuse `attachSourceRefs` with that file's `fileId`.
 - Standalone activatable `trust_envelope` / `citation` content-IR kinds with dedicated render
   components (currently: field declared on card kinds + residue-carried citations + the
   `<SourceCitations/>` component render it — functionally complete, not a separate kind).
 - Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
-- `education.study_source_chunk` (0 rows, unused) remains the natural future home for
-  server-side verifiable chunk lineage if citation resolution needs to open the source in place.
 
 ## Change log
-- **2026-07-07** — P0 shipped: contract + coercers, 4 UI primitives, verify + grade-on-meaning
+- **2026-07-07 (b)** — Source-agnostic grounding + open-the-real-source: `SourceCitation` gains
+  durable `fileId`/`documentId`/`url`/`page`; `attachSourceRefs` backfill wired in
+  `CreateFromSource` + the chat/canvas adapter; `<SourceCitations/>` "Open full source" opens the
+  real file/PDF/web via `openCitationSource`. 27 passing tests.
+- **2026-07-07 (a)** — P0 shipped: contract + coercers, 4 UI primitives, verify + grade-on-meaning
   hooks/agents, generateFromSource/helpLive reference retrofits, flashcards end-to-end, brand
-  pages, 22 passing tests + live agent evals.
+  pages, tests + live agent evals.

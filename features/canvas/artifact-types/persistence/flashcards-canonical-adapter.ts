@@ -20,6 +20,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { parseFlashcards } from "@/components/mardown-display/blocks/flashcards/flashcard-parser";
 import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
+import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";
 import type {
@@ -87,6 +88,10 @@ function cardsFromStructured(set: Record<string, unknown>): NewCardInput[] {
       card_kind: optionalString(raw.card_kind) ?? "basic",
       difficulty: optionalString(raw.difficulty),
       topic: optionalString(raw.topic),
+      // P0 Trust — a chat/canvas-materialized deck keeps its grounding (citations
+      // + confidence) exactly like the from-source path; persisted on
+      // fc_card.metadata.trust by fcService.addCards.
+      trust: coerceTrustEnvelope(raw) ?? undefined,
       ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
     });
   }

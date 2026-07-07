@@ -12,7 +12,7 @@
 
 "use client";
 
-import { Quote, FileText, Link as LinkIcon } from "lucide-react";
+import { Quote, FileText, Link as LinkIcon, ExternalLink } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { SourceCitation, TrustEnvelope } from "../types";
+import { citationIsOpenable, openCitationSource } from "../open-source";
 
 const KIND_ICON = {
   url: LinkIcon,
@@ -35,7 +36,11 @@ function citationLabel(c: SourceCitation, index: number): string {
 export interface SourceCitationsProps {
   trust: TrustEnvelope | null | undefined;
   className?: string;
-  /** Optional: open the source at its locator (PDF page, transcript timestamp, URL). */
+  /**
+   * Override how a citation's source opens. By default a citation with a durable
+   * `fileId`/`url` opens the REAL source (canonical file-preview window / new
+   * tab) via `openCitationSource` — pass this only to customize.
+   */
   onOpenSource?: (citation: SourceCitation) => void;
   /** Small heading above the chips (default: "Sources"). Pass null to hide. */
   label?: string | null;
@@ -49,6 +54,11 @@ export function SourceCitations({
 }: SourceCitationsProps) {
   const citations = trust?.citations ?? [];
   if (citations.length === 0) return null;
+
+  const open = (c: SourceCitation) => {
+    if (onOpenSource) onOpenSource(c);
+    else openCitationSource(c);
+  };
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
@@ -94,13 +104,14 @@ export function SourceCitations({
                       <span className="not-italic">{c.excerpt}</span>
                     </blockquote>
                   )}
-                  {onOpenSource && (
+                  {(onOpenSource || citationIsOpenable(c)) && (
                     <button
                       type="button"
-                      onClick={() => onOpenSource(c)}
-                      className="self-start text-xs font-medium text-primary hover:underline"
+                      onClick={() => open(c)}
+                      className="inline-flex items-center gap-1 self-start text-xs font-medium text-primary hover:underline"
                     >
-                      Open source
+                      <ExternalLink className="h-3 w-3" aria-hidden />
+                      {c.url ? "Open web source" : "Open full source"}
                     </button>
                   )}
                 </div>

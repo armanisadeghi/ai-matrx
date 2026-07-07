@@ -12,7 +12,9 @@ import {
   coerceVerifyResult,
   isRefusal,
   isGrounded,
+  citationIsOpenable,
 } from "../types";
+import { attachSourceRefs } from "../grounding";
 
 describe("coerceTrustEnvelope", () => {
   it("returns null when there is no envelope at all", () => {
@@ -81,6 +83,83 @@ describe("coerceTrustEnvelope", () => {
     expect(
       isGrounded({ citations: [{ sourceId: "c", sourceKind: "chunk" }], confidence: "grounded" }),
     ).toBe(true);
+  });
+});
+
+describe("openable source references", () => {
+  it("coerces durable openable fields (fileId/documentId/url/page, snake_case tolerant)", () => {
+    const env = coerceTrustEnvelope({
+      citations: [
+        {
+          sourceId: "chunk-1",
+          sourceKind: "chunk",
+          file_id: "file-abc",
+          processed_document_id: "doc-9",
+          url: "https://example.com/x",
+          page: 12,
+        },
+      ],
+      confidence: "grounded",
+    });
+    const c = env!.citations[0];
+    expect(c.fileId).toBe("file-abc");
+    expect(c.documentId).toBe("doc-9");
+    expect(c.url).toBe("https://example.com/x");
+    expect(c.page).toBe(12);
+    expect(citationIsOpenable(c)).toBe(true);
+  });
+
+  it("a citation with only an excerpt is not openable", () => {
+    const env = coerceTrustEnvelope({
+      citations: [{ sourceId: "c", sourceKind: "chunk", excerpt: "x" }],
+      confidence: "grounded",
+    });
+    expect(citationIsOpenable(env!.citations[0])).toBe(false);
+  });
+});
+
+describe("attachSourceRefs (source-agnostic grounding backfill)", () => {
+  it("backfills durable refs + resolves each citation's page by its sourceId", () => {
+    const env = {
+      citations: [
+        { sourceId: "chunk-a", sourceKind: "chunk" as const },
+        { sourceId: "chunk-b", sourceKind: "chunk" as const, page: 5 },
+      ],
+      confidence: "grounded" as const,
+    };
+    const pages: Record<string, number> = { "chunk-a": 2, "chunk-b": 99 };
+    const out = attachSourceRefs(env, {
+      fileId: "file-1",
+      documentId: "doc-1",
+      title: "My PDF",
+      pageForCitation: (c) => pages[c.sourceId],
+    });
+    expect(out!.citations[0].fileId).toBe("file-1");
+    expect(out!.citations[0].documentId).toBe("doc-1");
+    expect(out!.citations[0].page).toBe(2);
+    expect(out!.citations[0].title).toBe("My PDF");
+    // The agent's own page wins over the backfill.
+    expect(out!.citations[1].page).toBe(5);
+  });
+
+  it("does not overwrite refs the agent already provided", () => {
+    const out = attachSourceRefs(
+      {
+        citations: [
+          { sourceId: "c", sourceKind: "url", url: "https://real", fileId: "keep" },
+        ],
+        confidence: "grounded",
+      },
+      { fileId: "override", url: "https://override" },
+    );
+    expect(out!.citations[0].fileId).toBe("keep");
+    expect(out!.citations[0].url).toBe("https://real");
+  });
+
+  it("returns the envelope untouched when there are no citations or no envelope", () => {
+    expect(attachSourceRefs(undefined, { fileId: "x" })).toBeUndefined();
+    const empty = { citations: [], confidence: "inferred" as const };
+    expect(attachSourceRefs(empty, { fileId: "x" })).toBe(empty);
   });
 });
 

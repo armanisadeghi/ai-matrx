@@ -62,6 +62,19 @@ export interface SourceCitation {
   excerpt?: string;
   /** Display label for the source (document/section title, page heading, site name). */
   title?: string;
+  // ── Durable, openable references (source-agnostic) ────────────────────────
+  // These let a citation OPEN the real source — the full file/PDF/document —
+  // not just show an excerpt. Populated by the persisting surface (it knows the
+  // durable ids the agent doesn't), never trusted from raw agent output alone.
+  // Works for ANY source: RAG docs, user-uploaded/attached files, chat, web.
+  /** Durable file id — opens the real file/PDF via the canonical file viewer. */
+  fileId?: string;
+  /** Processed-document id — opens the source document viewer (RAG/notes/etc.). */
+  documentId?: string;
+  /** External URL — opens the web source in a new tab. */
+  url?: string;
+  /** 1-based page to open the file/PDF at, when known. */
+  page?: number;
 }
 
 /**
@@ -154,10 +167,18 @@ function coerceCitation(raw: unknown): SourceCitation | null {
   )
     ? (sourceKindRaw as CitationSourceKind)
     : "chunk";
-  const locator = asString(raw.locator ?? raw.page ?? raw.position) || undefined;
+  const locator = asString(raw.locator ?? raw.position) || undefined;
   const excerpt = asString(raw.excerpt ?? raw.passage ?? raw.text) || undefined;
   const title = asString(raw.title ?? raw.source_title ?? raw.label) || undefined;
-  return { sourceId, sourceKind, locator, excerpt, title };
+  const fileId = asString(raw.fileId ?? raw.file_id) || undefined;
+  const documentId =
+    asString(raw.documentId ?? raw.document_id ?? raw.processed_document_id) ||
+    undefined;
+  const url = asString(raw.url) || undefined;
+  const pageRaw = raw.page;
+  const page =
+    typeof pageRaw === "number" && Number.isFinite(pageRaw) ? pageRaw : undefined;
+  return { sourceId, sourceKind, locator, excerpt, title, fileId, documentId, url, page };
 }
 
 /**
@@ -239,3 +260,11 @@ export const isGrounded = (e: TrustEnvelope | null | undefined): boolean =>
 
 /** The `__kind`-carried field name every education AI kind uses for the envelope. */
 export const TRUST_FIELD = "trust" as const;
+
+/**
+ * True when this citation can open a REAL source (a durable file or a url) —
+ * drives the "Open full source" affordance. Pure predicate; the opener itself
+ * lives in `open-source.ts` (it pulls the file-preview surface).
+ */
+export const citationIsOpenable = (c: SourceCitation): boolean =>
+  Boolean(c.fileId || c.url);

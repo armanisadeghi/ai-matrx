@@ -57,6 +57,7 @@ import {
 } from "@/features/rag/hooks/useDocument";
 import type { LibraryDocSummary } from "@/features/rag/types/library";
 import type { ChunkRow } from "@/features/rag/types/documents";
+import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { FC_AGENTS } from "../../data/agents";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput } from "../../data/types";
@@ -181,6 +182,16 @@ export function CreateFromSource() {
       // real cld_files row — a note/code-file source has nothing to link to.
       const fileId =
         docDetail?.source_kind === "cld_file" ? docDetail.source_id : null;
+
+      // Page lookup by the exact chunk the agent cited (so a citation opens the
+      // PDF at the right page even when the agent didn't echo a page).
+      const pageByChunkId = new Map(
+        selected.map((c) => [
+          c.chunk_id,
+          c.page_numbers?.length ? c.page_numbers[0] : undefined,
+        ]),
+      );
+
       const cards: NewCardInput[] = result.cards.map((c) => ({
         ...c,
         source: fileId
@@ -192,6 +203,17 @@ export function CreateFromSource() {
               page: c.source?.page,
             }
           : undefined,
+        // Backfill durable, OPENABLE refs onto every citation — the doc's file,
+        // the processed-document id, and the chunk's real page — so tapping a
+        // citation opens the actual source, not just an excerpt. Source-agnostic
+        // (same helper serves uploads + chat); RAG just happens to know these ids.
+        trust: attachSourceRefs(c.trust, {
+          fileId,
+          documentId: selectedDoc.id,
+          title: selectedDoc.name,
+          pageForCitation: (cit) =>
+            cit.sourceId ? pageByChunkId.get(cit.sourceId) : undefined,
+        }),
       }));
 
       const setRes = await fcService.createSetWithCards(

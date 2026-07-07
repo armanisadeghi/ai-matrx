@@ -14,12 +14,40 @@ carries ONE small shape describing how grounded it is in the learner's **own** m
 type TrustConfidence = "grounded" | "inferred" | "not_in_material";
 
 interface SourceCitation {
-  sourceId: string;                    // processed_document_id / chunk id / section id / file_id / url
+  sourceId: string;                    // chunk id / section id / doc id — the passage identity
   sourceKind: "document" | "chunk" | "section" | "file" | "url" | "scope" | "transcript" | "web";
-  locator?: string;                    // "p. 12", "0:340-0:512", "12:04", a URL
+  locator?: string;                    // "p. 12", "0:340-0:512", "12:04"
   excerpt?: string;                    // the verbatim passage it was grounded in
   title?: string;                      // display label of the source
+  // Durable, OPENABLE references — let a citation open the REAL source, not just
+  // an excerpt. The persisting surface backfills these (it knows the durable ids
+  // the agent doesn't). Source-agnostic: RAG, uploads, chat attachments, web.
+  fileId?: string;                     // durable file id → canonical file/PDF viewer
+  documentId?: string;                 // processed-document id
+  url?: string;                        // external web source
+  page?: number;                       // 1-based page to land on, when known
 }
+```
+
+### Opening the real source (not just an excerpt)
+
+A citation must let the user **go to the actual source** — the whole file/PDF/document —
+not merely read a snippet. `<SourceCitations/>` handles this: tapping a chip shows the
+excerpt popover, and when the citation carries a durable `fileId`/`url` it shows **"Open full
+source"**, which opens the real file in the canonical file-preview window (`openFilePreview`)
+or the web page in a new tab. Consumers get this for free — no wiring. Resolver:
+[`open-source.ts`](./open-source.ts) (`openCitationSource`, `citationIsOpenable`).
+
+### Source-agnostic grounding (works for ANY source)
+
+Grounding is **not** RAG-specific. Any surface that creates a grounded card backfills durable
+refs onto its citations with the shared helper [`grounding.ts`](./grounding.ts)
+(`attachSourceRefs`) — passing the `fileId` behind a RAG doc, a user-uploaded/attached file,
+or a web url, plus the page for each cited chunk. Wired today in the RAG from-source flow
+(`CreateFromSource`) and the chat/canvas materialization path
+(`flashcards-canonical-adapter` carries the envelope through). A plain uploaded file (not
+RAG-indexed) grounds the same way once its `fileId` is passed to `attachSourceRefs`.
+```ts
 
 interface TrustEnvelope {
   citations: SourceCitation[];
