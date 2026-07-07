@@ -20,6 +20,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Camera as CameraIcon,
   Check,
@@ -51,6 +52,9 @@ import { DesktopReview } from "./DesktopReview";
 
 type DesktopView = "home" | "review";
 
+/** Per-file size cap (the design's "up to 50 MB each"). */
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
+
 export default function ScannerDesktop() {
   const router = useRouter();
   const session = useScanSession();
@@ -62,6 +66,7 @@ export default function ScannerDesktop() {
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [recent, setRecent] = useState<RecentScanRow[] | null>(null);
+  const [showAllRecent, setShowAllRecent] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -75,7 +80,7 @@ export default function ScannerDesktop() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchRecentScans(9)
+    fetchRecentScans(18)
       .then((rows) => {
         if (!cancelled) setRecent(rows);
       })
@@ -93,12 +98,21 @@ export default function ScannerDesktop() {
 
   const handleFiles = useCallback(
     (files: File[]) => {
-      const accepted = files.filter(
+      const typed = files.filter(
         (f) =>
           f.type.startsWith("image/") ||
           f.type === "application/pdf" ||
           /\.(heic|heif|pdf)$/i.test(f.name),
       );
+      const oversize = typed.filter((f) => f.size > MAX_FILE_BYTES);
+      if (oversize.length > 0) {
+        toast.error(
+          oversize.length === 1
+            ? `"${oversize[0].name}" is over 50 MB — files must be 50 MB or smaller.`
+            : `${oversize.length} files are over 50 MB — files must be 50 MB or smaller.`,
+        );
+      }
+      const accepted = typed.filter((f) => f.size <= MAX_FILE_BYTES);
       if (accepted.length > 0) session.addFiles(accepted);
     },
     [session],
@@ -339,7 +353,7 @@ export default function ScannerDesktop() {
                 — drop multiple files at once
               </p>
               <p className="mt-2.5 font-mono text-[11px] text-muted-foreground/80">
-                PDF · JPG · PNG · HEIC
+                PDF · JPG · PNG · HEIC — up to 50 MB each
               </p>
             </div>
 
@@ -386,9 +400,18 @@ export default function ScannerDesktop() {
                   <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                     Recent scans
                   </p>
+                  {recent.length > 6 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllRecent((v) => !v)}
+                      className="text-[13px] font-semibold text-primary hover:underline"
+                    >
+                      {showAllRecent ? "Show less" : "View all"}
+                    </button>
+                  )}
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                  {recent.slice(0, 6).map((r) => (
+                  {recent.slice(0, showAllRecent ? recent.length : 6).map((r) => (
                     <button
                       key={r.docId}
                       type="button"

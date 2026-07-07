@@ -66,6 +66,7 @@ function toManifestItems(items: ScanItem[]): ScanManifestItem[] {
       kind: i.kind,
       source: i.source,
       fileName: i.fileName,
+      label: i.label,
       mimeType: i.mimeType,
       quad: i.quad,
       rotation: i.rotation,
@@ -96,6 +97,8 @@ export interface UseScanSessionResult {
   moveItem: (activeId: string, overId: string) => void;
   setQuad: (itemId: string, quad: Quad | null | undefined) => void;
   setRotation: (itemId: string, rotation: ScanRotation) => void;
+  /** Rename an item (display label; persisted in the manifest). */
+  setItemLabel: (itemId: string, itemLabel: string) => void;
   /** All items durable — Save may proceed. */
   allUploaded: boolean;
   uploadingCount: number;
@@ -150,6 +153,7 @@ export function useScanSession(): UseScanSessionResult {
         kind: m.kind,
         source: m.source ?? "file",
         fileName: m.fileName,
+        label: m.label,
         mimeType: m.mimeType,
         status: "uploaded" as const,
         quad: m.quad,
@@ -297,6 +301,13 @@ export function useScanSession(): UseScanSessionResult {
     [updateItem],
   );
 
+  const setItemLabel = useCallback(
+    (itemId: string, itemLabel: string) => {
+      updateItem(itemId, { label: itemLabel });
+    },
+    [updateItem],
+  );
+
   const clearAfterSave = useCallback(() => {
     blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     blobUrlsRef.current.clear();
@@ -343,6 +354,7 @@ export function useScanSession(): UseScanSessionResult {
     moveItem,
     setQuad,
     setRotation,
+    setItemLabel,
     allUploaded,
     uploadingCount,
     errorCount,

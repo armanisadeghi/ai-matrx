@@ -215,6 +215,7 @@ export function DesktopReview({
                 onCrop={onCrop}
                 onRemove={session.removeItem}
                 onRetry={session.retryItem}
+                onRename={session.setItemLabel}
               />
             ))}
             <div className="flex min-h-[240px] flex-col items-stretch justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/35 bg-primary/[0.04] p-4">
@@ -255,6 +256,7 @@ export function DesktopReview({
                     onCrop={onCrop}
                     onRemove={session.removeItem}
                     onRetry={session.retryItem}
+                    onRename={session.setItemLabel}
                   />
                 ))}
                 <button
@@ -348,12 +350,14 @@ function GridCard({
   onCrop,
   onRemove,
   onRetry,
+  onRename,
 }: {
   item: ScanItem;
   index: number;
   onCrop: (item: ScanItem) => void;
   onRemove: (itemId: string) => void;
   onRetry: (itemId: string) => void;
+  onRename: (itemId: string, label: string) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -374,9 +378,13 @@ function GridCard({
         )}
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2.5">
-        <p className="min-w-0 flex-1 truncate text-[13px] font-semibold">
-          {item.fileName}
-        </p>
+        <input
+          value={item.label ?? item.fileName}
+          onChange={(e) => onRename(item.itemId, e.target.value)}
+          placeholder="Untitled"
+          aria-label="Page name"
+          className="min-w-0 flex-1 truncate bg-transparent text-[13px] font-semibold outline-none placeholder:text-muted-foreground/50"
+        />
         <div className="flex shrink-0 gap-1.5">
           {item.kind === "image" && (
             <button
@@ -408,12 +416,14 @@ function ListRow({
   onCrop,
   onRemove,
   onRetry,
+  onRename,
 }: {
   item: ScanItem;
   index: number;
   onCrop: (item: ScanItem) => void;
   onRemove: (itemId: string) => void;
   onRetry: (itemId: string) => void;
+  onRename: (itemId: string, label: string) => void;
 }) {
   const {
     attributes,
@@ -450,7 +460,13 @@ function ListRow({
         <StatusOverlay item={item} onRetry={onRetry} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold">{item.fileName}</p>
+        <input
+          value={item.label ?? item.fileName}
+          onChange={(e) => onRename(item.itemId, e.target.value)}
+          placeholder="Untitled"
+          aria-label="Page name"
+          className="w-full truncate bg-transparent text-[15px] font-semibold outline-none placeholder:text-muted-foreground/50"
+        />
         <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
           Position {index + 1}
           {item.kind === "image" && item.quad ? " · cropped" : ""}

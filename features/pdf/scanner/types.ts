@@ -34,6 +34,8 @@ export interface ScanItem {
   kind: ScanItemKind;
   source: ScanItemSource;
   fileName: string;
+  /** User-editable display name (Review rename). Falls back to fileName. */
+  label?: string;
   mimeType: string;
   /** Object/data URL for thumbnails. Session-local, never persisted. */
   previewUrl?: string;
@@ -56,6 +58,7 @@ export interface ScanManifestItem {
   /** Optional for manifests written before source tracking (defaults to "file"). */
   source?: ScanItemSource;
   fileName: string;
+  label?: string;
   mimeType: string;
   quad?: Quad | null;
   rotation: ScanRotation;
