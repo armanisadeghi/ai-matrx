@@ -16,6 +16,7 @@
  * kind. That is the whole point of a compiled floor.
  */
 
+import type { JsonObject } from "@/types/json";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
 
 export interface SystemComponentEntry {
@@ -26,7 +27,7 @@ export interface SystemComponentEntry {
   /** The legacy block type string the unified renderer routes on. */
   componentKey: string;
   source: "bundled";
-  config: Record<string, unknown>;
+  config: JsonObject;
 }
 
 let cache: SystemComponentEntry[] | null = null;

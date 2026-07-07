@@ -36,7 +36,7 @@ export interface KindComponentProjection {
   componentKey: string;
   source: string;
   isActive: boolean;
-  config: Record<string, unknown>;
+  config: JsonObject;
 }
 
 /**
@@ -45,10 +45,8 @@ export interface KindComponentProjection {
  * a real data defect upstream), never a throw — one malformed row must not
  * take down the resolver warm load.
  */
-function asConfigRecord(value: Json, kind: string): Record<string, unknown> {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
+function asConfigRecord(value: Json, kind: string): JsonObject {
+  if (isJsonObject(value)) return value;
   if (value !== null) {
     console.warn(
       `[content_ir] kind_component config for "${kind}" is not a JSON object — ignored.`,

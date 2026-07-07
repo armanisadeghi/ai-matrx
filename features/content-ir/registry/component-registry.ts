@@ -27,6 +27,7 @@
 // initializes the cycle in the safe order.
 import "./kind-registry";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import type { JsonObject } from "@/types/json";
 import {
   listKindComponentsFromTables,
   type KindComponentProjection,
@@ -44,7 +45,7 @@ export interface ComponentResolution {
   componentKey: string;
   /** `source` column vocabulary: "bundled" | "db" (db = web sandbox only). */
   source: string;
-  config: Record<string, unknown>;
+  config: JsonObject;
   /**
    * Render-trust verdict (R6). Compiled entries are always active (trusted
    * at bootstrap); DB rows carry their own `is_active`.
