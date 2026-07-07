@@ -27,7 +27,7 @@ BEGIN;
 -- 1. SKILL — skill.definition (skill_id = 'math-problem')
 -- ===========================================================================
 -- Composite-unique table → insert only when the global row is absent, else
--- refresh the mutable teaching columns. (No ON CONFLICT: the unique is
+-- insert-once — re-applying is a no-op when the row exists. (The guard is
 -- (skill_id,user_id,organization_id,project_id), not (skill_id).)
 
 INSERT INTO skill.definition (

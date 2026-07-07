@@ -25,7 +25,7 @@ BEGIN;
 -- 1. SKILL  →  skill.definition
 -- ============================================================================
 -- The body + description live once in a TEMP table so the INSERT (first apply) and the
--- UPDATE (re-apply refresh) share the exact same text — no duplicated literal, no self-
+-- body is defined once — no duplicated literal, no self-
 -- referencing no-op. The TEMP table is dropped at COMMIT.
 
 CREATE TEMP TABLE _rb_research_skill ON COMMIT DROP AS

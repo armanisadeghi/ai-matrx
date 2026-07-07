@@ -21,7 +21,7 @@
 --
 -- Idempotent. Schema-qualified. Do NOT wrap in ON CONFLICT for skill.definition
 --   (composite unique (skill_id,user_id,organization_id,project_id) — insert
---   guarded by NOT EXISTS, then an UPDATE refreshes the body on re-apply).
+--   guarded by NOT EXISTS; insert-once, so re-applying is a no-op when the row exists).
 
 BEGIN;
 

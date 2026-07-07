@@ -30,7 +30,8 @@ BEGIN;
 -- ============================================================================
 -- Composite unique is (skill_id,user_id,organization_id,project_id); the system/global row
 -- has user_id/project_id/task_id NULL and organization_id = the global org. Insert only if
--- the global row is absent, then UPDATE to refresh the body on re-apply (no ON CONFLICT).
+-- the global row is absent. Insert-once: re-applying is a no-op when the row exists
+-- (edit the live row or regenerate via `pnpm shape:skill` to change the body).
 
 INSERT INTO skill.definition (
     skill_id, label, description, skill_type, body, icon_name,

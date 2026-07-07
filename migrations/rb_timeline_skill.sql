@@ -19,7 +19,7 @@ BEGIN;
 -- ============================================================================
 -- SKILL → skill.definition (skill_id = 'timeline-block')
 -- Composite unique (skill_id,user_id,organization_id,project_id): insert-if-absent,
--- then mirror the body on re-apply so re-running refreshes content.
+-- insert-once: re-running is a no-op when the row exists (no body refresh).
 -- ============================================================================
 
 INSERT INTO skill.definition (

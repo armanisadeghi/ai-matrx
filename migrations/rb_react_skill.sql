@@ -21,7 +21,7 @@ BEGIN;
 -- ============================================================================
 -- Composite unique key is (skill_id, user_id, organization_id, project_id), so we
 -- INSERT ... SELECT ... WHERE NOT EXISTS (NOT ON CONFLICT (skill_id)), then a
--- mirroring UPDATE refreshes the body on re-apply.
+-- insert-once: re-applying is a no-op when the global row exists (no body refresh).
 
 INSERT INTO skill.definition (
   skill_id, label, description, skill_type, body, icon_name,

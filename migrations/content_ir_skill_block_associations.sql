@@ -42,9 +42,11 @@
 -- Section 1 — REQUIRES ARMAN APPROVAL: register the direction pair (neutral)
 -- ============================================================================
 -- Neutral registration: container_side='none' (no access cascade — these are
--- platform-global builtins), conveys_max left at the column default. Adjust
--- conveyance in /administration/relationships if this relationship should convey
--- access. Idempotent: PK is (source_type, target_type, label); label NULL.
+-- platform-global builtins), conveys_max='viewer' (least privilege; moot under
+-- container_side='none' — the column default is 'editor', which we deliberately
+-- do NOT use). Adjust direction/conveyance in /administration/relationships if
+-- this relationship should convey access. Idempotent: PK is
+-- (source_type, target_type, label); label NULL.
 --
 INSERT INTO platform.association_types (source_type, target_type, label, container_side, conveys_max, is_active, notes)
 SELECT 'content_block', 'skill', NULL, 'none', 'viewer', true,
