@@ -9,6 +9,15 @@
 // (member → container). The container is the TARGET; the resource is the SOURCE.
 // `room` maps to the registry token `war_room`; `thread` maps to `thread`.
 //
+// DIRECTION DOCTRINE (platform-wide): little points to big — content = source,
+// container = target, as declared in `platform.association_types`. One assignment
+// type inverts the container relationship: a PROJECT assigned to a room is not
+// content *inside* the room — the project is the BIGGER thing the room belongs
+// to. Its canonical edge is therefore `war_room → project` (room = source).
+// `REVERSED_ASSIGNMENT_TYPES` routes those through flipped read/write paths;
+// a DB trigger (`trg_associations_auto_orient`) additionally flips any stray
+// wrong-way write, loudly.
+//
 // `platform.associations` is NOT PostgREST-exposed, so the browser reaches it
 // ONLY through the public SECURITY-DEFINER `assoc_*` RPCs — and per doctrine the
 // SOLE chokepoint for those RPCs is `features/scopes/service/associationsService`.
@@ -32,6 +41,7 @@ import { associationsService } from "@/features/scopes/service/associationsServi
 import { isContentSourceEdge } from "@/features/scopes/service/associationEdges";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
+  AssociationSourceEdge,
   AssociationTargetEdge,
   AssociationTargetType,
   ScopesRpcError,
@@ -74,6 +84,42 @@ export function entityToSource(t: string): string {
 }
 export function sourceToEntity(t: string): string {
   return t === "file" ? "user_file" : t;
+}
+
+/**
+ * Assignment types whose canonical edge is CONTAINER → entity (the entity is
+ * the bigger thing the container belongs to — direction doctrine: little
+ * points to big). For these, the room/thread is the edge SOURCE.
+ */
+const REVERSED_ASSIGNMENT_TYPES: ReadonlySet<string> = new Set(["project"]);
+
+interface EdgeArgs {
+  sourceType: string;
+  sourceId: string;
+  targetType: AssociationTargetType;
+  targetId: string;
+}
+
+/** Canonical edge endpoints for one (container, entity) assignment. */
+function edgeArgsFor(
+  ref: ContainerRef,
+  entityType: string,
+  entityId: string,
+): EdgeArgs {
+  if (REVERSED_ASSIGNMENT_TYPES.has(entityType)) {
+    return {
+      sourceType: containerTargetType(ref.type),
+      sourceId: ref.id,
+      targetType: entityToSource(entityType) as AssociationTargetType,
+      targetId: entityId,
+    };
+  }
+  return {
+    sourceType: entityToSource(entityType),
+    sourceId: entityId,
+    targetType: containerTargetType(ref.type),
+    targetId: ref.id,
+  };
 }
 
 /** A thrown error that preserves the canonical RPC's error code for callers. */
@@ -130,6 +176,28 @@ function edgeToAssignment(
   };
 }
 
+/** Reconstruct an assignment from a REVERSED edge (container = source). */
+function reversedEdgeToAssignment(
+  edge: AssociationSourceEdge,
+  containerType: WarRoomContainerType,
+  containerId: string,
+): WarRoomAssignment {
+  const md = edge.metadata ?? {};
+  return {
+    id: edge.id,
+    container_type: containerType,
+    container_id: containerId,
+    entity_type: sourceToEntity(edge.targetType),
+    entity_id: edge.targetId,
+    position: metaNumber(md, "position", 0),
+    is_active: metaBool(md, "is_active", true),
+    label: edge.label,
+    metadata: edge.metadata,
+    created_by: null,
+    created_at: edge.createdAt,
+  };
+}
+
 function byPosition(a: WarRoomAssignment, b: WarRoomAssignment): number {
   const pa = a.position ?? 0;
   const pb = b.position ?? 0;
@@ -175,14 +243,24 @@ export async function listAssignmentsForContainers(
   const threadIds = refs.filter((r) => r.type === "thread").map((r) => r.id);
   const roomIds = refs.filter((r) => r.type === "room").map((r) => r.id);
 
-  // One RPC per container type (1-2 round-trips total), run in parallel.
-  const [threadRes, roomRes] = await Promise.all([
+  // Normal edges (entity → container) plus REVERSED edges (container → project),
+  // one RPC per direction per container type, all in parallel.
+  const reversedTypes = Array.from(REVERSED_ASSIGNMENT_TYPES);
+  const [threadRes, roomRes, ...reversedRes] = await Promise.all([
     threadIds.length > 0
       ? associationsService.listForTargets("thread", threadIds)
       : null,
     roomIds.length > 0
       ? associationsService.listForTargets("war_room", roomIds)
       : null,
+    ...reversedTypes.flatMap((t) => [
+      threadIds.length > 0
+        ? associationsService.listForSources("thread", threadIds, t)
+        : null,
+      roomIds.length > 0
+        ? associationsService.listForSources("war_room", roomIds, t)
+        : null,
+    ]),
   ]);
 
   const out: WarRoomAssignment[] = [];
@@ -198,6 +276,14 @@ export async function listAssignmentsForContainers(
       if (isContentEdge(e)) out.push(edgeToAssignment(e, "room"));
     }
   }
+  reversedRes.forEach((res, i) => {
+    if (!res) return;
+    if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
+    const containerType: WarRoomContainerType = i % 2 === 0 ? "thread" : "room";
+    for (const e of res.data.edges) {
+      out.push(reversedEdgeToAssignment(e, containerType, e.sourceId));
+    }
+  });
   return out.sort(byPosition);
 }
 
@@ -205,15 +291,24 @@ export async function listAssignmentsForContainers(
 export async function listAssignmentsForContainer(
   ref: ContainerRef,
 ): Promise<WarRoomAssignment[]> {
-  const res = await associationsService.listForTargets(
-    containerTargetType(ref.type),
-    [ref.id],
-  );
+  const containerToken = containerTargetType(ref.type);
+  const [res, ...reversedRes] = await Promise.all([
+    associationsService.listForTargets(containerToken, [ref.id]),
+    ...Array.from(REVERSED_ASSIGNMENT_TYPES).map((t) =>
+      associationsService.listForSources(containerToken, [ref.id], t),
+    ),
+  ]);
   if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
-  return res.data.edges
+  const out = res.data.edges
     .filter(isContentEdge)
-    .map((e) => edgeToAssignment(e, ref.type))
-    .sort(byPosition);
+    .map((e) => edgeToAssignment(e, ref.type));
+  for (const r of reversedRes) {
+    if (isScopesRpcErr(r)) throw new WarRoomAssocError(r.error);
+    for (const e of r.data.edges) {
+      out.push(reversedEdgeToAssignment(e, ref.type, ref.id));
+    }
+  }
+  return out.sort(byPosition);
 }
 
 // ── Writes ────────────────────────────────────────────────────────────
@@ -242,7 +337,6 @@ export async function createAssignment(
   const { ref, entityType, entityId } = input;
   const single = SINGLE_ACTIVE_ENTITY_TYPES.has(entityType);
   const makeActive = input.makeActive ?? true;
-  const targetType = containerTargetType(ref.type);
 
   const existing = await listAssignmentsForContainer(ref);
   const already = existing.find(
@@ -275,10 +369,7 @@ export async function createAssignment(
     await Promise.all(
       demote.map((a) =>
         associationsService.add({
-          sourceType: entityToSource(a.entity_type),
-          sourceId: a.entity_id,
-          targetType,
-          targetId: ref.id,
+          ...edgeArgsFor(ref, a.entity_type, a.entity_id),
           orgId,
           label: a.label ?? undefined,
           metadata: mergeMeta(a.metadata, { is_active: false }),
@@ -292,10 +383,7 @@ export async function createAssignment(
     { is_active: isActive, position },
   );
   const res = await associationsService.add({
-    sourceType: entityToSource(entityType),
-    sourceId: entityId,
-    targetType,
-    targetId: ref.id,
+    ...edgeArgsFor(ref, entityType, entityId),
     orgId,
     label: input.label ?? undefined,
     metadata,
@@ -323,7 +411,6 @@ export async function setActiveAssignment(
   entityType: string,
   entityId: string,
 ): Promise<void> {
-  const targetType = containerTargetType(ref.type);
   const orgId = await resolveContainerOrgId(ref);
   const sameType = (await listAssignmentsForContainer(ref)).filter(
     (a) => a.entity_type === entityType,
@@ -332,10 +419,7 @@ export async function setActiveAssignment(
   const results = await Promise.all(
     sameType.map((a) =>
       associationsService.add({
-        sourceType: entityToSource(a.entity_type),
-        sourceId: a.entity_id,
-        targetType,
-        targetId: ref.id,
+        ...edgeArgsFor(ref, a.entity_type, a.entity_id),
         orgId,
         label: a.label ?? undefined,
         metadata: mergeMeta(a.metadata, {
@@ -355,12 +439,9 @@ export async function removeAssignmentByEntity(
   entityType: string,
   entityId: string,
 ): Promise<void> {
-  const res = await associationsService.remove({
-    sourceType: entityToSource(entityType),
-    sourceId: entityId,
-    targetType: containerTargetType(ref.type),
-    targetId: ref.id,
-  });
+  const res = await associationsService.remove(
+    edgeArgsFor(ref, entityType, entityId),
+  );
   if (isScopesRpcErr(res)) throw new WarRoomAssocError(res.error);
 }
 
@@ -376,14 +457,10 @@ export async function copyContainerAssignments(
   const source = await listAssignmentsForContainer(from);
   if (source.length === 0) return [];
   const orgId = await resolveContainerOrgId(to);
-  const targetType = containerTargetType(to.type);
   const copied: WarRoomAssignment[] = [];
   for (const a of source) {
     const res = await associationsService.add({
-      sourceType: entityToSource(a.entity_type),
-      sourceId: a.entity_id,
-      targetType,
-      targetId: to.id,
+      ...edgeArgsFor(to, a.entity_type, a.entity_id),
       orgId,
       label: a.label ?? undefined,
       metadata: a.metadata ?? {},

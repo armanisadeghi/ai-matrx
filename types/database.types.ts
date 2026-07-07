@@ -23028,6 +23028,7 @@ export type Database = {
           is_active: boolean
           label: string
           notes: string
+          reverse_edge_count: number
           source_type: string
           target_type: string
           updated_at: string

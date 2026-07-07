@@ -39,7 +39,7 @@ Every `sourceType`/`targetType` MUST be a **canonical `EntityTypeToken`** — ge
 
 ## Recipe A — Replace a bespoke M2M / association RPC with `associationsService`
 
-**Direction is canonical and fixed: the RESOURCE is the source, the CONTAINER is the target.** `task → organization`, `file → scope`, `note → project`. (Same direction as scope-tagging; a container's attached resources are its INCOMING edges.)
+**Direction is canonical and fixed: little points to big — the RESOURCE/child is the source, the CONTAINER is the target.** `task → organization`, `file → scope`, `note → project`, `war_room → project`. (Same direction as scope-tagging; a container's attached resources are its INCOMING edges.) The registry `platform.association_types` is the single truth of direction per pair; `trg_associations_auto_orient` loudly flips a wrong-way write of a registered pair, and `/administration/relationships` flags reversed edges — but write the canonical direction yourself; the trigger is a net, not the mechanism. When the caller holds the container and the "assigned" entity is the BIGGER thing (a project picked for a war room), flip the args — precedent: `REVERSED_ASSIGNMENT_TYPES` in `features/war-room/service/associations.ts`.
 
 1. **Identify the edge.** What two entities does the junction/RPC relate, and which is the container? Map both to canonical tokens.
 2. **Replace writes:**

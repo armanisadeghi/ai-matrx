@@ -20,6 +20,8 @@ import {
   ListFilter,
   Lock,
   LockOpen,
+  MoveRight,
+  TriangleAlert,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -154,6 +156,11 @@ export default function RelationshipManagerClient({
       return hay.toLowerCase().includes(q);
     });
   }, [rules, filter, query]);
+
+  const reversedRuleCount = useMemo(
+    () => rules.filter((r) => r.is_active && r.reverse_edge_count > 0).length,
+    [rules],
+  );
 
   const editorFlipsToConveying =
     editor !== null &&
@@ -305,6 +312,33 @@ export default function RelationshipManagerClient({
         </div>
       </div>
 
+      {/* Direction doctrine — the one convention every rule must follow */}
+      <div className="flex items-start gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+        <MoveRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        <span>
+          <span className="font-medium text-foreground">
+            Direction convention: little points to big.
+          </span>{" "}
+          The <span className="font-medium text-foreground">source</span> is
+          the content/child; the{" "}
+          <span className="font-medium text-foreground">target</span> is its
+          container (a task points to its project). Container side{" "}
+          <span className="font-mono">target</span> is the norm —{" "}
+          <span className="font-mono">source</span> means the edge is stored
+          big→little and is a deliberate, documented exception. Wrong-way
+          writes are auto-flipped to the registered direction at the DB
+          (loudly), and rows below flag any reversed edges in the data.
+        </span>
+      </div>
+
+      {reversedRuleCount > 0 ? (
+        <div className="rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {reversedRuleCount} rule(s) have wrong-way edges in the data
+          (flagged below). Find the writer and fix it — the auto-orient
+          trigger only protects writes made after 2026-07-06.
+        </div>
+      ) : null}
+
       {enforcementOn && unregisteredCount > 0 ? (
         <div className="rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">
           Enforcement is ON but {unregisteredCount} unregistered pair(s) exist
@@ -377,7 +411,32 @@ export default function RelationshipManagerClient({
                   }
                 >
                   <TableCell className="max-w-xl">
-                    <span className="text-sm">{ruleSentence(rule)}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm">{ruleSentence(rule)}</span>
+                      <span className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+                        <DirectionChip
+                          token={rule.source_type}
+                          isContainer={rule.container_side === "source"}
+                        />
+                        <MoveRight className="h-3 w-3" />
+                        <DirectionChip
+                          token={rule.target_type}
+                          isContainer={rule.container_side === "target"}
+                        />
+                        {rule.container_side === "source" ? (
+                          <span className="ml-1 text-amber-600 dark:text-amber-500">
+                            big→little — deliberate exception
+                          </span>
+                        ) : null}
+                        {rule.reverse_edge_count > 0 ? (
+                          <Badge variant="destructive" className="ml-1 gap-1">
+                            <TriangleAlert className="h-3 w-3" />
+                            {rule.reverse_edge_count} wrong-way edge
+                            {rule.reverse_edge_count === 1 ? "" : "s"}
+                          </Badge>
+                        ) : null}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {!rule.is_active ? (
@@ -500,16 +559,21 @@ export default function RelationshipManagerClient({
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium">Container side</span>
+                <p className="text-xs text-muted-foreground">
+                  Convention: the edge is stored little→big, so the{" "}
+                  <span className="font-medium text-foreground">target</span>{" "}
+                  ({tokenLabel(editor.targetType)}) is normally the container.
+                </p>
                 {(
                   [
                     ["none", "Neither — just a known relationship"],
                     [
-                      "source",
-                      `${tokenLabel(editor.sourceType)} is the container`,
+                      "target",
+                      `${tokenLabel(editor.targetType)} is the container (convention)`,
                     ],
                     [
-                      "target",
-                      `${tokenLabel(editor.targetType)} is the container`,
+                      "source",
+                      `${tokenLabel(editor.sourceType)} is the container — against convention (big→little); only by explicit design`,
                     ],
                   ] as const
                 ).map(([side, label]) => (
@@ -517,14 +581,23 @@ export default function RelationshipManagerClient({
                     key={side}
                     variant={editor.containerSide === side ? "default" : "outline"}
                     size="sm"
-                    className="justify-start"
+                    className={`justify-start ${side === "source" && editor.containerSide !== "source" ? "border-amber-500/50 text-amber-700 dark:text-amber-500" : ""}`}
                     onClick={() =>
                       setEditor({ ...editor, containerSide: side })
                     }
                   >
+                    {side === "source" ? (
+                      <TriangleAlert className="mr-1.5 h-3.5 w-3.5" />
+                    ) : null}
                     {label}
                   </Button>
                 ))}
+                {editor.containerSide === "source" ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    This declares the edge stored big→little. Every writer
+                    must store it that way, and the notes field must say why.
+                  </p>
+                ) : null}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -642,6 +715,29 @@ export default function RelationshipManagerClient({
 }
 
 // ---------------------------------------------------------------------------
+
+/** Source/target token chip; the container side gets the visual weight. */
+function DirectionChip({
+  token,
+  isContainer,
+}: {
+  token: string;
+  isContainer: boolean;
+}) {
+  return (
+    <span
+      className={
+        isContainer
+          ? "rounded bg-primary/10 px-1 py-0.5 font-medium text-primary"
+          : "rounded bg-muted px-1 py-0.5"
+      }
+      title={isContainer ? "container (receives shares; conveys to contents)" : "content"}
+    >
+      {isContainer ? <Boxes className="mr-0.5 inline h-3 w-3" /> : null}
+      {token}
+    </span>
+  );
+}
 
 function StatusTile({
   label,
