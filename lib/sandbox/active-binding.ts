@@ -26,16 +26,19 @@
  *      when `sourceFeature === "code-editor"`.
  *   4. None → returns `null` → the capability is omitted → multi-tenant aidream.
  *
- * Liveness tombstone: a bound box can EXPIRE long after selection, and the
- * stored ref carries no liveness signal. When a token mint reports the box is
- * terminally gone (409 / "not running" / "status: expired|stopped|failed"), we
- * tombstone its rowId (`markSandboxDead`). `resolveAgentSandboxRef` then refuses
- * to resolve it at every level — which suppresses BOTH the binding AND the
- * `ec2-dedicated` server routing — so the turn (and every new conversation that
- * would otherwise inherit the surface-default corpse) falls back to the global
- * server instead of POSTing to a dead EC2 host (502 + CORS). The mint runs
- * before the AI stream in the same turn, so tombstoning in turn N protects
- * turn N. A successful mint or `clearSandboxBindingCache` (re-attach) clears it.
+ * Liveness suppression (self-healing): a bound box can go momentarily
+ * unmintable (mid-restart/migration, or a stale 60s DB status snapshot the mint
+ * route 409s on) or terminally expire long after selection, and the stored ref
+ * carries no liveness signal. On a mint failure we suppress its rowId for a
+ * BOUNDED cooldown (`markSandboxDead`) — `resolveAgentSandboxRef` then refuses
+ * to resolve it at every level, suppressing BOTH the binding AND the
+ * `ec2-dedicated` server routing, so the turn falls back to the global server
+ * instead of POSTing to a dead EC2 host (502 + CORS). The mint runs before the
+ * AI stream in the same turn, so suppressing in turn N protects turn N. Crucial
+ * difference from the old design: the window EXPIRES — after the cooldown the
+ * next turn retries the mint and a success clears it, so a box that recovered
+ * self-heals with NO manual re-attach (a transient blip must never drop the
+ * binding for the whole session — that was the "filesystem vanished" bug).
  *
  * The override and each per-surface entry store `{ rowId, proxyUrl, tier }`
  * together, so the common path needs no extra fetch. The access token is
@@ -115,27 +118,71 @@ const REFRESH_LEEWAY_SECONDS = 30;
  * stream fires (runAiStream) within the same turn, so marking dead here in turn
  * N stops the stream in turn N from ever reaching the dead host.
  */
-const DEAD_SANDBOXES = new Map<string, string>();
-
-/** Substrings in a mint failure body that mean the box is terminally gone. */
-const TERMINAL_STATUS_RE =
-  /not running|status:\s*(expired|stopped|terminated|failed|deleted|gone)/i;
+interface DeadEntry {
+  reason: string;
+  /** Unix epoch seconds. The box is suppressed only UNTIL this moment. */
+  until: number;
+}
+const DEAD_SANDBOXES = new Map<string, DeadEntry>();
 
 /**
- * Mark a box terminally dead so the resolver stops routing/binding to it for
- * the rest of the session. Loud + idempotent.
+ * A tombstone is a SUPPRESSION WINDOW, never a permanent verdict.
+ *
+ * The original design marked a box dead for the WHOLE session and — because
+ * `resolveAgentSandboxRef` short-circuits dead boxes BEFORE minting — the only
+ * clear paths (`clearSandboxBindingCache`, or a successful mint) were both
+ * unreachable. A single transient failure (a box mid-restart/migration, or a
+ * stale 60s DB status snapshot the mint route 409s on) therefore dropped the
+ * sandbox binding for every remaining turn, silently degrading the agent to
+ * the multi-tenant VFS — the "my filesystem vanished mid-conversation" bug.
+ *
+ * Now every tombstone carries a cooldown. After it elapses, `isSandboxDead`
+ * lets the resolver try a fresh mint; a success clears the entry entirely, so
+ * a box that recovered self-heals on the next turn — NO manual re-attach.
+ * Transient/ambiguous signals get a short window; clearly-terminal ones a
+ * longer one (still bounded, since a re-created box gets a new rowId anyway).
  */
-export function markSandboxDead(rowId: string, reason: string): void {
-  if (DEAD_SANDBOXES.has(rowId)) return;
-  DEAD_SANDBOXES.set(rowId, reason);
+const DEAD_COOLDOWN_TRANSIENT_SEC = 15;
+const DEAD_COOLDOWN_TERMINAL_SEC = 60;
+
+/** Mint-failure bodies that mean the box is genuinely gone (not a transient blip). */
+const TERMINAL_STATUS_RE =
+  /status:\s*(expired|terminated|failed|deleted|gone)/i;
+
+/**
+ * Suppress a box for a bounded cooldown so the resolver stops binding/routing
+ * to it — then lets it self-heal. Loud. Repeated failures refresh the window
+ * (and never shorten a longer one already in place).
+ */
+export function markSandboxDead(
+  rowId: string,
+  reason: string,
+  cooldownSec: number = DEAD_COOLDOWN_TRANSIENT_SEC,
+): void {
+  const until = nowSec() + cooldownSec;
+  const existing = DEAD_SANDBOXES.get(rowId);
+  DEAD_SANDBOXES.set(rowId, {
+    reason,
+    until: existing ? Math.max(existing.until, until) : until,
+  });
   console.warn(
-    `${LOG} ⚰️ box ${rowId} marked DEAD (${reason}). It will no longer be bound or routed to this session — turns fall back to the global server. Re-attach a live box to use sandbox tools again.`,
+    `${LOG} ⚰️ box ${rowId} suppressed for ~${cooldownSec}s (${reason}). Sandbox tools + ec2 routing fall back to the global server until the window elapses, then it self-heals on the next turn if the box is live again — no manual re-attach.`,
   );
 }
 
-/** True if the box was learned to be terminally dead this session. */
+/**
+ * True only while a box is inside its suppression window. Once the cooldown
+ * has elapsed the entry is dropped and this returns false, so the very next
+ * turn attempts a fresh mint and the binding self-heals on success.
+ */
 export function isSandboxDead(rowId: string): boolean {
-  return DEAD_SANDBOXES.has(rowId);
+  const entry = DEAD_SANDBOXES.get(rowId);
+  if (!entry) return false;
+  if (entry.until <= nowSec()) {
+    DEAD_SANDBOXES.delete(rowId);
+    return false;
+  }
+  return true;
 }
 
 function nowSec(): number {
@@ -174,9 +221,9 @@ export function resolveAgentSandboxRef(
   // must NEVER resolve again — otherwise a new conversation re-inherits the
   // corpse and routes its turn to a dead host. Skip dead refs at every level.
   const live = (ref: ResolvedSandboxRef): ResolvedSandboxRef | null => {
-    if (DEAD_SANDBOXES.has(ref.rowId)) {
+    if (isSandboxDead(ref.rowId)) {
       console.warn(
-        `${LOG} skipping bound box ${ref.rowId} for conversation ${conversationId ?? "(none)"} — it is dead (${DEAD_SANDBOXES.get(ref.rowId)}). Falling back to the global server.`,
+        `${LOG} skipping bound box ${ref.rowId} for conversation ${conversationId ?? "(none)"} — suppressed (${DEAD_SANDBOXES.get(ref.rowId)?.reason ?? "unknown"}). Falling back to the global server until the cooldown elapses; it retries automatically.`,
       );
       return null;
     }
@@ -263,12 +310,23 @@ async function fetchAccessToken(
     console.error(
       `${LOG} ❌ token mint FAILED for box ${sandboxRowId}: HTTP ${resp.status} ${resp.statusText}. The agent will get NO sandbox tools this turn. Server said: ${body}`,
     );
-    // A 409 "Sandbox is not running (status: expired)" (or any terminal status)
-    // means this box is gone for good — tombstone it so the resolver stops
-    // binding it AND stops routing turns to its dead EC2 host. A transient 5xx
-    // / network error is NOT terminal, so we only tombstone on a clear signal.
+    // Suppress the box briefly so we don't bind/route to it while it's
+    // unmintable. CRUCIAL: distinguish transient from terminal. The mint route
+    // 409s on any status outside {ready,running,starting} — which includes
+    // transient states (creating, a box mid-restart/migration, or a stale 60s
+    // DB status snapshot). Treating a bare 409 as terminal-for-the-session was
+    // the bug: a momentary blip permanently dropped the binding. Only a body
+    // with a clearly-terminal status gets the long window; everything else
+    // (bare 409, "not running", a transient status) gets a short one and
+    // self-heals on the next turn once the box is live again. A transient 5xx /
+    // network error is NOT suppressed at all (handled above / retried next turn).
     if (resp.status === 409 || TERMINAL_STATUS_RE.test(body)) {
-      markSandboxDead(sandboxRowId, `mint HTTP ${resp.status}: ${body}`);
+      const terminal = TERMINAL_STATUS_RE.test(body);
+      markSandboxDead(
+        sandboxRowId,
+        `mint HTTP ${resp.status}: ${body}`,
+        terminal ? DEAD_COOLDOWN_TERMINAL_SEC : DEAD_COOLDOWN_TRANSIENT_SEC,
+      );
     }
     return null;
   }
