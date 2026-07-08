@@ -146,6 +146,43 @@ export async function parseHttpError(response: Response): Promise<BackendApiErro
         });
     }
 
+    // FastAPI 422 validation shape: { detail: [{ loc, msg, type }, ...] }
+    if (Array.isArray(body.detail)) {
+        const first = body.detail[0] as Record<string, unknown> | undefined;
+        const firstMsg = first && typeof first.msg === 'string' ? first.msg : null;
+        return new BackendApiError({
+            code: statusToCode(status),
+            detail: firstMsg ? `Validation error: ${firstMsg}` : JSON.stringify(body.detail),
+            userMessage: firstMsg || `Request failed (${status})`,
+            details: body.detail,
+            status,
+        });
+    }
+
+    // FastAPI HTTPException with structured detail: { detail: { code?, error?, message?, user_message?, ... } }
+    if (typeof body.detail === 'object' && body.detail !== null && !Array.isArray(body.detail)) {
+        const d = body.detail as Record<string, unknown>;
+        const code =
+            (typeof d.code === 'string' && d.code) ||
+            (typeof d.error === 'string' && d.error) ||
+            statusToCode(status);
+        const message =
+            (typeof d.message === 'string' && d.message) ||
+            (typeof d.detail === 'string' && d.detail) ||
+            `HTTP ${status}`;
+        return new BackendApiError({
+            code: code as BackendErrorCode,
+            detail: message,
+            userMessage:
+                (typeof d.user_message === 'string' && d.user_message) ||
+                (typeof d.user_visible_message === 'string' && d.user_visible_message) ||
+                message,
+            details: d.details ?? d,
+            requestId: typeof d.request_id === 'string' ? d.request_id : undefined,
+            status,
+        });
+    }
+
     // Legacy: flat { error: string, message: string } or { detail: string }
     return new BackendApiError({
         code: typeof body.error === 'string' ? body.error : statusToCode(status),

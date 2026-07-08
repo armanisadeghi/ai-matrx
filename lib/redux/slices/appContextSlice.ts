@@ -155,6 +155,27 @@ const appContextSlice = createSlice({
       state.task_name = null;
     },
     /**
+     * Add ONE scope to the active context — purely ADDITIVE. Never evicts
+     * other scopes, including scopes of the same scope type (active context is
+     * MULTI-SCOPE by design — see the scope_selections doc above), and never
+     * resets project/task (it's a refinement, not a cascade).
+     */
+    addActiveScope: (state, action: PayloadAction<string>) => {
+      state.scope_selections[action.payload] = action.payload;
+    },
+    /**
+     * Remove ONE scope from the active context. Tolerates legacy type-keyed
+     * entries (key = scope_type_id, value = scope_id) by matching values too.
+     * Never resets project/task.
+     */
+    removeActiveScope: (state, action: PayloadAction<string>) => {
+      for (const [k, v] of Object.entries(state.scope_selections)) {
+        if (k === action.payload || v === action.payload) {
+          delete state.scope_selections[k];
+        }
+      }
+    },
+    /**
      * Set the active scope TYPES that have no specific scope chosen (the "whole
      * dimension is in play" case). Surface A only. Independent of
      * scope_selections — does NOT touch chosen scopes, project, or task.
@@ -265,6 +286,8 @@ export const {
   setOrganization,
   setPersonalOrganization,
   setScopeSelections,
+  addActiveScope,
+  removeActiveScope,
   setActiveScopeTypes,
   setProject,
   setTask,

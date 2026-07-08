@@ -14,16 +14,13 @@ const initialState: AgentContextMenuCacheState = {
 };
 
 /**
- * Stores raw agent.context_menu_view rows fetched server-side via
- * get_ssr_agent_shell_data() RPC (additive companion to the legacy
- * get_ssr_shell_data() RPC). Populated once at hydration time from
- * the SSR shell data call — DeferredShellData writes here in parallel
- * with the legacy contextMenuCache.
- *
- * The Phase 3 useUnifiedAgentContextMenu hook prefers this slice as its
- * "warm" signal so first-paint avoids waiting on the legacy view during
- * the prompts→agents migration. Once the legacy prompt system is removed
- * (Phase 18), this slice becomes the sole context-menu SSR cache.
+ * Cache for raw agent.context_menu_view rows. The planned "warm signal" read
+ * in useUnifiedAgentContextMenu was never wired — the v2/v3 menu fetches on
+ * open via /api/agent-context-menu (fetchUnifiedMenu thunk). The dead
+ * DeferredShellData preload (and its get_ssr_agent_shell_data RPC call) was
+ * removed 2026-07-07 (D25 residual cleanup); the slice currently has no
+ * writer or reader and is kept alongside contextMenuCacheSlice per the same
+ * D25 disposition.
  */
 const agentContextMenuCacheSlice = createSlice({
   name: "agentContextMenuCache",

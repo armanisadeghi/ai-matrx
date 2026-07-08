@@ -32,7 +32,6 @@ interface HtmlPreviewBridgeProps {
    * editor-save callback shape — see features/overlays/callbacks/fullScreenEditor.ts.
    */
   callbackGroupId?: string | null;
-  onSave?: (markdownContent: string) => void;
   showSaveButton?: boolean;
   isAgentSystem?: boolean;
 }
@@ -45,7 +44,6 @@ export function HtmlPreviewBridge({
   title = "HTML Preview & Publishing",
   description = "Edit markdown, preview HTML, and publish your content",
   callbackGroupId,
-  onSave,
   showSaveButton,
   isAgentSystem,
 }: HtmlPreviewBridgeProps) {
@@ -163,22 +161,16 @@ export function HtmlPreviewBridge({
     onClose();
   }, [dispatch, onClose]);
 
-  // Save the edited markdown back to the source message. The overlay
-  // controller can't pass a function through Redux (it hard-coded
-  // `onSave={undefined}`, which silently broke this Save button), so the
-  // bridge self-handles via `editMessage` when it has a conversation +
-  // message target — preserving the message's non-text blocks. A direct-mount
-  // caller that passes its own `onSave` still wins.
+  // Save the edited markdown back to the source. A function can't travel
+  // through Redux, so callers that own the save (rich-document source
+  // adapters, ContentActionBar) register a callback group and pass its
+  // `callbackGroupId`; the group always wins. Without one, the bridge
+  // self-handles via `editMessage` when it has a conversation + message
+  // target — preserving the message's non-text blocks.
   const handleMarkdownSave = useCallback(
     async (markdownContent: string) => {
-      // Callback group wins — the caller (e.g. a rich-document source adapter)
-      // owns the save. Then a direct-mount onSave prop. Else self-handle.
       if (callbackGroupId) {
         emitFullScreenEditorSave(callbackGroupId, markdownContent);
-        return;
-      }
-      if (onSave) {
-        onSave(markdownContent);
         return;
       }
       if (!conversationId || !messageId) return;
@@ -210,7 +202,7 @@ export function HtmlPreviewBridge({
         );
       }
     },
-    [callbackGroupId, onSave, conversationId, messageId, dispatch, store],
+    [callbackGroupId, conversationId, messageId, dispatch, store],
   );
 
   return (

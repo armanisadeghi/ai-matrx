@@ -1,10 +1,15 @@
 # Proposal — Parent/Child Surfaces (surface inheritance)
 
-> **Status: PROPOSAL, awaiting Arman's decision.** This is an architecture
-> recommendation, not yet built. It answers two questions Arman raised: (1) can
-> a surface declare a parent so common things hand down to children? (2) how do
-> we intelligently handle a context menu for the notes left-column (sidebar
-> items: notes / folders), distinct from the in-note editor menu?
+> **Status: APPROVED (Arman, 2026-07-07 — "Yes! This one is huge!").**
+> Build order lives in `docs/handoffs/surfaces-bindings.md`: the binding-cascade
+> section of this proposal is DEAD (it targeted the condemned
+> `agx_agent_surface` mechanism); inheritance builds on top of the
+> `platform.associations` binding replacement (surfaces-bindings item 1), with
+> values/roles/config inheritance (v1) first. This doc remains the design
+> reference. It answers two questions Arman raised: (1) can a surface declare a
+> parent so common things hand down to children? (2) how do we intelligently
+> handle a context menu for the notes left-column (sidebar items: notes /
+> folders), distinct from the in-note editor menu?
 
 ## The question
 

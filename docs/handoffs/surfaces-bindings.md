@@ -17,10 +17,12 @@ emit live values via `buildScope()`; agents consume them at launch. The system's
 in `features/surfaces/FEATURE.md`). It is slated for deletion in favor of `platform.associations`;
 its write paths fire `console.error` beacons. Do not extend it.
 
-Related but untouched: `docs/handoffs/SURFACE_INHERITANCE_PROPOSAL.md` (owner decision pending).
-
 ## Vision — Arman's words
 
+- **Surface inheritance APPROVED** (2026-07-07): "Yes! This one is huge! Approved!" — parent/child
+  surfaces per `docs/handoffs/SURFACE_INHERITANCE_PROPOSAL.md`, re-scoped: values/roles/config
+  inheritance (v1) on top of the association-based bindings; the proposal's binding-cascade section
+  is dead with the condemned mechanism.
 - Verification standard — the owner's favorite context test: put "Matrx is the product name (not
   matrix)" in context, feed text containing "matrix", check the output spells "Matrx".
 - Recovery layers must be LOUD (console.warn/error + toast) — a silently-skipped binding is how
@@ -56,7 +58,12 @@ Related but untouched: `docs/handoffs/SURFACE_INHERITANCE_PROPOSAL.md` (owner de
 4. **Wave 7 — surface-registration skill** (absent): the layered recipe (values → roles/namespaces
    → registry+drift → DB sync → emitter → verification incl. the Matrx-vs-matrix test), with
    transcripts-cleanup as the worked example. Unblocks the all-surfaces sweep (~100 surfaces).
-5. **`features/surfaces/FEATURE.md` documentation gap:** roles, config namespaces, and the
+5. **Surface inheritance v1 (APPROVED — after item 1):** `inheritsFrom` on `SurfaceManifest` +
+   parent layer at the bottom of the existing merge engines (`withInjectedBaselines`,
+   `mergeValueMappingLayers`) for values/roles/config. Design:
+   `docs/handoffs/SURFACE_INHERITANCE_PROPOSAL.md` (its binding-cascade section is dead — bindings
+   cascade lands with/after the associations replacement).
+6. **`features/surfaces/FEATURE.md` documentation gap:** roles, config namespaces, and the
    full-screen admin editor are undocumented. Use the `context-docs` skill.
 
 ## Done

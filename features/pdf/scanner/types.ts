@@ -26,6 +26,15 @@ export type ScanRotation = 0 | 90 | 180 | 270;
 /** Where an item entered the session — drives the CAM/FILE chip. */
 export type ScanItemSource = "camera" | "file";
 
+/**
+ * Enhance mode (design: Auto / Original / Grayscale / B&W). Applied via the
+ * platform image-ops registry (`POST /images/edit` — auto_levels, grayscale,
+ * levels): each pick creates a NON-DESTRUCTIVE derivative cld file whose id
+ * replaces the original in the save payload. Ops load with exif_transpose,
+ * so the derivative shares the quad's post-EXIF coordinate space.
+ */
+export type ScanEnhanceMode = "auto" | "grayscale" | "bw";
+
 export interface ScanItem {
   /** Local id — stable across reorder/crop; NOT the cld_files id. */
   itemId: string;
@@ -48,6 +57,10 @@ export interface ScanItem {
    */
   quad?: Quad | null;
   rotation: ScanRotation;
+  /** Enhance selection; undefined = original. */
+  enhance?: ScanEnhanceMode;
+  /** Derivative cld id produced by the enhance ops — used at save time. */
+  enhancedFileId?: string;
 }
 
 /** The persisted (localStorage) survivor of a ScanItem — durable fields only. */
@@ -62,6 +75,8 @@ export interface ScanManifestItem {
   mimeType: string;
   quad?: Quad | null;
   rotation: ScanRotation;
+  enhance?: ScanEnhanceMode;
+  enhancedFileId?: string;
 }
 
 export interface ScanSessionManifest {

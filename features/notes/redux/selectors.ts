@@ -59,7 +59,9 @@ export const selectAllNotesList = createSelector(
   [selectNotesMap],
   (notes): NoteRecord[] =>
     Object.values(notes)
-      .filter((n) => !n.deleted_at)
+      // Shared-with-me notes live ONLY in the sidebar's "Shared with me"
+      // section — never in the owner's folders/recents groupings.
+      .filter((n) => !n.deleted_at && !n._sharedWithMe)
       .sort((a, b) => {
         const aPos = a.position ?? 0;
         const bPos = b.position ?? 0;
@@ -89,6 +91,16 @@ export const selectAllFolders = createSelector(
 export const selectDeletedNotesList = createSelector(
   [selectNotesMap],
   (notes): NoteRecord[] => Object.values(notes).filter((n) => !!n.deleted_at),
+);
+
+/** Notes shared WITH the current user (from `get_notes_shared_with_me`),
+ *  most recently updated first. */
+export const selectSharedWithMeNotes = createSelector(
+  [selectNotesMap],
+  (notes): NoteRecord[] =>
+    Object.values(notes)
+      .filter((n) => n._sharedWithMe && !n.deleted_at)
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
 );
 
 export const selectNotesListStatus = createSelector(

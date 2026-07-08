@@ -326,18 +326,51 @@ const _rawCloseOverlay = overlaySlice.actions.closeOverlay;
 const _rawToggleOverlay = overlaySlice.actions.toggleOverlay;
 const _rawCloseAllInstances = overlaySlice.actions.closeAllInstancesOfOverlay;
 
+// ── Function-in-data guard ──────────────────────────────────────────────────
+// Functions can NEVER travel through Redux: the OverlayController only reads
+// serialisable values out of `data`, so a callback stored here silently never
+// fires (the D33 bug class — `onSave` handlers that looked wired but were
+// dead). Handlers must go through the callback registry
+// (`utils/callbackManager` — see features/overlays/callbacks/fullScreenEditor.ts)
+// with only the `callbackGroupId` string in `data`. This guard is the loud
+// recovery layer: it screams and strips the offending keys so the failure is
+// visible the moment it's introduced instead of surfacing as a dead button.
+
+function stripFunctionsFromOverlayData<
+  T extends { overlayId: OverlayId; data?: unknown },
+>(payload: T): T {
+  const { data } = payload;
+  if (!data || typeof data !== "object" || Array.isArray(data)) return payload;
+  const record = data as Record<string, unknown>;
+  const offenders = Object.keys(record).filter(
+    (key) => typeof record[key] === "function",
+  );
+  if (offenders.length === 0) return payload;
+  // eslint-disable-next-line no-console
+  console.error(
+    `[overlaySlice] BUG: function value(s) in openOverlay data for "${payload.overlayId}" ` +
+      `(keys: ${offenders.join(", ")}). Functions cannot travel through Redux — the handler `
+      + `would NEVER fire. Register a callback group (see ` +
+      `features/overlays/callbacks/fullScreenEditor.ts) and pass its callbackGroupId string ` +
+      `instead. The offending key(s) were stripped from state.`,
+  );
+  const cleaned = { ...record };
+  for (const key of offenders) delete cleaned[key];
+  return { ...payload, data: cleaned };
+}
+
 // ── Public typed actions ────────────────────────────────────────────────────
 // Single source of truth for opening/closing/toggling overlays. Every call
 // site narrows `overlayId` to the registry-derived `OverlayId` union.
 
 export const openOverlay = (payload: OpenOverlayPayload) =>
-  _rawOpenOverlay(payload);
+  _rawOpenOverlay(stripFunctionsFromOverlayData(payload));
 
 export const closeOverlay = (payload: CloseOverlayPayload) =>
   _rawCloseOverlay(payload);
 
 export const toggleOverlay = (payload: ToggleOverlayPayload) =>
-  _rawToggleOverlay(payload);
+  _rawToggleOverlay(stripFunctionsFromOverlayData(payload));
 
 export const closeAllInstancesOfOverlay = (payload: CloseAllInstancesPayload) =>
   _rawCloseAllInstances(payload);

@@ -282,7 +282,10 @@ export async function forgotPasswordAction(formData: FormData) {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirect_to=/reset-password`,
+    // The callback route reads the camelCase `redirectTo` param (and
+    // decodeURIComponent's it) — snake_case `redirect_to` was silently ignored,
+    // so the reset link landed on /dashboard and never reached /reset-password.
+    redirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent("/reset-password")}`,
   });
 
   if (error) {

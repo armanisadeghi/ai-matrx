@@ -1956,33 +1956,20 @@ export async function processStream({
     content: CxContentBlock[];
   }> = [];
 
-  if (sortedTurns.length === 1) {
-    // Single reservation — all assistant content lands here. Common path
-    // when the server collapses a multi-iteration turn into one cx_message.
-    const turn = sortedTurns[0];
-    dispatch(
-      updateMessageRecord({
-        conversationId,
-        messageId: turn.messageId,
-        patch: {
-          content: assistantBlocks,
-          status: "active",
-          _clientStatus: finalErrorMessage ? "error" : "complete",
-          position: turn.position,
-        },
-      }),
-    );
-    materializeTargets.push({
-      messageId: turn.messageId,
-      content: assistantBlocks,
-    });
-  } else if (sortedTurns.length > 1) {
-    // Multi-reservation — partition assembled blocks by iteration. Each
-    // tool_call carries an iteration on its observability record (looked up
-    // via callId → uuid → cx_tool_call.iteration). Non-tool_call blocks
-    // are bucketed with the iteration of the most-recently-seen tool_call;
-    // trailing blocks after the last tool_call belong to the next (final)
-    // iteration. Iterations are then mapped to reservations in order.
+  // Partition assembled blocks by server iteration. Each tool_call carries an
+  // iteration on its observability record (looked up via callId → uuid →
+  // cx_tool_call.iteration). Non-tool_call blocks are bucketed with the
+  // iteration of the most-recently-seen tool_call; trailing blocks after the
+  // last tool_call belong to the next (final) iteration. Shared by the
+  // single- and multi-reservation commit paths so both agree on what "one
+  // iteration's blocks" means — the server persists ONE assistant row per
+  // iteration, so a committed row must never carry another iteration's
+  // tool_calls (that duplicates tool_use ids in the persisted graph and
+  // makes Anthropic reject the conversation on replay).
+  const partitionBlocksByIteration = (): Map<
+    number,
+    Array<(typeof assistantBlocks)[number]>
+  > => {
     const blocksByIter = new Map<
       number,
       Array<(typeof assistantBlocks)[number]>
@@ -2024,6 +2011,142 @@ export async function processStream({
       list.push(block);
       blocksByIter.set(iter, list);
     }
+
+    return blocksByIter;
+  };
+
+  // Distinct iterations that own at least one tool_call block. >1 means the
+  // run was a multi-iteration tool loop — the server persisted one assistant
+  // row PER iteration, so folding everything onto one row is forbidden.
+  const toolCallIterationsOf = (
+    blocksByIter: Map<number, Array<(typeof assistantBlocks)[number]>>,
+  ): Set<number> => {
+    const iters = new Set<number>();
+    for (const [iter, blocks] of blocksByIter) {
+      if (blocks.some((b) => (b as { type?: string }).type === "tool_call")) {
+        iters.add(iter);
+      }
+    }
+    return iters;
+  };
+
+  // Commit one iteration's blocks to a Redux-only client-temp record so the
+  // live transcript keeps it. On reload, DB hydration shows the server's own
+  // per-iteration row instead; the client-temp id can never duplicate a real
+  // DB row and is never materialized to the DB.
+  const commitIterationToClientTemp = (
+    iter: number,
+    blocks: Array<(typeof assistantBlocks)[number]>,
+    position: number,
+    isLast: boolean,
+  ) => {
+    const tempId = `client-assistant-${requestId}-iter${iter}`;
+    dispatch(
+      reserveMessage({
+        conversationId,
+        messageId: tempId,
+        role: "assistant",
+        position,
+      }),
+    );
+    dispatch(
+      updateMessageRecord({
+        conversationId,
+        messageId: tempId,
+        patch: {
+          content: blocks,
+          status: "active",
+          _clientStatus: finalErrorMessage && isLast ? "error" : "complete",
+          position,
+        },
+      }),
+    );
+  };
+
+  if (sortedTurns.length === 1) {
+    const turn = sortedTurns[0];
+    const blocksByIter = partitionBlocksByIteration();
+    const toolCallIters = toolCallIterationsOf(blocksByIter);
+
+    if (toolCallIters.size > 1) {
+      // The run produced tool_calls across MULTIPLE iterations but the server
+      // announced only ONE assistant reservation. The server persisted one
+      // assistant row per iteration regardless — the single reservation is
+      // the FIRST of them. Folding the whole run onto it would overwrite that
+      // row with tool_calls belonging to LATER server-persisted rows,
+      // duplicating tool_use ids in the persisted graph (Anthropic 400 on
+      // replay; KNOWN_DEFECTS "assistant message persisted with more
+      // tool_uses than its adjacent tool message answers"). Commit ONLY the
+      // first iteration's blocks to the reservation; later iterations stay
+      // visible in-session on client-temp records and hydrate from the
+      // server's own rows on reload.
+      //
+      // Self-classifying diagnostic: with the per-iteration announcement fix
+      // live on the backend (matrx-ai persist_completed_request announces
+      // record_reserved for EVERY fresh assistant row), this branch should
+      // never fire — firing means the server under-announced.
+      const sortedIters = [...blocksByIter.keys()].sort((a, b) => a - b);
+      console.error(
+        `[stream:${requestId.slice(0, 8)}] SERVER UNDER-ANNOUNCED assistant reservations: ${toolCallIters.size} iterations carry tool_calls but only 1 assistant cx_message reservation arrived (${turn.messageId}). ` +
+          `Committing ONLY iteration ${sortedIters[0]}'s blocks to the reserved row; iterations [${sortedIters.slice(1).join(", ")}] go to client-temp records (server-persisted rows take over on reload). ` +
+          `Folding all iterations onto one row would corrupt the persisted tool graph (duplicate tool_use ids → provider 400 on replay). ` +
+          `Backend fix: persist_completed_request must announce record_reserved for every per-iteration assistant row.`,
+      );
+
+      const firstIterBlocks = blocksByIter.get(sortedIters[0]) ?? [];
+      dispatch(
+        updateMessageRecord({
+          conversationId,
+          messageId: turn.messageId,
+          patch: {
+            content: firstIterBlocks,
+            status: "active",
+            _clientStatus: "complete",
+            position: turn.position,
+          },
+        }),
+      );
+      materializeTargets.push({
+        messageId: turn.messageId,
+        content: firstIterBlocks,
+      });
+
+      for (let i = 1; i < sortedIters.length; i++) {
+        const iter = sortedIters[i];
+        const blocks = blocksByIter.get(iter) ?? [];
+        if (blocks.length === 0) continue;
+        commitIterationToClientTemp(
+          iter,
+          blocks,
+          turn.position + i,
+          i === sortedIters.length - 1,
+        );
+      }
+    } else {
+      // Single reservation, single iteration (or no iteration data) — all
+      // assistant content genuinely belongs to this one cx_message.
+      dispatch(
+        updateMessageRecord({
+          conversationId,
+          messageId: turn.messageId,
+          patch: {
+            content: assistantBlocks,
+            status: "active",
+            _clientStatus: finalErrorMessage ? "error" : "complete",
+            position: turn.position,
+          },
+        }),
+      );
+      materializeTargets.push({
+        messageId: turn.messageId,
+        content: assistantBlocks,
+      });
+    }
+  } else if (sortedTurns.length > 1) {
+    // Multi-reservation — one reservation per iteration (the server announces
+    // each per-iteration assistant row). Partition assembled blocks by
+    // iteration and map iterations to reservations in order.
+    const blocksByIter = partitionBlocksByIteration();
 
     const sortedIters = [...blocksByIter.keys()].sort((a, b) => a - b);
 

@@ -130,7 +130,9 @@ export const mermaidEditorManifest: SurfaceManifest = {
       description:
         "Agent that edits the current mermaid diagram. Receives the diagram source + editor state and returns ONE full updated ```mermaid fence; the workbench previews it and saves it as a new version.",
       kind: "multi",
-      defaultAgentId: null,
+      // Builtin "Diagram Editor" agent (agent.definition, agent_type='builtin'),
+      // seeded 2026-07-07 with the mermaid-diagrams skill via skill_config.included.
+      defaultAgentId: "bdaf5ee0-b490-46a4-884c-3786121bb126",
       maxAgents: 5,
       allowCustom: true,
       autoRun: "never",

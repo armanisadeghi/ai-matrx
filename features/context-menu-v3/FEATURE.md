@@ -165,6 +165,7 @@ For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe
 
 ## Change Log
 
+- `2026-07-07` — **D25 residual closed — the 4 prompt-menu surfaces confirmed live on v3.** `ContentTemplateManager`, `SaveTemplateModal`, `MarkdownTester`, and `ContentEditor` (plain mode) all wrap their textareas in `EditableContextMenu` with `getTextarea`, restoring right-click content-block insert (`handleContentBlockInsert` → `insertTextAtTextareaCursor`; data via `/api/agent-context-menu` → `agent.context_menu_view`, live `content-block` placement group confirmed). Also killed the dead SSR preload: `DeferredShellData` no longer writes `contextMenuCacheSlice` / `agentContextMenuCacheSlice` (no readers — the menu fetches on open via `fetchUnifiedMenu`), and the orphaned `getSSRAgentShellData` helper was deleted. Both slices remain per the D25 disposition.
 - `2026-07-03` — **Killed the hardcoded auto-run.** Both renderers'
   `handleBoundAgentExecute` hardcoded `autoRun: true`, forcing every mapped agent
   launched from the context menu to fire on render — no chance for the user to type

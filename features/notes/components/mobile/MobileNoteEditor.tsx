@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { Loader2 } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 import { useNotesRedux } from '../../hooks/useNotesRedux';
+import { useNoteAccess } from '../../hooks/useNoteAccess';
 import { NoteEditorDock } from './NoteEditorDock';
 import { useNoteDelete } from '../../hooks/useNoteDelete';
 import { useToastManager } from '@/hooks/useToastManager';
@@ -61,6 +62,13 @@ interface MobileNoteEditorProps {
 export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNoteEditorProps) {
   const { updateNote, deleteNote, copyNote, setActiveNoteDirty } = useNotesRedux();
   const toast = useToastManager('notes');
+
+  // A viewer-level sharee gets a read-only surface — their RLS-rejected
+  // saves would otherwise silently discard every edit.
+  const access = useNoteAccess(note.id);
+  const readOnly = access.readOnly;
+  const effectiveMode: MobileEditorMode =
+    readOnly && editorMode === 'wysiwyg' ? 'preview' : editorMode;
 
   const [localLabel, setLocalLabel] = useState(note.label || '');
   const [localContent, setLocalContent] = useState(note.content || '');
@@ -246,14 +254,24 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   return (
     // Flex column fills the parent — content scrolls, dock stays at bottom
     <div className="h-full bg-background flex flex-col overflow-hidden relative">
+      {readOnly && (
+        <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+          <Eye className="w-3.5 h-3.5 shrink-0" />
+          <span className="text-xs truncate">
+            Read-only — shared with view access
+            {access.ownerEmail ? ` by ${access.ownerEmail}` : ''}.
+          </span>
+        </div>
+      )}
       {/* ── Scrollable content area ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">
 
         {/* Plain text */}
-        {editorMode === 'plain' && (
+        {effectiveMode === 'plain' && (
           <textarea
             ref={textareaRef}
             value={localContent}
+            readOnly={readOnly}
             onChange={e => { setLocalContent(e.target.value); growTextarea(); }}
             placeholder="Start writing..."
             className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none border-none resize-none leading-relaxed"
@@ -262,7 +280,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
         )}
 
         {/* Rich (WYSIWYG) */}
-        {editorMode === 'wysiwyg' && (
+        {effectiveMode === 'wysiwyg' && (
           <div className="min-h-[calc(100dvh-200px)]">
             <TuiEditorContent
               ref={tuiRef}
@@ -276,7 +294,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
         )}
 
         {/* Preview */}
-        {editorMode === 'preview' && (
+        {effectiveMode === 'preview' && (
           <div className="min-h-[calc(100dvh-200px)] prose prose-sm dark:prose-invert max-w-none">
             {localContent.trim() ? (
               <RichDocument

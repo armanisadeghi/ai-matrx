@@ -22,6 +22,7 @@ import { CloudFolders, fileHandler } from "@/features/files";
 
 import type {
   Quad,
+  ScanEnhanceMode,
   ScanItem,
   ScanItemSource,
   ScanManifestItem,
@@ -70,6 +71,8 @@ function toManifestItems(items: ScanItem[]): ScanManifestItem[] {
       mimeType: i.mimeType,
       quad: i.quad,
       rotation: i.rotation,
+      enhance: i.enhance,
+      enhancedFileId: i.enhancedFileId,
     }));
 }
 
@@ -99,6 +102,12 @@ export interface UseScanSessionResult {
   setRotation: (itemId: string, rotation: ScanRotation) => void;
   /** Rename an item (display label; persisted in the manifest). */
   setItemLabel: (itemId: string, itemLabel: string) => void;
+  /** Record an enhance result (mode undefined = back to original). */
+  setEnhance: (
+    itemId: string,
+    enhance: ScanEnhanceMode | undefined,
+    enhancedFileId?: string,
+  ) => void;
   /** All items durable — Save may proceed. */
   allUploaded: boolean;
   uploadingCount: number;
@@ -158,6 +167,8 @@ export function useScanSession(): UseScanSessionResult {
         status: "uploaded" as const,
         quad: m.quad,
         rotation: m.rotation,
+        enhance: m.enhance,
+        enhancedFileId: m.enhancedFileId,
       })),
     );
     setResumable(null);
@@ -308,6 +319,20 @@ export function useScanSession(): UseScanSessionResult {
     [updateItem],
   );
 
+  const setEnhance = useCallback(
+    (
+      itemId: string,
+      enhance: ScanEnhanceMode | undefined,
+      enhancedFileId?: string,
+    ) => {
+      updateItem(itemId, {
+        enhance,
+        enhancedFileId: enhance ? enhancedFileId : undefined,
+      });
+    },
+    [updateItem],
+  );
+
   const clearAfterSave = useCallback(() => {
     blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     blobUrlsRef.current.clear();
@@ -355,6 +380,7 @@ export function useScanSession(): UseScanSessionResult {
     setQuad,
     setRotation,
     setItemLabel,
+    setEnhance,
     allUploaded,
     uploadingCount,
     errorCount,

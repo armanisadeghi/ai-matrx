@@ -63,7 +63,11 @@ export async function login(redirectToArg: string, formData: FormData) {
         redirect(`/login?error=${encodeURIComponent(error.message)}`);
     }
 
-    console.log(`[${timestamp}] Login successful for:`, data.email);
+    // Gate PII (email) behind dev — matches the signup path below; never leak
+    // user emails into production logs.
+    if (process.env.NODE_ENV === "development") {
+        console.log(`[${timestamp}] Login successful for:`, data.email);
+    }
     revalidatePath("/", "layout");
 
     // CRITICAL: Never redirect to homepage, login, or sign-up after successful login

@@ -5385,7 +5385,7 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      _message_tool_call_ids: { Args: { p_content: Json }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
@@ -11842,6 +11842,7 @@ export type Database = {
           attempt: number
           completed_at: string | null
           created_at: string
+          dispatched_at: string | null
           error_message: string | null
           http_status: number | null
           id: string
@@ -11857,6 +11858,7 @@ export type Database = {
           attempt?: number
           completed_at?: string | null
           created_at?: string
+          dispatched_at?: string | null
           error_message?: string | null
           http_status?: number | null
           id?: string
@@ -11872,6 +11874,7 @@ export type Database = {
           attempt?: number
           completed_at?: string | null
           created_at?: string
+          dispatched_at?: string | null
           error_message?: string | null
           http_status?: number | null
           id?: string
@@ -11921,6 +11924,7 @@ export type Database = {
           last_attempt_at: string | null
           last_success_at: string | null
           max_consecutive_failures: number
+          organization_id: string | null
           owner_id: string
           resource_types: string[] | null
           secret: string
@@ -11937,6 +11941,7 @@ export type Database = {
           last_attempt_at?: string | null
           last_success_at?: string | null
           max_consecutive_failures?: number
+          organization_id?: string | null
           owner_id: string
           resource_types?: string[] | null
           secret: string
@@ -11953,6 +11958,7 @@ export type Database = {
           last_attempt_at?: string | null
           last_success_at?: string | null
           max_consecutive_failures?: number
+          organization_id?: string | null
           owner_id?: string
           resource_types?: string[] | null
           secret?: string
@@ -11973,6 +11979,7 @@ export type Database = {
         Returns: Json
       }
       webhook_reconcile: { Args: never; Returns: number }
+      webhook_redeliver: { Args: { p_delivery_id: string }; Returns: string }
       webhook_send_test: { Args: { p_webhook_id: string }; Returns: string }
       webhook_sign: {
         Args: { p_payload: string; p_secret: string }
@@ -18334,6 +18341,10 @@ export type Database = {
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
+      is_org_member: {
+        Args: { p_org: string; p_user: string }
+        Returns: boolean
+      }
       my_orgs: { Args: never; Returns: string[] }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
       runnable_agent_fields: {
@@ -22453,6 +22464,39 @@ export type Database = {
           sizzle_questions?: string | null
           title?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      guest_conversion_audit: {
+        Row: {
+          anon_user_id: string
+          created_at: string
+          fingerprint: string | null
+          id: string
+          new_user_id: string
+          skipped: Json
+          total_rows: number
+          transferred: Json
+        }
+        Insert: {
+          anon_user_id: string
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          new_user_id: string
+          skipped?: Json
+          total_rows?: number
+          transferred?: Json
+        }
+        Update: {
+          anon_user_id?: string
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          new_user_id?: string
+          skipped?: Json
+          total_rows?: number
+          transferred?: Json
         }
         Relationships: []
       }
@@ -27441,6 +27485,25 @@ export type Database = {
           version_number: number
         }[]
       }
+      get_notes_shared_with_me: {
+        Args: never
+        Returns: {
+          created_at: string
+          created_by: string
+          folder_name: string
+          id: string
+          label: string
+          organization_id: string
+          owner_email: string
+          permission_level: string
+          project_id: string
+          tags: string[]
+          task_id: string
+          updated_at: string
+          version: number
+          visibility: string
+        }[]
+      }
       get_org_invitation_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -29242,6 +29305,14 @@ export type Database = {
           p_variables_used?: Json
         }
         Returns: string
+      }
+      transfer_guest_data_to_user: {
+        Args: {
+          p_anon_user_id: string
+          p_fingerprint?: string
+          p_new_user_id: string
+        }
+        Returns: Json
       }
       transfer_organization_ownership: {
         Args: { current_owner_id: string; new_owner_id: string; org_id: string }
@@ -37393,6 +37464,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      studio_recording_chunks: {
+        Row: {
+          chunk_index: number
+          created_at: string
+          created_by: string
+          file_id: string
+          id: string
+          mime_type: string
+          organization_id: string | null
+          safety_id: string
+          size_bytes: number
+        }
+        Insert: {
+          chunk_index: number
+          created_at?: string
+          created_by?: string
+          file_id: string
+          id?: string
+          mime_type?: string
+          organization_id?: string | null
+          safety_id: string
+          size_bytes?: number
+        }
+        Update: {
+          chunk_index?: number
+          created_at?: string
+          created_by?: string
+          file_id?: string
+          id?: string
+          mime_type?: string
+          organization_id?: string | null
+          safety_id?: string
+          size_bytes?: number
+        }
+        Relationships: []
       }
       studio_recording_segments: {
         Row: {

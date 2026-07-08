@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAccess } from "@/utils/permissions/access";
@@ -92,7 +93,11 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
 
   if (error || !assessment) {
     return (
-      <CenteredNotice icon={AlertCircle} text={error ?? "Not found"} onBack={() => router.back()} />
+      <CenteredNotice
+        icon={AlertCircle}
+        text={error ?? "Not found"}
+        onBack={() => router.back()}
+      />
     );
   }
   if (!canEdit) {
@@ -118,7 +123,9 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
   };
 
   const patchItem = (id: string, patch: Partial<AssessmentItemRow>) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, ...patch } : it)),
+    );
 
   const saveItem = async (item: AssessmentItemRow) => {
     const res = await assessmentService.updateItem(item.id, {
@@ -206,12 +213,13 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
                   toast.error("Couldn't deepen this question");
                   return;
                 }
-                const added = await assessmentService.addItems(
-                  assessmentId,
-                  [{ ...deeper, position: item.position + 1 }],
-                );
+                const added = await assessmentService.addItems(assessmentId, [
+                  { ...deeper, position: item.position + 1 },
+                ]);
                 if (added.error || !added.data?.length) {
-                  toast.error(added.error ?? "Couldn't add the deeper question");
+                  toast.error(
+                    added.error ?? "Couldn't add the deeper question",
+                  );
                   return;
                 }
                 setItems((prev) => {
@@ -246,9 +254,7 @@ function ItemEditor({
 }) {
   const [deepening, setDeepening] = useState(false);
   const type = item.question_type as QuestionType;
-  const options = Array.isArray(item.options)
-    ? (item.options as string[])
-    : [];
+  const options = Array.isArray(item.options) ? (item.options as string[]) : [];
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -296,30 +302,29 @@ function ItemEditor({
         placeholder="Question prompt"
       />
 
-      {(type === "multiple_choice" || type === "true_false") && options.length > 0 && (
-        <div className="mt-2 flex flex-col gap-1.5">
-          {options.map((opt, oi) => (
-            <div key={oi} className="flex items-center gap-2">
-              <Input
-                value={opt}
-                onChange={(e) => {
-                  const next = [...options];
-                  next[oi] = e.target.value;
-                  onChange({ options: next as never });
-                }}
-                className="text-sm"
-              />
-              <input
-                type="radio"
-                name={`correct-${item.id}`}
-                checked={item.correct_answer === opt}
-                onChange={() => onChange({ correct_answer: opt })}
-                title="Mark correct"
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      {(type === "multiple_choice" || type === "true_false") &&
+        options.length > 0 && (
+          <RadioGroup
+            value={item.correct_answer ?? ""}
+            onValueChange={(val) => onChange({ correct_answer: val })}
+            className="mt-2 flex flex-col gap-1.5"
+          >
+            {options.map((opt, oi) => (
+              <div key={oi} className="flex items-center gap-2">
+                <Input
+                  value={opt}
+                  onChange={(e) => {
+                    const next = [...options];
+                    next[oi] = e.target.value;
+                    onChange({ options: next as never });
+                  }}
+                  className="text-sm"
+                />
+                <RadioGroupItem value={opt} aria-label="Mark correct" />
+              </div>
+            ))}
+          </RadioGroup>
+        )}
 
       {(type === "fill_blank" || type === "short_answer") && (
         <Input

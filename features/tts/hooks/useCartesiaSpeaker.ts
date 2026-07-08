@@ -2,7 +2,7 @@
  * useCartesiaSpeaker
  *
  * Lazy Cartesia TTS engine. Does absolutely nothing until speak() is called.
- * Manages: token fetch → websocket → send → WebPlayer playback lifecycle.
+ * Manages: token fetch → websocket → send → SinkAwarePlayer playback lifecycle.
  *
  * Designed to be shared by any UI component that needs TTS controls.
  */
@@ -10,7 +10,8 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
+import { CartesiaClient } from '@cartesia/cartesia-js';
+import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectVoicePreferences } from '@/lib/redux/preferences/userPreferenceSelectors';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
@@ -58,7 +59,7 @@ export function useCartesiaSpeaker({
   const [lastText, setLastText] = useState('');
 
   const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
-  const playerRef = useRef<WebPlayer | null>(null);
+  const playerRef = useRef<SinkAwarePlayer | null>(null);
   const hasPlayedRef = useRef(false);
   const mountedRef = useRef(true);
 
@@ -160,7 +161,7 @@ export function useCartesiaSpeaker({
       });
 
       if (!playerRef.current) {
-        playerRef.current = new WebPlayer({
+        playerRef.current = new SinkAwarePlayer({
           bufferDuration: TTS_PLAYBACK_BUFFER_SEC,
         });
       }
@@ -204,11 +205,10 @@ export function useCartesiaSpeaker({
   }, [phase]);
 
   const stop = useCallback(async () => {
-    // Idempotent teardown: a WebPlayer whose AudioContext is already closed
-    // (natural completion, or an unmount-cleanup stop racing an explicit one)
-    // throws "Cannot close a closed AudioContext" on a second stop. Claim the
-    // player synchronously so a concurrent stop is a no-op, and drop the ref so
-    // the next speak() builds a fresh player rather than replaying a dead ctx.
+    // Idempotent teardown: claim the player synchronously so a concurrent stop
+    // is a no-op, and drop the ref so the next speak() builds a fresh player
+    // rather than replaying a dead context. (SinkAwarePlayer.stop() itself
+    // no-ops on an already-closed context, unlike the SDK WebPlayer it forked.)
     const player = playerRef.current;
     playerRef.current = null;
     hasPlayedRef.current = false;

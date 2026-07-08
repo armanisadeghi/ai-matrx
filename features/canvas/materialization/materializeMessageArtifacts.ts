@@ -37,16 +37,45 @@ export interface MaterializeResult {
 }
 
 /**
+ * DB tool-graph guard (aidream migration 0151): cx_message_set_content RAISEs
+ * this whenever the new content's tool_call call_id multiset differs from the
+ * row's existing one. Materialization may rewrite text/artifact blocks only —
+ * a rejection means the client tried to write another iteration's tool_calls
+ * onto this row (the corruption class the guard exists to stop). The rewrite
+ * is permanently invalid for this content, so retrying is pointless: leave
+ * the raw content in place (inline artifact rendering keeps working — the
+ * canvas_items rows persisted fine) and never re-attempt this session.
+ */
+const TOOL_GRAPH_GUARD = "tool_call_graph_change_forbidden";
+const graphGuardRejectedMessageIds = new Set<string>();
+
+/**
  * The chat rewrite writer, exported so reconcile delegation reuses the exact
  * same RPC call per message.
  */
 export function cxMessageContentRewriter(messageId: string): PersistRewrite {
   return async (rewritten) => {
+    if (graphGuardRejectedMessageIds.has(messageId)) {
+      return {
+        ok: false,
+        error: `${TOOL_GRAPH_GUARD}: rewrite for ${messageId} already rejected by the DB tool-graph guard this session — not retrying`,
+      };
+    }
     const { error } = await supabase.rpc("cx_message_set_content", {
       p_message_id: messageId,
       p_new_content: rewritten as unknown as Json,
     });
-    return error ? { ok: false, error: error.message } : { ok: true };
+    if (!error) return { ok: true };
+    if (error.message?.includes(TOOL_GRAPH_GUARD)) {
+      graphGuardRejectedMessageIds.add(messageId);
+      console.error(
+        `[materialize] cx_message_set_content REJECTED by the DB tool-graph guard for message ${messageId} — the rewrite would have changed the row's tool_call set. ` +
+          `The server-persisted tool graph is kept, artifacts stay inline-rendered from raw content, and this message will not be retried this session. ` +
+          `This indicates the client assembled another iteration's tool_calls onto this row (see the process-stream single-reservation partition).`,
+      );
+      return { ok: false, error: error.message };
+    }
+    return { ok: false, error: error.message };
   };
 }
 
