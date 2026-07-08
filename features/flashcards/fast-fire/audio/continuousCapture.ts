@@ -14,15 +14,30 @@
 // rate, so a clip is just `buffer.slice(startSample, endSample)`. No codec
 // fragments, no chunk-arrival jitter, decodable everywhere. iOS-robust.
 //
-// PER-CARD GRADING CONTEXT (REQUIREMENTS §6): each per-card clip includes ~2.5s
-// BEFORE the card start and ~2.5s AFTER the card stop, with an audible beep
-// SYNTHESIZED INTO the clip at the exact start/stop sample offsets. The beep is
-// mixed into the PCM at encode time (sample-accurate, immune to echo-cancellation
-// stripping a speaker beep) so the grader always hears the boundaries. The
-// learner still hears the live `playBuzzer` for UX. Because capture is
-// continuous, the +2.5s trailing pad is real audio captured during the advance —
-// so `stopCardClip` resolves a moment AFTER the card ends (grading is
+// PER-CARD GRADING CONTEXT (REQUIREMENTS §6): each per-card clip includes a short
+// configurable pad BEFORE the card start and AFTER the card stop, with an audible
+// beep SYNTHESIZED INTO the clip at the exact start/stop sample offsets. The beep
+// is mixed into the PCM at encode time (sample-accurate, immune to echo-
+// cancellation stripping a speaker beep) so the grader always hears the
+// boundaries. The learner still hears the live `playBuzzer` for UX. Because
+// capture is continuous, the trailing pad is real audio captured during the
+// advance — so `stopCardClip` resolves a moment AFTER the card ends (grading is
 // fire-and-forget, so this delay is free).
+//
+// THE ONE CLOCK — why timing can never drift again (the bug this kills): card
+// boundaries are marked on the AUDIO HARDWARE CLOCK (`ctx.currentTime`), NOT on
+// the buffer write-head (`sampleCount`). The write-head only counts PCM already
+// delivered from the worklet to the main thread and appended — it LAGS real audio
+// whenever the main thread is busy, and the main thread is busiest at a card
+// boundary (that card's grade upload + agent launch just fired). Marking a
+// boundary at the lagged write-head put the recorded start/stop BEHIND where the
+// learner actually spoke, and — because the live `playBuzzer` runs on the audio
+// clock — left the audible buzzer and the clip's beep marker at DIFFERENT real-
+// audio positions ("buzzer and timing not in sync"), compounding across skips.
+// `audioClockSamples()` derives the offset from `ctx.currentTime` instead, so the
+// live buzzer, the recorded audio, and the clip's beep all share ONE clock and
+// stay aligned by construction — identically whether the card timed out or the
+// learner hit Next.
 //
 // REUSE, DON'T REBUILD: the mic singleton (`acquireMicStream`/`releaseMicStream`
 // — one warm grant, no iOS re-prompt), the app-wide capture lock
@@ -51,9 +66,16 @@ import { encodeWavFromFloat32 } from "@/lib/audio/wav";
 // stream = one capture holder for the entire session.
 const CAPTURE_ID = "fast-fire-drill";
 
-/** Per-card grading context: audio kept on each side of the card window (§6). */
-const PAD_BEFORE_SEC = 2.5;
-const PAD_AFTER_SEC = 2.5;
+/**
+ * Per-card grading context: DEFAULT audio kept on each side of the card window
+ * (§6 — "~1 second of overlap each side"). Configurable per session via
+ * `startContinuousCapture({ padBeforeSec, padAfterSec })` so a mode with a
+ * different timing rule can widen/narrow it without forking the core. Kept short
+ * on purpose: a large fixed pad captured a fast-answered neighbour's whole answer
+ * into this card's clip (the "responses were not the correct clips" bug).
+ */
+const DEFAULT_PAD_BEFORE_SEC = 1.0;
+const DEFAULT_PAD_AFTER_SEC = 1.0;
 
 /** Boundary beep markers synthesized into the clip (the grader hears these). */
 const BEEP_START_HZ = 880;
@@ -86,6 +108,15 @@ interface CaptureStore {
   pcm: Float32Array;
   sampleCount: number;
   sampleRate: number;
+  /** The AudioContext this capture is bound to — the source of the audio clock. */
+  ctx: AudioContext | null;
+  /** `ctx.currentTime` captured the instant the graph started recording. Card
+   *  boundaries are `round((ctx.currentTime - baseTime) * sampleRate)` — the
+   *  authoritative audio-clock position, immune to main-thread write-head lag. */
+  baseTime: number;
+  /** Per-session grading-context pads (seconds each side of a card window). */
+  padBeforeSec: number;
+  padAfterSec: number;
   // Web Audio graph nodes (kept so teardown can disconnect them).
   source: MediaStreamAudioSourceNode | null;
   workletNode: AudioWorkletNode | null;
@@ -114,6 +145,10 @@ const store: CaptureStore = {
   pcm: new Float32Array(0),
   sampleCount: 0,
   sampleRate: 0,
+  ctx: null,
+  baseTime: 0,
+  padBeforeSec: DEFAULT_PAD_BEFORE_SEC,
+  padAfterSec: DEFAULT_PAD_AFTER_SEC,
   source: null,
   workletNode: null,
   scriptNode: null,
@@ -277,8 +312,19 @@ export function isContinuousCaptureActive(): boolean {
  * and grant the mic. Throws if the mic graph cannot be started (callers must
  * catch — a silent no-op used to leave voice-test UIs in a broken "capturing"
  * state with no audio).
+ *
+ * `opts.padBeforeSec` / `opts.padAfterSec` set the per-session grading-context
+ * pad on each side of a card window (config-driven; defaults ~1s). A mode with a
+ * different timing rule tunes these without forking the core.
  */
-export async function startContinuousCapture(): Promise<void> {
+export interface StartCaptureOptions {
+  padBeforeSec?: number;
+  padAfterSec?: number;
+}
+
+export async function startContinuousCapture(
+  opts: StartCaptureOptions = {},
+): Promise<void> {
   if (store.capturePath) return; // already capturing
 
   claimCapture({
@@ -297,11 +343,23 @@ export async function startContinuousCapture(): Promise<void> {
 
   const stream = await acquireMicStream({ channelCount: 1 });
   store.stream = stream;
+  store.ctx = ctx;
   store.sampleRate = ctx.sampleRate;
+  store.padBeforeSec =
+    typeof opts.padBeforeSec === "number" && opts.padBeforeSec >= 0
+      ? opts.padBeforeSec
+      : DEFAULT_PAD_BEFORE_SEC;
+  store.padAfterSec =
+    typeof opts.padAfterSec === "number" && opts.padAfterSec >= 0
+      ? opts.padAfterSec
+      : DEFAULT_PAD_AFTER_SEC;
   store.pcm = new Float32Array(
     Math.round(ctx.sampleRate * INITIAL_CAPACITY_SEC),
   );
   store.sampleCount = 0;
+  // The audio-clock time base: every card boundary is measured against this, so
+  // it is set the instant before the graph starts pumping samples.
+  store.baseTime = ctx.currentTime;
   bufferCapWarned = false;
   store.cards.clear();
   store.cardOrder = [];
@@ -371,12 +429,31 @@ export async function startContinuousCapture(): Promise<void> {
   }
 }
 
+/**
+ * The authoritative recording position RIGHT NOW, in samples, on the audio
+ * hardware clock — `round((ctx.currentTime - baseTime) * sampleRate)`. This is
+ * what every card boundary is marked with. Unlike `store.sampleCount` (the
+ * write-head, which lags whenever the main thread is busy — worst at a card
+ * boundary), this tracks real audio time, so a boundary marked here lands at the
+ * same real-audio position as the audible buzzer and the captured speech. Clamped
+ * to ≥ 0; never past the write-head is NOT enforced here (the pad timeout ensures
+ * the buffer catches up before we slice).
+ */
+function audioClockSamples(): number {
+  if (!store.ctx || store.sampleRate <= 0) return store.sampleCount;
+  const offset = Math.round(
+    (store.ctx.currentTime - store.baseTime) * store.sampleRate,
+  );
+  return Math.max(0, offset);
+}
+
 /** Mark the start sample of `cardId`'s answer window. No recorder to start — the
- *  continuous PCM buffer is already running; we only record the boundary. */
+ *  continuous PCM buffer is already running; we only record the boundary on the
+ *  audio clock (see `audioClockSamples`). */
 export function startCardClip(cardId: string): void {
   if (!store.capturePath) return;
   if (!store.cards.has(cardId)) store.cardOrder.push(cardId);
-  store.cards.set(cardId, { startSample: store.sampleCount, endSample: null });
+  store.cards.set(cardId, { startSample: audioClockSamples(), endSample: null });
   store.activeCardId = cardId;
   maybeEmitDebug(true);
 }
@@ -395,13 +472,13 @@ export function stopCardClip(cardId: string): Promise<Blob | null> {
       resolve(null);
       return;
     }
-    win.endSample = store.sampleCount;
+    win.endSample = audioClockSamples();
     if (store.activeCardId === cardId) store.activeCardId = null;
     maybeEmitDebug(true);
 
     // Wait for the post-card pad to be captured, then build the clip. Tracked so
     // teardown can flush (last card) or discard (abandon) it deterministically.
-    const padMs = PAD_AFTER_SEC * 1000;
+    const padMs = store.padAfterSec * 1000;
     const timer = setTimeout(() => {
       const pending = store.pending.get(cardId);
       if (!pending) return; // already flushed by teardown
@@ -420,11 +497,11 @@ function buildCardClip(cardId: string): Blob | null {
   const end = win.endSample ?? store.sampleCount;
   const clipStart = Math.max(
     0,
-    Math.floor(win.startSample - PAD_BEFORE_SEC * rate),
+    Math.floor(win.startSample - store.padBeforeSec * rate),
   );
   const clipEnd = Math.min(
     store.sampleCount,
-    Math.ceil(end + PAD_AFTER_SEC * rate),
+    Math.ceil(end + store.padAfterSec * rate),
   );
   if (clipEnd <= clipStart) return null;
 
@@ -458,38 +535,101 @@ export function subscribeLevel(listener: (level: number) => void): () => void {
   };
 }
 
-/** The full-session recording so far, encoded as one WAV (REQUIREMENTS §6/§8). */
+/**
+ * The full-session recording so far, encoded as one WAV (REQUIREMENTS §6/§8),
+ * with each card's start/stop boundary beeps mixed in at their audio-clock
+ * offsets. `slice` returns a COPY, so mixing the markers never corrupts the live
+ * buffer (per-card clips still slice clean PCM). The markers give the end-of-
+ * session coach — and the learner scrubbing the recording — real, aligned card
+ * boundaries instead of one undifferentiated block of speech.
+ */
 export function fullSessionClip(): Blob | null {
   if (store.sampleCount === 0) return null;
-  return encodeWavFromFloat32(
-    store.pcm.slice(0, store.sampleCount),
-    store.sampleRate,
-    { targetRate: WAV_TARGET_RATE },
-  );
+  const rate = store.sampleRate;
+  const full = store.pcm.slice(0, store.sampleCount);
+  const beepLen = Math.round(BEEP_DUR_SEC * rate);
+  const startBeep = makeSineFloat32(BEEP_START_HZ, BEEP_DUR_SEC, rate, BEEP_AMP);
+  const stopBeep = makeSineFloat32(BEEP_STOP_HZ, BEEP_DUR_SEC, rate, BEEP_AMP);
+  for (const cardId of store.cardOrder) {
+    const win = store.cards.get(cardId);
+    if (!win) continue;
+    // Clamp each marker so the whole beep fits inside the buffer (the audio clock
+    // can sit a quantum ahead of the write-head at the tail).
+    const startAt = Math.max(0, Math.min(win.startSample, full.length - beepLen));
+    mixInto(full, startBeep, startAt);
+    if (win.endSample !== null) {
+      const stopAt = Math.max(0, Math.min(win.endSample, full.length - beepLen));
+      mixInto(full, stopBeep, stopAt);
+    }
+  }
+  return encodeWavFromFloat32(full, rate, { targetRate: WAV_TARGET_RATE });
 }
 
 /**
- * Play the card-boundary buzzer audibly to the LEARNER (UX) through the shared
- * AudioContext. The grader's boundary markers are synthesized into the clip
- * separately (buildCardClip), so this is purely for the person drilling. Never
- * throws.
+ * The learner-audible cue kinds (UX only — the grader's boundary markers are
+ * synthesized into the clip separately in buildCardClip):
+ *   - `start`   : card begins — light rising blip.
+ *   - `stop`    : card closed by a manual "Next" — gentle falling blip (the
+ *                 learner chose to move on, so no alarm).
+ *   - `warning` : "a few seconds left" — a single light, higher blip, same
+ *                 family as `start` so it reads as a nudge, not an error.
+ *   - `timesup` : time RAN OUT — a prominent, unmistakable buzzer (harsher tone,
+ *                 louder, longer, two pulses) so a learner still mid-answer
+ *                 cannot miss that the window closed.
  */
-export function playBuzzer(kind: "start" | "stop"): void {
+export type BuzzerKind = "start" | "stop" | "warning" | "timesup";
+
+/** One short tone. `type`/`peak`/`attack`/`release` shape it. Best-effort. */
+function playTone(
+  ctx: AudioContext,
+  opts: {
+    freq: number;
+    type: OscillatorType;
+    peak: number;
+    durSec: number;
+    startAt?: number;
+  },
+): void {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = opts.type;
+  osc.frequency.value = opts.freq;
+  const at = opts.startAt ?? ctx.currentTime;
+  gain.gain.setValueAtTime(0, at);
+  gain.gain.linearRampToValueAtTime(opts.peak, at + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + opts.durSec);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(at);
+  osc.stop(at + opts.durSec + 0.02);
+}
+
+/**
+ * Play a learner cue audibly through the shared AudioContext. Never throws —
+ * silence is an acceptable degradation if Web Audio refuses.
+ */
+export function playBuzzer(kind: BuzzerKind): void {
   const ctx = getSharedAudioContext();
   if (!ctx) return;
   try {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = kind === "start" ? BEEP_START_HZ : BEEP_STOP_HZ;
     const now = ctx.currentTime;
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.15, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.14);
+    switch (kind) {
+      case "start":
+        playTone(ctx, { freq: BEEP_START_HZ, type: "sine", peak: 0.15, durSec: 0.13 });
+        return;
+      case "stop":
+        playTone(ctx, { freq: BEEP_STOP_HZ, type: "sine", peak: 0.15, durSec: 0.13 });
+        return;
+      case "warning":
+        // Light, higher single blip — a nudge, not an alarm.
+        playTone(ctx, { freq: 1174, type: "sine", peak: 0.12, durSec: 0.12 });
+        return;
+      case "timesup":
+        // Prominent two-pulse buzzer — harsher `square` timbre, louder, longer.
+        playTone(ctx, { freq: 320, type: "square", peak: 0.22, durSec: 0.26, startAt: now });
+        playTone(ctx, { freq: 240, type: "square", peak: 0.22, durSec: 0.34, startAt: now + 0.3 });
+        return;
+    }
   } catch {
     /* best-effort — silence is fine if Web Audio refuses */
   }
@@ -567,6 +707,8 @@ export function stopContinuousCapture(): Blob | null {
   store.capturePath = null;
   store.pcm = new Float32Array(0);
   store.sampleCount = 0;
+  store.ctx = null;
+  store.baseTime = 0;
   // Clear the per-card windows too (parity with hardStopCapture) so a debug read
   // between sessions never reports stale cards from the prior drill.
   store.cards.clear();
@@ -591,6 +733,8 @@ export function hardStopCapture(): void {
   store.capturePath = null;
   store.pcm = new Float32Array(0);
   store.sampleCount = 0;
+  store.ctx = null;
+  store.baseTime = 0;
   store.cards.clear();
   store.cardOrder = [];
   store.activeCardId = null;

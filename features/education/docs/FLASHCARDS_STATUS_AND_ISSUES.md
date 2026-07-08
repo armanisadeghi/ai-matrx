@@ -45,14 +45,33 @@ Learn/Test/Match/Quiz modes · the metadata/visuals agent (not yet in `LIVE_AGEN
 
 ## PART 3 — ISSUES (must fix; CORE-FIRST order)
 
-### 🟢 A. AUDIO CORE — REBUILT on Web Audio PCM→WAV (pending owner playback verification)
+### 🟢 A. AUDIO CORE — REBUILT on Web Audio PCM→WAV + AUDIO-CLOCK boundaries (2026-07-08)
+**Timing-drift fix (2026-07-08, owner report).** Boundaries were being marked at the buffer WRITE-HEAD
+(`store.sampleCount`), which lags real audio whenever the main thread is busy — worst exactly at a card
+boundary (that card's grade upload + agent launch fire there), and compounding across fast skips.
+Meanwhile the live `playBuzzer` runs on the audio hardware clock, so the audible buzzer and the clip's
+beep marker drifted apart ("buzzer and timing not in sync") and answer tails bled into the next card's
+clip ("wrong clips"). **Fix:** every boundary is now marked on the AUDIO clock (`audioClockSamples()` =
+`round((ctx.currentTime − baseTime) · sampleRate)`), so the live buzzer, the recorded speech, and the
+clip's beep share ONE clock and cannot drift — **identically for timeout and manual Next** (the two paths
+differ only in the learner-facing cue, never the recorded boundary). The full-session WAV now also carries
+per-card start/stop beep markers (mixed into a copy, aligned to the same clock). Pads are configurable
+(`startContinuousCapture({padBeforeSec,padAfterSec})`, default ~1s per §6 — a large fixed 2.5s pad was
+swallowing a fast-answered neighbour's whole answer). **NEW UX:** a light `warning` beep at
+`config.warningSeconds` left (default 3, off at 0, only when it lands inside the window) via the deadline
+timer's new fire-once `onWarning`; on TIMEOUT a prominent two-pulse `timesup` buzzer + a full-screen
+`FastFireTimesUp` "TIME'S UP" hold (~1s) so a learner still answering can't miss it (manual Next stays
+alarm-free). **Extraction seam (owner-approved scope):** the load-bearing reusable insight is audio-clock
+segment marking on a continuous recorder; the generic multi-turn / two-speaker (A-vs-B) segment-ownership
+engine is a documented follow-up, not built this pass.
+
 **Rebuilt 2026-06-30 (core-first reset).** `continuousCapture.ts` is now a Web-Audio AudioWorklet→PCM→
 WAV pipeline (was MediaRecorder dual-recorder). One warm mic stream feeds an `AudioWorklet` that taps raw
 PCM into ONE growing Float32 buffer with a sample clock; per-card clips and the full session are
 **sample-accurate slices** of that buffer, encoded as 16 kHz mono WAV (`lib/audio/wav.ts` +
-`lib/audio/pcm.ts`, new reusable primitives). Per-card clips include ~2.5s before + after the card window,
-with **beep markers synthesized into the clip** at the real start/stop offsets (sample-accurate, immune to
-echo-cancellation; the learner still hears the live buzzer). The public API is unchanged, so the (solid)
+`lib/audio/pcm.ts`, new reusable primitives). Per-card clips include a short configurable pad before +
+after the card window, with **beep markers synthesized into the clip** at the real start/stop offsets
+(sample-accurate, immune to echo-cancellation; the learner still hears the live buzzer). The public API is unchanged, so the (solid)
 drill orchestrator/timer/slice are untouched. `gradeCard`/`useFastFireDrill` upload now derive `.wav`
 ext/mime from the blob. **GATE — needs owner verification:** record + play back at
 **`/education/fastfire/capture-test`** (admin-only) — confirm each segment is the right (variable) length,
@@ -131,6 +150,17 @@ before implementing. **This is the thing that actually needs careful engineering
 5. **Document as we go** (this file) so context limits never lose the state.
 
 ## Change log
+- **2026-07-08 (timing hardening — owner report)** — Fixed the FastFire timing desync: card boundaries
+  now mark on the **audio hardware clock** (`audioClockSamples()` in `continuousCapture.ts`) instead of the
+  main-thread-lagged buffer write-head, so the live buzzer, recorded speech, and the clip's beep marker can
+  never drift — **identically for timeout vs manual Next** (the two differ only in the cue). Full-session
+  WAV now carries per-card beep markers; grading pads are configurable + shortened to ~1s (was a fixed 2.5s
+  that swallowed neighbours). Added a light **3s warning beep** (`config.warningSeconds`, fire-once
+  `onWarning` on the deadline timer) and, on TIMEOUT only, a prominent two-pulse `timesup` buzzer + a
+  full-screen `FastFireTimesUp` "TIME'S UP" hold (~1s). Files: `continuousCapture.ts`, `useDeadlineTimer.ts`,
+  `useFastFireDrill.ts`, `fastFireSlice.ts` (+`warningSeconds`/`lastAdvanceReason`), `fastFire.selectors.ts`,
+  `FastFireSurface.tsx`, `FastFireTimesUp.tsx` (new), `FastFireSetup.tsx`. Follow-up (deferred, owner-scoped):
+  extract the audio-clock segmented-recorder into a generic multi-turn / two-speaker engine for battle modes.
 - **2026-07-01 (loop 3 — adaptive Review-due, the north-star)** — Built + pushed in small chunks:
   `fcService.getCardsByIds` (cross-set, caller-ordered) · extracted the shared **StudyDeck** primitive
   from StudySurface (set-study path verified unchanged) · **useDueReview** (FSRS due queue via

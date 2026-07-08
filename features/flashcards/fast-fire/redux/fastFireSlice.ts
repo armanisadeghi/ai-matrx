@@ -112,7 +112,21 @@ export interface FastFireConfig {
    * mode you don't spend part of the window reading, so you need less time.
    */
   voiceAnswerSeconds: number;
+  /**
+   * Seconds-remaining at which the learner gets the light "almost out of time"
+   * warning beep. Config-driven so each mode/quiz can set its own rule; the timer
+   * only arms it when it lands strictly inside the card's window. 0 disables it.
+   */
+  warningSeconds: number;
 }
+
+/**
+ * WHY a card's window closed. `timeout` = the clock ran out (the learner may not
+ * have noticed — we show the prominent TIME'S UP hold). `skip` = the learner hit
+ * "Next" deliberately, so we advance quickly with no alarm. This changes only the
+ * inter-card UX; the recorded audio boundary is marked identically either way.
+ */
+export type AdvanceReason = "timeout" | "skip";
 
 /** Which subset of cards the review-playback scoreboard is showing. */
 export type ReviewFilter = "all" | "correct" | "incorrect";
@@ -133,6 +147,9 @@ export interface FastFireState {
   cards: DrillCard[];
   /** Index of the card currently being recorded (−1 before start). */
   currentIndex: number;
+  /** Why the current card advanced — drives the TIME'S UP hold vs a quick skip.
+   *  Reset to null when a new card starts recording. */
+  lastAdvanceReason: AdvanceReason | null;
   /** The study_session id (study spine). Null until the session opens. */
   sessionId: string | null;
   /** Full-session recording, uploaded at finalize. */
@@ -158,6 +175,7 @@ const DEFAULT_CONFIG: FastFireConfig = {
   liveScore: true,
   spokenFronts: false,
   voiceAnswerSeconds: 8,
+  warningSeconds: 3,
 };
 
 const initialState: FastFireState = {
@@ -165,6 +183,7 @@ const initialState: FastFireState = {
   config: DEFAULT_CONFIG,
   cards: [],
   currentIndex: -1,
+  lastAdvanceReason: null,
   sessionId: null,
   sessionAudioFileId: null,
   gradesByCard: {},
@@ -229,6 +248,7 @@ const fastFireSlice = createSlice({
       state.sessionId = sessionId;
       state.config.setName = setName;
       state.currentIndex = -1;
+      state.lastAdvanceReason = null;
       state.gradesByCard = {};
       for (const c of cards) state.gradesByCard[c.id] = blankGrade(c.id);
       state.sessionAudioFileId = null;
@@ -247,11 +267,14 @@ const fastFireSlice = createSlice({
     },
 
     /**
-     * The deadline fired (or the user skipped) for the current card. Move to the
-     * `advancing` beat. The drill hook owns the per-card slice + buzzer here.
+     * The deadline fired (`timeout`) or the user skipped (`skip`) for the current
+     * card. Move to the `advancing` beat, recording WHY so the surface can show
+     * the TIME'S UP hold on a timeout but a quick transition on a skip. The drill
+     * hook owns the per-card slice + buzzer here.
      */
-    advanceCard(state) {
+    advanceCard(state, action: PayloadAction<{ reason: AdvanceReason }>) {
       state.phase = "advancing";
+      state.lastAdvanceReason = action.payload.reason;
     },
 
     /**
@@ -259,6 +282,7 @@ const fastFireSlice = createSlice({
      * exhausted, go to `finalizing`.
      */
     commitAdvance(state) {
+      state.lastAdvanceReason = null;
       const nextIndex = state.currentIndex + 1;
       if (nextIndex >= state.cards.length) {
         state.phase = "finalizing";
