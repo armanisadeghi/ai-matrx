@@ -22,7 +22,11 @@ import { parseYouTubeUrl } from "@/lib/media/youtube";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
-import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
+import {
+  applyIrKindRoute,
+  GENERIC_STRUCTURED_COMPONENT_KEY,
+} from "@/features/content-ir/react/kind-route";
+import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { Loader2 } from "lucide-react";
 
@@ -1211,6 +1215,20 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // to end.
       if (block.type === "tool" && hideToolResults) return null;
       return block.content ? renderBasicMarkdown(block.content) : null;
+
+    // The R6 generic fallback (features/content-ir/react/kind-route.ts): the
+    // envelope resolved a kind the platform KNOWS, but nothing render-trusted
+    // claims it. Rather than dropping to a raw code block, show every field
+    // readably plus an honest "unverified shape" affordance. Reached ONLY via
+    // applyIrKindRoute — nothing emits this block type upstream.
+    case GENERIC_STRUCTURED_COMPONENT_KEY:
+      return (
+        <GenericStructuredBlock
+          key={index}
+          content={block.content}
+          metadata={block.metadata}
+        />
+      );
 
     default:
       return block.content ? renderBasicMarkdown(block.content) : null;

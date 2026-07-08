@@ -37,9 +37,45 @@ export interface IrRoutableBlock {
  */
 export const IR_ROUTE_KEY = "__ir_route" as const;
 
+/**
+ * The component key the R6 generic fallback routes to — the official renderer
+ * for a KNOWN shape that nothing render-trusted claims. Consumed by the
+ * unified renderer's switch (BlockRenderer) as a block type.
+ */
+export const GENERIC_STRUCTURED_COMPONENT_KEY = "generic_structured" as const;
+
+/** Why a block landed on the generic viewer instead of a real renderer. */
+export type GenericFallbackReason =
+  /** No compiled bridge and no `content_ir.kind_component` row at all. */
+  | "no-component"
+  /** A component row exists but is held `is_active = false`. */
+  | "inactive";
+
 export interface IrRouteMarker {
-  by: ComponentResolution["resolvedBy"];
+  by: ComponentResolution["resolvedBy"] | "generic";
   key: string;
+  /**
+   * Only on the generic fallback: the shape is NOT render-trusted, so the
+   * viewer must say so out loud (R6 — never an error, never hidden content).
+   */
+  unverified?: true;
+  reason?: GenericFallbackReason;
+}
+
+function isRouteMarker(value: unknown): value is IrRouteMarker {
+  return (
+    isRecord(value) &&
+    typeof value.by === "string" &&
+    typeof value.key === "string"
+  );
+}
+
+/** Read the routing marker a block picked up at the seam (or null). */
+export function readIrRouteMarker(
+  metadata: Record<string, unknown> | null | undefined,
+): IrRouteMarker | null {
+  const candidate = metadata?.[IR_ROUTE_KEY];
+  return isRouteMarker(candidate) ? candidate : null;
 }
 
 function withRouteMarker(
@@ -52,6 +88,38 @@ function withRouteMarker(
       by: resolution.resolvedBy,
       key: resolution.componentKey,
     } satisfies IrRouteMarker,
+  };
+}
+
+/**
+ * R6's sanctioned disposition for a shape the platform KNOWS (a kind
+ * definition supplied its schema) but nothing render-trusted claims: the
+ * generic structured viewer, carrying an honest "unverified shape" affordance
+ * — never an error, never a raw code block, never hidden content.
+ *
+ * `serverData` is CLEARED for the same reason the resolver-only path clears
+ * it: a raw region's annotation (`{ language: "json" }`) is not kind data,
+ * and the generic viewer reads the envelope, not serverData.
+ */
+function routeToGeneric<T extends IrRoutableBlock>(
+  block: T,
+  reason: GenericFallbackReason,
+): T {
+  if (block.type === GENERIC_STRUCTURED_COMPONENT_KEY) return block;
+
+  return {
+    ...block,
+    type: GENERIC_STRUCTURED_COMPONENT_KEY,
+    serverData: undefined,
+    metadata: {
+      ...block.metadata,
+      [IR_ROUTE_KEY]: {
+        by: "generic",
+        key: GENERIC_STRUCTURED_COMPONENT_KEY,
+        unverified: true,
+        reason,
+      } satisfies IrRouteMarker,
+    },
   };
 }
 
@@ -104,26 +172,42 @@ export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
   }
 
   // ── Resolver-only path (no compiled bridge): the registry decides ───────
-  if (!resolution) return block; // unknown kind — untouched (strangler seam)
+  // R6: only an ACTIVE resolution is render-trusted. An inactive row means
+  // "held", not "route it anyway".
+  if (resolution?.isActive) {
+    if (block.type === resolution.componentKey) {
+      return block; // already the target type — keep reference stability
+    }
 
-  // R6: a kind resolvable ONLY via the DB and flagged inactive is NOT
-  // trusted to render — leave the block exactly as it renders today
-  // (never an error, never hidden content).
-  if (!resolution.isActive) return block;
-
-  if (block.type === resolution.componentKey) {
-    return block; // already the target type — keep reference stability
+    return {
+      ...block,
+      type: resolution.componentKey,
+      // No compiled bridge exists — the routed component parses `content`
+      // itself; the raw region's annotation serverData is CLEARED, never
+      // forwarded (same poison rule as bridgeless compiled kinds).
+      serverData: undefined,
+      metadata: withRouteMarker(block.metadata, resolution),
+    };
   }
 
-  return {
-    ...block,
-    type: resolution.componentKey,
-    // No compiled bridge exists — the routed component parses `content`
-    // itself; the raw region's annotation serverData is CLEARED, never
-    // forwarded (same poison rule as bridgeless compiled kinds).
-    serverData: undefined,
-    metadata: withRouteMarker(block.metadata, resolution),
-  };
+  // ── R6 generic fallback: a KNOWN shape that nothing render-trusted claims ─
+  // `def` exists ⇒ a kind definition (compiled, or warm from
+  // `content_ir.kind_definition`) supplied this kind's schema: the platform
+  // knows the shape. It has no compiled bridge, and either no
+  // `kind_component` row at all (`no-component`) or one held inactive
+  // (`inactive`). Ruling R6 sends exactly this case to the generic structured
+  // viewer with an "unverified shape" affordance — the disposition that
+  // retires the permanently-red "no-component root" kinds (q_and_a_set,
+  // study_pack_set, schema_showcase) without pretending they have renderers.
+  if (def) {
+    return routeToGeneric(block, resolution ? "inactive" : "no-component");
+  }
+
+  // A kind slug the platform has NO definition for (typo, foreign emitter, a
+  // kind_component row pointing at nothing we can describe) is genuinely
+  // unknown — we cannot claim to "know this shape", so the strangler seam
+  // holds and legacy rendering stands, untouched and by reference.
+  return block;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
