@@ -46,26 +46,18 @@ export const listPublishedLearnDocs = unstable_cache(
   { tags: [LEARN_DOCS_TAG], revalidate: LEARN_REVALIDATE_SECONDS },
 );
 
-/** One published doc by slug, or null (→ notFound). Cached + tagged. */
-export const getPublishedLearnDoc = unstable_cache(
-  async (slug: string): Promise<LearnDocRecord | null> => {
-    const sb = getScriptSupabaseClient();
-    const { data, error } = await sb
-      .schema("education")
-      .from("learn_doc")
-      .select("*")
-      .eq("slug", slug)
-      .eq("visibility", "public")
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (error) {
-      throw new Error(`[learn_doc] get "${slug}" failed: ${error.message}`);
-    }
-    return data ? mapRowToLearnDoc(data as LearnDocRow) : null;
-  },
-  ["education-learn-docs:by-slug"],
-  { tags: [LEARN_DOCS_TAG], revalidate: LEARN_REVALIDATE_SECONDS },
-);
+/**
+ * One published doc by slug, or null (→ notFound). Derives from the cached
+ * list rather than a per-slug `unstable_cache` — a static `keyParts` does NOT
+ * fold in the slug argument, so a per-slug cache would collapse every slug onto
+ * one entry. Reusing the (small) list keeps one consistent, tag-busted entry.
+ */
+export async function getPublishedLearnDoc(
+  slug: string,
+): Promise<LearnDocRecord | null> {
+  const docs = await listPublishedLearnDocs();
+  return docs.find((d) => d.slug === slug) ?? null;
+}
 
 /**
  * slug → title for every published doc — used to label `related.content`
