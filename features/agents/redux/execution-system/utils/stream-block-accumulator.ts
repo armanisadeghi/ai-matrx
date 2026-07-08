@@ -843,8 +843,26 @@ export class StreamBlockAccumulator {
       }
 
       case "xml_tag": {
-        this.appendToCurrentBlock(rawLine);
-        if (trimmed.includes(this.subState.closingTag)) {
+        const { closingTag, isAttrXml } = this.subState;
+        // Strip the literal closing tag out of the line before it's committed
+        // to the block's content. Simple tags (thinking/reasoning/etc.) are
+        // rendered as plain prose, so leaving the raw "</reasoning>" substring
+        // in there leaks it into the visible output (it surfaces at the tail
+        // of the block, since this is the last chunk appended before close).
+        // Attribute-XML blocks (decision/artifact/editor_*) keep the tag in
+        // place — their `rawXml` metadata must match the original source
+        // verbatim for replaceBlockContent round-tripping.
+        let lineToAppend = rawLine;
+        if (!isAttrXml) {
+          const closingIdx = lineToAppend.indexOf(closingTag);
+          if (closingIdx !== -1) {
+            lineToAppend =
+              lineToAppend.slice(0, closingIdx) +
+              lineToAppend.slice(closingIdx + closingTag.length);
+          }
+        }
+        this.appendToCurrentBlock(lineToAppend);
+        if (trimmed.includes(closingTag)) {
           this.closeCurrentBlock(dispatch);
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
@@ -931,16 +949,39 @@ export class StreamBlockAccumulator {
     const isAttrXml = ATTR_XML_TAGS.has(tag);
     const openingTagText = extractOpeningTagText(trimmed, tag);
     const attributes = isAttrXml ? parseXmlAttributes(openingTagText) : {};
+    const closingTag = `</${tag}>`;
     this.subState = {
       kind: "xml_tag",
       tagName: tag,
-      closingTag: `</${tag}>`,
+      closingTag,
       openingTagText,
       attributes,
       isAttrXml,
     };
-    this.appendToCurrentBlock(rawLine);
-    if (trimmed.includes(`</${tag}>`)) {
+
+    // Strip the literal opening tag text (simple tags only — attribute-XML
+    // needs the raw source preserved for metadata.rawXml round-tripping). This
+    // is the streaming path's twin of the fix in processSubStateLine's
+    // "xml_tag" case below — together they stop `<reasoning>` / `</reasoning>`
+    // (and friends) from ever being baked into the block's rendered content.
+    let lineToAppend = rawLine;
+    if (!isAttrXml) {
+      const openIdx = rawLine.indexOf(openingTagText);
+      if (openIdx !== -1) {
+        lineToAppend =
+          rawLine.slice(0, openIdx) +
+          rawLine.slice(openIdx + openingTagText.length);
+      }
+      const closingIdx = lineToAppend.indexOf(closingTag);
+      if (closingIdx !== -1) {
+        lineToAppend =
+          lineToAppend.slice(0, closingIdx) +
+          lineToAppend.slice(closingIdx + closingTag.length);
+      }
+    }
+
+    this.appendToCurrentBlock(lineToAppend);
+    if (trimmed.includes(closingTag)) {
       this.closeCurrentBlock(dispatch);
       this.subState = { kind: "none" };
       this.openBlock("text", dispatch);
