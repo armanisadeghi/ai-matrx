@@ -50,12 +50,13 @@ import { assessmentService } from "../../data/assessmentService";
 import { ASSESSMENT_AGENTS } from "../../data/agents";
 import { useGenerateQuiz } from "../../data/useGenerateQuiz";
 import type {
+  AssessmentKind,
   AssessmentSourceKind,
   Depth,
   NewAssessmentItemInput,
   QuestionType,
 } from "../../data/types";
-import type { KindConfig } from "../kindConfig";
+import { KIND_CONFIG, type KindConfig } from "../kindConfig";
 
 const FIELD = "text-base"; // 16px+ prevents iOS zoom-on-focus
 
@@ -76,7 +77,8 @@ const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
 ];
 const CHUNK_FETCH_LIMIT = 800;
 
-export function AssessmentCreate({ config }: { config: KindConfig }) {
+export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
+  const config: KindConfig = KIND_CONFIG[kind];
   const router = useRouter();
   const base = `/education/${config.base}`;
   const { generate, isGenerating } = useGenerateQuiz();

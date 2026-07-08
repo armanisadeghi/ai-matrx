@@ -25,8 +25,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { assessmentService } from "../data/assessmentService";
-import type { AssessmentRow } from "../data/types";
-import type { KindConfig } from "./kindConfig";
+import type { AssessmentKind, AssessmentRow } from "../data/types";
+import { KIND_CONFIG, type KindConfig } from "./kindConfig";
 
 type VisibilityFilter = "all" | "mine" | "shared" | "public";
 const VISIBILITY_FILTERS: { id: VisibilityFilter; label: string }[] = [
@@ -172,7 +172,8 @@ function AssessmentRowItem({
   );
 }
 
-export function AssessmentHome({ config }: { config: KindConfig }) {
+export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
+  const config: KindConfig = KIND_CONFIG[kind];
   const router = useRouter();
   const [rows, setRows] = useState<AssessmentRow[] | null>(null);
   const [loading, setLoading] = useState(true);
