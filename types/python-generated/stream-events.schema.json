@@ -4903,6 +4903,133 @@
     "title": "ContextChangedData",
     "type": "object"
   },
+  "ContextDeltaData": {
+    "additionalProperties": false,
+    "description": "The CONTENT of a ctx_patch / create mutation, streamed as it is applied.\n\n``context_changed`` (unchanged, still emitted) announces THAT an object\nmutated but carries no content, forcing clients to re-read the row after\nthe writeback — which made agent edits appear all-at-once after the turn.\nThis event closes that gap: emitted at the same moment, in stream order,\ncarrying the edit itself so the client can update its copy immediately.\n\nTwo delivery forms, discriminated by ``delta_kind``:\n  - ``splice`` — a single contiguous replacement against the pre-edit\n    content: replace ``[start, end)`` with ``text``. ``base_len`` /\n    ``new_len`` guard application — if the client copy's length differs\n    from ``base_len`` its copy diverged (e.g. the user typed mid-turn);\n    skip the delta and rely on the ``context_persisted`` re-read.\n  - ``full`` — ``content`` carries the complete post-edit content\n    (create / JSON commands / non-string content, or whenever the splice\n    would not be smaller than the full content).\n\n``seq`` is monotonically increasing so a client can detect reordering.",
+    "properties": {
+      "type": {
+        "const": "context_delta",
+        "default": "context_delta",
+        "title": "Type",
+        "type": "string"
+      },
+      "key": {
+        "title": "Key",
+        "type": "string"
+      },
+      "command": {
+        "title": "Command",
+        "type": "string"
+      },
+      "object_type": {
+        "default": "",
+        "title": "Object Type",
+        "type": "string"
+      },
+      "source_kind": {
+        "default": "",
+        "title": "Source Kind",
+        "type": "string"
+      },
+      "source_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source Id"
+      },
+      "seq": {
+        "default": 0,
+        "title": "Seq",
+        "type": "integer"
+      },
+      "delta_kind": {
+        "default": "full",
+        "enum": [
+          "splice",
+          "full"
+        ],
+        "title": "Delta Kind",
+        "type": "string"
+      },
+      "start": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Start"
+      },
+      "end": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "End"
+      },
+      "text": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Text"
+      },
+      "base_len": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Base Len"
+      },
+      "new_len": {
+        "default": 0,
+        "title": "New Len",
+        "type": "integer"
+      },
+      "content": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Content"
+      }
+    },
+    "required": [
+      "key",
+      "command"
+    ],
+    "title": "ContextDeltaData",
+    "type": "object"
+  },
   "ContextPersistedData": {
     "additionalProperties": false,
     "description": "The server successfully persisted a ctx_patch / ctx_create mutation.\n\nEmitted after the fire-and-forget writeback finishes. Lets the client\nknow it can trust its own cached copy (or trigger a refresh).",
@@ -4949,6 +5076,61 @@
       "command"
     ],
     "title": "ContextPersistedData",
+    "type": "object"
+  },
+  "ContextConflictData": {
+    "additionalProperties": false,
+    "description": "A ctx_patch landed on a row a concurrent edit had already advanced.\n\nThe agent's edit STILL persisted (every version is captured in history), so\nnothing is lost — but the base version the agent edited no longer matched\nthe current row. The client surfaces a diff/merge from version history so\nthe user can reconcile. `base_version` is what the agent edited; the live\nrow is now `base_version + 1` (the agent's write).",
+    "properties": {
+      "type": {
+        "const": "context_conflict",
+        "default": "context_conflict",
+        "title": "Type",
+        "type": "string"
+      },
+      "key": {
+        "title": "Key",
+        "type": "string"
+      },
+      "command": {
+        "title": "Command",
+        "type": "string"
+      },
+      "source_kind": {
+        "default": "",
+        "title": "Source Kind",
+        "type": "string"
+      },
+      "source_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Source Id"
+      },
+      "base_version": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Base Version"
+      }
+    },
+    "required": [
+      "key",
+      "command"
+    ],
+    "title": "ContextConflictData",
     "type": "object"
   },
   "ContextPersistFailedData": {
