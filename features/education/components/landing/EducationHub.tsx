@@ -2,7 +2,7 @@
 // from the shared section primitives + axis config — the one entry point that
 // routes users into all five discovery axes, the content engine, and the tools.
 // 100% server-rendered. Tracks VISION-education-hub.md.
-import { GraduationCap, Upload, Sparkles, Trophy, ArrowRight } from "lucide-react";
+import { GraduationCap, Upload, Sparkles, Trophy, ArrowRight, Library, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
@@ -31,6 +31,29 @@ export function EducationHub() {
         description: axis.blurb,
         href: eduHref(axis.segment),
       })),
+    },
+    {
+      kind: "feature-grid",
+      heading: "Free & open",
+      subheading:
+        "Read, browse, and study without an account — the generous free layer.",
+      columns: 2,
+      items: [
+        {
+          icon: Library,
+          title: "Community Library",
+          description:
+            "Free public study decks from the community — study a copy, or find an editorially Certified one.",
+          href: eduHref("library"),
+        },
+        {
+          icon: BookOpen,
+          title: "Study Guides",
+          description:
+            "In-depth, free explainers on the subjects and exams you're tackling — then study them with the full toolkit.",
+          href: eduHref("learn"),
+        },
+      ],
     },
     {
       kind: "steps",

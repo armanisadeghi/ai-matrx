@@ -26263,6 +26263,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      edu_public_decks: {
+        Args: {
+          p_certified_only?: boolean
+          p_limit?: number
+          p_search?: string
+        }
+        Returns: {
+          card_count: number
+          certified: boolean
+          certified_note: string
+          description: string
+          difficulty: string
+          id: string
+          name: string
+          topic: string
+          updated_at: string
+        }[]
+      }
       edu_resolve_suggestion: {
         Args: { p_id: string; p_status: string }
         Returns: Database["education"]["Tables"]["deck_suggestion"]["Row"]
