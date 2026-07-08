@@ -70,6 +70,7 @@ import {
   UploadGuardHost,
 } from "@/features/files";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { SandboxGateHost } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
 import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
 import { AudioOutputHost } from "@/providers/AudioOutputHost";
@@ -161,6 +162,12 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
                                   <ConfirmDialogHost />
+                                  {/* Imperative sandbox pre-send gate host.
+                                  Exposes `openSandboxGate({conversationId})` —
+                                  a bound-but-unreachable sandbox blocks the send
+                                  and lets the user attach / detach / cancel.
+                                  See components/dialogs/sandbox-gate/. */}
+                                  <SandboxGateHost />
                                   <ValuePromptsDialogHost />
                                   {/* Imperative audio modal host. Exposes the global
                                   `showAudioModal({ text, title, ... })` helper

@@ -194,12 +194,15 @@ function isStillValid(cached: CachedToken | undefined): cached is CachedToken {
 }
 
 /**
- * Resolve which sandbox a conversation is bound to, highest priority first.
- * Returns `null` when no box is bound at any level. Pure + synchronous — safe
- * to call on every turn; does no network I/O (token mint happens in
- * `getActiveSandboxBinding`).
+ * The conversation's CONFIGURED sandbox binding INTENT — the stored ref at the
+ * highest-priority level, WITHOUT the liveness/suppression filter. Answers "is
+ * this conversation bound to a box?" (what the pre-send hard-gate needs), as
+ * distinct from `resolveAgentSandboxRef` which answers "is a live box resolvable
+ * right now?". A bound-but-currently-unresolvable box returns a ref HERE but
+ * `null` from `resolveAgentSandboxRef` — that gap is exactly the gate condition.
+ * Pure + synchronous; no network I/O.
  */
-export function resolveAgentSandboxRef(
+export function getConfiguredSandboxRef(
   state: RootState,
   conversationId: string | null | undefined,
 ): ResolvedSandboxRef | null {
@@ -217,26 +220,13 @@ export function resolveAgentSandboxRef(
     return null;
   }
 
-  // A box we've already learned is dead (token mint reported it not-running)
-  // must NEVER resolve again — otherwise a new conversation re-inherits the
-  // corpse and routes its turn to a dead host. Skip dead refs at every level.
-  const live = (ref: ResolvedSandboxRef): ResolvedSandboxRef | null => {
-    if (isSandboxDead(ref.rowId)) {
-      console.warn(
-        `${LOG} skipping bound box ${ref.rowId} for conversation ${conversationId ?? "(none)"} — suppressed (${DEAD_SANDBOXES.get(ref.rowId)?.reason ?? "unknown"}). Falling back to the global server until the cooldown elapses; it retries automatically.`,
-      );
-      return null;
-    }
-    return ref;
-  };
-
   // Level 1: explicit per-conversation override (applies on ANY surface — the
   // user pinned this specific conversation to a box).
   const override = conversationId
     ? selectConversationSandboxOverride(conversationId)(state)
     : null;
   if (override?.rowId && (override.proxyUrl || override.kind === "local-pc")) {
-    return live({ ...override, source: "conversation-override" });
+    return { ...override, source: "conversation-override" };
   }
 
   // The surface this conversation belongs to ("chat-route", "transcript-studio",
@@ -256,7 +246,7 @@ export function resolveAgentSandboxRef(
     surfaceBound?.rowId &&
     (surfaceBound.proxyUrl || surfaceBound.kind === "local-pc")
   ) {
-    return live({ ...surfaceBound, source: "surface-active" });
+    return { ...surfaceBound, source: "surface-active" };
   }
 
   // The /code editor's connected box — scoped to the code-editor surface ONLY,
@@ -265,15 +255,39 @@ export function resolveAgentSandboxRef(
     const editorRowId = selectActiveSandboxId(state);
     const editorProxyUrl = selectActiveSandboxProxyUrl(state);
     if (editorRowId && editorProxyUrl) {
-      return live({
+      return {
         rowId: editorRowId,
         proxyUrl: editorProxyUrl,
         source: "editor-active",
-      });
+      };
     }
   }
 
   return null;
+}
+
+/**
+ * Resolve which LIVE sandbox a conversation is bound to, highest priority first.
+ * Returns `null` when no box is bound OR the bound box is inside its dead-box
+ * suppression window. Pure + synchronous — safe to call on every turn; does no
+ * network I/O (token mint happens in `getActiveSandboxBinding`).
+ */
+export function resolveAgentSandboxRef(
+  state: RootState,
+  conversationId: string | null | undefined,
+): ResolvedSandboxRef | null {
+  const ref = getConfiguredSandboxRef(state, conversationId);
+  if (!ref) return null;
+  // A box we've learned is dead (token mint reported it not-running) must NOT
+  // resolve while suppressed — otherwise a turn routes to a dead host. The
+  // suppression is time-boxed (see isSandboxDead) so it self-heals.
+  if (isSandboxDead(ref.rowId)) {
+    console.warn(
+      `${LOG} skipping bound box ${ref.rowId} for conversation ${conversationId ?? "(none)"} — suppressed (${DEAD_SANDBOXES.get(ref.rowId)?.reason ?? "unknown"}). Falling back to the global server until the cooldown elapses; it retries automatically.`,
+    );
+    return null;
+  }
+  return ref;
 }
 
 /**

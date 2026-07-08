@@ -14,6 +14,7 @@ import {
 } from "../instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "../instance-user-input/instance-user-input.selectors";
 import { resolvePendingAsksWithInput } from "@/features/agents/ui-first-tools/redux/resolve-asks-with-input.thunk";
+import { ensureSandboxOrDecide } from "./sandbox-gate.thunk";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -67,6 +68,18 @@ export const smartExecute = createAsyncThunk<
       dispatch(clearUserInput(conversationId));
       return;
     }
+
+    // Sandbox hard-gate. A conversation BOUND to a sandbox must never silently
+    // run this turn on the global backend — that burns tokens on tool calls that
+    // fail against the wrong filesystem and poisons the agent's context. If the
+    // bound box can't be resolved, block the send and let the user decide
+    // (attach & retry / detach & send without it / cancel). Gating HERE — before
+    // markInputSubmitted and any optimistic user bubble — means a cancel leaves
+    // the composer text exactly as typed, with nothing to restore.
+    const gate = await dispatch(
+      ensureSandboxOrDecide({ conversationId }),
+    ).unwrap();
+    if (gate === "blocked") return;
 
     const autoClear = selectAutoClearConversation(conversationId)(state);
 
