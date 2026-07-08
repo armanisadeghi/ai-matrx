@@ -3,7 +3,7 @@ import { MarketingPageShell } from "@/features/shell/components/MarketingPageShe
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
 import { EduHero } from "@/features/education/components/sections/EduHero";
 import { SectionRenderer } from "@/features/education/components/sections/SectionRenderer";
-import { LEARN_DOCS } from "@/features/education/data/learn-content";
+import { listPublishedLearnDocs } from "@/features/education/publishing/queries";
 import {
   EDU_WORKSPACE_HREF,
   EDU_WORKSPACE_LABEL,
@@ -11,6 +11,9 @@ import {
 } from "@/features/education/constants";
 import { BookOpen } from "lucide-react";
 import type { EduSection } from "@/features/education/types";
+
+// ISR: the index reflects the published set, revalidated on publish via tag.
+export const revalidate = 3600;
 
 export const metadata = createRouteMetadata("/education", {
   titlePrefix: "Study Guides",
@@ -21,14 +24,15 @@ export const metadata = createRouteMetadata("/education", {
   canonicalPath: "/education/learn",
 });
 
-export default function EducationLearnPage() {
+export default async function EducationLearnPage() {
+  const docs = await listPublishedLearnDocs();
   const sections: EduSection[] = [
     {
       kind: "status-cards",
       heading: "Study guides & explainers",
       subheading:
         "Clear, comprehensive content on the topics you're studying — free to read, easy to turn into flashcards, quizzes, and audio.",
-      cards: LEARN_DOCS.map((d) => ({
+      cards: docs.map((d) => ({
         title: d.title,
         description: d.summary,
         status: "live" as const,

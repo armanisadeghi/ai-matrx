@@ -250,14 +250,19 @@ export async function updateNote(
  * Soft delete a note
  */
 export async function deleteNote(id: string): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .schema("workbench").from("notes")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
   if (error) {
     console.error("Error deleting note:", error);
     throw error;
+  }
+  // RLS silently filters a non-admin sharee's delete to 0 rows — surface it.
+  if (!data || data.length === 0) {
+    throw new Error("You don't have permission to delete this note.");
   }
 }
 

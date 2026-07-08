@@ -215,7 +215,12 @@ export type SourceFeature =
   | "education-planner"
   /** Study Intelligence (P5) analytics narrator — the narrative layer over the
    *  progress dashboard numbers (`/education/progress`). */
-  | "education-analytics";
+  | "education-analytics"
+  /** Assessment Engine (P1) — quiz + practice-test generation, per-item deepen,
+   *  and grade-on-meaning of typed/written answers (`/education/quizzes`,
+   *  `/education/practice-tests`). See features/education/assessment/. */
+  | "education-assessment"
+  | "education-assessment-grade";
 
 // Anti-patterns — never add these. Name the actual surface instead.
 // | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).

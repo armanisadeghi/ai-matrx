@@ -1,518 +1,118 @@
 # KNOWN DEFECTS — AI Matrx Admin (frontend)
 
-The running ledger of known bugs, gaps, and "must never happen again" classes of
-failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
+The ledger of known bugs and gaps on the frontend. Twin of aidream's `KNOWN_DEFECTS.md`.
 
-**Rules of this file**
-- When you discover a defect you can't fully fix in the moment, add it here with
-  enough context to act on it cold. A defect that lives only in a chat log is a
-  defect that will recur.
-- When you fix a defect, move it to **Resolved** with the commit/approach — don't
-  delete it (the history is the institutional memory).
-- Each entry: **what**, **why it happened**, **the fence(s) that prevent the
-  class**, and **what's still open**.
+**Rules**
+- File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
+- **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
+- Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.
 
 ---
 
 ## OPEN
 
-### D29 — Working-document sync model: accepted post-re-read design + two deferred gaps (cross-ref D9)
-**Severity: low — recorded 2026-07-05 during the scratchpad-goes-global build.** The working-document round-trip is deliberately a **post-event re-read** model: `context_changed`/`context_persisted` carry no content, so the editor slice updates only after `syncWorkingDocumentFromAgentThunk` re-reads the row (plus doc-id-filtered realtime). The tool-viz diff (`PatchDiffInline`) applies its patch optimistically for DISPLAY only and never writes the slice — making it a slice writer would race the re-read and the user's version-guarded commit. This is the accepted design until aidream ships mid-stream deltas (D9). Two deferred gaps, both data-safe:
-1. **Mid-typing invisibility.** `useWorkingDocument` refuses to merge remote/agent content into the visible draft while the user is actively typing (`editingRef` guard — it protects the draft); the agent's edit surfaces as a **conflict** on the next commit instead of live-merging. Proper fix is a 3-way merge, D9-adjacent.
-2. **Unmounted-origin attached docs.** A non-primary attached document syncs via realtime only while a mount subscribes its scope; an agent edit to an unmounted attached doc reaches the UI on next open/reload. Currently unreachable from agent writes (agents only patch the current conversation's `working_document`).
+### D31 — Anon-reachable SECURITY DEFINER RPCs trust caller-supplied p_user_id — CRITICAL hits FIXED 2026-07-07; broader audit OPEN
+**Severity: was CRITICAL (unauthenticated decrypted-credential theft); confirmed hits closed, wider candidate set needs a SUPERVISED audit.** Class: a `public` SECURITY DEFINER RPC takes a caller-supplied `p_user_id`/`p_org_id`/email, filters ONLY on it with NO `auth.uid()` check, and is EXECUTE-granted to `anon`+PUBLIC. PostgREST exposes `public`, so any unauthenticated browser can call it with another user's id. Found 2026-07-07 by critical-path review.
 
-### D28 — `study_record_attempt` RPC rejects a NULL `result` (NOT-NULL `item_mastery.struggle_flag`)
-**Severity: medium — found 2026-06-30 building FastFire ([`features/flashcards/fast-fire/`](features/flashcards/fast-fire/)).** A DB-side defect in the committed study spine, NOT in FastFire code; the DDL fix was correctly **denied** by the auto-mode classifier (DB is locked during the transition), so it is logged here for the DB owner to apply.
+**FIXED + live-verified (3 migrations, ledgered):**
+- `get_mcp_credentials` returned **DECRYPTED MCP OAuth access/refresh tokens** to anon (the worst) → revoked anon+authenticated+public (server-admin-only caller). `migrations/definer_rpc_anon_grant_revoke.sql` also revoked anon+public on `get_conversations_for_user`, `get_dm_conversations_with_details`, `get_user_email_preferences` (also dropped authenticated — admin-only), `get_user_session_data`, `apply_usage_delta`, `cx_canvas_save_user_version`, `create_user_list`, `lookup_user_by_email`.
+- `definer_rpc_self_guard_layer2.sql`: in-body `(auth.role()='service_role' OR p_user_id=auth.uid())` self-guards on the 5 still reachable by `authenticated` — verified all 5 cross-calls now 42501, self-calls pass.
+- `definer_rpc_ssr_shell_anon_revoke.sql`: revoked anon on `get_ssr_shell_data` (live browser-auth self) + anon/authenticated on the DEAD `get_ssr_agent_shell_data`.
 
-**What.** `public.study_record_attempt(...)` computes `item_mastery.struggle_flag` as `(not v_correct and not v_partial)`. When `p_result IS NULL` — a fully valid case (FastFire records attempts *before/without* a grade: grader-optional + fire-and-forget, exactly as REQUIREMENTS asks: "records attempts (result null / pending)") — `v_correct`/`v_partial` are NULL, so the expression is NULL (3-valued logic), and the INSERT/UPDATE violates `item_mastery.struggle_flag`'s NOT NULL constraint → PostgREST `23502` / 400. Every result-less FastFire attempt fails the spine write (loudly: `[fastfire.gradeCard] recordAttempt failed`). The session row + `session_audio_file_id` still persist (session create + finalize update use a different path); only the per-card `study_attempt`/`item_mastery` upsert fails.
+**OPEN residuals (supervise — some are guest-flow-sensitive):**
+1. **Authenticated-cross-user on LANGUAGE-sql `get_ssr_shell_data`** (anon closed; an authenticated user can still pass another id → their is_admin/prefs/org memberships). Needs an in-body guard = plpgsql conversion of a per-page-load fn (blast radius = every page; test hard). Same for `apply_usage_delta` (anon closed; left un-guarded — no FE caller, possible trigger context).
+2. **~35 more anon-granted `public` SECURITY DEFINER fns take a user/org id with no LITERAL auth check** — MIXED, audit each body. Many are SAFE via helper predicates (`iam.has_org_access`, `is_super_admin`, `mbr_*`/`org_admin_*` families). Check first (likely same hole): `get_dm_user_info`, `get_user_emails_by_ids`, `get_user_lists_summary`, `get_user_own_feedback`, `feedback_get_admin_info`, `check_prompt_app_drift`, `get_user_organizations`. **CAVEAT — do NOT blanket-revoke anon:** several are LEGITIMATELY anon (guest flows) — `check_upload_quota`/`get_usage_status`/`get_user_limits` (`p_is_guest`), `check_rate_limit` (public apps), `accept_organization_invitation`. Fix template: own-data fns get the `(auth.role()='service_role' OR <id>=auth.uid())` guard; org fns get `iam.has_org_access(p_org_id)`; revoke anon only where no guest path exists.
 
-**Why it happened.** The RPC was authored against the existing flashcard self-review path, which ALWAYS passes a concrete `result`, so the NULL branch was never exercised. FastFire is the first legitimate consumer of an ungraded attempt.
+### D2 — Org/scope authorization boundary open (deferred to the pre-launch security overhaul)
+**Severity: critical — multi-tenant compromise via raw supabase-js. Deferred by explicit decision (2026-06-10); build anything NEW with proper auth anyway.**
+- **Role self-escalation (re-verified live 2026-07-07):** `iam.memberships` UPDATE `WITH CHECK` is `iam.has_org_access(organization_id)` only — any org member can set any membership row's `role`, including their own → `owner`. Fix: role-change guard trigger (or column-guarding policy) + DB-enforced ≥1-owner invariant. Parked because tightening role writes risks breaking invite-accept/role-management flows.
+- Lower-tier residuals from the same audit: org create is non-atomic (orphan org row if the owner-member insert fails), last-owner removal is client-only TOCTOU, `transfer_organization_ownership` RPC exists but is never called, invite/resend API routes rely on RLS alone. Full prioritized audit: `~/.claude/plans/you-are-conducting-an-polymorphic-dragonfly.md`.
+- Fence to build (the overhaul): protected-resources doctrine on org membership + ctx mutations — deny direct writes at RLS, one DEFINER RPC family with org-admin preambles + `REVOKE FROM anon` (model: `accept_organization_invitation`, `migrations/ctx_set_entity_scopes_auth.sql`).
+- Already closed: org-takeover INSERT + membership disclosure (canonical RLS on `iam.memberships`), unauthenticated scope DEFINER RPCs (`migrations/scope_rpcs_org_membership_guard.sql`, `97fa489f9`).
 
-**The fix (one-line, idempotent, ready to apply).** Wrap both `struggle_flag` expressions in the RPC body in `coalesce(..., false)` — a result-less (ungraded) attempt is simply "not a struggle yet". `CREATE OR REPLACE FUNCTION public.study_record_attempt` with the two lines changed; nothing else in the contract moves. (The full corrected body was drafted during the FastFire build.)
+### D30 — Guest promotion trusts a client-supplied fingerprint = anon-account takeover (deferred: security overhaul)
+**Severity: medium — a known/observed FingerprintJS `visitorId` lets an attacker claim another visitor's anonymous account (its guest files/conversations/memory). Found 2026-07-07 by critical-path review.** `lib/services/guest-promotion.ts` (`promoteGuestToUser`, driven from `signUpAction`) authorizes SOLELY on the `fingerprint` in sign-up `formData`: it resolves `guest_executions.auth_user_id` by that fingerprint and sets email+password on the still-anonymous uid — with NO proof the caller holds that fingerprint's anon session. `looksLikeFingerprint` only rejects the guessable `temp_*` fallback; a real visitorId is accepted. **Fix belongs in the D2 overhaul (cross-repo):** bind the fingerprint to the current server-minted anon session/cookie (browser proves possession) before promoting — the browser never holds the anon session (Python mints it), so it needs aidream coordination. **Do NOT patch in isolation:** email/password promotion is the ONE working conversion path (OAuth is already lossy per the OAuth entry), and a wrong guard breaks it.
 
-**Also fixed here (client, in scope):** `study_session.source_kind` CHECK allows `set`/`dynamic_batch`/`adaptive` only (`source_kind` is the source TYPE, not the table name) — the FastFire launcher (and the existing `useFlashcardStudy`) were passing `'fc_set'`. FastFire now passes `'set'` (`features/flashcards/fast-fire/hooks/useFastFireLauncher.ts`). **The `useFlashcardStudy` half is now also CLOSED:** `features/flashcards/data/useFlashcardStudy.ts:196` passes `sourceKind: 'set'` (flipped from `'fc_set'` in commit `b9bab8309`). Verified live 2026-06-30 — ran `/education/flashcards/746e4ea0-…/study` (the `withSession: true` StudySurface) and the `POST …/study_session` returned **201** with `source_kind: "set"` (row id `67c95a16-80b6-4f9b-87a0-f0c5ba7b9a2a`), zero `23514`. The whole client `source_kind` class is resolved; only the DB-side RPC `struggle_flag` defect above remains open.
+### D1 — Agent chat audio is still an expiring signed S3 URL (backend-gated)
+**Severity: medium — plays today, breaks days later when the signature expires.** The media agent persists generated audio with the default `visibility="private"` (aidream `base_media._persist_asset`), so `/files/{id}/url` mints an expiring signed URL. `components/mardown-display/blocks/audio/AudioOutputBlockRenderer.tsx` renders via the file handler (`useFileSrc` from `file_id`, owner self-heal), but the URL should never surface. **Fix (aidream):** persist agent audio durable at the generation boundary the way podcasts do (`_persist_episode` → `make_urls_durable`) — do NOT flip the global private default (privacy regression). Optional follow-up: a pg_cron + pg_net healer draining `mtx_media_heal_queue` via a service-token aidream endpoint. Everything else from the 2026-06 media-durability campaign is done — fences live in CLAUDE.md "Media durability", `lib/media/signed-url.ts`, `lib/media/durability.ts`, the `mtx_public_media_url_guard` DB trigger, `<InlineMediaRef>` + `useRemintableSrc`, and the ESLint raw-`<img>`/`<video>` bans.
 
-### D27 — Phantom association tokens: `agent_app`, `cx_message`, `cx_conversation`, `user_file`, `chat_block`
-**Severity: medium — created 2026-06-29 during the association-system type-safety hardening ([`features/scopes/FEATURE.md`](features/scopes/FEATURE.md) Change Log 2026-06-29).**
+### D3 — Agent Find Usages + Drift: never browser/prod-driven + DM sender identity
+**Severity: low — data/RPC layer verified; backend deployed.** Open: (1) browser-drive the §5 checklist in [`docs/handoffs/agent-find-usages.md`](docs/handoffs/agent-find-usages.md) — DM *send* has never actually inserted a row; confirm the weekly cron fires. (2) Drift DMs send from a real super-admin user (env `MATRX_SYSTEM_DM_SENDER_USER_ID`) until a dedicated "Matrx System" bot auth-user exists — cosmetic.
 
-- **What.** Several entity-type tokens are used in code as association `source_type` / scope-tag `entity_type` but are **NOT registered** in `platform.entity_types` (the generated `EntityTypeToken` set of 216): `agent_app` (agent-apps scope tagging — there is no `aga_apps` table; apps live in `app.definition` = token `app`), `cx_message` (canonical token is `message`), `cx_conversation` (canonical `conversation`), `user_file` (canonical `file`; war-room already maps `user_file→file` in `features/war-room/service/associations.ts#entityToSource`), `chat_block`.
-- **Why it happened.** The edge's `source_type` FK to `platform.entity_types.token` is **validated/enforced**, so any write with these tokens FK-violates (`23503`) — and the now-graveyarded `associate_with_task`/`create_task_with_association` RPCs added a 4-vs-5-tuple `ON CONFLICT` bug (`42P10`) on top. These chat→task / app scope-tag flows were therefore already broken; the breakage was just cryptic.
-- **The fence that now exists.** `associationsService` runs `checkToken` (against the generated registry set) before every RPC, so a phantom token is rejected as a loud `invalid_argument` at the callsite — no longer a silent/cryptic PG error. `get_task_associations` still *reads* `source_type IN ('cx_message','cx_conversation','user_file',…)` for its preview buckets, so those buckets are simply always empty.
-- **What's still open.** Decide the canonical token per phantom and either (a) map at the write boundary (`cx_message→message`, `cx_conversation→conversation`, `user_file→file`, mirroring war-room) and repoint `get_task_associations`' read filters + `taskService.uploadTaskAttachment` (writes `user_file`) + `messageActionRegistry`'s `setPendingSource` tokens, or (b) register the missing tokens in `platform.entity_types`. `agent_app` needs an agent-apps-domain call (which table backs it). Tracked for the association-cleanup hunt (rogue tokens + bespoke M2M tables).
+### D7 — Scribe mobile: mic re-prompts (needs a device run) + cross-device recovery gap
+**Severity: high — the "never lose audio" promise on mobile.** Capture is already IndexedDB-first and interruptions are loud (`features/audio/micStream.ts` `onended`/`onmute` + `subscribeMicInterruption`; `safety_id` persisted on `studio_recording_segments` + reconcile re-upload). Open: (1) real-phone verification that the 2026-06-14 hardening actually reduces iOS re-prompts (re-acquire after a hard track-end inherently re-prompts; only a device run confirms felt behavior); (2) cross-device recovery — upload chunks eagerly to `cld_files` so a recording captured on a phone that never finished uploading is recoverable off that device.
 
-> **2026-06-29 sweep (triage + fixes; entries below carry per-item detail).** **Resolved by deleting dead/duplicate code:** D21 (AI-Runs ai_runs half), D24 (contentHistory overlay), D6-toolviz (`dynamic/` runner), D25 sub-items 1+5 (system-prompts→Dynamic* chain). **Resolved — no FE change, backend deployed + verified live:** D11 (per-turn context via `chat.message.model_context`), D26 functional part (`workbench.working_documents` writeback). **Fixed:** D8 (`message`→`chat.message` + 4 stale detailSources repointed; `session` deferred), D23 (task attachments → canonical `TaskAttachmentsPanel`). **Reviewed & dispositioned (senior call):** D16 + D12 deferred (low/risky/cosmetic, see notes), D13 accepted as-is, D5-mermaid = not-a-defect (reach), D3-Find-Usages narrowed (router confirmed live). **Confirmed genuinely backend-blocked (aidream HEAD checked):** D9, D10, D1-chat-audio. **Pending user decision:** D2 (Q1 — cheap security slice), D1 podcast heal (Q2). **Untouched by design:** D25 applet gate (being rebuilt), D14/D15 (war-room arch/backend), D20 (OAuth backend), D7 (needs a device), D3-pdf (needs KMS), D4-pdf (PDF effort). All FE fixes committed; typecheck 0, `check:schema`/`check:dead-relations`/`check:doctrine` green.
+### D9 — Scribe: agent working-document edits apply all-at-once, not streamed
+**Severity: low — UX only; aidream-gated (verified not implemented 2026-06-29).** `context_changed` carries no content, so the client re-reads the doc after the turn. Fix: aidream emits working-document deltas as a dedicated event type; FE applies them incrementally in `instance-working-document.thunks.ts`.
 
-### D26 — Working-document rebuild: legacy-litter cleanup pending (functional part RESOLVED 2026-06-29)
-**Severity: low — created 2026-06-29 by the working-document end-to-end rebuild (FEATURE.md `features/agents/FEATURE.md` Change Log 2026-06-29; [[project_working_document_rebuild]]). The functional gap is closed; what remains is canonicalization hygiene.**
+### D10 — Picklist `matrx` fence: BOUND scope-cell path not flipped (aidream-gated)
+**Severity: low — FE is fully unified on the canonical FLAT reference; direct/override variables work end-to-end.** Open (all aidream):
+1. Resolve a fence-valued BOUND scope cell — `scope_binding_resolution.py` reads only `entry.get("value")` / `_is_picklist_ref`; it must read `value_text` and guarantee `replace_variables` → `stage_reference_fences` ordering on the bound chain.
+2. **`value_type` drift caveat for the reader:** legacy bound picklist items still carry `value_type='object'/'array'` while a re-saved fence lands in `value_text` — read the populated `value_*` column, never trust `value_type`. Decide back-compat decoder vs one-time backfill for existing `picklist_ref` rows (legacy rows already scream via FE `legacyTranslate.ts`).
+3. After 1+2 hold end-to-end: retire the legacy `picklist_ref` path, then remove FE `@deprecated` `PicklistRefEnvelope`/`isPicklistRef` (`features/agents/types/agent-definition.types.ts`) and the `legacyTranslate.ts` seam.
 
-- **aidream writeback → `workbench` — DEPLOYED + VERIFIED (2026-06-29).** STEP 1 moved `chat.working_documents` → `workbench.working_documents`; the writeback (`_writeback_working_document`, aidream commit `285eb3f18`, targets `workbench` + materialize-on-write) is live (aidream auto-deploys on push to main). Verified against the live DB: `workbench.working_documents` has rows **created AND updated today** — agent edits persist server-side. This functional sub-item is closed.
-- **STEP 3 deferred (legacy litter, harmless).** `workbench.working_documents` still carries the unused `conversation_id` + `user_id` columns (provenance now lives in `metadata.origin_conversation_id`; owner is `created_by`), and the bespoke `chat.conversation_documents` junction still exists (retired — FE/aidream read `platform.associations`; verified no runtime callers). Dropping `user_id` couples to the aidream writeback's `select("created_by, user_id, …")` + a redeploy, so it was deferred off the chaotic shared aidream tree. Fix when convenient: stop selecting `user_id` in the handler → drop `conversation_id`/`user_id` → `ALTER TABLE chat.conversation_documents SET SCHEMA graveyard` → `python db/generate.py` (aidream model regen).
-- **Multi-attach beyond the primary slot.** The `instanceWorkingDocument` slice holds ONE doc per `(conversation, kind)` (the primary). A conversation *can* hold multiple `working_document`→`conversation` edges (true M2M), but hydrate restores only the primary (born-here deterministic id, else first enabled); additional attached docs surface via `DocumentsWorkspace`, not the slice. Full multi-attach in the primary slot needs a slice redesign (`byKey[...]` → array). Not a bug today; flagged so no one assumes it works.
+### D12 — `selectContextPayload` drops entry-level `label`/`type` (deferred 2026-06-29)
+**Severity: low — cosmetic; the model gets the content, only the manifest label is humanized.** The fix (wrap primitive values into rich form `{content, type, label}` in `features/agents/redux/execution-system/instance-context/instance-context.selectors.ts`) is deferred: it touches every agent's payload, and the safe wrap omits `max_inline_chars`, so wrapping LONG strings (transcripts) could silently flip inline-vs-deferred — needs backend confirmation first. Builders needing wire metadata use the rich-form dict workaround (`buildWorkingDocumentContextValue`, `sessionResourceContext`).
 
-### D25 — Prompts-system deletion: residuals (dead chain CLEARED 2026-06-29; applet gate + 2 degraded surfaces remain)
-**Severity: low — known, intentional, temporary. Created 2026-06-28 when the legacy prompts system + dead socket schema system were deleted (commits `3eef0cab1`, `35d8214bc`). The prompts system was replaced by the agents system (same UUIDs, agent execution path).**
+### D13 — TTS speaker routing via global `AudioContext` monkeypatch (accepted as-is 2026-06-29)
+**Severity: low — Chromium-only, next-utterance granularity; the patch is guarded and screams on failure** ([`features/audio/audioOutputSink.ts`](features/audio/audioOutputSink.ts)). Parked unless TTS sink routing is reprioritized. Open slivers: owner's patch-vs-fork call (a ~140-line sink-aware `WebPlayer` fork removes the patch + gains mid-utterance re-routing); `MicDeviceMenu` caret missing on the dedicated scribe record button; fold `videoConference.defaultMicrophone/defaultSpeaker` into `userPreferences.audioDevices`; real-browser sanity pass with a non-default speaker.
 
-**Cleared in the 2026-06-29 sweep (commits `c4a639ca9` + `28c83484c`):** the dead, runtime-broken `system-prompts-service` → `useSystemPrompts` → `DynamicButtons`/`DynamicCards` chain was **deleted** (sub-items 1 + 5 below). It had no live consumers; a prior repoint to `.schema("graveyard")` had silenced `pnpm check:schema` without fixing the runtime 404 (graveyard schema has no browser-role USAGE) — arguably worse, now gone. The decommissioned `GeneratePromptForSystemModal` lost its only dep on the deleted types (inlined `SystemPromptDB`).
+### D14 — War Room: live recording doesn't survive a tab switch; agent reads only the active session's transcript
+**Severity: medium — no data loss (mic singleton + chunk persistence survive), but the recording session tears down when the tile switches tabs, and non-active recordings are invisible to the thread agent.** Fences to build: a room-level media slice/controller owning the active recording across tab switches; `assistantContextBuilder` (or a war-room hydration thunk) binding EVERY `studio_session` assignment of a tile and emitting per-session transcript keys. Touch points: `features/transcription-cleanup/components/CleanupPad.tsx`, `features/audio/hooks/useChunkedRecordAndTranscribe.ts`, `features/transcript-studio/service/assistantContextBuilder.ts`, `features/war-room/components/tile/TileAgentPanel.tsx`, `features/war-room/service/warRoomAgentContext.ts`, `features/war-room/redux/thunks.ts`.
 
-**What's gated / degraded (compiles clean, `tsc` 0 errors):**
-- **Applet execution is OFF.** `features/applet/runner/AppletRunComponent.tsx` has `APPLET_EXECUTION_UNDER_CONSTRUCTION = true`. Both old execution paths died with prompts: `useAppletRecipe` (Socket.IO `run_recipe_to_chat`) and `useAppletRecipeFastAPI` (the removed `POST /api/recipes/{id}/convert-to-prompt`). The applet subsystem is **deliberately kept fully wired + rendered** (so it isn't forgotten/deleted) — execution side effects are short-circuited via a new `enabled` prop on both hooks, an under-construction banner shows, and submit raises a toast. **To resurrect:** flip the flag to `false` AND finish the recipe→agent rewire in `useAppletRecipeFastAPI` (restore agent resolution; the `submitAppletAgentThunk` it references is currently undefined). Owner: applet (user is rebuilding this).
-- **`PromptEditorContextMenu` removed from 4 surfaces** — `features/content-templates/admin/ContentTemplateManager.tsx`, `features/content-templates/components/SaveTemplateModal.tsx`, `components/admin/MarkdownTester.tsx`, `components/official/content-editor/ContentEditor.tsx`. Right-click "insert content block" into those textareas is lost (TODO markers left). Fix: lift a content-block context menu into a shared component independent of the deleted prompts feature.
-- **`ModelSettingsDialog` stubbed** in `features/ai-models/components/DeprecatedModelsAudit.tsx` + `ModelUsageAudit.tsx` — the "review settings" step is now a plain confirm. The agents `AgentSettingsModal` is agentId/Redux-driven, not a callback drop-in. Fix: extract `ModelSettings` to a shared callback component, or wire an agentId.
-- **`DynamicButtons` / `DynamicCards`** (`components/dynamic/`) — **DELETED 2026-06-29** (sub-item 5). They were unreachable (zero importers) and their only data source was the runtime-broken `system-prompts-service`. Gone with the chain rather than rewired to `useShortcutTrigger()`.
-- **Dead data flow (harmless):** `features/shell/components/DeferredShellData.tsx` still preloads `contextMenuCacheSlice` rows for the deleted v1 `features/context-menu/UnifiedContextMenu` (the slice is kept; only the v1 menu was deleted). Safe to leave; remove the preload when convenient.
-- **`lib/services/system-prompts-service.ts` + `hooks/useSystemPrompts.ts` + `types/system-prompts-db.ts` + `scripts/seed-system-prompts.ts` — DELETED 2026-06-29** (sub-item 1). They read graveyarded `system_prompts`/`system_prompt_executions` (404 at runtime) and had no reachable consumers once `DynamicButtons`/`DynamicCards` were deleted. `pnpm check:schema` stays green.
+### D15 — War Room file access is client-delegated; generic platform primitives unbuilt
+**Severity: low — works today via war-room-specific wiring.** Open (aidream): a generic server-side `file_read` tool (`file_id` → `processed_document_pages.{raw_text,cleaned_text}` under `acting_as_user`/RLS) so every agent reads file extractions disconnect-safe; a `source_ids`/`file_ids` filter on `RagSearchArgs` + `matrx_rag.search.search`. Then `war_room_read_file` becomes a thin alias or dies. Also: `rag_search` was added to the three War Room `agx_agent` rows by DB edit — re-add if personas are ever regenerated from code; arming `war_room_read_file` on room/master agents needs the per-file manifest plumbed into `MasterThreadEntry`.
 
-**Fence.** DB tables were already graveyarded; this was a pure code delete, so there's no shim/fallback to rot (clean-cut doctrine). All deletions verified: 0 `tsc` errors, no live `fetch()`/links to deleted routes, no remaining imports of deleted dirs/slices. Residual graveyard-table reads (system-prompts-service above) are caught by `pnpm check:schema`.
+### D19 — Event spine: webhook depth remainder
+**Severity: medium.** Run-lifecycle producers (12 tables) + `useRunListRealtime` polling-kill are done — see [`features/files/webhooks/FEATURE.md`](features/files/webhooks/FEATURE.md). Open: org-wide fan-out (needs iam membership for arbitrary (user,org)); Python file-audit events (`audit_bridge.py`) write `actor_id = null` so they never match owner webhooks; manual redeliver button + RPC; `latency_ms` capture; per-feature admin-map entry; browser-verify `/files/webhooks`.
 
-### D24 — `ContentHistoryViewer` overlay was a no-op-stub duplicate — RESOLVED 2026-06-29 (commit `594498a5e`)
-**Severity was: medium.** Triage found the `contentHistory` overlay + `ContentHistoryViewer` were a **non-functional duplicate**: reachable only from the half-migrated `cx-chat` demo (whose own edit/history state is itself stubbed), while the live `/chat` route already has the real, working twin — `EditHistoryDialog.tsx` (real selector + dispatched `editMessage` thunk + `parseHistory` guard), opened via the agents `AssistantActionBar` `onRequestEditHistory`. A naive rewire was the wrong move (the overlay carried `sessionId`, the slice is keyed by DB `conversationId`). **Deleted** the overlay end-to-end (both `ContentHistoryViewer.tsx` copies, the opener, the `OverlayController` block, catalogue/`overlay-ids`/`windowRegistryMetadata`/`toolsGridTiles`/`overlaySchemaRegistry` entries, and the two dead cx-chat callers). `EditHistoryDialog` (live) untouched. Independently verified clean (zero dangling refs).
+### D20 — Guest→user promotion: OAuth signup still orphans guest work
+**Severity: medium — Google/GitHub/Apple signup loses every file/conversation the guest created; email/password is fully handled** (`lib/services/guest-promotion.ts` promotes the anon UUID in place). OAuth does `signInWithOAuth` → new UUID; the browser never holds the anon session (Python mints it from the fingerprint), so `linkIdentity` isn't directly available. Fix: (a) link the OAuth identity to the fingerprint's anon UUID server-side after callback, or (b) a one-time anon→new-UUID data transfer for OAuth only. OAuth forms don't carry `GuestFingerprintField`.
 
-### D23 — Task attachments not persisted (data loss on reload) — RESOLVED 2026-06-29 (commit `c4a639ca9`)
-**Severity was: medium.** Triage found the canonical write path was already built and live (the "association cutover" note was stale for tasks): `taskService.uploadTaskAttachment`/`deleteTaskAttachment` → `associationsService` over the `assoc_add`/`assoc_remove`/`get_task_associations` SECURITY DEFINER RPCs (persisting a durable `file_id`, not a signed URL), already consumed by three sibling surfaces. `TaskDetails.tsx` was simply an **orphaned legacy variant** (local-state-only, with a latent `r.file.name` bug). **Fixed** by replacing its hand-rolled attachments block with the canonical `<TaskAttachmentsPanel taskId={task.id} />` (matching `TaskDetailPage`/`TaskDetailsPanel`/`TaskEditorBody`) — one canonical path, durable refs, survives reload.
+### D25 — Prompts-system deletion residuals
+**Severity: low — intentional, temporary (prompts system replaced by agents, 2026-06-28).** Open:
+- **Applet execution OFF:** `APPLET_EXECUTION_UNDER_CONSTRUCTION = true` in `features/applet/runner/AppletRunComponent.tsx` (subsystem kept fully wired + rendered; banner + toast on submit). To resurrect: flip the flag AND finish the recipe→agent rewire in `useAppletRecipeFastAPI` (`submitAppletAgentThunk` is currently undefined). Owner: applet rebuild.
+- **`ModelSettingsDialog` stubbed** in `features/ai-models/components/DeprecatedModelsAudit.tsx` + `ModelUsageAudit.tsx` — "review settings" is a plain confirm. Fix: extract a shared callback `ModelSettings` component or wire an agentId.
+Everything else closed — see Resolved (content-block menus, dead preloads, dead chains, dead ai_runs half).
 
-### D22 — Auth-action open-redirect + PII-log hardening — FULLY RESOLVED 2026-07-07
-**Severity was: high (open-redirect) + medium. Closed; residual `x-forwarded-host` trust closed 2026-07-07.**
+### D29 — Working-document sync: accepted post-re-read design, two deferred gaps
+**Severity: low — data-safe by design; accepted until aidream ships deltas (D9).** (1) Mid-typing invisibility: `useWorkingDocument`'s `editingRef` guard means an agent edit surfaces as a commit-time conflict, not a live merge — proper fix is a 3-way merge. (2) A non-primary attached doc only syncs via realtime while a mount subscribes its scope; agent edits reach it on next open (currently unreachable — agents only patch the current conversation's doc). `PatchDiffInline` applies patches for DISPLAY only — making it a slice writer would race the re-read and the version-guarded commit. Related design note: the `instanceWorkingDocument` slice holds ONE primary doc per `(conversation, kind)`; additional attached docs surface via `DocumentsWorkspace`, not the slice — multi-attach in the primary slot needs a `byKey[...]`→array redesign. Not a bug; don't assume it works.
 
-- **FIXED (2026-06-27, this wave).** The open-redirect CLASS is killed by one shared primitive `safeRelativePath` (`utils/auth/safe-redirect.ts`), applied at every sink that follows a user-supplied `redirectTo`/`callbackUrl`: `actions/auth.actions.ts` (signUp/signIn), `app/(auth-pages)/login/actions.ts` (login/signup), `app/auth/confirm/route.ts`, and `app/auth/callback/route.ts` (the `${baseUrl}${redirectTo}` concat). OAuth *provider* redirects (`redirect(data.url)`) are intentionally left untouched (commented). `resetPasswordAction` now `return`s before each `encodedRedirect`. PII logs (emails) gated behind `NODE_ENV==='development'` across all five files. Guard rejects `https://`, `//`, `/\`, `/%2F`/`/%5C`, `@evil`, and whitespace-after-slash vectors.
-- **RESIDUAL FIXED (2026-07-07).** The spoofable `x-forwarded-host` trust is closed by a second primitive `safeForwardedHost` (`utils/auth/safe-redirect.ts`, next to `safeRelativePath`): the header is followed only if it matches a host allowlist — the `NEXT_PUBLIC_SITE_URL` host, Vercel's system-env hosts (`VERCEL_URL` / `VERCEL_BRANCH_URL` / `VERCEL_PROJECT_PRODUCTION_URL`), or any `*.vercel.app` host (so preview-branch OAuth keeps working — the reason a blind allowlist was originally deferred). Comma-chained headers use the first entry; anything with a slash/`@`/whitespace is rejected structurally. On mismatch it falls back to the request's own origin and `console.error`s loudly (spoof attempt or missing allowlist entry — both must be seen). Applied in both forwarded-host consumers: `app/auth/callback/route.ts` and `app/auth/callback/admin/route.ts` (`app/auth/confirm/route.ts` never used the header — relative redirects only).
+### D31 — PDF reversible-redaction keys: client-only custody until KMS escrow lands *(formerly the second "D3")*
+**Severity: medium — clearing browser data / switching devices makes redacted spans cryptographically unrecoverable.** Keys live only in IndexedDB (`features/file-analysis/redact/session-keys.ts`); `redaction_mapping` holds ciphertext+nonce. `pdf_redaction_key_escrow` exists but its write path is deliberately unwired: keys must be KMS-wrapped (security team's interface) — storing raw keys server-side would weaken the custody model. Mitigation: MaskDialog KeyHandoff acknowledgment + destructive-mode ConfirmDialog. Close by wiring wrap/unwrap once the KMS interface exists.
 
-### D21 — AI Runs feature read the graveyarded `ai_runs` table — RESOLVED 2026-06-29 (commit `b4092df3b`)
-**Severity was: high.** The "repoint to `public.ai_runs_summary`" the prior note suggested was a dead end (that view itself reads `graveyard.ai_runs`). Triage found the `ai_runs` half was **dead code** — no route mounts it, nothing imports it, and its only consumers (the prompt-runner / matrx-actions modal) were deleted with the prompts system. **Deleted** the ai_runs components/hooks/service/utils, both dead server-action twins, the stale `/ai/runs` favicon entry, and the obsolete status docs. **Kept** the still-live `ai_tasks` half (`useAiTasks` / `ai-tasks-service`, used by `/administration/ai-tasks` + the public apps-response route) — that half reads `graveyard.ai_tasks` through the deprecated shim and belongs to the applet system being rebuilt (D25), so it was left intact. D19's "ai_runs Realtime conversion" is now MOOT (feature gone).
+### D32 — PDF 500-page scale items *(formerly the second "D4")*
+**Severity: medium — degraded UX on large docs, no data risk.** From the 2026-06-11 consolidation (plan `~/.claude/plans/feature-deep-dive-audit-rustling-hare.md`): PdfStudioReader mounts all page blocks (no virtualization); render-all/split build ZIPs in memory server-side (bounded but unstreamed); AI clean/extract on >200pp runs as a held request instead of the resumable per-page job model. Also open: reading-order viewer tab; verify the aidream variant pipeline renders PDF page-1 grid thumbnails.
 
-### D20 — Guest→user in-place promotion is email/password only; OAuth signup still orphans guest work
-**Severity: medium — a guest who signs up via Google/GitHub/Apple loses every file/conversation they created as a guest. Email/password signup is fully handled (2026-06-26).**
-
-**What.** `lib/services/guest-promotion.ts` `promoteGuestToUser()` runs inside the email/password `signUpAction` and promotes the anonymous `auth.users` row in place (same UUID → all guest work kept). The OAuth signup actions (`signUpWithGoogleAction` / `…Github` / `…Apple` in `actions/auth.actions.ts`) do a fresh `signInWithOAuth` → **new UUID**, orphaning the guest's anon UUID and its data.
-
-**Why.** In-place promotion needs to set credentials on the existing anon user; OAuth mints a separate identity. The correct path is `linkIdentity` on the anon session, but the browser never holds the anon session (Python mints it server-side from the fingerprint).
-
-**What's open.** Either (a) link the OAuth identity to the fingerprint's anon UUID server-side after callback, or (b) a one-time data-transfer (anon UUID → new UUID) fallback for OAuth only. Until then, OAuth guest conversion is lossy. The fingerprint reaches the email/password server action via the `GuestFingerprintField` hidden input — OAuth forms don't carry it.
-
-### D19 — Event spine: only Transport 2 is built; run-lifecycle producers + Transport 1 (Realtime polling kill) pending
-**Severity: medium — outbound webhooks work, but the "stop polling long jobs" win and "notify on job finished" are not wired yet. See [features/files/webhooks/FEATURE.md](features/files/webhooks/FEATURE.md).**
-
-**What's open.**
-- **Phase 1 — run-lifecycle producers — DONE (2026-06-26).** All 12 canonical run tables emit `run.completed`/`run.failed` with `actor_id` = owner via the generic `platform.emit_run_lifecycle()` trigger (`migrations/run_lifecycle_activity_events.sql`; reads `to_jsonb(NEW)`, owner = `coalesce(user_id, triggered_by)`). DB agent finished the retrofit; both owner shapes verified end-to-end. `public.ai_runs` excluded (record-state status). `organization_id` is now REQUIRED (NOT NULL) on all 12 (`migrations/run_org_required.sql`: backfill from personal org / system org for ownerless + a `platform.stamp_run_org()` insert-default), so every run has an org and every terminal transition emits.
-- **Transport 1 — Realtime kills in-app polling — STARTED.** Generic primitive shipped: `hooks/useRunListRealtime.ts` (owner-scoped Realtime → debounced refetch). **Podcast runs list (`useStudioRuns`) converted** — 15s poll deleted, `agent_run` added to `supabase_realtime`, verified live. The other "polls" are intentional and left as-is: `useStudioRun` (detail — disconnect-recovery fallback during streaming), `useResolveCreatedProject` (bounded one-shot wait for a new record, keyed on slug/name — no id to subscribe to), RAG safety-net (already Realtime-primary). The prior "only real blocker" (`useAiRunsList` on graveyarded `ai_runs`) is **MOOT as of 2026-06-29** — that feature half was deleted (D21), so there's no poll left to convert. To convert any future surface: add its run table to the publication (if absent), call `useRunListRealtime({table, onChange: refetch})`, delete the interval.
-- **Webhook depth:** org-wide fan-out (needs iam membership for arbitrary (user,org)); the Python file-audit events (`audit_bridge.py`) write `actor_id = null`, so they don't match owner webhooks yet — populate the actor; manual redeliver button + RPC; `latency_ms` capture; per-feature admin-map entry; **browser-UI verification of `/files/webhooks` still pending** (blocked at build time by a concurrent dev server; backend pipeline verified live).
-
-### D18 — `files.share_links` + `files.file_versions` owner SELECT RLS gap — RESOLVED 2026-06-27
-**Severity was: medium (`/files/f/[fileId]` showed "File not found").** Verified 2026-06-27: both tables now carry the full canonical policy set incl. `std_select` (authenticated via `iam.has_access` + `created_by` owner check), matching `files.files`/`folders` — the RLS gap is closed (a later canonical RLS pass applied it). The companion FE swallow at `SingleFileShell.tsx` is also fixed — it now `console.error`-screams on a real query error and only stays quiet on a clean `!data` not-found.
-
-### D17 — `userPreferencesSlice` module-coverage gaps — RESOLVED 2026-06-27
-**Severity was: low.** `sandbox`, `transcription`, and `agentConnections` were each missing from one or more of the four module lists in `lib/redux/preferences/userPreferencesSlice.ts`. Fixed: all three added to `resetToLoadedPreferences`, the REHYDRATE merge, and `PREFERENCE_MODULE_KEYS` (partialize) — so they now persist to the server/IDB, hydrate on boot, and reset correctly, matching every other module. (Also closes the D5-mermaid "Also noted" sub-item that flagged the same partialize omission.)
-
-### D16 — Composer draft false-alarm scream + non-unified send path — RESOLVED 2026-07-02 (commit `a3dfe59d2`)
-**Severity was: low (a false-positive `console.error`; the draft was always preserved — no data loss).**
-
-**Root cause (the earlier framing was WRONG — corrected by deep recon).** The prior note blamed "Scribe doesn't split, so the success-path `clearUserInput` screams." Two errors: (1) `smartExecute` splits ONLY behind `autoClear && surfaceKey` (a builder/orchestrator/extraction "iterate" affordance) — **neither main `/chat` nor Scribe sets `autoClear`**, so routing Scribe through `smartExecute` never splits and never orphans (the "orphan risk" was imaginary). (2) The success-path clear (`process-stream.ts:~2117`) was ALREADY guarded; the real screamer was the turn-**reservation** clear (`process-stream.ts:~1214`) firing `markInputPersisted` UNCONDITIONALLY — and it's **universal to every single-id continuous surface** (main `/chat` too), not Scribe-specific. Scribe's audio-first flow just widens the type-during-reservation window.
-
-**The canonical fix (3 parts).**
-1. **Sanctioned clear helper** — `clearComposerIfUnsubmitted(conversationId,{via})` ([`instance-user-input/clear-composer.thunk.ts`](features/agents/redux/execution-system/instance-user-input/clear-composer.thunk.ts)): silently no-ops when `isInputDraftProtected` (live diverged draft), else clears. Routed all FOUR clear-on-send sites through it (reservation + success + error `run-ai-stream.ts` + pre-stream-failure `execute-instance.thunk.ts`). The reducer's `reportInputDraftViolation` tripwire is untouched — it still screams for any rogue DIRECT clear that bypasses the helper.
-2. **Unified entrypoints** — the human composers now all go through the ONE `smartExecute` path: Scribe `useStudioAssistant.send`, `ProTextareaAgentPanel`, legacy `cx-chat/ConversationInput` (no `surfaceKey` → no split). Programmatic one-shot callers (transcription-cleanup/mermaid/war-room) have no live composer and were left as-is.
-3. **Structural anti-orphan guard** — `conversationLifecycle: "continuous" | "iterate"` on the instance (`instance.types.ts`), derived centrally at create from `autoClearConversation` (`conversations.slice.ts` `createInstanceFull`). `smartExecute` now splits ONLY when `autoClear && surfaceKey && lifecycle === "iterate"`; anything else with `autoClear` → `console.error` + NO split. **Orphaning a durable conversation is now structurally impossible + loud.** Verified: every `autoClear`/split-capable surface (builder/orchestrator/extraction/tester/widgets + the split-creators) resolves to `iterate`; no existing flow can trip the refuse branch (autoClear is creation-time-immutable, gated behind `showAutoClearToggle`).
-
-**What's open.** Nothing in code (touched files typecheck 0; adversarially reviewed). Final confirmation is a live-browser pass (a real Scribe multi-turn session + a long `/chat` stream with a typed next-draft) — the one thing not runnable headless here.
-
-### D15 — War Room agent file access is frontend client-delegated; the generic platform primitives are not built
-**Severity: low — the War Room thread agent now reads attached-file extractions + searches RAG (shipped), but via war-room-specific wiring, not reusable server tools.**
-
-**What.** The thread agent now (a) sees attached files in its inline `war_room` `<files>` manifest, (b) reads a file's extracted raw/clean text via the **client-delegated** `war_room_read_file` tool (`features/agents/war-room-master-tools/`, reusing `features/rag/api/document.ts`), and (c) RAG-searches via the existing `rag_search` server tool (added to the three War Room `agx_agent` rows). Two gaps remain by design (expedited path):
-1. **No generic server-side `file_read` tool.** `war_room_read_file` is a client-delegated war-room tool — it only runs while the tile panel is mounted/connected (the established war-room read pattern) and is not available to other agents. The platform primitive is a server tool (`file_id` → `processed_document_pages.{raw_text,cleaned_text}` inside `acting_as_user`/RLS, in aidream) so EVERY agent reads file extractions disconnect-safe.
-2. **`rag_search` can't scope to a single file.** Its filters are `source_kinds` (we pass `cld_file`) + `scope_ids` (ctx scope), NOT `file_id`. So the agent searches the user's file corpus, steered to the thread's files by the manifest + role, rather than strictly one file. The fix is a `source_ids`/`file_ids` filter on `RagSearchArgs` + `matrx_rag.search.search` (aidream).
-
-**Why.** The owner needed this expedited; the frontend already had `fetchDocument`/`fetchDocumentPage` + `rag_search` existed server-side — so v1 wired those rather than building+deploying new aidream tools.
-
-**The fence / follow-up (aidream).** Build the generic `file_read` tool + the `source_ids` RAG filter; then `war_room_read_file` becomes a thin alias (or is retired) and any agent gets file access. Also: the `agx_agent.tools` `rag_search` addition was a DB edit — if the War Room personas are ever regenerated from a code source, re-add it there.
-
-**What's open.** Both aidream primitives above; arming `war_room_read_file` on the room/master agents (their rosters use the leaner `MasterThreadEntry` shape — needs the per-file manifest plumbed there first).
-
-### D14 — War Room: live audio-session recording does NOT survive a tab-switch; agent sees only the active session's transcript
-**Severity: medium — recording data persists (no data loss), but the live capture/UI drops when the user switches a tile's tab, and the thread agent can't read a tile's non-active recordings.**
-
-**What.**
-1. (`db72068b`) Recording an audio *session* (`CleanupPad` → `useChunkedRecordAndTranscribe`) is owned by the tile's Audio tab; switching the tile to another tab unmounts `CleanupPad` and tears the recording engine down (the app-root mic singleton survives, but the per-session chunking/transcription lifecycle does not). The mic *capture* now survives navigation (app-root `GlobalRecordingProvider` + `micStream`), and the false "Recording" badge is fixed (`useTilePulse` reads the live `recordings` slice), but the recording *session* should be owned above the tab (a room-level media controller) so the engine isn't unmounted.
-2. (`00e37f34`) A tile's transcript context (`session_cleaned`) is built by `assistantContextBuilder` for the **active** studio session only; a tile with multiple audio sessions exposes just one → the thread agent gets `[not_found]` for the rest. The `war_room` manifest no longer over-promises `session_cleaned` (points to the data tool), but the durable fix is to hydrate ALL of the tile's audio sessions and emit a per-session transcript key.
-
-**Why.** War Room reused the studio recorder by embedding it in the tab; the recording lifecycle + the studio context builder are both single-active-session by construction.
-
-**The fence (not yet built).** A room-level media slice/controller that owns the active recording across tab switches; `assistantContextBuilder` (or a war-room hydration thunk) binds every `studio_session` assignment of the tile and emits per-session transcript context.
-
-**What's open.** Both fences. Touch points: `features/transcription-cleanup/components/CleanupPad.tsx`, `features/audio/hooks/useChunkedRecordAndTranscribe.ts`, `features/transcript-studio/service/assistantContextBuilder.ts`, `features/war-room/components/tile/TileAgentPanel.tsx`, `features/war-room/service/warRoomAgentContext.ts`, `features/war-room/redux/thunks.ts`.
-
-### D13 — Audio: TTS speaker routing relies on a global `AudioContext` constructor monkeypatch (Chromium-only, next-utterance granularity)
-**Severity: low — speaker selection works for media elements everywhere it's supported; only the Cartesia TTS path uses the patch, and it's a no-op unless a non-default speaker is chosen.**
-
-**Triage 2026-06-29 — ACCEPTED as-is.** No functional bug: the patch is guarded (installs once, Chromium-only, no-op on default, preserves prototype/`instanceof`, screams on `setSinkId` failure). Patch-vs-fork is a genuine owner preference call with no correctness impact, so this stays parked unless TTS sink routing is reprioritized — not a fix target.
-
-**What.** `<audio>`/`<video>` output routes cleanly via `HTMLMediaElement.setSinkId` (`InlineMediaRef`, Chrome/FF). The Cartesia `WebPlayer` builds a private per-utterance `AudioContext` with no handle, so [`installAudioContextSinkRouting`](features/audio/audioOutputSink.ts) patches the global `AudioContext` constructor to apply the chosen sink to every new context (opt-out via `NO_SINK_ROUTING` for the mic meter + capture). A device change applies to the *next* utterance, not mid-playback; Firefox/Safari have no `AudioContext.setSinkId` so TTS stays on the system default there.
-
-**Why.** Cartesia's SDK exposes no sink handle and we chose not to fork it.
-
-**The fence / cleaner path.** A small forked sink-aware player (the SDK's `WebPlayer` is ~140 lines) routed through a media element we control — removes the global monkeypatch and gives mid-utterance re-routing. Decision deferred to the owner (the patch is guarded: installs once, Chromium-only, no-op on default, preserves prototype/`instanceof`, screams on `setSinkId` failure).
-
-**What's open.** (a) The owner's call on patch-vs-fork; (b) the `MicDeviceMenu` caret is on `ProInput`/`ProTextarea` only — wire it onto the dedicated scribe record button if wanted; (c) `videoConference.defaultMicrophone/defaultSpeaker` are superseded by `userPreferences.audioDevices` but not yet folded in (unify when convenient); (d) real-browser sanity check that Cartesia playback + voice-agent capture behave with a non-default speaker selected.
-
-### D12 — `selectContextPayload` drops entry-level `label` / `type`, so compact (string-valued) context objects reach the backend WITHOUT their authored label
-**Severity: low — cosmetic. The model still receives the content; only the manifest label is the humanized key instead of the authored one.**
-
-**What.** [`selectContextPayload`](features/agents/redux/execution-system/instance-context/instance-context.selectors.ts) builds the request `context` dict as `payload[entry.key] = entry.value` — it forwards ONLY the value, dropping the entry's `label` / `type` / `slotMatched`. For entries whose value is a plain string (every `recording_NN_raw` / `session_cleaned` from `assistantContextBuilder`), the backend never sees the authored `label` ("Recording 1 — raw transcript (with [t=…s]…)") and humanizes the key ("Recording 01 Raw") in the `<available_context>` manifest instead.
-
-**Why it happened.** The wire shape predates the backend's rich-form support; the selector was written when context was a flat `key→string` map.
-
-**The workaround in use.** An entry that needs metadata on the wire ships a **rich-form value** — a dict `{ content, type, label, description, max_inline_chars }` (the selector passes the value through untouched, so the dict survives). `working_document` (`buildWorkingDocumentContextValue`) and the `session_brief` / `project_tasks` / `project_overview` entries (`sessionResourceContext`) all do this; it is also how they control inline-vs-deferred.
-
-**The fence (not yet built).** Make `selectContextPayload` wrap a PRIMITIVE value that carries entry metadata into rich form (`{ content: value, type, label }`) so authored labels reach the backend for every entry without each builder hand-rolling a dict. Behavior-preserving — the backend treats `{content,…}` ≤200 chars identically to a bare string. Deferred here because it touches the shared payload for EVERY agent and the only payoff is nicer manifest labels; not worth bundling into a hot fix that ships straight to main.
-
-**Triage 2026-06-29 — DEFERRED (accepted).** The dict-preserving wrap is low-risk in isolation, but (a) the payoff is purely cosmetic (authored manifest labels — the model already receives the content), (b) `selectContextPayload` feeds EVERY agent's request, and (c) the safe wrap omits `max_inline_chars`, so wrapping a LONG string (`all_raw`/`session_cleaned` transcripts, far over the backend's 200-char "treated as bare string" guarantee) could silently flip inline-vs-deferred behavior — needs backend confirmation first. Not worth a global, behavior-shifting change for a label nicety. Builders that need wire metadata keep using the rich-form dict (the existing workaround).
-
-**What's open.** The wrap above (deferred). Until then, only rich-form values carry `label` / `max_inline_chars` to the backend.
-
-### D11 — Per-turn context snapshot — RESOLVED 2026-06-29 (wired in code; verified live)
-**Severity was: medium.** The backend now persists per-turn context as the typed column `chat.message.model_context` (not the originally-planned `metadata.context_snapshot`), and the FE already reads it: `messageRowToRecord` maps `row.model_context → record.modelContext`, and `AgentUserMessage` maps `modelContext.items[]` → `ContextSlotChipStrip` entries (preferring it; falling back to the live snapshot only when absent). Verified live: 219+ user messages carry populated `model_context.items` (latest written today), the field mapping is exact, and reloaded historical turns now show the correct per-turn chips. No code change needed — this triage confirmed and closed it.
-
-**What.** The user-message context indicator (`ContextSlotChipStrip` inside [`AgentUserMessage.tsx`](features/agents/components/messages-display/user/AgentUserMessage.tsx)) used to read the **live, conversation-level** `instanceContext`, so every historical user bubble — across every conversation — displayed the *current* context as if the model had actually received it. That is a dangerous lie: it claims per-turn context tracking that did not exist.
-
-**Fix shipped (frontend).** [`execute-instance.thunk.ts`](features/agents/redux/execution-system/thunks/execute-instance.thunk.ts) now freezes the turn's real context entries (`selectInstanceContextEntries`) onto the optimistic user message's `metadata.context_snapshot` at submit. `AgentUserMessage` renders **only** that snapshot (`ContextSlotChipStrip entries={...}`) and never falls back to live context — no snapshot → no chips. So in-session turns are truthful and historical bubbles stop lying.
-
-**Why it happened.** The strip was wired to a per-conversation live slice with a code comment explicitly deferring per-turn accuracy as "a follow-up." Live state is the wrong source for a historical record.
-
-**The fence that prevents the class.** Historical record components must read a frozen per-record snapshot, never a live global/conversation slice. `ContextSlotChipStrip` keeps its live-selector behavior ONLY when no `entries` snapshot is passed (that path is reserved for "next request" surfaces above the input).
-
-**Full spec for the durable fix:** [`features/agents/docs/CONTEXT_RECORD_SPEC.md`](features/agents/docs/CONTEXT_RECORD_SPEC.md) — verified live (2026-06-19) that NO per-turn or per-conversation context record exists anywhere in Matrx Main, and that the two purpose-built tables (`ctx_context_access_log`, `ctx_user_active_context`) are empty/unwired. The spec defines the access-log wiring + per-turn snapshot table + `metadata.context_snapshot` mirror.
-
-**What's open.** Nothing for the per-turn chip display (the bug this entry tracked). The richer access-log + dedicated per-turn snapshot table in [`CONTEXT_RECORD_SPEC.md`](features/agents/docs/CONTEXT_RECORD_SPEC.md) (cross-conversation context auditing) remains future-scope — a feature, not a bug.
-
-### D10 — Picklist → `matrx` fence migration: BOUND scope-cell path not yet flipped (backend-gated)
-**Severity: low — FE is fully unified on the canonical FLAT reference; the only open item is the aidream bound scope-cell reader. No data loss.**
-
-**What (FE — DONE, hard cut).** The whole FE now emits and reads the canonical FLAT reference item (`{ list_id, item_id, label? }` — no `purpose`/`slot`/`ref`/`display`) across the 7-type taxonomy. Picklist-bound variable authoring emits the ` ```matrx ` reference fence (`kind:"reference"`, `type:"picklist_item"`) via [`referenceFence.ts`](features/matrx-envelope/referenceFence.ts) (`buildPicklistItemFence`) + `PicklistVariableInput.tsx`. Legacy shapes (old nested item, `picklist_ref` object/array) are NO LONGER silently dual-read — every legacy read is routed through [`features/matrx-envelope/legacyTranslate.ts`](features/matrx-envelope/legacyTranslate.ts), which flattens the value and fires a one-per-value `console.error` so the admin notices and migrates it.
-
-**What (backend — still gated).** A picklist value reaches the backend two ways; only one is verified:
-1. **Direct / override `variables`** (FE-controlled) — the fence string is sent as the value, substituted by `replace_variables`, resolved by aidream `substitute.py#stage_reference_fences`. **Works now.**
-2. **Bound scope-cell** (server reads the persisted cell) — aidream `aidream/api/utils/scope_binding_resolution.py` still recognizes only the `_is_picklist_ref` dict. A fence-valued cell coerces to its text via `_coerce_variable_value` and would only resolve if `replace_variables` runs before `stage_reference_fences`. **Not verified end-to-end → bound path NOT flipped.**
-
-**Why it matters / the `value_type` caveat.** New picklist context-items persist `value_type='string'` ([`componentValueType.ts`](features/scope-system/utils/componentValueType.ts)) → the fence lands in `value_text`. EXISTING bound picklist items still carry `value_type='object'`/`'array'` in the DB; when re-saved, `buildScopeValuePayload` falls back to `value_text` (a fence string isn't valid JSON), so the value lives in `value_text` while the `value_type` column still says object/array — a drift the backend reader must tolerate (read the actual populated `value_*` column, not just trust `value_type`).
-
-**Backend status (verified 2026-06-29):** still NOT implemented — `aidream/api/utils/scope_binding_resolution.py` reads `entry.get("value")` and branches only on `_is_picklist_ref`/`_looks_like_media_ref`; no `value_text` read, no fence resolution in that resolver (fence machinery lives only in `services/references/`). Genuinely blocked on backend.
-
-**What's open.**
-1. **aidream:** resolve a fence-valued BOUND scope cell — read `value_text`, and ensure `replace_variables` → `stage_reference_fences` ordering applies to the bound-variable substitution chain. Verify before relying on the bound path.
-2. **aidream:** decide handling for existing `picklist_ref` scope-cell rows (back-compat decoder vs. a one-time backfill) and tolerate the `value_type` column drift above for re-saved items. Legacy rows now surface a loud FE `console.error` when rendered (see `legacyTranslate`), making them easy to find and migrate.
-3. **aidream (post-FE):** once (1)+(2) hold end-to-end, retire the legacy `picklist_ref` variable path and drop it from the `validate_envelope_registry.py` parallel-encoding allowlist. Then remove the FE `@deprecated` `PicklistRefEnvelope` / `isPicklistRef` (`features/agents/types/agent-definition.types.ts`) and the `legacyTranslate.ts` seam.
-
-### D9 — Scribe: agent edits to the working document apply all-at-once, not streamed
-**Severity: low — a UX gap, not data loss. Deferred: needs an aidream change.**
-
-**What.** When the Scribe assistant edits the working document, the edit appears all at once after the turn finishes, not token-by-token like a chat response streams.
-
-**Why it happens.** The agent writes the doc server-side via `ctx_patch`; the client only learns of it through the `context_changed` stream event, which carries **no content** — so the client re-fetches the doc after the turn (for bound docs) and can't render incremental deltas (`instance-working-document.thunks.ts`). True live streaming requires aidream to emit working-document **deltas** as a dedicated event (like chat tokens), which the client would apply incrementally.
-
-**Fence / status.** Deferred per the 2026-06-17 Scribe-improvements spec (Feature 8: "implement if achievable without significant work, else defer and document the blocker"). No data loss — the final content always lands; only the live-typing feel is missing.
-
-**Backend status (verified 2026-06-29):** still NOT implemented — the aidream writeback path is fire-and-forget, emitting only `context_persisted`/`context_persist_failed`, no incremental deltas. Genuinely blocked on backend, not merely undeployed.
-
-**What's open.** aidream: stream working-document edit deltas as a dedicated event type. FE: incremental apply in `instance-working-document.thunks.ts` / the working-doc editors once the backend emits deltas.
-
-### D8 — `item_presentation`: `message` enriched + stale detailSources fixed 2026-06-29; `session` seed-only by decision (commit `6769af0c6`)
-**Severity: low.** Largely resolved this sweep; `session` enrichment is a deliberate deferral and the read-only generic window is optional polish, not a bug.
-
-**What.** The opener gap is closed. `agent`, `note`, `file`/`image`/`video`/`audio`, and `picklist` open their bespoke windows; **every other recognized type opens the generic `ItemDetailWindow`** (`features/window-panels/windows/item-detail/ItemDetailWindow.tsx`), which fetches the full row via the registry's `detailSource` and renders every populated field. Two gaps remain:
-1. **`message` — FIXED.** Now `detailSource: { table: "message", schemaName: "chat", titleField: "role" }` (the teaching block defines `message` = a chat message; `chat.message` is canonical, verified live). Same pass also fixed 4 EXISTING detailSources the DB reorg had left stale (silent not-found): `udt_datasets`/`udt_workbooks`/`udt_documents` → `workbench`, `emails` → `communication`, plus the matching `note`/`picklist` `enrich()` schemas → `workbench`. **`session` — left seed-only by decision:** genuinely ambiguous (`workspace.war_rooms` / `transcripts.studio_sessions` / `education.quiz_sessions` / `public.window_sessions`) with no teaching guidance, so one pick would mis-enrich the others; the entry carries a code comment. Revisit only if a canonical `session` source is chosen (or split into typed variants).
-2. **The generic window is read-only.** It's a clean detail view, not the type's real editor (e.g. a task board card, a project workspace). Upgrading a type to a bespoke window is one branch above the generic cases in `useOpenItemPresentation` + the bespoke window itself. Candidate bespoke targets: `task`, `project`, `scope` (note: `scopeEditWindow` needs `scopeTypeId`+`organizationId`, so a by-id open must fetch those first), `document` (`workingDocumentWindow` is `conversationId`-keyed, not `udt_documents`), `email` (`emailDialogWindow` is compose-only).
-
-**Fence.** `canOpen` only flips true when `config.open` is set; `useOpenItemPresentation` always resolves a recognized openable type to *some* window (bespoke or generic). `ItemDetailWindow` soft-fails on missing `detailSource`, missing row, RLS block, and network error — every state renders a calm message, never a throw.
-
-### D7 — Scribe: mobile mic re-prompts + recoverable-but-orphaned audio
-**Severity: high — violates the platform's "never lose audio" promise on mobile. Investigated 2026-06-14; recovery half is a known, scoped fix, the permission half needs device testing.**
-
-**What.** On mobile, `/transcripts/scribe` (a) re-prompts for mic permission repeatedly and (b) has dropped audio + lost transcripts.
-
-**Findings (the recorder engine itself is sound).** `useChunkedRecordAndTranscribe` already: shares one warm OS grant via `features/audio/micStream.ts` (ref-counted + 3-min keepalive, so repeated record taps don't re-prompt), persists every chunk to IndexedDB *before* transcription, runs a stop-time full-blob fallback when any chunk failed, bounds chunk fetches with `AbortController`, and flushes on `pagehide`. So the loss is NOT in capture.
-
-**Two real causes:**
-1. **Re-prompts** are not from the recorder (it reuses the warm grant). The likely source is **iOS ending/​muting the mic track on interruption** (lock screen, app switch, an incoming call, or switching the scribe Record↔Live tabs where `features/voice-agent/audio/audioCapture.ts` opens its *own* `AudioContext` and may clone the track). When the track's `readyState` flips off, `micStream.acquireMicStream` drops it and the next acquire re-prompts. There is **no `track.onended`/`onmute` handling** in `micStream.ts` and **no interruption/visibility recovery**, so this is silent and unmitigated. NOTE: graceful re-acquire on iOS inherently re-prompts — the real mitigation is keeping the grant + context warm across tab switches and surfacing the interruption loudly rather than silently re-acquiring.
-2. **Lost audio/transcript** has a concrete, documented hole: the crash-safe IndexedDB id (`safetyId`, on `ChunkCompleteInfo` + `useChunkedRecordAndTranscribe.getSafetyId()`) is **never written to the `studio_recording_segments` row**. So when a recording is stranded (page reload/crash/back-to-back start before finalize, or chunks never uploaded on bad network), `reconcileStuckRecordingsThunk` can derive `t_end` from raw chunks but **cannot recover the AUDIO** — it lives only in IndexedDB keyed by a `safetyId` the row doesn't know. `AudioRecoveryProvider` handles same-device orphans by scanning IndexedDB, but isn't linked to the specific stranded segment.
-
-**The fix.**
-- **Recovery — DONE (2026-06-14).** `migrations/studio_recording_segments_safety_id.sql` (applied live + ledgered) adds `safety_id text`. `useStudioSession` persists it the FIRST chunk it learns the id (`persistRecordingSafetyIdThunk`), so a crash BEFORE finalize still carries a recovery pointer. `reconcileStuckRecordingsThunk` (runs on session load) now, for any segment with `audio_path IS NULL` + a `safety_id` whose blob is still in IndexedDB, re-uploads it via `uploadRecordingAudioThunk` and screams (loud recovery). Closes same-device-after-reload loss. **Still open:** cross-device recovery needs the blob uploaded eagerly (chunk-by-chunk to `cld_files`) rather than only kept in this device's IndexedDB — today a recording captured on a phone that never finished uploading can only be recovered from that same phone.
-- **Permissions — HARDENED (2026-06-14), needs device verification.** `micStream.ts` now attaches `track.onended`/`onmute`/`onunmute` + a `navigator.permissions` microphone watcher and exposes `subscribeMicInterruption`; `useChunkedRecordAndTranscribe` raises a **loud** `MIC_INTERRUPTED` error on a hard end / permission-revoke mid-recording (chunks so far are already safe in IndexedDB) instead of silently dropping. New `features/audio/audioContext.ts` is ONE shared, resumable AudioContext for the level meter — the recorder no longer does `new AudioContext()` per instance (which churned contexts and risked iOS exhaustion → a recording that silently fails to start); capture is independent of it, so this can't affect the never-lose-audio path. The warm grant is already preserved across Record/Agent/Live tab switches (the Live tab uses `acquire/releaseMicStream`, never hard-stops). **Still needs verification on a real phone:** iOS inherently re-prompts when re-acquiring after a hard track-end — these changes make interruptions loud + cut context churn, which should reduce (not provably eliminate) the re-prompting; only a device run confirms the felt behavior. **Open next:** cross-device eager audio upload (chunk-by-chunk to `cld_files`) so a phone recording survives even if that phone never finishes the background upload.
-
-**Fence.** Capture already never loses audio locally (IndexedDB-first). The gap is *recovery linkage* (safety_id on the row) and *interruption visibility* (loud track-end handling). Both are additive — neither weakens the existing safety net.
-
-### D6 — Window geometry restore key mismatch (`overlayId` vs slug) — RESOLVED 2026-06-27
-**Severity was: low (saved size/position silently didn't restore for windows whose slug ≠ overlayId, e.g. `agentSettingsWindow`/`agent-settings-window`).** Fixed in `WindowPersistenceManager.tsx`: the `windowEntries` restore map is now keyed by `regEntry.slug` (the id `WindowPanel` registers under in `windowManagerSlice`) instead of `overlayId`, so `restoreWindowState` matches the registered window and applies the saved rect. No migration needed — DB `window_type` always stored the slug; only the in-memory key was wrong. `sessionMapRef` (save/close) stays keyed by `overlayId` (unchanged).
-
-### D3 — Agent Find Usages + Drift: never browser/prod-verified + DM sender identity
-**Severity: low — built, every RPC server-verified; full checklist in [`docs/handoffs/AGENT_FIND_USAGES_DRIFT_HANDOFF.md`](docs/handoffs/AGENT_FIND_USAGES_DRIFT_HANDOFF.md).**
-
-**Triage 2026-06-29 — backend DEPLOYED, confirmed live.** prod `/openapi.json` serves all four `/agent-usage/*` routes (registry/report/scan/sync) — the router, startup sync, and weekly-scan wiring are in aidream HEAD and deployed. The two residuals are both LOW and can't be closed from here: (1) browser-drive the §5 handoff checklist (DM *send* actually inserts a row; weekly cron fires) — needs a live session; (2) the cosmetic DM-bot-identity swap (drift DMs send from a real super-admin user until a "Matrx System" bot auth-user exists).
-
-**What.** The Find Usages + Drift subsystem (see [`features/agents/FEATURE.md`](features/agents/FEATURE.md) → Find Usages & Drift) is verified at the data/RPC layer (registry sync 42 rows/0 broken pins; weekly scan 30 groups dedup-clean; report deterministic; remediation repins v1→v3; history-counts works post-`agx_usage_005`). Open:
-1. **Never exercised in a browser or on prod.** The DM *send* has never actually inserted a row (stubbed in every test); aidream isn't deployed (startup sync / weekly cron / `/agent-usage/*` HTTP endpoints unrun over a real request); the windows, agents-page banner, DM chips, and the remediation/notify click flows weren't browser-driven (the shared `AgentUsagesEngine` WAS, via the report drill-in). Run the §5 checklist in the handoff after deploy.
-2. **DM sender identity.** Drift DMs send from the platform operator's *personal* super-admin user (`4cf62e4e-…`, env-overridable via `MATRX_SYSTEM_DM_SENDER_USER_ID`). A dedicated "Matrx System" bot auth-user is the clean later swap — purely cosmetic (messages show a real human's name as sender until then).
-
-**Fence.** The weekly scan fingerprint-dedups so a re-verify run can't double-notify; the registry sync writes only on real deployments (`strict_startup_gates`) so a laptop can't mark prod keys vanished. Broken code pins scream (`record_error` + red log) without crashing boot.
-
-### D1 — Media durability: public/owned media must never be a signed, expiring URL
-**Severity: high — silently breaks public pages days later.**
-
-**What.** Generated podcast media (covers, audio, per-clip videos) was persisted
-into `pc_episodes.image_url` / `audio_url` / `video_url` as **expiring signed S3
-URLs** (`matrx-user-files.s3.amazonaws.com/…?X-Amz-Signature=…&Expires=…`). The
-public episode page (`/podcast/[slug]`, viewed by anonymous users) renders these
-directly, so once the signature expires the images/audio break — silently, days
-after creation. Older episodes stored durable public-bucket / `cdn.matrxserver.com`
-URLs and work fine; the new pipeline regressed.
-
-**Why it happened (multiple mistakes, both sides).**
-1. **Backend (root):** the media agents persist with the default
-   `visibility="private"` (`packages/matrx-ai/.../providers/base_media.py:_persist_asset`),
-   which yields a signed S3 URL. The orchestrator captures that URL string and
-   `_persist_episode` (router `aidream/api/routers/podcast_generator.py`) writes it
-   verbatim into `pc_episodes`. The *official video* already does it right
-   (`visibility="public"` → permanent CDN) — proof the fix is a one-knob change.
-2. **Frontend:** the public episode/show pages render media with **raw `<img>` /
-   `<video>`** (`features/podcasts/components/player/PodcastEpisodePage.tsx`,
-   `PodcastShowPage.tsx`, `PodcastGrid.tsx`) instead of the canonical
-   `<InlineMediaRef>`, with hide-on-error and no fallback — so a broken URL just
-   vanishes. This violated CLAUDE.md's "every file flow funnels through
-   `@/features/files`" rule, and there was no lint rule enforcing it.
-
-**The fences (defense in depth).**
-| Layer | Status | Mechanism |
-|---|---|---|
-| 1. Server persists media PUBLIC at generation | **DONE (backend, pending deploy)** | `aidream/api/routers/podcast_generator.py` `_persist_episode` now runs every media URL through `aidream/services/media_durability.py#make_urls_durable(owner_user_id=...)` **before** writing `pc_episodes` — flipping each private file to public (`SyncEngine.change_visibility_async`) and minting its CDN URL. Deliberately scoped to the podcast persist boundary so the **global** media default (`base_media._persist_asset`) stays `private` — flipping that would make every AI image/audio/video on the platform public (a privacy regression). The official composed video is already public → passes through unchanged. |
-| 2. DB-edge guard | **DONE + ROLLED OUT** | `migrations/mtx_public_media_url_guard.sql` — registry (`mtx_public_url_guard`) + generic trigger that, on any write of a non-durable URL to a registered column, RAISES a loud WARNING and queues a heal job (`mtx_media_heal_queue`). Reusable for any table/column. Non-blocking. `migrations/mtx_public_media_url_guard_rollout.sql` (2026-06-08) made the trigger **array-aware** (`text[]` columns checked element-by-element) and registered every other public-read media column: `pc_shows.{image_url,og_image_url,thumbnail_url}`, `aga_apps.{preview_image_url,favicon_url}`, `shared_canvas_items.thumbnail_url`, `site_metadata.{logo_url,default_share_image_url}`, `custom_app_configs.image_url`, `custom_applet_configs.image_url`, `wf_template.preview_image_url`, `pc_studio_runs.{audio_url,selected_cover_url,image_urls[],video_urls[]}`. Existing non-durable rows backfilled (incl. 2 studio-run array rows). 9 tables guarded total. |
-| 3. Frontend classifier + loud logger | **DONE** | `lib/media/durability.ts` — `classifyMediaUrl` / `isDurableMediaUrl` (twin of the DB classifier) + `reportMediaDurabilityViolation()` which screams in the console when an expiring URL reaches a render/store path (so the defect can't be ignored). |
-| 4. Canonical render component re-mints | **DONE (podcasts)** | `<InlineMediaRef>` now extended with ambient/preview video flags (`autoPlay`/`loop`/`muted`/`playsInline`/`controls`/`preload`), so it covers background video — no more raw `<video>`. Every podcast display surface migrated: show hero, episode hero (metadata + ambient video), grid backdrop, studio `AssetCard` (image + video). **Authed** studio uses `podcastMediaRef()` (file_id → re-mint, durable for owners); **public/anonymous** pages pass the durable URL string directly (anonymous CANNOT re-mint a file_id, so they rely on layer 1/2/heal for durability) and get the informative error fallback instead of a silently-vanishing cover. Justified exception: `PodcastAudioPlayer`'s headless `<audio>` (custom transport) stays raw + documented. |
-| 5. Heal the backlog | **TOOL BUILT — run pending authorization** | The existing leaked rows are healed server-side (works cross-user, unlike a per-owner frontend drain — the 5 broken episodes span 2 users). `aidream/scripts/flip_files_public.py` (a thin CLI over `media_durability.flip_file_to_public`) flips a batch of file_ids to public + reports CDN URLs; the `pc_episodes` rewrite + `mtx_media_heal_queue` mark-healed is then applied via SQL. Dry-run verified (16 files for the 5 episodes all resolve, all `private`, 0 errors). Running the real flip mutates 2 real users' production media, so it needs an explicit go-ahead. The same primitive is what generation-time layer 1 uses, so the classifier never drifts. |
-
-**What's still open.**
-- **Agent chat audio (`audio_output` / `media_block(kind=audio)`) is served as a raw
-  signed S3 URL.** Same root as podcasts: the media agent persists the generated
-  `.wav` with the default `visibility="private"`, so the backend `/files/{id}/url`
-  endpoint mints `matrx-user-files.s3.amazonaws.com/…?AWSAccessKeyId=…&Signature=…&Expires=…`.
-  The new `components/mardown-display/blocks/audio/AudioOutputBlockRenderer.tsx`
-  renders correctly via the file handler (`useFileSrc` from `file_id`) and the URL
-  plays/downloads/copies, but it is still expiring + S3 — so it WILL break when the
-  signature expires and the link should never be surfaced to users. **Fix is backend:**
-  persist agent audio public (or proxy via an our-domain durable URL) the same way
-  podcast layer 1 flips visibility. Frontend logs the resolved shape via
-  `console.log("[audio-block] resolved", …)` (no longer a `console.error` overlay,
-  since this is a tracked backend gap). When the backend serves durable URLs this
-  note can close.
-- **5-episode public backlog — RESOLVED (verified 2026-07-02).** The `pc_episodes`
-  heal already ran: all 42 episodes now hold durable CDN/public URLs (**0 signed/
-  expiring**, live-verified), and the matching `mtx_media_heal_queue` rows are
-  `healed`. The public episode/show pages no longer break.
-- **Backend layer 1 (generation-time durability) — DEPLOYED (verified 2026-06-29).**
-  `_persist_episode` → `make_urls_durable` is in aidream HEAD (commit `b7b206833`)
-  and aidream auto-deploys on push to main, so newly generated episodes now persist
-  durable CDN URLs. (Agent chat audio — first bullet above — is the one path still
-  NOT fixed backend-side: `base_media._persist_asset` still defaults `private`.)
-- **A pg_cron + pg_net automated healer** (the fully-hands-off version): a cron job
-  drains `mtx_media_heal_queue` by calling a small aidream "flip file + rewrite
-  column" endpoint (wrap `flip_files_public.py`'s logic in a service-token route).
-  This makes the heal continuous instead of a manual run.
-- **`pc_studio_runs` internal residue — RESOLVED (2026-07-02).** 18 broken test
-  studio runs (2026-06-11..17, expiring signed URLs in `image_urls[]`/`video_urls[]`/
-  `audio_url`, no inbound FKs) couldn't be healed from the frontend env (needs AWS)
-  and were internal test data — deleted them + cleared their `mtx_media_heal_queue`
-  entries. `pending` heal-queue backlog is now **0**; 12 durable runs + the 27
-  `healed` audit rows kept. No expiring URL remains anywhere in the podcast data.
-- **Public pages still use raw `<img>` — RESOLVED (2026-07-07).** DONE for podcasts
-  (2026-06); the remaining sweep is now done too: every `appImageUrl` /
-  `applet.imageUrl` render under `features/applet/home/**` (all `app-display/*`
-  incl. `Banner.tsx`'s CSS `background-image`, `applet-card/*`, `main-layout/*`)
-  now renders via `<InlineMediaRef>`, and the ESLint raw-`<img>`/`<video>` fence
-  is extended to `features/applet/home/**` (`eslint.config.mjs`, second media-
-  durability block). The `/p/[slug]` public app surface has NO media renders
-  (its `preview_image_url` is used only in OG/twitter `generateMetadata` —
-  correct usage, nothing to migrate). Two justified leftovers: `GlassContainer`
-  (`components/ui/GlassContainer.tsx`) still takes a `backgroundImage` CSS prop
-  (shared generic UI primitive, consumed by `applet-card/Glass.tsx` +
-  `app-display/ModernGlass.tsx` shells) — its source columns are DB-guarded, so
-  this is residual render-polish only.
-
-**Fences that fully landed (2026-06-08).**
-- **Lint enforcement** — DONE. `eslint.config.mjs` bans raw `<img>`/`<video>` in
-  `features/podcasts/**` (`no-restricted-syntax`), pointing at `<InlineMediaRef>`.
-  Verified: fires on a raw `<img>`, clean on the migrated pages. The headless
-  `<audio>` transport in `PodcastAudioPlayer` is the one documented exception.
-- **Server root fix** — wired (layer 1 above), pending deploy.
-- **Heal tooling** — `aidream/services/media_durability.py` (shared classifier +
-  `flip_file_to_public` / `make_url(s)_durable`) consumed by BOTH the generation
-  path and the heal CLI, so the durable-vs-expiring classifier can never drift
-  across the generation fix, the heal tool, the frontend (`lib/media/durability.ts`),
-  and the DB guard (`mtx_is_durable_media_url`).
-
-**Update — 2026-06-21: "owned image goes dark" regression + codebase-wide self-heal sweep.**
-- **What.** Owned AI-generated images in real conversations rendered "Image
-  unavailable" forever once their signature expired — a direct violation of the
-  load-bearing rule (*a user's own file URL never just "expires"; re-mint from
-  `file_id`*).
-- **Why.** Two compounding regressions: (a) `from-image-output-data.ts` classified
-  signed URLs with a **SigV4-only** regex, but our image backend mints **SigV2**
-  (`AWSAccessKeyId`/`Signature`/`Expires=`), so SigV2 owned URLs were misread as
-  *permanent CDN* → re-mint was skipped; (b) the global expiry-wheel that used to
-  proactively re-mint was removed, deleting the safety net that had masked (a). The
-  `fromCxMediaPart` adapter also dropped the top-level `file_id`, so even the
-  on-demand re-mint had no identity to mint from.
-- **The fences.**
-  1. **Canonical signed-URL primitive** — `lib/media/signed-url.ts`
-     (`isSignedUrl` / `signedUrlExpiresAtMs`) knows **both** AWS dialects. Every
-     detector now routes through it (`from-image-output-data.ts`,
-     `parse-signed-url-expiry.ts`, `lib/media/durability.ts`,
-     `lib/media/our-file-sources.ts`, `features/files/handler/output/target.ts`,
-     `components/image/cloud/resolveCloudFileUrl.ts`, and the blob-cache service
-     worker `features/files/cache/service-worker/src/sw.ts`). No more dialect-blind
-     classification anywhere.
-  2. **Owned-file invariant in the unified hooks** — `useUnifiedImageUrl` /
-     `useUnifiedVideoUrl`: never treat a signed URL as a permanent `cdnUrl`, only
-     serve a signed URL with a *proven-future* expiry, always allow minting for an
-     owned `file_id`, and an `onError`→invalidate+re-mint backstop in the renderers
-     (`UnifiedImageBlockRenderer`, `UnifiedVideoBlockRenderer`, `InlineMediaRef`).
-  3. **Raw-URL self-heal primitive** — `features/files/handler/hooks/useRemintableSrc.ts`.
-     For surfaces holding only a *URL string* (markdown `![](signed-url)`, legacy
-     `audioUrl` props) it recognizes our-own URLs, recovers the `file_id`, and
-     re-mints on load failure. Consumed by the markdown `ImageBlock` / `VideoBlock`
-     (which the splitter routes our-own image/video links to *before* the
-     handler-backed `matrx_file` path) and the legacy raw-`<audio>` surfaces
-     (`cx-chat` / `cx-conversation` / `prompts` assistant messages). Closes the same
-     bug class in the one remaining path where owned media reached a raw element.
-  4. **CLAUDE.md rule** — a one-sentence firm statement of the invariant added to
-     the Media durability section.
-- **What's still open (low severity, self-recovering).**
-  - **File-preview previewers + `MediaThumbnail` — RESOLVED 2026-06-27.**
-    `FilePreview/previewers/SvgPreview.tsx` (`SvgRenderedView`), `AudioPreview.tsx`
-    (the custom `<audio>` engine), and `MediaThumbnail` (`ImageThumb` +
-    `VideoPosterThumb`) now route their `url` through `useRemintableSrc`, so an
-    *in-view* signed-URL expiry re-mints from the recovered `file_id` instead of
-    dead-ending at the icon/error UI. Durable/foreign URLs pass through untouched;
-    the terminal error/fallback only shows after re-mint is exhausted (`failed`).
-  - **`MediaVariableInput`** previously handed `<InlineMediaRef>` the resolved
-    signed-URL string instead of the `file_id` (losing re-mint ability) — **fixed**
-    2026-06-21 (now passes the bare `file_id`).
+### D33 — html-preview save-back + content-actions `onSave` latent gaps *(the open tail of R1)*
+**Severity: low, latent.** `rich-document/export.ts` html-preview save-back works for chat messages only — the `htmlPreview` overlay isn't callback-aware (only `fullScreenEditor` is), so note/non-chat sources can't save back. And `ContentActionBar`/`contentActionRegistry`'s editable `onSave` path is wired to raw-Redux-data — no live consumer passes `onSave` today (read-only-safe), but it will silently fail the day one does.
 
 ---
-
-### D2 — Org/scope authorization boundary is open (deferred to the pre-launch security overhaul)
-**Severity: critical — full multi-tenant compromise via raw supabase-js. Deferred by explicit decision (2026-06-10): app is not live; features first, dedicated security overhaul next week. Build anything NEW with proper auth anyway.**
-
-**Cheap slice LANDED 2026-07-02 (commit `97fa489f9` · `migrations/scope_rpcs_org_membership_guard.sql`).** Item 3 (unauthenticated scope DEFINER RPCs) is closed: `create_scope`/`create_scope_type`/`update_scope`/`delete_scope`/`delete_scope_type` now carry an `iam.has_org_access(<resolved org>)` guard + `SET search_path`, and anon EXECUTE is REVOKED on all six scope write RPCs (`set_scope_context_value` already had a membership guard). Verified live. **Progress since the audit (verified 2026-07-02):** `organization_members` was canonicalized to `iam.memberships` with canonical RLS — item 1 (org takeover: INSERT now `WITH CHECK iam.has_org_access(org) AND created_by=auth.uid()`) and item 4 (membership disclosure: SELECT no longer `qual=true`) are **already closed**.
-
-**Still open (deferred to the security overhaul, higher-risk):** item 2 (role self-escalation — `iam.memberships` UPDATE `WITH CHECK` guards the org but not the role column) and item 5 residuals. These stay parked because tightening membership-role writes risks breaking invite-accept/role-management flows and needs the dedicated overhaul.
-
-**What.** The browser talks to Supabase directly with the user's JWT, so RLS + RPC bodies are the only write-authorization boundary — and they are open in five independent ways (all live-verified against `txzxabzwovsujtloxrus`):
-1. **Org takeover.** `organization_members` INSERT policy is `WITH CHECK (true)` — any authenticated user can insert themselves as `owner` of ANY org, then passes every `EXISTS(member where role in owner/admin)` check repo-wide. No guarding trigger.
-2. **Role self-escalation.** `organization_members` UPDATE has `with_check = null` with `qual: user_id = auth.uid() OR admin` — a plain member can set their own row to `owner`.
-3. **Unauthenticated DEFINER RPCs.** `create_scope`, `update_scope`, `delete_scope`, `create_scope_type` perform **zero** caller checks and EXECUTE is granted to PUBLIC/anon — cross-org write/delete needing only a target UUID. `delete_scope_type` CASCADEs items → every cell + every scope of the type (irrecoverable data loss, blast radius reported only *after* deletion). (`set_entity_scopes` was fixed 2026-06-10 — `migrations/ctx_set_entity_scopes_auth.sql` is the membership-check + `REVOKE FROM anon` pattern to replicate.)
-4. **Membership-graph disclosure.** `organization_members` SELECT is `qual = true` for `public` — full user↔org↔role enumeration across all orgs.
-5. **Spoofable identity in `set_context_value`.** `acting_user_id` payload fallback applies when `auth.uid()` is NULL (anon path). `set_scope_context_value` (the live cell-write RPC) has NO in-function check at all.
-
-**Why it happened.** Policies were widened to make direct client inserts work (e.g. invitation accept used to insert `organization_members` directly), and the DEFINER RPC family shipped without auth preambles.
-
-**The fence (to build in the overhaul).** Apply the `protected-resources` doctrine to org membership + ctx mutations: deny direct writes at RLS, one DEFINER RPC family with `is_org_member`/`is_org_admin` preambles + `REVOKE FROM anon` (model: `accept_organization_invitation`, `set_context_value`'s membership check, and `ctx_set_entity_scopes_auth.sql`), DB-enforced ≥1-owner invariant, and a role-change guard trigger.
-
-**What's still open.** All of items 1–5 except the `set_entity_scopes` fix. Also from the same audit, lower-tier: org create is non-atomic (orphan org row if the owner-member insert fails — burned slug, invisible org), last-owner removal is a client-only TOCTOU (org can reach zero owners), `transfer_organization_ownership` RPC exists but is never called, and the invite/resend API routes rely solely on RLS instead of checking `auth_is_org_admin` in code. Full prioritized audit: `~/.claude/plans/you-are-conducting-an-polymorphic-dragonfly.md`.
-
----
-
-### D3 — PDF reversible-redaction keys: client-only custody until KMS escrow lands
-**Severity: medium — browser data loss = permanently unrecoverable redacted text.**
-
-**What.** Reversible-redaction session keys live ONLY in the redacting browser's
-IndexedDB (`features/file-analysis/redact/session-keys.ts`); `redaction_mapping`
-holds ciphertext+nonce. Clearing browser data / switching devices makes those
-spans cryptographically unrecoverable. The org-recovery model exists
-(`pdf_redaction_key_escrow`, applied 2026-06-11) but its WRITE PATH is
-intentionally unwired: keys must be KMS-wrapped (security team's interface),
-and storing raw keys server-side would silently weaken the custody model.
-Mitigation today: MaskDialog's KeyHandoff acknowledgment + destructive-mode
-ConfirmDialog. **Close by:** wiring wrap/unwrap once the KMS interface exists.
-
-### D5 — Foreign user-scoped shortcut-category LABELS visible to everyone — RESOLVED 2026-06-27
-**Severity was: low (name disclosure + empty menu groups).** Dropped the legacy permissive `shortcut_categories_select_any USING (true)` SELECT policy (`migrations/shortcut_categories_drop_permissive_select.sql`, applied + ledgered). The scoped `shortcut_categories_read` (authenticated: global OR own OR org-member) + `shortcut_categories_read_anon` policies now fully govern reads. Verified safe before drop: 0 project/task-only rows, all 54 global + 5 user + 8 org rows still readable by the right principals; the `/api/agent-shortcut-categories` route only ever filters `scope=user` to the caller's own id, and admin/content-block flows read global rows or use the service-role client (RLS-bypass).
-
-### D4 — PDF W5 scale items pending (500-page client-normal band)
-**Severity: medium — degraded UX on large docs, no data risk.**
-
-**What.** Remaining from the 2026-06-11 PDF consolidation (plan
-`~/.claude/plans/feature-deep-dive-audit-rustling-hare.md`):
-PdfStudioReader mounts all page blocks (no virtualization); render-all/split
-build ZIPs in memory server-side (bounded but unstreamed); AI clean/extract
-on >200pp runs as a held request instead of the resumable per-page job model
-(Operational Default: resume from last clean page preserving overlap).
-Also open: reading-order viewer tab; verify aidream variant pipeline renders
-PDF page-1 grid thumbnails.
-
-### D5 — Mermaid render block is web-only (other surfaces + chat-scoped agents pending)
-**Severity: low — feature works fully on web; gaps are reach, not correctness.**
-
-**Triage 2026-06-29 — NOT A DEFECT (tracked future reach).** The web feature is complete and correct; all three open items are deliberate reach/enhancement (extension/desktop/mobile renderers gated on those clients adopting server-side blocks; `skl_resources` injection path; per-block-type context-menu filtering). Keeping as a roadmap note, not an active bug.
-
-**What's deferred (by design, this build).**
-1. **Extension / desktop / mobile renderers.** The server-side block pipeline
-   already emits typed `mermaid` blocks (aidream `block_detector.py`
-   `SPECIAL_CODE_LANGUAGES` + `mermaid_parser.py`), but those clients don't
-   consume server-processed blocks yet, so they have no mermaid renderer. Tracked
-   by the `is_active=false` rows in `skl_render_components` (chrome-extension /
-   desktop / mobile). When a client switches to server-side processing, flip its
-   row active and add the renderer — the contract is already there.
-2. **`skl_resources` are not agent-reachable.** `skill_get` returns the skill
-   body only (aidream `tools/implementations/skill.py`), so the per-diagram-type
-   syntax reference lives inside the `mermaid-diagrams` skill body, not as
-   resource rows. Revisit if/when resources get an injection path.
-3. **Chat right-click surfaces assistant-message agents, not mermaid-scoped
-   ones.** `MarkdownContextMenuProvider` is one instance per conversation with a
-   single `surfaceName` (`matrx-user/assistant-message`); per-block surface
-   switching doesn't exist. So right-clicking a mermaid block passes the diagram
-   DSL as context (`data-block-source` → `diagram_source`) to whatever agent the
-   user picks, but mermaid-*scoped* agents live in the workbench AI rail (reached
-   via the block's Edit button), not the chat right-click menu. The captured
-   round-trip ("edit and send back into the artifact") is the workbench by
-   design — the chat menu is discovery + data hand-off. Per-block-type menu
-   filtering is the documented v2 (dynamic-contexts extension of
-   `useUnifiedAgentContextMenu`).
-
-**Also noted (pre-existing, surfaced by this build) — RESOLVED 2026-06-27 (see D17):**
-`PREFERENCE_MODULE_KEYS` in `userPreferencesSlice.ts` omitted `sandbox` /
-`transcription` / `agentConnections` (they never persisted via partialize). All
-three are now in partialize, the REHYDRATE merge, and `resetToLoadedPreferences`.
-
-**The fence.** Each item is a clean one-step unlock (flip a row + add a renderer;
-add a resource injection path; build dynamic-context menu filtering) — none block
-the web feature.
-
-### D6 — The duplicate tool-viz `dynamic/` code-runner — RESOLVED 2026-06-29 (commit `d05096766`)
-**Severity was: low.** The broken `features/tool-call-visualization/dynamic/` duplicate runtime was **deleted** wholesale — it was already orphaned (zero live importers; canonical rendering is static-registry → `db-renderer` → `GenericRenderer`, untouched, so the old "Loading tool display…" hang was never on a live path). Its two still-used leaves were relocated first: the scope builder → `features/dynamic-react/toolRendererScope.ts`, the row types → `features/tool-call-visualization/admin/types.ts`; the admin cache-bust was repointed to the canonical `db-renderer/toolRendererCache` (fixing a latent no-op bust). `OVERHAUL_STATUS.md` Track 2 updated. Remaining (a cleanup, NOT a defect, tracked there): the two scope builders (`dynamic-react` vs `agent-apps`) could still be collapsed to one.
 
 ## RESOLVED
 
-### R4 — Shareable-resource TS mirror fully reconciled with the DB registry (2026-07-07)
-**Was D30.** `utils/permissions/registry.ts` was badly drifted from `platform.shareable_resource_registry` (38 parity failures). Regenerated all 53 active rows from the live DB and split the two conflated canonical values: `resourceType` = entity **token** (stored in `iam.permissions.resource_type`, passed to RPCs), `tableName`(+`schemaName`) = **physical** table for `.from()` reads; the obsolete `physicalTable` field is gone; new `resolveResourceToken()`. Fixed a latent bug this exposed — `orgResources` filtered `iam.permissions.resource_type` on the physical name (`resolveTableName`) instead of the token, so org-shared counts silently returned 0 for canonicalized types — and backfilled 4 legacy `resource_type='notes'` grant rows to `'note'` (`migrations/permissions_legacy_resource_type_backfill.sql`). `usesVisibilityEnum()` now derives from `isPublicColumn == null` (was a stale hardcoded set). Parity test made schema-aware; passes 58/58. **Residual (low, non-blocking):** 12 `isPublicColumn=null` tables have no `visibility` column (`file_analysis`, `analysis_recipes`, `auto_ingest_batch`, file satellites, …) — `make_resource_public` on them fails gracefully with an error toast rather than hiding the toggle; these aren't real public-share surfaces, so left as-is.
+One line per fix — title, date, pointer. History lives in git.
 
-### R3 — Soft-delete (and restore) broken app-wide by canonical RLS gating `deleted_at` in the authenticated SELECT policy (2026-07-04)
-**What.** Deleting a War Room in prod threw `42501 "new row violates row-level security policy for table war_rooms"` — on the user's OWN room, where `created_by = auth.uid()`. Not war-room-specific: **~107 canonicalized tables** (notes, files, tasks, threads, conversations, agents, flashcards, podcasts, code, DMs, …) had the identical break, and restore (un-delete) was a silent 0-row no-op on all of them.
-
-**Why it happened.** The canonical RLS generator `iam.apply_rls` prefixed every **authenticated** policy — `std_select`, the standard `std_update` USING, and (hand-written) `files_update`/`folders_update` WITH CHECK — with `deleted_at IS NULL` (via `v_delpfx`). PostgreSQL RE-CHECKS a table's SELECT policy against the **post-UPDATE row**; a soft-delete sets `deleted_at` non-null, so the new row fails the `deleted_at IS NULL` gate in `std_select` → the whole UPDATE is rejected (42501). Symmetrically the `std_update` USING gate blocked updating an already-deleted row → restore silently matched 0 rows. Proven by A/B: relaxing ONLY `std_select` fixed the soft-delete; forcing `std_update`'s WITH CHECK to `true` did NOT. The design conflated *authorization* (RLS's job) with *soft-delete visibility* (the app's job — the FE already filters `.is('deleted_at', null)` at 100+ read sites), and it broke the top-level CLAUDE.md doctrine (React → Supabase directly; RLS is the authorization layer).
-
-**The fence (prevents the class).** `migrations/iam_apply_rls_v2_soft_delete_select_fix.sql` (applied + ledger-recorded 2026-07-04): (1) rewrote `iam.apply_rls` so `deleted_at IS NULL` is emitted **only on the anon `pub_read` policy** — never on any authenticated SELECT/UPDATE clause; (2) surgically stripped the gate from every existing authenticated access policy (SELECT + UPDATE USING) and rewrote `files_update`/`folders_update` WITH CHECK to their access predicate; (3) **self-verifying** — the migration RAISEs if any authenticated policy clause still gates `deleted_at`. Invariant now documented in [`docs/db_changes/CANONICAL_DATABASE_SYSTEM.md`](docs/db_changes/CANONICAL_DATABASE_SYSTEM.md) §4/§6: *authenticated RLS gates on authorization only; only anon `pub_read` filters `deleted_at`; soft-delete visibility is the app's job.* Verified live under RLS as the owning user: soft-delete + restore now succeed on war_rooms, threads, tasks, working_documents, files, folders; anon `pub_read` still hides deleted rows on 72 policies (public web unaffected).
-
-**Still open (caveat, low).** Dropping the RLS auto-hide means an authenticated reader that FORGETS to filter `deleted_at` will now see soft-deleted rows they have access to (never a cross-tenant leak — owner/`has_access` still gate). The FE overwhelmingly filters already (118 sites / 30+ services); any surface that doesn't is a pre-existing latent bug now surfaced. `public.entity_soft_delete` / `entity_undelete` (SECURITY-DEFINER, bypass RLS) remain available for consumers without direct table access.
-
-### R2 — All 11 remaining severed overlay callbacks (D7) were dead — deleted (2026-06-14)
-**What.** The 11 `undefined /* pass via callbackGroupId */` stubs that remained after R1 (`EmailDialogWindow.onSubmit`; `ResourcePickerWindow.{onResourceSelected,onSettingsClick,onDebugClick}`; `QuickSaveCodeDialog.{onOpenChange,onSaved}`; `QuickNoteSaveOverlay.onSaved`×2; `FullscreenBrokerState.onOpen`, `FullscreenMarkdownEditor.onOpen`, `FullscreenSocketAccordion.onOpen`, `ImageViewerWindow.onIndexChange`) were each audited and confirmed to have **zero consumers** — no callsite passed a handler and the relevant opener hooks had no callers. So every one was the *delete-dead-prop* completion, not a callback-group rewire.
-
-**Fix.** For each: removed the controller stub, removed the now-unused prop (+ destructure + internal `onOpen?.()`/guard) from the component, and removed the dead option from the opener (interface + dispatched `data` + Controller effect deps). `EmailDialogWindow` now closes synchronously on a valid submit (the dead async send path is gone). `QuickSaveCodeDialog` dropped its legacy `open`/`onOpenChange`/`onSaved` (now `isOpen`/`onClose` only); `QuickNoteSaveOverlay` dropped `onSaved`. The `resourcePickerWindow` overlay branch was deleted wholesale (it was never opened — both real consumers, `ResourcePickerButton` + `SmartAgentResourcePickerButton`, render the component directly — and `onResourceSelected` is *required*, so the branch was a latent `undefined is not a function` crash); its dead opener file `features/overlays/openers/resourcePickerWindow.tsx` was removed. `ImageViewerWindow` kept the body `ImageViewer`'s controlled-index props (the window shell legitimately uses them to sync its thumbnail sidebar) but `ImageViewerWindowProps` now `Omit`s them, closing the dead external/overlay surface.
-
-**Result.** `grep "pass via callbackGroupId" features/overlays/OverlayController.tsx` → **0**. The `resourcePickerWindow` id is intentionally retained in `features/overlays/catalogue.ts` + `features/window-panels/registry/overlay-ids.ts` (harmless metadata) because the still-used `ResourcePickerWindow` component declares `overlayId="resourcePickerWindow"` on its `WindowPanel`; removing the `OverlayId` union member would type-error there. D7 is closed.
-
-### R1 — Chat "Edit" / "Edit & resubmit" silently did nothing (severed editor `onSave`) + two missing RPCs (2026-06-14)
-**What.** Editing a user message or "Edit & resubmit" opened the editor but Save did nothing; "Edit content" (overflow) and "HTML preview → Save" were broken the same way. Root cause: `OverlayController` hard-coded `fullScreenEditor.onSave={undefined}` (and `htmlPreview.onSave`) — a function can't travel through Redux, but the replacement callback channel was never wired (the D7 class). Compounding it, two RPCs the resubmit/delete paths called had **never been created** in the DB (`cx_message_soft_delete`, `cx_truncate_conversation_after`), so even once `onSave` fired, Overwrite + Delete would fail server-side.
-
-**Fence.** (1) `fullScreenEditor` is now callback-aware (`features/overlays/callbacks/fullScreenEditor.ts` + `callbackManager`); the bridge prefers the callback, else self-handles via `editMessage` for any `conversationId`+`messageId`, else **screams** (toast + console.error — loud recovery, never silent). (2) `htmlPreview` self-handles its save. (3) Both RPCs built + applied (`migrations/cx_message_soft_delete_and_truncate.sql`) — SECURITY DEFINER + `auth.uid()` owner-check + GRANT (matching `cx_message_set_content`), tool-call/artifact/media cascade; dead feature-detect fallbacks removed. (4) Attachments survive edits via `mergeEditedText`. (5) The dead `editAndResubmitItem` menu factory (same landmine) was deleted. (6) Swept the severed-`onSave`-in-data pattern out of `rich-document` edit/fullscreen-editor/server-api handlers, `PromptSystemMessage`, and the admin `srv-replace-with-summary` item (callback group or self-handle). (7) **Fixed a second, independent bug** the save-fix surfaced: "Edit & resubmit → Fork" forked at `position−1` (excluding the edited message) so it silently no-op'd for any message past turn 1; now forks at the message's own position and re-runs (verified mid-conversation, original untouched). Bug *class* documented in [`features/overlays/FEATURE.md`](features/overlays/FEATURE.md); the 11 sibling severed controller callbacks tracked as **D7**.
-
-**Still open (smaller, same class):** `rich-document/export.ts` html-preview save-back works for chat messages (bridge self-handles) but NOT for note/non-chat sources — that needs the `htmlPreview` overlay itself to become callback-aware (it isn't yet; only `fullScreenEditor` is). And `content-actions` (`ContentActionBar`/`contentActionRegistry`) has the editable `onSave` path wired to raw-Redux-data — latent (no live consumer passes `onSave` today, so read-only-safe), but it'll silently fail the day one does.
+- **D34** — `pnpm dev` fatal (`opengraph-image.tsx` under `learn/[...slug]` — metadata-image conventions can't live in a catch-all): moved to `app/(core)/education/learn/og/[...slug]/route.tsx` + `generateMetadata` reference (2026-07-07, `9461f3b52`).
+- **D28** — `study_record_attempt` rejected NULL `result` (`item_mastery.struggle_flag` NOT NULL): live RPC has the ungraded early-branch + `coalesce(...,false)`, verified live 2026-07-07; client `source_kind='set'` halves landed earlier (`b9bab8309`).
+- **D27** — phantom association tokens (2026-07-07): `normalizeEntityToken()` chokepoint in `features/scopes/service/associationGuards.ts` (`cx_message→message`, `cx_conversation→conversation`, `user_file→file`, `agent_app→app`, `chat_block→message`; loud on hit), applied before `checkToken` in every `associationsService` method; `get_task_associations` reads canonical tokens (`migrations/get_task_associations_canonical_*.sql`); zero phantom rows in data; `blocks` bucket intentionally `[]` — do not resurrect `chat_block`.
+- **D26** — working-document legacy litter (2026-07-02): `conversation_id`/`user_id` dropped from `workbench.working_documents`, `chat.conversation_documents` graveyarded (`migrations/working_document_canonicalize_step3_drop_legacy.sql`); FE row-type trimmed 2026-07-07.
+- **D25-menus** — content-block insertion restored on all 4 surfaces via v3 `EditableContextMenu`; dead `DeferredShellData` preloads + `getSSRAgentShellData` deleted (2026-07-07).
+- **D22** — auth open-redirect + spoofable `x-forwarded-host` (2026-07-07): `safeRelativePath` + `safeForwardedHost` in `utils/auth/safe-redirect.ts` at every sink; PII logs dev-gated.
+- **D30** — shareable-resource TS mirror regenerated from `platform.shareable_resource_registry` (2026-07-07): token-vs-physical-table split + `resolveResourceToken()`; org-shared-count bug fixed; 4 legacy grant rows backfilled (`migrations/permissions_legacy_resource_type_backfill.sql`). 12 no-`visibility`-column tables fail `make_resource_public` gracefully — not real share surfaces.
+- **R3** — soft-delete/restore broken app-wide by `deleted_at` in authenticated RLS (2026-07-04): `iam.apply_rls` v2 gates `deleted_at` ONLY on anon `pub_read` (`migrations/iam_apply_rls_v2_soft_delete_select_fix.sql`, self-verifying). **Standing rule:** authenticated RLS = authorization only; readers filter `deleted_at` themselves — [`docs/db_changes/CANONICAL_DATABASE_SYSTEM.md`](docs/db_changes/CANONICAL_DATABASE_SYSTEM.md) §4/§6. Caveat: a reader that forgets the filter sees soft-deleted rows it has access to (never cross-tenant).
+- **D16** — composer draft false-alarm scream + non-unified send (2026-07-02, `a3dfe59d2`): `clearComposerIfUnsubmitted` at all four clear sites + `conversationLifecycle` anti-orphan guard in `smartExecute`. Live-browser pass never run.
+- **D11** — per-turn context chips (2026-06-29): read `chat.message.model_context` (FE freezes `metadata.context_snapshot` at submit as fallback). **Standing rule:** historical record components read frozen per-record snapshots, never live slices. Future scope: [`features/agents/docs/CONTEXT_RECORD_SPEC.md`](features/agents/docs/CONTEXT_RECORD_SPEC.md).
+- **D8** — item-presentation detailSources (2026-06-29, `6769af0c6`): `message` → `chat.message` + 4 stale schemas repointed; `session` left seed-only BY DECISION (ambiguous canonical source — code comment on the entry).
+- **D24** — no-op `contentHistory` overlay deleted end-to-end (2026-06-29, `594498a5e`); the live twin is `EditHistoryDialog`.
+- **D23** — task-attachments data loss: orphaned `TaskDetails` variant replaced with canonical `<TaskAttachmentsPanel>` (2026-06-29, `c4a639ca9`).
+- **D21** — dead AI-Runs feature (graveyarded `ai_runs`) deleted (2026-06-29, `b4092df3b`); live `ai_tasks` half kept — belongs to the D25 applet rebuild.
+- **D6b** — duplicate tool-viz `dynamic/` code-runner deleted, leaves relocated (2026-06-29, `d05096766`).
+- **D18** — `files.share_links`/`file_versions` owner SELECT RLS gap + `SingleFileShell` error swallow (2026-06-27).
+- **D17** — `userPreferencesSlice` module lists: `sandbox`/`transcription`/`agentConnections` added to partialize/rehydrate/reset (2026-06-27).
+- **D6a** — window geometry restore keyed by slug, not overlayId, in `WindowPersistenceManager.tsx` (2026-06-27).
+- **D5a** — permissive `shortcut_categories` SELECT policy dropped (2026-06-27, `migrations/shortcut_categories_drop_permissive_select.sql`).
+- **R2** — the 11 severed overlay callbacks were all dead: props/openers/`resourcePickerWindow` branch deleted (2026-06-14).
+- **R1** — chat Edit/resubmit severed `onSave` + two missing RPCs (2026-06-14, `migrations/cx_message_soft_delete_and_truncate.sql`): `fullScreenEditor` callback-aware with loud fallback; fork-position bug fixed. Open tail → D33. Bug class documented in [`features/overlays/FEATURE.md`](features/overlays/FEATURE.md).
+- **D5b (mermaid reach)** — removed from this ledger: not a defect. Extension/desktop/mobile renderers + `skl_resources` injection + per-block menu filtering are roadmap, tracked by the `is_active=false` rows in `skl_render_components` and the feature docs.

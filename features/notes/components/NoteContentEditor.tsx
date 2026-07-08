@@ -14,6 +14,7 @@ import React, {
   useMemo,
 } from "react";
 import dynamic from "next/dynamic";
+import { Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   updateNoteContent,
@@ -41,6 +42,7 @@ import {
   fetchNoteContent,
 } from "../redux/thunks";
 import { useNotesInstanceId } from "../context/NotesInstanceContext";
+import { useNoteAccess } from "../hooks/useNoteAccess";
 import { analyzeDiff } from "../utils/diffAnalysis";
 import { supabase } from "@/utils/supabase/client";
 import { NoteEditorCore, type EditorMode } from "./NoteEditorCore";
@@ -106,6 +108,11 @@ export function NoteContentEditor({
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
 
   const saveState = useAppSelector(selectNoteSaveState(noteId));
+
+  // ── Access gate — a viewer-level sharee gets a read-only editor ────
+  // (their RLS-rejected saves would otherwise silently discard every edit).
+  const access = useNoteAccess(noteId);
+  const readOnly = access.readOnly;
 
   const findReplaceState = useAppSelector(selectFindReplaceState(instanceId));
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
@@ -572,6 +579,24 @@ export function NoteContentEditor({
         redoHint={redoHint}
       >
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          {readOnly && (
+            <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-xs truncate">
+                Read-only — shared with view access
+                {access.ownerEmail ? ` by ${access.ownerEmail}` : ""}. Your
+                edits here can't be saved.
+              </span>
+              <button
+                type="button"
+                onClick={handleDuplicate}
+                className="ml-auto shrink-0 rounded px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/15 dark:text-amber-400 transition-colors cursor-pointer"
+                title="Create your own editable copy of this note"
+              >
+                Duplicate to edit
+              </button>
+            </div>
+          )}
           {findReplaceState?.isOpen && (
             <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />
           )}
@@ -579,11 +604,18 @@ export function NoteContentEditor({
             content={localContent}
             onChange={handleChange}
             onChangeFlush={handleChangeFlush}
-            editorMode={editorMode}
+            readOnly={readOnly}
+            editorMode={
+              // TUI modes have no read-only support — degrade to preview.
+              readOnly &&
+              (editorMode === "wysiwyg" || editorMode === "markdown-split")
+                ? "preview"
+                : editorMode
+            }
             textareaRef={textareaRef}
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             getApplicationScope={getApplicationScope}
-            showVoiceButton={editorMode !== "preview"}
+            showVoiceButton={editorMode !== "preview" && !readOnly}
             placeholder="Start typing..."
             className="flex-1 min-h-0"
             resetKey={`${noteId}:${resetGen}`}

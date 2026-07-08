@@ -2,17 +2,18 @@
  * Cartesia playback adapter.
  *
  * Imperative twin of `useCartesiaSpeaker.speak()`: token → WebSocket → send →
- * WebPlayer. Lives outside React so the singleton `playbackQueue` can drive it.
- * Output device routing is handled passively by the app-root AudioContext sink
- * patch (`installAudioContextSinkRouting`) — WebPlayer's internal context picks
- * up the selected sink on creation.
+ * SinkAwarePlayer. Lives outside React so the singleton `playbackQueue` can
+ * drive it. Output device routing is owned by the player itself — it applies
+ * the preferred speaker at context creation and re-routes mid-utterance on
+ * device change (see features/audio/sinkAwarePlayer.ts).
  *
  * Note: Cartesia "speed" is a synthesis-time parameter, so live rate changes are
  * not supported (no `setRate`). The queue's global rate is captured into the
  * synthesis `speed` at enqueue time by the consumer instead.
  */
 
-import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
+import { CartesiaClient } from "@cartesia/cartesia-js";
+import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import {
   buildGenerationConfig,
   CARTESIA_API_VERSION,
@@ -96,7 +97,9 @@ export const cartesiaAdapter: PlaybackAdapter = {
     await ws.connect({ accessToken: token });
 
     let stopped = false;
-    const player = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
+    const player = new SinkAwarePlayer({
+      bufferDuration: TTS_PLAYBACK_BUFFER_SEC,
+    });
 
     const cleanup = () => {
       try {

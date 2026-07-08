@@ -28,6 +28,7 @@ import {
 } from "@/features/notes/redux/slice";
 import {
   fetchNotesList,
+  fetchSharedNotesList,
   fetchAllNoteScopes,
   fetchNoteContent,
 } from "@/features/notes/redux/thunks";
@@ -103,6 +104,7 @@ export function NotesWindow({
     if (!fetchedRef.current && userId) {
       fetchedRef.current = true;
       dispatch(fetchNotesList());
+      dispatch(fetchSharedNotesList());
       dispatch(fetchAllNoteScopes());
       // Ensure the deep-linked note's body is hydrated even before the list
       // settles (fetchNoteContent self-guards against duplicate fetches).

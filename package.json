@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.3.632",
+  "version": "0.3.633",
   "private": true,
   "scripts": {
     "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && next dev",
@@ -177,6 +177,7 @@
     "@types/mdast": "^4.0.4",
     "@types/papaparse": "^5.5.2",
     "@types/qrcode": "^1.5.6",
+    "@types/sql.js": "^1.4.11",
     "@types/three": "latest",
     "@types/unist": "^3.0.3",
     "@types/uuid": "latest",
@@ -279,6 +280,7 @@
     "resend": "^6.16.0",
     "server-only": "^0.0.1",
     "sonner": "latest",
+    "sql.js": "^1.14.1",
     "stripe": "^22.3.0",
     "styled-components": "^6.4.3",
     "supabase": "^2.98.2",

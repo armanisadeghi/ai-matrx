@@ -5385,7 +5385,7 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      _message_tool_call_ids: { Args: { p_content: Json }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
@@ -8177,6 +8177,338 @@ export type Database = {
   }
   education: {
     Tables: {
+      assessment: {
+        Row: {
+          assessment_kind: string
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          depth: string | null
+          description: string | null
+          exam_type: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          source_id: string | null
+          source_kind: string | null
+          source_title: string | null
+          status: string
+          time_limit_seconds: number | null
+          title: string
+          topic: string | null
+          trust: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          assessment_kind: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: string | null
+          description?: string | null
+          exam_type?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          source_id?: string | null
+          source_kind?: string | null
+          source_title?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+          title: string
+          topic?: string | null
+          trust?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          assessment_kind?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: string | null
+          description?: string | null
+          exam_type?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          source_id?: string | null
+          source_kind?: string | null
+          source_title?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+          title?: string
+          topic?: string | null
+          trust?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      assessment_item: {
+        Row: {
+          acceptable_answers: Json | null
+          assessment_id: string
+          correct_answer: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          depth: string | null
+          explanation: string | null
+          id: string
+          metadata: Json
+          options: Json | null
+          organization_id: string
+          points: number
+          position: number
+          prompt: string
+          question_type: string
+          rubric: string | null
+          topic: string | null
+          trust: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          acceptable_answers?: Json | null
+          assessment_id: string
+          correct_answer?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: string | null
+          explanation?: string | null
+          id?: string
+          metadata?: Json
+          options?: Json | null
+          organization_id: string
+          points?: number
+          position?: number
+          prompt: string
+          question_type: string
+          rubric?: string | null
+          topic?: string | null
+          trust?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          acceptable_answers?: Json | null
+          assessment_id?: string
+          correct_answer?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: string | null
+          explanation?: string | null
+          id?: string
+          metadata?: Json
+          options?: Json | null
+          organization_id?: string
+          points?: number
+          position?: number
+          prompt?: string
+          question_type?: string
+          rubric?: string | null
+          topic?: string | null
+          trust?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_item_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessment_result: {
+        Row: {
+          assessment_id: string
+          completed_at: string | null
+          correct_count: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detail: Json | null
+          duration_seconds: number | null
+          gain_group_id: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          partial_count: number
+          phase: string
+          points_earned: number | null
+          points_possible: number | null
+          score_value: number | null
+          session_id: string | null
+          source_id: string | null
+          source_kind: string | null
+          started_at: string | null
+          status: string
+          topic: string | null
+          total_count: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          assessment_id: string
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json | null
+          duration_seconds?: number | null
+          gain_group_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          partial_count?: number
+          phase?: string
+          points_earned?: number | null
+          points_possible?: number | null
+          score_value?: number | null
+          session_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          started_at?: string | null
+          status?: string
+          topic?: string | null
+          total_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          assessment_id?: string
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json | null
+          duration_seconds?: number | null
+          gain_group_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          partial_count?: number
+          phase?: string
+          points_earned?: number | null
+          points_possible?: number | null
+          score_value?: number | null
+          session_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          started_at?: string | null
+          status?: string
+          topic?: string | null
+          total_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_result_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessment_result_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "study_session"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_certification: {
+        Row: {
+          certified_at: string
+          certified_by: string
+          id: string
+          note: string | null
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          certified_at?: string
+          certified_by: string
+          id?: string
+          note?: string | null
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          certified_at?: string
+          certified_by?: string
+          id?: string
+          note?: string | null
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: []
+      }
+      deck_suggestion: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          owner_id: string
+          resolved_at: string | null
+          resource_id: string
+          resource_type: string
+          status: string
+          suggested_by: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          owner_id: string
+          resolved_at?: string | null
+          resource_id: string
+          resource_type?: string
+          status?: string
+          suggested_by: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          resolved_at?: string | null
+          resource_id?: string
+          resource_type?: string
+          status?: string
+          suggested_by?: string
+        }
+        Relationships: []
+      }
       fc_card: {
         Row: {
           back: string
@@ -8621,6 +8953,207 @@ export type Database = {
         }
         Relationships: []
       }
+      game_badge: {
+        Row: {
+          badge_key: string
+          context: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          earned_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          badge_key: string
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          earned_at?: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          badge_key?: string
+          context?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          earned_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      game_result: {
+        Row: {
+          answered_count: number
+          best_streak: number
+          correct_count: number
+          created_at: string
+          created_by: string | null
+          currency_earned: number
+          deleted_at: string | null
+          display_name: string | null
+          duration_ms: number | null
+          id: string
+          mastery_gain: number
+          metadata: Json
+          mode: string
+          organization_id: string
+          room_id: string | null
+          score: number
+          session_id: string | null
+          source_kind: string | null
+          source_set_id: string | null
+          source_title: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          answered_count?: number
+          best_streak?: number
+          correct_count?: number
+          created_at?: string
+          created_by?: string | null
+          currency_earned?: number
+          deleted_at?: string | null
+          display_name?: string | null
+          duration_ms?: number | null
+          id?: string
+          mastery_gain?: number
+          metadata?: Json
+          mode?: string
+          organization_id: string
+          room_id?: string | null
+          score?: number
+          session_id?: string | null
+          source_kind?: string | null
+          source_set_id?: string | null
+          source_title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          answered_count?: number
+          best_streak?: number
+          correct_count?: number
+          created_at?: string
+          created_by?: string | null
+          currency_earned?: number
+          deleted_at?: string | null
+          display_name?: string | null
+          duration_ms?: number | null
+          id?: string
+          mastery_gain?: number
+          metadata?: Json
+          mode?: string
+          organization_id?: string
+          room_id?: string | null
+          score?: number
+          session_id?: string | null
+          source_kind?: string | null
+          source_set_id?: string | null
+          source_title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      game_room: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ended_at: string | null
+          host_user_id: string
+          id: string
+          join_code: string
+          metadata: Json
+          organization_id: string
+          source_kind: string
+          source_set_id: string | null
+          source_title: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ended_at?: string | null
+          host_user_id: string
+          id?: string
+          join_code: string
+          metadata?: Json
+          organization_id: string
+          source_kind?: string
+          source_set_id?: string | null
+          source_title?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ended_at?: string | null
+          host_user_id?: string
+          id?: string
+          join_code?: string
+          metadata?: Json
+          organization_id?: string
+          source_kind?: string
+          source_set_id?: string | null
+          source_title?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       item_mastery: {
         Row: {
           attempt_count: number
@@ -8710,6 +9243,132 @@ export type Database = {
           stability?: number | null
           streak?: number
           struggle_flag?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      league_membership: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string | null
+          games_played: number
+          id: string
+          mastery_gain: number
+          metadata: Json
+          opted_in: boolean
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string | null
+          games_played?: number
+          id?: string
+          mastery_gain?: number
+          metadata?: Json
+          opted_in?: boolean
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string | null
+          games_played?: number
+          id?: string
+          mastery_gain?: number
+          metadata?: Json
+          opted_in?: boolean
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          week_start?: string
+        }
+        Relationships: []
+      }
+      learn_doc: {
+        Row: {
+          content_updated_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          keywords: string[]
+          letter: string
+          metadata: Json
+          organization_id: string
+          published_at: string | null
+          related: Json
+          sections: Json
+          slug: string
+          subject: string | null
+          summary: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          content_updated_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          keywords?: string[]
+          letter?: string
+          metadata?: Json
+          organization_id?: string
+          published_at?: string | null
+          related?: Json
+          sections?: Json
+          slug: string
+          subject?: string | null
+          summary: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          content_updated_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          keywords?: string[]
+          letter?: string
+          metadata?: Json
+          organization_id?: string
+          published_at?: string | null
+          related?: Json
+          sections?: Json
+          slug?: string
+          subject?: string | null
+          summary?: string
+          title?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -9521,26 +10180,41 @@ export type Database = {
       }
       study_streak: {
         Row: {
+          created_at: string
           current_streak: number
+          freezes_available: number
+          freezes_used: number
+          frozen_dates: string[]
           last_active_date: string | null
           longest_streak: number
           organization_id: string
+          rest_weekdays: number[]
           updated_at: string
           user_id: string
         }
         Insert: {
+          created_at?: string
           current_streak?: number
+          freezes_available?: number
+          freezes_used?: number
+          frozen_dates?: string[]
           last_active_date?: string | null
           longest_streak?: number
           organization_id: string
+          rest_weekdays?: number[]
           updated_at?: string
           user_id: string
         }
         Update: {
+          created_at?: string
           current_streak?: number
+          freezes_available?: number
+          freezes_used?: number
+          frozen_dates?: string[]
           last_active_date?: string | null
           longest_streak?: number
           organization_id?: string
+          rest_weekdays?: number[]
           updated_at?: string
           user_id?: string
         }
@@ -11168,6 +11842,7 @@ export type Database = {
           attempt: number
           completed_at: string | null
           created_at: string
+          dispatched_at: string | null
           error_message: string | null
           http_status: number | null
           id: string
@@ -11183,6 +11858,7 @@ export type Database = {
           attempt?: number
           completed_at?: string | null
           created_at?: string
+          dispatched_at?: string | null
           error_message?: string | null
           http_status?: number | null
           id?: string
@@ -11198,6 +11874,7 @@ export type Database = {
           attempt?: number
           completed_at?: string | null
           created_at?: string
+          dispatched_at?: string | null
           error_message?: string | null
           http_status?: number | null
           id?: string
@@ -11247,6 +11924,7 @@ export type Database = {
           last_attempt_at: string | null
           last_success_at: string | null
           max_consecutive_failures: number
+          organization_id: string | null
           owner_id: string
           resource_types: string[] | null
           secret: string
@@ -11263,6 +11941,7 @@ export type Database = {
           last_attempt_at?: string | null
           last_success_at?: string | null
           max_consecutive_failures?: number
+          organization_id?: string | null
           owner_id: string
           resource_types?: string[] | null
           secret: string
@@ -11279,6 +11958,7 @@ export type Database = {
           last_attempt_at?: string | null
           last_success_at?: string | null
           max_consecutive_failures?: number
+          organization_id?: string | null
           owner_id?: string
           resource_types?: string[] | null
           secret?: string
@@ -11299,6 +11979,7 @@ export type Database = {
         Returns: Json
       }
       webhook_reconcile: { Args: never; Returns: number }
+      webhook_redeliver: { Args: { p_delivery_id: string }; Returns: string }
       webhook_send_test: { Args: { p_webhook_id: string }; Returns: string }
       webhook_sign: {
         Args: { p_payload: string; p_secret: string }
@@ -17660,6 +18341,10 @@ export type Database = {
       has_org_access: { Args: { p_org: string }; Returns: boolean }
       has_org_admin: { Args: { p_org: string }; Returns: boolean }
       has_org_owner: { Args: { p_org: string }; Returns: boolean }
+      is_org_member: {
+        Args: { p_org: string; p_user: string }
+        Returns: boolean
+      }
       my_orgs: { Args: never; Returns: string[] }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
       runnable_agent_fields: {
@@ -21782,6 +22467,39 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_conversion_audit: {
+        Row: {
+          anon_user_id: string
+          created_at: string
+          fingerprint: string | null
+          id: string
+          new_user_id: string
+          skipped: Json
+          total_rows: number
+          transferred: Json
+        }
+        Insert: {
+          anon_user_id: string
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          new_user_id: string
+          skipped?: Json
+          total_rows?: number
+          transferred?: Json
+        }
+        Update: {
+          anon_user_id?: string
+          created_at?: string
+          fingerprint?: string | null
+          id?: string
+          new_user_id?: string
+          skipped?: Json
+          total_rows?: number
+          transferred?: Json
+        }
+        Relationships: []
+      }
       guest_execution_log: {
         Row: {
           cost: number | null
@@ -25533,6 +26251,108 @@ export type Database = {
           total_count: number
         }[]
       }
+      edu_certify_content: {
+        Args: {
+          p_note?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Database["education"]["Tables"]["content_certification"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "content_certification"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_learn_doc_admin_list: {
+        Args: never
+        Returns: Database["education"]["Tables"]["learn_doc"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "learn_doc"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      edu_learn_doc_delete: { Args: { p_id: string }; Returns: undefined }
+      edu_learn_doc_set_status: {
+        Args: { p_id: string; p_publish: boolean }
+        Returns: Database["education"]["Tables"]["learn_doc"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "learn_doc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_learn_doc_upsert: {
+        Args: {
+          p_content_updated_at?: string
+          p_id?: string
+          p_keywords?: string[]
+          p_letter?: string
+          p_related?: Json
+          p_sections: Json
+          p_slug: string
+          p_subject?: string
+          p_summary: string
+          p_title: string
+        }
+        Returns: Database["education"]["Tables"]["learn_doc"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "learn_doc"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_public_decks: {
+        Args: {
+          p_certified_only?: boolean
+          p_limit?: number
+          p_search?: string
+        }
+        Returns: {
+          card_count: number
+          certified: boolean
+          certified_note: string
+          description: string
+          difficulty: string
+          id: string
+          name: string
+          topic: string
+          updated_at: string
+        }[]
+      }
+      edu_resolve_suggestion: {
+        Args: { p_id: string; p_status: string }
+        Returns: Database["education"]["Tables"]["deck_suggestion"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "deck_suggestion"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_suggest_edit: {
+        Args: {
+          p_body: string
+          p_resource_id: string
+          p_resource_type?: string
+        }
+        Returns: Database["education"]["Tables"]["deck_suggestion"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "deck_suggestion"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_uncertify_content: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: undefined
+      }
       encrypt_mcp_token: { Args: { p_plaintext: string }; Returns: string }
       ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
@@ -26085,6 +26905,35 @@ export type Database = {
       }
       fork_shared_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
       fork_shared_quiz: { Args: { p_quiz_id: string }; Returns: Json }
+      game_room_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          config: Json
+          created_at: string
+          host_user_id: string
+          id: string
+          join_code: string
+          source_kind: string
+          source_set_id: string
+          source_title: string
+          started_at: string
+          status: string
+        }[]
+      }
+      game_room_players: {
+        Args: { p_room_id: string }
+        Returns: {
+          answered_count: number
+          best_streak: number
+          correct_count: number
+          created_at: string
+          currency_earned: number
+          display_name: string
+          mastery_gain: number
+          score: number
+          user_id: string
+        }[]
+      }
       generate_canvas_content_hash: {
         Args: { content_data: Json }
         Returns: string
@@ -26634,6 +27483,25 @@ export type Database = {
           id: string
           label: string
           version_number: number
+        }[]
+      }
+      get_notes_shared_with_me: {
+        Args: never
+        Returns: {
+          created_at: string
+          created_by: string
+          folder_name: string
+          id: string
+          label: string
+          organization_id: string
+          owner_email: string
+          permission_level: string
+          project_id: string
+          tags: string[]
+          task_id: string
+          updated_at: string
+          version: number
+          visibility: string
         }[]
       }
       get_org_invitation_by_token: {
@@ -27308,6 +28176,20 @@ export type Database = {
         Returns: Json
       }
       kg_simulated_scope_graph: { Args: { p_scope_id: string }; Returns: Json }
+      league_add_result: {
+        Args: { p_display_name?: string; p_mastery_gain: number }
+        Returns: undefined
+      }
+      league_leaderboard: {
+        Args: { p_week_start: string }
+        Returns: {
+          display_name: string
+          games_played: number
+          is_me: boolean
+          mastery_gain: number
+          user_id: string
+        }[]
+      }
       list_entities_by_scopes: {
         Args: {
           p_entity_type?: string
@@ -28252,6 +29134,16 @@ export type Database = {
         }
         Returns: string
       }
+      set_streak_rest_weekdays: {
+        Args: { p_weekdays: number[] }
+        Returns: Database["education"]["Tables"]["study_streak"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "study_streak"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       share_resource_with_org: {
         Args: {
           p_permission_level?: string
@@ -28413,6 +29305,14 @@ export type Database = {
           p_variables_used?: Json
         }
         Returns: string
+      }
+      transfer_guest_data_to_user: {
+        Args: {
+          p_anon_user_id: string
+          p_fingerprint?: string
+          p_new_user_id: string
+        }
+        Returns: Json
       }
       transfer_organization_ownership: {
         Args: { current_owner_id: string; new_owner_id: string; org_id: string }
@@ -36564,6 +37464,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      studio_recording_chunks: {
+        Row: {
+          chunk_index: number
+          created_at: string
+          created_by: string
+          file_id: string
+          id: string
+          mime_type: string
+          organization_id: string | null
+          safety_id: string
+          size_bytes: number
+        }
+        Insert: {
+          chunk_index: number
+          created_at?: string
+          created_by?: string
+          file_id: string
+          id?: string
+          mime_type?: string
+          organization_id?: string | null
+          safety_id: string
+          size_bytes?: number
+        }
+        Update: {
+          chunk_index?: number
+          created_at?: string
+          created_by?: string
+          file_id?: string
+          id?: string
+          mime_type?: string
+          organization_id?: string | null
+          safety_id?: string
+          size_bytes?: number
+        }
+        Relationships: []
       }
       studio_recording_segments: {
         Row: {

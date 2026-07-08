@@ -10,25 +10,19 @@ import {
   setModulePreferences,
   type UserPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
-import { setContextMenuRows } from "@/lib/redux/slices/contextMenuCacheSlice";
-import { setAgentContextMenuRows } from "@/lib/redux/slices/agentContextMenuCacheSlice";
 import {
   hydrateModels,
   type AIModel,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 // smsSlice imported lazily — avoids pulling the full SMS feature into the shell bundle
 import { supabase } from "@/utils/supabase/client";
-import {
-  getSSRShellData,
-  getSSRAgentShellData,
-} from "@/utils/supabase/ssrShellData";
+import { getSSRShellData } from "@/utils/supabase/ssrShellData";
 import { mapUserData } from "@/utils/userDataMapper";
 import { bootstrapActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 // Phase 4 PR 4.C: setGlobalUserIdAndToken removed — the dispatch(setUser(...))
 // below already updates the Redux state, and `lib/sync/identity::attachStore`
 // (wired in StoreProvider) makes that state visible to non-React consumers.
 // No imperative seeding needed.
-import type { ContextMenuRow } from "@/utils/supabase/ssrShellData";
 
 export default function DeferredShellData() {
   const dispatch = useAppDispatch();
@@ -59,13 +53,7 @@ export default function DeferredShellData() {
         const accessToken = session?.access_token ?? null;
 
         const t2 = performance.now();
-        // Phase 5: parallel-call legacy + agent SSR RPCs so both slices are
-        // warm in one round-trip. The agent RPC is additive and safe — if it
-        // is not yet deployed the helper returns defaults without throwing.
-        const [shellData, agentShellData] = await Promise.all([
-          getSSRShellData(supabase, user.id),
-          getSSRAgentShellData(supabase, user.id),
-        ]);
+        const shellData = await getSSRShellData(supabase, user.id);
         console.debug(
           `⚡DeferredShellData getSSRShellData: ${(performance.now() - t2).toFixed(2)}ms`,
         );
@@ -94,24 +82,12 @@ export default function DeferredShellData() {
           }
         }
 
-        console.log(
-          "[DeferredShellData] Context Menu length: ",
-          shellData.context_menu.length,
-        );
-
-        if (shellData.context_menu.length > 0) {
-          dispatch(
-            setContextMenuRows(shellData.context_menu as ContextMenuRow[]),
-          );
-        }
-
-        if (agentShellData.agent_context_menu.length > 0) {
-          dispatch(
-            setAgentContextMenuRows(
-              agentShellData.agent_context_menu as ContextMenuRow[],
-            ),
-          );
-        }
+        // Context-menu preloads removed 2026-07-07 (D25 residual): the v1
+        // UnifiedContextMenu (contextMenuCache reader) was deleted with the
+        // prompts system, and the v2/v3 menu fetches on open via
+        // /api/agent-context-menu — neither cache slice has a reader. The
+        // slices themselves are kept (per D25 disposition); only the dead
+        // preload data flow is gone.
 
         if (shellData.ai_models.length > 0) {
           dispatch(

@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { updateNote } from '../service/notesService';
+import { noteSaveErrorMessage, toastNoteWriteBlocked } from '../utils/writeErrors';
 import type { UpdateNoteInput } from '../types';
 
 interface UseAutoSaveOptions {
@@ -80,6 +81,12 @@ export function useAutoSave({
             // Restore pending updates so the next scheduled save retries them
             pendingUpdatesRef.current = { ...updatesSnapshot, ...pendingUpdatesRef.current };
             console.error('[useAutoSave] Error saving note:', error);
+            // Never let a rejected write pass as silence — a viewer-level
+            // sharee's RLS-filtered save would otherwise eat every keystroke.
+            toastNoteWriteBlocked(
+                noteId,
+                noteSaveErrorMessage(error as { code?: string; message?: string }),
+            );
             onSaveError?.(error as Error);
         } finally {
             isSavingRef.current = false;
@@ -132,6 +139,10 @@ export function useAutoSave({
                 pendingUpdatesRef.current = {};
                 updateNote(currentNoteId, pendingUpdates).catch(err => {
                     console.error('[useAutoSave] Error saving note on unmount/switch:', err);
+                    toastNoteWriteBlocked(
+                        currentNoteId,
+                        noteSaveErrorMessage(err as { code?: string; message?: string }),
+                    );
                 });
             }
         };

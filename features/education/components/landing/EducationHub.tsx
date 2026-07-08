@@ -2,7 +2,7 @@
 // from the shared section primitives + axis config — the one entry point that
 // routes users into all five discovery axes, the content engine, and the tools.
 // 100% server-rendered. Tracks VISION-education-hub.md.
-import { GraduationCap, Upload, Sparkles, Trophy, ArrowRight } from "lucide-react";
+import { GraduationCap, Upload, Sparkles, Trophy, ArrowRight, Library, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 import { AuthedWorkspaceCTA } from "@/features/auth/components/module-landing/AuthedWorkspaceCTA";
@@ -33,6 +33,29 @@ export function EducationHub() {
       })),
     },
     {
+      kind: "feature-grid",
+      heading: "Free & open",
+      subheading:
+        "Read, browse, and study without an account — the generous free layer.",
+      columns: 2,
+      items: [
+        {
+          icon: Library,
+          title: "Community Library",
+          description:
+            "Free public study decks from the community — study a copy, or find an editorially Certified one.",
+          href: eduHref("library"),
+        },
+        {
+          icon: BookOpen,
+          title: "Study Guides",
+          description:
+            "In-depth, free explainers on the subjects and exams you're tackling — then study them with the full toolkit.",
+          href: eduHref("learn"),
+        },
+      ],
+    },
+    {
       kind: "steps",
       heading: "How it works",
       subheading: "Bring in any material; walk out with everything you need to master it.",
@@ -51,16 +74,16 @@ export function EducationHub() {
       items: [
         { icon: Sparkles, title: "FastFire", description: "Rapid-fire spoken recall, graded live and adapting mid-session.", href: eduHref("features", "fastfire") },
         { icon: GraduationCap, title: "An AI tutor that knows everything", description: "Your sets, your history, your exam dates — present at every surface.", href: eduHref("features", "ai-tutor") },
-        { icon: Upload, title: "Ingest anything", description: "PDF, video, audio, photos, YouTube, live lectures — all become study material.", href: eduHref("features", "multi-format-ingestion") },
+        { icon: Upload, title: "Ingest anything", description: "PDF, video, audio, photos, YouTube, live lectures — all become study material.", href: "/education/start" },
         { icon: Trophy, title: "Graded the way you actually answer", description: "Spoken, written, typed, and handwritten — all graded with feedback.", href: eduHref("features", "ai-grading") },
       ],
     },
     {
       kind: "cta",
       heading: "Start studying — free",
-      body: "Build your first deck, take a practice quiz, or ask the tutor a question. No credit card, every grade level, every subject.",
-      primary: { label: "Open the Study Hub", href: EDU_BASE },
-      secondary: { label: "Browse study aids", href: eduHref("study-aids") },
+      body: "Drop in a PDF or your notes and get a full study kit in one flow. No credit card, every grade level, every subject.",
+      primary: { label: "Create a study kit", href: "/education/start" },
+      secondary: { label: "Open the Study Hub", href: EDU_BASE },
     },
   ];
 
@@ -80,8 +103,8 @@ export function EducationHub() {
         title="Every subject. Every grade."
         titleAccent="Every way to learn."
         description="The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a context-aware tutor that grades your spoken answers in real time. From a 2nd grader's picture cards to a med student's oral-exam prep."
-        primary={{ label: "Start studying free", href: EDU_BASE }}
-        secondary={{ label: "See the features", href: eduHref("features") }}
+        primary={{ label: "Create a study kit", href: "/education/start" }}
+        secondary={{ label: "Start studying free", href: EDU_BASE }}
       />
       <SectionRenderer sections={sections} />
       {/* Quiet footer line — the hub is the savior list view, never a dead end. */}

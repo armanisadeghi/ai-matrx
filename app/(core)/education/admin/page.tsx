@@ -36,6 +36,38 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/education/start",
+      label: "Universal Ingest — Study Kit (P9)",
+      description:
+        "The hero onboarding flow: drop/paste/link ANY input (PDF, notes, URL, YouTube) → one grounded, cited study kit (deck + summary + mind map; quiz/audio as P1/P3 register on the converter). Every artifact links a `source` edge to a durable cld_files anchor.",
+      filePath: "app/(core)/education/start/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/onboard/** (useIngest → useKitGeneration → StartHero)",
+        "Converter contract: features/education/convert/** (convertContent / useContentConverter)",
+        "Agents: kit-deck 0de9ff99 · summary 92b607a4 · mindmap d13184d4",
+      ],
+    },
+    {
+      url: "/education/data",
+      label: "Your data — export/import + pledge (P9)",
+      description:
+        "Data-ownership back door: export any deck (JSON/Markdown/Anki/CSV) or the whole library as a zip; one-click import from Quizlet/CSV/TSV/Matrx-JSON/Anki .apkg/paste; the anti-lock-in pledge.",
+      filePath: "app/(core)/education/data/page.tsx",
+      status: "Live",
+      notes: [
+        "Export/import: features/education/onboard/export|import/** · Anki decode via jszip + sql.js (dynamic import)",
+      ],
+    },
+    {
+      url: "/education/summaries/[id]",
+      label: "Study summary viewer (P9)",
+      description:
+        "Grounded study summary (education.study_media, media_kind='summary') — markdown + key points + P0 citations + Markdown export.",
+      filePath: "app/(core)/education/summaries/[id]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/subjects",
       label: "Subjects index",
       description:
@@ -76,13 +108,42 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       url: "/education/learn",
       label: "Study guides (content engine)",
       description:
-        "Pure-SEO content library; articles at /learn/[...slug] (JSON-LD).",
+        "DB-backed SEO content library; articles at /learn/[...slug] (JSON-LD, ISR).",
       filePath: "app/(core)/education/learn/page.tsx",
       status: "Live",
       notes: [
-        "Demo seeded from data/learn-content.ts",
-        "Production engine will read education.study_structured_section",
+        "Content in education.learn_doc; reads via features/education/publishing/queries.ts",
+        "Authoring at /education/learn/admin (super-admin; publish without deploy)",
       ],
+    },
+    {
+      url: "/education/learn/admin",
+      label: "Study-guide authoring",
+      description:
+        "Super-admin authoring: create / edit / preview / publish learn docs; agent-assisted drafting.",
+      filePath: "app/(core)/education/learn/admin/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/library",
+      label: "Community Library (P6-C)",
+      description:
+        "Public browse over community decks (edu_public_decks): search, Certified-only facet, view (P7 /p/e), duplicate-to-edit, suggest-edit. Super-admins certify inline.",
+      filePath: "app/(core)/education/library/page.tsx",
+      status: "Live",
+      notes: [
+        "Certified tier: education.content_certification (super-admin RPCs edu_certify_content/edu_uncertify_content)",
+        "Contribution flywheel: education.deck_suggestion (edu_suggest_edit / edu_resolve_suggestion)",
+        "Feature: features/education/library/**",
+      ],
+    },
+    {
+      url: "/education/library/suggestions",
+      label: "Suggestion inbox",
+      description:
+        "Deck owner's inbox of suggest-edits on their decks (accept / decline). Signed-in only; RLS + RPC gate to owner.",
+      filePath: "app/(core)/education/library/suggestions/page.tsx",
+      status: "Live",
     },
     {
       url: "/education/subjects/quick-math",
@@ -146,16 +207,30 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/education/quizzes",
       label: "Quiz Builder",
-      description: "App tool — placeholder.",
-      filePath: "app/(core)/education/quizzes/page.tsx",
-      status: "Coming soon",
+      description:
+        "P1 Assessment Engine (quiz kind). List → new (topic/deck/document, depth, type mix) → [id] detail/take → [id]/results → [id]/edit. Grade-on-meaning; grounded citations; spine-recorded.",
+      filePath: "features/education/assessment/components/AssessmentHome.tsx",
+      status: "Live",
+      notes: [
+        "/education/quizzes/new — generate (AssessmentCreate)",
+        "/education/quizzes/[id] — detail + shareable take URL (?start=1); learning-gain (?phase=/?gain=)",
+        "/education/quizzes/[id]/results — scored report (?r=<resultId>)",
+        "/education/quizzes/[id]/edit — inline edit + 'make deeper' (EDIT-gated)",
+      ],
     },
     {
       url: "/education/practice-tests",
       label: "Practice Tests",
-      description: "App tool — placeholder.",
-      filePath: "app/(core)/education/practice-tests/page.tsx",
-      status: "Coming soon",
+      description:
+        "P1 Assessment Engine (practice_test kind) — same engine as quizzes, timed + full-length. Countdown auto-submit; detailed post-test analysis; pre/post learning gain.",
+      filePath: "features/education/assessment/components/AssessmentHome.tsx",
+      status: "Live",
+      notes: [
+        "/education/practice-tests/new — configure + generate (timed)",
+        "/education/practice-tests/[id] — detail + timed taker",
+        "/education/practice-tests/[id]/results — post-test analysis",
+        "/education/practice-tests/[id]/edit — edit (EDIT-gated)",
+      ],
     },
     {
       url: "/education/audio-study",
@@ -228,6 +303,51 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       filePath: "app/(core)/education/flashcards/progress/page.tsx",
       status: "Live",
     },
+    {
+      url: "/education/game",
+      label: "Study Games (Engagement Engine)",
+      description:
+        "App tool — LIVE (P10). List-first home: Solo Arcade, Host, Join + healthy streak (freezes/rest days), opt-in weekly league (mastery-gain), outcome badges. Play IS review — every answer records to the spine (method='game').",
+      filePath: "app/(core)/education/game/page.tsx",
+      status: "Live",
+      notes: [
+        "Sub-routes: /solo (arcade), /host (create room), /join (by code), /play/[roomId]?code= (live multiplayer)",
+        "Realtime: Supabase Broadcast + presence (channel edu-game:<roomId>); only results persist",
+        "DB: education.game_room / game_result / game_badge / league_membership + streak forgiveness",
+      ],
+    },
+    {
+      url: "/education/game/solo",
+      label: "Solo Arcade",
+      description:
+        "P10 — single-player against your SRS due/weak queue; the daily-habit surface. Heavy client, code-split (ssr:false).",
+      filePath: "app/(core)/education/game/solo/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/game/host",
+      label: "Host a game",
+      description:
+        "P10 — create a multiplayer room from a deck or your due queue; wires P8 education.game_room_size (max players shown before hosting).",
+      filePath: "app/(core)/education/game/host/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/game/join",
+      label: "Join a game",
+      description:
+        "P10 — join a room by 5-char code (cross-owner via game_room_by_code RPC). No player tax.",
+      filePath: "app/(core)/education/game/join/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/education/game/play/[roomId]",
+      label: "Live multiplayer game",
+      description:
+        "P10 — lobby → play → results. Broadcast roster + per-player SRS queues + comeback power-ups + team/private scoreboard (no speed-shame). Rejoin syncs to host started_at.",
+      filePath: "app/(core)/education/game/play/[roomId]/page.tsx",
+      status: "Live",
+    },
   ],
 
   components: [
@@ -236,6 +356,34 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/education/components/landing/EducationHub.tsx",
       description:
         "Bespoke hub landing composed from the section primitives + axis config.",
+      tier: "official",
+    },
+    {
+      name: "Content Converter (contract)",
+      filePath: "features/education/convert/useContentConverter.ts",
+      description:
+        "P9/P4 — the ONE cross-tool dispatch: convertContent({source,targetKind}) + convertMany (kit fan-out). Live generators: deck/summary/mind_map; placeholders: audio(P3)/quiz+practice_test(P1)/notes(P4). See features/education/convert/FEATURE.md.",
+      tier: "official",
+    },
+    {
+      name: "StartHero (Universal Ingest)",
+      filePath: "features/education/onboard/components/StartHero.tsx",
+      description:
+        "P9 — the upload-hero flow: input picker (file/paste/link) → kit target picker → live per-target board → linked artifacts. Driven by useKitGeneration + useIngest.",
+      tier: "official",
+    },
+    {
+      name: "DataOwnershipPage / ImportDeckPanel",
+      filePath: "features/education/onboard/components/DataOwnershipPage.tsx",
+      description:
+        "P9 — the /education/data back door: pledge + per-deck/all export + one-click import (incl. Anki .apkg). useDataOwnership + importDeck/importAnki + deckFormats.",
+      tier: "official",
+    },
+    {
+      name: "SummaryDetail",
+      filePath: "features/education/onboard/components/SummaryDetail.tsx",
+      description:
+        "P9 — the study-summary viewer (study_media 'summary' kind): markdown + key points + P0 citations + Markdown export.",
       tier: "official",
     },
     {
@@ -284,7 +432,7 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       name: "Registries (data/*)",
       filePath: "features/education/data/registry.ts",
       description:
-        "subjects / levels / exam-prep / study-aids / features / tools / learn-content — add an entry, get a page.",
+        "subjects / levels / exam-prep / study-aids / features / tools — add a registry entry, get a page. Learn docs are DB-backed (education.learn_doc).",
       tier: "official",
     },
     {
@@ -339,6 +487,42 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       description:
         "P5 — pre/post learning-gain report + print/PDF export (reads P1's contract; seed fixtures until it lands).",
       tier: "official",
+    },
+    {
+      name: "EngageHome",
+      filePath: "features/education/engage/components/EngageHome.tsx",
+      description:
+        "P10 — the /education/game list-first home (Solo/Host/Join + streak + league + badges).",
+      tier: "internal",
+    },
+    {
+      name: "PlaySurface",
+      filePath: "features/education/engage/components/play/PlaySurface.tsx",
+      description:
+        "P10 — the shared in-game UI (HUD, MC question, power-up bar, feedback) driven by useGamePlay; used by solo + multiplayer.",
+      tier: "internal",
+    },
+    {
+      name: "MultiplayerGameImpl",
+      filePath:
+        "features/education/engage/components/multiplayer/MultiplayerGameImpl.tsx",
+      description:
+        "P10 — the live multiplayer surface (lobby → play → results) composing the Broadcast channel + game engine. Code-split via MultiplayerGame.",
+      tier: "internal",
+    },
+    {
+      name: "SoloArcadeImpl",
+      filePath: "features/education/engage/components/solo/SoloArcadeImpl.tsx",
+      description:
+        "P10 — the solo arcade round surface. Code-split via SoloArcade (ssr:false).",
+      tier: "internal",
+    },
+    {
+      name: "StreakCard",
+      filePath: "features/education/engage/components/streak/StreakCard.tsx",
+      description:
+        "P10 — the healthy-streak surface: current/longest, banked freezes, planned rest-day picker (anti-Duolingo).",
+      tier: "internal",
     },
   ],
 

@@ -291,6 +291,7 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
     content,
     title,
     metadata,
+    onSave,
     isAuthenticated,
     dispatch,
     onClose,
@@ -307,10 +308,26 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
         const instanceId = instanceKey
           ? `html-preview-${instanceKey}`
           : `html-preview-${Date.now().toString(36)}`;
-        // No message/conversation target here (generic content, not a
-        // cx_message), and `onSave` can't travel through Redux — so the
-        // bridge opens in publish/preview mode with no Save button. Mirrors
-        // the proven chat-message dispatch shape exactly.
+        // `onSave` travels via the callback registry — a function can't
+        // survive Redux. When the caller provides one, the bridge shows a
+        // Save button and the edited markdown routes back here; failures
+        // scream (toast + console.error), never silent. Read-only callers
+        // (no onSave) get publish/preview mode with no Save button.
+        const callbackGroupId = onSave
+          ? createFullScreenEditorCallbackGroup({
+              onSave: async (newContent: string) => {
+                try {
+                  await onSave(newContent);
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.error("[ContentActionBar] html-preview save failed", err);
+                  toast.error(getErrorMessage(err, "Failed to save changes"));
+                  return;
+                }
+                dispatch(closeOverlay({ overlayId: "htmlPreview", instanceId }));
+              },
+            }).callbackGroupId
+          : null;
         dispatch(
           openOverlay({
             overlayId: "htmlPreview",
@@ -322,7 +339,8 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
                 : "HTML Preview & Publishing",
               description:
                 "Edit markdown, preview HTML, and publish your content",
-              showSaveButton: false,
+              callbackGroupId,
+              showSaveButton: !!onSave,
               isAgentSystem: false,
             },
           }),

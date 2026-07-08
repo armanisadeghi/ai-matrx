@@ -5,9 +5,9 @@
 // THE canonical COMPACT active-context picker — a small collapsible tree
 // (Org → scope types → scopes, plus Projects / Tasks groups) that reads and
 // writes the working context directly. Same semantics as ActiveContextPanel
-// (org explicit, ONE scope per type, single project, single task) at a
-// fraction of the footprint: no search bar, no fixed section height, no
-// summary footer. Drop it into popovers/menus where the full field is too
+// (org explicit, MULTI-scope — any number of scopes per type, checkbox not
+// radio — single project, single task) at a fraction of the footprint: no
+// search bar, no fixed section height, no summary footer. Drop it into popovers/menus where the full field is too
 // tall (ContextDocsMenu, quick rows); keep ActiveContextPanel for hosts with
 // real vertical room.
 //
@@ -23,7 +23,8 @@ import {
   selectProjectId,
   selectTaskId,
   setOrganization,
-  setScopeSelections,
+  addActiveScope,
+  removeActiveScope,
   setProject,
   setTask,
   clearContext,
@@ -115,8 +116,9 @@ export function ActiveContextTree({
       return next;
     });
 
-  // ── Writers (ONE scope per type, single project/task — same product
-  // semantics as ActiveContextPanel/ActiveContextButton) ──────────────────
+  // ── Writers (MULTI-scope — checkbox semantics, any number of scopes per
+  // type; single project/task — same product semantics as
+  // ActiveContextPanel/ActiveContextButton) ────────────────────────────────
   const toggleOrg = (id: string, name: string) => {
     if (orgId === id) dispatch(setOrganization({ id: null, name: null }));
     else {
@@ -125,14 +127,12 @@ export function ActiveContextTree({
     }
   };
 
-  const toggleScope = (scopeId: string, siblingIds: string[]) => {
-    const next: Record<string, string | null> = {};
-    for (const sid of selectedScopeIds) {
-      if (sid === scopeId || siblingIds.includes(sid)) continue; // drop self + same-type siblings
-      next[sid] = sid;
-    }
-    if (!selectedScopeIds.has(scopeId)) next[scopeId] = scopeId;
-    dispatch(setScopeSelections(next));
+  const toggleScope = (scopeId: string) => {
+    dispatch(
+      selectedScopeIds.has(scopeId)
+        ? removeActiveScope(scopeId)
+        : addActiveScope(scopeId),
+    );
   };
 
   const toggleProject = (p: AssignableProject) =>
@@ -236,12 +236,7 @@ export function ActiveContextTree({
                           <button
                             key={scope.id}
                             type="button"
-                            onClick={() =>
-                              toggleScope(
-                                scope.id,
-                                st.scopes.map((s) => s.id),
-                              )
-                            }
+                            onClick={() => toggleScope(scope.id)}
                             className={cn(ROW, "pl-8")}
                           >
                             <CheckDot on={selectedScopeIds.has(scope.id)} />

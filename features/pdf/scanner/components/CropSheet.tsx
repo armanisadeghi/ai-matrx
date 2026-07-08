@@ -27,6 +27,7 @@ import React, {
   useState,
 } from "react";
 import { Check, Loader2, Maximize2, RotateCw, ScanSearch } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -36,16 +37,35 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { cn } from "@/lib/utils";
 import { useFileSrc } from "@/features/files";
 
 import { detectDocument } from "../api";
-import type { Quad, QuadPoint, ScanItem, ScanRotation } from "../types";
+import { ENHANCE_LABELS, applyEnhance } from "../enhance";
+import type {
+  Quad,
+  QuadPoint,
+  ScanEnhanceMode,
+  ScanItem,
+  ScanRotation,
+} from "../types";
 import { QuadEditor, fullFrameQuad } from "./QuadEditor";
+
+/** Enhance selection carried out of the sheet on Apply. */
+export interface CropEnhance {
+  mode: ScanEnhanceMode | undefined;
+  fileId: string | undefined;
+}
 
 interface CropSheetProps {
   item: ScanItem | null;
   onClose: () => void;
-  onApply: (itemId: string, quad: Quad | null, rotation: ScanRotation) => void;
+  onApply: (
+    itemId: string,
+    quad: Quad | null,
+    rotation: ScanRotation,
+    enhance: CropEnhance,
+  ) => void;
 }
 
 export function CropSheet({ item, onClose, onApply }: CropSheetProps) {
@@ -175,7 +195,12 @@ function CropEditor({
 }: {
   item: ScanItem;
   onClose: () => void;
-  onApply: (itemId: string, quad: Quad | null, rotation: ScanRotation) => void;
+  onApply: (
+    itemId: string,
+    quad: Quad | null,
+    rotation: ScanRotation,
+    enhance: CropEnhance,
+  ) => void;
 }) {
   // Quad state lives in ORIGINAL post-EXIF space (the server contract).
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(
@@ -186,6 +211,44 @@ function CropEditor({
   const [detecting, setDetecting] = useState(false);
   const [detectNote, setDetectNote] = useState<string | null>(null);
   const [offerRetry, setOfferRetry] = useState(false);
+
+  // Enhance (design: Original / Auto / Grayscale / B&W). Each pick runs the
+  // platform image ops (non-destructive derivative); Apply carries the result.
+  const [enhance, setEnhanceState] = useState<ScanEnhanceMode | undefined>(
+    item.enhance,
+  );
+  const [enhancedFileId, setEnhancedFileId] = useState<string | undefined>(
+    item.enhancedFileId,
+  );
+  const [enhanceBusy, setEnhanceBusy] = useState<ScanEnhanceMode | null>(null);
+
+  const pickEnhance = useCallback(
+    (mode: ScanEnhanceMode | undefined) => {
+      if (enhanceBusy) return;
+      if (mode === undefined) {
+        setEnhanceState(undefined);
+        setEnhancedFileId(undefined);
+        return;
+      }
+      if (mode === enhance && enhancedFileId) return;
+      if (!item.fileId) return; // chips disabled until uploaded anyway
+      setEnhanceBusy(mode);
+      applyEnhance(item.fileId, mode)
+        .then((res) => {
+          setEnhanceState(mode);
+          setEnhancedFileId(res.fileId);
+        })
+        .catch((err: unknown) => {
+          toast.error(
+            err instanceof Error
+              ? `Enhance failed: ${err.message}`
+              : "Enhance failed — keeping the original.",
+          );
+        })
+        .finally(() => setEnhanceBusy(null));
+    },
+    [enhanceBusy, enhance, enhancedFileId, item.fileId],
+  );
 
   // Measured drawer-body area — the editor is sized to fit it exactly.
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -276,9 +339,21 @@ function CropEditor({
     if (!quad) return;
     // A full-frame quad means "no crop" — store null so the server skips
     // the warp entirely (faster, byte-identical page).
-    onApply(item.itemId, isFullFrame ? null : quad, rotation);
+    onApply(item.itemId, isFullFrame ? null : quad, rotation, {
+      mode: enhance,
+      fileId: enhance ? enhancedFileId : undefined,
+    });
     onClose();
-  }, [item.itemId, quad, isFullFrame, rotation, onApply, onClose]);
+  }, [
+    item.itemId,
+    quad,
+    isFullFrame,
+    rotation,
+    enhance,
+    enhancedFileId,
+    onApply,
+    onClose,
+  ]);
 
   // Display-space geometry (rotation-aware).
   const displayDims = naturalSize
@@ -391,6 +466,32 @@ function CropEditor({
         )}
       </div>
 
+      {/* Enhance row (design: Original / Auto / Grayscale / B&W) */}
+      <div className="flex items-center gap-2 px-4 pt-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+          Enhance
+        </span>
+        <div className="flex flex-1 gap-1.5">
+          <EnhanceChip
+            label="Original"
+            active={enhance === undefined}
+            busy={false}
+            disabled={Boolean(enhanceBusy)}
+            onClick={() => pickEnhance(undefined)}
+          />
+          {(Object.keys(ENHANCE_LABELS) as ScanEnhanceMode[]).map((mode) => (
+            <EnhanceChip
+              key={mode}
+              label={ENHANCE_LABELS[mode]}
+              active={enhance === mode}
+              busy={enhanceBusy === mode}
+              disabled={!item.fileId || Boolean(enhanceBusy)}
+              onClick={() => pickEnhance(mode)}
+            />
+          ))}
+        </div>
+      </div>
+
       <DrawerFooter className="flex-row gap-2 pb-safe pt-2">
         <Button
           variant="outline"
@@ -417,7 +518,7 @@ function CropEditor({
         <Button
           size="sm"
           className="h-10 flex-1"
-          disabled={!quad || detecting}
+          disabled={!quad || detecting || Boolean(enhanceBusy)}
           onClick={apply}
         >
           <Check className="mr-1.5 h-3.5 w-3.5" />
@@ -425,5 +526,37 @@ function CropEditor({
         </Button>
       </DrawerFooter>
     </>
+  );
+}
+
+function EnhanceChip({
+  label,
+  active,
+  busy,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled && !active}
+      className={cn(
+        "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
+        active
+          ? "bg-primary/15 text-primary"
+          : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground",
+        disabled && !active && "opacity-50",
+      )}
+    >
+      {busy && <Loader2 className="h-3 w-3 animate-spin" />}
+      {label}
+    </button>
   );
 }

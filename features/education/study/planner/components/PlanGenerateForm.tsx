@@ -12,6 +12,7 @@ import { useState } from "react";
 import { CalendarClock, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import type { PlanInput, Weekday } from "../types";
 
@@ -104,14 +105,13 @@ export function PlanGenerateForm({
             />
           </Field>
           <Field label={`Minutes per day: ${dailyMinutes}`}>
-            <input
-              type="range"
+            <Slider
               min={10}
               max={180}
               step={5}
-              value={dailyMinutes}
-              onChange={(e) => setDailyMinutes(Number(e.target.value))}
-              className="mt-2 w-full accent-primary"
+              value={[dailyMinutes]}
+              onValueChange={([v]) => setDailyMinutes(v ?? dailyMinutes)}
+              className="mt-2"
             />
           </Field>
         </div>

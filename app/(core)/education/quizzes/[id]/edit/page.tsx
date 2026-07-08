@@ -1,10 +1,15 @@
+// /education/quizzes/[id]/edit — authoring surface, gated to EDIT (P7 useAccess).
 import type { Metadata } from "next";
-import { EduToolComingSoon } from "@/features/education/components/EduToolComingSoon";
 import { toolMetadata } from "@/features/education/route-helpers";
+import { AssessmentEdit } from "@/features/education/assessment/components/edit/AssessmentEdit";
 
 export const metadata: Metadata = toolMetadata("quizzes");
 
-// Authoring surface — same [id], gated to EDIT permission (see ROUTING.md).
-export default function QuizEditPage() {
-  return <EduToolComingSoon slug="quizzes" surface={{ label: "Edit a quiz", gate: "edit" }} />;
+export default async function QuizEditPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  return <AssessmentEdit assessmentId={id} />;
 }

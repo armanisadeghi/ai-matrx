@@ -8,7 +8,7 @@
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
 // tool to its source-of-truth section in VISION-education-hub.md.
 
-import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, NotebookPen, CalendarClock } from "lucide-react";
+import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, NotebookPen, CalendarClock, Gamepad2 } from "lucide-react";
 import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
@@ -75,13 +75,14 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Generate MC, T/F, fill-in-blank, short-answer, and written-response questions from any deck or upload.",
     icon: ListChecks,
     letter: "Qz",
-    status: "coming-soon",
+    status: "live", // P1 — 5 question types, depth-on-demand, grade-on-meaning, grounded citations, spine-recorded, learning gain
     accessTier: "free",
     visionRef: "VISION §2 Test/Quiz mode",
     capabilities: [
-      "Five question types auto-generated from source",
-      "Per-item explanations and feedback",
-      "Quiz session state persisted (education.quiz_sessions)",
+      "Five question types auto-generated from a topic, deck, or document",
+      "Depth-on-demand (recall → applied → exam) + per-item 'make deeper'",
+      "Grade-on-meaning for free-response; grounded, cited questions (TrustEnvelope)",
+      "Every answer feeds the study spine (FSRS mastery + weak-area review)",
     ],
   },
   {
@@ -91,14 +92,14 @@ export const EDU_TOOLS: EduToolEntry[] = [
     description: "Configurable, timed, full-length practice exams with detailed post-test analysis and pre/post learning-gain.",
     icon: FileCheck2,
     letter: "Pt",
-    status: "coming-soon",
+    status: "live", // P1 — timed full-length tests reusing the assessment engine; detailed post-test analysis + learning gain
     accessTier: "trial",
     visionRef: "VISION §8 Practice Tests & Exam Prep",
     capabilities: [
       "Configurable question mix, difficulty, count, time limits",
-      "Item-level feedback + explanations",
-      "Pre/post testing → measured learning gain",
-      "Standardized-exam formats (SAT/ACT/AP/MCAT/…)",
+      "Timed taker with auto-submit; detailed item-level post-test analysis",
+      "Pre/post testing → persisted, measured learning gain",
+      "Standardized-exam formats (SAT/ACT/AP/MCAT/…) via exam-type config",
     ],
   },
   {
@@ -167,6 +168,26 @@ export const EDU_TOOLS: EduToolEntry[] = [
       "Adaptive re-planning on new performance data (re-plan in place)",
       "Anti-burnout: honored rest days, gentle daily caps, tapered practice-test finish",
     ],
+  },
+  {
+    slug: "game",
+    name: "Study Games",
+    tagline: "Play IS review — SRS-wired multiplayer + solo arcade",
+    description: "A real-time multiplayer study game (host a room, join by code) and a solo arcade, both fed by the FSRS engine so every round is genuine review. Healthy streaks, opt-in leagues, outcome badges — no speed-shame, ever.",
+    icon: Gamepad2,
+    letter: "Gm",
+    status: "live", // P10 — SRS-wired multiplayer + solo arcade + healthy streaks/leagues/badges
+    accessTier: "free",
+    visionRef: "VISION §11 Engagement / Gamification",
+    capabilities: [
+      "Real-time multiplayer: host a room, players join by code (no player tax)",
+      "Per-player SRS-biased question queues — every answer is real review",
+      "Solo arcade against your due/weak queue (the daily-habit surface)",
+      "Correctness-first scoring + earn-to-upgrade power-ups + comeback assist",
+      "Healthy streaks (freezes + rest days), opt-in mastery-gain leagues, outcome badges",
+      "Every answer records to the study spine (method='game') → mastery + P5 analytics",
+    ],
+    featured: true,
   },
 ];
 

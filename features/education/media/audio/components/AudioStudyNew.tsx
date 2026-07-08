@@ -12,9 +12,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Headphones, Loader2, MessagesSquare, Radio, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Headphones,
+  Loader2,
+  MessagesSquare,
+  Radio,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -33,9 +41,27 @@ const FORMATS: {
   icon: typeof Headphones;
   defaultHosts: number;
 }[] = [
-  { id: "overview", label: "Overview", blurb: "A narrated walkthrough of the material.", icon: Radio, defaultHosts: 2 },
-  { id: "debate", label: "Debate", blurb: "Two distinct voices argue opposing views.", icon: MessagesSquare, defaultHosts: 2 },
-  { id: "panel", label: "Panel", blurb: "A multi-host expert roundtable.", icon: Users, defaultHosts: 4 },
+  {
+    id: "overview",
+    label: "Overview",
+    blurb: "A narrated walkthrough of the material.",
+    icon: Radio,
+    defaultHosts: 2,
+  },
+  {
+    id: "debate",
+    label: "Debate",
+    blurb: "Two distinct voices argue opposing views.",
+    icon: MessagesSquare,
+    defaultHosts: 2,
+  },
+  {
+    id: "panel",
+    label: "Panel",
+    blurb: "A multi-host expert roundtable.",
+    icon: Users,
+    defaultHosts: 4,
+  },
 ];
 
 export function AudioStudyNew() {
@@ -79,7 +105,9 @@ export function AudioStudyNew() {
     }
     const verdict = await ent.check();
     if (!verdict.allowed) {
-      toast.error(ent.definition?.upgradeMessage ?? "You've reached your audio limit.");
+      toast.error(
+        ent.definition?.upgradeMessage ?? "You've reached your audio limit.",
+      );
       return;
     }
     await create({
@@ -95,13 +123,21 @@ export function AudioStudyNew() {
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/education/audio-study")} aria-label="Back">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.push("/education/audio-study")}
+          aria-label="Back"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Generate audio study</h1>
+          <h1 className="text-lg font-semibold text-foreground">
+            Generate audio study
+          </h1>
           <p className="text-xs text-muted-foreground">
-            Turn a deck or a topic into a produced audio session you can listen to anywhere.
+            Turn a deck or a topic into a produced audio session you can listen
+            to anywhere.
           </p>
         </div>
       </div>
@@ -110,8 +146,18 @@ export function AudioStudyNew() {
       <section className="space-y-2">
         <label className="text-sm font-medium text-foreground">Source</label>
         <div className="flex gap-2">
-          <SegBtn active={sourceKind === "deck"} onClick={() => setSourceKind("deck")}>From a deck</SegBtn>
-          <SegBtn active={sourceKind === "topic"} onClick={() => setSourceKind("topic")}>From a topic</SegBtn>
+          <SegBtn
+            active={sourceKind === "deck"}
+            onClick={() => setSourceKind("deck")}
+          >
+            From a deck
+          </SegBtn>
+          <SegBtn
+            active={sourceKind === "topic"}
+            onClick={() => setSourceKind("topic")}
+          >
+            From a topic
+          </SegBtn>
         </div>
         {sourceKind === "deck" ? (
           <select
@@ -136,8 +182,8 @@ export function AudioStudyNew() {
         )}
         {sourceKind === "topic" && (
           <p className="text-[11px] text-muted-foreground">
-            A topic isn&apos;t grounded in your own material — the audio is reasoned from general
-            knowledge and labelled honestly.
+            A topic isn&apos;t grounded in your own material — the audio is
+            reasoned from general knowledge and labelled honestly.
           </p>
         )}
       </section>
@@ -156,12 +202,23 @@ export function AudioStudyNew() {
                 onClick={() => setFormat(f.id)}
                 className={cn(
                   "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors",
-                  active ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-accent",
+                  active
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-card hover:bg-accent",
                 )}
               >
-                <Icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
-                <span className="text-sm font-medium text-foreground">{f.label}</span>
-                <span className="text-[11px] leading-tight text-muted-foreground">{f.blurb}</span>
+                <Icon
+                  className={cn(
+                    "h-4 w-4",
+                    active ? "text-primary" : "text-muted-foreground",
+                  )}
+                />
+                <span className="text-sm font-medium text-foreground">
+                  {f.label}
+                </span>
+                <span className="text-[11px] leading-tight text-muted-foreground">
+                  {f.blurb}
+                </span>
               </button>
             );
           })}
@@ -175,7 +232,11 @@ export function AudioStudyNew() {
             <span className="text-sm text-foreground">Hosts</span>
             <div className="flex items-center gap-2">
               {[3, 4, 5, 6].map((n) => (
-                <SegBtn key={n} active={hostCount === n} onClick={() => setHostCount(n)}>
+                <SegBtn
+                  key={n}
+                  active={hostCount === n}
+                  onClick={() => setHostCount(n)}
+                >
                   {String(n)}
                 </SegBtn>
               ))}
@@ -184,16 +245,16 @@ export function AudioStudyNew() {
         )}
         {sourceKind === "deck" && (
           <label className="flex cursor-pointer items-start gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={adaptive}
-              onChange={(e) => setAdaptive(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
+              onCheckedChange={(checked) => setAdaptive(checked === true)}
+              className="mt-0.5"
             />
             <span className="text-sm text-foreground">
               Target my weak areas
               <span className="block text-[11px] text-muted-foreground">
-                Spends extra time on the concepts you&apos;ve been struggling with (from your study history).
+                Spends extra time on the concepts you&apos;ve been struggling
+                with (from your study history).
               </span>
             </span>
           </label>
@@ -207,7 +268,11 @@ export function AudioStudyNew() {
       )}
 
       <Button onClick={handleGenerate} disabled={busy} className="w-full gap-2">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Headphones className="h-4 w-4" />}
+        {busy ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Headphones className="h-4 w-4" />
+        )}
         Generate audio
       </Button>
     </div>
@@ -229,7 +294,9 @@ function SegBtn({
       onClick={onClick}
       className={cn(
         "rounded-md border px-3 py-1.5 text-sm transition-colors",
-        active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:bg-accent",
+        active
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-border bg-card text-muted-foreground hover:bg-accent",
       )}
     >
       {children}

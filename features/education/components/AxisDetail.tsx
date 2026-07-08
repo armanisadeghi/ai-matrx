@@ -12,7 +12,9 @@ import { SectionRenderer } from "./sections/SectionRenderer";
 import { ACCESS_TIER_META, EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_WORKSPACE_HREF, EDU_WORKSPACE_LABEL, eduHref } from "../constants";
 import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";
-import { LEARN_DOC_BY_SLUG } from "../data/learn-content";
+import { getPublishedLearnDocTitles } from "../publishing/queries";
+import { ExamHubActions } from "./ExamHubActions";
+import { siteConfig } from "@/config/extras/site";
 import type { AxisEntry, EduAxisId, EduSection } from "../types";
 
 /** Slug → Title Case, used ONLY as a fallback when no registry name exists. */
@@ -28,14 +30,17 @@ function humanize(slug: string): string {
 const toolName = (s: string) => EDU_TOOL_BY_SLUG[s]?.name ?? humanize(s);
 const examName = (s: string) => getAxisEntry("exam-prep", s)?.name ?? humanize(s);
 const subjectName = (s: string) => getAxisEntry("subjects", s)?.name ?? humanize(s);
-const contentName = (s: string) => LEARN_DOC_BY_SLUG[s]?.title ?? humanize(s);
 
 interface RelatedGroup {
   label: string;
   links: { label: string; href: string }[];
 }
 
-function buildRelated(entry: AxisEntry): RelatedGroup[] {
+function buildRelated(
+  entry: AxisEntry,
+  contentTitles: Record<string, string>,
+): RelatedGroup[] {
+  const contentName = (s: string) => contentTitles[s] ?? humanize(s);
   const groups: RelatedGroup[] = [];
   const r = entry.related;
   if (!r) return groups;
@@ -70,12 +75,49 @@ interface AxisDetailProps {
   entry: AxisEntry;
 }
 
-export function AxisDetail({ axisId, entry }: AxisDetailProps) {
+/** Structured-data JSON-LD for an axis page: FAQPage (from any faq section)
+ *  + Course (subjects / exam-prep, where a "course" framing is apt). Static,
+ *  server-built from trusted registry data (no user input). */
+function buildAxisJsonLd(axisId: EduAxisId, entry: AxisEntry, url: string) {
+  const graph: Record<string, unknown>[] = [];
+
+  const faqItems = (entry.sections ?? [])
+    .filter((s): s is Extract<EduSection, { kind: "faq" }> => s.kind === "faq")
+    .flatMap((s) => s.items);
+  if (faqItems.length > 0) {
+    graph.push({
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.a },
+      })),
+    });
+  }
+
+  if (axisId === "subjects" || axisId === "exam-prep") {
+    graph.push({
+      "@type": "Course",
+      name: entry.name,
+      description: entry.description,
+      url,
+      provider: { "@type": "Organization", name: "AI Matrx", sameAs: siteConfig.url },
+    });
+  }
+
+  if (graph.length === 0) return null;
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+export async function AxisDetail({ axisId, entry }: AxisDetailProps) {
   const axisSegment = EDU_AXIS_BY_ID[axisId].segment;
   const sections = entry.sections ?? [];
   const hasCta = sections.some((s) => s.kind === "cta");
-  const related = buildRelated(entry);
+  const contentTitles = await getPublishedLearnDocTitles();
+  const related = buildRelated(entry, contentTitles);
   const tierLabel = ACCESS_TIER_META[entry.accessTier].label;
+  const url = `${siteConfig.url}${eduHref(axisSegment, entry.slug)}`;
+  const jsonLd = buildAxisJsonLd(axisId, entry, url);
 
   const heroChips = [
     ...(entry.meta ? Object.values(entry.meta) : []),
@@ -84,6 +126,14 @@ export function AxisDetail({ axisId, entry }: AxisDetailProps) {
 
   return (
     <MarketingPageShell>
+      {jsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+      ) : null}
       <AuthedWorkspaceCTA
         workspaceHref={EDU_WORKSPACE_HREF}
         workspaceLabel={EDU_WORKSPACE_LABEL}
@@ -101,6 +151,10 @@ export function AxisDetail({ axisId, entry }: AxisDetailProps) {
             : undefined
         }
       />
+
+      {/* Exam hub: marketing → product entry points (mock exam, quiz, guides,
+          community decks). Only for exam-prep entries. */}
+      {axisId === "exam-prep" ? <ExamHubActions entry={entry} /> : null}
 
       <SectionRenderer sections={sections} />
 
