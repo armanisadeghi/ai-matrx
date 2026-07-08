@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAccess } from "@/utils/permissions/access";
@@ -297,7 +298,11 @@ function ItemEditor({
       />
 
       {(type === "multiple_choice" || type === "true_false") && options.length > 0 && (
-        <div className="mt-2 flex flex-col gap-1.5">
+        <RadioGroup
+          value={item.correct_answer ?? ""}
+          onValueChange={(val) => onChange({ correct_answer: val })}
+          className="mt-2 flex flex-col gap-1.5"
+        >
           {options.map((opt, oi) => (
             <div key={oi} className="flex items-center gap-2">
               <Input
@@ -309,16 +314,10 @@ function ItemEditor({
                 }}
                 className="text-sm"
               />
-              <input
-                type="radio"
-                name={`correct-${item.id}`}
-                checked={item.correct_answer === opt}
-                onChange={() => onChange({ correct_answer: opt })}
-                title="Mark correct"
-              />
+              <RadioGroupItem value={opt} aria-label="Mark correct" />
             </div>
           ))}
-        </div>
+        </RadioGroup>
       )}
 
       {(type === "fill_blank" || type === "short_answer") && (

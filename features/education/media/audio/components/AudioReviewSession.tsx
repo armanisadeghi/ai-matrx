@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
@@ -281,7 +282,11 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
           ))}
         </select>
         <label className="flex cursor-pointer items-start gap-2">
-          <input type="checkbox" checked={adaptive} onChange={(e) => setAdaptive(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+          <Checkbox
+            checked={adaptive}
+            onCheckedChange={(checked) => setAdaptive(checked === true)}
+            className="mt-0.5"
+          />
           <span className="text-sm text-foreground">
             Review what&apos;s due first
             <span className="block text-[11px] text-muted-foreground">Prioritizes cards the FSRS scheduler says you should review now.</span>

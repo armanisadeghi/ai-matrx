@@ -15,6 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Headphones, Loader2, MessagesSquare, Radio, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -184,11 +185,10 @@ export function AudioStudyNew() {
         )}
         {sourceKind === "deck" && (
           <label className="flex cursor-pointer items-start gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={adaptive}
-              onChange={(e) => setAdaptive(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-primary"
+              onCheckedChange={(checked) => setAdaptive(checked === true)}
+              className="mt-0.5"
             />
             <span className="text-sm text-foreground">
               Target my weak areas
