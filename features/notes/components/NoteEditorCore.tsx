@@ -29,6 +29,10 @@ import type {
   RichDocumentActionsVariant,
 } from "@/features/rich-document/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import {
+  toastNoteWriteBlocked,
+  NOTE_READONLY_SAVE_MESSAGE,
+} from "../utils/writeErrors";
 import { cn } from "@/lib/utils";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 
@@ -314,7 +318,8 @@ export function NoteEditorCore({
               value={content}
               onChange={(e) => onChange(e.target.value)}
               placeholder={placeholder}
-              disabled={readOnly}
+              // readOnly, not disabled — viewers still select/copy/scroll.
+              readOnly={readOnly}
               wrapperClassName="absolute inset-0 w-full h-full"
               className={cn(
                 "w-full h-full resize-none border-0 shadow-none",
@@ -407,8 +412,19 @@ export function NoteEditorCore({
             enableContextMenu
             isStreamActive={false}
             hideCopyButton={true}
-            allowFullScreenEditor={true}
-            onContentChange={readOnly ? undefined : onChange}
+            // Viewers must not reach the full-screen editor: its saves apply a
+            // LOCAL overlay that displays as saved while onContentChange is a
+            // no-op — the silent-lost-work class this feature exists to kill.
+            allowFullScreenEditor={!readOnly}
+            onContentChange={
+              readOnly
+                ? () =>
+                    toastNoteWriteBlocked(
+                      noteId ?? "readonly-preview",
+                      NOTE_READONLY_SAVE_MESSAGE,
+                    )
+                : onChange
+            }
           />
         </div>
       )}

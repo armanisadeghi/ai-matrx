@@ -78,7 +78,7 @@ export default function MobileNotesList({
       result = result.filter((n) => n.project_id === activeProjectId);
     if (activeTaskId) result = result.filter((n) => n.task_id === activeTaskId);
     return result;
-  }, [notes, activeOrgId, activeProjectId, activeTaskId]);
+  }, [notes, activeOrgId, scopeFilteredNoteIds, activeProjectId, activeTaskId]);
 
   // Filtered + sorted notes. "Shared only" swaps the base list to the notes
   // shared WITH me (from get_notes_shared_with_me) — those are cross-org, so
@@ -86,7 +86,10 @@ export default function MobileNotesList({
   const filteredNotes = useMemo(() => {
     let result = filters.sharedOnly ? sharedNotes : uniqueNotes;
 
-    if (filters.folder !== "all") {
+    // Shared rows carry the OWNER's folder_name and the folder picker only
+    // lists MY folders — combining them would reliably show "no notes match"
+    // with no hint why. Folder filtering applies to owned notes only.
+    if (!filters.sharedOnly && filters.folder !== "all") {
       result = result.filter(
         (n) => (n.folder_name || "Draft") === filters.folder,
       );

@@ -50,6 +50,9 @@ interface NoteEditorDockProps {
   onExport: () => void;
   onDelete: () => void;
   isDeleting?: boolean;
+  /** Viewer-level sharee: hide the folder/tags mutators (their saves are
+   *  RLS-rejected); copy/export/context/more stay available. */
+  readOnly?: boolean;
 }
 
 // ─── Constants (mirrors MobileDock) ──────────────────────────────────────────
@@ -71,6 +74,7 @@ export function NoteEditorDock({
   onExport,
   onDelete,
   isDeleting,
+  readOnly = false,
 }: NoteEditorDockProps) {
   const toast = useToastManager("notes");
   const openKnowledge = useOpenNoteKnowledgePanel();
@@ -89,34 +93,41 @@ export function NoteEditorDock({
     "folder-tags" | "context" | "more" | null
   >(null);
 
-  // Dock items definition — icons only, no labels
+  // Dock items definition — icons only, no labels. onPress receives the
+  // item's RENDER index (items can be filtered, so positions aren't fixed).
   const items: {
     key: string;
     tooltip: string;
     Icon: LucideIcon;
-    onPress: () => void;
+    onPress: (index: number) => void;
   }[] = [
-    {
-      key: "folder",
-      tooltip: folder,
-      Icon: FolderOpen,
-      onPress: () => {
-        setActiveIndex(0);
-        setSheetOpen("folder-tags");
-      },
-    },
-    {
-      key: "tags",
-      tooltip:
-        tags.length > 0
-          ? `${tags.length} tag${tags.length !== 1 ? "s" : ""}`
-          : "Tags",
-      Icon: Tag,
-      onPress: () => {
-        setActiveIndex(1);
-        setSheetOpen("folder-tags");
-      },
-    },
+    // Folder + tags mutate the note — a viewer's save is RLS-rejected, so
+    // don't offer the affordance at all.
+    ...(readOnly
+      ? []
+      : [
+          {
+            key: "folder",
+            tooltip: folder,
+            Icon: FolderOpen,
+            onPress: (index: number) => {
+              setActiveIndex(index);
+              setSheetOpen("folder-tags");
+            },
+          },
+          {
+            key: "tags",
+            tooltip:
+              tags.length > 0
+                ? `${tags.length} tag${tags.length !== 1 ? "s" : ""}`
+                : "Tags",
+            Icon: Tag,
+            onPress: (index: number) => {
+              setActiveIndex(index);
+              setSheetOpen("folder-tags");
+            },
+          },
+        ]),
     {
       key: "copy",
       tooltip: "Copy",
@@ -138,8 +149,8 @@ export function NoteEditorDock({
       key: "context",
       tooltip: "Context",
       Icon: Network,
-      onPress: () => {
-        setActiveIndex(4);
+      onPress: (index: number) => {
+        setActiveIndex(index);
         setSheetOpen("context");
       },
     },
@@ -147,8 +158,8 @@ export function NoteEditorDock({
       key: "more",
       tooltip: "More",
       Icon: MoreHorizontal,
-      onPress: () => {
-        setActiveIndex(5);
+      onPress: (index: number) => {
+        setActiveIndex(index);
         setSheetOpen("more");
       },
     },
@@ -232,7 +243,7 @@ export function NoteEditorDock({
                 className="relative flex-1 flex items-center justify-center min-w-0"
               >
                 <button
-                  onClick={item.onPress}
+                  onClick={() => item.onPress(i)}
                   aria-label={item.tooltip}
                   title={item.tooltip}
                   className={cn(

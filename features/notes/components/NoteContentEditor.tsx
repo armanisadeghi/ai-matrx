@@ -14,7 +14,7 @@ import React, {
   useMemo,
 } from "react";
 import dynamic from "next/dynamic";
-import { Eye } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   updateNoteContent,
@@ -541,6 +541,20 @@ export function NoteContentEditor({
             Close this tab
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // ── Guard: shared note's content still in flight ────────────────────
+  // Shared-with-me rows arrive from the RPC WITHOUT content. Mounting the
+  // editor on "" is not just a flash of empty state: an editor-level sharee
+  // typing during the fetch window arms the local-edit sync, the arriving
+  // server content gets discarded as a clobber-guard, and the next save
+  // REPLACES the owner's entire note body with those few keystrokes.
+  if (noteExists._sharedWithMe && noteExists.content == null) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" />
       </div>
     );
   }

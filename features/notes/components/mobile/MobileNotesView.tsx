@@ -16,6 +16,7 @@ import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectSharedWithMeNotes } from "../../redux/selectors";
 import { fetchNoteContent } from "../../redux/thunks";
+import { useNoteAccess } from "../../hooks/useNoteAccess";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
@@ -69,6 +70,9 @@ export default function MobileNotesView() {
       sharedNotes.find((n) => n.id === selectedNoteId) ??
       null)
     : null;
+
+  // Header actions that mutate the note (Clean up) hide for viewers.
+  const selectedAccess = useNoteAccess(selectedNoteId);
 
   // Shared list rows come from the get_notes_shared_with_me RPC WITHOUT
   // content — fetch the full note (RLS grants the sharee SELECT) before the
@@ -265,12 +269,14 @@ export default function MobileNotesView() {
               ))}
             </div>
 
-            {/* Clean up content */}
-            <NoteCleanupButton
-              noteId={selectedNote.id}
-              triggerClassName="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-muted-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
-              triggerActiveClassName="bg-muted/60 text-foreground"
-            />
+            {/* Clean up content — mutates the note, so viewers don't get it */}
+            {!selectedAccess.readOnly && (
+              <NoteCleanupButton
+                noteId={selectedNote.id}
+                triggerClassName="flex items-center justify-center w-7 h-7 rounded-full hover:bg-muted/60 transition-colors text-muted-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
+                triggerActiveClassName="bg-muted/60 text-foreground"
+              />
+            )}
 
             {/* Copy reference */}
             <NoteReferenceCopyButton

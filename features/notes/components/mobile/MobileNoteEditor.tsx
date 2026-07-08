@@ -94,6 +94,10 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const tuiRef = useRef<TuiEditorContentRef>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  // After a failed autosave, don't re-arm until the user edits again —
+  // otherwise the isDirty→schedule effect retries the doomed write every 2s
+  // forever (the failure already toasted via the thunk's loud-save path).
+  const autoSaveFailedRef = useRef(false);
 
   // Capture the server baseline when the note first loads (or switches).
   // We compare local edits against THIS snapshot — not the live `note` prop —
@@ -136,6 +140,8 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
       localFolder !== baseline.folder_name ||
       JSON.stringify(localTags) !== baseline.tags;
     setIsDirty(hasChanges);
+    // A NEW user edit re-earns one autosave attempt after a failure.
+    autoSaveFailedRef.current = false;
   }, [localLabel, localContent, localFolder, localTags]);
 
   // Auto-grow plain textarea
@@ -154,7 +160,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
   const scheduleAutoSave = useCallback(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
-      if (!isDirty || isSaving) return;
+      if (!isDirty || isSaving || autoSaveFailedRef.current) return;
       setIsSaving(true);
       const label = localLabel.trim() || 'Untitled Note';
       const content = localContent;
@@ -171,7 +177,10 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
         };
         setIsDirty(false);
       } catch {
-        // silent — user can see save button
+        // The save path already toasted loudly (writeErrors). Park autosave
+        // until the user edits again — retrying the same doomed write every
+        // 2s is a permanent request/toast loop.
+        autoSaveFailedRef.current = true;
       } finally {
         setIsSaving(false);
       }
@@ -314,6 +323,7 @@ export default function MobileNoteEditor({ note, editorMode, onBack }: MobileNot
       <NoteEditorDock
         noteId={note.id}
         noteLabel={note.label}
+        readOnly={readOnly}
         folder={localFolder}
         tags={localTags}
         content={localContent}

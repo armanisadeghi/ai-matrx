@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-07-07
+updated: 2026-07-08
 repos: [matrx-frontend]
 ---
 
@@ -29,12 +29,11 @@ repos: [matrx-frontend]
 4. **Auto-fork after signup.** Carry fork intent through signup (`redirectTo=/s/[token]?fork=1`) and auto-run on return; today the user must click again.
 5. **Share-link expiry / max-uses UI.** `ShareLinkPanel` doesn't expose `p_expires_at` / `p_max_uses` (RPC supports both).
 6. **Broaden allowlists as renderers land.** Many types are `is_link_shareable=false`; as each renderer ships, enable + set `public_columns` via the admin panel.
-7. **Shared-with-me for the mobile notes list.** Desktop sidebar + NotesWindow show the section; `MobileNotesList` doesn't yet (records are already in Redux — `selectSharedWithMeNotes`).
 
 ## Done
 
 - Canonical no-login link sharing + policy admin + DM-on-share + fork RPCs — see `features/sharing/FEATURE.md` 2026-07-07.
-- Notes shared-with-me list + read-only enforcement + loud lost-write protection — see `features/notes/FEATURE.md` 2026-07-07.
+- Notes shared-with-me (desktop + mobile) + real read-only enforcement (incl. `MatrxSplit readOnly`) + loud lost-write protection — see `features/notes/FEATURE.md` 2026-07-07/08.
 
 ## Decisions needed (Arman)
 
