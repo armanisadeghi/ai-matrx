@@ -241,6 +241,21 @@ export const aiModelService = {
     return data as unknown as AiOffering[];
   },
 
+  /** The live offerings of one model. `token_billed` — the fact that a media
+   *  model's NULL usage_basis is intentional — is recorded per offering, so a
+   *  model-level pricing screen must read it from here. */
+  async fetchOfferingsForModel(modelId: string): Promise<AiOffering[]> {
+    const { data, error } = await supabase
+      .schema("ai")
+      .from("offering")
+      .select("*")
+      .eq("model_id", modelId)
+      .is("deleted_at", null)
+      .order("priority", { ascending: true });
+    if (error) throw error;
+    return data as unknown as AiOffering[];
+  },
+
   async createOffering(payload: AiOfferingInsert): Promise<AiOffering> {
     const { data, error } = await supabase
       .schema("ai")

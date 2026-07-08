@@ -244,6 +244,10 @@ export type AiOfferingFormData = {
   is_available: boolean;
   pricing: PricingTier[];
   usage_basis: string;
+  // `ai.offering.token_billed` — this offering's provider bills REAL tokens even
+  // though the model emits media, so a NULL usage_basis is intentional (not a
+  // pricing bug). See features/ai-models/usageBasis.ts.
+  token_billed: boolean;
   capabilities_override: Record<string, unknown>;
   controls_override: Record<string, unknown>;
   notes: string;

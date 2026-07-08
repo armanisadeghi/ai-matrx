@@ -138,7 +138,7 @@ export default function OfferingForm({
         />
       </FormField>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <FormField label="Priority" description="Lower = preferred">
           <Input
             type="number"
@@ -155,6 +155,21 @@ export default function OfferingForm({
             className="h-8 text-sm"
           />
         </FormField>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Token-billed
+          </Label>
+          <div className="h-8 flex items-center">
+            <Switch
+              checked={data.token_billed}
+              onCheckedChange={(v) => onChange({ ...data, token_billed: v })}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Media model whose provider bills real tokens — makes an empty usage
+            basis intentional
+          </p>
+        </div>
         <div className="space-y-1">
           <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Available
@@ -174,7 +189,14 @@ export default function OfferingForm({
         </p>
         <ModelPricingEditor
           tiers={data.pricing}
-          model={selectedModel}
+          model={
+            selectedModel
+              ? {
+                  capabilities: selectedModel.capabilities,
+                  tokenBilled: data.token_billed,
+                }
+              : null
+          }
           onChange={(tiers) => onChange({ ...data, pricing: tiers })}
         />
       </div>

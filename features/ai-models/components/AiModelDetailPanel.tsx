@@ -824,6 +824,36 @@ export default function AiModelDetailPanel({
     [],
   );
 
+  // `token_billed` is a per-OFFERING fact (ai.offering.token_billed) — it is the
+  // only thing that makes a media model's NULL usage_basis intentional. This
+  // panel edits the MODEL-level default pricing, so it must read the fact from
+  // the model's offerings. Unknown ⇒ false ⇒ the validator screams (fail-closed).
+  const [offeringsTokenBilled, setOfferingsTokenBilled] = useState(false);
+  const [offeringsError, setOfferingsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const modelId = model?.id;
+    setOfferingsTokenBilled(false);
+    setOfferingsError(null);
+    if (!modelId) return;
+    let cancelled = false;
+    aiModelService
+      .fetchOfferingsForModel(modelId)
+      .then((offerings) => {
+        if (!cancelled) {
+          setOfferingsTokenBilled(offerings.some((o) => o.token_billed));
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setOfferingsError(err instanceof Error ? err.message : String(err));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [model?.id]);
+
   const requestClose = useCallback(() => {
     if (isDirty) {
       setShowDirtyDialog(true);
@@ -1319,11 +1349,18 @@ export default function AiModelDetailPanel({
               value="pricing"
               className="flex-1 m-0 overflow-auto p-3 min-h-0"
             >
+              {offeringsError && (
+                <p className="text-xs text-destructive mb-2">
+                  Could not load this model&apos;s offerings ({offeringsError}) —
+                  the token-billed fact is unknown, so pricing validation is
+                  running fail-closed.
+                </p>
+              )}
               <ModelPricingEditor
                 tiers={formData.pricing}
                 model={{
-                  name: formData.name,
                   capabilities: model?.capabilities ?? null,
+                  tokenBilled: offeringsTokenBilled,
                 }}
                 onChange={(tiers: PricingTier[]) =>
                   setFormData({ ...formData, pricing: tiers })

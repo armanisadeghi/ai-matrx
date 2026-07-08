@@ -164,46 +164,30 @@ export function isMediaModel(caps: ModelCapabilities): boolean {
   return caps.input.includes("audio") && !caps.input.includes("text");
 }
 
-/**
- * Media models that legitimately carry NO usage_basis because their provider
- * bills them on REAL tokens.
- *
- * ⚠️ This is a per-model FACT that no column currently records. It used to be
- * keyed on `ai.model_definition.api_class`, which is being dropped. It cannot
- * be derived from `capabilities` (gpt-image and Imagen are both "image out";
- * one is token-billed, one is per-image) nor from `ai.service.wire_format`
- * (Gemini TTS and Gemini chat share `google_chat`; Gemini native-image and
- * Imagen share `google_image`). Verified against the live DB — the patterns
- * below reproduce the old api_class exception set EXACTLY, and are anchored so
- * the resold copies (`openai/gpt-image-1.5` on Replicate/Together,
- * `google/gemini-3-pro-image` on Together) are correctly NOT excepted.
- *
- * 🔴 DURABLE FIX (backend, not done): record token-billing as data — a
- * `token_billed boolean` on `ai.offering` (or on `ai.service`) — and delete
- * these patterns. Until then a new token-billed family must be added here or
- * admins see a false "missing basis" error.
- */
-const TOKEN_BILLED_MEDIA_MODEL_PATTERNS: readonly RegExp[] = [
-  /^gpt-image-/, // OpenAI gpt-image-* (Images API, token-billed)
-  /^gemini-.*image/, // Gemini native image generation
-  /^gemini-.*tts/, // Gemini TTS
-];
-
-export function isTokenBilledMediaModel(modelName: string | null | undefined): boolean {
-  const name = modelName ?? "";
-  return TOKEN_BILLED_MEDIA_MODEL_PATTERNS.some((re) => re.test(name));
-}
-
 interface TierLike {
   input_price?: number | null;
   output_price?: number | null;
   usage_basis?: string | null;
 }
 
-/** The model facts this validator needs. `capabilities` is the raw jsonb column. */
+/**
+ * The facts this validator needs. Both are DATA, never derived from a model name.
+ *
+ * - `capabilities` — the raw canonical jsonb column; decides `isMediaModel`.
+ * - `tokenBilled`  — `ai.offering.token_billed` (migration `ai_012`). A media
+ *   model whose provider bills on REAL tokens (gpt-image-*, Gemini native
+ *   image, Gemini TTS) legitimately carries a NULL `usage_basis`. This flag is
+ *   what makes that NULL *intentional*; without it a NULL basis is a pricing
+ *   bug. It cannot be derived from `capabilities` (gpt-image and Imagen are
+ *   both "image out"; one is token-billed, one is per-image) nor from
+ *   `ai.service.wire_format` — so it is recorded per offering.
+ *
+ * Fail-closed: when the fact is unknown, pass `tokenBilled: false` and let the
+ * validator scream. Never guess from the model name.
+ */
 export interface PricedModel {
-  name: string | null | undefined;
   capabilities: unknown;
+  tokenBilled: boolean;
 }
 
 export function validatePricingTiers(
@@ -212,7 +196,7 @@ export function validatePricingTiers(
 ): PricingIssue[] {
   const issues: PricingIssue[] = [];
   const isMedia = model ? isMediaModel(parseCapabilities(model.capabilities)) : false;
-  const tokenBilled = isTokenBilledMediaModel(model?.name);
+  const tokenBilled = model?.tokenBilled ?? false;
   if (!Array.isArray(tiers)) return issues;
 
   tiers.forEach((tier, idx) => {
@@ -236,7 +220,7 @@ export function validatePricingTiers(
         severity: "error",
         code: "missing_basis",
         message:
-          "Media/audio model with NO usage basis (and the provider isn't token-billed). Billing will mis-charge — pick a usage basis.",
+          "Media/audio model with NO usage basis, and the offering is not marked token-billed. Billing will mis-charge — pick a usage basis, or set Token-billed if the provider really bills real tokens.",
       });
     }
 
