@@ -36,6 +36,38 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/education/start",
+      label: "Universal Ingest — Study Kit (P9)",
+      description:
+        "The hero onboarding flow: drop/paste/link ANY input (PDF, notes, URL, YouTube) → one grounded, cited study kit (deck + summary + mind map; quiz/audio as P1/P3 register on the converter). Every artifact links a `source` edge to a durable cld_files anchor.",
+      filePath: "app/(core)/education/start/page.tsx",
+      status: "Live",
+      notes: [
+        "Feature: features/education/onboard/** (useIngest → useKitGeneration → StartHero)",
+        "Converter contract: features/education/convert/** (convertContent / useContentConverter)",
+        "Agents: kit-deck 0de9ff99 · summary 92b607a4 · mindmap d13184d4",
+      ],
+    },
+    {
+      url: "/education/data",
+      label: "Your data — export/import + pledge (P9)",
+      description:
+        "Data-ownership back door: export any deck (JSON/Markdown/Anki/CSV) or the whole library as a zip; one-click import from Quizlet/CSV/TSV/Matrx-JSON/Anki .apkg/paste; the anti-lock-in pledge.",
+      filePath: "app/(core)/education/data/page.tsx",
+      status: "Live",
+      notes: [
+        "Export/import: features/education/onboard/export|import/** · Anki decode via jszip + sql.js (dynamic import)",
+      ],
+    },
+    {
+      url: "/education/summaries/[id]",
+      label: "Study summary viewer (P9)",
+      description:
+        "Grounded study summary (education.study_media, media_kind='summary') — markdown + key points + P0 citations + Markdown export.",
+      filePath: "app/(core)/education/summaries/[id]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/subjects",
       label: "Subjects index",
       description:
@@ -324,6 +356,34 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/education/components/landing/EducationHub.tsx",
       description:
         "Bespoke hub landing composed from the section primitives + axis config.",
+      tier: "official",
+    },
+    {
+      name: "Content Converter (contract)",
+      filePath: "features/education/convert/useContentConverter.ts",
+      description:
+        "P9/P4 — the ONE cross-tool dispatch: convertContent({source,targetKind}) + convertMany (kit fan-out). Live generators: deck/summary/mind_map; placeholders: audio(P3)/quiz+practice_test(P1)/notes(P4). See features/education/convert/FEATURE.md.",
+      tier: "official",
+    },
+    {
+      name: "StartHero (Universal Ingest)",
+      filePath: "features/education/onboard/components/StartHero.tsx",
+      description:
+        "P9 — the upload-hero flow: input picker (file/paste/link) → kit target picker → live per-target board → linked artifacts. Driven by useKitGeneration + useIngest.",
+      tier: "official",
+    },
+    {
+      name: "DataOwnershipPage / ImportDeckPanel",
+      filePath: "features/education/onboard/components/DataOwnershipPage.tsx",
+      description:
+        "P9 — the /education/data back door: pledge + per-deck/all export + one-click import (incl. Anki .apkg). useDataOwnership + importDeck/importAnki + deckFormats.",
+      tier: "official",
+    },
+    {
+      name: "SummaryDetail",
+      filePath: "features/education/onboard/components/SummaryDetail.tsx",
+      description:
+        "P9 — the study-summary viewer (study_media 'summary' kind): markdown + key points + P0 citations + Markdown export.",
       tier: "official",
     },
     {

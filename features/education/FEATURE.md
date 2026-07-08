@@ -67,6 +67,26 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- **2026-07-07** — **P9 Universal Ingest + Data Ownership shipped.** New consumer feature
+  `features/education/onboard/` (own [FEATURE.md](./onboard/FEATURE.md)) + the shared cross-tool
+  **content converter contract** `features/education/convert/` (own [FEATURE.md](./convert/FEATURE.md)).
+  **Front door** `/education/start` (`StartHero`): drop/paste/link ANY input → normalized to text +
+  a durable `cld_files` anchor (`useIngest`: PDF via the extractor stream, text inline, URL/YouTube
+  via the scraper) → parallel `convertContent` fan-out (`useKitGeneration`) into a grounded, cited
+  kit — deck + summary + mind map today; quiz/audio/notes register on the same dispatch as P1/P3/P4
+  land. Every artifact links a `source` association edge to the anchor file (the "kit" = the file's
+  associations — no new table). **Back door** `/education/data` (`DataOwnershipPage`): export any
+  deck (JSON round-trips / Markdown / Anki-TSV / CSV) or the whole library as a zip; one-click
+  import from Quizlet/CSV/TSV/Matrx-JSON/paste and **Anki `.apkg`** (jszip + sql.js, dynamically
+  imported); the anti-lock-in pledge (every line backed by a button). Authored two public agents
+  (`agent_author`, live-verified): **Study Summary** (`92b607a4`) + **Kit Flashcard Generator**
+  (`0de9ff99` — the production `generateFromSource` doesn't receive variables via `launchAgentExecution`,
+  so the kit uses its own). `study_media` gained a `summary` kind (migration
+  `study_media_summary_kind.sql`, ledger-recorded) + viewer `/education/summaries/[id]`. Hub landing
+  now leads with "Create a study kit". Verified live end-to-end (deck 7 grounded cited cards +
+  summary + mind map, all linked to one anchor file; export round-trip; Anki decode). Remaining:
+  YouTube→transcript is best-effort scrape (no dedicated pipeline); Anki media + review-history→FSRS
+  surfaced-as-limitation; final pass needs a genuine Anki-app `.apkg` from Arman.
 - **2026-07-07** — **P6-B exam hub — marketing → product entry points.** Exam-prep axis pages (`AxisDetail`, `axisId==='exam-prep'`) now render `ExamHubActions`: free mock exam / practice quiz (deep-link into P1's live `practice-tests/new`/`quizzes/new` with `?examType=&topic=&depth=exam`), free study guides, and community decks — the generosity showcase. Exam-season SEO already covered (Course JSON-LD + OG per exam entry from P6-A). Remaining for full Phase B DoD: signed-out guest mock-exam funnel (P8 guest promotion) + P1's create-surface prefill from the deep-link params (small ask noted in `docs/proposals/education-projects/P6-EXAM-HUB-REQUIREMENTS.md`).
 - **2026-07-07** — **P6-C Community Library + Certified tier + suggest-edit shipped.** New `features/education/library/` (its own [FEATURE.md](./library/FEATURE.md)): `/education/library` public browse over `visibility='public'` decks (search + Certified-only facet, certified-first) reusing P7's public viewer (`/p/e/fc_set/{id}`) + `DuplicateToEditButton`. DB (migrations ledger-recorded): `education.content_certification` (admin-granted trust mark, public-read, super-admin-only write) + `education.deck_suggestion` (the ethical contribution flywheel — routes to the owner's inbox, never edits the deck) + `edu_public_decks` listing RPC (public deck + card-count via associations + certified status, anon, public-only). Super-admins certify/uncertify inline; `CertifiedBadge` is the one reusable mark; owner inbox at `/education/library/suggestions`. Hub gained a "Free & open" discovery section. Admin map updated.
 - **2026-07-07** — **P6-A Growth Content Engine — publishing + SEO shipped.** `/education/learn` is now DB-backed off `education.learn_doc` (canonical base entity + `visibility`-as-publication + super-admin SECURITY DEFINER RPCs `edu_learn_doc_*`; migration `education_learn_doc.sql`, ledger-recorded, `iam.apply_rls`). The hardcoded `LEARN_DOCS` registry is **deleted** (no dual path); the 8 seed docs migrated in. New `features/education/publishing/` (its own [FEATURE.md](./publishing/FEATURE.md)): anon cookie-free cached reads (ISR + `unstable_cache` tag `education-learn-docs`, busted on publish via `updateTag`), server-action authoring, super-admin authoring UI at `/education/learn/admin` (list + JSON-sections editor with live `SectionRenderer` preview + publish/unpublish/delete). SEO machinery: `generateStaticParams` on the learn route + all 5 axis `[slug]` routes; dynamic `sitemap.xml` (whole hub, was one hardcoded URL); per-doc + per-axis `opengraph-image` routes (shared branded renderer); `FAQPage` + `Course` JSON-LD from axis `faq` sections (`AxisDetail`). Verified live: signed-out anon RLS reads exactly the 8 published docs; `/education/learn` renders them. Phases B (exam hub → P1) + C (community library → P7) next; P1 coordination note at `docs/proposals/education-projects/P6-EXAM-HUB-REQUIREMENTS.md`. (Also unblocked a sibling `??`/`||` parse error in `convert/generators/deck.ts` that broke the whole education compile.)
