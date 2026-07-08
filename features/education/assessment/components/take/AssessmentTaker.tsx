@@ -21,7 +21,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import { useTakeAssessment, type TakeOptions } from "./useTakeAssessment";
 import { QuestionView } from "./QuestionView";
-import { KIND_CONFIG } from "../kindConfig";
+import { kindConfigFor } from "../kindConfig";
 import type {
   AssessmentItemRow,
   AssessmentRow,
@@ -52,7 +52,7 @@ export function AssessmentTaker({
   options?: TakeOptions;
 }) {
   const router = useRouter();
-  const config = KIND_CONFIG[assessment.assessment_kind];
+  const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
   const take = useTakeAssessment(assessment, items, options);
   const [index, setIndex] = useState(0);

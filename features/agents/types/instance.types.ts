@@ -220,7 +220,11 @@ export type SourceFeature =
    *  and grade-on-meaning of typed/written answers (`/education/quizzes`,
    *  `/education/practice-tests`). See features/education/assessment/. */
   | "education-assessment"
-  | "education-assessment-grade";
+  | "education-assessment-grade"
+  /** Onboarding ingest → converter one-shot generation runs (deck / summary /
+   *  mind-map from an ingested source) driven by `runAgentExtraction`. See
+   *  features/education/convert/ + features/education/onboard/. */
+  | "education-ingest";
 
 // Anti-patterns — never add these. Name the actual surface instead.
 // | "demo"         — WHICH demo? Be SPECIFIC (route, panel, window).

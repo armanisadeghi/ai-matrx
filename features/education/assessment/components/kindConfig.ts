@@ -58,3 +58,22 @@ export const KIND_CONFIG: Record<AssessmentKind, KindConfig> = {
   quiz: QUIZ_CONFIG,
   practice_test: PRACTICE_TEST_CONFIG,
 };
+
+export function isAssessmentKind(value: string): value is AssessmentKind {
+  return Object.hasOwn(KIND_CONFIG, value);
+}
+
+/**
+ * Narrow a DB `assessment_kind` string (CHECK-constrained to the
+ * `AssessmentKind` union) to its config. Throws loudly on an unknown kind —
+ * that means the DB CHECK and this union drifted, never a recoverable state.
+ */
+export function kindConfigFor(kind: string): KindConfig {
+  if (!isAssessmentKind(kind)) {
+    throw new Error(
+      `Unknown assessment_kind "${kind}" — expected one of: ${Object.keys(KIND_CONFIG).join(", ")}. ` +
+        "The education.assessment CHECK constraint and AssessmentKind drifted.",
+    );
+  }
+  return KIND_CONFIG[kind];
+}

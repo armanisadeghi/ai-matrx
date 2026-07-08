@@ -29,6 +29,26 @@ export type QuestionType =
   | "short_answer"
   | "written_response";
 export type Depth = "recall" | "applied" | "exam";
+
+const DEPTHS = ["recall", "applied", "exam"] as const satisfies readonly Depth[];
+
+export function isDepth(value: string): value is Depth {
+  return DEPTHS.some((d) => d === value);
+}
+
+/**
+ * Narrow a DB `depth` string (CHECK-constrained to the `Depth` union, nullable)
+ * at ingress. Throws loudly on an unknown value — that means the DB CHECK and
+ * this union drifted, never a recoverable state.
+ */
+export function asDepth(value: string | null | undefined): Depth | null {
+  if (value == null) return null;
+  if (isDepth(value)) return value;
+  throw new Error(
+    `Unknown assessment_item depth "${value}" — expected one of: ${DEPTHS.join(", ")}. ` +
+      "The education.assessment_item CHECK constraint and Depth drifted.",
+  );
+}
 export type ResultPhase = "standalone" | "baseline" | "post";
 export type ResultStatus = "in_progress" | "completed" | "abandoned";
 

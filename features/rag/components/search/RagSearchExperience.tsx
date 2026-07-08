@@ -1474,7 +1474,10 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
         use_hyde: scope.useHyde,
         rerank: scope.rerank,
         use_mmr: true,
-        expand_entity_clusters: scope.expandClusters || undefined,
+        // No expand_entity_clusters here: this endpoint simulates the agent's
+        // registered rag_search tool byte-for-byte, and that tool has no
+        // cluster-expansion option. The sidebar toggle applies to /rag/search
+        // (Search + Pipeline tabs) only.
         scope_ids: scopeIds,
         organization_id: orgOverride,
       });

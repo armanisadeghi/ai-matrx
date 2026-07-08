@@ -46,10 +46,10 @@ export function attachRefsToCitation(
  * generated item so its citations are openable regardless of source type.
  */
 export function attachSourceRefs(
-  env: TrustEnvelope | undefined,
+  env: TrustEnvelope | null | undefined,
   refs: SourceRefs,
 ): TrustEnvelope | undefined {
-  if (!env) return env;
+  if (!env) return undefined;
   if (env.citations.length === 0) return env;
   return {
     ...env,

@@ -15,6 +15,7 @@ import {
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { ASSESSMENT_AGENTS } from "./agents";
+import { asDepth, isDepth } from "./types";
 import type { AssessmentItemRow, Depth, NewAssessmentItemInput, QuestionType } from "./types";
 
 const VALID_TYPES: readonly QuestionType[] = [
@@ -24,8 +25,6 @@ const VALID_TYPES: readonly QuestionType[] = [
   "short_answer",
   "written_response",
 ];
-const VALID_DEPTH: readonly Depth[] = ["recall", "applied", "exam"];
-
 const nextDepth: Record<Depth, Depth> = {
   recall: "applied",
   applied: "exam",
@@ -61,9 +60,7 @@ function coerceOne(raw: unknown): NewAssessmentItemInput | null {
     correctAnswer = options[0];
   }
   const rawDepth = asString(r.depth);
-  const depth: Depth | null = VALID_DEPTH.includes(rawDepth as Depth)
-    ? (rawDepth as Depth)
-    : null;
+  const depth: Depth | null = isDepth(rawDepth) ? rawDepth : null;
   return {
     questionType,
     prompt,
@@ -124,7 +121,7 @@ export function deepenItem(args: {
     getState: () => RootState,
   ): Promise<NewAssessmentItemInput | null> => {
     const agentId = ASSESSMENT_AGENTS.deepenItem;
-    const target = deeperThan(args.item.depth as Depth | null);
+    const target = deeperThan(asDepth(args.item.depth));
     let conversationId: string | null = null;
     try {
       const launch = await dispatch(

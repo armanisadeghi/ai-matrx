@@ -636,7 +636,7 @@ export function CopyPagesOverlay({
             <Button
               size="sm"
               className="h-8 shrink-0 text-xs"
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={pagesLoading}
             >
               {isBatchMode ? "Generate Sections" : "Generate"}

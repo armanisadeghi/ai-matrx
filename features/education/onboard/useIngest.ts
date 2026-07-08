@@ -120,7 +120,7 @@ export function useIngest(): UseIngestResult {
         }
         const title =
           input.title?.trim() ||
-          scraped?.overview?.title ||
+          scraped?.overview?.page_title ||
           titleFromUrl(url);
         onProgress?.({ phase: "uploading", message: "Saving the source…" });
         const fileId = await anchorText(raw, title);

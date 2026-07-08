@@ -30,7 +30,7 @@ import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { assessmentService } from "../../data/assessmentService";
 import { pairLearningGain } from "../../data/learningGain";
-import { KIND_CONFIG } from "../kindConfig";
+import { kindConfigFor } from "../kindConfig";
 import type {
   AssessmentItemRow,
   AssessmentResultRow,
@@ -125,7 +125,7 @@ export function AssessmentResults({
     );
   }
 
-  const config = KIND_CONFIG[assessment.assessment_kind];
+  const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
   const detail = asDetail(result.detail);
   const detailById = new Map(detail.map((d) => [d.itemId, d]));

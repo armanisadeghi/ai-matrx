@@ -179,6 +179,33 @@ export const FEATURE_META: Record<string, SourceMeta> = {
     system: true,
   },
 
+  // Assessment Engine (P1) one-shot generation / grading runs — automation.
+  "education-assessment": {
+    label: "Assessments",
+    icon: GraduationCap,
+    system: true,
+  },
+  "education-assessment-grade": {
+    label: "Assessment Grading",
+    icon: GraduationCap,
+    system: true,
+  },
+
+  // Study Media (P3) mind-map generator — one-shot automation runs.
+  "education-mindmap": {
+    label: "Mind Maps",
+    icon: GraduationCap,
+    system: true,
+  },
+
+  // Onboarding ingest → converter (deck / summary / mind-map from a source) —
+  // one-shot automation runs.
+  "education-ingest": {
+    label: "Study Material Ingest",
+    icon: GraduationCap,
+    system: true,
+  },
+
   // Other interactive surfaces
   notes: { label: "Notes", icon: StickyNote },
   research: { label: "Research", icon: Globe },

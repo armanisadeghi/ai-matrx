@@ -60,7 +60,7 @@ export default function OrgAgentAppsPage() {
       ) : (
         <OrgResourceList
           orgId={resolvedOrgId}
-          resourceType="agent_app"
+          resourceType="app"
           tableName="definition"
           selectColumns={SELECT_COLS}
           ownedQuery={fetchOwned}

@@ -22,6 +22,7 @@ import {
   selectRequestError,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
+import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { AppDispatch, AppStore, RootState } from "@/lib/redux/store";
 
 export interface RunAgentExtractionOpts {
@@ -29,7 +30,7 @@ export interface RunAgentExtractionOpts {
   /** Stable surface key for this generation surface (telemetry + variable scope). */
   surfaceKey: string;
   /** Feature tag (e.g. "education-ingest"). */
-  sourceFeature: string;
+  sourceFeature: SourceFeature;
   /** The agent's declared variable values (all stringified). */
   variables: Record<string, string>;
   /** Extraction ceiling. Defaults to 180s — generous for a full artifact. */

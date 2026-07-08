@@ -284,7 +284,7 @@ export function AgentAppCard({
           />
           {isOwner && (
             <ShareButton
-              resourceType="agent_app"
+              resourceType="app"
               resourceId={app.id}
               resourceName={app.name}
               isOwner={true}

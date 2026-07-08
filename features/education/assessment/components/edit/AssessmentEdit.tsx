@@ -31,7 +31,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAccess } from "@/utils/permissions/access";
 import { assessmentService } from "../../data/assessmentService";
 import { deepenItem, deeperThan } from "../../data/deepenItem";
-import { KIND_CONFIG } from "../kindConfig";
+import { kindConfigFor } from "../kindConfig";
+import { asDepth } from "../../data/types";
 import type {
   AssessmentItemRow,
   AssessmentRow,
@@ -110,7 +111,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
     );
   }
 
-  const config = KIND_CONFIG[assessment.assessment_kind];
+  const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
 
   const saveTitle = async () => {
@@ -200,7 +201,7 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
               onSave={() => void saveItem(item)}
               onDelete={() => void removeItem(item.id)}
               onDeepen={async () => {
-                const target = deeperThan(item.depth);
+                const target = deeperThan(asDepth(item.depth));
                 const t = toast.loading(`Deepening to ${target} level…`);
                 const deeper = await dispatch(
                   deepenItem({

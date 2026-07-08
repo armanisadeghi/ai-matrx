@@ -225,9 +225,9 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     table: "definition",
     schemaName: "app",
     hasOrgColumn: true,
-    // DB resource_type is 'app' but FE registry key is 'agent_app' (pre-existing drift).
-    // getShareableResource looks up by resourceType key first, so use 'agent_app'.
-    shareKey: "agent_app",
+    // Canonical resource_type is 'app' (DB + SHAREABLE_RESOURCE_REGISTRY); the
+    // old drifted 'agent_app' FE key was deleted in the registry audit.
+    shareKey: "app",
     titleColumn: "name",
     orgRoute: "agent-apps",
     scopeable: true,

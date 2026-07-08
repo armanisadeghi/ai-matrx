@@ -31,7 +31,7 @@ import { useAccess } from "@/utils/permissions/access";
 import { cn } from "@/lib/utils";
 import { assessmentService } from "../data/assessmentService";
 import { newGainGroupId } from "../data/learningGain";
-import { KIND_CONFIG } from "./kindConfig";
+import { kindConfigFor } from "./kindConfig";
 import { AssessmentTaker } from "./take/AssessmentTaker";
 import type {
   AssessmentItemRow,
@@ -113,7 +113,7 @@ export function AssessmentDetail({
     );
   }
 
-  const config = KIND_CONFIG[assessment.assessment_kind];
+  const config = kindConfigFor(assessment.assessment_kind);
   const base = `/education/${config.base}`;
   const Icon = config.icon;
 
