@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Loader2, Pause, Play, RotateCcw, Square } from "lucide-react";
-import { WebPlayer } from "@cartesia/cartesia-js";
+import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -61,9 +61,10 @@ export function TtsTesterPanel({
   const [metrics, setMetrics] = useState<TtsRunMetrics>(EMPTY_METRICS);
   const [phase, setPhase] = useState<TtsRunPhase>("idle");
   const handleRef = useRef<TtsRunHandle | null>(null);
-  const playerRef = useRef<{ player: WebPlayer; bufferSec: number } | null>(
-    null,
-  );
+  const playerRef = useRef<{
+    player: SinkAwarePlayer;
+    bufferSec: number;
+  } | null>(null);
 
   useEffect(() => {
     return () => {
@@ -74,11 +75,11 @@ export function TtsTesterPanel({
     };
   }, []);
 
-  const getPlayer = (bufferSec: number): WebPlayer => {
+  const getPlayer = (bufferSec: number): SinkAwarePlayer => {
     if (!playerRef.current || playerRef.current.bufferSec !== bufferSec) {
       void playerRef.current?.player.stop();
       playerRef.current = {
-        player: new WebPlayer({ bufferDuration: bufferSec }),
+        player: new SinkAwarePlayer({ bufferDuration: bufferSec }),
         bufferSec,
       };
     }

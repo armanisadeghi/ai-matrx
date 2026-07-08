@@ -353,6 +353,7 @@ export function NoteEditorCore({
         <MatrxSplit
           key={resetKey}
           value={content}
+          readOnly={readOnly}
           onChange={readOnly ? () => {} : onChange}
           textareaRef={
             textareaRef as React.RefObject<HTMLTextAreaElement | null>

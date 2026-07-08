@@ -19,9 +19,14 @@
  *   - `bind/unbindWorkingDocumentToNoteThunk` swap the durable source to/from a
  *     `workbench.notes` row (working kind only).
  *   - `syncWorkingDocumentFromAgentThunk` reflects an agent writeback.
+ *   - `applyAgentWorkingDocDelta` applies a live `context_delta` stream event
+ *     (the agent's edit content, streamed as each ctx_patch lands — D9 fix).
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import type { ContextDeltaData } from "@/types/python-generated/stream-events";
+import { applyContextDeltaToContent } from "./contextDelta";
+import { studioDocumentContentChanged } from "@/features/transcript-studio/redux/slice";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
@@ -714,6 +719,103 @@ export const unbindWorkingDocumentThunk = createAsyncThunk<
     );
   },
 );
+
+// =============================================================================
+// Live agent edits — context_delta stream events (D9 fix)
+// =============================================================================
+
+/**
+ * Reflect a live agent edit from a `context_delta` stream event — the same
+ * slice write the post-turn re-read used to make, just at the moment the
+ * agent's ctx_patch lands. SYNCHRONOUS (plain thunk) so the stream processor
+ * knows immediately whether the delta applied and can skip the re-read the
+ * follow-up `context_changed` would otherwise trigger.
+ *
+ * Routing mirrors the writeback handlers:
+ *   - `source_kind: "studio_document"` → the Scribe/transcript-studio slice
+ *     (that surface publishes the doc itself; `instanceWorkingDocument` has no
+ *     binding for it). The later realtime UPDATE confirms canonically.
+ *   - everything else (`working_document` / `note`) → the conversation's
+ *     primary working slot via `applyAgentWorkingDocContent` (bumps
+ *     `agentRevision`; editors merge it in only while the user isn't typing —
+ *     the existing `editingRef` guard, unchanged).
+ *
+ * Returns true when the edit was reflected somewhere; false means "fall back
+ * to the existing re-read path" (never destructive).
+ */
+export function applyAgentWorkingDocDelta({
+  conversationId,
+  kind = DEFAULT_DOC_KIND,
+  delta,
+}: {
+  conversationId: string;
+  kind?: WorkingDocumentKind;
+  delta: ContextDeltaData;
+}) {
+  return (dispatch: AppDispatch, getState: () => RootState): boolean => {
+    const state = getState();
+
+    // ── Scribe: the doc lives in the transcript-studio slice ────────────────
+    if (delta.source_kind === "studio_document" && delta.source_id) {
+      const docsBySession = state.transcriptStudio.documentsById;
+      for (const sessionId of Object.keys(docsBySession)) {
+        const doc = docsBySession[sessionId]?.[delta.source_id];
+        if (!doc) continue;
+        const next = applyContextDeltaToContent(doc.content ?? "", delta);
+        if (next === null) {
+          console.warn(
+            "[working-document] context_delta did not apply to studio document (local copy diverged) — deferring to realtime/persisted sync",
+            { sessionId, documentId: delta.source_id, command: delta.command },
+          );
+          return false;
+        }
+        // BUG-B guard (same class as applyAgentWorkingDocContent): never let
+        // a transient empty payload wipe a non-empty document.
+        if (next === "" && (doc.content ?? "") !== "") {
+          console.warn(
+            "[working-document] blocked an empty context_delta from wiping a non-empty studio document (BUG-B guard fired)",
+            { sessionId, documentId: delta.source_id },
+          );
+          return false;
+        }
+        dispatch(
+          studioDocumentContentChanged({
+            sessionId,
+            documentId: delta.source_id,
+            content: next,
+          }),
+        );
+        return true;
+      }
+      // Doc not loaded on this client — nothing to update; realtime covers it.
+      return false;
+    }
+
+    // ── Conversation working document (instanceWorkingDocument slice) ───────
+    const current = selectWorkingDocContent(conversationId, kind)(state);
+    const next = applyContextDeltaToContent(current, delta);
+    if (next === null) {
+      console.warn(
+        "[working-document] context_delta did not apply (local copy diverged) — deferring to the context_persisted re-read",
+        { conversationId, kind, command: delta.command },
+      );
+      return false;
+    }
+    if (next === "" && current !== "") {
+      // applyAgentWorkingDocContent would block this anyway — return false so
+      // the stream processor keeps the re-read fallback armed.
+      console.warn(
+        "[working-document] blocked an empty context_delta from wiping a non-empty document (BUG-B guard fired)",
+        { conversationId, kind },
+      );
+      return false;
+    }
+    dispatch(
+      applyAgentWorkingDocContent({ conversationId, kind, content: next }),
+    );
+    return true;
+  };
+}
 
 // =============================================================================
 // Agent writeback resync

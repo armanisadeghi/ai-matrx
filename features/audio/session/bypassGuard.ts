@@ -50,7 +50,7 @@ export function reportAudioBypassViolation(args: {
   const canonical =
     args.direction === "playback"
       ? "Route audio OUT through the registry: beginPlaybackSession(...) (or " +
-        "enqueue via useAudioPlayback / useTtsSpeak), never a raw WebPlayer / " +
+        "enqueue via useAudioPlayback / useTtsSpeak), never a raw SinkAwarePlayer / " +
         "AudioContext / <audio> for our media."
       : "Route audio IN through the global recorder (useGlobalRecording / " +
         "useVoiceCapture) or register a recording session; acquire the mic only " +

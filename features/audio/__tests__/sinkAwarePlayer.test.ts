@@ -229,7 +229,8 @@ describe("SinkAwarePlayer sink routing", () => {
     // Let the first chunk get scheduled, then flip devices mid-utterance.
     await new Promise((r) => setTimeout(r, 0));
     setPreferredOutputDeviceId("device-B");
-    releaseRead!();
+    if (!releaseRead) throw new Error("source was never stalled");
+    (releaseRead as () => void)();
     await playing;
     expect(fake.sinkCalls).toEqual(["device-A", "device-B"]);
   });

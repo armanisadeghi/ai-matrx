@@ -2,7 +2,8 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
+import { CartesiaClient } from '@cartesia/cartesia-js';
+import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
 import { Play, Pause, RotateCcw } from 'lucide-react';
 
 interface TextToSpeechPlayerProps {
@@ -17,7 +18,7 @@ const TextToSpeechPlayer: React.FC<TextToSpeechPlayerProps> = ({ text, autoPlay 
     const [playbackStatus, setPlaybackStatus] = useState('');
     const cartesiaRef = useRef<CartesiaClient | null>(null);
     const websocketRef = useRef<any>(null);
-    const playerRef = useRef<WebPlayer | null>(null);
+    const playerRef = useRef<SinkAwarePlayer | null>(null);
     const sourceRef = useRef<any>(null);
 
 
@@ -30,7 +31,7 @@ const TextToSpeechPlayer: React.FC<TextToSpeechPlayerProps> = ({ text, autoPlay 
             sampleRate: 44100
         });
 
-        playerRef.current = new WebPlayer({ bufferDuration: 1 }); // 1 second buffer
+        playerRef.current = new SinkAwarePlayer({ bufferDuration: 1 }); // 1 second buffer
 
         if (autoPlay) {
             handlePlay();

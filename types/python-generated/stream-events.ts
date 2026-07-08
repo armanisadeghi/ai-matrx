@@ -424,6 +424,32 @@ export interface ContextChangedData {
   source_id?: string | null;
 }
 
+export interface ContextConflictData {
+  type?: "context_conflict";
+  key: string;
+  command: string;
+  source_kind?: string;
+  source_id?: string | null;
+  base_version?: number | null;
+}
+
+export interface ContextDeltaData {
+  type?: "context_delta";
+  key: string;
+  command: string;
+  object_type?: string;
+  source_kind?: string;
+  source_id?: string | null;
+  seq?: number;
+  delta_kind?: "splice" | "full";
+  start?: number | null;
+  end?: number | null;
+  text?: string | null;
+  base_len?: number | null;
+  new_len?: number;
+  content?: string | null;
+}
+
 export interface ContextPersistFailedData {
   type?: "context_persist_failed";
   key: string;
@@ -1312,6 +1338,8 @@ export type TypedDataPayload =
   | AudioStreamEndData
   | CategorizationResultData
   | ContextChangedData
+  | ContextConflictData
+  | ContextDeltaData
   | ContextPersistFailedData
   | ContextPersistedData
   | ConversationIdData

@@ -3,8 +3,10 @@
  *
  * IndexedDB-backed cache for reversible-redaction per-session AES-256-GCM
  * keys. Keys are generated server-side ONCE during /redact/mask and never
- * persisted by the backend. The browser is the canonical owner of the key
- * for the security model — only the caller can restore originals.
+ * persisted raw by the backend. The browser is the canonical owner of the
+ * key for the security model — only the caller can restore originals. A
+ * KMS-wrapped copy is escrowed for org recovery via ./escrow.ts (D31):
+ * IndexedDB is the fast path, escrow is the recovery path.
  *
  * Why IndexedDB instead of localStorage:
  *   - localStorage is synchronous (blocks the main thread for 5 MB blobs).

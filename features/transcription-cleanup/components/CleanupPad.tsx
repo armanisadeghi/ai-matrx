@@ -49,6 +49,7 @@ import {
   GitCompareArrows,
   Layers,
   Loader2,
+  Mic,
   PanelLeftOpen,
   Pin,
   Play,
@@ -130,13 +131,20 @@ import {
   CLEANUP_DOC_KIND,
   makeSlotDocKind,
 } from "../hooks/useCleanupSession";
+import {
+  CLEANUP_OVERLAY_ID,
+  cleanupVoicePadInstanceId,
+} from "../constants";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
 // lightweight shell (imported statically); MenuContent lazy-loads on first open.
 // All three panes (Transcript / Clean / Custom) are editable textareas.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
-const OVERLAY_ID = "transcriptionCleanupPage" as const;
+// Shared with external hosts (e.g. the War Room room-level recording
+// controller) via features/transcription-cleanup/constants.ts — the slice keys
+// must stay addressable without importing this heavy component module.
+const OVERLAY_ID = CLEANUP_OVERLAY_ID;
 
 const H_COOKIE = "panels:cleanup-h3";
 const V_COOKIE = "panels:cleanup-v";
@@ -387,6 +395,31 @@ function slotsWithCustomRoleDefaults(
   return changed ? next : slots;
 }
 
+/** How an external stop was requested — routes the finalized transcript. */
+export type CleanupExternalStopMode = "full" | "transcript-only";
+
+/**
+ * An EXTERNAL recording controller the pad renders as a VIEW (D14 fence 1).
+ * When provided, the pad does NOT own the recording lifecycle: start/stop are
+ * delegated to the host's controller (e.g. the War Room's room-level
+ * RoomRecordingController), which records with the SESSION-KEYED ownership
+ * context `{ kind: "studio", sessionId }` and holds the finalize callbacks at
+ * host scope — so unmounting this pad (tile tab switch) never tears the
+ * recording down, and a remounted pad re-attaches via the recordings slice.
+ * The pad registers its finalize handler through `registerView` so a mounted
+ * pad still runs its full commit pipeline (queued inserts, persist, auto-clean).
+ */
+export interface CleanupExternalRecording {
+  /** Begin recording into the pad's pinned session. */
+  start: () => void | Promise<void>;
+  /** Stop; "full" runs Clean on commit, "transcript-only" just saves. */
+  stop: (mode: CleanupExternalStopMode) => void;
+  /** Register the pad's finalize handler; returns an unregister. */
+  registerView: (view: {
+    onComplete: (text: string, mode: CleanupExternalStopMode) => void;
+  }) => () => void;
+}
+
 /** Which sub-sections of the pad render. All default true (page behavior). */
 export interface CleanupPadSections {
   sidebar?: boolean;
@@ -427,6 +460,14 @@ interface CleanupPadProps {
   compact?: boolean;
   /** Host-owned session switcher rendered at the start of the compact toolbar. */
   embeddedHeaderSlot?: React.ReactNode;
+  /**
+   * Host-owned recording controller — see CleanupExternalRecording. When set,
+   * the pad's mic/save-only controls drive the host controller instead of the
+   * pad-owned MicrophoneIconButton, and recording state is read from the
+   * recordings slice keyed by `sessionId` (stable across remounts). Requires
+   * `sessionId`. Omit for the standalone page (unchanged behavior).
+   */
+  externalRecording?: CleanupExternalRecording;
   /**
    * Host-owned SESSION LIST, revealed IN PLACE behind a "Sessions" affordance in
    * the embedded reveal bar. The pad's own session list (CleanupSessionList) is
@@ -509,6 +550,7 @@ export default function CleanupPad({
   compact = false,
   embeddedHeaderSlot,
   sessionListSlot,
+  externalRecording,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -546,7 +588,7 @@ export default function CleanupPad({
    * pads keyed by their pinned session id so two tiles never collide on the
    * "main" key; the standalone page keeps "main".
    */
-  const INSTANCE_ID = sessionId ? `embedded:${sessionId}` : "main";
+  const INSTANCE_ID = cleanupVoicePadInstanceId(sessionId);
 
   const entries = useAppSelector((s) =>
     selectVoicePadEntries(s, OVERLAY_ID, INSTANCE_ID),
@@ -1305,6 +1347,73 @@ export default function CleanupPad({
     [],
   );
 
+  // ── External (host-owned) recording controller — the pad as a VIEW ────────
+  // Ownership is keyed by the STUDIO SESSION (`{kind:"studio", sessionId}` in
+  // the recordings slice), not by this component instance — so a pad remounted
+  // mid-recording (tile tab switch and back) re-attaches to the live recording:
+  // state, live transcript, and stop all keep working.
+  const externallyControlled = Boolean(externalRecording) && Boolean(sessionId);
+  const extOwned = useAppSelector((s) => {
+    if (!externallyControlled) return false;
+    const c = s.recordings.context;
+    return c?.kind === "studio" && c.sessionId === sessionId;
+  });
+  const extIsRecording = useAppSelector(
+    (s) => extOwned && s.recordings.isRecording,
+  );
+  const extIsTranscribing = useAppSelector(
+    (s) => extOwned && s.recordings.isTranscribing,
+  );
+  const extLiveTranscript = useAppSelector((s) =>
+    extOwned ? s.recordings.liveTranscript : "",
+  );
+
+  // Mirror the slice-derived recording state into the pad's existing mic state
+  // so every downstream consumer (pill, save-only, insert queueing, compose)
+  // is untouched. Only runs in external mode — the standalone page keeps the
+  // MicrophoneIconButton callback path.
+  useEffect(() => {
+    if (!externallyControlled) return;
+    setIsMicRecording(extIsRecording);
+    setIsMicTranscribing(extIsTranscribing);
+  }, [externallyControlled, extIsRecording, extIsTranscribing]);
+  useEffect(() => {
+    if (!externallyControlled) return;
+    handleLiveTranscript(extLiveTranscript);
+  }, [externallyControlled, extLiveTranscript, handleLiveTranscript]);
+
+  // Register this pad as the finalize VIEW for its session: while mounted, the
+  // host controller hands the finished transcript here so the FULL commit
+  // pipeline runs (queued inserts, persist, auto-clean on "full" stops). While
+  // unmounted, the controller's own fallback commit keeps the text safe.
+  // Handlers ride a ref so the registration never holds a stale closure.
+  const externalHandlersRef = useRef<{
+    full: (text: string) => void;
+    transcriptOnly: (text: string) => void;
+  }>({ full: () => {}, transcriptOnly: () => {} });
+  externalHandlersRef.current = {
+    full: handleTranscriptionComplete,
+    transcriptOnly: handleTranscriptOnlyComplete,
+  };
+  useEffect(() => {
+    if (!externalRecording || !sessionId) return undefined;
+    return externalRecording.registerView({
+      onComplete: (text, mode) => {
+        if (mode === "transcript-only") {
+          externalHandlersRef.current.transcriptOnly(text);
+        } else {
+          externalHandlersRef.current.full(text);
+        }
+      },
+    });
+  }, [externalRecording, sessionId]);
+
+  const handleExternalMicToggle = useCallback(() => {
+    if (!externalRecording) return;
+    if (extIsRecording) externalRecording.stop("full");
+    else void externalRecording.start();
+  }, [externalRecording, extIsRecording]);
+
   const queueTranscriptInsert = useCallback(
     (position: TranscriptInsertTarget, text: string) => {
       const trimmed = text.trim();
@@ -1353,8 +1462,12 @@ export default function CleanupPad({
   );
 
   const handleSoftStop = useCallback(() => {
+    if (externalRecording) {
+      externalRecording.stop("transcript-only");
+      return;
+    }
     micRef.current?.stopForTranscriptOnly();
-  }, []);
+  }, [externalRecording]);
 
   // ── Edits ──────────────────────────────────────────────────────────────────
   const handleDraftChange = useCallback(
@@ -1671,6 +1784,59 @@ export default function CleanupPad({
   );
 
   // ── Shared UI fragments ────────────────────────────────────────────────────
+  /**
+   * The mic control in EXTERNAL mode — a plain toggle over the host controller
+   * (the pad-owned MicrophoneIconButton would start its OWN recording and take
+   * over — killing the room-owned one — so it must not render here).
+   */
+  const externalMicButton = (size: "md" | "lg") => (
+    <button
+      type="button"
+      onClick={handleExternalMicToggle}
+      disabled={extIsTranscribing && !extIsRecording}
+      title={
+        extIsRecording
+          ? "Tap to stop recording"
+          : extIsTranscribing
+            ? "Processing…"
+            : "Start recording"
+      }
+      aria-label={extIsRecording ? "Stop recording" : "Start recording"}
+      className={cn(
+        "relative inline-flex items-center justify-center rounded-full",
+        size === "lg" ? "h-9 w-9" : "h-8 w-8",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+        "cursor-pointer",
+        extIsTranscribing && !extIsRecording && "cursor-not-allowed opacity-70",
+      )}
+    >
+      {extIsRecording && (
+        <span
+          className="absolute inset-0 rounded-full bg-red-500/20 animate-ping"
+          style={{ animationDuration: "1.5s" }}
+        />
+      )}
+      <span
+        className={cn(
+          "relative z-10 inline-flex h-full w-full items-center justify-center rounded-full transition-all duration-200",
+          extIsRecording || extIsTranscribing
+            ? "bg-red-500/15 shadow-md hover:bg-red-500/25"
+            : "bg-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-accent",
+          "hover:scale-105 active:scale-95",
+        )}
+      >
+        <Mic
+          className={cn(
+            size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5",
+            extIsRecording || extIsTranscribing
+              ? "text-red-500"
+              : "text-foreground/70",
+          )}
+        />
+      </span>
+    </button>
+  );
+
   /** Mid-size pill — shared by New session and Save only (record pill stays larger). */
   const secondaryPillClass =
     "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 shadow-sm text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -1696,16 +1862,20 @@ export default function CleanupPad({
           isRecordingActive ? "bg-red-500/15 text-red-500" : "text-primary",
         )}
       >
-        <MicrophoneIconButton
-          ref={micRef}
-          id={micId}
-          onTranscriptionComplete={handleTranscriptionComplete}
-          onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
-          onLiveTranscript={handleLiveTranscript}
-          onRecordingStateChange={handleRecordingStateChange}
-          variant="icon-only"
-          size="lg"
-        />
+        {externallyControlled ? (
+          externalMicButton("lg")
+        ) : (
+          <MicrophoneIconButton
+            ref={micRef}
+            id={micId}
+            onTranscriptionComplete={handleTranscriptionComplete}
+            onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
+            onLiveTranscript={handleLiveTranscript}
+            onRecordingStateChange={handleRecordingStateChange}
+            variant="icon-only"
+            size="lg"
+          />
+        )}
       </span>
       <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
         {isRecordingActive && (
@@ -1749,16 +1919,20 @@ export default function CleanupPad({
       )}
       title={recordStatus}
     >
-      <MicrophoneIconButton
-        ref={micRef}
-        id={micId}
-        onTranscriptionComplete={handleTranscriptionComplete}
-        onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
-        onLiveTranscript={handleLiveTranscript}
-        onRecordingStateChange={handleRecordingStateChange}
-        variant="icon-only"
-        size="md"
-      />
+      {externallyControlled ? (
+        externalMicButton("md")
+      ) : (
+        <MicrophoneIconButton
+          ref={micRef}
+          id={micId}
+          onTranscriptionComplete={handleTranscriptionComplete}
+          onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
+          onLiveTranscript={handleLiveTranscript}
+          onRecordingStateChange={handleRecordingStateChange}
+          variant="icon-only"
+          size="md"
+        />
+      )}
     </span>
   );
 

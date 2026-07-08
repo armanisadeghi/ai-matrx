@@ -121,7 +121,6 @@ export class SinkAwarePlayer {
         source.durationToSampleCount(this.#bufferDuration),
       );
       const plays: Promise<void>[] = [];
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const read = await source.read(buffer);
         // A short read means the source is exhausted — only play what was

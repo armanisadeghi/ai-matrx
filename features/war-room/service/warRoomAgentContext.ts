@@ -30,6 +30,7 @@ import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import {
+  selectActiveAudioSessionId,
   selectActiveNoteId,
   selectActiveSessionId,
   selectAttachmentsForThread,
@@ -41,6 +42,10 @@ import {
   selectThreadIdsForRoom,
   selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
+import {
+  selectSessionCleanedText,
+  selectSessionRawText,
+} from "@/features/transcript-studio/redux/selectors";
 import type {
   WarRoomAssignment,
   WarRoomThread,
@@ -194,6 +199,83 @@ function threadToThreadModel(
   };
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/**
+ * Per-session transcript entries for EVERY audio session assigned to the
+ * thread (D14 fence 2). The studio context only carries the ACTIVE session
+ * (`session_cleaned` / `all_raw` / `recording_NN_*`); a thread with several
+ * audio sessions exposed just one, so the agent got nothing for the rest.
+ *
+ * Naming follows the studio contract (`recording_NN_raw` / `session_cleaned`):
+ *   - `session_NN_cleaned` — session NN's full AI-cleaned transcript.
+ *   - `session_NN_raw`     — session NN's raw transcript, emitted only when no
+ *                            cleaned pass exists yet (fallback, labeled).
+ * NN is the session's 1-based position in the thread's audio-session list, so
+ * keys are stable across turns and across which session is active. The ACTIVE
+ * session is skipped — its transcript is already the studio `session_cleaned`.
+ *
+ * Reads the studio slice, hydrated for all of the thread's sessions by
+ * `hydrateThreadTranscripts` (ThreadAgentPanel fires it; a not-yet-hydrated
+ * session simply contributes nothing this push and lands on the next).
+ */
+export function buildThreadSessionTranscriptEntries(
+  state: RootState,
+  threadId: string,
+): AssistantContextEntry[] {
+  const sessionIds = selectAudioSessionIdsForThread(threadId)(state);
+  if (sessionIds.length <= 1) return [];
+  const activeId = selectActiveAudioSessionId(threadId)(state);
+
+  // Session titles from the assignment rows (labels are stamped at attach
+  // time), falling back to the studio slice's session row.
+  const rows = selectContentAssignmentsForThread(threadId)(state);
+  const labelById = new Map<string, string>();
+  for (const a of rows) {
+    if (a.entity_type === "studio_session" && a.label?.trim()) {
+      labelById.set(a.entity_id, a.label.trim());
+    }
+  }
+
+  const entries: AssistantContextEntry[] = [];
+  sessionIds.forEach((sessionId, idx) => {
+    if (sessionId === activeId) return; // already in the studio context
+    const n = pad2(idx + 1);
+    const title =
+      labelById.get(sessionId) ??
+      state.transcriptStudio.byId[sessionId]?.title ??
+      `Session ${idx + 1}`;
+
+    const cleaned = selectSessionCleanedText(sessionId)(state);
+    if (cleaned) {
+      entries.push({
+        key: `session_${n}_cleaned`,
+        value: cleaned,
+        type: "text",
+        label:
+          `Audio session ${idx + 1} ("${title}") on this thread — full ` +
+          "AI-cleaned transcript. (The ACTIVE session's transcript is " +
+          "`session_cleaned`.)",
+      });
+      return;
+    }
+    const raw = selectSessionRawText(sessionId)(state);
+    if (raw) {
+      entries.push({
+        key: `session_${n}_raw`,
+        value: raw,
+        type: "text",
+        label:
+          `Audio session ${idx + 1} ("${title}") on this thread — raw ` +
+          "transcript (no cleaned pass yet).",
+      });
+    }
+  });
+  return entries;
+}
+
 /**
  * Build the Tier-1 thread agent's context: a single inline `war_room` entry.
  */
@@ -249,19 +331,25 @@ export function buildThreadAgentContextEntries(
       "<resources> — any type: files, documents, datasets, data stores, " +
       "flashcards, … The <access> legend maps each type to the exact tool " +
       "that reads or searches it (server tools like data / data_action / " +
-      "document / rag_search are preferred; war_room_read_resource(" +
+      "document / file_read / rag_search are preferred; war_room_read_resource(" +
       "entity_type, entity_id) reads ANY listed resource, and " +
       "entity_type='thread' returns a thread's full attachment manifest). " +
       'A data_store row means: rag_search(query, data_store_id=<its id>) — ' +
       "the user attached that knowledge store for you to USE. Rows with " +
       'pin="1" are the user\'s must-use resources. For this thread\'s ' +
-      "transcripts, the ACTIVE recording is in your studio context as " +
-      "`session_cleaned` when one exists; for any/all recordings use the " +
-      'data tool (resource_type "studio_session"). Read ANOTHER thread\'s ' +
+      "transcripts, the ACTIVE recording session is in your studio context " +
+      "as `session_cleaned` when one exists, and EVERY OTHER audio session " +
+      "on this thread is provided as `session_NN_cleaned` (or " +
+      "`session_NN_raw` when it has no cleaned pass yet) — read those " +
+      "entries directly; never report a thread recording as missing without " +
+      "checking them. Read ANOTHER thread's " +
       "chain with war_room_read_thread(thread_id=<its id>).",
     room: roomModel,
     currentThreadId: threadId,
   };
 
-  return [buildWarRoomContextEntry(model)];
+  return [
+    buildWarRoomContextEntry(model),
+    ...buildThreadSessionTranscriptEntries(state, threadId),
+  ];
 }

@@ -56,6 +56,7 @@ One physical PDF = `cld_files` row. Two derived families, now sharing identity:
 - Verify aidream variant pipeline renders PDF page-1 thumbnails (FE grid path already prefers `thumbnailUrl`).
 
 ## Change Log
+- 2026-07-08 — **Reversible-redaction key escrow wired (closes D31).** The browser now wraps each session key with the org escrow KMS RSA public key (WebCrypto RSA-OAEP SHA-256; raw key never transits the server) and inserts the ciphertext into `pdf.pdf_redaction_key_escrow` (`features/file-analysis/redact/escrow.ts` + `utils/supabase/pdfDb.ts`); recovery = "Recover via organization" in `RestoreDialog` → aidream `POST /redact/escrow/recover` (owner or org owner/admin, KMS Decrypt, every unwrap audit-logged to `platform.activity_log`); `KeyHandoff` copy reflects escrow status (loud red panel on escrow failure). Server: aidream `GET /redact/escrow/wrapping-key` + recover endpoint, env `MATRX_REDACTION_KMS_KEY_ID` (asymmetric RSA ENCRYPT_DECRYPT key; 503 loudly when unset).
 - 2026-07-07 — **Design-parity wave** (design sources now in-repo:
   `docs/proposals/pdf-scanner-projects/design/`). Per-page rename (`ScanItem.label`,
   manifest-persisted, editable inputs on desktop Review grid/list), "View all" recents expand,

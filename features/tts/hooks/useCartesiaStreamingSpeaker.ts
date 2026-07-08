@@ -326,7 +326,7 @@ export function useCartesiaStreamingSpeaker({
   );
 
   /**
-   * Fetches a token, opens the WebSocket, and ensures a WebPlayer exists.
+   * Fetches a token, opens the WebSocket, and ensures a SinkAwarePlayer exists.
    * Idempotent — subsequent calls are no-ops once the WS is open.
    */
   const ensureConnection = useCallback(async () => {
@@ -730,7 +730,7 @@ export function useCartesiaStreamingSpeaker({
     sessionRef.current = null;
     streamRef.current?.session.abort();
     streamRef.current = null;
-    // Tear down the player and NULL it. WebPlayer.stop() closes its underlying
+    // Tear down the player and NULL it. SinkAwarePlayer.stop() closes its underlying
     // AudioContext; if we keep the ref, a second stop() (header button +
     // auto-disable effect + unmount can all fire) calls stop() on an already-
     // closed context → "Cannot close a closed AudioContext". Nulling makes a

@@ -649,6 +649,26 @@ const slice = createSlice({
       byId[document.id] = document;
       if (isNew) ids.push(document.id);
     },
+    /**
+     * Live agent edit to a working document, applied from a `context_delta`
+     * stream event (D9 fix) — the content arrives on the stream as the agent's
+     * ctx_patch lands, BEFORE the DB writeback. The later realtime UPDATE
+     * (studioDocumentUpserted) confirms the same content canonically. No-op if
+     * the document isn't loaded.
+     */
+    studioDocumentContentChanged(
+      state,
+      action: PayloadAction<{
+        sessionId: string;
+        documentId: string;
+        content: string;
+      }>,
+    ) {
+      const { sessionId, documentId, content } = action.payload;
+      const doc = state.documentsById[sessionId]?.[documentId];
+      if (!doc) return;
+      doc.content = content;
+    },
     assistantConversationIdSet(
       state,
       action: PayloadAction<{ sessionId: string; conversationId: string }>,
@@ -704,6 +724,7 @@ export const {
   recordingAudioUploadFinished,
   studioDocumentsLoaded,
   studioDocumentUpserted,
+  studioDocumentContentChanged,
   assistantConversationIdSet,
 } = slice.actions;
 

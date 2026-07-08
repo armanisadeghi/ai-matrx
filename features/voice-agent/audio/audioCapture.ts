@@ -29,7 +29,6 @@ import {
 } from "../constants";
 import { writeAmplitude } from "./amplitudeBus";
 import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
-import { NO_SINK_ROUTING } from "@/features/audio/audioOutputSink";
 
 const WORKLET_PATH = "/pcm-processor-worklet.js";
 
@@ -143,10 +142,10 @@ export function createAudioCapture(): AudioCaptureHandle {
           message: "AudioContext is not available in this browser.",
         } satisfies CaptureError;
       }
+      // Capture/keep-alive context — input only, never audible playback, so
+      // output-device routing never touches it. (Playback routing lives in
+      // SinkAwarePlayer; the old global AudioContext sink patch is gone.)
       ctx = new Ctor({ sampleRate: SAMPLE_RATE_HZ });
-      // Capture/keep-alive context — input only, never audible playback. Mark
-      // it so the OUTPUT-device sink patch never re-routes it.
-      (ctx as unknown as Record<string, unknown>)[NO_SINK_ROUTING] = true;
     }
     if (ctx.state === "suspended") {
       // resume() returns a Promise but we deliberately don't await — the

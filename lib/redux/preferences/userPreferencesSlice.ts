@@ -105,12 +105,14 @@ export interface EmailPreferences {
 }
 
 // Suggested preferences for video conferencing (you can add or adjust fields)
+// NOTE: mic/speaker choice is NOT here — it is canonical in `audioDevices`
+// (AudioDevicePreferences). The legacy free-text `defaultMicrophone` /
+// `defaultSpeaker` fields were deleted; stale persisted copies are stripped
+// loudly on load (see stripSupersededVideoConferenceAudio).
 export interface VideoConferencePreferences {
   background: string;
   filter: string;
   defaultCamera: string;
-  defaultMicrophone: string;
-  defaultSpeaker: string;
   defaultMeetingType: string;
   defaultLayout: string;
   defaultNotesType: string;
@@ -437,10 +439,10 @@ export interface ConversationFilterPreferences {
  * resolve we match by id → else by label → else system default. `""` everywhere
  * means "system default" (no explicit choice).
  *
- * NOTE: this supersedes the legacy free-text `videoConference.defaultMicrophone`
- * / `defaultSpeaker` fields (which were never wired to real `enumerateDevices`
- * ids). VC is left untouched for now — a future pass should fold it into this
- * single device store.
+ * NOTE: this superseded — and has now absorbed — the legacy free-text
+ * `videoConference.defaultMicrophone` / `defaultSpeaker` fields (which were
+ * never wired to real `enumerateDevices` ids). Those fields are deleted from
+ * the shape; stale persisted copies are stripped loudly on load.
  */
 export interface AudioDevicePreferences {
   audioInputDeviceId: string;
@@ -535,6 +537,35 @@ export interface UserPreferencesState extends UserPreferences {
   };
 }
 
+/**
+ * LOUD MIGRATION (2026-07): the legacy free-text
+ * `videoConference.defaultMicrophone` / `defaultSpeaker` fields were folded
+ * into the canonical `audioDevices` module and deleted from the shape. A
+ * persisted blob (IDB / localStorage mirror / remote) may still carry them;
+ * strip them here — with a warning, never silently — so they can't shadow-
+ * revive through the shallow module merges. The blob self-heals on the next
+ * engine save (partialize writes the whole module).
+ */
+function stripSupersededVideoConferenceAudio(
+  vc: Partial<VideoConferencePreferences> | undefined,
+): Partial<VideoConferencePreferences> | undefined {
+  if (!vc) return vc;
+  const carrier = vc as Record<string, unknown>;
+  const stale = ["defaultMicrophone", "defaultSpeaker"].filter(
+    (k) => k in carrier,
+  );
+  if (stale.length === 0) return vc;
+  console.warn(
+    "[userPreferences] MIGRATION: dropping superseded videoConference audio " +
+      `field(s) [${stale.join(", ")}] from a persisted payload — mic/speaker ` +
+      "choice is canonical in userPreferences.audioDevices. The stored blob " +
+      "self-heals on the next save.",
+  );
+  const cleaned: Record<string, unknown> = { ...carrier };
+  for (const k of stale) delete cleaned[k];
+  return cleaned as Partial<VideoConferencePreferences>;
+}
+
 // Helper function to ensure preferences have the proper structure
 export const initializeUserPreferencesState = (
   preferences: Partial<UserPreferences> = {},
@@ -619,8 +650,6 @@ export const initializeUserPreferencesState = (
       background: "default",
       filter: "default",
       defaultCamera: "default",
-      defaultMicrophone: "default",
-      defaultSpeaker: "default",
       defaultMeetingType: "default",
       defaultLayout: "default",
       defaultNotesType: "default",
@@ -776,7 +805,7 @@ export const initializeUserPreferencesState = (
     email: { ...defaultPreferences.email, ...preferences.email },
     videoConference: {
       ...defaultPreferences.videoConference,
-      ...preferences.videoConference,
+      ...stripSupersededVideoConferenceAudio(preferences.videoConference),
     },
     photoEditing: {
       ...defaultPreferences.photoEditing,
@@ -1038,7 +1067,7 @@ const userPreferencesSlice = createSlice({
       if (loaded.videoConference)
         state.videoConference = {
           ...state.videoConference,
-          ...loaded.videoConference,
+          ...stripSupersededVideoConferenceAudio(loaded.videoConference),
         };
       if (loaded.photoEditing)
         state.photoEditing = { ...state.photoEditing, ...loaded.photoEditing };

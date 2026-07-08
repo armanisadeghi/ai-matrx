@@ -2,9 +2,20 @@
 
 import React, { useState, useMemo } from "react";
 import { idMatchesQuery } from "@/utils/search-scoring";
-import { FolderOpen, Clock, Tag, Plus } from "lucide-react";
+import {
+  FolderOpen,
+  Clock,
+  Tag,
+  Plus,
+  Users,
+  ChevronDown,
+  Eye,
+  Pencil,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectSharedWithMeNotes } from "../../redux/selectors";
 import {
   selectOrganizationId,
   selectProjectId,
@@ -28,9 +39,11 @@ export default function MobileNotesList({
   onFiltersChange,
 }: MobileNotesListProps) {
   const { notes, findOrCreateEmptyNote, isLoading } = useNotesRedux();
+  const sharedNotes = useAppSelector(selectSharedWithMeNotes);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sharedOpen, setSharedOpen] = useState(true);
 
   // Active context for filtering
   const activeOrgId = useAppSelector(selectOrganizationId);
@@ -67,9 +80,11 @@ export default function MobileNotesList({
     return result;
   }, [notes, activeOrgId, activeProjectId, activeTaskId]);
 
-  // Filtered + sorted notes
+  // Filtered + sorted notes. "Shared only" swaps the base list to the notes
+  // shared WITH me (from get_notes_shared_with_me) — those are cross-org, so
+  // the active-context org/project filters don't apply to them.
   const filteredNotes = useMemo(() => {
-    let result = uniqueNotes;
+    let result = filters.sharedOnly ? sharedNotes : uniqueNotes;
 
     if (filters.folder !== "all") {
       result = result.filter(
@@ -81,14 +96,6 @@ export default function MobileNotesList({
       result = result.filter((n) =>
         filters.tags.every((tag) => n.tags?.includes(tag)),
       );
-    }
-
-    if (filters.sharedOnly) {
-      // Canonical sharing lives in the `permissions` table, not on the note
-      // row (the legacy `shared_with` column has been dropped). The in-memory
-      // notes list carries no permission data, so this filter currently has
-      // nothing to match against — sharing surfacing is a follow-up.
-      result = [];
     }
 
     if (searchQuery.trim()) {
@@ -108,7 +115,7 @@ export default function MobileNotesList({
       const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return filters.sortOrder === "asc" ? cmp : -cmp;
     });
-  }, [uniqueNotes, filters, searchQuery]);
+  }, [uniqueNotes, sharedNotes, filters, searchQuery]);
 
   const handleCreateNote = async () => {
     try {
@@ -206,6 +213,74 @@ export default function MobileNotesList({
             ))}
           </div>
         )}
+        {/* ── Shared with me ─────────────────────────────────────────── */}
+        {!filters.sharedOnly && sharedNotes.length > 0 && (
+          <div className="border-t border-border/40 mt-2">
+            <button
+              onClick={() => setSharedOpen((v) => !v)}
+              className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-medium text-muted-foreground active:bg-muted/40 transition-colors"
+            >
+              <Users size={12} />
+              <span>Shared with me</span>
+              <span className="text-[10px] bg-muted px-1.5 rounded-full">
+                {sharedNotes.length}
+              </span>
+              <ChevronDown
+                size={12}
+                className={cn(
+                  "ml-auto transition-transform",
+                  sharedOpen && "rotate-180",
+                )}
+              />
+            </button>
+            {sharedOpen && (
+              <div className="divide-y divide-border/50">
+                {sharedNotes.map((note) => {
+                  const level = note._sharedMeta?.permissionLevel ?? "viewer";
+                  const canEdit = level === "editor" || level === "admin";
+                  return (
+                    <button
+                      key={note.id}
+                      onClick={() => onNoteSelect(note)}
+                      className="w-full flex items-start gap-3 px-4 py-3 text-left active:bg-muted/40 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold text-foreground mb-0.5 truncate">
+                          {note.label || "Untitled Note"}
+                        </h3>
+                        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock size={10} />
+                            <span>{formatDate(note.updated_at)}</span>
+                          </div>
+                          {note._sharedMeta?.ownerEmail && (
+                            <span className="truncate max-w-[140px]">
+                              {note._sharedMeta.ownerEmail}
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1 ml-auto shrink-0">
+                            {canEdit ? (
+                              <>
+                                <Pencil size={10} />
+                                <span>Can edit</span>
+                              </>
+                            ) : (
+                              <>
+                                <Eye size={10} />
+                                <span>View only</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Spacer so last item clears the floating action bar */}
         <div className="h-24" />
       </div>

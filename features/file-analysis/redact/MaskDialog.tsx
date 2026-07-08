@@ -33,7 +33,10 @@ import {
   saveSession,
   type StoredSession,
 } from "./session-keys";
-import { KeyHandoff } from "./KeyHandoff";
+import { escrowSessionKey } from "./escrow";
+import { KeyHandoff, type EscrowStatus } from "./KeyHandoff";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
@@ -60,6 +63,8 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<StoredSession | null>(null);
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
+  const [escrowStatus, setEscrowStatus] = useState<EscrowStatus>(null);
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
 
   const handleRun = async () => {
     if (!candidates.length) return;
@@ -111,6 +116,21 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
           created_at: Date.now(),
         };
         await saveSession(stored);
+        // Org-recovery escrow (D31): wrap client-side with the KMS public
+        // key and store the ciphertext. Failure is LOUD in KeyHandoff but
+        // never blocks the mask result.
+        let escrowed: EscrowStatus = null;
+        try {
+          await escrowSessionKey(stored, organizationId);
+          escrowed = "escrowed";
+        } catch (escrowErr) {
+          console.error(
+            "[redact] session-key escrow FAILED — key exists only in this browser:",
+            escrowErr,
+          );
+          escrowed = "failed";
+        }
+        setEscrowStatus(escrowed);
         setHandoff(stored);
       } else {
         // Destructive mode — no key, just close.
@@ -229,7 +249,11 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
 
       <KeyHandoff
         record={handoff}
-        onClose={() => setHandoff(null)}
+        escrowStatus={escrowStatus}
+        onClose={() => {
+          setHandoff(null);
+          setEscrowStatus(null);
+        }}
         onDownloadMasked={maskedBlob ? downloadMasked : undefined}
       />
     </>

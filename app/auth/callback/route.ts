@@ -7,9 +7,14 @@
 // unlike Server Components where it throws).
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { extractErrorMessage } from "@/utils/errors";
 import { safeForwardedHost, safeRelativePath } from "@/utils/auth/safe-redirect";
+import {
+  GUEST_OAUTH_FP_COOKIE,
+  transferGuestDataAfterOAuth,
+} from "@/lib/services/guest-oauth-transfer";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -110,6 +115,39 @@ export async function GET(request: Request) {
         }
       }
 
+      // D20: if the OAuth flow started with a guest fingerprint stashed by
+      // the OAuth server actions, transfer the guest's data (files,
+      // conversations, everything FK'd to the anon UUID) onto this account.
+      // FAIL-OPEN: any failure logs loudly and the login proceeds untouched.
+      let guestFpToClear = false;
+      try {
+        const jar = await cookies();
+        const guestFp = jar.get(GUEST_OAUTH_FP_COOKIE)?.value;
+        if (guestFp) {
+          guestFpToClear = true;
+          if (data.user && data.user.is_anonymous !== true) {
+            const transfer = await transferGuestDataAfterOAuth(
+              guestFp,
+              data.user.id,
+            );
+            if (transfer.transferred) {
+              console.log(
+                `[${timestamp}] Auth callback - guest data transferred onto ${data.user.id}: ${transfer.totalRows} rows (anon ${transfer.anonUserId})`,
+              );
+            } else if (transfer.reason !== "no_guest") {
+              console.error(
+                `[${timestamp}] Auth callback - LOUD: guest transfer did not run (${transfer.reason}): ${transfer.message ?? ""}`,
+              );
+            }
+          }
+        }
+      } catch (guestErr) {
+        console.error(
+          `[${timestamp}] Auth callback - LOUD: guest transfer threw — login proceeds, guest data stays orphaned:`,
+          guestErr instanceof Error ? guestErr.message : String(guestErr),
+        );
+      }
+
       // D22 residual fix: only follow x-forwarded-host when it passes the
       // host allowlist (prod host from NEXT_PUBLIC_SITE_URL, Vercel system
       // hosts, *.vercel.app previews). On mismatch safeForwardedHost screams
@@ -140,7 +178,12 @@ export async function GET(request: Request) {
       console.log(
         `[${timestamp}] Auth callback - Final redirect URL: ${finalRedirectUrl}`,
       );
-      return NextResponse.redirect(finalRedirectUrl);
+      const response = NextResponse.redirect(finalRedirectUrl);
+      if (guestFpToClear) {
+        // One-shot carrier: always clear after the callback consumed it.
+        response.cookies.delete(GUEST_OAUTH_FP_COOKIE);
+      }
+      return response;
     }
 
     console.log(

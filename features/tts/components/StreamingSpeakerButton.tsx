@@ -5,7 +5,7 @@
  *
  * This button speaks a COMPLETE piece of text (a finished assistant message, a
  * document, a selection). It enqueues onto the app-wide `playbackQueue`
- * singleton via `useTtsSpeak` rather than owning a Cartesia WebPlayer in a React
+ * singleton via `useTtsSpeak` rather than owning a Cartesia SinkAwarePlayer in a React
  * hook.
  *
  * That is the whole point: the queue lives OUTSIDE React (module scope), so

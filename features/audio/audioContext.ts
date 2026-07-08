@@ -16,8 +16,6 @@
 // off the `MediaStream`; this context only powers the cosmetic level meter. So
 // this is safe to share/keep-warm without any risk to the never-lose-audio path.
 
-import { NO_SINK_ROUTING } from "@/features/audio/audioOutputSink";
-
 let ctx: AudioContext | null = null;
 
 type AudioCtor = typeof AudioContext;
@@ -41,11 +39,11 @@ export function getSharedAudioContext(): AudioContext | null {
     const Ctor = ctor();
     if (!Ctor) return null;
     try {
+      // This context only powers the cosmetic mic-level meter — input-analysis
+      // only, never audible playback, so output-device routing never touches
+      // it. (Playback routing lives in SinkAwarePlayer, which owns its own
+      // contexts; the old global AudioContext sink patch is gone.)
       ctx = new Ctor();
-      // This context only powers the cosmetic mic-level meter; it must NOT be
-      // re-routed to the chosen OUTPUT device by the AudioContext sink patch
-      // (that's for playback contexts like Cartesia's WebPlayer).
-      (ctx as unknown as Record<string, unknown>)[NO_SINK_ROUTING] = true;
     } catch {
       return null;
     }

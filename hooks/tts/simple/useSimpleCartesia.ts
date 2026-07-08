@@ -1,5 +1,6 @@
 "use client";
-import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
+import { CartesiaClient } from "@cartesia/cartesia-js";
+import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
 import {
@@ -79,7 +80,7 @@ export function useSimpleCartesia() {
                 transcript: script,
                 generationConfig: buildGenerationConfig({ speed }),
             });
-            const player = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
+            const player = new SinkAwarePlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
             setPlayerState("playing");
             await player.play(resp.source);
             setPlayerState("idle");

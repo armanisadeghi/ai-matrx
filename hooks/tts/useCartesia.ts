@@ -13,8 +13,8 @@ import {
     EmotionName,
     EmotionLevel
 } from '@/lib/cartesia/cartesia.types';
-import {WebPlayer} from "@cartesia/cartesia-js";
 import Source from '@cartesia/cartesia-js/wrapper/source';
+import {SinkAwarePlayer} from '@/features/audio/sinkAwarePlayer';
 import type CartesiaWebsocket from '@cartesia/cartesia-js/wrapper/Websocket';
 import type {TtsRequestVoiceSpecifier} from '@cartesia/cartesia-js/api/resources/tts/types/TtsRequestVoiceSpecifier';
 import {
@@ -101,7 +101,7 @@ export function useCartesia(
         bufferDuration
     });
     
-    const playerRef = useRef<WebPlayer | null>(null);
+    const playerRef = useRef<SinkAwarePlayer | null>(null);
     // Track whether play() has been called at least once (AudioContext is lazy-initialized on first play)
     const hasPlayedRef = useRef(false);
     // Create a silent audio buffer to unlock Web Audio API
@@ -123,7 +123,7 @@ export function useCartesia(
                 setWebsocket(ws);
                 // Create the player but don't start AudioContext yet
                 if (!playerRef.current) {
-                    playerRef.current = new WebPlayer({bufferDuration: config.bufferDuration ?? 1});
+                    playerRef.current = new SinkAwarePlayer({bufferDuration: config.bufferDuration ?? 1});
                 }
             })
             .catch((err: Error) => {
@@ -135,7 +135,7 @@ export function useCartesia(
             if (ws) {
                 ws.disconnect();
             }
-            // Only stop if play() has been called — WebPlayer throws 'AudioContext not initialized' otherwise
+            // Only stop if play() has been called — the player throws 'AudioContext not initialized' otherwise
             if (playerRef.current && hasPlayedRef.current) {
                 playerRef.current.stop().catch(console.error);
             }
@@ -155,7 +155,7 @@ export function useCartesia(
         
         try {
             // Create a silent source to "warm up" the AudioContext
-            // This is a workaround since WebPlayer doesn't expose the AudioContext directly
+            // This is a workaround since the player doesn't expose the AudioContext directly
             if (!silentSourceRef.current) {
                 // Create a tiny silent audio buffer
                 const silentResponse = await websocket.send({

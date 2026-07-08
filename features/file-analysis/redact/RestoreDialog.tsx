@@ -4,12 +4,17 @@
  * Paste the LLM/3rd-party response that contains substitute markers,
  * pick the session id (auto-filled from IndexedDB for known sessions),
  * and restore the originals via POST /redact/restore.
+ *
+ * Sessions whose key is missing from this browser (cleared site data,
+ * different device) but present in org escrow are offered too — "Recover
+ * via organization" performs the audited server-side KMS unwrap and
+ * restores the key into IndexedDB (see ./escrow.ts, closes D31).
  */
 
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Undo2 } from "lucide-react";
+import { KeyRound, Loader2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -34,6 +39,11 @@ import {
   listSessionsForFile,
   type StoredSession,
 } from "./session-keys";
+import {
+  listEscrowedSessionsForFile,
+  recoverSessionKey,
+  type EscrowedSessionSummary,
+} from "./escrow";
 
 interface RestoreDialogProps {
   fileId: string;
@@ -43,11 +53,13 @@ interface RestoreDialogProps {
 
 export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps) {
   const [sessions, setSessions] = useState<StoredSession[]>([]);
+  const [escrowOnly, setEscrowOnly] = useState<EscrowedSessionSummary[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [key, setKey] = useState<string>("");
   const [text, setText] = useState<string>("");
   const [restored, setRestored] = useState<string>("");
   const [running, setRunning] = useState(false);
+  const [recovering, setRecovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,6 +71,14 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
         setKey(list[0].session_key_b64);
       }
     });
+    // Escrowed sessions whose key is NOT in this browser — recoverable via
+    // the org (D31). Errors are non-fatal here (local sessions still work)
+    // but never silent.
+    listEscrowedSessionsForFile(fileId)
+      .then(setEscrowOnly)
+      .catch((e) => {
+        console.error("[redact] escrow session listing failed:", e);
+      });
   }, [open, fileId, sessionId]);
 
   // Auto-fill key when sessionId changes from the dropdown.
@@ -68,6 +88,39 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
       if (s) setKey(s.session_key_b64);
     });
   }, [sessionId]);
+
+  function handleSelectSession(id: string) {
+    setSessionId(id);
+    // Clear any previous key so an escrow-only pick shows the recovery
+    // button instead of a stale key from the prior selection.
+    setKey("");
+  }
+
+  const localIds = new Set(sessions.map((s) => s.session_id));
+  const recoverable = escrowOnly.filter(
+    (e) => !localIds.has(e.session_id) && !e.revoked,
+  );
+  const selectedNeedsRecovery =
+    !!sessionId && !key && recoverable.some((e) => e.session_id === sessionId);
+
+  async function handleRecover() {
+    if (!sessionId) return;
+    setRecovering(true);
+    setError(null);
+    try {
+      const restoredSession = await recoverSessionKey(sessionId, fileId);
+      setKey(restoredSession.session_key_b64);
+      setSessions((prev) => [restoredSession, ...prev]);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? `Organization recovery failed: ${e.message}`
+          : String(e),
+      );
+    } finally {
+      setRecovering(false);
+    }
+  }
 
   async function handleRestore() {
     if (!text.trim() || !sessionId || !key) return;
@@ -105,8 +158,8 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
           <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
             <div className="space-y-1">
               <span className="text-xs font-medium">Session</span>
-              {sessions.length ? (
-                <Select value={sessionId} onValueChange={setSessionId}>
+              {sessions.length || recoverable.length ? (
+                <Select value={sessionId} onValueChange={handleSelectSession}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder="Pick a session…" />
                   </SelectTrigger>
@@ -119,6 +172,16 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
                       >
                         {new Date(s.created_at).toLocaleString()} —{" "}
                         {s.session_id.slice(0, 8)}…
+                      </SelectItem>
+                    ))}
+                    {recoverable.map((s) => (
+                      <SelectItem
+                        key={s.session_id}
+                        value={s.session_id}
+                        className="text-xs"
+                      >
+                        {new Date(s.created_at).toLocaleString()} —{" "}
+                        {s.session_id.slice(0, 8)}… (org escrow)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -140,6 +203,27 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
                 onChange={(e) => setKey(e.target.value)}
                 className="h-9 font-mono text-[11px]"
               />
+              {selectedNeedsRecovery ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs"
+                  disabled={recovering}
+                  onClick={() => void handleRecover()}
+                >
+                  {recovering ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      Recovering…
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-3 w-3 mr-1" />
+                      Recover via organization
+                    </>
+                  )}
+                </Button>
+              ) : null}
             </div>
           </div>
 

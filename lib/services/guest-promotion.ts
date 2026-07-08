@@ -20,6 +20,12 @@
 // Gating: uses the service-role admin client. This is a sanctioned admin
 // operation (CLAUDE.md "admin-only operations gated by a secret token") run
 // only inside the sign-up server action — never exposed to the browser.
+//
+// OAuth twin (D20): in-place promotion is impossible for OAuth signups (no
+// server-side API attaches a provider identity to an existing user), so those
+// flows use the ownership TRANSFER in lib/services/guest-oauth-transfer.ts
+// (RPC public.transfer_guest_data_to_user, migration
+// migrations/guest_oauth_data_transfer.sql).
 
 import "server-only";
 
@@ -46,7 +52,7 @@ export type GuestPromotionResult =
  *  attacker enumerate a window and hijack a guest's anonymous account. A high-
  *  entropy FingerprintJS visitorId is the only accepted promotion key; a guest
  *  on the temp fallback simply gets a normal fresh sign-up. */
-function looksLikeFingerprint(fp: string | undefined | null): fp is string {
+export function looksLikeFingerprint(fp: string | undefined | null): fp is string {
   if (!fp || typeof fp !== "string") return false;
   if (fp.startsWith("temp_")) return false;
   if (fp.length < 16) return false;

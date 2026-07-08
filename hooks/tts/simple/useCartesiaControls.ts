@@ -1,5 +1,6 @@
 "use client";
-import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
+import { CartesiaClient } from "@cartesia/cartesia-js";
+import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Emotion } from "@/components/audio/VoiceConfigSelects";
 import {
@@ -15,8 +16,8 @@ type PlayerState = "idle" | "playing" | "paused";
 
 export function useCartesiaControls() {
     const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
-    const playerRef = useRef<WebPlayer | null>(null);
-    // Track whether play() has been called — WebPlayer's AudioContext is lazy-initialized on first play
+    const playerRef = useRef<SinkAwarePlayer | null>(null);
+    // Track whether play() has been called — the player's AudioContext is lazy-initialized on first play
     const hasPlayedRef = useRef(false);
     const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
     const [playerState, setPlayerState] = useState<PlayerState>("idle");
@@ -89,7 +90,7 @@ export function useCartesiaControls() {
 
             // Create a new player if one doesn't exist or if we're starting a new speech
             if (!playerRef.current || playerState === "idle") {
-                playerRef.current = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
+                playerRef.current = new SinkAwarePlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
             }
 
             // If player is paused, resume instead of starting new speech

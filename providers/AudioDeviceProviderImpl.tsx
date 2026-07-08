@@ -4,13 +4,15 @@
 //
 // The effectful body of AudioDeviceProvider (loaded via next/dynamic, ssr:false).
 // Renders nothing — it only:
-//   1. installs the AudioContext output-sink routing patch (Chromium) so the
-//      Cartesia TTS WebPlayer's private context inherits the chosen speaker,
-//   2. wires the manager's `devicechange` / Permissions API listeners once,
-//   3. applies the user's persisted mic + speaker choice to the mic singleton /
+//   1. wires the manager's `devicechange` / Permissions API listeners once,
+//   2. applies the user's persisted mic + speaker choice to the mic singleton /
 //      output sink EARLY — and re-applies whenever the persisted choice changes
 //      (cross-tab edit, rehydrate) or the live device list changes (so a stored
 //      label re-resolves to a fresh deviceId on iOS, where ids regenerate).
+//
+// Web Audio speaker routing is owned by SinkAwarePlayer
+// (features/audio/sinkAwarePlayer.ts), which reads the output-sink store this
+// provider feeds — the old global AudioContext monkeypatch is gone.
 
 import { useEffect, useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -29,7 +31,6 @@ import {
   subscribeAudioDevices,
   type AudioDevicesSnapshot,
 } from "@/features/audio/audioDevices";
-import { installAudioContextSinkRouting } from "@/features/audio/audioOutputSink";
 
 const EMPTY_SNAPSHOT: AudioDevicesSnapshot = {
   permissionState: "unknown",
@@ -51,7 +52,6 @@ export default function AudioDeviceProviderImpl(): null {
 
   // One-time boot wiring.
   useEffect(() => {
-    installAudioContextSinkRouting();
     console.log("[AudioDeviceProviderImpl] Starting device listeners");
     startDeviceListeners();
   }, []);

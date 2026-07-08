@@ -41,6 +41,8 @@
  *   POST   /files/{file_id}/redact/mask
  *   POST   /redact/restore
  *   POST   /redact/sessions/{session_id}/revoke
+ *   GET    /redact/escrow/wrapping-key
+ *   POST   /redact/escrow/recover
  */
 
 import {
@@ -120,6 +122,9 @@ export type MaskResponse = Schemas["MaskResponse"];
 export type RestoreRequestBody = Schemas["RestoreRequestBody"];
 export type RestoreResponse =
   Schemas["aidream__api__routers__file_analysis__RestoreResponse"];
+export type EscrowWrappingKeyResponse = Schemas["EscrowWrappingKeyResponse"];
+export type EscrowRecoverBody = Schemas["EscrowRecoverBody"];
+export type EscrowRecoverResponse = Schemas["EscrowRecoverResponse"];
 
 type Result<T> = Promise<{ data: T; meta: ResponseMeta }>;
 const fid = (id: string) => encodeURIComponent(id);
@@ -550,6 +555,27 @@ export function revokeSession(
   return postJson<null, Record<string, never>>(
     `/redact/sessions/${fid(sessionId)}/revoke`,
     {},
+    opts,
+  );
+}
+
+// ─── Key escrow (org recovery, D31) ─────────────────────────────────────────
+
+/** Escrow KMS RSA public key for CLIENT-side session-key wrapping. */
+export function getEscrowWrappingKey(
+  opts: RequestOptions = {},
+): Result<EscrowWrappingKeyResponse> {
+  return getJson<EscrowWrappingKeyResponse>("/redact/escrow/wrapping-key", opts);
+}
+
+/** Org-authorized, audit-logged KMS unwrap of an escrowed session key. */
+export function recoverEscrowedKey(
+  body: EscrowRecoverBody,
+  opts: RequestOptions = {},
+): Result<EscrowRecoverResponse> {
+  return postJson<EscrowRecoverResponse, EscrowRecoverBody>(
+    "/redact/escrow/recover",
+    body,
     opts,
   );
 }

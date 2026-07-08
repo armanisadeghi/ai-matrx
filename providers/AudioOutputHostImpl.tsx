@@ -4,7 +4,7 @@
 //
 // The heavy half of the app-root audio-OUTPUT singleton. Mounting this hook is
 // the whole job: `useAutoVoiceResponse` owns a `useCartesiaStreamingSpeaker`
-// (its WebSocket + WebPlayer + the @cartesia/cartesia-js SDK), and because this
+// (its WebSocket + SinkAwarePlayer + the @cartesia/cartesia-js SDK), and because this
 // lives at app-root it NEVER unmounts on a tab switch or route change — so a
 // read-aloud that is mid-stream keeps playing while the user navigates.
 //

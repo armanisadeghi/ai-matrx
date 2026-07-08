@@ -136,7 +136,7 @@ register({
 register({
   token: "file",
   accessHint:
-    'data_action(operation="read_file_extraction", inputs={file_id:<id>, mode:"clean"}) to read; rag_search(source_ids=[<id>]) to search (rag="indexed" only)',
+    'file_read(file_id=<id>) to read its extracted text (mode/page_start/page_end/max_chars to scope it); rag_search(source_ids=[<id>]) to search (rag="indexed" only)',
 });
 register({
   token: "note",

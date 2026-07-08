@@ -145,6 +145,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
                             name="redirectTo"
                             value={redirectTo}
                         />
+                        <GuestFingerprintField />
                         <SubmitButton pendingText="Loading..." className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200">
                             <IconBrandGoogle className="h-5 w-5 mr-1" />
                             <span>Google</span>
@@ -158,6 +159,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
                             name="redirectTo"
                             value={redirectTo}
                         />
+                        <GuestFingerprintField />
                         <SubmitButton pendingText="Loading..." className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200">
                             <IconBrandApple className="h-5 w-5 mr-1" />
                             <span>Apple</span>
@@ -171,6 +173,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
                             name="redirectTo"
                             value={redirectTo}
                         />
+                        <GuestFingerprintField />
                         <SubmitButton pendingText="Loading..." className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200">
                             <IconBrandGithub className="h-5 w-5 mr-1" />
                             <span>GitHub</span>

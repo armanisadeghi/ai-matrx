@@ -1608,6 +1608,7 @@ export type Database = {
           slug: string
           updated_at: string
           updated_by: string | null
+          vendor: string
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
           wire_format: string
@@ -1633,6 +1634,7 @@ export type Database = {
           slug: string
           updated_at?: string
           updated_by?: string | null
+          vendor: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           wire_format: string
@@ -1658,6 +1660,7 @@ export type Database = {
           slug?: string
           updated_at?: string
           updated_by?: string | null
+          vendor?: string
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
           wire_format?: string
@@ -28463,6 +28466,7 @@ export type Database = {
         Returns: undefined
       }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
+      mtx_media_heal_dispatch: { Args: never; Returns: number }
       org_admin_get_member: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: Json

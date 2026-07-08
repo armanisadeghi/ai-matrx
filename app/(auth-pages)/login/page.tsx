@@ -8,6 +8,7 @@ import Link from "next/link";
 import { IconBrandGithub, IconBrandGoogle, IconBrandApple } from "@tabler/icons-react";
 import AuthPageContainer from "@/components/auth/auth-page-container";
 import { AuthMessageType } from '@/components/form-message';
+import { GuestFingerprintField } from "../sign-up/GuestFingerprintField";
 
 interface SignInProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -147,6 +148,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
                 <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-2">
                     <form action={googleLoginWithRedirect}>
                         <input type="hidden" name="redirectTo" value={redirectTo} />
+                        <GuestFingerprintField />
                         <SubmitButton
                             pendingText="Loading..."
                             className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200"
@@ -158,6 +160,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
                     <form action={appleLoginWithRedirect}>
                         <input type="hidden" name="redirectTo" value={redirectTo} />
+                        <GuestFingerprintField />
                         <SubmitButton
                             pendingText="Loading..."
                             className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200"
@@ -169,6 +172,7 @@ export default async function SignIn({ searchParams }: SignInProps) {
 
                     <form action={githubLoginWithRedirect}>
                         <input type="hidden" name="redirectTo" value={redirectTo} />
+                        <GuestFingerprintField />
                         <SubmitButton
                             pendingText="Loading..."
                             className="w-full inline-flex justify-center py-2 px-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-neutral-700 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-600 transition-colors duration-200"

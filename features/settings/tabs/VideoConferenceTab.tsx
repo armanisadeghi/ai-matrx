@@ -16,12 +16,6 @@ export default function VideoConferenceTab() {
   const [camera, setCamera] = useSetting<string>(
     "userPreferences.videoConference.defaultCamera",
   );
-  const [microphone, setMicrophone] = useSetting<string>(
-    "userPreferences.videoConference.defaultMicrophone",
-  );
-  const [speaker, setSpeaker] = useSetting<string>(
-    "userPreferences.videoConference.defaultSpeaker",
-  );
   const [meetingType, setMeetingType] = useSetting<string>(
     "userPreferences.videoConference.defaultMeetingType",
   );
@@ -69,6 +63,9 @@ export default function VideoConferenceTab() {
           last
         />
       </SettingsSection>
+      {/* Mic + speaker live in the canonical audio-device preferences
+          (userPreferences.audioDevices — the audio device settings, wired to
+          real enumerateDevices ids). Only the camera stays here. */}
       <SettingsSection title="Devices">
         <SettingsSelect
           label="Camera"
@@ -79,28 +76,6 @@ export default function VideoConferenceTab() {
             { value: "front", label: "Front" },
             { value: "rear", label: "Rear" },
             { value: "external", label: "External" },
-          ]}
-        />
-        <SettingsSelect
-          label="Microphone"
-          value={microphone}
-          onValueChange={setMicrophone}
-          options={[
-            { value: "default", label: "System default" },
-            { value: "builtin", label: "Built-in" },
-            { value: "external", label: "External" },
-            { value: "headset", label: "Headset" },
-          ]}
-        />
-        <SettingsSelect
-          label="Speaker"
-          value={speaker}
-          onValueChange={setSpeaker}
-          options={[
-            { value: "default", label: "System default" },
-            { value: "builtin", label: "Built-in" },
-            { value: "external", label: "External" },
-            { value: "headset", label: "Headset" },
           ]}
           last
         />

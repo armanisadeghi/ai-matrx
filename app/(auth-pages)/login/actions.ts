@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { safeRelativePath } from "@/utils/auth/safe-redirect";
+import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
 
 // Dynamic baseUrl that works with Vercel deployments (including preview branches)
 const getBaseUrl = async () => {
@@ -160,6 +161,10 @@ export async function loginWithGoogle(redirectToArg: string, formData?: FormData
 
     const callbackUrl = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
     console.log(`[${timestamp}] Google login - OAuth callback URL:`, callbackUrl);
+
+    // D20: carry the guest fingerprint across the OAuth provider round-trip so
+    // /auth/callback can transfer guest-owned data onto the account. Fail-open.
+    await stashGuestFingerprintForOAuth(formData);
     // console.log(`[${timestamp}] 🚨 IMPORTANT: This URL must be whitelisted in Supabase Dashboard → Authentication → URL Configuration`);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -207,6 +212,10 @@ export async function loginWithGithub(redirectToArg: string, formData?: FormData
     const callbackUrl = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
     console.log(`[${timestamp}] GitHub login - OAuth callback URL:`, callbackUrl);
 
+    // D20: carry the guest fingerprint across the OAuth provider round-trip so
+    // /auth/callback can transfer guest-owned data onto the account. Fail-open.
+    await stashGuestFingerprintForOAuth(formData);
+
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "github",
         options: {
@@ -252,6 +261,10 @@ export async function loginWithApple(redirectToArg: string, formData?: FormData)
     const callbackUrl = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
     console.log(`[${timestamp}] Apple login - OAuth callback URL:`);
     console.log(` -> ${callbackUrl}`);
+
+    // D20: carry the guest fingerprint across the OAuth provider round-trip so
+    // /auth/callback can transfer guest-owned data onto the account. Fail-open.
+    await stashGuestFingerprintForOAuth(formData);
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "apple",

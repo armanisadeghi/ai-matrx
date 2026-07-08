@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import MatrixLogo from "@/components/branding/MatrixLogo";
 import { IconBrandGoogle, IconBrandGithub } from "@tabler/icons-react";
+import { GuestFingerprintField } from "./GuestFingerprintField";
 
 interface SignUpProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -129,6 +130,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
                         <div className="mt-6 w-full flex flex-col items-center justify-center space-y-4">
                             <form action={signInWithGoogleAction}>
                                 <input type="hidden" name="redirectTo" value={redirectTo} />
+                                <GuestFingerprintField />
                                 <SubmitButton className="bg-red-500 relative z-10 hover:bg-red-600 text-white text-sm md:text-sm transition font-medium duration-200 rounded-full px-4 py-1.5 flex items-center justify-center w-full dark:text-white dark:hover:bg-red-700" pendingText="Connecting...">
                                     <IconBrandGoogle className="h-5 w-5 mr-2"/>
                                     <span className="text-sm font-semibold leading-6">Google</span>
@@ -137,6 +139,7 @@ export default async function SignUp({ searchParams }: SignUpProps) {
 
                             <form action={signInWithGithubAction}>
                                 <input type="hidden" name="redirectTo" value={redirectTo} />
+                                <GuestFingerprintField />
                                 <SubmitButton className="bg-black relative z-10 hover:bg-black/90 text-white text-sm md:text-sm transition font-medium duration-200 rounded-full px-4 py-1.5 flex items-center justify-center w-full dark:text-black dark:bg-white dark:hover:bg-neutral-100 dark:hover:shadow-xl" pendingText="Connecting...">
                                     <IconBrandGithub className="h-5 w-5 mr-2"/>
                                     <span className="text-sm font-semibold leading-6">GitHub</span>

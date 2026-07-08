@@ -13,6 +13,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectSharedWithMeNotes } from "../../redux/selectors";
+import { fetchNoteContent } from "../../redux/thunks";
 import { PageSpecificHeader } from "@/components/layout/new-layout/PageSpecificHeaderPortal";
 import { cn } from "@/lib/utils";
 import MobileNotesList from "./MobileNotesList";
@@ -38,6 +41,8 @@ const VIEW_MODES: {
 
 export default function MobileNotesView() {
   const { notes } = useNotesRedux();
+  const sharedNotes = useAppSelector(selectSharedWithMeNotes);
+  const dispatch = useAppDispatch();
 
   const [currentView, setCurrentView] = useState<MobileView>("list");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -58,15 +63,31 @@ export default function MobileNotesView() {
     return Array.from(seen).sort();
   }, [notes]);
 
+  // Shared-with-me notes are excluded from the owner list — look them up too.
   const selectedNote = selectedNoteId
-    ? (notes.find((n) => n.id === selectedNoteId) ?? null)
+    ? (notes.find((n) => n.id === selectedNoteId) ??
+      sharedNotes.find((n) => n.id === selectedNoteId) ??
+      null)
     : null;
+
+  // Shared list rows come from the get_notes_shared_with_me RPC WITHOUT
+  // content — fetch the full note (RLS grants the sharee SELECT) before the
+  // editor mounts, otherwise it would open on an empty body.
+  const selectedNoteReady = Boolean(
+    selectedNote &&
+      (!selectedNote._sharedWithMe || selectedNote.content != null),
+  );
 
   const handleNoteSelect = (note: Note) => {
     setSelectedNoteId(note.id);
     setCurrentView("editor");
     setIsDirty(false);
     setJustSaved(false);
+    // Owner rows already carry content from the list query; only shared rows
+    // arrive content-less and need the full fetch.
+    if (note.content == null) {
+      dispatch(fetchNoteContent(note.id));
+    }
   };
 
   const handleBack = () => {
@@ -308,13 +329,21 @@ export default function MobileNotesView() {
             currentView === "editor" ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          {selectedNote && (
-            <MobileNoteEditor
-              note={selectedNote}
-              editorMode={editorMode}
-              onBack={handleBack}
-            />
-          )}
+          {selectedNote &&
+            (selectedNoteReady ? (
+              <MobileNoteEditor
+                note={selectedNote}
+                editorMode={editorMode}
+                onBack={handleBack}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-40">
+                <Loader2
+                  size={18}
+                  className="animate-spin text-muted-foreground"
+                />
+              </div>
+            ))}
         </div>
       </div>
     </>

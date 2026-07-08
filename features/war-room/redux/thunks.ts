@@ -22,6 +22,7 @@ import * as taskService from "@/features/tasks/services/taskService";
 import { requireUserId } from "@/utils/auth/getUserId";
 import {
   createSessionThunk,
+  fetchCleanedSegmentsThunk,
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
 import {
@@ -29,7 +30,10 @@ import {
   setActiveAssistantConversationThunk,
   switchAssistantAgentThunk,
 } from "@/features/transcript-studio/redux/assistantAgent.thunk";
-import { selectRawSegmentsLoaded } from "@/features/transcript-studio/redux/selectors";
+import {
+  selectCleanedSegmentsLoaded,
+  selectRawSegmentsLoaded,
+} from "@/features/transcript-studio/redux/selectors";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { favoritesService } from "@/features/scopes/service/favoritesService";
@@ -46,6 +50,7 @@ import {
   selectActiveAudioSessionId,
   selectActiveNoteId,
   selectAssignmentsForContainer,
+  selectAudioSessionIdsForThread,
   selectContainerAssignmentsLoaded,
   selectEffectiveThreadProjectId,
   selectNoteIdsForThread,
@@ -920,6 +925,45 @@ export const hydrateThreadAudio =
         dispatch(fetchRawSegmentsThunk({ sessionId: active }));
       }
       return active;
+    } finally {
+      inFlightThreadOps.delete(key);
+    }
+  };
+
+/**
+ * Hydrate the transcript content (raw + cleaned segments) of EVERY
+ * `studio_session` assigned to a thread — not just the active one (D14
+ * fence 2). The Tier-1 agent context emits a per-session transcript entry for
+ * each of the thread's audio sessions; those selectors read the studio slice,
+ * which only ever held the ACTIVE session's segments — so every other session
+ * surfaced to the agent as missing. Hydrate-only, loaded-gated (never
+ * re-fetches an already-loaded session), never creates anything.
+ */
+export const hydrateThreadTranscripts =
+  (threadId: string) =>
+  async (
+    dispatch: AppDispatch,
+    getState: () => RootState,
+  ): Promise<string[]> => {
+    const key = `hydrate-transcripts:${threadId}`;
+    if (inFlightThreadOps.has(key)) return [];
+    inFlightThreadOps.add(key);
+    try {
+      if (!selectContainerAssignmentsLoaded("thread", threadId)(getState())) {
+        await dispatch(loadThreadAttachments(threadId));
+      }
+      const sessionIds = selectAudioSessionIdsForThread(threadId)(getState());
+      const jobs: Promise<unknown>[] = [];
+      for (const sessionId of sessionIds) {
+        if (!selectRawSegmentsLoaded(sessionId)(getState())) {
+          jobs.push(dispatch(fetchRawSegmentsThunk({ sessionId })));
+        }
+        if (!selectCleanedSegmentsLoaded(sessionId)(getState())) {
+          jobs.push(dispatch(fetchCleanedSegmentsThunk({ sessionId })));
+        }
+      }
+      await Promise.all(jobs);
+      return sessionIds;
     } finally {
       inFlightThreadOps.delete(key);
     }

@@ -41,6 +41,13 @@ export interface MatrxSplitProps {
   textareaRef?: React.Ref<HTMLTextAreaElement>;
   /** Placeholder text shown when the editor is empty */
   placeholder?: string;
+  /**
+   * Render the editor pane read-only. Sets `readOnly` on the underlying
+   * <textarea> so keystrokes are blocked natively (a swallowed `onChange`
+   * alone lets typing paint into the DOM and silently go nowhere) and
+   * disables the preview pane's full-screen editor entry.
+   */
+  readOnly?: boolean;
   /** Extra className applied to the outer ResizablePanelGroup */
   className?: string;
   /** Initial panel sizes as [leftPercent, rightPercent]. Defaults to [50, 50] */
@@ -135,6 +142,7 @@ export function MatrxSplit({
   onChange,
   textareaRef,
   placeholder = "Start writing...",
+  readOnly = false,
   className,
   defaultLayout = [50, 50],
   textareaClassName,
@@ -182,7 +190,7 @@ export function MatrxSplit({
           hideCopyButton={hideCopyButton}
           analysisData={analysisData}
           messageId={messageId}
-          allowFullScreenEditor={allowFullScreenEditor}
+          allowFullScreenEditor={allowFullScreenEditor && !readOnly}
           contentClassName={previewMarkdownClassName}
           onContentChange={previewChange}
         />
@@ -195,7 +203,7 @@ export function MatrxSplit({
         hideCopyButton={hideCopyButton}
         analysisData={analysisData}
         messageId={messageId}
-        allowFullScreenEditor={allowFullScreenEditor}
+        allowFullScreenEditor={allowFullScreenEditor && !readOnly}
         className={previewMarkdownClassName}
         onContentChange={previewChange}
       />
@@ -366,6 +374,7 @@ export function MatrxSplit({
                 value={localValue}
                 onChange={(e) => handleLocalChange(e.target.value)}
                 placeholder={placeholder}
+                readOnly={readOnly}
                 aria-label="Markdown editor"
                 className={cn(
                   "absolute inset-0 h-full w-full resize-none border-none bg-transparent p-4 leading-[1.7] font-[inherit] text-foreground outline-none placeholder:text-muted-foreground overflow-y-auto scrollbar-thin-auto",
@@ -410,6 +419,7 @@ export function MatrxSplit({
             onChange={(e) => handleLocalChange(e.target.value)}
             onScroll={handleEditorScroll}
             placeholder={placeholder}
+            readOnly={readOnly}
             aria-label="Markdown editor"
             className={cn(
               "h-full w-full resize-none border-none bg-transparent p-4 text-sm leading-[1.7] font-[inherit] text-foreground outline-none placeholder:text-muted-foreground overflow-y-auto scrollbar-thin-auto",

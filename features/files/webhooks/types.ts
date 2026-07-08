@@ -18,6 +18,14 @@ export interface Webhook {
   secret?: string;
   description: string | null;
   is_active: boolean;
+  /**
+   * Org-wide fan-out scope. null = personal ("my own events / my finished
+   * jobs" — event actor must equal owner). Set to an org the owner belongs
+   * to (enforced by files.webhook_org_guard) and the webhook ALSO fires for
+   * events whose organization_id matches or whose actor is any member of
+   * that org. Delivery re-checks the owner is still a member.
+   */
+  organization_id: string | null;
   /** null = subscribe to ALL event types. Otherwise an allow-list of actions. */
   event_types: string[] | null;
   /** null = ALL resource types. Otherwise an allow-list of entity_types. */
@@ -44,12 +52,16 @@ export interface WebhookDelivery {
   next_attempt_at: string | null;
   signature: string | null;
   created_at: string;
+  /** When the HTTP POST was handed to pg_net (re-stamped on every retry / redeliver). */
+  dispatched_at: string | null;
   completed_at: string | null;
 }
 
 export interface CreateWebhookInput {
   target_url: string;
   description?: string | null;
+  /** Org-wide fan-out: an org the owner belongs to, or null for personal scope. */
+  organization_id?: string | null;
   /** null/undefined = all events. */
   event_types?: string[] | null;
   resource_types?: string[] | null;
@@ -59,6 +71,7 @@ export interface UpdateWebhookInput {
   target_url?: string;
   description?: string | null;
   is_active?: boolean;
+  organization_id?: string | null;
   event_types?: string[] | null;
   resource_types?: string[] | null;
 }

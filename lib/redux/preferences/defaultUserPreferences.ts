@@ -57,8 +57,8 @@ export const defaultUserPreferences: UserPreferences = {
     background: "default",
     filter: "default",
     defaultCamera: "default",
-    defaultMicrophone: "default",
-    defaultSpeaker: "default",
+    // Mic/speaker choice is canonical in `audioDevices` below — the legacy
+    // videoConference.defaultMicrophone/defaultSpeaker fields are deleted.
     defaultMeetingType: "default",
     defaultLayout: "default",
     defaultNotesType: "default",

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { WebPlayer } from '@cartesia/cartesia-js';
 import type Source from '@cartesia/cartesia-js/wrapper/source';
+import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
 import cartesia from '@/lib/cartesia/client';
 import {
     VoiceSpeed,
@@ -32,9 +32,9 @@ const useTextToSpeech = (options: UseTextToSpeechOptions) => {
     // type (SDK type/version drift, see escalation brief). Typing this ref
     // honestly is blocked on that upstream gap.
     const websocketRef = useRef<any>(null);
-    const playerRef = useRef<WebPlayer | null>(null);
+    const playerRef = useRef<SinkAwarePlayer | null>(null);
     const sourceRef = useRef<Source | null>(null);
-    // Track whether play() has been called — WebPlayer's AudioContext is lazy-initialized on first play
+    // Track whether play() has been called — the player's AudioContext is lazy-initialized on first play
     const hasPlayedRef = useRef(false);
 
     useEffect(() => {
@@ -44,11 +44,14 @@ const useTextToSpeech = (options: UseTextToSpeechOptions) => {
             sampleRate: 44100,
         });
 
-        playerRef.current = new WebPlayer(websocketRef.current);
+        // NOTE: the pre-fork code passed the WEBSOCKET to `new WebPlayer(...)`,
+        // leaving bufferDuration undefined (a latent bug — zero-length read
+        // buffers). The fork gets a real 1s buffer like its sibling hooks.
+        playerRef.current = new SinkAwarePlayer({ bufferDuration: 1 });
 
         return () => {
             websocketRef.current?.disconnect();
-            // Only stop if play() has been called — WebPlayer throws 'AudioContext not initialized' otherwise
+            // Only stop if play() has been called — the player throws 'AudioContext not initialized' otherwise
             if (playerRef.current && hasPlayedRef.current) {
                 playerRef.current.stop();
             }

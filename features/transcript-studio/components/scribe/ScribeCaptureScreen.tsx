@@ -11,6 +11,7 @@ import {
   Square,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MicDeviceMenu } from "@/components/audio/MicDeviceMenu";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useStudioSession } from "../../hooks/useStudioSession";
 import { selectRecordingSegmentCount } from "../../redux/selectors";
@@ -171,45 +172,61 @@ export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
             <FileText className="h-5 w-5" />
           </button>
 
-          {/* Start / stop — primary */}
-          <button
-            type="button"
-            onClick={isRecording ? session.stop : session.start}
-            disabled={!isRecording && (blockedByOther || session.isFinalizing)}
-            aria-label={
-              isRecording
-                ? "Stop recording"
-                : session.isFinalizing
-                  ? "Saving previous recording"
-                  : "Start recording"
-            }
-            className={cn(
-              "relative flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
-              isRecording
-                ? "bg-red-500 text-white"
-                : blockedByOther || session.isFinalizing
-                  ? "cursor-not-allowed bg-muted text-muted-foreground"
-                  : "bg-primary text-primary-foreground",
-            )}
-          >
-            {isRecording && !session.isPaused && (
-              <span
-                aria-hidden
-                className="absolute inset-0 rounded-full bg-red-500/30"
-                style={{
-                  transform: `scale(${1 + (level / 100) * 0.4})`,
-                  transition: "transform 100ms ease-out",
-                }}
-              />
-            )}
-            {isRecording ? (
-              <Square className="relative h-6 w-6 fill-current" />
-            ) : session.isFinalizing ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <Mic className="h-7 w-7" />
-            )}
-          </button>
+          {/* Start / stop — primary. Wrapped so the mic-device caret can dock
+              to its corner without shifting the fixed control row. */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={isRecording ? session.stop : session.start}
+              disabled={
+                !isRecording && (blockedByOther || session.isFinalizing)
+              }
+              aria-label={
+                isRecording
+                  ? "Stop recording"
+                  : session.isFinalizing
+                    ? "Saving previous recording"
+                    : "Start recording"
+              }
+              className={cn(
+                "relative flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+                isRecording
+                  ? "bg-red-500 text-white"
+                  : blockedByOther || session.isFinalizing
+                    ? "cursor-not-allowed bg-muted text-muted-foreground"
+                    : "bg-primary text-primary-foreground",
+              )}
+            >
+              {isRecording && !session.isPaused && (
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full bg-red-500/30"
+                  style={{
+                    transform: `scale(${1 + (level / 100) * 0.4})`,
+                    transition: "transform 100ms ease-out",
+                  }}
+                />
+              )}
+              {isRecording ? (
+                <Square className="relative h-6 w-6 fill-current" />
+              ) : session.isFinalizing ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <Mic className="h-7 w-7" />
+              )}
+            </button>
+
+            {/* Mic-device caret — the same picker ProInput/ProTextarea expose
+                via MicWithDeviceMenu. Docked to the record button's corner
+                (absolute, so the fixed control row never shifts); dimmed +
+                inert while recording/finalizing, matching the split-pill
+                convention of hiding device choice mid-capture. */}
+            <MicDeviceMenu
+              disabled={isRecording || session.isFinalizing}
+              ariaLabel="Choose microphone for this recording"
+              className="absolute -right-1 -top-1 h-6 w-6 rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:bg-accent"
+            />
+          </div>
 
           {/* Pause / resume — same size & shape as start/stop, icon only.
               Always present; dimmed + inert when not recording. */}

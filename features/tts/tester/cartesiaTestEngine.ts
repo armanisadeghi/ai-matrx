@@ -7,12 +7,13 @@
  * server max_buffer_delay_ms) so what you hear here is what ships.
  *
  * Playback control (pause/resume/stop) is owned by the returned handle and
- * driven by the WebPlayer — NOT the synthesis lifecycle — so pause works even
- * after all audio has been received.
+ * driven by the SinkAwarePlayer — NOT the synthesis lifecycle — so pause works
+ * even after all audio has been received.
  */
 
-import type { Cartesia, WebPlayer } from "@cartesia/cartesia-js";
+import type { Cartesia } from "@cartesia/cartesia-js";
 import Source from "@cartesia/cartesia-js/wrapper/source";
+import type { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import cartesia from "@/lib/cartesia/client";
 import {
   AudioEncoding,
@@ -73,7 +74,7 @@ export interface TtsTestConfig {
   volume: number;
   /** generation_config.emotion; "" = none. */
   emotion: string;
-  /** Client-side WebPlayer buffer (seconds) before playback starts. */
+  /** Client-side player buffer (seconds) before playback starts. */
   playbackBufferSec: number;
   /** Server-side text buffering. 0 = custom (immediate); >0 = managed. */
   maxBufferDelayMs: number;
@@ -127,13 +128,13 @@ interface RunCallbacks {
 }
 
 /**
- * Run one synthesis + playback pass on the supplied {@link WebPlayer}. The
- * caller owns the player (one per panel, recreated only when the playback buffer
- * changes) to avoid exhausting the browser's AudioContext budget. Call from a
- * user gesture so the browser can unlock the AudioContext.
+ * Run one synthesis + playback pass on the supplied {@link SinkAwarePlayer}.
+ * The caller owns the player (one per panel, recreated only when the playback
+ * buffer changes) to avoid exhausting the browser's AudioContext budget. Call
+ * from a user gesture so the browser can unlock the AudioContext.
  */
 export async function runTtsTest(
-  player: WebPlayer,
+  player: SinkAwarePlayer,
   config: TtsTestConfig,
   transcript: string,
   callbacks: RunCallbacks,

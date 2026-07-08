@@ -154,7 +154,12 @@ describe("shareable_resource_registry: TS ↔ DB parity", () => {
     // multiple schemas (e.g. `definition` in agent/app/skill/workflow), so
     // uniqueness is on `schema.table`, not the bare table name.
     const seen = new Map<string, string>();
-    for (const entry of Object.values(SHAREABLE_RESOURCE_REGISTRY)) {
+    // Widen the literal union — `schemaName` is optional and absent on
+    // public-schema entries, so the union type has no common accessor.
+    const entries: ShareableResourceEntry[] = Object.values(
+      SHAREABLE_RESOURCE_REGISTRY,
+    );
+    for (const entry of entries) {
       const qualified = `${entry.schemaName ?? "public"}.${entry.tableName}`;
       const prior = seen.get(qualified);
       if (prior) {

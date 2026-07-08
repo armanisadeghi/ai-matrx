@@ -52,10 +52,12 @@ import { selectNoteById } from "@/features/notes/redux/selectors";
 import {
   selectActiveNoteId,
   selectAttachmentsForThread,
+  selectAudioSessionIdsForThread,
   selectThreadTaskId,
 } from "@/features/war-room/redux/selectors";
 import {
   attachEntityToThread,
+  hydrateThreadTranscripts,
   loadThreadSubtasks,
 } from "@/features/war-room/redux/thunks";
 import { buildThreadAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
@@ -132,6 +134,28 @@ export default function ThreadAgentPanel({
     return () => ac.abort();
   }, [userFileIds, dispatch]);
 
+  // ── Hydrate EVERY audio session's transcript (D14 fence 2) ───────────────
+  // The context builder emits a per-session transcript entry for each of the
+  // thread's `studio_session` assignments; those selectors read the studio
+  // slice, which only ever held the ACTIVE session — hydrate the rest here.
+  // Bumping `transcriptsTick` when the fetches land re-pushes the context so
+  // the entries populate. Loaded-gated inside the thunk — no refetch churn.
+  const audioSessionIds = useAppSelector(
+    selectAudioSessionIdsForThread(threadId),
+  );
+  const audioSessionIdsKey = audioSessionIds.join(",");
+  const [transcriptsTick, setTranscriptsTick] = useState(0);
+  useEffect(() => {
+    if (!audioSessionIdsKey) return undefined;
+    let cancelled = false;
+    void dispatch(hydrateThreadTranscripts(threadId)).then(() => {
+      if (!cancelled) setTranscriptsTick((t) => t + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [audioSessionIdsKey, threadId, dispatch]);
+
   // A builder the assistant hook calls against fresh state. Its identity changes
   // whenever the tile's task/subtasks/note/files change (the values it closes
   // over), which is exactly what re-triggers the hook's context-refresh effect.
@@ -158,6 +182,9 @@ export default function ThreadAgentPanel({
       // Re-push when the attached files' extraction/RAG signals resolve, so the
       // <files> manifest's flags become accurate without a recording/cleanup.
       filesProbeTick,
+      // Re-push when the thread's OTHER audio sessions' transcripts hydrate,
+      // so the per-session `session_NN_cleaned`/`session_NN_raw` entries land.
+      transcriptsTick,
     ],
   );
 
@@ -220,10 +247,11 @@ export default function ThreadAgentPanel({
         // routed to the read dispatcher by name): war_room_read_thread to read
         // ANOTHER thread's chain by its tile id, and war_room_read_resource to
         // read ANY <resources> row (any registered entity type) or a
-        // container's full attachment manifest. NOTE: war_room_read_file is
-        // intentionally NOT armed — reading an attached file's extracted text
-        // is SERVER-side data (data_action read_file_extraction); a client
-        // round-trip would hard-suspend the agent loop.
+        // container's full attachment manifest. NOTE: reading an attached
+        // file's extracted text is the SERVER tool `file_read` (armed via the
+        // War Room agents' agent.definition tool arrays; the client-delegated
+        // war_room_read_file was deleted, D15) — a client round-trip would
+        // hard-suspend the agent loop.
         tools: [
           ...WAR_ROOM_TOOL_NAMES,
           "war_room_read_thread",

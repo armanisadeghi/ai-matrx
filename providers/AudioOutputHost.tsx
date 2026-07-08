@@ -16,7 +16,7 @@
 // at once: the requesting surface can come and go; the audio keeps playing.
 //
 // HOW IT WORKS (same shape as AudioModalHost: thin client host + dynamic impl)
-//   • The heavy speaker (Cartesia SDK + WebSocket + WebPlayer) lives in
+//   • The heavy speaker (Cartesia SDK + WebSocket + SinkAwarePlayer) lives in
 //     AudioOutputHostImpl, loaded via `next/dynamic({ ssr: false })` so the SDK
 //     stays off the server render and out of every page's static graph.
 //   • Surfaces don't import the speaker. They publish a request to the bus:

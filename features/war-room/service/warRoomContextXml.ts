@@ -67,9 +67,10 @@ export interface WarRoomResourceCount {
 /**
  * One file/document attached to a thread, as the agent sees it in the inline
  * `<files>` manifest. `id` is the `cld_files.id` (file) / `udt_documents.id`
- * (document) — the handle `war_room_read_file(file_id=…)` (files) / the `document`
- * tool (documents) read by. `hasExtraction`/`ragIndexed` are best-effort: omitted
- * (undefined) when not yet known rather than guessed (see threadToModel).
+ * (document) — the handle the server `file_read(file_id=…)` tool (files) / the
+ * `document` tool (documents) read by. `hasExtraction`/`ragIndexed` are
+ * best-effort: omitted (undefined) when not yet known rather than guessed (see
+ * threadToModel).
  */
 export interface WarRoomFileModel {
   /** cld_files.id (kind="file") or udt_documents.id (kind="document"). */
@@ -78,7 +79,7 @@ export interface WarRoomFileModel {
   mime?: string;
   kind: "file" | "document";
   /** True when OUR text extraction exists (readable server-side via the
-   *  data_action read_file_extraction operation). */
+   *  `file_read` tool / data_action read_file_extraction operation). */
   hasExtraction?: boolean;
   /** True when the file is indexed for RAG (searchable via rag_search). */
   ragIndexed?: boolean;

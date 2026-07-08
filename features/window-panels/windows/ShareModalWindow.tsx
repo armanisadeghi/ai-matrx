@@ -270,6 +270,7 @@ export default function ShareModalWindow({
                 onMakePublic={makePublic}
                 onRevokePublic={() => revokeAccess({ isPublic: true })}
                 resourceType={resourceType}
+                resourceId={resourceId}
                 resourceName={resourceName}
               />
             </TabsContent>

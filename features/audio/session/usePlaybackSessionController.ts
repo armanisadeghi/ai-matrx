@@ -2,7 +2,7 @@
  * usePlaybackSessionController — bind a phase-based playback hook (no
  * HTMLMediaElement) to the unified audio system.
  *
- * For TTS hooks that drive a Cartesia `WebPlayer` / raw `AudioContext` and track
+ * For TTS hooks that drive a Cartesia `SinkAwarePlayer` / raw `AudioContext` and track
  * their own play/pause/loading state (e.g. `useCartesiaSpeaker`). Declarative:
  * pass the hook's current `active`/`status`/`label` and its transport controls;
  * this registers a registry session + claims `playbackLock` while active, mirrors

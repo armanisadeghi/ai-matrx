@@ -49,6 +49,30 @@ export const selectAdHocContext = (conversationId: string) =>
   );
 
 /**
+ * Wire form for one context entry (D12 fix, 2026-07-07).
+ *
+ * PRIMITIVE values (string / number / boolean) are wrapped in the backend's
+ * rich per-request form `{content, type, label}` so the entry's authored
+ * label + type reach the manifest instead of being dropped. `max_inline_chars`
+ * is deliberately OMITTED: the backend keeps it `null` for a rich dict exactly
+ * as for a bare value (agent-slot value, else the 200-char system default), so
+ * inline-vs-deferred behavior is byte-identical — setting it explicitly would
+ * clobber slots configured with a higher ceiling via the backend's
+ * `min(agent, surface)` rule (see aidream `context_objects.py`).
+ *
+ * Everything else passes through untouched: already-rich dicts
+ * (`buildWorkingDocumentContextValue`, `sessionResourceContext`), raw JSON
+ * dicts/arrays (legacy raw-content form), and null/undefined.
+ */
+export function toWireContextValue(entry: InstanceContextEntry): unknown {
+  const v = entry.value;
+  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+    return { content: v, type: entry.type, label: entry.label };
+  }
+  return v;
+}
+
+/**
  * Build the context dict for the API payload.
  * Returns Record<string, ContextValue> ready for the request.
  */
@@ -63,7 +87,7 @@ export const selectContextPayload =
 
     const payload: Record<string, unknown> = {};
     for (const entry of entries) {
-      payload[entry.key] = entry.value;
+      payload[entry.key] = toWireContextValue(entry);
     }
     return payload;
   };

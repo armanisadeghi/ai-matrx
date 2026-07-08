@@ -674,13 +674,6 @@ export const fetchSharedNotesList = createAsyncThunk<void, void>(
   "notes/fetchSharedNotesList",
   async (_, { dispatch }) => {
     const { data, error } = await supabase.rpc("get_notes_shared_with_me");
-    if (typeof window !== "undefined") {
-      (window as unknown as Record<string, unknown>).__sharedNotesDebug = {
-        rows: data?.length ?? 0,
-        error: error?.message ?? null,
-        at: new Date().toISOString(),
-      };
-    }
     if (error) throw error;
 
     for (const row of data ?? []) {

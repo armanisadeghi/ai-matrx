@@ -24,9 +24,17 @@
 // row (sessions · + · Controls · Custom · record · save-only) — no duplicate
 // header bands eating scroll space.
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, Mic, Plus } from "lucide-react";
+// Type-only import — erased at compile time, so the heavy CleanupPad module
+// stays out of the room bundle (the component itself loads via dynamic below).
+import type { CleanupExternalRecording } from "@/features/transcription-cleanup/components/CleanupPad";
+import {
+  getRoomRecordingController,
+  registerRoomRecordingView,
+} from "@/features/war-room/service/roomRecordingBridge";
+import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
 import { useThreadAudioSessionSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
@@ -103,6 +111,44 @@ export function ThreadAudioTab({
     <ThreadAudioSessionChrome threadId={threadId} compact={compact} />
   );
 
+  // Room-level recording ownership (D14 fence 1): hand the pad an EXTERNAL
+  // controller adapting the room's RoomRecordingController (mounted in
+  // WarRoomShell, registered in roomRecordingBridge). The pad becomes a VIEW —
+  // start/stop/levels route through the room controller, whose session-keyed
+  // ownership + room-scope finalize callbacks survive this tab unmounting.
+  const externalRecording = useMemo<CleanupExternalRecording | null>(() => {
+    if (!sessionId) return null;
+    return {
+      start: () => {
+        const controller = getRoomRecordingController();
+        if (!controller) {
+          // LOUD: inside a war room this must never happen — the controller
+          // mounts with the shell. No silent fallback to a pad-owned recorder.
+          reportWarRoomError(
+            "threadAudio.startRecording",
+            new Error("RoomRecordingController is not mounted"),
+            { toast: "Recording is unavailable — reload the room" },
+          );
+          return;
+        }
+        return controller.start({ threadId, sessionId });
+      },
+      stop: (mode) => {
+        const controller = getRoomRecordingController();
+        if (!controller) {
+          reportWarRoomError(
+            "threadAudio.stopRecording",
+            new Error("RoomRecordingController is not mounted"),
+            { toast: "Couldn't reach the recording controller" },
+          );
+          return;
+        }
+        controller.stop(mode);
+      },
+      registerView: (view) => registerRoomRecordingView(sessionId, view),
+    };
+  }, [threadId, sessionId]);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {!compact ? (
@@ -126,6 +172,7 @@ export function ThreadAudioTab({
             showNewSession={false}
             compact={compact}
             embeddedHeaderSlot={compact ? sessionChrome : undefined}
+            externalRecording={externalRecording ?? undefined}
             sessionListSlot={<ThreadAudioSessionList threadId={threadId} />}
             sections={{
               sidebar: false,

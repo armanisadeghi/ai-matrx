@@ -38,7 +38,7 @@ export const TTS_DEFAULT_SPEED = 1.2;
 export const TTS_DEFAULT_VOLUME = 1.0;
 
 /**
- * Client-side WebPlayer buffer (seconds). Higher than the old 0.25s, which
+ * Client-side player buffer (seconds). Higher than the old 0.25s, which
  * caused stream underruns heard as choppy "pauses"; tune in one place.
  */
 export const TTS_PLAYBACK_BUFFER_SEC = 0.7;

@@ -1,5 +1,6 @@
 "use client";
-import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
+import { CartesiaClient } from "@cartesia/cartesia-js";
+import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
@@ -30,8 +31,8 @@ export function useCartesiaWithPreferences({
   onError,
 }: UseCartesiaWithPreferencesOptions = {}) {
   const websocketRef = useRef<ReturnType<typeof CartesiaClient.prototype.tts.websocket> | null>(null);
-  const playerRef = useRef<WebPlayer | null>(null);
-  // Track whether play() has been called — WebPlayer's AudioContext is lazy-initialized on first play
+  const playerRef = useRef<SinkAwarePlayer | null>(null);
+  // Track whether play() has been called — the player's AudioContext is lazy-initialized on first play
   const hasPlayedRef = useRef(false);
   const [connectionState, setConnectionState] = useState<ConnectionState>("idle");
   const [playerState, setPlayerState] = useState<PlayerState>("idle");
@@ -86,7 +87,7 @@ export function useCartesiaWithPreferences({
       if (websocketRef.current) {
         websocketRef.current.disconnect();
       }
-      // Only stop if play() has been called — WebPlayer throws 'AudioContext not initialized' otherwise
+      // Only stop if play() has been called — the player throws 'AudioContext not initialized' otherwise
       if (playerRef.current && hasPlayedRef.current) {
         playerRef.current.stop();
       }
@@ -112,7 +113,7 @@ export function useCartesiaWithPreferences({
 
         // Create a new player for streaming playback
         if (!playerRef.current || playerState === "idle") {
-          playerRef.current = new WebPlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
+          playerRef.current = new SinkAwarePlayer({ bufferDuration: TTS_PLAYBACK_BUFFER_SEC });
         }
 
         // If player is paused, resume instead of starting new speech

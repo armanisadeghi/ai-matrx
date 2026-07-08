@@ -5,7 +5,7 @@
 // OWNERSHIP (2026-06-23): this hook owns a `useCartesiaStreamingSpeaker` and is
 // now mounted ONCE at app-root by `AudioOutputHost` (providers/AudioOutputHost),
 // NOT inside a tab/route component. That is the whole point: the speaker (and
-// its WebSocket + WebPlayer) no longer unmount on a War Room tab switch or a
+// its WebSocket + SinkAwarePlayer) no longer unmount on a War Room tab switch or a
 // route change, so an in-flight read-aloud keeps playing. The conversation to
 // speak + the on/off toggle are read from `voicePlaybackBus`, which any surface
 // publishes via `requestVoicePlayback(...)`.

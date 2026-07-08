@@ -158,6 +158,7 @@ export function AgentSharePanel({
               onMakePublic={makePublic}
               onRevokePublic={() => revokeAccess({ isPublic: true })}
               resourceType="agent"
+              resourceId={agentId}
               resourceName={agentName}
             />
           )}

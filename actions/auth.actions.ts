@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { promoteGuestToUser } from "@/lib/services/guest-promotion";
+import { stashGuestFingerprintForOAuth } from "@/lib/services/guest-oauth-transfer";
 import { safeRelativePath } from "@/utils/auth/safe-redirect";
 
 export async function signUpAction(formData: FormData): Promise<void> {
@@ -218,6 +219,11 @@ export async function signInWithGoogleAction(formData: FormData) {
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
 
+  // D20: carry the guest fingerprint across the OAuth provider round-trip so
+  // /auth/callback can transfer guest-owned data onto the account. Fail-open:
+  // any failure just means a normal OAuth login with no transfer.
+  await stashGuestFingerprintForOAuth(formData);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -248,6 +254,11 @@ export async function signInWithGithubAction(formData: FormData) {
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
+
+  // D20: carry the guest fingerprint across the OAuth provider round-trip so
+  // /auth/callback can transfer guest-owned data onto the account. Fail-open:
+  // any failure just means a normal OAuth login with no transfer.
+  await stashGuestFingerprintForOAuth(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -354,6 +365,11 @@ export async function signUpWithGoogleAction(formData: FormData) {
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
 
+  // D20: carry the guest fingerprint across the OAuth provider round-trip so
+  // /auth/callback can transfer guest-owned data onto the account. Fail-open:
+  // any failure just means a normal OAuth login with no transfer.
+  await stashGuestFingerprintForOAuth(formData);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -383,6 +399,11 @@ export const signUpWithGithubAction = async (formData: FormData) => {
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
+
+  // D20: carry the guest fingerprint across the OAuth provider round-trip so
+  // /auth/callback can transfer guest-owned data onto the account. Fail-open:
+  // any failure just means a normal OAuth login with no transfer.
+  await stashGuestFingerprintForOAuth(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -414,6 +435,11 @@ export async function signInWithAppleAction(formData: FormData) {
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
 
+  // D20: carry the guest fingerprint across the OAuth provider round-trip so
+  // /auth/callback can transfer guest-owned data onto the account. Fail-open:
+  // any failure just means a normal OAuth login with no transfer.
+  await stashGuestFingerprintForOAuth(formData);
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "apple",
     options: {
@@ -439,6 +465,11 @@ export const signUpWithAppleAction = async (formData: FormData) => {
 
   const callbackUrl = new URL("/auth/callback", origin);
   callbackUrl.searchParams.set("redirectTo", encodeURIComponent(redirectTo));
+
+  // D20: carry the guest fingerprint across the OAuth provider round-trip so
+  // /auth/callback can transfer guest-owned data onto the account. Fail-open:
+  // any failure just means a normal OAuth login with no transfer.
+  await stashGuestFingerprintForOAuth(formData);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "apple",

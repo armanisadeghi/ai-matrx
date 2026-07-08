@@ -3,9 +3,11 @@
  *
  * One-time reveal of the per-session AES key returned by /redact/mask.
  *
- * The key is also saved in IndexedDB (see ./session-keys.ts) automatically.
- * This dialog exists for the security ritual:
- *   - Tell the user what the key is + that there's no recovery.
+ * The key is also saved in IndexedDB (see ./session-keys.ts) automatically,
+ * and — when the KMS escrow pipeline is up — a client-wrapped copy is
+ * escrowed for org recovery (see ./escrow.ts, closes D31). This dialog
+ * exists for the security ritual:
+ *   - Tell the user what the key is + what recovery exists (escrowStatus).
  *   - Offer "Copy to clipboard" + "Download .key.json" for offline backup.
  *   - Require an explicit acknowledge before closing.
  *
@@ -28,14 +30,19 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { downloadSessionKey, type StoredSession } from "./session-keys";
 
+/** null = escrow not attempted (e.g. non-reversible mode). */
+export type EscrowStatus = "escrowed" | "failed" | null;
+
 interface KeyHandoffProps {
   record: StoredSession | null;
+  escrowStatus?: EscrowStatus;
   onClose: () => void;
   onDownloadMasked?: () => void;
 }
 
 export function KeyHandoff({
   record,
+  escrowStatus = null,
   onClose,
   onDownloadMasked,
 }: KeyHandoffProps) {
@@ -72,8 +79,10 @@ export function KeyHandoff({
           </DialogTitle>
           <DialogDescription>
             This key restores the original values from the masked PDF.{" "}
-            <strong>It is shown exactly once.</strong> Without it, no one
-            (including us) can decrypt the originals — that's the point.
+            <strong>It is shown exactly once.</strong>
+            {escrowStatus === "escrowed"
+              ? " A KMS-wrapped copy is escrowed for your organization, so an organization admin can recover it if this browser's data is lost."
+              : " Without it, no one (including us) can decrypt the originals — that's the point."}
           </DialogDescription>
         </DialogHeader>
 
@@ -114,10 +123,21 @@ export function KeyHandoff({
             ) : null}
           </div>
 
+          {escrowStatus === "failed" ? (
+            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
+              Organization escrow FAILED — this key exists only in this
+              browser. Clearing site data makes the originals permanently
+              unrecoverable. Download the key file now and report the escrow
+              failure to your administrator.
+            </div>
+          ) : null}
+
           <div className="rounded border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">
             We've also saved this in your browser's local store. You can find
-            past sessions in the Redact panel. Clearing site data wipes them —
-            keep an external copy for important work.
+            past sessions in the Redact panel.{" "}
+            {escrowStatus === "escrowed"
+              ? "If site data is cleared, use \u201cRecover via organization\u201d in the Restore dialog."
+              : "Clearing site data wipes them — keep an external copy for important work."}
           </div>
 
           <label className="flex items-center gap-2 text-xs">
@@ -126,7 +146,9 @@ export function KeyHandoff({
               onCheckedChange={(v) => setAcknowledged(v === true)}
             />
             <span>
-              I understand this key cannot be recovered if I lose it.
+              {escrowStatus === "escrowed"
+                ? "I understand this key is shown once here, with organization escrow as the only recovery path."
+                : "I understand this key cannot be recovered if I lose it."}
             </span>
           </label>
         </div>

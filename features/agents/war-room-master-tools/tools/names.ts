@@ -16,16 +16,21 @@
  *     are armed ONLY on the master conversation, never on a tile's agent.
  *
  * NAMESPACE: the `war_room_` prefix is shared with the per-tile war-room tools
- * but the NAMES are distinct (`_read_thread` / `_read_file` / `_message_thread`
- * / `_create_room` / `_rename_room`), so a conversation that armed one family
- * never accidentally dispatches the other.
+ * but the NAMES are distinct (`_read_thread` / `_read_resource` /
+ * `_message_thread` / `_create_room` / `_rename_room`), so a conversation that
+ * armed one family never accidentally dispatches the other.
+ *
+ * READING FILES IS A SERVER TOOL: an attached file's extracted text is read by
+ * the server-side `file_read` tool (armed on the three War Room
+ * agent.definition rows — no client arming, no per-file manifest plumbing, no
+ * hard-suspend). The client-delegated `war_room_read_file` was deleted (D15).
  *
  * REUSED ON THE TILE AGENT: the read-only members (`war_room_read_thread`,
- * `war_room_read_file`) are also armed on a per-thread TILE conversation by
+ * `war_room_read_resource`) are also armed on a per-thread TILE conversation by
  * `ThreadAgentPanel` — routing keys off the NAME (this family ⇒ the read
  * dispatcher, no HITL), not the surface — so a thread agent can read a sibling
- * thread's chain and the extracted text of its own attached files without an
- * approval pause. The write/orchestration members stay master/room-only.
+ * thread's chain and any attached resource without an approval pause. The
+ * write/orchestration members stay master/room-only.
  *
  * DESIGN — NOTIFY-AND-WATCH, not approve-each: unlike the per-tile war-room
  * tools (every write is HITL-gated), the master's actions run WITHOUT a
@@ -38,7 +43,6 @@
 
 export const WAR_ROOM_MASTER_TOOL_NAMES = [
   "war_room_read_thread",
-  "war_room_read_file",
   "war_room_read_resource",
   "war_room_message_thread",
   "war_room_create_room",

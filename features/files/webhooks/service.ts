@@ -25,7 +25,7 @@ export function generateWebhookSecret(): string {
 // Every column EXCEPT `secret` — the signing secret is shown once at create /
 // rotate time and must never come back over the wire on a list read.
 const WEBHOOK_LIST_COLUMNS =
-  "id, owner_id, target_url, description, is_active, event_types, resource_types, " +
+  "id, owner_id, target_url, description, is_active, organization_id, event_types, resource_types, " +
   "last_attempt_at, last_success_at, consecutive_failures, max_consecutive_failures, created_at, updated_at";
 
 export async function listWebhooks(): Promise<Webhook[]> {
@@ -57,6 +57,7 @@ export async function createWebhook(
       target_url: input.target_url,
       secret,
       description: input.description ?? null,
+      organization_id: input.organization_id ?? null,
       event_types: input.event_types ?? null,
       resource_types: input.resource_types ?? null,
       is_active: true,
@@ -118,6 +119,21 @@ export async function sendTestWebhook(webhookId: string): Promise<void> {
     p_webhook_id: webhookId,
   });
   if (error) throw new Error(`Failed to send test event: ${error.message}`);
+}
+
+/**
+ * Manually re-enqueue a settled delivery (files.webhook_redeliver RPC —
+ * SECURITY DEFINER, owner-checked against auth.uid()). Re-signs the canonical
+ * event payload and re-posts immediately; the row flips back to `pending` and
+ * the reconcile tick settles it. Test pings (no activity_log_id) are not
+ * redeliverable — use `sendTestWebhook`.
+ */
+export async function redeliverWebhookDelivery(deliveryId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await filesDb(supabase).rpc("webhook_redeliver", {
+    p_delivery_id: deliveryId,
+  });
+  if (error) throw new Error(`Failed to redeliver: ${error.message}`);
 }
 
 export async function listDeliveries(

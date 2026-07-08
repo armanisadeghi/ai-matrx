@@ -6,31 +6,25 @@
 // WHY THIS EXISTS
 // ---------------
 // Two unrelated playback paths exist: real `HTMLMediaElement`s (`<audio>` /
-// `<video>` via `InlineMediaRef`) and the Cartesia TTS `WebPlayer` (a private
-// `AudioContext` we can't reach). The browser exposes TWO sink APIs for these:
+// `<video>` via `InlineMediaRef`) and Web Audio playback via our
+// `SinkAwarePlayer` (features/audio/sinkAwarePlayer.ts — the fork of the
+// Cartesia SDK WebPlayer). The browser exposes TWO sink APIs for these:
 //
 //   • `HTMLMediaElement.setSinkId(deviceId)` — Chrome/Firefox; routes one media
-//     element. Used directly by `InlineMediaRef`.
+//     element. Used directly by `InlineMediaRef` via `applySinkToMediaElement`.
 //   • `AudioContext.setSinkId(deviceId)` — Chromium-only; routes a Web Audio
-//     graph. The Cartesia `WebPlayer` builds (and discards, per utterance) a
-//     hard-private `AudioContext` with no accessible handle, so we cannot call
-//     this on it directly. Instead `installAudioContextSinkRouting()` patches
-//     the `AudioContext` constructor so EVERY newly-created context inherits the
-//     current preferred sink — except contexts that opt out (the mic-analysis
-//     meter and the voice-agent capture keep-alive, which are silent or
-//     input-only and must not be re-routed).
+//     graph. `SinkAwarePlayer` owns its per-utterance contexts and calls this
+//     itself: it reads this store at context creation and subscribes for
+//     mid-utterance device changes. (The old global `AudioContext` constructor
+//     monkeypatch — `installAudioContextSinkRouting` + the `NO_SINK_ROUTING`
+//     opt-out sentinel — is DELETED; nothing patches globals anymore.)
 //
 // SAFARI has NEITHER API. Everything here feature-detects and no-ops gracefully;
 // on Safari the user picks the output device in macOS/iOS settings.
 //
 // One store, one subscribe channel, two appliers. The audio-devices manager is
-// the only writer (`setPreferredOutputDeviceId`); InlineMediaRef + the Cartesia
-// host are the readers.
-
-/** Sentinel marking an AudioContext that must NOT be auto-routed to the
- *  preferred sink (mic-analysis meter, capture keep-alive). Set it on the
- *  context instance right after construction. */
-export const NO_SINK_ROUTING = "__matrxNoSinkRouting" as const;
+// the only writer (`setPreferredOutputDeviceId`); InlineMediaRef +
+// SinkAwarePlayer are the readers.
 
 type SinkListener = (deviceId: string) => void;
 
@@ -38,14 +32,11 @@ interface SinkState {
   /** Current preferred output deviceId. "" = system default. */
   deviceId: string;
   listeners: Set<SinkListener>;
-  /** Whether the AudioContext constructor patch has been installed. */
-  ctxPatched: boolean;
 }
 
 const state: SinkState = {
   deviceId: "",
   listeners: new Set(),
-  ctxPatched: false,
 };
 
 /** True when `HTMLMediaElement.setSinkId` exists (Chrome/Firefox, not Safari). */
@@ -82,8 +73,8 @@ export function getPreferredOutputDeviceId(): string {
 
 /**
  * Set the preferred output device. Notifies subscribers (InlineMediaRef
- * re-applies to its live media elements; the AudioContext patch picks it up for
- * the next context). Idempotent — a no-op when unchanged.
+ * re-applies to its live media elements; SinkAwarePlayer re-routes any live
+ * playback context mid-utterance). Idempotent — a no-op when unchanged.
  */
 export function setPreferredOutputDeviceId(deviceId: string): void {
   if (state.deviceId === deviceId) return;
@@ -126,79 +117,11 @@ export async function applySinkToMediaElement(
   try {
     await elWithSink.setSinkId?.(target);
   } catch (err) {
-     
+
     console.error(
       "[audioOutputSink] setSinkId on media element failed — falling back to " +
         "the system default device. Requested device may be unavailable.",
       { deviceId: target, error: err },
     );
-  }
-}
-
-/**
- * Install a one-time patch on the `AudioContext` constructor so every new
- * context inherits the current preferred sink. This is the ONLY way to route
- * the Cartesia `WebPlayer`'s private, per-utterance context (Chromium only).
- *
- * Contexts created by the mic-analysis meter / voice-agent capture mark
- * themselves with `(ctx as any)[NO_SINK_ROUTING] = true` immediately after
- * construction and are skipped. Safe to call repeatedly — installs once.
- */
-export function installAudioContextSinkRouting(): void {
-  if (state.ctxPatched) return;
-  if (typeof window === "undefined") return;
-  if (!audioContextSinkSupported()) return; // Safari/Firefox: nothing to patch
-  state.ctxPatched = true;
-
-  const patch = (CtorName: "AudioContext" | "webkitAudioContext") => {
-    const w = window as unknown as Record<string, unknown>;
-    const Original = w[CtorName] as
-      | (new (...args: unknown[]) => AudioContext)
-      | undefined;
-    if (typeof Original !== "function") return;
-    if ((Original as { __matrxSinkPatched?: boolean }).__matrxSinkPatched) {
-      return;
-    }
-
-    const Patched = function (
-      this: unknown,
-      ...args: unknown[]
-    ): AudioContext {
-      const instance = new Original(...args);
-      // Defer one microtask so the creator can set NO_SINK_ROUTING first.
-      queueMicrotask(() => {
-        const marked = (instance as unknown as Record<string, unknown>)[
-          NO_SINK_ROUTING
-        ];
-        if (marked) return;
-        const target = state.deviceId;
-        if (!target) return; // system default — leave the context alone
-        const ctxWithSink = instance as AudioContext & {
-          setSinkId?: (id: string) => Promise<void>;
-        };
-        ctxWithSink.setSinkId?.(target).catch((err: unknown) => {
-           
-          console.error(
-            "[audioOutputSink] setSinkId on AudioContext failed — output stays " +
-              "on the system default device.",
-            { deviceId: target, error: err },
-          );
-        });
-      });
-      return instance;
-    } as unknown as new (...args: unknown[]) => AudioContext;
-
-    // Preserve prototype + statics so instanceof and feature-detects survive.
-    Patched.prototype = Original.prototype;
-    Object.setPrototypeOf(Patched, Original);
-    (Patched as { __matrxSinkPatched?: boolean }).__matrxSinkPatched = true;
-    w[CtorName] = Patched;
-  };
-
-  patch("AudioContext");
-  if (
-    (window as unknown as { webkitAudioContext?: unknown }).webkitAudioContext
-  ) {
-    patch("webkitAudioContext");
   }
 }

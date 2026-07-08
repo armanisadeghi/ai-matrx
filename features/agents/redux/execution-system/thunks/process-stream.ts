@@ -50,6 +50,7 @@ import {
   type ConversationIdData,
   type ConversationLabeledData,
   type ContextChangedData,
+  type ContextDeltaData,
   type ContextPersistedData,
   type ContextPersistFailedData,
   type MemoryBufferSpawnedData,
@@ -104,6 +105,7 @@ import {
 } from "../observational-memory/observational-memory.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
 import {
+  applyAgentWorkingDocDelta,
   reflectAgentMaterializedThunk,
   syncWorkingDocumentFromAgentThunk,
 } from "../instance-working-document/instance-working-document.thunks";
@@ -339,6 +341,12 @@ export async function processStream({
   let renderBlockEvents = 0;
   let warningEvents = 0;
   let infoEvents = 0;
+  // Context keys whose live `context_delta` events applied cleanly this
+  // stream. While a key is here, its `context_changed` events skip the
+  // mid-turn re-read (the content is already reflected — and fresher than the
+  // row, since the writeback is fire-and-forget). `context_persisted` always
+  // re-reads: it latches the new row version and heals any divergence.
+  const contextDeltaAppliedKeys = new Set<string>();
   let recordReservedEvents = 0;
   let recordUpdateEvents = 0;
   let resourceChangedEvents = 0;
@@ -777,13 +785,35 @@ export async function processStream({
               data: d as MemoryErrorData,
             }),
           );
+        } else if (d.type === "context_delta") {
+          // LIVE agent edit (D9): the event carries the edit's CONTENT (splice
+          // or full text), emitted the moment each ctx_patch lands server-side
+          // — before the DB writeback. Apply it synchronously so the document
+          // streams in like chat tokens instead of appearing after the turn.
+          const cd = d as ContextDeltaData;
+          if (docKindForContextKey(cd.key) === "working") {
+            const applied = dispatch(
+              applyAgentWorkingDocDelta({ conversationId, delta: cd }),
+            );
+            if (applied) {
+              contextDeltaAppliedKeys.add(cd.key);
+            } else {
+              // Fall back to the re-read path for the REST of the stream too:
+              // once one delta is skipped, later splices are against server
+              // content our copy no longer matches.
+              contextDeltaAppliedKeys.delete(cd.key);
+            }
+          }
         } else if (
           d.type === "context_changed" ||
           d.type === "context_persisted"
         ) {
           // A mutable context object was patched/persisted server-side. The
           // event carries no new content, so for the working document we re-read
-          // its bound source to reflect the agent's edit.
+          // its bound source to reflect the agent's edit — unless this turn's
+          // `context_delta` already applied it (context_changed only; the
+          // persisted event ALWAYS re-reads to latch the new row version and
+          // heal any delta divergence).
           const cd = d as ContextChangedData | ContextPersistedData;
           // The map is the single routing authority for doc-like context keys.
           // Only the working kind is agent-writable (scratch never emits these).
@@ -799,7 +829,10 @@ export async function processStream({
                   documentId: persisted.source_id,
                 }),
               );
-            } else {
+            } else if (
+              d.type === "context_persisted" ||
+              !contextDeltaAppliedKeys.has(cd.key)
+            ) {
               void dispatch(
                 syncWorkingDocumentFromAgentThunk({ conversationId }),
               );

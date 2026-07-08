@@ -19,7 +19,14 @@ import {
   CircleAlert,
   CircleCheck,
   Clock,
+  Building2,
+  RefreshCw,
 } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectOrganizationId,
+  selectOrganizationName,
+} from "@/lib/redux/slices/appContextSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +39,7 @@ import {
   deleteWebhook,
   listDeliveries,
   listWebhooks,
+  redeliverWebhookDelivery,
   rotateWebhookSecret,
   sendTestWebhook,
   updateWebhook,
@@ -70,7 +78,14 @@ function SecretReveal({ secret }: { secret: string }) {
   );
 }
 
-function DeliveryRow({ d }: { d: WebhookDelivery }) {
+function DeliveryRow({
+  d,
+  onRefresh,
+}: {
+  d: WebhookDelivery;
+  onRefresh: () => void;
+}) {
+  const [redelivering, setRedelivering] = useState(false);
   const icon =
     d.status === "delivered" ? (
       <CircleCheck className="size-3.5 text-emerald-500" />
@@ -79,17 +94,52 @@ function DeliveryRow({ d }: { d: WebhookDelivery }) {
     ) : (
       <CircleAlert className="size-3.5 text-red-500" />
     );
+
+  const handleRedeliver = async () => {
+    setRedelivering(true);
+    try {
+      await redeliverWebhookDelivery(d.id);
+      toast.success("Redelivery sent — it will settle within ~30s");
+      onRefresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Redeliver failed");
+    } finally {
+      setRedelivering(false);
+    }
+  };
+
+  // Manual redeliver applies to SETTLED real-event deliveries. Test pings
+  // (no activity_log_id) are re-sent via the webhook's Send test button.
+  const canRedeliver = d.status !== "pending" && d.activity_log_id !== null;
+
   return (
     <div className="flex items-center gap-2 py-1 text-xs">
       {icon}
       <span className="w-16 capitalize text-foreground">{d.status}</span>
       <span className="w-14 text-muted-foreground">{d.http_status ?? "—"}</span>
+      <span className="w-16 text-muted-foreground" title="Request → response latency">
+        {d.latency_ms !== null ? `${d.latency_ms} ms` : "—"}
+      </span>
       <span className="flex-1 truncate text-muted-foreground">
         {d.error_message ?? `attempt ${d.attempt}`}
       </span>
       <span className="text-muted-foreground">
         {new Date(d.created_at).toLocaleString()}
       </span>
+      {canRedeliver && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="size-6"
+          disabled={redelivering}
+          onClick={handleRedeliver}
+          title="Redeliver this event now"
+        >
+          <RefreshCw
+            className={`size-3.5 ${redelivering ? "animate-spin" : ""}`}
+          />
+        </Button>
+      )}
     </div>
   );
 }
@@ -186,6 +236,11 @@ function WebhookCard({
             </p>
           )}
           <div className="mt-2 flex flex-wrap gap-1">
+            {webhook.organization_id !== null && (
+              <Badge variant="secondary" className="gap-1">
+                <Building2 className="size-3" /> Org-wide
+              </Badge>
+            )}
             {webhook.event_types === null ? (
               <Badge variant="secondary">All events</Badge>
             ) : (
@@ -266,7 +321,16 @@ function WebhookCard({
           ) : deliveries.length === 0 ? (
             <p className="text-xs text-muted-foreground">No deliveries yet.</p>
           ) : (
-            deliveries.map((d) => <DeliveryRow key={d.id} d={d} />)
+            deliveries.map((d) => (
+              <DeliveryRow
+                key={d.id}
+                d={d}
+                onRefresh={() => {
+                  // Give the reconcile tick a moment, then refresh.
+                  setTimeout(() => void loadDeliveries(), 600);
+                }}
+              />
+            ))
           )}
         </div>
       )}
@@ -280,8 +344,11 @@ export function WebhooksManager() {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [allEvents, setAllEvents] = useState(true);
+  const [orgWide, setOrgWide] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const organizationName = useAppSelector(selectOrganizationName);
   const [justCreatedSecret, setJustCreatedSecret] = useState<string | null>(
     null,
   );
@@ -309,6 +376,7 @@ export function WebhooksManager() {
       const created = await createWebhook({
         target_url: url.trim(),
         description: description.trim() || null,
+        organization_id: orgWide && organizationId ? organizationId : null,
         event_types: allEvents ? null : Array.from(selected),
       });
       setJustCreatedSecret(created.secret ?? null);
@@ -316,6 +384,7 @@ export function WebhooksManager() {
       setDescription("");
       setSelected(new Set());
       setAllEvents(true);
+      setOrgWide(false);
       setCreating(false);
       toast.success("Webhook created");
       await reload();
@@ -370,6 +439,21 @@ export function WebhooksManager() {
               placeholder="What is this endpoint for?"
             />
           </div>
+          {organizationId && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="wh-org"
+                checked={orgWide}
+                onCheckedChange={(v) => setOrgWide(Boolean(v))}
+              />
+              <Label htmlFor="wh-org" className="font-normal">
+                Org-wide — also fire for events from anyone in{" "}
+                <span className="font-medium">
+                  {organizationName ?? "your organization"}
+                </span>
+              </Label>
+            </div>
+          )}
           <div>
             <div className="mb-2 flex items-center gap-2">
               <Checkbox
