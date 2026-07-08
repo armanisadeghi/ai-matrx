@@ -1448,6 +1448,7 @@ export type Database = {
           priority: number
           provider_model_id: string
           service_id: string
+          token_billed: boolean
           updated_at: string
           updated_by: string | null
           usage_basis: string | null
@@ -1471,6 +1472,7 @@ export type Database = {
           priority?: number
           provider_model_id: string
           service_id: string
+          token_billed?: boolean
           updated_at?: string
           updated_by?: string | null
           usage_basis?: string | null
@@ -1494,6 +1496,7 @@ export type Database = {
           priority?: number
           provider_model_id?: string
           service_id?: string
+          token_billed?: boolean
           updated_at?: string
           updated_by?: string | null
           usage_basis?: string | null
@@ -1839,6 +1842,7 @@ export type Database = {
           priority: number | null
           service_name: string | null
           service_slug: string | null
+          token_billed: boolean | null
           usage_basis: string | null
         }
         Relationships: [
