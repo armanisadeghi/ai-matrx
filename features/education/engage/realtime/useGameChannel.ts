@@ -75,7 +75,10 @@ export function useGameChannel({
     const supabase = createClient();
     const channelName = `edu-game:${roomId}`;
     const channel = supabase.channel(channelName, {
-      config: { presence: { key: me.userId } },
+      // self:true echoes our own score broadcasts back so the sender's OWN row
+      // in the live scoreboard updates from their answers (presence sync alone
+      // wouldn't refresh it until someone else scored).
+      config: { presence: { key: me.userId }, broadcast: { self: true } },
     });
     channelRef.current = channel;
 

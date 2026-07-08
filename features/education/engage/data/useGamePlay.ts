@@ -46,6 +46,12 @@ export interface UseGamePlayArgs {
   seed?: number;
   /** Solo: start on load. Multiplayer: false — call `start()` on the host signal. */
   autoStart?: boolean;
+  /**
+   * Gate the queue load. Defaults true; multiplayer passes `!!room` so the load
+   * (and session creation) waits until the room source is known — avoiding an
+   * orphaned 'due' session created against the null-room first render.
+   */
+  enabled?: boolean;
   /** Multiplayer: broadcast the mutable scoreboard after each answer. */
   onScore?: (fields: {
     score: number;
@@ -94,6 +100,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     mode,
     roomId = null,
     autoStart = mode === "solo",
+    enabled = true,
     onScore,
     onFinish,
   } = args;
@@ -121,9 +128,18 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   const startedAtRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
   const seedRef = useRef(args.seed ?? Math.floor(Math.random() * 1e9));
+  // Authoritative outcome accumulators (refs, not state): the finish report must
+  // read final values even though the last recordAttempt resolves async. Mirror
+  // the display state below but are the source of truth for the outcome.
+  const masteryGainRef = useRef(0);
+  const pendingAttemptsRef = useRef<Promise<unknown>[]>([]);
 
   // ── Load the queue + open a session. ──────────────────────────────────────
   useEffect(() => {
+    // Don't load until the caller is ready (multiplayer waits for the room to
+    // resolve — otherwise the first render's null-room args would open an
+    // orphaned 'due' session and then reload the real queue).
+    if (!enabled) return;
     let cancelled = false;
     void (async () => {
       setStatus("loading");
@@ -208,7 +224,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     return () => {
       cancelled = true;
     };
-  }, [sourceKind, sourceSetId, mode, roomId]);
+  }, [enabled, sourceKind, sourceSetId, mode, roomId]);
 
   // Solo autostart once the queue is ready.
   useEffect(() => {
@@ -301,9 +317,11 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     if (usedShield) setShieldArmed(false);
 
     // Record to the spine + measure REAL mastery gain from the FSRS delta.
+    // Track the in-flight promise so finish() can await it — otherwise the last
+    // answer's gain (→ league standing + badges) is lost to the async race.
     const prior = masteryRef.current[q.card.id];
     const priorR = currentRetrievability(prior) ?? 0;
-    void studyService
+    const attemptPromise = studyService
       .recordAttempt({
         itemType: GAME_ITEM_TYPE,
         itemId: q.card.id,
@@ -323,8 +341,12 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
           ? Number(res.data.mastery.retrievability)
           : priorR;
         const gain = Math.max(0, newR - priorR);
-        if (gain > 0) setMasteryGain((g) => g + gain);
+        if (gain > 0) {
+          masteryGainRef.current += gain;
+          setMasteryGain((g) => g + gain);
+        }
       });
+    pendingAttemptsRef.current.push(attemptPromise);
 
     // Broadcast the new scoreboard (multiplayer).
     if (onScore) {
@@ -379,12 +401,14 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     }
   };
 
-  // Report the finalized outcome exactly once, reading live state.
+  // Report the finalized outcome exactly once, reading live state. Await any
+  // in-flight attempt writes first so masteryGain (the headline "real learning"
+  // metric that feeds the league + badges) includes the final answer(s).
   const finishReportedRef = useRef(false);
   useEffect(() => {
     if (status !== "finished" || finishReportedRef.current) return;
     finishReportedRef.current = true;
-    onFinish?.({
+    const outcomeBase = {
       roomId,
       sessionId: session?.id ?? null,
       mode,
@@ -392,12 +416,14 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       correctCount,
       answeredCount,
       bestStreak,
-      masteryGain,
       currencyEarned: currency,
       durationMs: startedAtRef.current ? Date.now() - startedAtRef.current : 0,
       sourceKind,
       sourceSetId: sourceSetId ?? null,
       sourceTitle: args.sourceTitle ?? null,
+    };
+    void Promise.allSettled(pendingAttemptsRef.current).then(() => {
+      onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);

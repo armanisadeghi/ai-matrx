@@ -8446,6 +8446,69 @@ export type Database = {
           },
         ]
       }
+      content_certification: {
+        Row: {
+          certified_at: string
+          certified_by: string
+          id: string
+          note: string | null
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          certified_at?: string
+          certified_by: string
+          id?: string
+          note?: string | null
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          certified_at?: string
+          certified_by?: string
+          id?: string
+          note?: string | null
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: []
+      }
+      deck_suggestion: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          owner_id: string
+          resolved_at: string | null
+          resource_id: string
+          resource_type: string
+          status: string
+          suggested_by: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          owner_id: string
+          resolved_at?: string | null
+          resource_id: string
+          resource_type?: string
+          status?: string
+          suggested_by: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          resolved_at?: string | null
+          resource_id?: string
+          resource_type?: string
+          status?: string
+          suggested_by?: string
+        }
+        Relationships: []
+      }
       fc_card: {
         Row: {
           back: string
@@ -26144,6 +26207,20 @@ export type Database = {
           total_count: number
         }[]
       }
+      edu_certify_content: {
+        Args: {
+          p_note?: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Database["education"]["Tables"]["content_certification"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "content_certification"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       edu_learn_doc_admin_list: {
         Args: never
         Returns: Database["education"]["Tables"]["learn_doc"]["Row"][]
@@ -26185,6 +26262,34 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      edu_resolve_suggestion: {
+        Args: { p_id: string; p_status: string }
+        Returns: Database["education"]["Tables"]["deck_suggestion"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "deck_suggestion"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_suggest_edit: {
+        Args: {
+          p_body: string
+          p_resource_id: string
+          p_resource_type?: string
+        }
+        Returns: Database["education"]["Tables"]["deck_suggestion"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "deck_suggestion"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edu_uncertify_content: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: undefined
       }
       encrypt_mcp_token: { Args: { p_plaintext: string }; Returns: string }
       ensure_folder_chain: {

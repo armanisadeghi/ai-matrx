@@ -11,11 +11,11 @@
 // the two drift on card shape.
 
 import { fcService } from "@/features/flashcards/data/fcService";
-import { FC_AGENTS } from "@/features/flashcards/data/agents";
 import { EDGE_ROLE } from "@/features/flashcards/data/types";
 import type { NewCardInput } from "@/features/flashcards/data/types";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
+import { CONVERT_AGENTS } from "../agents";
 import { runAgentExtraction } from "../runAgentExtraction";
 import { mergeTrustEnvelopes } from "../trustMerge";
 import type {
@@ -138,17 +138,18 @@ async function run(
   const { source, options } = request;
   const anchorFileId = source.ref?.fileId ?? "";
   // The agent grounds cards against these markers + echoes document_id back.
-  const docId = source.ref?.processedDocumentId ?? anchorFileId || "ingest";
+  const docId = (source.ref?.processedDocumentId ?? anchorFileId) || "ingest";
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-    agentId: FC_AGENTS.generateFromSource,
+    agentId: CONVERT_AGENTS.deckFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
     variables: {
       source_content: chunkForGrounding(source.text),
-      document_id: docId,
+      title: source.title ?? "Study material",
       count: String(options?.count ?? 15),
       difficulty: options?.difficulty ?? "Mixed",
+      focus: options?.focus ?? "",
     },
     onRequestId: ctx.onRequestId,
   });

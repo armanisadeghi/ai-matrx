@@ -98,6 +98,9 @@ export function MultiplayerGameImpl({
     roomId,
     seed: userId ? seedFromString(`${userId}:${roomId}`) : undefined,
     autoStart: false,
+    // Gate the queue load until the room (source deck/config) is resolved —
+    // otherwise the null-room first render opens an orphaned 'due' session.
+    enabled: Boolean(room),
     onScore: channel.sendScore,
     onFinish: (outcome) => {
       setFinalOutcome(outcome);

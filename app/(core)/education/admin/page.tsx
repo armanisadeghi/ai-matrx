@@ -93,6 +93,27 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/education/library",
+      label: "Community Library (P6-C)",
+      description:
+        "Public browse over community decks (edu_public_decks): search, Certified-only facet, view (P7 /p/e), duplicate-to-edit, suggest-edit. Super-admins certify inline.",
+      filePath: "app/(core)/education/library/page.tsx",
+      status: "Live",
+      notes: [
+        "Certified tier: education.content_certification (super-admin RPCs edu_certify_content/edu_uncertify_content)",
+        "Contribution flywheel: education.deck_suggestion (edu_suggest_edit / edu_resolve_suggestion)",
+        "Feature: features/education/library/**",
+      ],
+    },
+    {
+      url: "/education/library/suggestions",
+      label: "Suggestion inbox",
+      description:
+        "Deck owner's inbox of suggest-edits on their decks (accept / decline). Signed-in only; RLS + RPC gate to owner.",
+      filePath: "app/(core)/education/library/suggestions/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/education/subjects/quick-math",
       label: "Quick Math (relocated)",
       description:
