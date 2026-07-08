@@ -13,6 +13,7 @@ import { ACCESS_TIER_META, EDU_AXIS_BY_ID, EDU_BASE, EDU_LEARN_SEGMENT, EDU_WORK
 import { getAxisEntry } from "../data/registry";
 import { EDU_TOOL_BY_SLUG } from "../data/tools";
 import { getPublishedLearnDocTitles } from "../publishing/queries";
+import { ExamHubActions } from "./ExamHubActions";
 import { siteConfig } from "@/config/extras/site";
 import type { AxisEntry, EduAxisId, EduSection } from "../types";
 
@@ -150,6 +151,10 @@ export async function AxisDetail({ axisId, entry }: AxisDetailProps) {
             : undefined
         }
       />
+
+      {/* Exam hub: marketing → product entry points (mock exam, quiz, guides,
+          community decks). Only for exam-prep entries. */}
+      {axisId === "exam-prep" ? <ExamHubActions entry={entry} /> : null}
 
       <SectionRenderer sections={sections} />
 

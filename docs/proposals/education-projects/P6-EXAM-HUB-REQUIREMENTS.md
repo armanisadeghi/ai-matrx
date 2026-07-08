@@ -46,6 +46,21 @@ free-response (FRQ)**. For that, P1's service must keep the following first-clas
 `examType`/`exam_type` and the single-item written-response grading path stable — the exam
 hub binds to them.
 
+## One small ask (forward-compatible, non-blocking)
+
+Phase B shipped exam-hub CTAs on the exam-prep pages that deep-link into P1's create
+surface with query params:
+
+```
+/education/practice-tests/new?examType=<slug>&topic=<Exam Name>&depth=exam
+/education/quizzes/new?examType=<slug>&topic=<Exam Name>&depth=exam
+```
+
+`AssessmentCreate` doesn't read these yet, so today the user re-selects the exam. **When
+convenient**, prefill the create surface from these params (seed `topic`, `examType`,
+`depth` from `useSearchParams`, wrapped in a Suspense boundary). Harmless until then — the
+links just land on the create page. This is the only P1-side wiring the exam hub wants.
+
 ## Contract P6 Phase B will consume
 
 ```ts
