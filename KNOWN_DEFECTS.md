@@ -12,6 +12,19 @@ The ledger of known bugs and gaps on the frontend. Twin of aidream's `KNOWN_DEFE
 
 ## OPEN
 
+### D34 — `api_class` tear-out left three truth-vs-code gaps (2026-07-07)
+Filed during the `api_class` removal (`b8a0cbb94`, `9fcffb97d`, `ecc66217d`). The feedback MCP rejected the placeholder agent id (FK wall), so they live here. All verified against live Supabase `txzxabzwovsujtloxrus`.
+
+1. **Bad capabilities data.** `ai.model_definition` row `meta-llama/llama-4-scout-17b-16e-instruct` (deprecated, `groq_standard`) has `capabilities.output = ["image","text"]`. A Groq Llama text model emits no images. It is the ONLY row of 205 where the new capabilities-derived `isMediaModel()` (`features/ai-models/usageBasis.ts`) disagrees with the old `api_class` regex — it now (correctly, fail-closed) raises a "missing usage_basis" pricing error. **Fix:** correct `capabilities.output` to `["text"]`, or delete the deprecated row.
+
+2. **Two canonical capability fields are silently dropped on read** (`features/ai-models/capabilities/types.ts`):
+   - `interaction: "extraction"` exists on 5 live rows (fastino/GLiNER2). `INTERACTION_MODES` is `["turn","realtime"]`, so `isInteractionMode()` rejects it and `parseCapabilities` coerces those models to `"turn"` — `features/agents/runtime/runtime-resolver.ts` then treats extraction models as ordinary chat models. Live: `turn:198, extraction:5, realtime:2`.
+   - `capabilities.multilingual` is populated on 47 rows but absent from `ModelCapabilities`, so it is discarded.
+
+   **Fix:** add `"extraction"` to `INTERACTION_MODES` and `multilingual` to `ModelCapabilities`; check every `switch` on `interaction` for exhaustiveness.
+
+3. **`TOKEN_BILLED_MEDIA_MODEL_PATTERNS` is a stopgap** (`features/ai-models/usageBasis.ts`). Which media models bill on real provider tokens (gpt-image-\*, Gemini native image, Gemini TTS) is a per-model fact **no column records**. It cannot be derived from `capabilities` (gpt-image and Imagen are both "image out"; one is token-billed, one per-image) nor from `ai.service.wire_format` (Gemini TTS and Gemini chat share `google_chat`; Gemini native-image and Imagen share `google_image`). The name-pattern list reproduces the old `api_class` exception set exactly, but rots the day a new token-billed family ships — admins then see a false "missing basis" error. **Fix:** a `token_billed boolean` on `ai.offering` (or `ai.service`), then delete the patterns. Mirror it in the server SSOT (`matrx_ai.config.usage_config`, `scripts/validate_model_pricing.py`).
+
 ### D31 — Anon-reachable SECURITY DEFINER RPCs trust caller-supplied p_user_id — CRITICAL hits FIXED 2026-07-07; broader audit OPEN
 **Severity: was CRITICAL (unauthenticated decrypted-credential theft); confirmed hits closed, wider candidate set needs a SUPERVISED audit.** Class: a `public` SECURITY DEFINER RPC takes a caller-supplied `p_user_id`/`p_org_id`/email, filters ONLY on it with NO `auth.uid()` check, and is EXECUTE-granted to `anon`+PUBLIC. PostgREST exposes `public`, so any unauthenticated browser can call it with another user's id. Found 2026-07-07 by critical-path review.
 
