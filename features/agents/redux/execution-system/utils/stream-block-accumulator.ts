@@ -337,6 +337,18 @@ export class StreamBlockAccumulator {
    * genuinely completed fence regions.
    */
   private fenceClosedCleanly = false;
+  /**
+   * True once a simple-XML region's LITERAL closing tag has been seen — the twin
+   * of `fenceClosedCleanly`. Never set by stream-death `finalize()`, so a
+   * truncated region keeps today's legacy rendering (no envelope).
+   *
+   * MUST NOT be re-derived by scanning `currentBlockContent` for the closing
+   * tag: the accumulator STRIPS the literal tag text out of a simple-XML
+   * block's content (so `</reasoning>` can't leak into visible chat), which
+   * silently killed the XML keystone once already. The state machine already
+   * knows when the region closed; ask it, don't re-parse its output.
+   */
+  private xmlClosedCleanly = false;
   /** Every session identity opened during this stream (disposed at finalize). */
   private irIdentities: string[] = [];
   private upsertAction: (payload: {
@@ -863,6 +875,10 @@ export class StreamBlockAccumulator {
         }
         this.appendToCurrentBlock(lineToAppend);
         if (trimmed.includes(closingTag)) {
+          // Record the clean close BEFORE closing: the keystone convergence hook
+          // must distinguish a completed region from a stream-death truncation,
+          // and the content no longer carries the tag to scan for.
+          this.xmlClosedCleanly = true;
           this.closeCurrentBlock(dispatch);
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
@@ -1142,13 +1158,16 @@ export class StreamBlockAccumulator {
     // whose tag resolves through the surface registry converges to its
     // canonical kind here — the envelope rides the same complete emit JSON
     // regions use, and streaming emits stay envelope-free (today's per-tag
-    // skeleton until complete). Completion = the literal closing tag: a
-    // region cut off mid-stream (tool break / stream death) keeps today's
-    // behavior untouched. Failure inside the hook is loud + fail-open.
+    // skeleton until complete). Completion is the state machine's own
+    // `xmlClosedCleanly` fact (set when the literal closing tag was seen), NOT
+    // a scan of `currentBlockContent` — the accumulator strips the tag text out
+    // of simple-XML content, so scanning for it can never match. A region cut
+    // off mid-stream (tool break / stream death) never sets the flag and keeps
+    // today's behavior. Failure inside the hook is loud + fail-open.
     if (
       this.subState.kind === "xml_tag" &&
       !this.subState.isAttrXml &&
-      this.currentBlockContent.includes(this.subState.closingTag)
+      this.xmlClosedCleanly
     ) {
       const xmlEnvelope = envelopeForCompletedXmlRegion(
         this.subState.tagName,
@@ -1172,6 +1191,7 @@ export class StreamBlockAccumulator {
       }
     }
     this.fenceClosedCleanly = false;
+    this.xmlClosedCleanly = false;
     this.emitCurrentBlock(dispatch, "complete");
     this.irEnvelope = null;
     this.currentBlockContent = "";
