@@ -93,8 +93,8 @@ Our error — `Argument of type 'Record<string, unknown>' is not assignable to p
 **Schema-qualified note:** matrx uses custom schemas (`.schema("ai")`, `.schema("agent")`, etc.). The generated helpers are typed per-schema, so use the schema-aware generated type. With `types/database.types.ts`, the cleanest is the per-table `Tables*` helper if generated for that schema, otherwise index the `Database` type directly:
 
 ```typescript
-type ModelInsert = Database["ai"]["Tables"]["model"]["Insert"];
-type ModelUpdate = Database["ai"]["Tables"]["model"]["Update"];
+type ModelInsert = Database["ai"]["Tables"]["model_definition"]["Insert"];
+type ModelUpdate = Database["ai"]["Tables"]["model_definition"]["Update"];
 ```
 
 ### Code examples — mapped to our situation
@@ -144,8 +144,8 @@ await supabase.from("notes").update({
 // schema-qualified table; payload comes from elsewhere as a wider type
 await supabase
   .schema("ai")
-  .from("model")
-  .update<Database["ai"]["Tables"]["model"]["Update"]>(payload) // ✅
+  .from("model_definition")
+  .update<Database["ai"]["Tables"]["model_definition"]["Update"]>(payload) // ✅
   .eq("id", id);
 ```
 

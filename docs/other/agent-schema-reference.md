@@ -75,7 +75,6 @@ Same shape as `prompts` minus hierarchy columns, plus:
 | common_name | varchar | | Display name |
 | model_class | varchar | NOT NULL | Grouping key |
 | provider | varchar | | Human label (e.g. `Anthropic`) |
-| api_class | varchar | | **Routing key for Python API handler** |
 | context_window | bigint | | |
 | max_tokens | bigint | | |
 | controls | jsonb | | **Per-model config schema — see §3** |
@@ -151,4 +150,4 @@ model_id, stream, temperature, max_tokens, max_output_tokens, top_p, frequency_p
 
 ## 7. Sync Trigger: `sync_agent_settings_columns` — bi-directional, settings wins ties, BEFORE INSERT|UPDATE, shared by both tables
 
-## 8. Execution: load agent → resolve model via settings.model_id → read controls → resolve tools by name → api_class routes to handler
+## 8. Execution: load agent → resolve model via settings.model_id → read controls → resolve tools by name → ai.service.wire_format routes to handler
