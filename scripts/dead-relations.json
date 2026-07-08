@@ -1000,6 +1000,14 @@
       "new": "platform.associations",
       "since": "2026-07-02",
       "reason": "collapsed into platform.associations (tool → tool_bundle, role='member'; position=sort_order; metadata.local_alias) and moved to graveyard.bundle_member. Reads/writes go through associationsService (assoc_* RPCs), server-side admin routes write platform.associations directly. Never .from('bundle_member')."
+    },
+    {
+      "relation": "render_component",
+      "old": "skill.render_component",
+      "newSchema": "content_ir",
+      "new": "content_ir.kind_component",
+      "since": "2026-07-07",
+      "reason": "retired to graveyard.render_component (Shape System Stage 3, SHAPE_SYSTEM.md R1) — the dormant render registry lost to content_ir.kind_component, the canonical (kind, platform, role) → component_key resolver. Its only reader was the never-dispatched fetchRenderComponents thunk, now deleted. skill.render_definition SURVIVES as the markdown-atom palette; only its render_component satellite died. Never .from('render_component')."
     }
   ]
 }

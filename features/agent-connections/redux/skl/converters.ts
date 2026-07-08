@@ -1,9 +1,5 @@
 import type { Database } from "@/types/database.types";
-import type {
-  SklRenderComponent,
-  SklRenderDefinition,
-  ShortcutCategoryRow,
-} from "./types";
+import type { SklRenderDefinition, ShortcutCategoryRow } from "./types";
 
 // NOTE — May 2026: skill-definition + category converters moved to
 // `features/skills/redux/skillsConverters.ts`. Render-blocks continue here.
@@ -11,8 +7,6 @@ import type {
 // platform.associations (features/skills/redux/skillsThunks.ts).
 
 type RenderDefRow = Database["skill"]["Tables"]["render_definition"]["Row"];
-type RenderComponentRow =
-  Database["skill"]["Tables"]["render_component"]["Row"];
 
 /**
  * Row shape returned by fetchRenderBlockCategories after the May 2026 migration
@@ -95,25 +89,6 @@ export function sklRenderDefinitionToInsert(
       : {}),
     project_id: def.projectId ?? null,
     task_id: def.taskId ?? null,
-  };
-}
-
-export function rowToSklRenderComponent(
-  row: RenderComponentRow,
-): SklRenderComponent {
-  return {
-    id: row.id,
-    renderDefinitionId: row.render_definition_id,
-    componentKey: row.component_key,
-    platform: row.platform,
-    parserKey: row.parser_key,
-    parserConfig: row.parser_config,
-    propsSchema: row.props_schema,
-    importPath: row.import_path,
-    isActive: row.is_active,
-    sortOrder: row.sort_order,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
   };
 }
 

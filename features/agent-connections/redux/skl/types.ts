@@ -1,16 +1,14 @@
-import type { Database } from "@/types/database.types";
-
 // ─── DB row types (camelCased for Redux state) ───────────────────────────────
 //
 // NOTE — May 2026: the skill *definition* + *category* types moved to
 // `features/skills/redux/` and are now backed by `/api/skills` (the
 // Python backend). Only render-blocks (renderDefinitions /
-// renderComponents / renderBlockCategories) and resources still live
-// in this slice — they're awaiting their own migration. Do not add
-// new skill / category code here.
-
-type Json =
-  Database["skill"]["Tables"]["render_component"]["Row"]["parser_config"];
+// renderBlockCategories) and resources still live in this slice —
+// they're awaiting their own migration. Do not add new skill /
+// category code here.
+//
+// The component resolver is `content_ir.kind_component` (SHAPE_SYSTEM R1);
+// `skill.render_definition` below is the markdown-atom palette only.
 
 export interface SklRenderDefinition {
   id: string;
@@ -28,21 +26,6 @@ export interface SklRenderDefinition {
   organizationId: string | null;
   projectId: string | null;
   taskId: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface SklRenderComponent {
-  id: string;
-  renderDefinitionId: string;
-  componentKey: string;
-  platform: string;
-  parserKey: string | null;
-  parserConfig: Json | null;
-  propsSchema: Json | null;
-  importPath: string | null;
-  isActive: boolean;
-  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,13 +74,6 @@ export interface SklSliceState {
     error: string | null;
     activeId: string | null;
   };
-  renderComponents: {
-    byId: Record<string, SklRenderComponent>;
-    allIds: string[];
-    byRenderDefinitionId: Record<string, string[]>;
-    status: SklStatus;
-    error: string | null;
-  };
   renderBlockCategories: {
     byId: Record<string, ShortcutCategoryRow>;
     allIds: string[];
@@ -120,13 +96,6 @@ export const initialSklSliceState: SklSliceState = {
     status: "idle",
     error: null,
     activeId: null,
-  },
-  renderComponents: {
-    byId: {},
-    allIds: [],
-    byRenderDefinitionId: {},
-    status: "idle",
-    error: null,
   },
   renderBlockCategories: { byId: {}, allIds: [], status: "idle", error: null },
   resources: {

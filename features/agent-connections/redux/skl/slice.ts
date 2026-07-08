@@ -1,7 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   initialSklSliceState,
-  type SklRenderComponent,
   type SklRenderDefinition,
   type SklResource,
   type SklSliceState,
@@ -11,8 +10,8 @@ import {
 // NOTE — May 2026: skill definitions + categories live at
 // `features/skills/redux/skillsSlice.ts` (backed by /api/skills + Supabase
 // direct). The slot is intentionally absent from this slice — render-
-// blocks, render-components, render-block-categories, and resources
-// remain here until their own migration.
+// blocks, render-block-categories, and resources remain here until their
+// own migration.
 
 function indexById<T extends { id: string }>(
   rows: T[],
@@ -70,24 +69,6 @@ const sklSlice = createSlice({
     },
     setActiveRenderDefinitionId(state, action: PayloadAction<string | null>) {
       state.renderDefinitions.activeId = action.payload;
-    },
-
-    // ── Render Components ───────────────────────────────────────────────────
-    renderComponentsReceived(
-      state,
-      action: PayloadAction<SklRenderComponent[]>,
-    ) {
-      const { byId, allIds } = indexById(action.payload);
-      state.renderComponents.byId = byId;
-      state.renderComponents.allIds = allIds;
-      const byDef: Record<string, string[]> = {};
-      for (const c of action.payload) {
-        if (!byDef[c.renderDefinitionId]) byDef[c.renderDefinitionId] = [];
-        byDef[c.renderDefinitionId].push(c.id);
-      }
-      state.renderComponents.byRenderDefinitionId = byDef;
-      state.renderComponents.status = "ready";
-      state.renderComponents.error = null;
     },
 
     // ── Render-block categories (shortcut_categories FK target) ────────────
@@ -150,7 +131,6 @@ const sklSlice = createSlice({
       state.renderDefinitions = initialSklSliceState.renderDefinitions;
       state.renderBlockCategories = initialSklSliceState.renderBlockCategories;
       state.resources = initialSklSliceState.resources;
-      // renderComponents is scope-free (registry); do not reset
       // Skills + categories migrated to features/skills/ — reset that
       // slice separately if needed (see skillsActions.resetSkills).
     },

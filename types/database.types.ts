@@ -16187,6 +16187,69 @@ export type Database = {
           },
         ]
       }
+      render_component: {
+        Row: {
+          component_key: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          import_path: string | null
+          is_active: boolean
+          metadata: Json
+          organization_id: string
+          parser_config: Json | null
+          parser_key: string | null
+          platform: string
+          props_schema: Json | null
+          render_definition_id: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          component_key: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_active?: boolean
+          metadata?: Json
+          organization_id: string
+          parser_config?: Json | null
+          parser_key?: string | null
+          platform?: string
+          props_schema?: Json | null
+          render_definition_id: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          component_key?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          import_path?: string | null
+          is_active?: boolean
+          metadata?: Json
+          organization_id?: string
+          parser_config?: Json | null
+          parser_key?: string | null
+          platform?: string
+          props_schema?: Json | null
+          render_definition_id?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       rs_keyword_source: {
         Row: {
           created_at: string | null
@@ -36049,77 +36112,6 @@ export type Database = {
             columns: ["parent_skill_id"]
             isOneToOne: false
             referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      render_component: {
-        Row: {
-          component_key: string
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          import_path: string | null
-          is_active: boolean
-          metadata: Json
-          organization_id: string
-          parser_config: Json | null
-          parser_key: string | null
-          platform: string
-          props_schema: Json | null
-          render_definition_id: string
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          component_key: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_active?: boolean
-          metadata?: Json
-          organization_id: string
-          parser_config?: Json | null
-          parser_key?: string | null
-          platform?: string
-          props_schema?: Json | null
-          render_definition_id: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          component_key?: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          import_path?: string | null
-          is_active?: boolean
-          metadata?: Json
-          organization_id?: string
-          parser_config?: Json | null
-          parser_key?: string | null
-          platform?: string
-          props_schema?: Json | null
-          render_definition_id?: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "skl_render_components_render_definition_id_fkey"
-            columns: ["render_definition_id"]
-            isOneToOne: false
-            referencedRelation: "render_definition"
             referencedColumns: ["id"]
           },
         ]

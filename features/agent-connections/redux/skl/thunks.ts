@@ -5,7 +5,6 @@ import { sklActions } from "./slice";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   rowToShortcutCategory,
-  rowToSklRenderComponent,
   rowToSklRenderDefinition,
   sklRenderDefinitionToInsert,
   sklRenderDefinitionToUpdate,
@@ -196,23 +195,6 @@ export const deleteRenderDefinition = createAsyncThunk(
     if (error) throw error;
     dispatch(sklActions.renderDefinitionRemoved(args.id));
     return args.id;
-  },
-);
-
-// ─── Render Components ──────────────────────────────────────────────────────
-
-export const fetchRenderComponents = createAsyncThunk(
-  "skl/fetchRenderComponents",
-  async (_args: void, { dispatch }) => {
-    const { data, error } = await supabase
-      .schema("skill")
-      .from("render_component")
-      .select("*")
-      .is("deleted_at", null);
-    if (error) throw error;
-    const rows = (data ?? []).map(rowToSklRenderComponent);
-    dispatch(sklActions.renderComponentsReceived(rows));
-    return rows;
   },
 );
 

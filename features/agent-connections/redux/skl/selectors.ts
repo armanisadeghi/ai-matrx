@@ -2,7 +2,6 @@ import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ShortcutCategoryRow,
-  SklRenderComponent,
   SklRenderDefinition,
   SklResource,
 } from "./types";
@@ -13,8 +12,8 @@ const selectSkl = (state: RootState) => state.skl;
 
 // NOTE — May 2026: skill-definition + category selectors moved to
 // `features/skills/redux/skillsSelectors.ts`. This file now serves
-// render-blocks, render-components, render-block-categories, and
-// resources only. The replacements are:
+// render-blocks, render-block-categories, and resources only. The
+// replacements are:
 //
 //   selectAllSkillDefinitions      → selectAllSkills
 //   selectSkillDefinitionsStatus   → selectSkillsStatus
@@ -56,19 +55,6 @@ export const selectRenderDefinitionsByCategory = createSelector(
     return out;
   },
 );
-
-// ─── Render Components ──────────────────────────────────────────────────────
-
-export const selectRenderComponentsForDefinition =
-  (renderDefinitionId: string | null) =>
-  (state: RootState): SklRenderComponent[] => {
-    if (!renderDefinitionId) return [];
-    const ids =
-      state.skl.renderComponents.byRenderDefinitionId[renderDefinitionId] ?? [];
-    return ids
-      .map((id) => state.skl.renderComponents.byId[id])
-      .filter((c): c is SklRenderComponent => Boolean(c));
-  };
 
 // ─── Render-Block categories (still shortcut_categories) ───────────────────
 
