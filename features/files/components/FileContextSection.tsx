@@ -8,9 +8,10 @@
 //   • FileContextDialog  — modal opened from … / right-click menus
 //   • FileContextPicker  — compact chips + popover (inline surfaces)
 //
-// Writes:
-//   • Scopes → ctx_scope_assignments via ContextAssignmentField (live).
-//   • Projects/tasks → logged until ctx_associations migration lands.
+// Writes (both live, via ContextAssignmentField's canonical save path):
+//   • Scopes → setEntityScopes chokepoint (ctx_scope_assignments).
+//   • Projects/tasks → platform.associations (associationsService.setTargets,
+//     replace-semantics — the selection IS the full desired edge set).
 
 import { useMemo } from "react";
 import { Building2, ChevronDown, FileText } from "lucide-react";

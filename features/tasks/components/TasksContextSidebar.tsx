@@ -58,7 +58,8 @@ import {
   selectOrganizationId,
   selectScopeSelectionsContext,
   setOrganization,
-  setScopeSelections,
+  addActiveScope,
+  removeActiveScope,
 } from "@/lib/redux/slices/appContextSlice";
 import {
   selectAllScopeTypesFlat,
@@ -179,11 +180,26 @@ export default function TasksContextSidebar() {
     return map;
   }, [allScopeTypes, allScopes]);
 
-  const handleSelectScope = (typeId: string, scopeId: string | null) => {
-    const next = { ...scopeSelections };
-    if (scopeId) next[typeId] = scopeId;
-    else delete next[typeId];
-    dispatch(setScopeSelections(next));
+  // MULTI-scope active context (checkbox semantics — any number of scopes per
+  // type; one-per-type radio semantics is a known regression pattern).
+  const selectedScopeIds = useMemo(
+    () =>
+      new Set(Object.values(scopeSelections).filter((v): v is string => !!v)),
+    [scopeSelections],
+  );
+
+  const toggleScope = (scopeId: string) => {
+    dispatch(
+      selectedScopeIds.has(scopeId)
+        ? removeActiveScope(scopeId)
+        : addActiveScope(scopeId),
+    );
+  };
+
+  const clearScopesOfType = (typeScopeIds: string[]) => {
+    for (const id of typeScopeIds) {
+      if (selectedScopeIds.has(id)) dispatch(removeActiveScope(id));
+    }
   };
 
   const handleSelectOrg = (id: string | null) => {
@@ -389,14 +405,16 @@ export default function TasksContextSidebar() {
         {scopeTypesOrdered.map((type) => {
           const Icon = resolveIcon(type.icon);
           const opts = scopesByType.get(type.id) ?? [];
-          const selectedId = scopeSelections[type.id] ?? null;
+          const selectedOfType = opts.filter((s) =>
+            selectedScopeIds.has(s.id),
+          );
           const typeBelongsToActiveOrg =
             !orgId || type.organization_id === orgId;
 
-          const selectedScopeName = selectedId
-            ? (opts.find((s) => s.id === selectedId)?.name ??
-              `All ${type.label_plural}`)
-            : `All ${type.label_plural}`;
+          const selectedScopeName =
+            selectedOfType.length > 0
+              ? selectedOfType.map((s) => s.name).join(", ")
+              : `All ${type.label_plural}`;
 
           return (
             <CollapsibleSidebarSection
@@ -408,10 +426,12 @@ export default function TasksContextSidebar() {
               titleMuted={!typeBelongsToActiveOrg}
               summary={selectedScopeName}
               headerAction={
-                selectedId ? (
+                selectedOfType.length > 0 ? (
                   <button
                     type="button"
-                    onClick={() => handleSelectScope(type.id, null)}
+                    onClick={() =>
+                      clearScopesOfType(opts.map((s) => s.id))
+                    }
                     className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
                     title={`Show all ${type.label_plural.toLowerCase()}`}
                   >
@@ -423,11 +443,12 @@ export default function TasksContextSidebar() {
               <div className="space-y-0.5">
                 <AllRow
                   label={`All ${type.label_plural}`}
-                  active={!selectedId}
+                  active={selectedOfType.length === 0}
                   count={opts.length}
                   dimmed={!typeBelongsToActiveOrg}
                   onClick={() =>
-                    typeBelongsToActiveOrg && handleSelectScope(type.id, null)
+                    typeBelongsToActiveOrg &&
+                    clearScopesOfType(opts.map((s) => s.id))
                   }
                   accentColor={type.color}
                 />
@@ -436,7 +457,7 @@ export default function TasksContextSidebar() {
                   // active org selection. If no org selected, all scopes are
                   // active.
                   const dimmed = !!orgId && scope.organization_id !== orgId;
-                  const isActive = selectedId === scope.id;
+                  const isActive = selectedScopeIds.has(scope.id);
                   return (
                     <ContextRow
                       key={scope.id}
@@ -445,10 +466,7 @@ export default function TasksContextSidebar() {
                       dimmed={dimmed}
                       accentColor={type.color}
                       dotColor={type.color}
-                      onClick={() =>
-                        !dimmed &&
-                        handleSelectScope(type.id, isActive ? null : scope.id)
-                      }
+                      onClick={() => !dimmed && toggleScope(scope.id)}
                     />
                   );
                 })}

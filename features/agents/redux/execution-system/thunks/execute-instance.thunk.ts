@@ -170,7 +170,8 @@ export function assembleRequest(
   const organization_id = selectEffectiveOrganizationId(state) ?? undefined;
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
-  // Active scope selections (scope_type_id → scope_id). Shipped as a flat
+  // Active scope selections (multi-scope, keyed by scope id — any number of
+  // scopes per type). Shipped as a flat
   // id list; the server unions them with the conversation's tags inside
   // resolve_full_context so the selected scopes' context cells reach the
   // agent. Pre-deploy backends ignore the field (pydantic extra='ignore').

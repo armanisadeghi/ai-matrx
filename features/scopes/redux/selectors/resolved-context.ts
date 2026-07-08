@@ -167,15 +167,19 @@ export function makeSelectResolvedContext() {
       }
       let globalPri = 2200;
       const contradictions: ScopeContradiction[] = [];
-      for (const [scopeTypeId, scopeId] of Object.entries(
-        activeScopeSelections,
-      )) {
+      // scope_selections is keyed by SCOPE id (multi-scope, 2026-06-12) with
+      // legacy type-keyed entries tolerated — resolve each scope's type from
+      // the tree; never interpret the map key as a scope_type_id.
+      for (const scopeId of Object.values(activeScopeSelections)) {
         if (!scopeId) continue;
+        const scopeTypeId = scopeIndex.get(scopeId)?.scope_type_id ?? null;
         // ─── Contradiction check ─────────────────────────────────
         // A contradiction is: SAME scope_type_id selected globally AND
         // present locally, but with a DIFFERENT scope_id. Same id is
-        // not a contradiction, it's redundancy.
-        if (localScopeTypeIds.has(scopeTypeId)) {
+        // not a contradiction, it's redundancy. (Multi-scope: a type can
+        // legitimately have several active scopes — only a global-vs-local
+        // mismatch on the same type is flagged, and it stays informational.)
+        if (scopeTypeId && localScopeTypeIds.has(scopeTypeId)) {
           const localId = localScopeIds.find((sid) => {
             const s = scopeIndex.get(sid);
             return s?.scope_type_id === scopeTypeId;

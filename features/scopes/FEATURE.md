@@ -528,7 +528,8 @@ interface TemplatesState {
 ```ts
 interface AppContextState {
   organization_id: string | null;
-  scope_selections: Record<string, string>;     // scope_type_id → scope_id
+  scope_selections: Record<string, string>;     // scope_id → scope_id (MULTI-scope; any number per type)
+  active_scope_type_ids: string[];              // whole-dimension-active, no instance chosen
   project_id: string | null;
   task_id: string | null;
   conversation_id: string | null;
@@ -542,14 +543,16 @@ Promoted to `lib/redux/slices/` because it is used by `assembleRequest`, the pro
 Only Surface A components may dispatch the action creators below. Enforced by exporting the action creators *only* through `features/scopes/redux/active-context-actions.ts`, which ESLint restricts to be imported only from `features/scopes/components/active-context/**`.
 
 ```ts
-// active-context-actions.ts (restricted import)
-setActiveOrg(orgId: string | null)
-addActiveScope(scopeId: string)              // replaces any existing scope of the same type
-removeActiveScope(scopeId: string)
-clearActiveScopesOfType(typeId: string)
-setActiveProject(projectId: string | null)
-setActiveTask(taskId: string | null)
-setActiveConversation(conversationId: string | null)
+// lib/redux/slices/appContextSlice.ts (import restricted by ESLint)
+setOrganization({ id, name })
+addActiveScope(scopeId)         // ADDITIVE — never evicts other scopes, incl. same-type; no project/task reset
+removeActiveScope(scopeId)      // surgical removal (tolerates legacy type-keyed entries); no project/task reset
+setScopeSelections(map)         // bulk replace (full-selection apply, e.g. ActiveContextPanel); resets project/task
+setActiveScopeTypes(typeIds)    // whole-dimension-active, no instance chosen
+setProject({ id, name })
+setTask({ id, name })
+setConversation(conversationId)
+clearContext()
 ```
 
 Every other surface that wants to "set a scope on a thing" goes through `setEntityScopes()` thunks (`scopesService` → `platform.associations`), never `appContextSlice`.
@@ -566,11 +569,12 @@ selectProjectsForOrg(orgId)
 selectOrphanProjectsForOrg(orgId)             // includes status + items
 selectTasksForLevel(level, id)                // includes status + items
 
-// active-context selectors
-selectActiveContext                           // returns the assembled bundle
+// active-context selectors (redux/selectors/active-context.ts)
+selectActiveContextBundle                     // the assembled bundle (use sparingly)
+selectActiveScopeSelections                   // keyed by scope id — read VALUES, never keys
 selectActiveScopeIds
-selectActiveScopesByType
-selectActiveScopeOfType(typeId)
+selectActiveScopeIdsByType                    // scope_type_id → scope_id[] (tree join; multi-scope)
+makeSelectActiveScopeOfType(typeId)           // FIRST active scope of a type (representative only)
 
 // resolution selectors (DERIVED)
 selectLocalContextFor(entityType, entityId)   // entity-bound scopes only
@@ -654,7 +658,7 @@ selectContradictions({ entityType?, entityId? })   // returns Array<{ typeId, gl
 Lives under `features/scopes/components/active-context/`. The only place allowed to import from `redux/active-context-actions.ts`.
 
 - `<ActiveContextButton />` / `<ActiveContextPanel />` — primary Surface A controls for headers, toolbars, and tab panels. Multi-scope, single project, single task.
-- `<ActiveContextTree />` — THE compact picker: a small collapsible tree (Org → scope types → scopes, plus Projects/Tasks groups) with the same semantics as `ActiveContextPanel` (one scope per type, single project/task) at a fraction of the footprint — no search bar, no fixed section height, no summary footer. Use in popovers/menus where the full field is too tall (`ContextDocsMenu`); prefer `ActiveContextPanel` where there's real vertical room.
+- `<ActiveContextTree />` — THE compact picker: a small collapsible tree (Org → scope types → scopes, plus Projects/Tasks groups) with the same semantics as `ActiveContextPanel` (MULTI-scope — checkbox not radio, any number of scopes per type — single project/task) at a fraction of the footprint — no search bar, no fixed section height, no summary footer. Use in popovers/menus where the full field is too tall (`ContextDocsMenu`); prefer `ActiveContextPanel` where there's real vertical room.
 - `<ActiveScopeChips />` — header / chat composer pills.
 - `<ActiveContextBreadcrumb />` — read-only display.
 - `<ActiveContextLayersPanel />` — read-only display of every active layer (org / scope(s) / project / task). Per scope it renders its context items + current values (`useContextValues` + `scopesService.listContextItems`, the `ScopeDetailView` pattern); task uses the native `TaskEditor` (embedded/compact); org & project show a compact card + manage link. Pure read — never dispatches into `appContextSlice`. Rendered under the picker in the `RunControlsMenu` Context tab.
@@ -711,13 +715,12 @@ Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (
 3. `treeStatus: 'loading' → 'ready'`. Tasks NOT fetched. Orphan buckets all `unfetched`.
 4. Surface A renders the sidebar with the populated tree.
 
-### Flow 2 — User picks an active scope in the sidebar
+### Flow 2 — User picks an active scope in a Surface A picker
 
-1. User clicks "Client: Rejuvina" in `<ActiveScopePicker />`.
-2. Dispatch `addActiveScope('rejuvina-id')`. The reducer replaces any existing scope of type `Client` in `scope_selections`.
-3. If Rejuvina's org differs from the active org, dispatch `setActiveOrg(rejuvinaOrgId)` (cross-org cascade).
-4. `selectActiveContext` recomputes. Every consumer subscribed to it re-renders.
-5. Fire-and-forget `ensureTasksForLevel({ level: 'scope', id: 'rejuvina-id' })` to warm the tasks cache for Rejuvina.
+1. User clicks "Client: Rejuvina" in `<ActiveContextTree />` (or any Surface A picker).
+2. Dispatch `addActiveScope('rejuvina-id')`. The reducer ADDS the scope keyed by its id — any already-active scopes, including other `Client` scopes, stay active (checkbox semantics).
+3. Clicking an already-active scope dispatches `removeActiveScope('rejuvina-id')` — surgical, never resets project/task.
+4. `selectActiveScopeSelections` / `selectActiveScopeIdsByType` recompute. Every consumer subscribed re-renders; agent runs ship ALL active scope ids (`request.scope_ids`, `ambient.active_scopes`).
 
 ### Flow 3 — User tags a note with a scope
 
@@ -759,8 +762,8 @@ Still open: whether to merge the two **scope** pickers `<ActiveScopePicker />` (
 
 - **Global context is ONLY written by Surface A components** (`features/scopes/components/active-context/**`). Enforced, not just documented: `appContextWriteSyntaxRestrictions` (`eslint.config.mjs`, modeled on the scopesService chokepoint) bans importing the `appContextSlice` write actions (`setOrganization`/`setScopeSelections`/`setProject`/`setTask`/`setConversation`/`setFullContext`/`clearContext`) anywhere else. A legitimate Surface-A writer living outside that folder (`useHierarchyReduxBridge`, `useContextScope`, `BoundVariableChips`, `TasksContextSidebar`, the logout reset) carries a justified `// eslint-disable-next-line no-restricted-syntax`. Every other surface persists a durable association instead.
 - **Association writes NEVER touch `appContextSlice`.** A durable `platform.associations` edge is a stored relationship, not the active working context. All edge writes go through `useAssociations` → `associationsService` → the `assoc_*` RPCs; new "tag / link X to Y" UI extends the edge, never a fresh M2M table or FK column.
-- **One scope per scope_type in active context.** Multiple selections on the same type are rejected at the reducer (idempotent replace).
-- **Across-type selection is fully additive.** Never silently clear other dimensions.
+- **Active context is MULTI-SCOPE by design — one scope per type is a known regression pattern, never reintroduce it** (Arman, 2026-07-07: a sales call for Client X touches Client + Department + Service + Product scopes at once). `scope_selections` is keyed by scope id (2026-06-12); any number of scopes across AND WITHIN scope types can be active. `addActiveScope` is purely additive — no same-type eviction, no radio semantics in any Surface A picker. Interpreting a `scope_selections` KEY as a scope_type_id is the same bug in read form — resolve a scope's type from the tree (`selectActiveScopeIdsByType`).
+- **All selection is fully additive — across and within types.** Never silently clear other dimensions or sibling scopes.
 - **Cross-org snap is automatic and silent.** A scope from org B → active org becomes B. No confirm. Document it; never gate it.
 - **No refetching unless the user clicks refresh.** Period.
 - **Tasks are never in the root fetch.** Always lazy per-level.
@@ -914,6 +917,8 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 
 ## Change log
 
+- `2026-07-07` — claude: **MULTI-scope active context restored (regression fix, owner-decided).** Arman ruled one-scope-per-type is a regression (a sales call for Client X = Client + Department + Service + Product at once). The slice never reverted — the radio semantics crept back through `ActiveContextTree`'s same-type-sibling eviction (2026-07-06) plus stale pre-2026-06-12 spec text in this doc, and two writers still keyed `scope_selections` by scope_type_id. Fixed: new ADDITIVE slice actions `addActiveScope`/`removeActiveScope` (no eviction, no project/task reset; ESLint Surface-A gate extended); `ActiveContextTree` toggles checkbox-style; `ActiveScopeChips` chip-clear is surgical; `TasksContextSidebar` converted radio→checkbox per type; `BoundVariableChips` writes id-keyed; new `selectActiveScopeIdsByType` (tree join) replaces key-as-type reads in `useBoundVariableScope` + `resolved-context` contradiction check (which silently never fired on id-keyed entries). Verified the run path already ships ALL selected scopes (`execute-instance` `request.scope_ids`, `buildAmbientContext` `active_scopes`). Still one-per-type: the legacy `features/agent-context/components/hierarchy-selection/*` family (SidebarContextSelector / ContextSwitcherWindow / TaskContentNew) — type-keyed radio pickers, flagged for the Layer-B consolidation.
+- `2026-07-07` — claude: **Upload prompt project/task links wired live.** `UploadContextPrompt` custom submit now persists project/task durable links per uploaded file via `associationsService.setTargets` (platform.associations, replace-semantics) instead of the log-and-toast placeholder; `FileContextSection`'s stale "awaits ctx_associations migration" comment corrected (its field's live path already wrote both).
 - `2026-07-07` — claude: **Phantom entity tokens closed (KNOWN_DEFECTS D27 — RESOLVED).** ONE shared primitive `normalizeEntityToken()` (`service/associationGuards.ts`, alias table `LEGACY_ENTITY_TOKEN_ALIASES`) maps the never-registered tokens to canonical at the write boundary in every `associationsService` method before `checkToken` — `cx_message→message`, `cx_conversation→conversation`, `user_file→file`, `agent_app→app` (app.definition, DB-confirmed), `chat_block→message` (block = message slice; `metadata.block_index`) — recovering loudly (`console.error`) so a stale callsite is still a visible bug. Callsites emit canonical tokens directly (taskService `file`, `buildTaskSeedFromMessage` `message`/`conversation`, `AgentAppHierarchyCascade` `app`); `public.get_task_associations` read filters repointed to canonical (`migrations/get_task_associations_canonical_tokens.sql` + `get_task_associations_canonical_read.sql`, applied + ledgered + live-verified; return shape unchanged). No phantom rows existed (FK-impossible); `ctx_scope_assignments` graveyarded — no backfill.
 - `2026-07-06` — claude: **`ActiveContextTree` — the canonical COMPACT Surface-A picker.** New `active-context/ActiveContextTree.tsx`: a small collapsible tree (Org → scope types → scopes + Projects/Tasks groups, `maxHeight` capped scroll, inline Clear) with `ActiveContextPanel` semantics (one scope per type, single project/task, org explicit) at a fraction of the footprint — no search bar, no `sectionHeight` block, no summary footer, no embedded TaskEditor. Reuses `useScopeTree`/`ensureScopeTree`, `fetchAssignableProjects/Tasks`, and the slice writers directly. First consumer: chat's `ContextDocsMenu`, which dropped `ActiveContextPanel sectionHeight=200` + `ActiveContextLayersPanel` (~400px+ → one compact tree). Use it wherever a popover/menu needs the picker; `ActiveContextPanel` stays for roomy hosts.
 - `2026-07-06` — claude: **`AssociationEntitySelect` — the canonical name dropdown — + generic row writes.** (1) New `components/associations/AssociationEntitySelect.tsx`: ONE compact adapter-driven control per token per container — active entity's real name (registry icon), inline rename (click, via `EditableLabel`), always-visible switcher (Popover+Command, searchable past 5 items), per-row unlink, trailing "+ New \<Entity\>" that creates + attaches + activates (typed search text doubles as the new name). (2) Default adapter `hooks/useAssociationEntitySelect.ts` (`useAssociationEntitySelectAdapter`) over `useContainerLinks` + `useEntityTitles`; bespoke-lifecycle surfaces implement `AssociationEntitySelectAdapter` themselves. (3) New `service/entityRows.ts` — generic registry-driven `createEntityRow`/`renameEntityRow` (titleColumn + owner/org conventions, loud errors, `extraColumns` for divergent NOT NULLs); `service/entityTitles.ts` gained `primeEntityTitle` so renames/creates never render stale. First consumers: war-room thread Notes/Audio/Agent tabs (`useThreadEntitySelect.ts`). Skill: `.claude/skills/association-entity-select/`.

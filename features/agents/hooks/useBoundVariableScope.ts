@@ -22,7 +22,7 @@ import { mergeScopeVariableValues } from "../redux/execution-system/instance-var
 import {
   selectActiveOrganizationId,
   selectActiveScopeIds,
-  selectActiveScopeSelections,
+  selectActiveScopeIdsByType,
 } from "@/features/scopes/redux/selectors/active-context";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { makeSelectResolvedContext } from "@/features/scopes/redux/selectors/resolved-context";
@@ -74,7 +74,7 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
   );
   const orgId = useAppSelector(selectActiveOrganizationId);
   const activeScopeIds = useAppSelector(selectActiveScopeIds);
-  const activeSelections = useAppSelector(selectActiveScopeSelections);
+  const activeIdsByType = useAppSelector(selectActiveScopeIdsByType);
   const selectScopeTypeLabelMap = useMemo(
     makeSelectScopeTypeLabelMapForOrg,
     [],
@@ -123,7 +123,10 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
       const source = binding.contextItemId
         ? resolved.sourcePerKey[binding.contextItemId]
         : undefined;
-      const activeScopeIdOfType = activeSelections[binding.scopeTypeId] ?? null;
+      // Multi-scope active context: any number of scopes of the type may be
+      // active — the first is the representative write-back target.
+      const activeScopeIdOfType =
+        activeIdsByType[binding.scopeTypeId]?.[0] ?? null;
       const scopeActive = !!activeScopeIdOfType;
       return {
         name: d.name,
@@ -140,7 +143,7 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
         missing: !resolvedValue && !scopeActive,
       };
     });
-  }, [boundDefs, allItems, resolved, activeSelections, labelMap]);
+  }, [boundDefs, allItems, resolved, activeIdsByType, labelMap]);
 
   // Fold resolved values into the scopeValues tier (merge — never wipe other values) so
   // required-validation + previews reflect them. Bound vars are still omitted from the

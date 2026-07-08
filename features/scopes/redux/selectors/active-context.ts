@@ -38,8 +38,11 @@ export const selectActiveConversationId = createSelector(
 );
 
 /**
- * Map of scope_type_id → scope_id for currently-active scopes.
- * Filters out null values from appContextSlice's looser shape.
+ * Map of currently-active scopes, keyed by scope id (multi-scope since
+ * 2026-06-12 — any number of scopes per scope type). Legacy entries keyed by
+ * scope_type_id may still appear; consumers should use the VALUES (scope ids),
+ * never interpret the keys. Filters out null values from appContextSlice's
+ * looser shape.
  */
 export const selectActiveScopeSelections = createSelector(
   selectAppContextSlice,
@@ -71,14 +74,43 @@ export const selectHasActiveContext = createSelector(
 );
 
 /**
- * Returns the active scope id for a given scope_type, or null.
+ * Active scope ids grouped by scope_type_id, resolved through the scope tree
+ * (active context is MULTI-SCOPE — a type can have any number of active
+ * scopes). Selections whose scope isn't in the loaded tree are omitted.
+ */
+const emptyIdsByType = {} as Record<string, string[]>;
+
+export const selectActiveScopeIdsByType = createSelector(
+  selectActiveScopeIds,
+  (state: RootState) => state.scopesTree.organizations,
+  (scopeIds, orgs): Record<string, string[]> => {
+    if (scopeIds.length === 0) return emptyIdsByType;
+    const wanted = new Set(scopeIds);
+    const out: Record<string, string[]> = {};
+    for (const orgId of Object.keys(orgs)) {
+      for (const type of orgs[orgId].scope_types) {
+        for (const scope of type.scopes) {
+          if (!wanted.has(scope.id)) continue;
+          (out[type.id] ??= []).push(scope.id);
+        }
+      }
+    }
+    return Object.keys(out).length === 0 ? emptyIdsByType : out;
+  },
+);
+
+/**
+ * Returns the FIRST active scope id of a given scope_type, or null. Active
+ * context is multi-scope — use `selectActiveScopeIdsByType` when all active
+ * scopes of the type matter; this is for "is any scope of this type active /
+ * give me a representative one" cases (e.g. bound-variable write-back).
  */
 export const makeSelectActiveScopeOfType = () =>
   createSelector(
-    selectActiveScopeSelections,
+    selectActiveScopeIdsByType,
     (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
-    (sel, scopeTypeId): string | null =>
-      (scopeTypeId && sel[scopeTypeId]) || null,
+    (byType, scopeTypeId): string | null =>
+      (scopeTypeId && byType[scopeTypeId]?.[0]) || null,
   );
 
 /**

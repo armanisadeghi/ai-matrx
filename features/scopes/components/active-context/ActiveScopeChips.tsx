@@ -18,9 +18,9 @@ import {
   selectOrganizationName,
   selectProjectName,
   selectTaskName,
+  removeActiveScope,
   setOrganization,
   setProject,
-  setScopeSelections,
   setTask,
 } from "@/lib/redux/slices/appContextSlice";
 import {
@@ -97,9 +97,9 @@ export function ActiveScopeChips({
               onClickChip("scope", scopeId);
               return;
             }
-            const next: Record<string, string | null> = { ...scopeSelections };
-            delete next[key];
-            dispatch(setScopeSelections(next));
+            // Surgical removal — never resets project/task (unlike a bulk
+            // setScopeSelections) and handles legacy type-keyed entries.
+            dispatch(removeActiveScope(scopeId));
           }}
         />
       ))}

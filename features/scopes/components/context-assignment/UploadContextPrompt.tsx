@@ -13,8 +13,10 @@
 //   • Dismissed: nothing is written; files stay context-less (and the file
 //     UI's amber status icons keep nudging).
 //
-// Writes go file-by-file through the canonical setEntityScopes chokepoint —
-// the same path every other assignment surface uses.
+// Writes go file-by-file through the canonical chokepoints — scopes via
+// setEntityScopes (ctx_scope_assignments), project/task links via
+// associationsService.setTargets (platform.associations) — the same paths
+// every other assignment surface uses.
 
 import React from "react";
 import { UploadCloud } from "lucide-react";
@@ -22,6 +24,8 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
+import { associationsService } from "@/features/scopes/service/associationsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import {
   ContextAssignmentField,
   type ContextSelection,
@@ -69,7 +73,10 @@ export function UploadContextPrompt({
     const fileIds = await awaitFileIds();
     if (fileIds.length === 0)
       return { ok: false, error: "Upload failed — nothing to assign" };
+    // `new:` ids are local quick-add placeholders — never persist.
     const realScopeIds = sel.scopeIds.filter((id) => !id.startsWith("new:"));
+    const realProjectIds = sel.projectIds.filter((id) => !id.startsWith("new:"));
+    const realTaskIds = sel.taskIds.filter((id) => !id.startsWith("new:"));
     for (const fileId of fileIds) {
       const res = await dispatch(
         setEntityScopes({
@@ -79,16 +86,28 @@ export function UploadContextPrompt({
         }),
       );
       if (!res.ok) return { ok: false, error: res.error };
-    }
-    if (sel.projectIds.length > 0 || sel.taskIds.length > 0) {
-      console.warn(
-        "[upload-context] project/task associations await the ctx_associations migration — logged only",
-        {
-          fileIds,
-          projectIds: sel.projectIds,
-          taskIds: sel.taskIds,
-        },
-      );
+      // Project/task durable links through the canonical platform.associations
+      // primitive (replace-semantics — fresh uploads have no prior edges).
+      if (realProjectIds.length > 0) {
+        const r = await associationsService.setTargets({
+          sourceType: "file",
+          sourceId: fileId,
+          targetType: "project",
+          targetIds: realProjectIds,
+          orgId: sel.organizationId ?? undefined,
+        });
+        if (isScopesRpcErr(r)) return { ok: false, error: r.error.message };
+      }
+      if (realTaskIds.length > 0) {
+        const r = await associationsService.setTargets({
+          sourceType: "file",
+          sourceId: fileId,
+          targetType: "task",
+          targetIds: realTaskIds,
+          orgId: sel.organizationId ?? undefined,
+        });
+        if (isScopesRpcErr(r)) return { ok: false, error: r.error.message };
+      }
     }
     invalidateAssignableData("bulk");
     onAssigned?.(fileIds, sel);

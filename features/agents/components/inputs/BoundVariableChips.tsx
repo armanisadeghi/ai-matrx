@@ -37,11 +37,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 // globally-triggered agent run resolves its bound variables (the server fills them
 // authoritatively from request.scope_ids). Explicit active-context selection.
 // eslint-disable-next-line no-restricted-syntax -- Surface A: agent-run active-scope selection
-import { setScopeSelections } from "@/lib/redux/slices/appContextSlice";
-import {
-  selectActiveOrganizationId,
-  selectActiveScopeSelections,
-} from "@/features/scopes/redux/selectors/active-context";
+import { addActiveScope } from "@/lib/redux/slices/appContextSlice";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   fetchScopes,
   selectScopesByType,
@@ -124,7 +121,6 @@ function BoundScopePrompt({
 }) {
   const dispatch = useAppDispatch();
   const orgId = useAppSelector(selectActiveOrganizationId);
-  const selections = useAppSelector(selectActiveScopeSelections);
   const scopes = useAppSelector((s) => selectScopesByType(s, scopeTypeId));
   const loaded = useAppSelector((s) =>
     orgId ? selectScopesLoadedForType(s, orgId, scopeTypeId) : false,
@@ -140,7 +136,8 @@ function BoundScopePrompt({
     <Select
       value=""
       onValueChange={(scopeId) =>
-        dispatch(setScopeSelections({ ...selections, [scopeTypeId]: scopeId }))
+        // Additive — active context is multi-scope; keyed by scope id.
+        dispatch(addActiveScope(scopeId))
       }
     >
       <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs text-primary hover:bg-primary/15">

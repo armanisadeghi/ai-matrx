@@ -15,7 +15,9 @@
 // Semantics (product decisions, 2026-06-11):
 //   • The org is part of the context ONLY when explicitly selected — a scope
 //     never drags its organization along.
-//   • Active context = one scope per type, single project, single task.
+//   • Active context = MULTI-scope (any number of scopes, across and within
+//     scope types — 2026-06-12, reaffirmed 2026-07-07), single project,
+//     single task.
 //   • Setting context here feeds the agent/runtime; it never writes a durable
 //     association anywhere.
 

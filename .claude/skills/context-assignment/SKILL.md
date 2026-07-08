@@ -100,9 +100,14 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
   a fixed `sectionHeight` inside a sheet (that re-introduces nested scrolling) —
   pass `fill` instead. The field's org-of-record row stacks (`flex-col
   sm:flex-row`) so it never overflows a narrow screen.
-- **Project/task durable links** log-and-toast until the `ctx_associations`
-  migration (docs/ctx/ctx-association-architecture.md) lands — keep it loud,
-  never silent.
+- **Project/task durable links are LIVE** via `associationsService.setTargets`
+  (`platform.associations`, replace-semantics) — the field's live save path and
+  `UploadContextPrompt` both write them. Never reintroduce a log-and-toast stub.
+- **Active context is MULTI-SCOPE — never radio.** Any number of scopes per
+  scope type (Arman, 2026-07-07). Toggle with `addActiveScope` /
+  `removeActiveScope` (additive/surgical); never evict same-type siblings, and
+  never read a `scope_selections` KEY as a scope_type_id — use
+  `selectActiveScopeIdsByType`.
 
 ## Live references
 
