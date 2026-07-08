@@ -52,15 +52,15 @@ tabs made true, not just mapped in a comment.
 - Share/export: canonical share of a scanned file + PDF download from the extractor surface
   verified for scan-born docs.
 - **Design parity** (source: [`design/Photo-to-PDF Desktop.dc.html`](./design/Photo-to-PDF%20Desktop.dc.html)
-  — read the HTML directly; these are in the prototype and missing from the build). Already
-  built 2026-07-07 (not yours): per-page rename, View all recents, 50 MB limit. Remaining:
+  — read the HTML directly). Already built 2026-07-07 (not yours): per-page rename, View all
+  recents, 50 MB limit, AND enhance modes (Auto/Grayscale/B&W in the crop sheet via the
+  existing image-ops registry — `scanner/enhance.ts` composes `POST /images/edit` ops
+  auto_levels/grayscale/levels; catalog at GET `/images/ops`, ~45 registered ops. NEVER
+  propose new server ops without reading that catalog first). Remaining for you:
   - Results-surface details the extractor must deliver for scan-born docs: header
     Download + Share buttons, "Indexed for RAG" pill, Extracted-text stat line
     ("N words · M% confidence") + Copy text button, Ask tab's suggested-questions grid
     (four content-derived prompts) + "grounded in its text" framing (design ~445-531).
-  - Enhance modes at capture/crop time: Auto / Original / Grayscale / B&W (design confirm
-    screen ~131-141). Needs an aidream per-item color-mode op applied at build time
-    (like `perspective_crop` — original never mutated); FE picker in the crop sheet.
 
 **OUT**
 - Device/prod certification matrix — **P1** (they re-run over your thumbnails at
@@ -83,9 +83,8 @@ tabs made true, not just mapped in a comment.
 4. Ask verified: screenshot of a correct, content-grounded answer about a scanned doc, desktop
    + mobile; the entry affordance shipped.
 5. Share link to a scanned file opens for the grantee; PDF download works.
-6. Design parity closed: enhance modes produce visibly different PDF output (grayscale scan
-   verified); results surface shows the stat line, Copy text, suggested questions,
-   Download/Share.
+6. Design parity closed: results surface shows the stat line, Copy text, suggested
+   questions, Download/Share.
 7. `features/pdf/FEATURE.md` updated (parts table if you add a primitive; change log always).
 
 ## Surfaces touched

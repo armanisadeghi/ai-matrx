@@ -249,7 +249,9 @@ export function useScanSaveFlow(
 
     const payload = {
       items: uploaded.map((i) => ({
-        media: { file_id: i.fileId as string },
+        // Enhance modes swap in the non-destructive derivative (same
+        // post-EXIF space — quads stay valid).
+        media: { file_id: (i.enhancedFileId ?? i.fileId) as string },
         kind: i.kind,
         quad: i.kind === "image" ? (i.quad ?? null) : undefined,
         rotation: (i.kind === "image" ? i.rotation : 0) as ScanRotation,

@@ -46,7 +46,7 @@ import type { Quad, ScanItem, ScanRotation } from "../../types";
 import { useScanSession } from "../../useScanSession";
 import { defaultScanLabel, useScanSaveFlow } from "../../useScanSaveFlow";
 import { CaptureView } from "../CaptureView";
-import { CropSheet } from "../CropSheet";
+import { CropSheet, type CropEnhance } from "../CropSheet";
 import { ProcessingView } from "../ProcessingView";
 import { DesktopReview } from "./DesktopReview";
 
@@ -155,9 +155,15 @@ export default function ScannerDesktop() {
   }, [handleFiles]);
 
   const handleCropApply = useCallback(
-    (itemId: string, quad: Quad | null, rotation: ScanRotation) => {
+    (
+      itemId: string,
+      quad: Quad | null,
+      rotation: ScanRotation,
+      enhance: CropEnhance,
+    ) => {
       session.setQuad(itemId, quad);
       session.setRotation(itemId, rotation);
+      session.setEnhance(itemId, enhance.mode, enhance.fileId);
     },
     [session],
   );

@@ -44,6 +44,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { ENHANCE_LABELS } from "../../enhance";
 import type { ScanItem } from "../../types";
 import type { UseScanSessionResult } from "../../useScanSession";
 
@@ -370,10 +371,12 @@ function GridCard({
           <SourceChip item={item} />
         </span>
         <StatusOverlay item={item} onRetry={onRetry} />
-        {item.kind === "image" && item.quad && (
+        {item.kind === "image" && (item.quad || item.enhance) && (
           <span className="absolute bottom-2 left-2.5 flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
             <Check className="h-2.5 w-2.5" />
-            Cropped
+            {[item.quad && "Cropped", item.enhance && ENHANCE_LABELS[item.enhance]]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         )}
       </div>
@@ -470,6 +473,9 @@ function ListRow({
         <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
           Position {index + 1}
           {item.kind === "image" && item.quad ? " · cropped" : ""}
+          {item.kind === "image" && item.enhance
+            ? ` · ${ENHANCE_LABELS[item.enhance].toLowerCase()}`
+            : ""}
           {item.status === "error" ? " · upload failed" : ""}
         </p>
       </div>
