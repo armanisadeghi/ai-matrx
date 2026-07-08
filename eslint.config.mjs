@@ -466,8 +466,9 @@ const scopesChokepointSyntaxRestrictions = [
 // features/scopes/components/active-context/** — may WRITE it. Every other
 // surface that wants to "tag X with a scope" persists a DURABLE association
 // (platform.associations via the association primitive, or ctx_scope_assignments);
-// it must never dispatch setOrganization / setScopeSelections / setProject /
-// setTask / setConversation / setFullContext / clearContext. A picker that
+// it must never dispatch setOrganization / setScopeSelections / addActiveScope /
+// removeActiveScope / setProject / setTask / setConversation / setFullContext /
+// clearContext. A picker that
 // silently changes the sidebar's active context is the #1 bug this kills.
 //
 // Modeled on the scopesService chokepoint above: the selector bans IMPORTING the
@@ -481,9 +482,9 @@ const scopesChokepointSyntaxRestrictions = [
 const appContextWriteSyntaxRestrictions = [
     {
         selector:
-            "ImportDeclaration[source.value='@/lib/redux/slices/appContextSlice']:has(ImportSpecifier[imported.name=/^(setOrganization|setScopeSelections|setActiveScopeTypes|setProject|setTask|setConversation|setFullContext|clearContext)$/])",
+            "ImportDeclaration[source.value='@/lib/redux/slices/appContextSlice']:has(ImportSpecifier[imported.name=/^(setOrganization|setScopeSelections|addActiveScope|removeActiveScope|setActiveScopeTypes|setProject|setTask|setConversation|setFullContext|clearContext)$/])",
         message:
-            "appContextSlice write actions (setOrganization / setScopeSelections / setActiveScopeTypes / setProject / setTask / setConversation / setFullContext / clearContext) may be imported ONLY by Surface A components under features/scopes/components/active-context/**. Global active context is written by Surface A alone; every other surface must persist a DURABLE association (platform.associations via the association primitive, or ctx_scope_assignments) instead of mutating the sidebar's working context. If this IS a legitimate Surface-A active-context write, add `// eslint-disable-next-line no-restricted-syntax` directly above this import with a one-line justification. See CLAUDE.md 'Scopes and Context' + features/scopes/FEATURE.md 'Global vs local context'.",
+            "appContextSlice write actions (setOrganization / setScopeSelections / addActiveScope / removeActiveScope / setActiveScopeTypes / setProject / setTask / setConversation / setFullContext / clearContext) may be imported ONLY by Surface A components under features/scopes/components/active-context/**. Global active context is written by Surface A alone; every other surface must persist a DURABLE association (platform.associations via the association primitive, or ctx_scope_assignments) instead of mutating the sidebar's working context. If this IS a legitimate Surface-A active-context write, add `// eslint-disable-next-line no-restricted-syntax` directly above this import with a one-line justification. See CLAUDE.md 'Scopes and Context' + features/scopes/FEATURE.md 'Global vs local context'.",
     },
 ];
 
