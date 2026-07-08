@@ -42,12 +42,16 @@ import { gradeSpokenAnswer } from "@/features/flashcards/fast-fire/agents/gradeS
 import type { SpokenGrade } from "@/features/flashcards/fast-fire/agents/grading-core";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
-import type { CardWithDetails, FcSetRow } from "@/features/flashcards/data/types";
+import type {
+  CardWithDetails,
+  FcSetRow,
+} from "@/features/flashcards/data/types";
 
 const ANSWER_SECONDS = 12;
 const AUDIO_REVIEW_METHOD = "audio_review";
 
-type Phase = "setup" | "asking" | "answering" | "grading" | "result" | "summary";
+type Phase =
+  "setup" | "asking" | "answering" | "grading" | "result" | "summary";
 
 interface CardResult {
   cardId: string;
@@ -59,15 +63,37 @@ const RESULT_STYLE: Record<
   SpokenGrade["result"],
   { label: string; icon: typeof CheckCircle2; text: string; bg: string }
 > = {
-  correct: { label: "Correct", icon: CheckCircle2, text: "text-green-600 dark:text-green-400", bg: "bg-green-500/10" },
-  partial: { label: "Almost", icon: AlertCircle, text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10" },
-  incorrect: { label: "Not quite", icon: XCircle, text: "text-red-600 dark:text-red-400", bg: "bg-red-500/10" },
+  correct: {
+    label: "Correct",
+    icon: CheckCircle2,
+    text: "text-green-600 dark:text-green-400",
+    bg: "bg-green-500/10",
+  },
+  partial: {
+    label: "Almost",
+    icon: AlertCircle,
+    text: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-500/10",
+  },
+  incorrect: {
+    label: "Not quite",
+    icon: XCircle,
+    text: "text-red-600 dark:text-red-400",
+    bg: "bg-red-500/10",
+  },
 };
 
-export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }) {
+export function AudioReviewSession({
+  initialDeckId,
+}: {
+  initialDeckId?: string;
+}) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { speak, stop: speakStop } = useCartesiaSpeaker({ processMarkdown: true, purpose: "assistant" });
+  const { speak, stop: speakStop } = useCartesiaSpeaker({
+    processMarkdown: true,
+    purpose: "assistant",
+  });
 
   const [decks, setDecks] = useState<FcSetRow[]>([]);
   const [deckId, setDeckId] = useState(initialDeckId ?? "");
@@ -130,10 +156,13 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
     // Warm the mic inside the click gesture (iOS requirement).
     try {
       await startContinuousCapture();
-      if (!isContinuousCaptureActive()) throw new Error("Microphone did not start");
+      if (!isContinuousCaptureActive())
+        throw new Error("Microphone did not start");
       capturingRef.current = true;
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't access the microphone");
+      toast.error(
+        e instanceof Error ? e.message : "Couldn't access the microphone",
+      );
       return;
     }
 
@@ -179,13 +208,17 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
   // Answer window timer.
   useEffect(() => {
     if (phase !== "answering") return;
-    const id = window.setTimeout(() => void finishAnswer(), ANSWER_SECONDS * 1000);
+    const id = window.setTimeout(
+      () => void finishAnswer(),
+      ANSWER_SECONDS * 1000,
+    );
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, index]);
 
   async function finishAnswer() {
-    if (phaseRef.current !== "answering" || finishingRef.current || !card) return;
+    if (phaseRef.current !== "answering" || finishingRef.current || !card)
+      return;
     finishingRef.current = true;
     playBuzzer("stop");
     setPhase("grading");
@@ -208,14 +241,27 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
       );
       if (res.status === "graded" && res.grade) {
         setGrade(res.grade);
-        setResults((r) => [...r, { cardId: card.id, result: res.grade!.result, score: res.grade!.score }]);
+        setResults((r) => [
+          ...r,
+          {
+            cardId: card.id,
+            result: res.grade!.result,
+            score: res.grade!.score,
+          },
+        ]);
       } else {
-        setResults((r) => [...r, { cardId: card.id, result: "skipped", score: 0 }]);
+        setResults((r) => [
+          ...r,
+          { cardId: card.id, result: "skipped", score: 0 },
+        ]);
         if (res.error) setError(res.error);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Grading failed");
-      setResults((r) => [...r, { cardId: card.id, result: "skipped", score: 0 }]);
+      setResults((r) => [
+        ...r,
+        { cardId: card.id, result: "skipped", score: 0 },
+      ]);
     } finally {
       setPhase("result");
     }
@@ -261,12 +307,21 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
     return (
       <div className="mx-auto w-full max-w-md space-y-5 p-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/education/audio-study")} aria-label="Back">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/education/audio-study")}
+            aria-label="Back"
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Audio review</h1>
-            <p className="text-xs text-muted-foreground">Questions read aloud — you answer by voice, graded on meaning.</p>
+            <h1 className="text-lg font-semibold text-foreground">
+              Audio review
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Questions read aloud — you answer by voice, graded on meaning.
+            </p>
           </div>
         </div>
         <select
@@ -289,7 +344,9 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
           />
           <span className="text-sm text-foreground">
             Review what&apos;s due first
-            <span className="block text-[11px] text-muted-foreground">Prioritizes cards the FSRS scheduler says you should review now.</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Prioritizes cards the FSRS scheduler says you should review now.
+            </span>
           </span>
         </label>
         <Button className="w-full gap-2" onClick={handleStart}>
@@ -308,16 +365,25 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
           <CheckCircle2 className="h-8 w-8 text-primary" />
         </div>
         <div>
-          <div className="text-xl font-semibold text-foreground">Review complete</div>
+          <div className="text-xl font-semibold text-foreground">
+            Review complete
+          </div>
           <div className="mt-0.5 text-sm text-muted-foreground">
             {correct} of {results.length} correct
           </div>
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row">
-          <Button className="flex-1" onClick={() => router.push("/education/flashcards/sessions")}>
+          <Button
+            className="flex-1"
+            onClick={() => router.push("/education/flashcards/sessions")}
+          >
             View session history
           </Button>
-          <Button variant="outline" className="flex-1" onClick={() => router.push("/education/audio-study")}>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => router.push("/education/audio-study")}
+          >
             Done
           </Button>
         </div>
@@ -333,7 +399,12 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
         <span className="text-xs text-muted-foreground">
           Card {index + 1} of {cards.length}
         </span>
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={quit}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs text-muted-foreground"
+          onClick={quit}
+        >
           Quit
         </Button>
       </div>
@@ -342,17 +413,25 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
         {(phase === "asking" || phase === "answering") && card && (
           <>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              {phase === "answering" ? <Mic className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              {phase === "answering" ? (
+                <Mic className="h-3.5 w-3.5" />
+              ) : (
+                <Volume2 className="h-3.5 w-3.5" />
+              )}
               {phase === "answering" ? "Answer out loud…" : "Listen…"}
             </span>
-            <p className="max-w-xl text-2xl font-semibold leading-snug text-foreground">{card.front}</p>
+            <p className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
+              {card.front}
+            </p>
           </>
         )}
 
         {phase === "grading" && (
           <>
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Grading your answer…</p>
+            <p className="text-sm text-muted-foreground">
+              Grading your answer…
+            </p>
           </>
         )}
 
@@ -360,17 +439,30 @@ export function AudioReviewSession({ initialDeckId }: { initialDeckId?: string }
           <div className="flex w-full flex-col items-center gap-3">
             {grade && style ? (
               <>
-                <div className={cn("flex h-14 w-14 items-center justify-center rounded-full", style.bg)}>
+                <div
+                  className={cn(
+                    "flex h-14 w-14 items-center justify-center rounded-full",
+                    style.bg,
+                  )}
+                >
                   <style.icon className={cn("h-7 w-7", style.text)} />
                 </div>
-                <div className={cn("text-lg font-semibold", style.text)}>{style.label}</div>
-                {grade.feedback && <p className="text-sm text-foreground">{grade.feedback}</p>}
+                <div className={cn("text-lg font-semibold", style.text)}>
+                  {style.label}
+                </div>
+                {grade.feedback && (
+                  <p className="text-sm text-foreground">{grade.feedback}</p>
+                )}
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">{error ?? "Didn't catch that — moving on."}</p>
+              <p className="text-sm text-muted-foreground">
+                {error ?? "Didn't catch that — moving on."}
+              </p>
             )}
             <div className="w-full rounded-lg border border-border bg-background px-3 py-2 text-left">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Answer</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Answer
+              </div>
               <div className="text-sm text-foreground">{card.back}</div>
             </div>
             <Button className="w-full gap-1.5" onClick={next}>
