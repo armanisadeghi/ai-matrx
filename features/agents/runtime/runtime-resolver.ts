@@ -91,10 +91,7 @@ export async function resolveAgentRuntime(
   const model = selectModelById(state, modelId);
   let caps: ModelCapabilities;
   if (model) {
-    caps = parseCapabilities(model.capabilities, {
-      api_class: model.api_class,
-      provider: model.provider,
-    });
+    caps = parseCapabilities(model.capabilities);
   } else {
     // Model not in the registry cache — assume turn-based. The launcher
     // already fetches the model later; we're being defensive here.

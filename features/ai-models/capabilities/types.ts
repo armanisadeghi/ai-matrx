@@ -1,14 +1,13 @@
 // features/ai-models/capabilities/types.ts
 //
-// Canonical shape for `ai_model.capabilities`. Source of truth for what a
-// model accepts as input, produces as output, and supports as a feature.
+// Canonical shape for `ai.model_definition.capabilities`. Source of truth for
+// what a model accepts as input, produces as output, and supports as a feature.
 //
 // Before May 2026 this column was a zoo — null / empty string / flat
 // string arrays / Google-style boolean object / OpenAI-style I/O object /
-// literal `"[transcription]"`. Every reader did its own ad-hoc
-// normalization. We standardize on this shape and route all reads
-// through `parseCapabilities` so legacy rows keep working until the
-// backfill lands.
+// literal `"[transcription]"`. The backfill landed and every row is now
+// canonical, so `parseCapabilities` validates rather than infers, and the
+// dead `api_class` sniffing fallback is gone. Route all reads through it.
 //
 // Why `{input, output, features, interaction}` instead of a flat boolean
 // map: content-type acceptance is a SET, not 20 bools. `input: ["text",
