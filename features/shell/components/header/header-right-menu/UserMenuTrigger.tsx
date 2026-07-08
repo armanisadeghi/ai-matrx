@@ -44,6 +44,12 @@ export default function UserMenuTrigger({
             className="object-cover"
             sizes="32px"
             unoptimized
+            // Always-visible header avatar: often the above-the-fold LCP element
+            // on sparse routes. priority preloads it (eager + fetchpriority=high),
+            // silencing Next's LCP hint. Orthogonal to `unoptimized`. Applies to
+            // both CDN (cdn.matrxserver.com) and Google OAuth (googleusercontent)
+            // avatar URLs — this is the one avatar that's reliably above the fold.
+            priority
           />
         ) : userData?.userMetadata.name ? (
           <span className="text-xs font-semibold text-foreground leading-none">

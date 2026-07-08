@@ -14,7 +14,7 @@
  *      as small as possible. Subsequent chunks (up to ~400 chars each) stream
  *      into the SAME audio source via `ws.continue({ contextId, ... })`.
  *
- *   2. **Shared WebPlayer source.** The WebSocket response from the first send
+ *   2. **Shared player source.** The WebSocket response from the first send
  *      returns a single `source`. Every follow-up `ws.continue` pushes more
  *      audio chunks into that same source. The player begins playback as soon
  *      as the first byte arrives — we never await full generation.
@@ -38,7 +38,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useCallback, useState } from "react";
-import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
+import { CartesiaClient } from "@cartesia/cartesia-js";
+import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { toast } from "sonner";
@@ -50,7 +51,6 @@ import {
   TTS_MODEL_ID,
   TTS_STREAMING_BUFFER_SEC,
 } from "@/lib/cartesia/config";
-import { installAudioContextSinkRouting } from "@/features/audio/audioOutputSink";
 import {
   claimPlayback,
   releasePlayback,
@@ -116,7 +116,7 @@ export function useCartesiaStreamingSpeaker({
   );
 
   const websocketRef = useRef<CartesiaWs | null>(null);
-  const playerRef = useRef<WebPlayer | null>(null);
+  const playerRef = useRef<SinkAwarePlayer | null>(null);
   const hasPlayedRef = useRef(false);
   const mountedRef = useRef(true);
   /** AbortController for the current speak session. */
@@ -370,17 +370,13 @@ export function useCartesiaStreamingSpeaker({
     }
 
     if (!playerRef.current) {
-      // Output-device routing: the WebPlayer builds a hard-private AudioContext
-      // per utterance with no handle we can call setSinkId on. Instead we ensure
-      // the AudioContext sink patch is installed (idempotent) — it routes every
-      // newly-created playback context to the user's chosen speaker (Chromium;
-      // Safari has no AudioContext.setSinkId and gracefully no-ops). A device
-      // change applies to the NEXT utterance (a fresh context), which is the
-      // best we can do without a handle to the live one.
-      installAudioContextSinkRouting();
+      // Output-device routing is owned by SinkAwarePlayer: it applies the
+      // user's chosen speaker to its own context at creation and re-routes
+      // MID-UTTERANCE on device change (Chromium; Firefox/Safari have no
+      // AudioContext.setSinkId and gracefully stay on the system default).
       // Lower buffer for real-time streaming (latency-sensitive), centralized in
       // lib/cartesia/config so it can't drift back to a stutter-prone value.
-      playerRef.current = new WebPlayer({
+      playerRef.current = new SinkAwarePlayer({
         bufferDuration: TTS_STREAMING_BUFFER_SEC,
       });
     }
