@@ -47,6 +47,7 @@ import {
   STATUS_LABELS,
   ACTIVE_EFFECTIVE_STATUSES,
 } from "@/lib/sandbox/status";
+import { clearSandboxBindingCache } from "@/lib/sandbox/active-binding";
 import type { SandboxInstance } from "@/types/sandbox";
 
 interface SandboxPanelProps {
@@ -175,6 +176,11 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   }
 
   const applyRef = (ref: SandboxRef | null) => {
+    // (Re-)attaching a box is an explicit "use this now" — clear any suppression
+    // / token tombstone so it resolves on the very next send, instead of waiting
+    // out the dead-box cooldown. This is the manual-recovery path that
+    // complements the automatic TTL self-heal.
+    if (ref?.rowId) clearSandboxBindingCache(ref.rowId);
     if (effectiveOverrideMode && conversationId) {
       void dispatch(setConversationSandboxOverride({ conversationId, ref }));
       toast.success(
