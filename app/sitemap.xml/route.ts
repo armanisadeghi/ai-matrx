@@ -33,12 +33,21 @@ export async function GET() {
   const urls = [...staticUrls, ...educationUrls]
   const now = new Date().toISOString()
 
+  // Escape XML metacharacters — `loc` includes author-controlled doc slugs.
+  const xmlEscape = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
   .map(
     (url) => `  <url>
-    <loc>${url.loc}</loc>
+    <loc>${xmlEscape(url.loc)}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>${url.changefreq}</changefreq>
     <priority>${url.priority}</priority>

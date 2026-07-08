@@ -61,10 +61,13 @@ export function LearnArticle({ doc }: { doc: LearnDoc }) {
 
   return (
     <MarketingPageShell>
-      {/* Static, server-built JSON-LD from trusted registry data (no user input). */}
+      {/* Server-built JSON-LD. Doc fields are super-admin authored, but escape
+          `<` so a title/summary can never break out of the <script> block. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <AuthedWorkspaceCTA
         workspaceHref={EDU_WORKSPACE_HREF}
