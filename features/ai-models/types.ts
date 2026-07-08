@@ -150,7 +150,14 @@ export type ProviderModelsCache = {
 
 export type AiModel = Omit<
   AiModelRow,
-  "controls" | "constraints" | "pricing" | "endpoints" | "capabilities"
+  | "controls"
+  | "constraints"
+  | "pricing"
+  | "endpoints"
+  | "capabilities"
+  // `api_class` is being dropped from ai.model_definition. Nothing in the app
+  // may read it — routing is decided by ai.service.wire_format on the server.
+  | "api_class"
 > & {
   controls: ControlsSchema | null;
   constraints: ModelConstraint[] | null;
@@ -216,7 +223,6 @@ export type AiModelFormData = {
   common_name: string;
   model_class: string;
   provider: string;
-  api_class: string;
   context_window: string;
   max_tokens: string;
   model_provider: string;

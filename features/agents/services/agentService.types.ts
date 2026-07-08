@@ -98,7 +98,6 @@ export interface ModelInfo {
   name: string;
   common_name: string;
   provider: string;
-  api_class: string;
   context_window: number | null;
   is_premium: boolean;
 }

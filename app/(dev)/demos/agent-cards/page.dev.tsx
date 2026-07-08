@@ -177,7 +177,7 @@ const SAMPLES: PendingAsk[] = [
     batchIndex: 0,
     batchTotal: 3,
     question:
-      'For Gemini Omni Flash — a new video-gen model on the Interactions API — I\'ll create a new api_class "google_omni_video" and endpoint tag "google_interactions", then insert it. OK to proceed?',
+      'For Gemini Omni Flash — a new video-gen model on the Interactions API — I\'ll create a new ai.service with wire_format "google_omni_video" and endpoint tag "google_interactions", then insert it. OK to proceed?',
   }),
   ask({
     callId: "b1.1",

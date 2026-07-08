@@ -206,7 +206,6 @@ const SORT_FIELDS = [
   "name",
   "provider",
   "model_class",
-  "api_class",
   "model_provider",
   "context_window",
   "max_tokens",
@@ -291,21 +290,6 @@ const COLUMNS: ColDef[] = [
         title={item.model_class}
       >
         {item.model_class}
-      </span>
-    ),
-  },
-  {
-    key: "api_class",
-    header: "API Class",
-    width: "w-[160px] min-w-[120px]",
-    sortable: true,
-    filterType: "api_class",
-    render: (item) => (
-      <span
-        className="text-xs font-mono text-muted-foreground truncate block max-w-[150px]"
-        title={item.api_class ?? ""}
-      >
-        {item.api_class ?? "—"}
       </span>
     ),
   },
@@ -468,8 +452,7 @@ function applyFilters(
         (m.name ?? "").toLowerCase().includes(lq) ||
         (m.common_name ?? "").toLowerCase().includes(lq) ||
         (m.provider ?? "").toLowerCase().includes(lq) ||
-        (m.model_class ?? "").toLowerCase().includes(lq) ||
-        (m.api_class ?? "").toLowerCase().includes(lq),
+        (m.model_class ?? "").toLowerCase().includes(lq),
     );
   }
 
@@ -490,9 +473,6 @@ function applyFilters(
     result = result.filter(
       (m) => (m.is_premium ?? false) === filters.is_premium,
     );
-  }
-  if (filters.api_class) {
-    result = result.filter((m) => m.api_class === filters.api_class);
   }
   if (filters.model_class) {
     result = result.filter((m) => m.model_class === filters.model_class);
@@ -679,7 +659,6 @@ function SortIcon({
 type FilterType =
   | "provider"
   | "model_class"
-  | "api_class"
   | "is_deprecated"
   | "is_primary"
   | "is_premium"
@@ -689,7 +668,6 @@ type FilterType =
 interface FilterOptions {
   providers: string[];
   modelClasses: string[];
-  apiClasses: string[];
 }
 
 function isFilterActive(
@@ -701,8 +679,6 @@ function isFilterActive(
       return !!filters.provider;
     case "model_class":
       return !!filters.model_class;
-    case "api_class":
-      return !!filters.api_class;
     case "is_deprecated":
       return isDeprecatedFilterNonDefault(filters);
     case "is_primary":
@@ -955,19 +931,6 @@ function ColumnHeaderFilter({
             onClear={() => onUpdateFilters({ model_class: undefined })}
           />
         );
-      case "api_class":
-        return (
-          <SelectFilterContent
-            label="API Class"
-            value={filters.api_class}
-            options={filterOptions.apiClasses.map((c) => ({
-              value: c,
-              label: c,
-            }))}
-            onChange={(v) => onUpdateFilters({ api_class: v })}
-            onClear={() => onUpdateFilters({ api_class: undefined })}
-          />
-        );
       case "is_deprecated":
         return (
           <BoolFilterContent
@@ -1101,9 +1064,6 @@ export default function AiModelTable({
       ].sort() as string[],
       modelClasses: [
         ...new Set(models.map((m) => m.model_class).filter(Boolean)),
-      ].sort() as string[],
-      apiClasses: [
-        ...new Set(models.map((m) => m.api_class).filter(Boolean)),
       ].sort() as string[],
     }),
     [models],

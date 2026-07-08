@@ -8,7 +8,7 @@ export function aiModelSummary(m: AiModel): string {
   return [
     `Model: ${m.common_name || m.name}`,
     `Provider: ${m.model_provider ?? m.provider ?? "—"}`,
-    `Class: ${m.model_class ?? "—"}${m.api_class ? ` (api: ${m.api_class})` : ""}`,
+    `Class: ${m.model_class ?? "—"}`,
     `ID: ${m.id}`,
     `Context window: ${m.context_window ?? "—"}`,
     `Max tokens: ${m.max_tokens ?? "—"}`,

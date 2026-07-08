@@ -215,15 +215,6 @@ export default function AiModelForm({
                     )}
                     <p className="text-xs text-muted-foreground">The API model identifier</p>
                 </div>
-
-                <FormField label="API Class" description="Internal routing class">
-                    <Input
-                        value={data.api_class}
-                        onChange={set('api_class')}
-                        placeholder="e.g. anthropic_adaptive"
-                        className="h-8 text-sm font-mono"
-                    />
-                </FormField>
             </div>
 
             <FormField label="Provider" description="ai.provider record — the free-text provider column is derived automatically, never edited directly">

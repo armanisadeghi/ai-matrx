@@ -77,7 +77,6 @@ export interface CxRequestRecord {
   conversationId: string;
   userRequestId: string;
   aiModelId: string;
-  apiClass: string | null;
   iteration: number;
   responseId: string | null;
   finishReason: string | null;

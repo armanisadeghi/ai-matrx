@@ -30,7 +30,6 @@ import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 const CATEGORY_LABELS: Record<AuditCategory, string> = {
   core_fields: "Core",
   pricing: "Pricing",
-  api_class: "API Class",
   capabilities: "Capabilities",
   configurations: "Config",
 };
@@ -38,7 +37,6 @@ const CATEGORY_LABELS: Record<AuditCategory, string> = {
 const CATEGORY_ORDER: AuditCategory[] = [
   "core_fields",
   "pricing",
-  "api_class",
   "capabilities",
   "configurations",
 ];

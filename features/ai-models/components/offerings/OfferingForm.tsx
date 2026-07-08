@@ -174,7 +174,7 @@ export default function OfferingForm({
         </p>
         <ModelPricingEditor
           tiers={data.pricing}
-          apiClass={selectedModel?.api_class}
+          model={selectedModel}
           onChange={(tiers) => onChange({ ...data, pricing: tiers })}
         />
       </div>

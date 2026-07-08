@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, DollarSign, Cpu, Zap, Settings2, FileText } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, DollarSign, Zap, Settings2, FileText } from 'lucide-react';
 import type { AuditCategory, ModelAuditResult } from './auditTypes';
 
 interface CategoryStat {
@@ -21,7 +21,6 @@ interface AuditSummaryBarProps {
 
 const CATEGORY_META: Record<AuditCategory, { label: string; icon: React.ReactNode }> = {
     pricing: { label: 'Pricing', icon: <DollarSign className="h-4 w-4" /> },
-    api_class: { label: 'API Class', icon: <Cpu className="h-4 w-4" /> },
     capabilities: { label: 'Capabilities', icon: <Zap className="h-4 w-4" /> },
     configurations: { label: 'Configurations', icon: <Settings2 className="h-4 w-4" /> },
     core_fields: { label: 'Core Fields', icon: <FileText className="h-4 w-4" /> },
@@ -32,7 +31,7 @@ export default function AuditSummaryBar({ results, activeCategory, onCategoryCli
     const totalFail = results.length - totalPass;
     const overallPct = results.length > 0 ? Math.round((totalPass / results.length) * 100) : 0;
 
-    const categories: AuditCategory[] = ['core_fields', 'pricing', 'api_class', 'capabilities', 'configurations'];
+    const categories: AuditCategory[] = ['core_fields', 'pricing', 'capabilities', 'configurations'];
 
     const stats: CategoryStat[] = categories.map((cat) => {
         const pass = results.filter((r) => r.categoryPass[cat]).length;

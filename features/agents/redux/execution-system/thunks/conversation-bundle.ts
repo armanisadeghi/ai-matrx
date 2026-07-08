@@ -388,7 +388,6 @@ export function requestRowToRecord(row: CxRequestRow): CxRequestRecord {
     conversationId: row.conversation_id,
     userRequestId: row.user_request_id,
     aiModelId: row.ai_model_id,
-    apiClass: row.api_class,
     iteration: row.iteration,
     responseId: row.response_id,
     finishReason: row.finish_reason,

@@ -215,8 +215,7 @@ export default function DeprecatedModelsAudit({
           (e.model.common_name ?? "").toLowerCase().includes(lq) ||
           e.model.name.toLowerCase().includes(lq) ||
           (e.model.provider ?? "").toLowerCase().includes(lq) ||
-          (e.model.model_class ?? "").toLowerCase().includes(lq) ||
-          (e.model.api_class ?? "").toLowerCase().includes(lq),
+          (e.model.model_class ?? "").toLowerCase().includes(lq),
       );
     }
 

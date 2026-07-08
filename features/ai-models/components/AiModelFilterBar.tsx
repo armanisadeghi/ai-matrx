@@ -142,18 +142,6 @@ export default function AiModelFilterBar({
     [models],
   );
 
-  const apiClasses = useMemo(
-    () =>
-      [
-        ...new Set(
-          models
-            .map((m) => m.api_class)
-            .filter((c): c is string => c != null && c !== ""),
-        ),
-      ].sort(),
-    [models],
-  );
-
   // Local debounced search
   const [localQ, setLocalQ] = useState(q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -177,7 +165,6 @@ export default function AiModelFilterBar({
     isDeprecatedFilterNonDefault(filters),
     filters.is_primary !== undefined,
     filters.is_premium !== undefined,
-    filters.api_class,
     filters.model_class,
     filters.context_window_min !== undefined,
     filters.context_window_max !== undefined,
@@ -424,26 +411,6 @@ export default function AiModelFilterBar({
               <SelectItem value="__all__">All</SelectItem>
               <SelectItem value="true">Premium only</SelectItem>
               <SelectItem value="false">Non-premium</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* API class */}
-          <Select
-            value={filters.api_class ?? "__all__"}
-            onValueChange={(v) =>
-              onUpdateFilters({ api_class: v === "__all__" ? undefined : v })
-            }
-          >
-            <SelectTrigger className="h-7 text-xs w-36 shrink-0">
-              <SelectValue placeholder="API Class" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">All API Classes</SelectItem>
-              {apiClasses.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
             </SelectContent>
           </Select>
 

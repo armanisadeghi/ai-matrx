@@ -105,7 +105,6 @@ export const CAPABILITY_GROUPS: Record<string, CapabilityKey[]> = {
 
 export type AuditCategory =
   | "pricing"
-  | "api_class"
   | "capabilities"
   | "configurations"
   | "core_fields";
@@ -117,8 +116,6 @@ export interface AuditRuleConfig {
   pricing_require_input_price: boolean;
   /** Pricing audit: require all tiers to have positive output_price */
   pricing_require_output_price: boolean;
-  /** API class audit: require api_class to be non-empty */
-  api_class_required: boolean;
   /** Capabilities audit: minimum number of capabilities that must be set to true */
   capabilities_min_true: number;
   /** Capabilities audit: these specific capabilities must be present (set to true) */
@@ -141,7 +138,6 @@ export const DEFAULT_AUDIT_RULES: AuditRuleConfig = {
   pricing_required: true,
   pricing_require_input_price: true,
   pricing_require_output_price: true,
-  api_class_required: true,
   capabilities_min_true: 1,
   capabilities_required_keys: ["text_input", "text_output"],
   capabilities_object_required: true,
@@ -183,18 +179,9 @@ export type CapabilitiesRecord = Partial<Record<CapabilityKey, boolean>>;
  * canonical module. The signature is preserved so audit consumers
  * (`CapabilitiesAuditTab`, rule evaluation below) keep working
  * unchanged.
- *
- * Hints (api_class, provider) are forwarded so null/empty rows still
- * resolve sanely — without hints, a null row collapses to an all-false
- * record, which historically tripped the `capabilities_min_true` rule
- * for unrelated reasons.
  */
-export function parseCapabilities(
-  raw: unknown,
-  hints: { api_class?: string | null; provider?: string | null } = {},
-): CapabilitiesRecord {
-  const canonical = parseCapabilitiesCanonical(raw, hints);
-  return toAuditRecord(canonical);
+export function parseCapabilities(raw: unknown): CapabilitiesRecord {
+  return toAuditRecord(parseCapabilitiesCanonical(raw));
 }
 
 // ── Audit runner ──────────────────────────────────────────────────────────
@@ -293,21 +280,8 @@ export function auditModel(
     });
   }
 
-  // ── API class ──────────────────────────────────────────────────────────
-  if (rules.api_class_required && !model.api_class?.trim()) {
-    issues.push({
-      category: "api_class",
-      field: "api_class",
-      message: "Missing api_class",
-      severity: "error",
-    });
-  }
-
   // ── Capabilities ───────────────────────────────────────────────────────
-  const caps = parseCapabilities(model.capabilities, {
-    api_class: model.api_class,
-    provider: model.provider,
-  });
+  const caps = parseCapabilities(model.capabilities);
   if (rules.capabilities_object_required && !model.capabilities) {
     issues.push({
       category: "capabilities",
@@ -344,9 +318,6 @@ export function auditModel(
   const categoryPass: Record<AuditCategory, boolean> = {
     pricing: !issues.some(
       (i) => i.category === "pricing" && i.severity === "error",
-    ),
-    api_class: !issues.some(
-      (i) => i.category === "api_class" && i.severity === "error",
     ),
     capabilities: !issues.some(
       (i) => i.category === "capabilities" && i.severity === "error",

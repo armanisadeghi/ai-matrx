@@ -11,6 +11,9 @@
  * which price field is billed and what real-world unit the price is in.
  */
 
+import { parseCapabilities } from "./capabilities/parse";
+import type { ModelCapabilities } from "./capabilities/types";
+
 export type UsageBasis =
   | "image_output"
   | "megapixel_output"
@@ -141,19 +144,54 @@ export interface PricingIssue {
   message: string;
 }
 
-// api_classes that legitimately bill on REAL provider tokens (no basis needed).
-const TOKEN_BILLED_MEDIA_API_CLASSES = new Set<string>([
-  "openai_image_generation",
-  "openai_image_edit",
-  "google_image_native",
-  "google_image_generation",
-  "google_tts",
-]);
+/**
+ * A model bills per media UNIT (image / video-second / audio-second / character)
+ * rather than per real provider token. Derived from the canonical
+ * `capabilities` shape: it emits a media modality, or it consumes audio and
+ * nothing else (speech-to-text).
+ *
+ * Replaces the old `api_class` regex (`/image|video|imagen|tts|stt|.../`).
+ * Verified against the live DB on 2026-07-07: identical verdict on 204 of 205
+ * `ai.model_definition` rows. The single divergence is the DEPRECATED
+ * `meta-llama/llama-4-scout-17b-16e-instruct`, whose `capabilities.output`
+ * wrongly claims `image` — a data bug in that row, not in this rule; the new
+ * rule flags it (fail-closed), the old one didn't.
+ */
+export function isMediaModel(caps: ModelCapabilities): boolean {
+  if (caps.output.some((c) => c === "image" || c === "video" || c === "audio")) {
+    return true;
+  }
+  return caps.input.includes("audio") && !caps.input.includes("text");
+}
 
-const MEDIA_API_CLASS_RE = /image|video|imagen|tts|stt|speech|audio|realtime|transcrib/i;
+/**
+ * Media models that legitimately carry NO usage_basis because their provider
+ * bills them on REAL tokens.
+ *
+ * ⚠️ This is a per-model FACT that no column currently records. It used to be
+ * keyed on `ai.model_definition.api_class`, which is being dropped. It cannot
+ * be derived from `capabilities` (gpt-image and Imagen are both "image out";
+ * one is token-billed, one is per-image) nor from `ai.service.wire_format`
+ * (Gemini TTS and Gemini chat share `google_chat`; Gemini native-image and
+ * Imagen share `google_image`). Verified against the live DB — the patterns
+ * below reproduce the old api_class exception set EXACTLY, and are anchored so
+ * the resold copies (`openai/gpt-image-1.5` on Replicate/Together,
+ * `google/gemini-3-pro-image` on Together) are correctly NOT excepted.
+ *
+ * 🔴 DURABLE FIX (backend, not done): record token-billing as data — a
+ * `token_billed boolean` on `ai.offering` (or on `ai.service`) — and delete
+ * these patterns. Until then a new token-billed family must be added here or
+ * admins see a false "missing basis" error.
+ */
+const TOKEN_BILLED_MEDIA_MODEL_PATTERNS: readonly RegExp[] = [
+  /^gpt-image-/, // OpenAI gpt-image-* (Images API, token-billed)
+  /^gemini-.*image/, // Gemini native image generation
+  /^gemini-.*tts/, // Gemini TTS
+];
 
-export function isMediaApiClass(apiClass: string | null | undefined): boolean {
-  return MEDIA_API_CLASS_RE.test(apiClass ?? "");
+export function isTokenBilledMediaModel(modelName: string | null | undefined): boolean {
+  const name = modelName ?? "";
+  return TOKEN_BILLED_MEDIA_MODEL_PATTERNS.some((re) => re.test(name));
 }
 
 interface TierLike {
@@ -162,13 +200,19 @@ interface TierLike {
   usage_basis?: string | null;
 }
 
+/** The model facts this validator needs. `capabilities` is the raw jsonb column. */
+export interface PricedModel {
+  name: string | null | undefined;
+  capabilities: unknown;
+}
+
 export function validatePricingTiers(
-  apiClass: string | null | undefined,
+  model: PricedModel | null | undefined,
   tiers: readonly TierLike[] | null | undefined,
 ): PricingIssue[] {
   const issues: PricingIssue[] = [];
-  const isMedia = isMediaApiClass(apiClass);
-  const cls = apiClass ?? "";
+  const isMedia = model ? isMediaModel(parseCapabilities(model.capabilities)) : false;
+  const tokenBilled = isTokenBilledMediaModel(model?.name);
   if (!Array.isArray(tiers)) return issues;
 
   tiers.forEach((tier, idx) => {
@@ -186,7 +230,7 @@ export function validatePricingTiers(
       return;
     }
 
-    if (basis === null && isMedia && !TOKEN_BILLED_MEDIA_API_CLASSES.has(cls)) {
+    if (basis === null && isMedia && !tokenBilled) {
       issues.push({
         tierIndex: idx,
         severity: "error",

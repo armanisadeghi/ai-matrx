@@ -61,7 +61,6 @@ type ComparisonSortKey =
   | "released"
   | "our_name"
   | "class"
-  | "api_class"
   | "primary"
   | "deprecated"
   | "status";
@@ -178,9 +177,6 @@ function compareComparisons(
       break;
     case "class":
       cmp = (leA?.model_class ?? "").localeCompare(leB?.model_class ?? "");
-      break;
-    case "api_class":
-      cmp = (leA?.api_class ?? "").localeCompare(leB?.api_class ?? "");
       break;
     case "primary":
       cmp = Number(Boolean(leA?.is_primary)) - Number(Boolean(leB?.is_primary));
@@ -546,7 +542,6 @@ function ProviderEntryDetail({
                     ["name", le.name],
                     ["common_name", le.common_name ?? "—"],
                     ["model_class", le.model_class],
-                    ["api_class", le.api_class ?? "—"],
                     ["provider", le.provider ?? "—"],
                     [
                       "context_window",
@@ -776,14 +771,6 @@ function ComparisonTable({
               Class
             </SortableTH>
             <SortableTH
-              sortKey="api_class"
-              activeSortKey={sortKey}
-              activeSortDir={sortDir}
-              onSort={toggleSort}
-            >
-              API Class
-            </SortableTH>
-            <SortableTH
               sortKey="primary"
               activeSortKey={sortKey}
               activeSortDir={sortDir}
@@ -861,9 +848,6 @@ function ComparisonTable({
                 </td>
                 <td className="px-2 py-1.5 whitespace-nowrap">
                   {le?.model_class ?? "—"}
-                </td>
-                <td className="px-2 py-1.5 whitespace-nowrap">
-                  {le?.api_class ?? "—"}
                 </td>
                 <td className="px-2 py-1.5 text-center">
                   {le?.is_primary ? (

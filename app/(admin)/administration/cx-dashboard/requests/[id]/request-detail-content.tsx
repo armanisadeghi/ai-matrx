@@ -218,7 +218,6 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                 <tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-1.5 px-3 font-medium">Iter</th>
                   <th className="text-left py-1.5 px-3 font-medium">Model</th>
-                  <th className="text-left py-1.5 px-3 font-medium">API</th>
                   <th className="text-right py-1.5 px-3 font-medium">Input</th>
                   <th className="text-right py-1.5 px-3 font-medium">Output</th>
                   <th className="text-right py-1.5 px-3 font-medium">Cached</th>
@@ -240,9 +239,6 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
                       <span className="truncate max-w-[120px] block">
                         {req.model_name || "-"}
                       </span>
-                    </td>
-                    <td className="py-1.5 px-3 text-muted-foreground">
-                      {req.api_class || "-"}
                     </td>
                     <td className="text-right py-1.5 px-3 font-mono">
                       {formatTokens(req.input_tokens)}

@@ -254,7 +254,6 @@ export default function PricingAuditTab({
               <Th className="w-6" />
               <Th>Model</Th>
               <Th className="w-28">Provider</Th>
-              <Th className="w-28">API Class</Th>
               <Th className="w-16">Status</Th>
               <Th>Current Pricing</Th>
               <Th className="w-40">Issues</Th>
@@ -286,9 +285,6 @@ export default function PricingAuditTab({
                   </td>
                   <td className="px-3 py-1.5">
                     <ProviderBadge provider={model.provider} />
-                  </td>
-                  <td className="px-3 py-1.5 text-muted-foreground font-mono text-[11px]">
-                    {model.api_class ?? "—"}
                   </td>
                   <td className="px-3 py-1.5">
                     {wasSaved ? (

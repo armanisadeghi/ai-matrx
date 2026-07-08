@@ -19,14 +19,15 @@ import {
   usageBasisOption,
   priceFieldLabel,
   validatePricingTiers,
+  type PricedModel,
   type PricingIssue,
 } from "../usageBasis";
 
 interface ModelPricingEditorProps {
   tiers: PricingTier[] | null | undefined;
   onChange: (tiers: PricingTier[]) => void;
-  /** Model api_class — drives "media model needs a usage basis" validation. */
-  apiClass?: string | null;
+  /** The priced model — drives "media model needs a usage basis" validation. */
+  model?: PricedModel | null;
 }
 
 const NONE_BASIS = "__token__"; // shadcn Select can't use "" as an item value
@@ -125,10 +126,10 @@ function IssueRow({ issue }: { issue: PricingIssue }) {
 export default function ModelPricingEditor({
   tiers: rawTiers,
   onChange,
-  apiClass,
+  model,
 }: ModelPricingEditorProps) {
   const tiers = normalizeTiers(rawTiers);
-  const issues = validatePricingTiers(apiClass, tiers);
+  const issues = validatePricingTiers(model, tiers);
 
   const updateTier = (index: number, patch: Partial<PricingTier>) => {
     const next = tiers.map((t, i) => (i === index ? { ...t, ...patch } : t));

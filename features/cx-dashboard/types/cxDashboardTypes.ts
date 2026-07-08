@@ -74,7 +74,6 @@ export type CxRequest = {
   id: string;
   user_request_id: string;
   conversation_id: string;
-  api_class: string | null;
   iteration: number;
   input_tokens: number | null;
   output_tokens: number | null;

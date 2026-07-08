@@ -10,7 +10,6 @@ import {
   RotateCcw,
   Settings2,
   DollarSign,
-  Cpu,
   Zap,
   FileText,
 } from "lucide-react";
@@ -199,17 +198,6 @@ export default function AuditRulesConfig({
               onChange={(v) => set("pricing_require_output_price", v)}
             />
           </div>
-        </section>
-
-        {/* API Class */}
-        <section>
-          <SectionHeader icon={<Cpu className="h-4 w-4" />} title="API Class" />
-          <RuleSwitch
-            label="Require api_class"
-            description="Model must have an API class string (e.g. openai, anthropic) for the Python backend to select the right SDK"
-            checked={rules.api_class_required}
-            onChange={(v) => set("api_class_required", v)}
-          />
         </section>
 
         {/* Capabilities */}

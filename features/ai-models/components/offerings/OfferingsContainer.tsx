@@ -279,13 +279,6 @@ export default function OfferingsContainer() {
       getValue: (m) => m.provider ?? "",
       width: "160px",
     },
-    {
-      key: "api_class",
-      label: "API Class",
-      type: "text",
-      getValue: (m) => m.api_class ?? "",
-      width: "160px",
-    },
   ];
 
   return (

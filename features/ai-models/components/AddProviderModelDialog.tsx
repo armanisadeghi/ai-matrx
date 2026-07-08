@@ -283,8 +283,7 @@ export default function AddProviderModelDialog({
                               {m.common_name ?? m.name}
                             </span>
                             <span className="text-muted-foreground ml-2">
-                              ({m.model_class}
-                              {m.api_class ? ` / ${m.api_class}` : ""})
+                              ({m.model_class})
                             </span>
                           </SelectItem>
                         ))}
@@ -337,10 +336,6 @@ export default function AddProviderModelDialog({
                       Inherited from template
                     </p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                      <InheritedField
-                        label="api_class"
-                        value={template.api_class ?? "—"}
-                      />
                       <InheritedField
                         label="is_premium"
                         value={String(template.is_premium ?? false)}

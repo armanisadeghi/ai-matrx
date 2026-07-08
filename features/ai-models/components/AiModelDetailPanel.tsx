@@ -67,7 +67,6 @@ function rowToFormData(row: AiModel): AiModelFormData {
     common_name: row.common_name ?? "",
     model_class: row.model_class ?? "",
     provider: row.provider ?? "",
-    api_class: row.api_class ?? "",
     context_window:
       row.context_window != null ? String(row.context_window) : "",
     max_tokens: row.max_tokens != null ? String(row.max_tokens) : "",
@@ -86,7 +85,6 @@ const EMPTY_FORM: AiModelFormData = {
   common_name: "",
   model_class: "",
   provider: "",
-  api_class: "",
   context_window: "",
   max_tokens: "",
   model_provider: "",
@@ -436,7 +434,6 @@ const AI_MODEL_COLUMNS = new Set([
   "common_name",
   "model_class",
   "provider",
-  "api_class",
   "context_window",
   "max_tokens",
   "model_provider",
@@ -890,7 +887,6 @@ export default function AiModelDetailPanel({
           common_name: formData.common_name.trim() || null,
           model_class: formData.model_class.trim(),
           provider: formData.provider.trim() || null,
-          api_class: formData.api_class.trim() || null,
           context_window: formData.context_window
             ? parseInt(formData.context_window)
             : null,
@@ -1116,8 +1112,6 @@ export default function AiModelDetailPanel({
                       partial.model_class = cleaned.model_class;
                     if (typeof cleaned.provider === "string")
                       partial.provider = cleaned.provider;
-                    if (typeof cleaned.api_class === "string")
-                      partial.api_class = cleaned.api_class;
                     if (typeof cleaned.model_provider === "string")
                       partial.model_provider = cleaned.model_provider;
                     if (typeof cleaned.context_window === "number")
@@ -1327,7 +1321,10 @@ export default function AiModelDetailPanel({
             >
               <ModelPricingEditor
                 tiers={formData.pricing}
-                apiClass={formData.api_class}
+                model={{
+                  name: formData.name,
+                  capabilities: model?.capabilities ?? null,
+                }}
                 onChange={(tiers: PricingTier[]) =>
                   setFormData({ ...formData, pricing: tiers })
                 }

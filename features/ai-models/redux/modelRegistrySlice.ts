@@ -34,7 +34,9 @@ export type ModelRecordFetchType = "options" | "full";
  */
 export type AIModelRecord = {
   _fetchType: ModelRecordFetchType;
-} & AIModelRow;
+  // `api_class` is being dropped from ai.model_definition — routing is decided
+  // server-side by ai.service.wire_format. The registry must never surface it.
+} & Omit<AIModelRow, "api_class">;
 
 /** Convenience alias — the full normalized model (fetchType === 'full'). */
 export type AIModel = AIModelRecord;
@@ -305,7 +307,6 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     id: "",
     name: "",
     common_name: null,
-    api_class: null,
     capabilities: null,
     capabilities_pre_canonical: null,
     constraints: [],

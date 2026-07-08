@@ -1352,7 +1352,6 @@ export async function processStream({
               conversationId: owningConvId(conversation_id),
               userRequestId: user_request_id,
               aiModelId: "",
-              apiClass: null,
               iteration,
               responseId: null,
               finishReason: null,

@@ -64,8 +64,7 @@ function TabItem({
     tab.filters.provider ||
     isDeprecatedFilterNonDefault(tab.filters) ||
     tab.filters.is_primary !== undefined ||
-    tab.filters.is_premium !== undefined ||
-    tab.filters.api_class
+    tab.filters.is_premium !== undefined
   );
 
   return (
