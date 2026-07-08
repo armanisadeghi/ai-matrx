@@ -51,23 +51,20 @@ import {
 } from "../../features/content-ir/registry/kind-dual-gate";
 import type { KindDefinition } from "../../features/content-ir/registry/kind-registry.types";
 
-// The gold-mine family arrays — the SAME KindDefinition objects that
-// SYSTEM_KIND_DEFINITIONS spreads. Imported directly (not via the system-kinds
-// barrel) so this harness never pulls the non-gold-mine kind modules'
-// React-parser VALUE imports (comparison / decision-tree / diagram import from
-// @/components/mardown-display), which are not tsx-safe. Every gold-mine
-// module's only @/components imports are `import type` (erased at runtime), so
-// this set is clean under tsx.
-import { MERMAID_DIAGRAM_KIND_DEFINITION } from "../../features/content-ir/kinds/mermaid-diagram";
-import { TASK_LIST_KIND_DEFINITIONS } from "../../features/content-ir/kinds/task-list";
-import { RESOURCE_COLLECTION_KIND_DEFINITIONS } from "../../features/content-ir/kinds/resource-collection";
-import { PROGRESS_TRACKER_KIND_DEFINITIONS } from "../../features/content-ir/kinds/progress-tracker";
-import { TIMELINE_KIND_DEFINITIONS } from "../../features/content-ir/kinds/timeline";
-import { STRUCTURED_INFO_KIND_DEFINITIONS } from "../../features/content-ir/kinds/structured-info";
-import { TRANSCRIPT_KIND_DEFINITIONS } from "../../features/content-ir/kinds/transcript";
-import { TROUBLESHOOTING_KIND_DEFINITIONS } from "../../features/content-ir/kinds/troubleshooting-guide";
-import { COOKING_RECIPE_KIND_DEFINITIONS } from "../../features/content-ir/kinds/cooking-recipe";
-import { RESEARCH_REPORT_KIND_DEFINITIONS } from "../../features/content-ir/kinds/research-report";
+// EVERY compiled kind — the same objects the runtime registry bootstraps from,
+// so the harness resolves a definition (and therefore a real render leg) for
+// ANY kind, not just the gold-mine set.
+//
+// HISTORY: this used to import the gold-mine family arrays directly, on the
+// belief that the other kind modules' parser imports were "not tsx-safe". That
+// was STALE and actively harmful: a kind absent from the map resolved to
+// `definition: null`, which `validateRender` reports as "has no component" — a
+// FALSE render failure for kinds that render fine in production (e.g.
+// presentation_deck). Verified 2026-07-07: `SYSTEM_KIND_DEFINITIONS` imports
+// cleanly under tsx (55 defs, 20 bridged) because the legacy parsers it reaches
+// (parseComparisonJSON / parseDecisionTreeJSON / parseDiagramJSON) are
+// dependency-free and every @/components import on that path is `import type`.
+import { SYSTEM_KIND_DEFINITIONS } from "../../features/content-ir/registry/system-kinds";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -81,25 +78,14 @@ const C = {
   cyan: "\x1b[36m",
 };
 
-// ─── The gold-mine kind set (roots + children) ──────────────────────────────
-
-const GOLD_MINE_DEFINITIONS: KindDefinition[] = [
-  MERMAID_DIAGRAM_KIND_DEFINITION,
-  ...TASK_LIST_KIND_DEFINITIONS,
-  ...RESOURCE_COLLECTION_KIND_DEFINITIONS,
-  ...PROGRESS_TRACKER_KIND_DEFINITIONS,
-  ...TIMELINE_KIND_DEFINITIONS,
-  ...STRUCTURED_INFO_KIND_DEFINITIONS,
-  ...TRANSCRIPT_KIND_DEFINITIONS,
-  ...TROUBLESHOOTING_KIND_DEFINITIONS,
-  ...COOKING_RECIPE_KIND_DEFINITIONS,
-  ...RESEARCH_REPORT_KIND_DEFINITIONS,
-];
+// ─── Every compiled kind (roots + children) ─────────────────────────────────
 
 const DEF_BY_KIND = new Map<string, KindDefinition>(
-  GOLD_MINE_DEFINITIONS.map((def) => [def.kind, def]),
+  SYSTEM_KIND_DEFINITIONS.map((def) => [def.kind, def]),
 );
-const DEFAULT_SLUGS: string[] = GOLD_MINE_DEFINITIONS.map((def) => def.kind);
+// Default sweep = every compiled kind. Kinds without a canonical example are
+// skipped; kinds whose render leg genuinely fails stay inactive with a reason.
+const DEFAULT_SLUGS: string[] = SYSTEM_KIND_DEFINITIONS.map((def) => def.kind);
 
 // ─── DB reads (service key) ─────────────────────────────────────────────────
 

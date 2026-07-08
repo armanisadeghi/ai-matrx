@@ -293,13 +293,21 @@ async function main(): Promise<number> {
   }
   console.log(`${C.green}✓ structural leg passed${C.reset} — ${describeValue(sample)}`);
 
-  // 3. Canonical probe — is_canonical only when kind@version has no live
-  //    canonical example (kind_example_canonical_unique partial-unique index).
+  // 3. Canonical probe — is_canonical only when this KIND has no live canonical
+  //    example at ANY version.
+  //
+  //    Deliberately NOT filtered by `kind_version`. `kind_definition` carries the
+  //    shared `platform._touch_row` trigger, which bumps `version` on EVERY update
+  //    — including an `is_active` flip that changes no schema at all. A
+  //    version-scoped probe therefore sees "no canonical example" for a kind whose
+  //    canonical row is merely one version behind, and inserts a SECOND canonical
+  //    row (the partial unique is per (kind_definition_id, kind_version), so it
+  //    does NOT block the duplicate). Probe the kind, not the kind@version.
+  //    Re-bind stranded rows with `pnpm shape:revalidate --apply`.
   const { data: canonicalRows, error: canonErr } = await contentIr
     .from("kind_example")
-    .select("id,label")
+    .select("id,label,kind_version")
     .eq("kind_definition_id", kindRow.id)
-    .eq("kind_version", kindRow.version)
     .eq("is_canonical", true)
     .is("deleted_at", null);
   if (canonErr) fail([`read content_ir.kind_example: ${canonErr.message}`], 2);
