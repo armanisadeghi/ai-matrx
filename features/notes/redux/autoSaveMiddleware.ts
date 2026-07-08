@@ -25,6 +25,11 @@ import {
 import { getAutoSaveDelay } from "./notes.types";
 import type { NoteRecord } from "./notes.types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
+import {
+  noteSaveErrorMessage,
+  toastNoteWriteBlocked,
+  clearNoteWriteBlockedToast,
+} from "../utils/writeErrors";
 
 // Timer map — one debounce timer per note
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -178,13 +183,16 @@ export const autoSaveMiddleware: Middleware =
 
           if (error) {
             console.error("[AutoSave] INSERT failed:", error.message);
+            const friendly = noteSaveErrorMessage(error);
             storeApi.dispatch(
-              markNoteSaveError({ id: noteId, error: error.message }),
+              markNoteSaveError({ id: noteId, error: friendly }),
             );
+            toastNoteWriteBlocked(noteId, friendly);
             return;
           }
 
           // Mark as materialized (no longer auto-generated)
+          clearNoteWriteBlockedToast(noteId);
           storeApi.dispatch(materializeNote(noteId));
           storeApi.dispatch(
             markNoteSaved({ id: noteId, updatedAt: data?.updated_at ?? undefined }),
@@ -211,13 +219,20 @@ export const autoSaveMiddleware: Middleware =
             .single();
 
           if (error) {
+            // A viewer-level sharee's UPDATE is RLS-filtered to 0 rows (no SQL
+            // error — .single() turns it into PGRST116). The user's edits are
+            // NOT saved: mark the record AND scream. Silent loss is the one
+            // unforgivable failure mode here.
             console.error("[AutoSave] UPDATE failed:", error.message);
+            const friendly = noteSaveErrorMessage(error);
             storeApi.dispatch(
-              markNoteSaveError({ id: noteId, error: error.message }),
+              markNoteSaveError({ id: noteId, error: friendly }),
             );
+            toastNoteWriteBlocked(noteId, friendly);
             return;
           }
 
+          clearNoteWriteBlockedToast(noteId);
           storeApi.dispatch(
             markNoteSaved({ id: noteId, updatedAt: data?.updated_at ?? undefined }),
           );

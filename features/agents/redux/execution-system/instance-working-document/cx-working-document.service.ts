@@ -40,10 +40,6 @@ export type WorkingDocumentKind = "working" | "scratch";
 
 export interface CxWorkingDocumentRow {
   id: string;
-  // Legacy columns — optional so the type survives the STEP 3 drop. Origin now
-  // lives in metadata.origin_conversation_id.
-  conversation_id?: string | null;
-  user_id?: string | null;
   kind: string;
   title: string;
   content: string;
@@ -57,12 +53,11 @@ export interface CxWorkingDocument {
   id: string;
   /**
    * The conversation the document was BORN in (provenance, not identity — a doc
-   * is M2M-linked to many conversations). Resolved from the legacy column when
-   * present, else from metadata.origin_conversation_id. Keys the doc's tab in the
-   * workspace so an attached doc from another chat loads its own content.
+   * is M2M-linked to many conversations). Read from metadata.origin_conversation_id.
+   * Keys the doc's tab in the workspace so an attached doc from another chat
+   * loads its own content.
    */
   conversationId: string | null;
-  userId: string | null;
   kind: WorkingDocumentKind;
   title: string;
   content: string;
@@ -76,9 +71,7 @@ export function rowToCxWorkingDocument(
 ): CxWorkingDocument {
   return {
     id: row.id,
-    conversationId:
-      row.conversation_id ?? row.metadata?.origin_conversation_id ?? null,
-    userId: row.user_id ?? null,
+    conversationId: row.metadata?.origin_conversation_id ?? null,
     kind: (row.kind as WorkingDocumentKind) ?? "working",
     title: row.title,
     content: row.content,

@@ -27441,6 +27441,25 @@ export type Database = {
           version_number: number
         }[]
       }
+      get_notes_shared_with_me: {
+        Args: never
+        Returns: {
+          created_at: string
+          created_by: string
+          folder_name: string
+          id: string
+          label: string
+          organization_id: string
+          owner_email: string
+          permission_level: string
+          project_id: string
+          tags: string[]
+          task_id: string
+          updated_at: string
+          version: number
+          visibility: string
+        }[]
+      }
       get_org_invitation_by_token: {
         Args: { p_token: string }
         Returns: {

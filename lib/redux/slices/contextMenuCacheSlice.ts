@@ -14,9 +14,11 @@ const initialState: ContextMenuCacheState = {
 };
 
 /**
- * Stores raw context_menu_unified_view rows fetched server-side.
- * Populated once at hydration time from the SSR shell data RPC.
- * useUnifiedContextMenu reads from here first — no client fetch needed.
+ * Legacy cache for raw context_menu_unified_view rows.
+ * Its v1 reader (features/context-menu/UnifiedContextMenu) was deleted with
+ * the prompts system (D25), and the dead DeferredShellData preload was removed
+ * 2026-07-07 — the slice currently has no writer or reader. Kept by explicit
+ * D25 disposition (slice stays; only the dead data flow was removed).
  */
 const contextMenuCacheSlice = createSlice({
   name: 'contextMenuCache',

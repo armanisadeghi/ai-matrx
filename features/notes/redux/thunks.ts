@@ -23,8 +23,18 @@ import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { RootState } from "@/lib/redux/store";
 import { createFolder } from "../service/notesService";
+import {
+  noteSaveErrorMessage,
+  toastNoteWriteBlocked,
+  clearNoteWriteBlockedToast,
+  NOTE_READONLY_DELETE_MESSAGE,
+} from "../utils/writeErrors";
 import type { Note, CreateNoteInput } from "../types";
-import type { NoteRecord, NoteScopeAssignment } from "./notes.types";
+import type {
+  NoteRecord,
+  NoteScopeAssignment,
+  SharedNotePermissionLevel,
+} from "./notes.types";
 import {
   upsertNoteFromServer,
   removeNote,
@@ -258,10 +268,16 @@ export const saveNote = createAsyncThunk<void, string>(
       .single();
 
     if (error) {
-      dispatch(markNoteSaveError({ id: noteId, error: error.message }));
+      // A viewer-level sharee's UPDATE is silently filtered by RLS (0 rows →
+      // PGRST116 via .single()). That means the user's edits are NOT saved —
+      // scream, never let it read as "fine".
+      const friendly = noteSaveErrorMessage(error);
+      dispatch(markNoteSaveError({ id: noteId, error: friendly }));
+      toastNoteWriteBlocked(noteId, friendly);
       throw error;
     }
 
+    clearNoteWriteBlockedToast(noteId);
     dispatch(
       markNoteSaved({
         id: noteId,
@@ -377,13 +393,23 @@ export const createNewNote = createAsyncThunk<
 export const deleteNote = createAsyncThunk<void, string>(
   "notes/deleteNote",
   async (noteId, { dispatch }) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .schema("workbench")
       .from("notes")
       .update({ deleted_at: new Date().toISOString() })
-      .eq("id", noteId);
+      .eq("id", noteId)
+      .select("id");
 
-    if (error) throw error;
+    if (error) {
+      toastNoteWriteBlocked(noteId, noteSaveErrorMessage(error));
+      throw error;
+    }
+    // RLS filters a non-admin sharee's delete to 0 rows with NO error — the
+    // note would vanish from the UI while surviving in the DB. Detect and scream.
+    if (!data || data.length === 0) {
+      toastNoteWriteBlocked(noteId, NOTE_READONLY_DELETE_MESSAGE);
+      throw new Error(NOTE_READONLY_DELETE_MESSAGE);
+    }
 
     dispatch(removeNote(noteId));
     dispatchCustomEvent("notes:deleted", { noteId });
@@ -612,6 +638,52 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
         upsertNoteFromServer({
           note: { ...note, created_by: userId },
           fetchStatus: "full",
+        }),
+      );
+    }
+  },
+);
+
+// ---------------------------------------------------------------------------
+// 11b. fetchSharedNotesList
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch notes shared WITH the current user (direct + org grants) via the
+ * `get_notes_shared_with_me` RPC. Upserts them into the store flagged
+ * `_sharedWithMe` (with the effective permission level + owner email) so the
+ * sidebar can render a "Shared with me" section while the owner-only list
+ * selectors keep excluding them from folders.
+ */
+export const fetchSharedNotesList = createAsyncThunk<void, void>(
+  "notes/fetchSharedNotesList",
+  async (_, { dispatch }) => {
+    const { data, error } = await supabase.rpc("get_notes_shared_with_me");
+    if (error) throw error;
+
+    for (const row of data ?? []) {
+      dispatch(
+        upsertNoteFromServer({
+          note: {
+            id: row.id,
+            label: row.label ?? "Untitled",
+            folder_name: row.folder_name,
+            tags: row.tags,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            organization_id: row.organization_id,
+            project_id: row.project_id,
+            task_id: row.task_id,
+            visibility: (row.visibility ?? "private") as Note["visibility"],
+            version: row.version,
+            created_by: row.created_by,
+          },
+          fetchStatus: "list",
+          sharedMeta: {
+            permissionLevel: (row.permission_level ??
+              "viewer") as SharedNotePermissionLevel,
+            ownerEmail: row.owner_email,
+          },
         }),
       );
     }

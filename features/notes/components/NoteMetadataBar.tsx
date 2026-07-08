@@ -142,12 +142,24 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   // re-renders). Word/char/line/reading-time all come from one shared util.
   const stats = useMemo(() => computeNoteStats(content), [content]);
 
-  const saveStatus = isSaving ? "Saving..." : isDirty ? "Unsaved" : "Saved";
-  const statusColor = isSaving
-    ? "text-yellow-500"
-    : isDirty
-      ? "text-amber-500"
-      : "text-green-500";
+  // A persisted save error (RLS-rejected write, conflict, network) outranks
+  // everything — "Unsaved" alone reads as benign while edits are being lost.
+  const saveError =
+    note?._error && note._error !== "conflict" ? note._error : null;
+  const saveStatus = saveError
+    ? "Save failed"
+    : isSaving
+      ? "Saving..."
+      : isDirty
+        ? "Unsaved"
+        : "Saved";
+  const statusColor = saveError
+    ? "text-destructive"
+    : isSaving
+      ? "text-yellow-500"
+      : isDirty
+        ? "text-amber-500"
+        : "text-green-500";
 
   const handleFolderChange = useCallback(
     (f: string) => {
@@ -288,7 +300,10 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         </div>
 
         {/* Status + word count */}
-        <span className={cn("text-xs font-medium shrink-0", statusColor)}>
+        <span
+          className={cn("text-xs font-medium shrink-0", statusColor)}
+          title={saveError ?? undefined}
+        >
           {saveStatus}
         </span>
         <span

@@ -29,7 +29,7 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 | `queries.ts` | Public server reads (anon cookie-free client, `unstable_cache` tagged `education-learn-docs`, ISR). `listPublishedLearnDocs` / `getPublishedLearnDoc` (**derived from the list — a per-slug `unstable_cache` collapses on static keyParts**) / `getPublishedLearnDocTitles`. |
 | `actions.ts` | `"use server"` admin mutations → RPC → `updateTag('education-learn-docs')` (read-your-own-writes) → public surfaces update without a deploy. |
 | `sitemap.ts` | Every axis index/entry + published learn doc + live tool → `app/sitemap.xml/route.ts`. |
-| `ogImage.tsx` | Shared branded OG renderer; thin `opengraph-image.tsx` routes for learn docs + all 5 axis families. |
+| `ogImage.tsx` | Shared branded OG renderer; thin `opengraph-image.tsx` routes for axis families; learn docs use `/education/learn/og/[...slug]` route handler (catch-all can't host file-based OG). |
 | `components/LearnDocAdmin.tsx` | The authoring UI (list + JSON-sections editor with live `SectionRenderer` preview). |
 | `app/(core)/education/learn/admin/page.tsx` | Self-gating super-admin route (explicit segment beats the `[...slug]` catch-all). |
 
@@ -37,7 +37,7 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 
 - **ISR + static params:** learn `[...slug]` and all 5 axis `[slug]` routes have `generateStaticParams` + `dynamicParams` + `revalidate=3600` (`axisStaticParams` in `route-helpers.ts`).
 - **Sitemap:** dynamic, enumerates the whole hub (was one hardcoded `/education` URL).
-- **OG images:** per learn doc + per axis entry.
+- **OG images:** per learn doc (route handler at `/education/learn/og/[...slug]`) + per axis entry (`opengraph-image.tsx`).
 - **JSON-LD:** `LearnArticle` emits `Article`; `AxisDetail` emits `FAQPage` (from any `faq` section) + `Course` (subjects / exam-prep).
 
 ## Invariants
@@ -55,4 +55,5 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 
 ## Change log
 
+- **2026-07-07** — Learn OG images moved from invalid `[...slug]/opengraph-image.tsx` to `/education/learn/og/[...slug]` route handler (Next.js catch-all constraint); page metadata sets `ogImage` explicitly.
 - **2026-07-07** — Phase A shipped: `education.learn_doc` + RPCs + RLS, 8 seed docs migrated off the deleted registry, DB-backed `/learn` (ISR + static params), dynamic sitemap, per-doc/per-axis OG images, FAQPage/Course JSON-LD, super-admin authoring UI.

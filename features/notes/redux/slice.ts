@@ -13,6 +13,7 @@ import {
   type NotesSliceState,
   type NoteScopeAssignment,
   type FindReplaceState,
+  type SharedNoteMeta,
   NOTE_UNDO_MAX_ENTRIES,
   NOTE_UNDO_MAX_BYTES,
   NOTE_UNDO_COALESCE_MS,
@@ -346,9 +347,12 @@ const notesSlice = createSlice({
       action: PayloadAction<{
         note: Partial<Note> & { id: string };
         fetchStatus: NoteFetchStatus;
+        /** Present when this upsert came from the shared-with-me list —
+         *  flags the record so owner-list selectors exclude it. */
+        sharedMeta?: SharedNoteMeta;
       }>,
     ) {
-      const { note, fetchStatus } = action.payload;
+      const { note, fetchStatus, sharedMeta } = action.payload;
       const existing = state.notes[note.id];
 
       if (!existing) {
@@ -371,15 +375,28 @@ const notesSlice = createSlice({
           });
           return;
         }
-        state.notes[note.id] = createBlankNoteRecordFromPartial(
+        const record = createBlankNoteRecordFromPartial(
           { ...note, organization_id: note.organization_id },
           fetchStatus,
         );
+        if (sharedMeta) {
+          record._sharedWithMe = true;
+          record._sharedMeta = sharedMeta;
+        }
+        state.notes[note.id] = record;
         return;
       }
 
       // Never downgrade fetch status
       applyFetchStatus(existing, fetchStatus);
+
+      // Refresh shared-with-me metadata (a re-fetch may carry a changed grant
+      // level). Never CLEAR the flag from an unrelated upsert — only the
+      // shared list sets or updates it.
+      if (sharedMeta) {
+        existing._sharedWithMe = true;
+        existing._sharedMeta = sharedMeta;
+      }
 
       // If user has local edits, don't overwrite — mark conflict if content changed
       if (existing._dirty) {

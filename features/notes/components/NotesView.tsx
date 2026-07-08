@@ -64,6 +64,7 @@ import {
 } from "../redux/slice";
 import {
   fetchNotesList,
+  fetchSharedNotesList,
   fetchNoteContent,
   refreshNoteContent,
   saveNote,
@@ -214,6 +215,7 @@ export function NotesView({ config, className, sidebarLayout }: NotesViewProps) 
     if (!fetchedRef.current && userId) {
       fetchedRef.current = true;
       dispatch(fetchNotesList());
+      dispatch(fetchSharedNotesList());
     }
   }, [dispatch, userId]);
 
@@ -275,7 +277,10 @@ export function NotesView({ config, className, sidebarLayout }: NotesViewProps) 
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
-      const work: Promise<unknown>[] = [dispatch(fetchNotesList()).unwrap()];
+      const work: Promise<unknown>[] = [
+        dispatch(fetchNotesList()).unwrap(),
+        dispatch(fetchSharedNotesList()).unwrap(),
+      ];
       if (orgId) {
         // Explicit user refresh → force-refresh the canonical scope tree.
         work.push(dispatch(ensureScopeTree({ refresh: true })));

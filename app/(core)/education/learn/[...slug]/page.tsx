@@ -29,12 +29,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       letter: "Lr",
     });
   }
+  const slugPath = slug.join("/");
   return createDynamicRouteMetadata("/education", {
     title: doc.title,
     description: doc.summary,
     letter: doc.letter,
     keywords: doc.keywords,
-    canonicalPath: `/education/learn/${slug.join("/")}`,
+    canonicalPath: `/education/learn/${slugPath}`,
+    ogImage: `/education/learn/og/${slugPath}`,
   });
 }
 

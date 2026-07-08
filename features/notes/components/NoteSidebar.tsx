@@ -53,6 +53,9 @@ import {
   Tag,
   RotateCcw,
   TriangleAlert,
+  Users,
+  Eye,
+  Pencil,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -86,6 +89,7 @@ import {
 } from "../redux/thunks";
 import {
   selectAllNotesList,
+  selectSharedWithMeNotes,
   selectDeletedNotesList,
   selectInstanceActiveTab,
   selectInstanceTabs,
@@ -236,6 +240,8 @@ export function NoteSidebar({
   const [trashOpen, setTrashOpen] = useState(false);
   const trashFetchedRef = useRef(false);
   const deletedNotes = useAppSelector(selectDeletedNotesList);
+  const sharedNotes = useAppSelector(selectSharedWithMeNotes);
+  const [sharedOpen, setSharedOpen] = useState(true);
   const [groupByDropdown, setGroupByDropdown] = useState(false);
 
   // ── Fetch scope assignments when switching to scope mode ────────────
@@ -1302,6 +1308,70 @@ export function NoteSidebar({
             ? createPortal(content, contextMenuPortalTarget)
             : content;
         })()}
+
+      {/* ── Shared with me ─────────────────────────────────────────────── */}
+      {sharedNotes.length > 0 && (
+        <div className="shrink-0 border-t border-border/20">
+          <button
+            onClick={() => setSharedOpen((v) => !v)}
+            className="flex items-center gap-1.5 w-full px-3 py-1.5 text-[0.625rem] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Users className="w-3 h-3" />
+            <span>Shared with me</span>
+            <span className="text-[0.5rem] bg-muted px-1 rounded">
+              {sharedNotes.length}
+            </span>
+            <ChevronDown
+              className={cn(
+                "w-2.5 h-2.5 ml-auto transition-transform",
+                sharedOpen && "rotate-180",
+              )}
+            />
+          </button>
+          {sharedOpen && (
+            <div className="max-h-48 overflow-y-auto px-1 pb-1">
+              {sharedNotes.map((note) => {
+                const level = note._sharedMeta?.permissionLevel ?? "viewer";
+                const canEdit = level === "editor" || level === "admin";
+                const isActive = activeTabId === note.id;
+                const isOpenTab = openTabIds?.includes(note.id) ?? false;
+                return (
+                  <button
+                    key={note.id}
+                    data-note-id={note.id}
+                    onClick={() => selectNote(note.id)}
+                    title={
+                      `${note._sharedMeta?.ownerEmail ?? "Someone"} shared this with you — ` +
+                      (canEdit ? "you can edit" : "view only")
+                    }
+                    className={cn(
+                      "flex items-center gap-1.5 w-full text-left px-2 py-[3px] rounded-sm cursor-pointer transition-colors",
+                      isActive
+                        ? "bg-accent text-foreground"
+                        : isOpenTab
+                          ? "bg-accent/30 text-foreground/80"
+                          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                    )}
+                  >
+                    <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                    <span className="flex-1 text-xs truncate leading-tight">
+                      {note.label}
+                    </span>
+                    <span className="text-[0.5625rem] opacity-40 shrink-0 truncate max-w-[80px]">
+                      {note._sharedMeta?.ownerEmail?.split("@")[0] ?? ""}
+                    </span>
+                    {canEdit ? (
+                      <Pencil className="w-3 h-3 shrink-0 opacity-50" />
+                    ) : (
+                      <Eye className="w-3 h-3 shrink-0 opacity-50" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Trash section ──────────────────────────────────────────────── */}
       <div className="shrink-0 border-t border-border/20">

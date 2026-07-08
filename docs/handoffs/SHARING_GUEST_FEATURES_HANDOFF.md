@@ -52,6 +52,10 @@ Today: logged-out fork → `/sign-up?redirectTo=/s/[token]` → user returns and
 ### 6. Broaden safe allowlists as renderers land
 Many types are `is_link_shareable=false` by default (see the admin panel). As you build a renderer for a type, enable it + set its `public_columns` via `admin_set_share_policy` (or the panel). The owner's stance: **nearly everything should be shareable** — the gate is per-type safety, not restriction.
 
+### 7. Notes route must show shared items
+- Currently the notes route does not provide a "Shared with me" list but it needs to. Notes that are shared must be first class citizens.
+- Additionally, the system does not warn you or make any indication when you modify a note that is readonly for you. No indication that it's readyony and no error when you edit it and no error when you save. it makes you think everything is fine, except all of your work is thrown out and lost!!! That can never happen again!
+
 ---
 
 ## Open questions for the owner
