@@ -535,3 +535,31 @@ const { requestId } = await dispatch(launchAgentExecution({
 })).unwrap();
 const out = selectFirstExtractedObject(requestId)(getState()); // typed object
 ```
+
+---
+
+## P1 — Assessment Engine agents (LIVE, authored 2026-07-07)
+
+Quiz/practice-test generation (5 question types + depth-on-demand + TrustEnvelope) and per-item
+deepen. Ids in `features/education/assessment/data/agents.ts` (`ASSESSMENT_AGENTS`); full ids +
+variable lists in `LIVE_AGENTS.md`. Grade-on-meaning for typed/short/written answers REUSES
+`gradeTypedAnswer` (`GradeVerdict`) — P1 does not fork a grading path.
+
+Shared question schema (each item in `questions[]`): `question_type` (multiple_choice | true_false |
+fill_blank | short_answer | written_response), `prompt` (fill_blank uses `___`), `options` (MC/TF),
+`correct_answer` (MUST equal one option verbatim for MC; null for written_response),
+`acceptable_answers` (fill_blank/short_answer synonyms), `explanation`, `rubric` (written_response
+full-credit criteria), `depth` (recall|applied|exam), `topic`, and a `trust` envelope
+(`{citations[], confidence, groundedIn}` — see the Trust addendum above).
+
+- **`generateQuiz`** (`afb89a8f-…`) — topic → questions. No corpus ⇒ `trust.confidence:"inferred"`,
+  `citations:[]`. Honors `depth`, `question_types` (else a smart mix), `exam_type`, `grade_level`.
+- **`generateQuizFromSource`** (`04acfd83-…`) — `source_content` segmented with `### Chunk <id>` /
+  `### Card <id>` markers → GROUNDED questions; each `trust.citations[].sourceId` echoes the marker id
+  with a verbatim `excerpt`, `confidence:"grounded"`, `groundedIn=source_label`. Drops any question the
+  material can't support.
+- **`deepenItem`** (`00ae6c89-…`) — one question → a deeper version at `target_depth` (the per-item
+  "make this deeper" action); may switch to a richer type; keeps citations when `source_content` given.
+
+**Persist:** `assessmentService.createWithItems({ assessmentKind, … }, questions)`; every taking records
+each answer via `studyService.recordAttempt({ itemType:'assessment_item', method:'quiz'|'practice_test', … })`.

@@ -577,3 +577,29 @@ Contract + surface live in `features/education/tutor/` (see its `FEATURE.md`).
 | `FC_AGENTS.microCoach` | `0d6c715b-b861-4769-b0de-5d33f29f64a8` | gemini-flash-lite | `{ tip }` — one-sentence post-grade coaching, `fc_micro_coach` (AGENT_SPECS §11). Lights up the no-op lane in `StudyDeck`. |
 
 Superseded: `df4a4142-…` (first tutor draft, deactivated — its `learner_memory`/`study_material` never wired as prompt variables; recreated as `46b7b357-…`).
+
+---
+
+## P1 Assessment Engine agents (2026-07-07)
+
+Quiz + practice-test generation, per-item deepen, and grade-on-meaning of typed/written
+answers. Contract + surface in `features/education/assessment/` (see its `FEATURE.md`). Ids
+in `features/education/assessment/data/agents.ts` (`ASSESSMENT_AGENTS`). All gemini-3.5-flash,
+authored via `agent_author` + verified with `agent_run`. Wired with the standard
+`launchAgentExecution({ jsonExtraction:{enabled:true}, config:{autoRun:true, displayMode:"direct"} })`
++ `selectFirstExtractedObject` pattern (`useGenerateQuiz` / `deepenItem` / `gradeAnswerAI`).
+
+| Key | Agent id | Shape |
+|---|---|---|
+| `generateQuiz` | `afb89a8f-3525-451d-87fa-e19cfa183d58` | topic,count,difficulty,depth,question_types,exam_type,grade_level,user_request → `{title,description,questions[]}` (5 types; trust=inferred, citations []) |
+| `generateQuizFromSource` | `04acfd83-63ba-4ca4-9b0d-205d4f853c18` | source_content(chunk-/card-marked),source_label,count,difficulty,depth,question_types,exam_type,user_request → `{title,description,questions[]}` with GROUNDED per-item trust (real `sourceId`/`excerpt`) |
+| `deepenItem` | `00ae6c89-59cb-4d49-8b62-c434fa0c4d8b` | prompt,correct_answer,question_type,current_depth,target_depth,topic,exam_type,source_content → ONE deeper question object |
+
+Grading + verify are REUSED from `FC_AGENTS` (P1 does not fork a grading path):
+`gradeTypedAnswer` `b39183d1-…` (grade-on-meaning, the ONE typed/short/written path),
+`gradeSpoken` `e0449378-…`, `verifyAgainstSource` `90b49ead-…`.
+
+The `questions[]` item shape: `{ question_type, prompt, options?, correct_answer?,
+acceptable_answers?, explanation, rubric?, depth, topic?, trust }` — MC `correct_answer` MUST
+match an `options` entry verbatim (the FE also repairs a drifted key). `written_response` →
+`correct_answer:null`, `rubric` describes full credit.

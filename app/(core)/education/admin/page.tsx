@@ -154,16 +154,30 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/education/quizzes",
       label: "Quiz Builder",
-      description: "App tool — placeholder.",
-      filePath: "app/(core)/education/quizzes/page.tsx",
-      status: "Coming soon",
+      description:
+        "P1 Assessment Engine (quiz kind). List → new (topic/deck/document, depth, type mix) → [id] detail/take → [id]/results → [id]/edit. Grade-on-meaning; grounded citations; spine-recorded.",
+      filePath: "features/education/assessment/components/AssessmentHome.tsx",
+      status: "Live",
+      notes: [
+        "/education/quizzes/new — generate (AssessmentCreate)",
+        "/education/quizzes/[id] — detail + shareable take URL (?start=1); learning-gain (?phase=/?gain=)",
+        "/education/quizzes/[id]/results — scored report (?r=<resultId>)",
+        "/education/quizzes/[id]/edit — inline edit + 'make deeper' (EDIT-gated)",
+      ],
     },
     {
       url: "/education/practice-tests",
       label: "Practice Tests",
-      description: "App tool — placeholder.",
-      filePath: "app/(core)/education/practice-tests/page.tsx",
-      status: "Coming soon",
+      description:
+        "P1 Assessment Engine (practice_test kind) — same engine as quizzes, timed + full-length. Countdown auto-submit; detailed post-test analysis; pre/post learning gain.",
+      filePath: "features/education/assessment/components/AssessmentHome.tsx",
+      status: "Live",
+      notes: [
+        "/education/practice-tests/new — configure + generate (timed)",
+        "/education/practice-tests/[id] — detail + timed taker",
+        "/education/practice-tests/[id]/results — post-test analysis",
+        "/education/practice-tests/[id]/edit — edit (EDIT-gated)",
+      ],
     },
     {
       url: "/education/audio-study",
