@@ -12,6 +12,18 @@ The ledger of known bugs and gaps on the frontend. Twin of aidream's `KNOWN_DEFE
 
 ## OPEN
 
+### D31 — Anon-reachable SECURITY DEFINER RPCs trust caller-supplied p_user_id — CRITICAL hits FIXED 2026-07-07; broader audit OPEN
+**Severity: was CRITICAL (unauthenticated decrypted-credential theft); confirmed hits closed, wider candidate set needs a SUPERVISED audit.** Class: a `public` SECURITY DEFINER RPC takes a caller-supplied `p_user_id`/`p_org_id`/email, filters ONLY on it with NO `auth.uid()` check, and is EXECUTE-granted to `anon`+PUBLIC. PostgREST exposes `public`, so any unauthenticated browser can call it with another user's id. Found 2026-07-07 by critical-path review.
+
+**FIXED + live-verified (3 migrations, ledgered):**
+- `get_mcp_credentials` returned **DECRYPTED MCP OAuth access/refresh tokens** to anon (the worst) → revoked anon+authenticated+public (server-admin-only caller). `migrations/definer_rpc_anon_grant_revoke.sql` also revoked anon+public on `get_conversations_for_user`, `get_dm_conversations_with_details`, `get_user_email_preferences` (also dropped authenticated — admin-only), `get_user_session_data`, `apply_usage_delta`, `cx_canvas_save_user_version`, `create_user_list`, `lookup_user_by_email`.
+- `definer_rpc_self_guard_layer2.sql`: in-body `(auth.role()='service_role' OR p_user_id=auth.uid())` self-guards on the 5 still reachable by `authenticated` — verified all 5 cross-calls now 42501, self-calls pass.
+- `definer_rpc_ssr_shell_anon_revoke.sql`: revoked anon on `get_ssr_shell_data` (live browser-auth self) + anon/authenticated on the DEAD `get_ssr_agent_shell_data`.
+
+**OPEN residuals (supervise — some are guest-flow-sensitive):**
+1. **Authenticated-cross-user on LANGUAGE-sql `get_ssr_shell_data`** (anon closed; an authenticated user can still pass another id → their is_admin/prefs/org memberships). Needs an in-body guard = plpgsql conversion of a per-page-load fn (blast radius = every page; test hard). Same for `apply_usage_delta` (anon closed; left un-guarded — no FE caller, possible trigger context).
+2. **~35 more anon-granted `public` SECURITY DEFINER fns take a user/org id with no LITERAL auth check** — MIXED, audit each body. Many are SAFE via helper predicates (`iam.has_org_access`, `is_super_admin`, `mbr_*`/`org_admin_*` families). Check first (likely same hole): `get_dm_user_info`, `get_user_emails_by_ids`, `get_user_lists_summary`, `get_user_own_feedback`, `feedback_get_admin_info`, `check_prompt_app_drift`, `get_user_organizations`. **CAVEAT — do NOT blanket-revoke anon:** several are LEGITIMATELY anon (guest flows) — `check_upload_quota`/`get_usage_status`/`get_user_limits` (`p_is_guest`), `check_rate_limit` (public apps), `accept_organization_invitation`. Fix template: own-data fns get the `(auth.role()='service_role' OR <id>=auth.uid())` guard; org fns get `iam.has_org_access(p_org_id)`; revoke anon only where no guest path exists.
+
 ### D2 — Org/scope authorization boundary open (deferred to the pre-launch security overhaul)
 **Severity: critical — multi-tenant compromise via raw supabase-js. Deferred by explicit decision (2026-06-10); build anything NEW with proper auth anyway.**
 - **Role self-escalation (re-verified live 2026-07-07):** `iam.memberships` UPDATE `WITH CHECK` is `iam.has_org_access(organization_id)` only — any org member can set any membership row's `role`, including their own → `owner`. Fix: role-change guard trigger (or column-guarding policy) + DB-enforced ≥1-owner invariant. Parked because tightening role writes risks breaking invite-accept/role-management flows.
