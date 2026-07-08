@@ -33,6 +33,11 @@ function isRecord(v: unknown): v is Record<string, unknown> {
  * The from-source deck agent grounds + cites against `### Chunk <id>` markers —
  * it returns NO cards for an unmarked blob. Ingest gives us plain text, so we
  * synthesize chunk markers (paragraph-packed to ~1000 chars) before sending.
+ *
+ * NOTE: no page number is emitted. Ingest hands us a flat text blob with no
+ * per-chunk page mapping, so any page we stamped would be a lie — and the agent
+ * echoes it straight into the citation locator the trust layer renders. Better
+ * an honest chunk id with no page than a false "Page 1" on every card.
  */
 function chunkForGrounding(text: string): string {
   const paras = text
@@ -51,7 +56,7 @@ function chunkForGrounding(text: string): string {
   }
   if (buf) chunks.push(buf);
   if (chunks.length === 0) chunks.push(text.trim());
-  return chunks.map((c, i) => `### Chunk c${i + 1} (Page 1)\n${c}`).join("\n\n");
+  return chunks.map((c, i) => `### Chunk c${i + 1}\n${c}`).join("\n\n");
 }
 
 /** Coerce one raw agent card object → NewCardInput (drops unusable entries). */

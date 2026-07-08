@@ -48,6 +48,8 @@ export interface RunAgentExtractionResult {
 
 const DEFAULT_TIMEOUT_MS = 180_000;
 const DEFAULT_POLL_MS = 250;
+/** After the stream ends, how long to let Redux settle before declaring "no JSON". */
+const GRACE_MS = 6_000;
 
 /**
  * Launch a direct/autoRun agent with JSON extraction on, wait for the extracted
@@ -98,6 +100,10 @@ export async function runAgentExtraction(
     opts.onRequestId(finalRequestId);
   }
 
+  // For displayMode:"direct" + autoRun, `.unwrap()` resolves only AFTER the
+  // whole stream completes — so extraction is either already in state or never
+  // coming. We poll a short GRACE window for Redux to settle, NOT the full
+  // timeout, and distinguish "no JSON" from "timed out" so the error is honest.
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const state = store.getState() as RootState;
@@ -105,7 +111,7 @@ export async function runAgentExtraction(
     if (selectJsonExtractionComplete(finalRequestId)(state)) {
       const snapshot = selectFirstExtractedObject(finalRequestId)(state);
       if (!snapshot) {
-        throw new Error("Agent finished but produced no structured JSON");
+        throw new Error("The agent finished but returned no structured result");
       }
       return {
         value: snapshot.value,
@@ -120,6 +126,20 @@ export async function runAgentExtraction(
         reqError?.user_message ??
           reqError?.message ??
           "The generation agent failed before returning a result",
+      );
+    }
+
+    // Stream already ended (status settled to a terminal, non-error state) but
+    // no extraction landed — fail fast rather than burn the whole timeout.
+    const status = selectRequestStatus(finalRequestId)(state);
+    const inFlight =
+      status === "pending" ||
+      status === "connecting" ||
+      status === "streaming" ||
+      status === "awaiting-tools";
+    if (Date.now() - start > GRACE_MS && !inFlight) {
+      throw new Error(
+        "The agent finished but returned no structured result — try again or simplify the source.",
       );
     }
 

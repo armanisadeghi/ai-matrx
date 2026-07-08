@@ -20,9 +20,9 @@ Consumers: P9, P4, flashcards, P1, P3.
 ## The contract (import this)
 
 ```ts
-import { useContentConverter } from "@/features/education/convert";
+import { useContentConverter } from "@/features/education/convert/useContentConverter";
 // or, outside React:
-import { convertContent } from "@/features/education/convert";
+import { runConvert } from "@/features/education/convert/registry";
 
 const { convert, convertMany } = useContentConverter();
 
@@ -49,7 +49,7 @@ ingest pipeline normalizes EVERY input to a durable file.
 
 | Kind | Agent / service | Persists to | Capability (P8) |
 |---|---|---|---|
-| `deck` | flashcards from-source agent → `fcService.createSetWithCards` | `fc_set` + `fc_card` | `education.generate_cards` |
+| `deck` | Kit Flashcard agent (`0de9ff99…`) → `fcService.createSetWithCards` | `fc_set` + `fc_card` | `education.generate_cards` |
 | `summary` | Study Summary agent (`92b607a4…`) → `studyMediaService` | `study_media` (`media_kind='summary'`) | `education.ingest_document` |
 | `mind_map` | Study Mind Map agent → `studyMediaService` | `study_media` (`media_kind='mind_map'`) | `education.mindmap_generate` |
 
@@ -62,7 +62,7 @@ TrustEnvelopes roll up via `mergeTrustEnvelopes`.
 Replace the placeholder in `generators/index.ts` (or self-register from your feature):
 
 ```ts
-import { registerGenerator } from "@/features/education/convert";
+import { registerGenerator } from "@/features/education/convert/registry";
 registerGenerator({
   targetKind: "quiz",
   label: "Quiz",

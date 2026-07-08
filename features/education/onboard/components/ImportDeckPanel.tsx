@@ -16,7 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { importDeckFile, importDelimited, type ImportOutcome } from "../import/importDeck";
-import { importAnkiFile, isAnkiFile } from "../import/importAnki";
+
+/** Filename check only — kept here so the heavy Anki decoder (jszip + sql.js
+ * WASM) is loaded LAZILY, only when an .apkg is actually chosen. */
+const isAnkiFile = (file: File) => /\.(apkg|colpkg)$/i.test(file.name);
 
 type Mode = "file" | "paste";
 
@@ -47,7 +50,14 @@ export function ImportDeckPanel() {
   }
 
   const onFile = (file: File) =>
-    runImport(() => (isAnkiFile(file) ? importAnkiFile(file) : importDeckFile(file)));
+    runImport(async () => {
+      if (isAnkiFile(file)) {
+        // Lazy-load the Anki decoder (jszip + sql.js WASM) only on demand.
+        const { importAnkiFile } = await import("../import/importAnki");
+        return importAnkiFile(file);
+      }
+      return importDeckFile(file);
+    });
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -139,7 +149,7 @@ export function ImportDeckPanel() {
       {result && (
         <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2">
           <div className="flex items-center gap-2 text-sm text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
+            <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
             <span className="truncate">
               {result.name} · {result.cardCount} cards
             </span>

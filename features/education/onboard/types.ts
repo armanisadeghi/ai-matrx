@@ -4,7 +4,7 @@
 // input to `NormalizedIngest`; the kit orchestrator fans it out through the
 // converter contract (`features/education/convert`).
 
-import type { SourceRef, TargetKind } from "@/features/education/convert";
+import type { SourceRef, TargetKind } from "@/features/education/convert/types";
 
 /** The raw input the user handed us at the front door. */
 export type IngestInputKind = "paste" | "file" | "url" | "youtube";

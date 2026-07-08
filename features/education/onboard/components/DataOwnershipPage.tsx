@@ -74,13 +74,13 @@ export function DataOwnershipPage() {
       {/* The pledge — every line is backed by a button on this page. */}
       <section className="rounded-xl border border-border bg-card p-4">
         <div className="mb-3 flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
+          <ShieldCheck className="h-5 w-5 text-green-600 dark:text-green-500" />
           <h2 className="text-sm font-semibold text-foreground">Our data-ownership pledge</h2>
         </div>
         <ul className="space-y-2">
           {PLEDGE.map((line) => (
             <li key={line} className="flex gap-2 text-sm text-muted-foreground">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
               <span>{line}</span>
             </li>
           ))}

@@ -64,6 +64,14 @@ export function useIngest(): UseIngestResult {
       const blob = new Blob([text], { type: "text/markdown" });
       const file = new File([blob], `${safe}.md`, { type: "text/markdown" });
       const result = await upload({ kind: "file", file });
+      if (!result.fileId) {
+        // Loud recovery: without an anchor fileId, artifacts can't link a
+        // `source` lineage edge — the "durable anchor" guarantee is broken.
+        console.error(
+          "[useIngest] anchor upload returned no fileId — kit artifacts will have no source lineage.",
+          { title },
+        );
+      }
       return result.fileId;
     },
     [upload],

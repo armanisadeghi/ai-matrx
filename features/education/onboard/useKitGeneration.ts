@@ -8,9 +8,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { getGenerator } from "@/features/education/convert";
-import type { TargetKind } from "@/features/education/convert";
-import { useContentConverter } from "@/features/education/convert";
+import { getGenerator } from "@/features/education/convert/registry";
+import type { TargetKind } from "@/features/education/convert/types";
+import { useContentConverter } from "@/features/education/convert/useContentConverter";
 import { useIngest } from "./useIngest";
 import type {
   IngestProgress,
@@ -74,6 +74,11 @@ export function useKitGeneration(): UseKitGeneration {
       kinds: TargetKind[],
       options?: { count?: number; difficulty?: string; focus?: string },
     ) => {
+      if (kinds.length === 0) {
+        setError("Pick at least one thing to create.");
+        setPhase("error");
+        return;
+      }
       setError(null);
       setSource(null);
       setPhase("ingesting");

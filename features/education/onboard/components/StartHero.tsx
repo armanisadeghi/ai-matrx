@@ -36,12 +36,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEntitlement } from "@/features/entitlements/hooks";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
-import {
-  ALL_TARGET_KINDS,
-  getGenerator,
-  isTargetAvailable,
-  type TargetKind,
-} from "@/features/education/convert";
+import { getGenerator, isTargetAvailable } from "@/features/education/convert/registry";
+import { ALL_TARGET_KINDS, type TargetKind } from "@/features/education/convert/types";
 import { useKitGeneration } from "../useKitGeneration";
 import type { KitTargetState } from "../types";
 
@@ -196,7 +192,7 @@ export function StartHero() {
           </Button>
 
           <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" />
+            <ShieldCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
             Grounded in your material. Your files, your data —{" "}
             <Link href="/education/data" className="underline hover:text-foreground">
               export anytime

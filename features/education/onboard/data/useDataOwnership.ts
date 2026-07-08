@@ -37,6 +37,7 @@ export function useDataOwnership(): UseDataOwnership {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null); // clear a stale error so a successful reload isn't masked
     const res = await fcService.listSets();
     if (res.error) setError(typeof res.error === "string" ? res.error : "Failed to load your decks");
     else setDecks(res.data ?? []);
@@ -72,21 +73,29 @@ export function useDataOwnership(): UseDataOwnership {
       const stamp = new Date().toISOString();
       const folder = zip.folder("matrx-flashcards");
       const seen = new Map<string, number>();
+      let written = 0;
+      const failed: string[] = [];
       for (const set of decks) {
         const res = await fcService.getSetWithCards(set.id);
-        if (res.error || !res.data) continue;
+        if (res.error || !res.data) {
+          failed.push(set.name);
+          continue;
+        }
         const json = buildDeckExport(res.data.set, res.data.cards, "json", stamp);
         let base = safeFileBase(set.name);
         const n = seen.get(base) ?? 0;
         seen.set(base, n + 1);
         if (n > 0) base = `${base}_${n}`;
         folder?.file(`${base}.json`, json);
+        written++;
       }
+      // Manifest reflects what was ACTUALLY written, not what was requested.
       const manifest = {
         __format: "matrx.education.export",
         version: 1,
         exported_at: stamp,
-        deck_count: decks.length,
+        deck_count: written,
+        ...(failed.length ? { failed_decks: failed } : {}),
       };
       zip.file("manifest.json", JSON.stringify(manifest, null, 2));
       const blob = await zip.generateAsync({ type: "blob" });
