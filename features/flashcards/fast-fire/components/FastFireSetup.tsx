@@ -15,6 +15,7 @@ import {
   Flame,
   Layers,
   Clock,
+  Bell,
   Hash,
   Gauge,
   AlertCircle,
@@ -191,6 +192,33 @@ export function FastFireSetup() {
                 dispatch(updateConfig({ secondsPerCard: v[0] ?? 12 }))
               }
             />
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="mb-2 flex items-center justify-between text-sm font-medium text-foreground">
+              <span className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                Warning beep
+              </span>
+              <span className="tabular-nums text-orange-600 dark:text-orange-400">
+                {config.warningSeconds === 0
+                  ? "Off"
+                  : `${config.warningSeconds}s left`}
+              </span>
+            </div>
+            <Slider
+              min={0}
+              max={10}
+              step={1}
+              value={[config.warningSeconds]}
+              onValueChange={(v) =>
+                dispatch(updateConfig({ warningSeconds: v[0] ?? 3 }))
+              }
+            />
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              A light beep this many seconds before time runs out. 0 = off. Only
+              fires when it lands inside a card&apos;s window.
+            </p>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4">

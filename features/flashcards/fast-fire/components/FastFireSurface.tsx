@@ -24,6 +24,7 @@ import { FastFireSetup } from "./FastFireSetup";
 import { FastFireCountdown } from "./FastFireCountdown";
 import { FastFireLiveCard } from "./FastFireLiveCard";
 import { FastFireScoreboard } from "./FastFireScoreboard";
+import { FastFireTimesUp } from "./FastFireTimesUp";
 
 const FLASHCARDS_HOME = "/education/flashcards";
 
@@ -73,12 +74,16 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
     case "card_recording":
     case "advancing":
       return (
-        <FastFireLiveCard
-          subscribeProgress={subscribeProgress}
-          onSkip={skipCard}
-          onAbort={abort}
-          onSpokenFrontEnded={onSpokenFrontEnded}
-        />
+        <>
+          <FastFireLiveCard
+            subscribeProgress={subscribeProgress}
+            onSkip={skipCard}
+            onAbort={abort}
+            onSpokenFrontEnded={onSpokenFrontEnded}
+          />
+          {/* Full-screen "TIME'S UP" cue — self-gates to a timed-out advance. */}
+          <FastFireTimesUp />
+        </>
       );
     case "finalizing":
     case "complete":

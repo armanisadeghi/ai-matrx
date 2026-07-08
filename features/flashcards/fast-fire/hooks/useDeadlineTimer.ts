@@ -35,10 +35,21 @@ export interface DeadlineTimerOptions {
    * rAF — no React state, no Redux, no re-render per frame.
    */
   onTick?: (remainingMs: number, progress: number) => void;
+  /**
+   * Fire a ONE-TIME warning when the remaining time first drops to `warningMs`
+   * or below (the "you have N seconds left" beep). Fired at most once per
+   * deadline, from the SAME single rAF loop that owns expiry — so the warning is
+   * on the identical clock as the countdown and can never double-fire or drift.
+   * Omit (or pass warningMs ≤ 0 / ≥ durationMs) to disable it for this card.
+   */
+  warningMs?: number;
+  /** Fired EXACTLY ONCE when `warningMs` is crossed (if armed). */
+  onWarning?: () => void;
 }
 
 export function useDeadlineTimer(options: DeadlineTimerOptions): void {
-  const { deadlineTs, durationMs, onExpire, onTick } = options;
+  const { deadlineTs, durationMs, onExpire, onTick, warningMs, onWarning } =
+    options;
 
   // Latest values in refs so the SINGLE rAF effect never lists unstable
   // callbacks/values in its deps (that was the original churn bug). The effect
@@ -48,11 +59,16 @@ export function useDeadlineTimer(options: DeadlineTimerOptions): void {
   onExpireRef.current = onExpire;
   const onTickRef = useRef(onTick);
   onTickRef.current = onTick;
+  const onWarningRef = useRef(onWarning);
+  onWarningRef.current = onWarning;
   const durationRef = useRef(durationMs);
   durationRef.current = durationMs;
+  const warningRef = useRef(warningMs);
+  warningRef.current = warningMs;
 
-  // Guards a single fire per deadline.
+  // Guards a single fire per deadline (expiry + warning are each once-only).
   const firedRef = useRef(false);
+  const warnedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -65,9 +81,20 @@ export function useDeadlineTimer(options: DeadlineTimerOptions): void {
       return undefined;
     }
 
-    // New deadline → arm a fresh single-fire window.
+    // New deadline → arm a fresh single-fire window (expiry + warning).
     firedRef.current = false;
+    warnedRef.current = false;
     const duration = Math.max(1, durationRef.current);
+    // Only arm a warning that lands strictly INSIDE this card's window — a
+    // warning ≥ the whole duration (or ≤ 0) would fire instantly or never, both
+    // useless. This makes short-window modes (voice answers, quick drills) safe
+    // without any caller-side guard.
+    const warnAt =
+      typeof warningRef.current === "number" &&
+      warningRef.current > 0 &&
+      warningRef.current < duration
+        ? warningRef.current
+        : null;
 
     const loop = () => {
       const now = Date.now();
@@ -82,6 +109,12 @@ export function useDeadlineTimer(options: DeadlineTimerOptions): void {
         }
         rafRef.current = null;
         return; // stop the loop — the transition is owned by onExpire now
+      }
+
+      // One-time warning as the window nears its end (before expiry).
+      if (warnAt !== null && !warnedRef.current && remaining <= warnAt) {
+        warnedRef.current = true;
+        onWarningRef.current?.();
       }
 
       const elapsed = duration - remaining;

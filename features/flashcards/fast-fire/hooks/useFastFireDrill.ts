@@ -9,12 +9,13 @@
 //     dispatches transitions. No drifting useStates driving the flow.
 //   • Deadline timer (#2): one `deadlineTs` (state) → useDeadlineTimer's single
 //     rAF loop → `onExpire` fires the card transition once. No setInterval.
-//   • Per-card capture (#3): ONE warm mic for the whole session; a fresh
-//     MediaRecorder is started per card (`startCardClip`) and stopped at the card
-//     boundary (`stopCardClip`), so each card's clip is a COMPLETE, self-contained,
-//     decodable container — no mid-stream slicing, no arrival-timestamp math. A
-//     separate full-session recorder retains the durable whole-session recording.
-//     Buzzers fire at each boundary.
+//   • Per-card capture (#3): ONE warm mic + ONE continuous PCM buffer for the
+//     whole session. `startCardClip`/`stopCardClip` only MARK the card's window on
+//     the AUDIO clock (`ctx.currentTime`, see continuousCapture.ts) — each clip is
+//     a sample-accurate slice of the one buffer, so the boundary can never drift
+//     from the audible buzzer or the recorded speech, and skip vs timeout mark the
+//     boundary identically. The full session is the same buffer with markers mixed
+//     in. Buzzers fire at each boundary.
 //   • Fire-and-forget grading (#4): when a card's window closes we stop its
 //     recorder, take the resulting blob, and dispatch `gradeCard(...)` WITHOUT
 //     awaiting the grade. The drill advances to the next card immediately; grades
@@ -45,7 +46,9 @@ import {
   selectFastFireCurrentCard,
   selectFastFireCurrentIndex,
   selectFastFireSessionId,
+  selectFastFireAdvanceReason,
 } from "../redux/fastFire.selectors";
+import type { AdvanceReason } from "../redux/fastFireSlice";
 import { useDeadlineTimer } from "./useDeadlineTimer";
 import {
   startCardClip,
@@ -65,8 +68,13 @@ import { reviewSession } from "../agents/reviewSession.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
 
 const COUNTDOWN_SECONDS = 3;
-/** The brief beat between cards (buzzer + slice), then the next card arms. */
-const ADVANCE_BEAT_MS = 450;
+/** SKIP path: the brief beat between cards (buzzer + slice), then the next arms.
+ *  The learner chose to move on, so this is short and unobtrusive. */
+const SKIP_ADVANCE_BEAT_MS = 450;
+/** TIMEOUT path: hold the full-screen "TIME'S UP" cue this long before the next
+ *  card, so a learner still answering clearly registers that time ran out
+ *  (owner direction: ~1 second). Longer than the skip beat by design. */
+const TIMESUP_HOLD_MS = 1000;
 /** VOICE MODE safety net: if the spoken question never signals it finished (e.g.
  *  iOS autoplay blocked), open the answer window anyway so a card can't hang. */
 const SPOKEN_FRONT_MAX_WAIT_MS = 25000;
@@ -185,11 +193,11 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     return () => clearInterval(id);
   }, [phase, dispatch]);
 
-  // ── Arm the deadline + open the per-card recorder when a card starts ─────────
-  // Keyed on (phase, currentIndex). When a new card enters `card_recording` we
-  // play the start buzzer, start a FRESH per-card MediaRecorder (so this card's
-  // clip is a complete, self-contained container), and set the wall-clock
-  // deadline. The deadline change is what (re)starts the rAF loop.
+  // ── Arm the deadline + mark the card's audio window when a card starts ───────
+  // Keyed on (phase, currentCard.id). When a new card enters `card_recording` we
+  // play the start buzzer, MARK this card's start on the audio clock
+  // (`startCardClip`), and set the wall-clock deadline. The deadline change is
+  // what (re)starts the rAF loop.
   useEffect(() => {
     if (phase !== "card_recording" || !currentCard) {
       return undefined;
@@ -222,11 +230,16 @@ export function useFastFireDrill(): UseFastFireDrillResult {
     // currentCard.id is the real key (the card changing); phase guards entry.
   }, [phase, currentCard?.id, config.spokenFronts]);
 
-  // ── Deadline expiry → close the card: buzzer, stop recorder, grade, advance ──
-  // This is the ONE place a card ends. It stops the per-card recorder and
-  // dispatches `gradeCard(...)` FIRE-AND-FORGET (no await on the clip flush or the
-  // grade), then moves the machine to `advancing`. The drill never blocks.
-  const handleExpire = (): void => {
+  // ── Deadline expiry (or Next) → close the card: buzzer, mark boundary, grade ──
+  // The ONE place a card ends. It closes the card's audio window, dispatches
+  // `gradeCard(...)` FIRE-AND-FORGET (no await on the clip flush or the grade),
+  // then moves the machine to `advancing`. The drill never blocks. `reason`
+  // distinguishes the clock running out (`timeout` — prominent buzzer + TIME'S UP
+  // hold) from a deliberate "Next" (`skip` — gentle beep, quick advance).
+  // CRITICAL: the two paths differ ONLY in the learner-facing cue; the audio
+  // boundary (`stopCardClip`) is marked on the audio clock at this instant either
+  // way, so the RECORDING timing is identical.
+  const handleExpire = (reason: AdvanceReason): void => {
     const win = windowRef.current;
     const card = currentCard;
     if (!win || !card) {
@@ -239,12 +252,13 @@ export function useFastFireDrill(): UseFastFireDrillResult {
       return;
     }
     closedCardsRef.current.add(card.id);
-    playBuzzer("stop");
+    playBuzzer(reason === "timeout" ? "timesup" : "stop");
 
-    // Stop THIS card's recorder and grade its complete, self-contained clip. The
-    // blob flushes asynchronously (MediaRecorder.stop → onstop), so we grade in
-    // the resolve callback — still fire-and-forget: the drill advances NOW and
-    // never blocks on the clip or the grade. Keyed by stable card id.
+    // Close THIS card's audio window and grade its clip. `stopCardClip` marks the
+    // boundary on the audio clock NOW, then resolves the WAV a moment later (once
+    // the trailing pad is captured), so we grade in the resolve callback — still
+    // fire-and-forget: the drill advances NOW and never blocks on the clip or the
+    // grade. Keyed by stable card id.
     const cardSnapshot = {
       cardId: card.id,
       front: card.front,
@@ -258,13 +272,17 @@ export function useFastFireDrill(): UseFastFireDrillResult {
 
     windowRef.current = null;
     setDeadlineTs(null);
-    dispatch(advanceCard());
+    dispatch(advanceCard({ reason }));
   };
 
   useDeadlineTimer({
     deadlineTs: phase === "card_recording" ? deadlineTs : null,
     durationMs: answerSeconds * 1000,
-    onExpire: handleExpire,
+    onExpire: () => handleExpire("timeout"),
+    // The light "almost out of time" nudge, once per card, from the same clock as
+    // the countdown so it never drifts or double-fires.
+    warningMs: config.warningSeconds * 1000,
+    onWarning: () => playBuzzer("warning"),
     onTick: (remainingMs, progress) => {
       for (const l of progressListenersRef.current) {
         try {
@@ -277,13 +295,19 @@ export function useFastFireDrill(): UseFastFireDrillResult {
   });
 
   // ── The advancing beat → commit to the next card (or finalize) ───────────────
+  // A timeout holds the "TIME'S UP" cue longer (the learner may not have noticed);
+  // a deliberate skip advances quickly. Capture continues throughout, so the extra
+  // hold is just real audio that becomes the just-closed card's trailing pad.
+  const advanceReason = useAppSelector(selectFastFireAdvanceReason);
   useEffect(() => {
     if (phase !== "advancing") return undefined;
+    const holdMs =
+      advanceReason === "timeout" ? TIMESUP_HOLD_MS : SKIP_ADVANCE_BEAT_MS;
     const id = setTimeout(() => {
       dispatch(commitAdvance());
-    }, ADVANCE_BEAT_MS);
+    }, holdMs);
     return () => clearTimeout(id);
-  }, [phase, currentIndex, dispatch]);
+  }, [phase, currentIndex, advanceReason, dispatch]);
 
   // ── Finalize: stop capture, upload the full-session recording, run review ────
   const finalizingRef = useRef(false);
@@ -369,7 +393,7 @@ export function useFastFireDrill(): UseFastFireDrillResult {
 
   const skipCard = (): void => {
     if (phase === "card_recording") {
-      handleExpire();
+      handleExpire("skip");
     }
   };
 

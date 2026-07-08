@@ -8,6 +8,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
+  AdvanceReason,
   CardGrade,
   DrillCard,
   FastFirePhase,
@@ -29,6 +30,12 @@ export const selectFastFireCards = (state: RootState): DrillCard[] =>
 
 export const selectFastFireCurrentIndex = (state: RootState): number =>
   state.fastFire.currentIndex;
+
+/** Why the current card advanced — drives the TIME'S UP hold (timeout) vs a
+ *  quick, alarm-free transition (skip). Null outside the `advancing` beat. */
+export const selectFastFireAdvanceReason = (
+  state: RootState,
+): AdvanceReason | null => state.fastFire.lastAdvanceReason;
 
 export const selectFastFireSessionId = (state: RootState): string | null =>
   state.fastFire.sessionId;
