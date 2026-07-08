@@ -4,11 +4,18 @@
  * kind whose recomputed structural gate fails — schema drifted under the
  * sample), the duplicate-skill red (R9: ONE skill per kind per syntax), the
  * yellow no-example gap, and the interim sample_data warn.
+ *
+ * Plus the `n/a` doctrine (R10 honesty pass): the two classes of kind that
+ * CANNOT hold some assets — `data_only` (workflow I/O contracts) and
+ * `nested_only_child` (renders only inside its root) — get `n/a` cells and
+ * emit no findings, while every RED still screams and no positive cell is
+ * ever overwritten.
  */
 
 import {
   runShapeDoctor,
   attributeSkillsToKinds,
+  classifyExemption,
   type DoctorKindDefinition,
   type ShapeDoctorInput,
 } from "../registry/shape-doctor";
@@ -42,6 +49,7 @@ function makeKind(overrides: Partial<DoctorKindDefinition>): DoctorKindDefinitio
     emittedJsonSchema: STRICT_CARD_SCHEMA,
     sampleData: null,
     updatedAt: T0,
+    metadata: null,
     ...overrides,
   };
 }
@@ -52,12 +60,18 @@ function baseInput(overrides: Partial<ShapeDoctorInput>): ShapeDoctorInput {
     examples: [],
     components: [],
     surfaces: [],
+    edges: [],
     renderBlockSkills: [],
     contentBlocks: [],
     detectorTokens: [],
     codeRenderPaths: { compiledKinds: [], artifactKinds: [] },
     ...overrides,
   };
+}
+
+/** `<parent> embeds <child>` — one kind_edge row. */
+function edge(parentDefinitionId: string, childDefinitionId: string, fieldName = "items") {
+  return { parentDefinitionId, childDefinitionId, fieldName };
 }
 
 const goodSample = {
@@ -120,8 +134,9 @@ describe("shape doctor", () => {
       kinds: 1,
       red: 0,
       yellow: 0,
-      cells: { ok: 7, warn: 0, missing: 0 },
+      cells: { ok: 7, warn: 0, missing: 0, "n/a": 0 },
     });
+    expect(row.exemption).toBeNull();
   });
 
   it("screams RED when an ACTIVE kind fails its recomputed structural gate", () => {
@@ -273,5 +288,341 @@ describe("shape doctor", () => {
     expect(tokenFindings).toHaveLength(1); // deduped, control tag excluded
     expect(tokenFindings[0].message).toContain("flashcards");
     expect(tokenFindings[0].message).toContain("expected until Stage 5");
+  });
+});
+
+// ─── The `n/a` doctrine ─────────────────────────────────────────────────────
+
+const WORKFLOW_IO_META = { family: "workflow_io", generic: true, category: "pure" };
+
+describe("shape doctor — n/a classification", () => {
+  it("marks a DATA-ONLY (workflow_io) kind n/a for component/surface/skill/block", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "http_response",
+            emittedJsonSchema: { type: "object" },
+            metadata: WORKFLOW_IO_META,
+          }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "k1", isCanonical: true, data: {}, updatedAt: T0 },
+        ],
+      }),
+    );
+
+    const row = report.rows[0];
+    expect(row.exemption?.class).toBe("data_only");
+    for (const col of ["component", "surface", "skill", "content_block"] as const) {
+      expect(row.assets[col].status).toBe("n/a");
+      expect(row.assets[col].detail).toContain("workflow I/O contract");
+    }
+    // Definition / example / gate stay REAL — a data-only kind still has a
+    // schema that must validate against its sample.
+    expect(row.assets.definition.status).toBe("ok");
+    expect(row.assets.example.status).toBe("ok");
+    expect(row.assets.gate_structural.status).toBe("ok");
+
+    // No yellow noise.
+    expect(report.findings).toHaveLength(0);
+    expect(report.totals.cells["n/a"]).toBe(4);
+  });
+
+  it("marks a NESTED-ONLY CHILD n/a for component/surface/skill/block", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "flashcard_set", isActive: true }),
+          makeKind({ id: "child", kind: "flashcard" }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "root", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        edges: [edge("root", "child", "cards")],
+      }),
+    );
+
+    const child = report.rows.find((r) => r.kind === "flashcard");
+    expect(child?.exemption?.class).toBe("nested_only_child");
+    expect(child?.exemption?.parents).toEqual(["flashcard_set"]);
+    for (const col of ["component", "surface", "skill", "content_block"] as const) {
+      expect(child?.assets[col].status).toBe("n/a");
+      expect(child?.assets[col].detail).toContain("nested-only child of flashcard_set");
+    }
+    // Those four findings must NOT be emitted for the child.
+    for (const code of ["no-skill", "no-content-block"] as const) {
+      expect(report.findings.some((f) => f.code === code && f.kind === "flashcard")).toBe(false);
+    }
+  });
+
+  it("keeps `no-example` LOUD for a nested-only child (its schema is unproven)", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "timeline_period" }),
+          makeKind({ id: "child", kind: "timeline_event" }),
+        ],
+        edges: [edge("root", "child", "events")],
+      }),
+    );
+
+    const child = report.rows.find((r) => r.kind === "timeline_event");
+    expect(child?.exemption?.class).toBe("nested_only_child");
+    // example + gate are NEVER exemptible — a child CAN and SHOULD have one.
+    expect(child?.assets.example.status).toBe("missing");
+    expect(child?.assets.gate_structural.status).toBe("missing");
+    expect(
+      report.findings.some((f) => f.code === "no-example" && f.kind === "timeline_event"),
+    ).toBe(true);
+  });
+
+  it("never exempts an ACTIVE kind, even when it IS nested in another kind", () => {
+    // quiz_set is embedded by study_pack_set yet is an ACTIVE root — its
+    // missing component is a REAL gap that must stay loud (R6).
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "pack", kind: "study_pack_set" }),
+          makeKind({ id: "quiz", kind: "quiz_set", isActive: true }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "quiz", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        edges: [edge("pack", "quiz", "included_sets")],
+      }),
+    );
+
+    const quiz = report.rows.find((r) => r.kind === "quiz_set");
+    expect(quiz?.exemption).toBeNull();
+    expect(quiz?.assets.component.status).toBe("missing");
+    expect(quiz?.assets.surface.status).toBe("warn");
+    expect(report.findings.some((f) => f.code === "no-skill" && f.kind === "quiz_set")).toBe(true);
+    expect(
+      report.findings.some((f) => f.code === "no-content-block" && f.kind === "quiz_set"),
+    ).toBe(true);
+  });
+
+  it("does not treat SELF-recursion as evidence of nesting", () => {
+    // decision_node.yes → decision_node is recursion, not a parent embed.
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [makeKind({ id: "n1", kind: "decision_node" })],
+        edges: [edge("n1", "n1", "yes")],
+      }),
+    );
+    expect(report.rows[0].exemption).toBeNull();
+    expect(report.rows[0].assets.component.status).toBe("missing");
+  });
+
+  it("never lets n/a overwrite a POSITIVE cell (child taught by its parent's skill)", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "flashcard_set", isActive: true }),
+          makeKind({ id: "child", kind: "flashcard" }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "root", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        edges: [edge("root", "child", "cards")],
+        // The parent's skill body demonstrates the nested child's __kind.
+        renderBlockSkills: [
+          {
+            skillId: "kind_flashcard_set",
+            label: "Flashcards",
+            body: '{"__kind":"flashcard_set","cards":[{"__kind":"flashcard"}]}',
+          },
+        ],
+        contentBlocks: [{ id: "b1", template: '{"__kind": "flashcard"} nested' }],
+      }),
+    );
+
+    const child = report.rows.find((r) => r.kind === "flashcard");
+    expect(child?.exemption?.class).toBe("nested_only_child");
+    // Real coverage wins over the exemption.
+    expect(child?.assets.skill.status).toBe("ok");
+    expect(child?.assets.content_block.status).toBe("ok");
+    // Cells with no possible positive stay n/a.
+    expect(child?.assets.component.status).toBe("n/a");
+    expect(child?.assets.surface.status).toBe("n/a");
+  });
+
+  it("a registered component or surface DISQUALIFIES the nested-child exemption", () => {
+    const withComponent = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "flashcard_set", isActive: true }),
+          makeKind({ id: "child", kind: "flashcard" }),
+        ],
+        components: [
+          {
+            id: "c1",
+            kindDefinitionId: "child",
+            platform: "web",
+            role: "output",
+            componentKey: "FlashcardBlock",
+          },
+        ],
+        edges: [edge("root", "child", "cards")],
+      }),
+    );
+    const child = withComponent.rows.find((r) => r.kind === "flashcard");
+    expect(child?.exemption).toBeNull();
+    expect(child?.assets.component.status).toBe("ok");
+    // Gap cells come back.
+    expect(child?.assets.surface.status).toBe("warn");
+    expect(withComponent.findings.some((f) => f.code === "no-skill" && f.kind === "flashcard")).toBe(
+      true,
+    );
+
+    const withSurface = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "flashcard_set", isActive: true }),
+          makeKind({ id: "child", kind: "flashcard" }),
+        ],
+        surfaces: [
+          { id: "s1", kindDefinitionId: "child", surfaceType: "xml_tag", token: "flashcard" },
+        ],
+        edges: [edge("root", "child", "cards")],
+      }),
+    );
+    expect(withSurface.rows.find((r) => r.kind === "flashcard")?.exemption).toBeNull();
+  });
+
+  it("a compiled render path DISQUALIFIES the nested-child exemption", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "flashcard_set", isActive: true }),
+          makeKind({ id: "child", kind: "flashcard" }),
+        ],
+        edges: [edge("root", "child", "cards")],
+        codeRenderPaths: { compiledKinds: ["flashcard"], artifactKinds: [] },
+      }),
+    );
+    const child = report.rows.find((r) => r.kind === "flashcard");
+    expect(child?.exemption).toBeNull();
+    expect(child?.assets.component.status).toBe("warn");
+  });
+
+  // ─── Reds survive the exemption, always ───────────────────────────────────
+
+  it("still screams RED on an ACTIVE exempted-family kind failing its gate", () => {
+    // Activating a workflow_io kind does not silence its recomputed gate.
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "json",
+            isActive: true,
+            metadata: WORKFLOW_IO_META,
+          }),
+        ],
+        examples: [
+          {
+            id: "e1",
+            kindDefinitionId: "k1",
+            isCanonical: true,
+            data: { title: "Set", cards: [{ front: "f", extra: true }] },
+            updatedAt: T0,
+          },
+        ],
+      }),
+    );
+    expect(report.rows[0].exemption?.class).toBe("data_only");
+    expect(report.findings.some((f) => f.code === "active-gate-fail")).toBe(true);
+    expect(report.totals.red).toBe(1);
+  });
+
+  it("still screams RED on duplicate skills teaching an exempted nested child", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({ id: "root", kind: "flashcard_set", isActive: true }),
+          makeKind({ id: "child", kind: "flashcard" }),
+        ],
+        examples: [
+          { id: "e1", kindDefinitionId: "root", isCanonical: true, data: goodSample, updatedAt: T0 },
+        ],
+        edges: [edge("root", "child", "cards")],
+        renderBlockSkills: [
+          { skillId: "flash-a", label: "A", body: '{"__kind":"flashcard"}' },
+          { skillId: "flash-b", label: "B", body: '{"__kind":"flashcard"}' },
+        ],
+      }),
+    );
+    const red = report.findings.find((f) => f.code === "duplicate-skill");
+    expect(red?.kind).toBe("flashcard");
+    expect(report.rows.find((r) => r.kind === "flashcard")?.assets.skill.status).toBe("warn");
+  });
+
+  it("still screams RED on component-without-schema for an exempted kind", () => {
+    const report = runShapeDoctor(
+      baseInput({
+        kinds: [
+          makeKind({
+            id: "k1",
+            kind: "json",
+            emittedJsonSchema: null,
+            metadata: WORKFLOW_IO_META,
+          }),
+        ],
+        components: [
+          {
+            id: "c1",
+            kindDefinitionId: "k1",
+            platform: "web",
+            role: "output",
+            componentKey: "JsonBlock",
+          },
+        ],
+      }),
+    );
+    expect(report.findings.some((f) => f.code === "component-without-schema")).toBe(true);
+  });
+
+  it("classifyExemption encodes the exact predicate", () => {
+    const child = makeKind({ id: "c", kind: "flashcard" });
+    const base = {
+      kind: child,
+      parentKinds: ["flashcard_set"],
+      componentCount: 0,
+      surfaceCount: 0,
+      codeRenderPathCount: 0,
+    };
+    expect(classifyExemption(base)?.class).toBe("nested_only_child");
+    expect(classifyExemption({ ...base, parentKinds: [] })).toBeNull();
+    expect(classifyExemption({ ...base, componentCount: 1 })).toBeNull();
+    expect(classifyExemption({ ...base, surfaceCount: 1 })).toBeNull();
+    expect(classifyExemption({ ...base, codeRenderPathCount: 1 })).toBeNull();
+    expect(
+      classifyExemption({ ...base, kind: makeKind({ id: "c", kind: "x", isActive: true }) }),
+    ).toBeNull();
+
+    // family=workflow_io wins regardless of nesting/render evidence.
+    const dataOnly = makeKind({ id: "d", kind: "json", metadata: { family: "workflow_io" } });
+    expect(
+      classifyExemption({
+        kind: dataOnly,
+        parentKinds: [],
+        componentCount: 0,
+        surfaceCount: 0,
+        codeRenderPathCount: 0,
+      })?.class,
+    ).toBe("data_only");
+    // A non-workflow_io family is NOT a data-only kind.
+    expect(
+      classifyExemption({
+        kind: makeKind({ id: "r", kind: "research_report", metadata: { family: "research_report" } }),
+        parentKinds: [],
+        componentCount: 0,
+        surfaceCount: 0,
+        codeRenderPathCount: 0,
+      }),
+    ).toBeNull();
   });
 });

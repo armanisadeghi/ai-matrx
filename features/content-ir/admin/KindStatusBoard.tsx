@@ -15,6 +15,7 @@ import {
   Activity,
   Check,
   CircleAlert,
+  Minus,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -46,6 +47,9 @@ function StatusIcon({ status }: { status: AssetStatus }) {
       return <TriangleAlert className="mx-auto h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />;
     case "missing":
       return <X className="mx-auto h-3.5 w-3.5 text-red-500/80" />;
+    case "n/a":
+      // Structurally inapplicable — deliberately the quietest mark on the board.
+      return <Minus className="mx-auto h-3.5 w-3.5 text-muted-foreground/40" />;
   }
 }
 

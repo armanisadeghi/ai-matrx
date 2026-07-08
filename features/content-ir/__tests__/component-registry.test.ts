@@ -85,6 +85,7 @@ describe("compiled bootstrap (system-components)", () => {
       troubleshooting_guide: "troubleshooting",
       cooking_recipe: "cooking_recipe",
       research_report: "research",
+      questionnaire: "questionnaire",
     });
   });
 });

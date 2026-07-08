@@ -9,10 +9,25 @@
  *      the same schema and agree by construction. A disagreement IS the
  *      screamer (a schema Pydantic can't express, or an ajv/Pydantic gap).
  *   2. Render (UI): the sample lights up the kind's real component. TS is the
- *      AUTHORITATIVE owner of this leg. Proxy: the legacy bridge
- *      (`toLegacyServerData`) must produce real, non-empty serverData from the
- *      sample — the exact failure that produced "No flashcards available yet"
- *      (empty/garbage serverData) is caught here.
+ *      AUTHORITATIVE owner of this leg. It is a PROXY for a DOM render, not a
+ *      DOM render. Exactly what it checks, and nothing more:
+ *        · the kind has something to render with (`legacyBlockType` or
+ *          `component`);
+ *        · for BRIDGED kinds, `toLegacyServerData(sample)` returns a plain
+ *          object that is SEMANTICALLY non-empty — see
+ *          `describeUnrenderableBridgeOutput` for the exact predicate;
+ *        · BRIDGELESS kinds pass with a recorded caveat — nothing is verified.
+ *
+ *      This catches the 2026-07-04 "No flashcards available yet" class: a
+ *      bridge that returns `undefined`, `{}`, `{language:"json"}` (the raw
+ *      code-region annotation), or an object whose every value is empty.
+ *
+ *      What it does NOT do — stated plainly, because a gate that overclaims is
+ *      worse than no gate: it does not mount the component, and it cannot know
+ *      WHICH key carries the payload. `{title:"Cell Biology", cards:[]}` passes
+ *      this leg on `title` alone. Proving the payload key is populated needs
+ *      per-kind knowledge the gate deliberately does not have; a DOM-level
+ *      render check is the deeper leg, deferred to an RTL harness.
  *
  * Both legs necessary, neither sufficient. Fail either → `isActive: false` and
  * the caller reports it loudly (Error Inspector, `content-ir`) and holds the
@@ -116,6 +131,98 @@ export function validateStructuralLeg(
   return { ok: false, detail: `sample failed schema: ${errors.join("; ")}` };
 }
 
+/**
+ * Keys a bridge may emit that carry NO kind content — pure region annotation.
+ *
+ * `language` is the sole member, and it is here because of a real, shipped bug.
+ * `StreamBlockAccumulator.buildBlockData()` emits `data: { language: "json" }`
+ * for an UNTYPED code region (a bare ```json fence), and
+ * `render-block-to-content-block.ts` maps `rb.data` → `block.serverData`. That
+ * annotation therefore arrives downstream as a TRUTHY `serverData` holding zero
+ * kind data. On 2026-07-04 it reached the flashcards component in place of
+ * `cards` and rendered "No flashcards available yet" (see `react/kind-route.ts`,
+ * which now REPLACES or CLEARS it rather than forwarding it).
+ *
+ * This list only removes keys from the "is anything substantive here?" tally —
+ * it never fails a bridge on its own. A kind whose serverData is
+ * `{ language: "python", code: "..." }` still passes, on `code`. Only a bridge
+ * whose ENTIRE output is annotation has produced nothing renderable.
+ *
+ * Add a key here only with evidence that the region-annotation path emits it and
+ * that it can never itself be kind content.
+ */
+const SERVER_DATA_ANNOTATION_KEYS: ReadonlySet<string> = new Set(["language"]);
+
+/** serverData is JSON-shaped; this only guards pathological/cyclic nesting. */
+const SUBSTANCE_DEPTH_LIMIT = 8;
+
+/**
+ * Is `value` real content that a component could render?
+ *
+ *   string  → non-empty after trim    ("" and "   " are not content)
+ *   number  → any finite number       (0 IS content: `completedItems: 0`)
+ *   boolean → always                  (false IS content: `isComplete: false`)
+ *   array   → ≥1 substantive ELEMENT  ([] and [""] are not content)
+ *   object  → ≥1 substantive VALUE    ({} and {a:""} are not content)
+ *   null | undefined | NaN | function | symbol | bigint → never content
+ *
+ * Recursive by design: `{ data: { items: [] } }` is structurally present and
+ * semantically empty, and telling those two apart is this leg's entire job.
+ */
+function isSubstantiveValue(value: unknown, depth = 0): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "boolean") return true;
+  // Deep AND present — stop descending rather than claim it is empty.
+  if (depth >= SUBSTANCE_DEPTH_LIMIT) return true;
+  if (Array.isArray(value)) {
+    return value.some((entry) => isSubstantiveValue(entry, depth + 1));
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).some((entry) =>
+      isSubstantiveValue(entry, depth + 1),
+    );
+  }
+  return false;
+}
+
+/**
+ * The render leg's real predicate: why is this bridge output NOT renderable?
+ * Returns a specific reason, or `null` when the output is genuinely renderable.
+ *
+ * `serverData` is typed `unknown` on purpose — the facet's declared return type
+ * is a promise the gate must not take on faith; a bridge is ordinary code that
+ * can return anything at runtime.
+ *
+ * Renderable ⇔ a non-null, non-array object with at least one key that is not
+ * pure annotation AND whose value is substantive (see `isSubstantiveValue`).
+ */
+function describeUnrenderableBridgeOutput(serverData: unknown): string | null {
+  if (serverData === undefined || serverData === null) {
+    return "bridge returned no serverData (undefined)";
+  }
+  if (typeof serverData !== "object") {
+    return `bridge returned a non-object serverData (${typeof serverData})`;
+  }
+  if (Array.isArray(serverData)) {
+    return "bridge returned an array, not a serverData record";
+  }
+
+  const record = serverData as Record<string, unknown>;
+  const keys = Object.keys(record);
+  if (keys.length === 0) return "bridge returned an empty object ({})";
+
+  const contentKeys = keys.filter((key) => !SERVER_DATA_ANNOTATION_KEYS.has(key));
+  if (contentKeys.length === 0) {
+    return `bridge returned only annotation keys [${keys.join(", ")}] — that is the raw code-region annotation, not kind data`;
+  }
+  if (!contentKeys.some((key) => isSubstantiveValue(record[key]))) {
+    return `bridge returned serverData whose every content value is empty (keys: ${contentKeys.join(", ")}) — structurally present, semantically empty`;
+  }
+  return null;
+}
+
 function validateRender(
   kind: string,
   sample: Record<string, unknown>,
@@ -143,14 +250,11 @@ function validateRender(
         }`,
       };
     }
-    if (
-      !serverData ||
-      typeof serverData !== "object" ||
-      Object.keys(serverData).length === 0
-    ) {
+    const problem = describeUnrenderableBridgeOutput(serverData);
+    if (problem) {
       return {
         ok: false,
-        detail: `bridge produced empty serverData (the "No ${kind} available" failure)`,
+        detail: `${problem} (the "No ${kind} available" failure)`,
       };
     }
     return { ok: true };

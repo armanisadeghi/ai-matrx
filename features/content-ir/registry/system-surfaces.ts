@@ -142,4 +142,21 @@ export const SYSTEM_SURFACE_ENTRIES: KindSurfaceEntry[] = [
     parserStrategy: "research_legacy_text",
     streaming: true,
   },
+  // `questionnaire` arrives in BOTH framings today — SIMPLE_XML_TAGS
+  // (stream-block-accumulator) and SPECIAL_CODE_LANGUAGES (content-splitter-v2)
+  // — carrying the identical `## Q1:` + `Type:` body. One strategy, two rows.
+  {
+    surfaceType: "xml_tag",
+    token: "questionnaire",
+    kind: "questionnaire",
+    parserStrategy: "questionnaire_legacy_text",
+    streaming: true,
+  },
+  {
+    surfaceType: "fence_lang",
+    token: "questionnaire",
+    kind: "questionnaire",
+    parserStrategy: "questionnaire_legacy_text",
+    streaming: true,
+  },
 ];

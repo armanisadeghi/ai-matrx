@@ -65,6 +65,7 @@ import { TRANSCRIPT_KIND_DEFINITIONS } from "../kinds/transcript";
 import { TROUBLESHOOTING_KIND_DEFINITIONS } from "../kinds/troubleshooting-guide";
 import { COOKING_RECIPE_KIND_DEFINITIONS } from "../kinds/cooking-recipe";
 import { RESEARCH_REPORT_KIND_DEFINITIONS } from "../kinds/research-report";
+import { QUESTIONNAIRE_KIND_DEFINITIONS } from "../kinds/questionnaire";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -81,6 +82,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...TROUBLESHOOTING_KIND_DEFINITIONS,
   ...COOKING_RECIPE_KIND_DEFINITIONS,
   ...RESEARCH_REPORT_KIND_DEFINITIONS,
+  ...QUESTIONNAIRE_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",

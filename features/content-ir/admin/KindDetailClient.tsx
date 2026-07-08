@@ -8,12 +8,13 @@
  * once in the browser (canonical first) and shares them with the Preview and
  * Gate tabs.
  *
- * Code-splitting: the Gate tab (ajv + dual gate) is `next/dynamic({ ssr:
- * false })` behind its tab condition. The Preview tab is a light shell whose
- * heavy renderer is ALREADY split behind SafeBlockRenderer's own
- * `ssr:false` boundary — adding a second boundary here would stack
- * waterfalls (code-splitting skill rule 2), so it is imported statically and
- * simply not rendered until its tab is active.
+ * Code-splitting: the Gate tab (ajv + dual gate) and the Inputs tab (ajv, plus
+ * the whole production agent-input stack via VariableInputComponent →
+ * ProTextarea) are each `next/dynamic({ ssr: false })` behind their tab
+ * condition. The Preview tab is a light shell whose heavy renderer is ALREADY
+ * split behind SafeBlockRenderer's own `ssr:false` boundary — adding a second
+ * boundary here would stack waterfalls (code-splitting skill rule 2), so it is
+ * imported statically and simply not rendered until its tab is active.
  */
 
 import { useEffect, useState } from "react";
@@ -42,12 +43,26 @@ const KindGateTab = dynamic(
   },
 );
 
-const TABS = ["preview", "gate", "schema", "assets"] as const;
+const KindInputsTab = dynamic(
+  () => import("@/features/content-ir/admin/KindInputsTab"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center gap-2 py-10 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading input bridge</span>
+      </div>
+    ),
+  },
+);
+
+const TABS = ["preview", "gate", "schema", "inputs", "assets"] as const;
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
   preview: "Preview",
   gate: "Gate",
   schema: "Schema",
+  inputs: "Inputs",
   assets: "Assets",
 };
 
@@ -187,6 +202,12 @@ export default function KindDetailClient({
           <KindSchemaTab
             kind={detail.kind}
             fieldData={detail.fieldData}
+            emittedJsonSchema={detail.emittedJsonSchema}
+          />
+        )}
+        {tab === "inputs" && (
+          <KindInputsTab
+            kind={detail.kind}
             emittedJsonSchema={detail.emittedJsonSchema}
           />
         )}

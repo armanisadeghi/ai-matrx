@@ -33,6 +33,7 @@ import {
   type AssetColumn,
   type AssetStatus,
   type DoctorDetectorToken,
+  type DoctorKindEdge,
   type ShapeDoctorReport,
   type ShapeFinding,
 } from "@/features/content-ir/registry/shape-doctor";
@@ -163,6 +164,7 @@ interface DbGather {
     data: Json | null;
     version: number;
     visibility: string;
+    metadata: Json | null;
   }>;
   examples: Array<{
     id: string;
@@ -173,6 +175,7 @@ interface DbGather {
   }>;
   components: ComponentDetailRow[];
   surfaces: SurfaceDetailRow[];
+  edges: DoctorKindEdge[];
   renderBlockSkills: Array<{ skillId: string; label: string; body: string | null }>;
   contentBlocks: ContentBlockDetailRow[];
 }
@@ -180,13 +183,13 @@ interface DbGather {
 async function fetchDbGather(): Promise<DbGather> {
   const supabase = await createClient();
 
-  const [kindsRes, examplesRes, componentsRes, surfacesRes, skillsRes, blocksRes] =
+  const [kindsRes, examplesRes, componentsRes, surfacesRes, edgesRes, skillsRes, blocksRes] =
     await Promise.all([
       supabase
         .schema("content_ir")
         .from("kind_definition")
         .select(
-          "id,kind,label,is_active,emitted_json_schema,sample_data,updated_at,data,version,visibility",
+          "id,kind,label,is_active,emitted_json_schema,sample_data,updated_at,data,version,visibility,metadata",
         )
         .is("deleted_at", null),
       supabase
@@ -208,6 +211,12 @@ async function fetchDbGather(): Promise<DbGather> {
           "id,kind_definition_id,surface_type,token,parser_strategy,streaming,is_active",
         )
         .is("deleted_at", null),
+      // The nesting graph — feeds the doctor's nested-only-child `n/a` classing.
+      supabase
+        .schema("content_ir")
+        .from("kind_edge")
+        .select("parent_definition_id,child_definition_id,field_name")
+        .is("deleted_at", null),
       supabase
         .schema("skill")
         .from("definition")
@@ -224,6 +233,7 @@ async function fetchDbGather(): Promise<DbGather> {
   if (examplesRes.error) fail("content_ir.kind_example", examplesRes.error);
   if (componentsRes.error) fail("content_ir.kind_component", componentsRes.error);
   if (surfacesRes.error) fail("content_ir.kind_surface", surfacesRes.error);
+  if (edgesRes.error) fail("content_ir.kind_edge", edgesRes.error);
   if (skillsRes.error) fail("skill.definition", skillsRes.error);
   if (blocksRes.error) fail("public.content_blocks", blocksRes.error);
 
@@ -239,7 +249,15 @@ async function fetchDbGather(): Promise<DbGather> {
       data: r.data,
       version: r.version,
       visibility: r.visibility,
+      metadata: r.metadata,
     })),
+    edges: (edgesRes.data ?? []).map(
+      (r): DoctorKindEdge => ({
+        parentDefinitionId: r.parent_definition_id,
+        childDefinitionId: r.child_definition_id,
+        fieldName: r.field_name,
+      }),
+    ),
     examples: (examplesRes.data ?? []).map((r) => ({
       id: r.id,
       kindDefinitionId: r.kind_definition_id,
@@ -301,10 +319,12 @@ export async function runLiveShapeDoctor(): Promise<LiveDoctorRun> {
       emittedJsonSchema: k.emittedJsonSchema,
       sampleData: k.sampleData,
       updatedAt: k.updatedAt,
+      metadata: k.metadata,
     })),
     examples: db.examples,
     components: db.components,
     surfaces: db.surfaces,
+    edges: db.edges,
     renderBlockSkills: db.renderBlockSkills,
     contentBlocks: db.contentBlocks,
     detectorTokens: code.detectorTokens,
@@ -360,7 +380,9 @@ export interface KindStatusBoardModel {
 }
 
 function snapshotStatus(value: string | undefined): AssetStatus | null {
-  return value === "ok" || value === "warn" || value === "missing" ? value : null;
+  return value === "ok" || value === "warn" || value === "missing" || value === "n/a"
+    ? value
+    : null;
 }
 
 export async function buildKindStatusBoard(): Promise<KindStatusBoardModel> {

@@ -8,7 +8,7 @@
  * rows.
  */
 
-import { Check, TriangleAlert, X } from "lucide-react";
+import { Check, Minus, TriangleAlert, X } from "lucide-react";
 import {
   ASSET_COLUMNS,
   type AssetColumn,
@@ -44,6 +44,12 @@ function StatusBadge({ status }: { status: AssetStatus }) {
       return (
         <span className="flex items-center gap-1 rounded bg-red-500/10 px-1.5 py-0.5 text-[11px] font-medium text-red-700 dark:text-red-300">
           <X className="h-3 w-3" /> missing
+        </span>
+      );
+    case "n/a":
+      return (
+        <span className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <Minus className="h-3 w-3" /> n/a
         </span>
       );
   }

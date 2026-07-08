@@ -36,6 +36,7 @@ import {
   type DoctorDetectorToken,
   type DoctorKindComponent,
   type DoctorKindDefinition,
+  type DoctorKindEdge,
   type DoctorKindExample,
   type DoctorKindSurface,
   type DoctorRenderBlockSkill,
@@ -123,6 +124,12 @@ interface KindDefinitionRow {
   emitted_json_schema: unknown;
   sample_data: unknown;
   updated_at: string;
+  metadata: unknown;
+}
+interface KindEdgeRow {
+  parent_definition_id: string;
+  child_definition_id: string;
+  field_name: string;
 }
 interface KindExampleRow {
   id: string;
@@ -159,6 +166,7 @@ interface DoctorDbInputs {
   examples: DoctorKindExample[];
   components: DoctorKindComponent[];
   surfaces: DoctorKindSurface[];
+  edges: DoctorKindEdge[];
   renderBlockSkills: DoctorRenderBlockSkill[];
   contentBlocks: DoctorContentBlock[];
 }
@@ -172,12 +180,12 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
   }
   const supabase = createClient(url, key);
 
-  const [kindsRes, examplesRes, componentsRes, surfacesRes, skillsRes, blocksRes] =
+  const [kindsRes, examplesRes, componentsRes, surfacesRes, edgesRes, skillsRes, blocksRes] =
     await Promise.all([
       supabase
         .schema("content_ir")
         .from("kind_definition")
-        .select("id,kind,label,is_active,emitted_json_schema,sample_data,updated_at")
+        .select("id,kind,label,is_active,emitted_json_schema,sample_data,updated_at,metadata")
         .is("deleted_at", null),
       supabase
         .schema("content_ir")
@@ -193,6 +201,14 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
         .schema("content_ir")
         .from("kind_surface")
         .select("id,kind_definition_id,surface_type,token")
+        .is("deleted_at", null),
+      // The nesting graph — required to tell a nested-only child kind (whose
+      // component/surface/skill/block cells are structurally `n/a`) from a root
+      // with a real, closeable gap.
+      supabase
+        .schema("content_ir")
+        .from("kind_edge")
+        .select("parent_definition_id,child_definition_id,field_name")
         .is("deleted_at", null),
       supabase
         .schema("skill")
@@ -210,6 +226,7 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
   if (examplesRes.error) fail("content_ir.kind_example", examplesRes.error);
   if (componentsRes.error) fail("content_ir.kind_component", componentsRes.error);
   if (surfacesRes.error) fail("content_ir.kind_surface", surfacesRes.error);
+  if (edgesRes.error) fail("content_ir.kind_edge", edgesRes.error);
   if (skillsRes.error) fail("skill.definition", skillsRes.error);
   if (blocksRes.error) fail("public.content_blocks", blocksRes.error);
 
@@ -217,6 +234,7 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
   const exampleRows = (examplesRes.data ?? []) as KindExampleRow[];
   const componentRows = (componentsRes.data ?? []) as KindComponentRow[];
   const surfaceRows = (surfacesRes.data ?? []) as KindSurfaceRow[];
+  const edgeRows = (edgesRes.data ?? []) as KindEdgeRow[];
   const skillRows = (skillsRes.data ?? []) as SkillRow[];
   const blockRows = (blocksRes.data ?? []) as ContentBlockRow[];
 
@@ -230,6 +248,14 @@ async function fetchDbInputs(): Promise<DoctorDbInputs> {
         emittedJsonSchema: r.emitted_json_schema,
         sampleData: r.sample_data,
         updatedAt: r.updated_at,
+        metadata: r.metadata,
+      }),
+    ),
+    edges: edgeRows.map(
+      (r): DoctorKindEdge => ({
+        parentDefinitionId: r.parent_definition_id,
+        childDefinitionId: r.child_definition_id,
+        fieldName: r.field_name,
       }),
     ),
     examples: exampleRows.map(
@@ -307,7 +333,13 @@ function generatedFor(core: SnapshotCore): string {
   return `${core.rows.length}-kinds+${hash}`;
 }
 
-const STATUS_MARK: Record<AssetStatus, string> = { ok: "✅", warn: "⚠️", missing: "❌" };
+/** `n/a` renders as an em dash — visibly NOT a gap, distinct from ❌/⚠️. */
+const STATUS_MARK: Record<AssetStatus, string> = {
+  ok: "✅",
+  warn: "⚠️",
+  missing: "❌",
+  "n/a": "—",
+};
 const COLUMN_HEADING: Record<AssetColumn, string> = {
   definition: "Definition",
   example: "Example",
@@ -327,7 +359,11 @@ function buildMarkdown(report: ShapeDoctorReport, stamp: string): string {
   lines.push(`\`generated_for: ${stamp}\``);
   lines.push("");
   lines.push(
-    `${report.totals.kinds} kinds · ${report.totals.red} red finding(s) · ${report.totals.yellow} yellow finding(s) · cells: ${report.totals.cells.ok} ok / ${report.totals.cells.warn} warn / ${report.totals.cells.missing} missing`,
+    `${report.totals.kinds} kinds · ${report.totals.red} red finding(s) · ${report.totals.yellow} yellow finding(s) · cells: ${report.totals.cells.ok} ok / ${report.totals.cells.warn} warn / ${report.totals.cells.missing} missing / ${report.totals.cells["n/a"]} n/a`,
+  );
+  lines.push("");
+  lines.push(
+    "Legend: ✅ ok · ⚠️ warn · ❌ missing (a real, closeable gap) · — n/a (structurally inapplicable — see \"Not applicable\" below).",
   );
   lines.push("");
   lines.push(`| Kind | Active | ${ASSET_COLUMNS.map((c) => COLUMN_HEADING[c]).join(" | ")} |`);
@@ -353,11 +389,32 @@ function buildMarkdown(report: ShapeDoctorReport, stamp: string): string {
   for (const f of yellows) lines.push(`- **${f.code}** — ${f.message}`);
   lines.push("");
 
+  // Not-applicable roster — one line per exempted kind, so the reader can audit
+  // WHY a cell went quiet instead of taking `—` on faith.
+  const exempted = report.rows.filter((r) => r.exemption !== null);
+  if (exempted.length > 0) {
+    lines.push(`## Not applicable (${exempted.length} kinds)`);
+    lines.push("");
+    lines.push(
+      "These cells are structurally impossible to satisfy, so they are `n/a` and emit no finding. Derived, never declared — register a surface/component or activate the kind and the `n/a` evaporates.",
+    );
+    lines.push("");
+    for (const row of exempted) {
+      const ex = row.exemption;
+      if (!ex) continue;
+      const naCols = ASSET_COLUMNS.filter((c) => row.assets[c].status === "n/a");
+      lines.push(
+        `- \`${row.kind}\` — **${ex.class}** (${ex.subject}); n/a: ${naCols.map((c) => COLUMN_HEADING[c]).join(", ")}`,
+      );
+    }
+    lines.push("");
+  }
+
   const notes: string[] = [];
   for (const row of report.rows) {
     for (const col of ASSET_COLUMNS) {
       const cell = row.assets[col];
-      if (cell.status !== "ok" && cell.detail) {
+      if ((cell.status === "warn" || cell.status === "missing") && cell.detail) {
         notes.push(`- \`${row.kind}\` · ${COLUMN_HEADING[col]} — ${cell.detail}`);
       }
     }
@@ -377,6 +434,7 @@ const CONSOLE_MARK: Record<AssetStatus, string> = {
   ok: `${C.green}✓${C.reset}`,
   warn: `${C.yellow}~${C.reset}`,
   missing: `${C.red}✗${C.reset}`,
+  "n/a": `${C.dim}·${C.reset}`,
 };
 const SHORT_HEAD: Record<AssetColumn, string> = {
   definition: "def",
@@ -504,7 +562,8 @@ async function main(): Promise<number> {
 
   const reds = report.findings.filter((f) => f.severity === "red").length;
   const yellows = report.findings.filter((f) => f.severity === "yellow").length;
-  const summary = `${report.totals.kinds} kinds · cells ${report.totals.cells.ok} ok / ${report.totals.cells.warn} warn / ${report.totals.cells.missing} missing · ${reds} red / ${yellows} yellow finding(s)`;
+  const exemptCount = report.rows.filter((r) => r.exemption !== null).length;
+  const summary = `${report.totals.kinds} kinds · cells ${report.totals.cells.ok} ok / ${report.totals.cells.warn} warn / ${report.totals.cells.missing} missing / ${report.totals.cells["n/a"]} n/a (${exemptCount} kinds structurally exempt) · ${reds} red / ${yellows} yellow finding(s)`;
   if (reds === 0) {
     console.log(`\n${C.green}${C.bold}✓ shape doctor:${C.reset} ${summary}${refresh ? ` ${C.dim}(snapshot + markdown refreshed: ${stamp})${C.reset}` : ""}`);
   } else {
