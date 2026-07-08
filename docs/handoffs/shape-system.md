@@ -54,11 +54,13 @@ vision: [features/content-ir/docs/SHAPE_SYSTEM.md, features/content-ir/docs/cont
 
 5. **`IrDiscriminator.json` hard-types `key: "__kind"`.** Python stamps JSON blocks detected by legacy wrapper keys (`quiz_title`, `diagram`…), which that type misdescribes. Widen to `key: string` in `features/content-ir/core/ir-types.ts`.
 
-6. **Stage 5a — one detection list.** 14 `detector-token-unregistered` yellows remain (see `pnpm check:shapes`). Generate `system-surfaces.ts` + a Python twin from `kind_surface` so the frozen literal sets in `stream-block-accumulator.ts` / `content-splitter-v2.ts` / `block_detector.py` can be deleted (Phase 7). Control tags (`thinking`/`reasoning`/`plan`/…) and editor pills are **code-owned, not Shapes** (R2).
+6. **The kind↔variable converter under-reports losses — it lies by omission.** `variableDefinitionsToKindFields` returns `losses[]` and reports **zero** for `flashcard_set` and `timeline`, while their array fields (`cards`, `periods`) are silently flattened to `string`. The reverse converter structurally cannot see this: the flattening happens in the FORWARD call, and `kindFieldsToVariableDefinitions` (`convert/kind-variable-bridge.ts:118`) returns a bare `VariableDefinition[]` with no loss channel at all. Give the forward converter a loss report (`{definitions, losses}`) recording every structural flattening (`array`/`object`/`inline_object`/`record`/`union` → textarea), and make the Inputs tab consume it instead of its own before/after type-drift table (`admin/KindInputsTab.tsx`). **Trap:** signature change to a primitive with 51 committed tests. Until then, `losses[]` alone must NOT be treated as proof a round trip was lossless.
 
-7. **Remaining tracker gaps** (`pnpm check:shapes`, 51 yellows, all real): 30 `no-example` on child kinds (closeable via `pnpm shape:sample`), 10 `stale-example`, and `no-skill`/`no-content-block` on the two genuine roots `schema_showcase` + `study_pack_set`.
+7. **Stage 5a — one detection list.** 14 `detector-token-unregistered` yellows remain (see `pnpm check:shapes`). Generate `system-surfaces.ts` + a Python twin from `kind_surface` so the frozen literal sets in `stream-block-accumulator.ts` / `content-splitter-v2.ts` / `block_detector.py` can be deleted (Phase 7). Control tags (`thinking`/`reasoning`/`plan`/…) and editor pills are **code-owned, not Shapes** (R2).
 
-8. **Stage 7 (later, per Arman's ordering):** tool `output_kind` (tools render fine today — canonicalize LAST) · **React Native component map** (first external platform) · user/org render preferences + variations · `canvas_items.state` for stateful Shapes (R7).
+8. **Remaining tracker gaps** (`pnpm check:shapes`, 51 yellows, all real): 30 `no-example` on child kinds (closeable via `pnpm shape:sample`), 10 `stale-example`, and `no-skill`/`no-content-block` on the two genuine roots `schema_showcase` + `study_pack_set`.
+
+9. **Stage 7 (later, per Arman's ordering):** tool `output_kind` (tools render fine today — canonicalize LAST) · **React Native component map** (first external platform) · user/org render preferences + variations · `canvas_items.state` for stateful Shapes (R7).
 
 ## Done
 
