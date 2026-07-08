@@ -30,6 +30,10 @@ import {
   logClientError,
 } from "../services/audioFallbackUpload";
 import {
+  journalChunk,
+  discardChunkJournal,
+} from "../services/audioChunkJournal";
+import {
   acquireMicStream,
   releaseMicStream,
   subscribeMicInterruption,
@@ -340,6 +344,10 @@ export function useChunkedRecordAndTranscribe({
 
     setIsTranscribing(false);
 
+    // Captured before any async continuation — a back-to-back start resets
+    // safetyIdRef, and the journal discard below must target THIS cycle.
+    const journalSafetyId = safetyIdRef.current;
+
     if (safetyIdRef.current) {
       try {
         await audioSafetyStore.markComplete(safetyIdRef.current);
@@ -373,6 +381,12 @@ export function useChunkedRecordAndTranscribe({
                 ({ saveAudioToStorage }) => {
                   saveAudioToStorage(finalBlob, userId, undefined, 3)
                     .then((uploadResult) => {
+                      // Durable full-audio upload landed — the eager chunk
+                      // journal (cross-device recovery staging) is now
+                      // redundant for this cycle. Best-effort sweep.
+                      if (journalSafetyId) {
+                        void discardChunkJournal(journalSafetyId);
+                      }
                       saveDraftTranscript({
                         title: "Voice Pad Recording",
                         segments: [
@@ -437,6 +451,22 @@ export function useChunkedRecordAndTranscribe({
         try {
           await audioSafetyStore.saveChunk(safetyIdRef.current, blob);
         } catch {}
+      }
+
+      // Eager cross-device journal (KNOWN_DEFECTS D7): mirror the chunk to
+      // cld_files in the background so the recording is recoverable even if
+      // this device disappears before the full-audio upload lands. ADDITIONAL
+      // to the IndexedDB save above, never a replacement — fire-and-forget
+      // with its own retries; a journal failure never touches recording.
+      // Skipped during page-hide (the fetch would be cancelled mid-unload
+      // and would only produce a false-alarm loud error).
+      if (safetyIdRef.current && !isPageHidingRef.current) {
+        journalChunk({
+          safetyId: safetyIdRef.current,
+          chunkIndex: idx,
+          blob,
+          mimeType: mimeTypeRef.current,
+        });
       }
 
       // Skip transcription for tiny chunks (not enough audio) or when the page is

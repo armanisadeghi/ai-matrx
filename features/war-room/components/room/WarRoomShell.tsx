@@ -45,6 +45,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
+import { RoomRecordingController } from "@/features/war-room/components/room/RoomRecordingController";
 import { cn } from "@/lib/utils";
 import {
   selectHiddenThreads,
@@ -326,6 +327,12 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
           the warRoomWatch slice with the /all master surface (only one room
           surface is mounted at a time, so they never contend). */}
       <MasterWatchLayer />
+
+      {/* Room-level recording ownership (D14): the controller — not the tile's
+          CleanupPad — owns the active recording session, so a tile tab switch
+          (which unmounts the pad) never tears the recording down. Renders
+          nothing; registers its imperative API in roomRecordingBridge. */}
+      <RoomRecordingController />
     </div>
   );
 }

@@ -73,9 +73,16 @@ export async function resilientFetch(
       : opts.totalTimeoutMs;
   const throwOnHttpError = opts.throwOnHttpError ?? true;
 
-  if (typeof navigator !== "undefined" && navigator.onLine === false) {
-    throw new OfflineError();
-  }
+  // NOTE: we deliberately do NOT hard-block on `navigator.onLine === false`
+  // here. That flag is only a HINT — it is unreliable in both directions
+  // (VPNs, virtual network adapters, browser network-service hiccups, sleep/
+  // wake, and some corporate stacks leave it stuck at `false` while the
+  // machine is fully online). Trusting it as a pre-flight gate produced a
+  // real production outage: the Agent Builder (this path) threw OfflineError
+  // on every submit while the Run path — which uses plain fetch() and never
+  // consults the flag — worked fine on the same network. We now let the
+  // fetch actually run and only classify the result as "offline" if a genuine
+  // network failure ALSO corroborates the flag (see the catch below).
 
   const controller = new AbortController();
   const unlinkCaller = opts.signal
@@ -126,13 +133,17 @@ export async function resilientFetch(
       throw new AbortedError(err);
     }
     if (err instanceof TypeError) {
+      // fetch() throws TypeError on DNS/connection failure. If the browser
+      // ALSO reports offline, the flag is now corroborated by an actual
+      // failure — surface the more specific OfflineError. Absent a real
+      // failure, `navigator.onLine === false` is never allowed to block.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        throw new OfflineError();
+      }
       throw new NetworkError(err.message || "Network request failed", err);
     }
     if (err instanceof HttpError) throw err;
-    throw new NetworkError(
-      extractErrorMessage(err),
-      err,
-    );
+    throw new NetworkError(extractErrorMessage(err), err);
   } finally {
     unlinkCaller();
   }

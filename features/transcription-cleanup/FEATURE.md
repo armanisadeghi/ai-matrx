@@ -164,6 +164,19 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-07-08 — **CleanupPad can be a VIEW over a host-owned recording controller (D14).**
+  New optional `externalRecording` prop (`CleanupExternalRecording`: `start` /
+  `stop(mode)` / `registerView`). When set, the pad does NOT own the recording
+  lifecycle: mic + Save-only drive the host controller, recording state is read
+  from the `recordings` slice keyed by `{kind:"studio", sessionId}` (stable
+  across remounts, so a pad remounted mid-recording re-attaches), and the pad
+  registers its finalize handler via `registerView` so the full commit pipeline
+  still runs while mounted. The War Room tile is the first host
+  (`RoomRecordingController` + `roomRecordingBridge` in `features/war-room/`).
+  New dependency-free `constants.ts` exports `CLEANUP_OVERLAY_ID` +
+  `cleanupVoicePadInstanceId()` so hosts can address the pad's voicePad slice
+  keys without importing the heavy component. The standalone page path
+  (no prop → `MicrophoneIconButton`) is unchanged.
 - 2026-06-25 — Fixed the **War Room "transcript vanished after stop"** defect.
   The embedded pad's session load (mount-load resolving after a recording stop,
   or a realtime-driven `activeSessionId` re-derivation) could re-run the

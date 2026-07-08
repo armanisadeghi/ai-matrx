@@ -70,7 +70,8 @@ import { ENDPOINTS } from "@/lib/api/endpoints";
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
 function extractProgressMessage(data: InfoPayload): string | null {
-  if (data.user_message && data.user_message.length > 0) return data.user_message;
+  if (data.user_message && data.user_message.length > 0)
+    return data.user_message;
   if (data.system_message && data.system_message.length > 0) {
     return data.system_message;
   }
@@ -112,6 +113,15 @@ export interface StreamPdfCleanCallbacks {
   onCleanContent?: (text: string) => void;
   /** Server's "row changed, refetch me" signal. */
   onRecordUpdate?: (recordId: string) => void;
+  /**
+   * Fires when the server announces the run mode via the initial
+   * `pdf_clean_started` data event. `mode === "per_page"` means the run is
+   * RESUMABLE: every cleaned page persists server-side the moment it
+   * finishes, so re-invoking the endpoint after a dropped connection only
+   * pays for the pages that never completed. Callers use this to auto-retry
+   * per-page runs instead of surfacing a fatal error.
+   */
+  onCleanStarted?: (info: { mode: string; totalPages: number | null }) => void;
 }
 
 export interface StreamPdfCleanResult {
@@ -166,7 +176,18 @@ export async function streamPdfClean(opts: {
       },
       onData: (data) => {
         if (!data || typeof data !== "object") return;
-        const candidate = (data as Record<string, unknown>).clean_content;
+        const record = data as Record<string, unknown>;
+        if (record.type === "pdf_clean_started") {
+          callbacks.onCleanStarted?.({
+            mode: typeof record.mode === "string" ? record.mode : "whole_doc",
+            totalPages:
+              typeof record.total_pages === "number"
+                ? record.total_pages
+                : null,
+          });
+          return;
+        }
+        const candidate = record.clean_content;
         if (typeof candidate === "string" && candidate.length > 0) {
           cleanContent = candidate;
           callbacks.onCleanContent?.(candidate);
@@ -191,7 +212,9 @@ export async function streamPdfClean(opts: {
       },
       onError: (data) => {
         firstErrorMessage =
-          data.user_message ?? data.message ?? "AI cleanup stream emitted an error";
+          data.user_message ??
+          data.message ??
+          "AI cleanup stream emitted an error";
       },
     },
     signal,
@@ -304,7 +327,9 @@ export async function streamPdfFullPipeline(opts: {
       },
       onError: (data) => {
         firstErrorMessage =
-          data.user_message ?? data.message ?? "PDF pipeline stream emitted an error";
+          data.user_message ??
+          data.message ??
+          "PDF pipeline stream emitted an error";
       },
     },
     signal,
@@ -363,7 +388,9 @@ async function consumePdfExtractTextStream(
       },
       onError: (data) => {
         firstErrorMessage =
-          data.user_message ?? data.message ?? "PDF extraction stream emitted an error";
+          data.user_message ??
+          data.message ??
+          "PDF extraction stream emitted an error";
       },
     },
     signal,

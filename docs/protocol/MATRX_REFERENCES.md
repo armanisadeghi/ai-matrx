@@ -98,11 +98,19 @@ families — never a third encoding.
   fences with `purpose:substitute|expand` and merges them into the per-request wire
   swaps (send-clone only, never persisted, re-resolved each send).
 - **FE:** `MatrxEnvelopeBlock` renders the fence (reference chips).
-- **Next (migration):** migrate the legacy `picklist_ref` *variable* path onto the
-  envelope; until then it stays live behind the parallel-encoding allowlist.
+- **Migration complete (2026-07-08):** the legacy `picklist_ref` encoding is retired — FE
+  authors fences only, all stored values were backfilled, the FE dual-read seam
+  (`legacyTranslate.ts`) is deleted, and the aidream parallel-encoding allowlist entries are
+  removed. The server keeps (a) the client-envelope picklist pipeline for a handful of stale
+  pre-migration conversations that re-send envelopes on continue turns, and (b) a LOUD
+  legacy decoder in `scope_binding_resolution.py` (screams via record_error if a legacy
+  shape ever reappears).
 
 ## Change Log
 
+- 2026-07-08 — Legacy `picklist_ref` retired end-to-end (backfill + FE seam deletion +
+  allowlist retirement); bound scope-cell fences resolve via the restored `cell_values`
+  RPC output + the substitution chain (D10 closed).
 - 2026-06-17 — Items-based (every reference is `items:[{purpose,slot?,ref,display?}]`),
   types `picklist_item` / `dataset_cell` registered with resolvers; the position
   invariant; the ` ```matrx ` fence.

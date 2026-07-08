@@ -616,9 +616,9 @@ export default function ResilienceLabPage() {
       key: "offline-toggle",
       title: "6. Offline toggle",
       description:
-        "Flip navigator.onLine → false, fire a submit, then bring it back. Verifies netHealth flips and request is blocked.",
+        "Flip navigator.onLine → false, fire a submit at a dead endpoint, then bring it back. Verifies netHealth flips and a genuine failure is classified as OfflineError. (onLine=false alone never blocks — it must be corroborated by a real fetch failure.)",
       icon: WifiOff,
-      expected: "OfflineError (immediate)",
+      expected: "OfflineError (after failure)",
       run: async () => {
         window.dispatchEvent(new Event("offline"));
         const original = Object.getOwnPropertyDescriptor(

@@ -56,6 +56,10 @@ import type {
   UpdateSessionInput,
 } from "../types";
 import { audioSafetyStore } from "@/features/audio/services/audioSafetyStore";
+import {
+  assembleJournaledAudio,
+  discardChunkJournal,
+} from "@/features/audio/services/audioChunkJournal";
 import { saveAudioToStorage } from "@/features/transcripts/service/audioStorageService";
 import { getUserId } from "@/utils/auth/getUserId";
 import {
@@ -578,6 +582,10 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
       });
       // Recording was deleted/discarded before the upload landed — drop it.
       if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      // Durable full audio landed — the eager chunk journal (cross-device
+      // recovery staging, D7) is redundant for this cycle. Best-effort sweep;
+      // never blocks the upload result.
+      if (safetyId) void discardChunkJournal(safetyId);
     } catch (err) {
       // Audio is still safe in IndexedDB; surface quietly and continue.
       // eslint-disable-next-line no-console
@@ -782,18 +790,38 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
       }
     }
 
-    // Audio recovery: any segment with NO audio_path but a safety_id whose blob
-    // is still in this device's IndexedDB had its background upload lost (bad
-    // network, crash before finalize). Re-upload it now so the audio stops being
-    // orphaned (KNOWN_DEFECTS D7). Same-device only — IndexedDB is per-device.
+    // Audio recovery: any segment with NO audio_path but a safety_id had its
+    // background upload lost (bad network, crash before finalize). Two layers,
+    // tried in order (KNOWN_DEFECTS D7):
+    //   1. Same-device — the full blob is still in this device's IndexedDB.
+    //   2. Cross-device — the eager chunk journal (studio_recording_chunks +
+    //      cld_files staging blobs) uploaded during the recording. Any device
+    //      that opens the session reassembles the audio from those chunks —
+    //      the capture device can be gone entirely.
     // LOUD on recovery: a recovery firing means the proactive upload failed.
     let audioRecovered = 0;
     for (const id of ids) {
       const seg = byId[id];
       if (!seg || seg.audioPath || !seg.safetyId) continue;
       try {
-        const blob = await audioSafetyStore.getAudioBlob(seg.safetyId);
-        if (!blob || blob.size === 0) continue; // not on this device — skip quietly
+        let blob = await audioSafetyStore.getAudioBlob(seg.safetyId);
+        let via = "IndexedDB (same device)";
+        if (!blob || blob.size === 0) {
+          // Not on this device — try the cross-device chunk journal.
+          const assembled = await assembleJournaledAudio(seg.safetyId);
+          if (!assembled) continue; // nothing journaled either — skip quietly
+          blob = assembled.blob;
+          via = `the eager chunk journal (${assembled.chunkCount} chunk(s), cross-device)`;
+          if (assembled.missingIndices.length > 0) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[studio] reconcile: journal for recording ${seg.id} is missing ` +
+                `chunk(s) ${assembled.missingIndices.join(", ")} — recovering ` +
+                "partial audio (better than none).",
+            );
+          }
+        }
+        if (!blob || blob.size === 0) continue;
         await dispatch(
           uploadRecordingAudioThunk({
             sessionId,
@@ -806,7 +834,7 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
         // eslint-disable-next-line no-console
         console.warn(
           `[studio] reconcile: recovered orphaned audio for recording ${seg.id} ` +
-            `from IndexedDB (safety_id ${seg.safetyId}). Its background upload had been lost.`,
+            `from ${via} (safety_id ${seg.safetyId}). Its background upload had been lost.`,
         );
       } catch (err) {
         // eslint-disable-next-line no-console
@@ -869,8 +897,18 @@ export const deleteRecordingSegmentThunk = createAsyncThunk<
         transcriptStudio: {
           rawIdsBySession: Record<string, string[]>;
           rawById: Record<string, Record<string, RawSegment>>;
+          recordingSegmentsById: Record<
+            string,
+            Record<string, RecordingSegment>
+          >;
         };
       };
+      // Captured BEFORE the optimistic removal — the deleted recording's
+      // eager chunk journal (D7 staging) must go with it.
+      const journalSafetyId =
+        root.transcriptStudio.recordingSegmentsById[sessionId]?.[
+          recordingSegmentId
+        ]?.safetyId ?? null;
       const rawIds = root.transcriptStudio.rawIdsBySession[sessionId] ?? [];
       const rawById = root.transcriptStudio.rawById[sessionId] ?? {};
       const ownedRawIds = rawIds.filter(
@@ -883,6 +921,7 @@ export const deleteRecordingSegmentThunk = createAsyncThunk<
         dispatch(rawSegmentRemoved({ sessionId, segmentId: rawId }));
       }
       await deleteRecordingSegment(recordingSegmentId);
+      if (journalSafetyId) void discardChunkJournal(journalSafetyId);
       return undefined;
     } catch (err) {
       const message =

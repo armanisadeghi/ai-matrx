@@ -4218,6 +4218,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/runtime/worker-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Worker Health
+         * @description Is the ``workflow_worker`` (queue + cron) process alive? Reports LIVE when
+         *     a heartbeat (``workflow.worker_heartbeat``, wf_007) is fresh. An empty result
+         *     means no worker has ever run — the definitive answer that 0 jobs / 0 triggers
+         *     can't give. See docs/agent_plans/WORKFLOW_WORKER_DEPLOY.md.
+         */
+        get: operations["worker_health_admin_runtime_worker_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/runtime/conversations/{conversation_id}": {
         parameters: {
             query?: never;
@@ -4633,30 +4656,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7614,6 +7613,9 @@ export interface paths {
         /**
          * Stage Embed
          * @description Embed every chunk that doesn't already have a vector for this model.
+         *
+         *     ``embedding_model`` omitted → run_embed resolves the configured prose
+         *     default (voyage-4-large). Never default to the legacy oai model here.
          */
         post: operations["stage_embed_rag_library__processed_document_id__embed_post"];
         delete?: never;
@@ -11683,6 +11685,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media-heal/drain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Drain Media Heal Queue
+         * @description Drain pending ``mtx_media_heal_queue`` rows (flip public + rewrite column).
+         */
+        post: operations["drain_media_heal_queue_media_heal_drain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/podcast/generate": {
         parameters: {
             query?: never;
@@ -13298,6 +13320,56 @@ export interface paths {
         put?: never;
         /** Revoke Session */
         post: operations["revoke_session_redact_sessions__session_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/redact/escrow/wrapping-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Escrow Wrapping Key
+         * @description Public half of the escrow KMS key, for CLIENT-side wrapping.
+         *
+         *     The browser wraps the session key itself (RSA-OAEP SHA-256) and writes
+         *     the ciphertext straight to ``pdf.pdf_redaction_key_escrow`` via
+         *     supabase-js — the raw key never transits this server. 503 (loudly) when
+         *     ``MATRX_REDACTION_KMS_KEY_ID`` is unset.
+         */
+        get: operations["escrow_wrapping_key_redact_escrow_wrapping_key_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/redact/escrow/recover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Escrow Recover
+         * @description Recover a reversible-redaction session key from org escrow.
+         *
+         *     THE sensitive door of the escrow system. Authorization: the caller must
+         *     be the escrow row's owner, OR an owner/admin (active ``iam.memberships``
+         *     row) of the row's organization. Every successful unwrap is audit-logged
+         *     to ``platform.activity_log`` (action ``redaction_key.recovered``).
+         */
+        post: operations["escrow_recover_redact_escrow_recover_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18957,6 +19029,11 @@ export interface components {
              * @description Optional. If set, the scheduler starts from these node ids. If empty, the compiler derives entry nodes (nodes with no incoming edges).
              */
             entry_nodes?: string[];
+            /**
+             * Variables
+             * @description Declared run variables. Node static inputs reference them with {'$var': name}; run-time initial_variables supply the values. A reference to an UNDECLARED variable fails compile/validate loudly (see matrx_graph.types.variables).
+             */
+            variables?: components["schemas"]["VariableSpec"][];
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
@@ -19154,33 +19231,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -19641,6 +19691,44 @@ export interface components {
              */
             proxy_type: string;
         };
+        /** DrainRequest */
+        DrainRequest: {
+            /**
+             * Limit
+             * @default 50
+             */
+            limit: number;
+        };
+        /** DrainResponse */
+        DrainResponse: {
+            /** Claimed */
+            claimed: number;
+            /** Healed */
+            healed: number;
+            /** Failed */
+            failed: number;
+            /** Results */
+            results: components["schemas"]["DrainRowResult"][];
+        };
+        /** DrainRowResult */
+        DrainRowResult: {
+            /** Queue Id */
+            queue_id: string;
+            /** Table */
+            table: string;
+            /** Column */
+            column: string;
+            /** Row Id */
+            row_id: string;
+            /** Status */
+            status: string;
+            /** Error */
+            error?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Rewrote Column */
+            rewrote_column?: boolean | null;
+        };
         /** DuplicatePagesRequest */
         DuplicatePagesRequest: {
             /** Output Mode */
@@ -19888,6 +19976,31 @@ export interface components {
             normalized_value?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** EscrowRecoverBody */
+        EscrowRecoverBody: {
+            /** Session Id */
+            session_id: string;
+        };
+        /** EscrowRecoverResponse */
+        EscrowRecoverResponse: {
+            /** Session Id */
+            session_id: string;
+            /** File Id */
+            file_id?: string | null;
+            /** Session Key B64 */
+            session_key_b64: string;
+        };
+        /** EscrowWrappingKeyResponse */
+        EscrowWrappingKeyResponse: {
+            /** Kms Key Id */
+            kms_key_id: string;
+            /** Wrap Alg */
+            wrap_alg: string;
+            /** Public Key Spki B64 */
+            public_key_spki_b64: string;
+            /** Key Spec */
+            key_spec: string;
         };
         /** ExcludePageBody */
         ExcludePageBody: {
@@ -23987,11 +24100,6 @@ export interface components {
              * @default
              */
             provider: string;
-            /**
-             * Api Class
-             * @default
-             */
-            api_class: string;
             /** Context Window */
             context_window?: number | null;
             /**
@@ -25512,11 +25620,8 @@ export interface components {
             file_name?: string | null;
             /** Storage Uri */
             storage_uri?: string | null;
-            /**
-             * Embedding Model
-             * @default openai:text-embedding-3-small
-             */
-            embedding_model: string;
+            /** Embedding Model */
+            embedding_model?: string;
             /**
              * Clean Concurrency
              * @default 8
@@ -30719,6 +30824,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * VariableSpec
+         * @description One declared run variable on a Definition.
+         *
+         *     ``default=None`` means "no default" — a reference to this variable with
+         *     no per-reference default MUST be supplied at run time or the run fails
+         *     loudly at that node. (A literal None default would be useless anyway:
+         *     node input schemas want real values.)
+         */
+        VariableSpec: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Default */
+            default?: unknown;
+        };
         /** VerdictRequest */
         VerdictRequest: {
             /**
@@ -31435,6 +31560,12 @@ export interface components {
              * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
              */
             scope_ids?: string[] | null;
+            /**
+             * Expand Entity Clusters
+             * @description Recall-broadening: also surface chunks about same-kind entities that share a KG cluster with the query's matched entities (canonical concept expansion). Off by default — enabling it for a corpus is an eval decision. Cross-spelling (alias) matches work regardless.
+             * @default false
+             */
+            expand_entity_clusters: boolean;
         };
         /** ScannerStatusResponse */
         aidream__api__routers__scheduling__ScannerStatusResponse: {
@@ -38813,6 +38944,28 @@ export interface operations {
             };
         };
     };
+    worker_health_admin_runtime_worker_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     conversation_executions_admin_runtime_conversations__conversation_id__get: {
         parameters: {
             query?: never;
@@ -39611,41 +39764,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -45201,7 +45319,7 @@ export interface operations {
     stage_embed_rag_library__processed_document_id__embed_post: {
         parameters: {
             query?: {
-                embedding_model?: string;
+                embedding_model?: string | null;
             };
             header?: never;
             path: {
@@ -52215,6 +52333,41 @@ export interface operations {
             };
         };
     };
+    drain_media_heal_queue_media_heal_drain_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Cloud-Files-Bypass"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DrainRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrainResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     generate_podcast_endpoint_podcast_generate_post: {
         parameters: {
             query?: never;
@@ -55274,6 +55427,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    escrow_wrapping_key_redact_escrow_wrapping_key_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscrowWrappingKeyResponse"];
+                };
+            };
+        };
+    };
+    escrow_recover_redact_escrow_recover_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EscrowRecoverBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscrowRecoverResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -28,17 +28,11 @@ render through the SAME live chip renderer.
   `MatrxEnvelope`, the FLAT per-type `ReferenceItem` union + `REFERENCE_TYPES` / `ReferenceType`,
   the `directive_apply.*` receipt events (incl. `DirectiveProposed` / `DirectiveApplyBlocked`) +
   `isDirectiveApplyEvent` / `isDirectiveProposed`, and `buildEnvelopeOutputSchema` (mirrors
-  aidream's schema-gen). `ReferencePurpose` is `@deprecated` (kept only to type the
-  legacy-translation input).
+  aidream's schema-gen).
 - `state/proposedDirectivesSlice.ts` — the per-conversation inbox of agent-proposed actions
   (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
 - `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
   Approve → `confirmDirective` (`features/action-catalog/service.ts`) → `POST /actions/confirm`.
-- `legacyTranslate.ts` — the **loud HARD-CUT seam**. `translateLegacyReferenceItem(raw,type)`
-  flattens an old nested item (`{purpose,ref:{…},display:{…}}`) and
-  `translateLegacyPicklistRef(env)` flattens the legacy `picklist_ref` object; both fire a
-  one-per-value `console.error` so admins notice stale data and migrate it. Every legacy
-  read routes through here — no silent dual-read anywhere else.
 - `registry.tsx` — the **renderer registry** (mirrors the backend shape registry):
   `registerEnvelopeRenderer(kind, renderer, type?)` + `getEnvelopeRenderer(kind, type)`
   (type-specific → kind-default → null). Built-in: `reference` → **live, clickable chips**
@@ -50,7 +44,8 @@ render through the SAME live chip renderer.
   ` ```matrx ` `kind:"reference"` fence with FLAT items (`{ list_id, item_id, label? }` — no
   `purpose`/`slot`/`ref`/`display`); `parseReferenceFence(value)` reads it back (tolerant of a
   missing ``` wrapper). `readPicklistSelection(value)` → `{ refs, otherText, labels }` reads the
-  new fence AND routes any legacy shape through `legacyTranslate` (loud). Pure module (no React).
+  fence — the ONLY picklist encoding (`legacyTranslate.ts` + the `picklist_ref` dual-read were
+  deleted 2026-07-08 after the stored-value backfill). Pure module (no React).
   Never hand-assemble a fence elsewhere.
 - `bookmarkToReference.ts` — `bookmarkToReference(bm)` → `{ type, item }` and
   `bookmarksToReferenceEnvelopes(bm[])` → one `reference` envelope per type. The single seam
@@ -106,8 +101,8 @@ render through the SAME live chip renderer.
 - Done: **unified flat reference model.** `ReferenceItem` is the FLAT 7-type taxonomy (no
   `purpose`/`slot`/`ref`/`display`). All 7 types + `dataset_cell` alias resolve live; bookmarks
   converge onto reference items (`bookmarkToReference`); `input_table`/`input_list` render as
-  live chips in the context drawer. HARD CUT: new writes emit FLAT items; legacy shapes are
-  loud-translated (`legacyTranslate`, `console.error` per value).
+  live chips in the context drawer. HARD CUT COMPLETE (2026-07-08): all stored legacy shapes
+  were backfilled to flat fences and the `legacyTranslate.ts` seam was deleted.
 - Done: envelope module, renderer registry + reference resolver registry — `reference` chips
   **come to life** (live Supabase fetch + click-to-open the entity, graceful fallback to the
   item's display hint) — outer-first recognition + graceful fallback, fence wiring, directive
@@ -135,6 +130,15 @@ render through the SAME live chip renderer.
   mounted beside the chat input). `process-stream.ts` routes `directive_apply.proposed` →
   `proposeDirective`. Approve applies via `confirmDirective` → `POST /actions/confirm`. Pairs
   with the backend apply-policy cascade (aidream `services/output_directives/`).
+- 2026-07-08 — **Legacy `picklist_ref` annihilated.** All stored legacy envelopes backfilled to
+  canonical fences (4 scope-cell rows in `context.context_item_values`; agent definitions/versions
+  already clean). Deleted `legacyTranslate.ts`, `PicklistRefEnvelope`/`isPicklistRef`
+  (agent-definition.types.ts), `ReferencePurpose`, and every dual-read branch
+  (`readPicklistSelection`, `variableValueToDisplay`). aidream's envelope-registry allowlist
+  entries retired in the same change; the server's scope-binding legacy decoder remains as a
+  LOUD recovery layer only. Note: 7 stale pre-migration conversations still carry envelopes in
+  `chat.conversation.variables` — the server's client-envelope continue-turn pipeline handles
+  them; converting them would break their frozen turn-1 placeholder tokens.
 - 2026-06-20 — **Unified Matrx References (full alignment).** Purified `ReferenceItem` to the
   FLAT per-type model + `REFERENCE_TYPES` 7-type taxonomy (dropped `purpose`/`slot`/`ref`/`display`;
   `ReferencePurpose` `@deprecated`). New `legacyTranslate.ts` (loud hard-cut) + `bookmarkToReference.ts`.

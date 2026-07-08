@@ -6,8 +6,8 @@
  * recovery context's `isOpen` is true, so the dialog/button/icon dep
  * graph below never enters the static graph of any route.
  *
- * Actions per item: Copy, Edit (rawUserInput), Retry (navigate to routeHref),
- * Delete. Items marked viewedByUser on selection so the "new" badge clears.
+ * Actions per item: Copy (input or JSON), Edit (rawUserInput), Retry,
+ * Delete. Detail pane has "Your input" + variables vs Raw JSON tabs.
  */
 
 "use client";
@@ -34,9 +34,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useRequestRecovery } from "../providers/RequestRecoveryProvider";
 import type { PayloadRecord } from "@/lib/persistence/payloadSafetyStore";
+import {
+  buildHumanReadableRecoveryText,
+  extractUserInput,
+  extractVariables,
+  formatPayloadJson,
+} from "../utils/formatRecoveryDisplay";
+import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
 import { toast } from "sonner";
 
 function formatTimestamp(ts: number): string {
@@ -63,12 +72,67 @@ function kindBadge(kind: PayloadRecord["kind"]): string {
   }
 }
 
+function RecoveryInputSection({
+  isEditing,
+  draftText,
+  onDraftChange,
+  userInput,
+  variables,
+}: {
+  isEditing: boolean;
+  draftText: string;
+  onDraftChange: (value: string) => void;
+  userInput: string;
+  variables: Record<string, unknown> | null;
+}) {
+  const variableLines = variables ? formatVariablesForDisplay(variables) : "";
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+          Your input
+        </div>
+        {isEditing ? (
+          <Textarea
+            value={draftText}
+            onChange={(e) => onDraftChange(e.target.value)}
+            className="min-h-[160px] text-base"
+            style={{ fontSize: "16px" }}
+          />
+        ) : userInput ? (
+          <pre className="text-sm whitespace-pre-wrap break-words bg-muted/40 rounded-md p-3 border border-border">
+            {userInput}
+          </pre>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            No user input saved for this submission.
+          </p>
+        )}
+      </div>
+
+      {variableLines ? (
+        <div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+            Variables
+          </div>
+          <pre className="text-sm whitespace-pre-wrap break-words bg-muted/40 rounded-md p-3 border border-border">
+            {variableLines}
+          </pre>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function RecoveryWindowImpl() {
   const { items, isOpen, close, markViewed, deleteItem, updatePayload } =
     useRequestRecovery();
   const router = useRouter();
+  const isMobile = useIsMobile();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeViewTab, setActiveViewTab] = useState<"input" | "json">("input");
   const [isEditing, setIsEditing] = useState(false);
   const [draftText, setDraftText] = useState("");
   const [copied, setCopied] = useState(false);
@@ -76,6 +140,27 @@ export default function RecoveryWindowImpl() {
   const selected = useMemo(
     () => items.find((item) => item.id === selectedId) ?? null,
     [items, selectedId],
+  );
+
+  const humanReadableText = useMemo(
+    () => (selected ? buildHumanReadableRecoveryText(selected) : ""),
+    [selected],
+  );
+
+  const displayUserInput = useMemo(
+    () =>
+      selected ? extractUserInput(selected.payload, selected.rawUserInput) : "",
+    [selected],
+  );
+
+  const displayVariables = useMemo(
+    () => (selected ? extractVariables(selected.payload) : null),
+    [selected],
+  );
+
+  const payloadJson = useMemo(
+    () => (selected ? formatPayloadJson(selected.payload) : ""),
+    [selected],
   );
 
   // Auto-select first item on open.
@@ -89,20 +174,39 @@ export default function RecoveryWindowImpl() {
   // Reset editing state when selection changes and mark as viewed.
   useEffect(() => {
     if (!selected) return;
+    setActiveViewTab("input");
     setIsEditing(false);
-    setDraftText(selected.rawUserInput ?? "");
+    setDraftText(
+      selected.rawUserInput ??
+        extractUserInput(selected.payload, selected.rawUserInput),
+    );
     if (!selected.viewedByUser) {
       void markViewed(selected.id);
     }
   }, [selected, markViewed]);
 
+  const copyLabel = copied
+    ? "Copied"
+    : activeViewTab === "json" && !isMobile
+      ? "Copy JSON"
+      : "Copy input";
+
+  const handleCopyJson = async () => {
+    if (!payloadJson.trim()) return;
+    await navigator.clipboard.writeText(payloadJson);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
   const handleCopy = async () => {
     if (!selected) return;
     const text =
-      selected.rawUserInput ??
-      (typeof selected.payload === "string"
-        ? selected.payload
-        : JSON.stringify(selected.payload, null, 2));
+      activeViewTab === "json" && !isMobile
+        ? payloadJson
+        : isEditing
+          ? draftText
+          : humanReadableText;
+    if (!text.trim()) return;
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
@@ -233,23 +337,71 @@ export default function RecoveryWindowImpl() {
                   </div>
                 </header>
 
-                <div className="flex-1 min-h-0 overflow-auto px-5 py-4">
-                  <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-                    Your input
-                  </div>
-                  {isEditing ? (
-                    <Textarea
-                      value={draftText}
-                      onChange={(e) => setDraftText(e.target.value)}
-                      className="min-h-[200px] font-mono text-sm"
-                    />
+                <div className="flex-1 min-h-0 flex flex-col px-5 py-4">
+                  {isMobile ? (
+                    <div className="flex-1 min-h-0 overflow-auto space-y-5">
+                      <RecoveryInputSection
+                        isEditing={isEditing}
+                        draftText={draftText}
+                        onDraftChange={setDraftText}
+                        userInput={displayUserInput}
+                        variables={displayVariables}
+                      />
+                      <div className="border-t border-border pt-5">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Raw JSON
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleCopyJson}
+                            className="h-7 px-2 text-xs gap-1"
+                          >
+                            <Copy className="w-3 h-3" />
+                            Copy JSON
+                          </Button>
+                        </div>
+                        <pre className="text-sm whitespace-pre-wrap break-words bg-muted/40 rounded-md p-3 border border-border font-mono">
+                          {payloadJson}
+                        </pre>
+                      </div>
+                    </div>
                   ) : (
-                    <pre className="text-sm whitespace-pre-wrap break-words bg-muted/40 rounded-md p-3 border border-border">
-                      {selected.rawUserInput ??
-                        (typeof selected.payload === "string"
-                          ? selected.payload
-                          : JSON.stringify(selected.payload, null, 2))}
-                    </pre>
+                    <Tabs
+                      value={activeViewTab}
+                      onValueChange={(value) => {
+                        if (value === "input" || value === "json") {
+                          setActiveViewTab(value);
+                        }
+                      }}
+                      className="flex-1 min-h-0 flex flex-col"
+                    >
+                      <TabsList className="w-fit shrink-0">
+                        <TabsTrigger value="input">Your input</TabsTrigger>
+                        <TabsTrigger value="json">Raw JSON</TabsTrigger>
+                      </TabsList>
+                      <TabsContent
+                        value="input"
+                        className="flex-1 min-h-0 overflow-auto mt-3"
+                      >
+                        <RecoveryInputSection
+                          isEditing={isEditing}
+                          draftText={draftText}
+                          onDraftChange={setDraftText}
+                          userInput={displayUserInput}
+                          variables={displayVariables}
+                        />
+                      </TabsContent>
+                      <TabsContent
+                        value="json"
+                        className="flex-1 min-h-0 overflow-auto mt-3"
+                      >
+                        <pre className="text-sm whitespace-pre-wrap break-words bg-muted/40 rounded-md p-3 border border-border font-mono">
+                          {payloadJson}
+                        </pre>
+                      </TabsContent>
+                    </Tabs>
                   )}
                 </div>
 
@@ -272,7 +424,11 @@ export default function RecoveryWindowImpl() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setIsEditing(true)}
+                      onClick={() => {
+                        setActiveViewTab("input");
+                        setIsEditing(true);
+                      }}
+                      disabled={activeViewTab === "json" && !isMobile}
                       className="gap-1.5"
                     >
                       <Pencil className="w-3.5 h-3.5" />
@@ -290,7 +446,7 @@ export default function RecoveryWindowImpl() {
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
-                    {copied ? "Copied" : "Copy"}
+                    {copied ? "Copied" : copyLabel}
                   </Button>
                   <div className="flex-1" />
                   <Button

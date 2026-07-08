@@ -88,33 +88,9 @@ export interface PicklistBinding {
   multiple?: boolean;
 }
 
-/**
- * The legacy wire value of a picklist-bound variable: a reference, never the resolved text.
- * The server reconciles `list_item_id` to the item's hidden `description` and injects THAT
- * into the prompt. `label` is carried for display + the server's safe fallback only.
- *
- * @deprecated READ-ONLY back-compat. Authoring now emits the canonical ```matrx reference
- * fence (`kind:"reference"`, `type:"picklist_item"`) via
- * `features/matrx-envelope/referenceFence.ts#buildPicklistItemFence`; this shape is only
- * still read (through `readPicklistSelection`) so already-saved values keep working. Do NOT
- * emit it from new code. Remove once the backend drops the parallel-encoding allowlist.
- */
-export interface PicklistRefEnvelope {
-  type: "picklist_ref";
-  list_id: string;
-  list_item_id: string;
-  label: string;
-}
-
-/** @deprecated Read-only back-compat guard for legacy {@link PicklistRefEnvelope} values. */
-export function isPicklistRef(value: unknown): value is PicklistRefEnvelope {
-  return (
-    !!value &&
-    typeof value === "object" &&
-    (value as { type?: unknown }).type === "picklist_ref" &&
-    typeof (value as { list_item_id?: unknown }).list_item_id === "string"
-  );
-}
+// (Legacy `picklist_ref` envelope + `isPicklistRef` guard removed 2026-07-08 — every stored
+// value was backfilled to the canonical ```matrx reference fence; the ONLY wire value of a
+// picklist-bound variable is the fence from `referenceFence.ts#buildPicklistItemFence`.)
 
 /** Configuration for a variable's custom UI input component. */
 export interface VariableCustomComponent {

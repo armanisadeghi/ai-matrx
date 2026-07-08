@@ -2,7 +2,6 @@
  * Utility functions for handling agent variables.
  */
 
-import { isLegacyPicklistRef } from "@/features/matrx-envelope/legacyTranslate";
 import { readPicklistSelection } from "@/features/matrx-envelope/referenceFence";
 
 /**
@@ -76,16 +75,16 @@ export const formatVariableDisplayName = (name: string): string =>
 
 /**
  * Renders a variable value for human display. Picklist selections show their public
- * LABEL(s) (never the secret description, which the client never has) — reading both the
- * new ```matrx reference fence string and the legacy `picklist_ref` envelope; arrays render
+ * LABEL(s) (never the secret description, which the client never has) — read from the
+ * canonical ```matrx reference fence string (the only picklist encoding); arrays render
  * as comma-joined labels; everything else stringifies. Use this anywhere a variable value
  * is shown to a user, so a reference never renders as raw JSON or "[object Object]".
  */
 export const variableValueToDisplay = (value: unknown): string => {
   const isPicklistValue =
-    isLegacyPicklistRef(value) ||
-    (Array.isArray(value) && value.some(isLegacyPicklistRef)) ||
-    (typeof value === "string" && value.includes("```matrx"));
+    (typeof value === "string" && value.includes("```matrx")) ||
+    (Array.isArray(value) &&
+      value.some((v) => typeof v === "string" && v.includes("```matrx")));
   if (isPicklistValue) {
     const { labels, otherText } = readPicklistSelection(value);
     const parts = [...labels, ...otherText].filter(Boolean);
@@ -93,7 +92,7 @@ export const variableValueToDisplay = (value: unknown): string => {
   }
   if (Array.isArray(value)) {
     return value
-      .map((v) => (isLegacyPicklistRef(v) ? v.label : v == null ? "" : String(v)))
+      .map((v) => (v == null ? "" : String(v)))
       .filter(Boolean)
       .join(", ");
   }

@@ -730,12 +730,16 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   //      Supabase, not the 30-second stale entry.
   //   3. Refetch the row, replace the tab's document with the fresh truth.
   //
-  // **Important:** the AI Clean endpoint only writes the AGGREGATE
-  // `processed_documents.clean_content` column — it does NOT populate
-  // per-page `processed_document_pages.cleaned_text`. That column is owned
-  // by the RAG pipeline (`/rag/ingest/stream`) which uses a different
-  // cleaning algorithm with a per-page section taxonomy. The UI handles
-  // both shapes via the smart-pane rule in `PdfStudioReader`.
+  // **Two server modes (announced via the `pdf_clean_started` data event):**
+  //   - `whole_doc` (≤200 pages): one agent request writes only the AGGREGATE
+  //     `processed_documents.clean_content` column — per-page
+  //     `processed_document_pages.cleaned_text` stays untouched.
+  //   - `per_page` (>200 pages): the RESUMABLE per-page model (same engine
+  //     as the RAG clean stage) — every page's `cleaned_text` + section
+  //     taxonomy persists the moment it finishes, then the aggregate is
+  //     written from the per-page results. On a dropped connection this
+  //     hook auto-retries; the server skips already-cleaned pages.
+  // The UI handles both shapes via the smart-pane rule in `PdfStudioReader`.
 
   interface CleanContentCallbacks {
     onProgress?: (message: string) => void;
@@ -759,57 +763,106 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         ),
       );
 
-      // Inactivity watchdog: aborts only when the stream stops EMITTING
-      // (stalled socket / hung server) — a stream that's actively working
-      // never trips it. Without this, a mid-stream network death stranded
-      // the tab on "cleaning" forever with no recovery short of a reload.
-      const watchdog = createInactivityWatchdog(90_000);
+      // Whether the server declared this run resumable (`pdf_clean_started`
+      // with mode "per_page" — large docs). Per-page runs persist every
+      // cleaned page server-side, so a dropped/stalled stream is safely
+      // retried: the server skips the pages that already finished.
+      let perPageMode = false;
+      const MAX_RESUME_RETRIES = 2;
+
+      // One stream attempt with its own inactivity watchdog: aborts only
+      // when the stream stops EMITTING (stalled socket / hung server) — a
+      // stream that's actively working never trips it. Without this, a
+      // mid-stream network death stranded the tab on "cleaning" forever
+      // with no recovery short of a reload.
+      const runStreamOnce = async (baseUrl: string): Promise<string | null> => {
+        const watchdog = createInactivityWatchdog(90_000);
+        try {
+          const headers = await getAuthHeaders();
+          const { cleanContent: streamedClean } = await streamPdfClean({
+            docId,
+            baseUrl,
+            headers,
+            signal: watchdog.signal,
+            callbacks: {
+              onCleanStarted: (info) => {
+                watchdog.bump();
+                perPageMode = info.mode === "per_page";
+              },
+              onProgress: (msg) => {
+                watchdog.bump();
+                opts.onProgress?.(msg);
+                setTabs((prev) =>
+                  prev.map((tab) =>
+                    tab.id === docId ? { ...tab, progressMessage: msg } : tab,
+                  ),
+                );
+              },
+              onTextDelta: (accumulated) => {
+                watchdog.bump();
+                opts.onTextDelta?.(accumulated);
+                setTabs((prev) =>
+                  prev.map((tab) =>
+                    tab.id === docId
+                      ? { ...tab, streamingText: accumulated }
+                      : tab,
+                  ),
+                );
+              },
+              onCleanContent: (text) => {
+                watchdog.bump();
+                // Mirror the final payload into the live preview field so
+                // legacy consumers (AiCleanView) see the final blob the same
+                // way they saw the deltas.
+                opts.onTextDelta?.(text);
+                setTabs((prev) =>
+                  prev.map((tab) =>
+                    tab.id === docId ? { ...tab, streamingText: text } : tab,
+                  ),
+                );
+              },
+              onRecordUpdate: () => watchdog.bump(),
+            },
+          });
+          return streamedClean;
+        } catch (err) {
+          if (watchdog.timedOut) {
+            throw new Error(
+              "No response from the server for 90s — the cleanup may still finish in the background. Refetch in a moment or retry.",
+            );
+          }
+          throw err;
+        } finally {
+          watchdog.dispose();
+        }
+      };
+
       try {
         if (!backendUrl) {
           throw new Error("Backend URL is not configured");
         }
-        const headers = await getAuthHeaders();
-        const { cleanContent: streamedClean } = await streamPdfClean({
-          docId,
-          baseUrl: backendUrl,
-          headers,
-          signal: watchdog.signal,
-          callbacks: {
-            onProgress: (msg) => {
-              watchdog.bump();
-              opts.onProgress?.(msg);
+
+        let streamedClean: string | null = null;
+        for (let attempt = 0; ; attempt++) {
+          try {
+            streamedClean = await runStreamOnce(backendUrl);
+            break;
+          } catch (err) {
+            // Resumable per-page runs auto-retry: the server's per-page
+            // checkpoints mean a reconnect only pays for unfinished pages.
+            if (perPageMode && attempt < MAX_RESUME_RETRIES) {
+              const note = `Connection interrupted — resuming per-page clean (attempt ${attempt + 2}/${MAX_RESUME_RETRIES + 1})…`;
+              opts.onProgress?.(note);
               setTabs((prev) =>
                 prev.map((tab) =>
-                  tab.id === docId ? { ...tab, progressMessage: msg } : tab,
+                  tab.id === docId ? { ...tab, progressMessage: note } : tab,
                 ),
               );
-            },
-            onTextDelta: (accumulated) => {
-              watchdog.bump();
-              opts.onTextDelta?.(accumulated);
-              setTabs((prev) =>
-                prev.map((tab) =>
-                  tab.id === docId
-                    ? { ...tab, streamingText: accumulated }
-                    : tab,
-                ),
-              );
-            },
-            onCleanContent: (text) => {
-              watchdog.bump();
-              // Mirror the final payload into the live preview field so
-              // legacy consumers (AiCleanView) see the final blob the same
-              // way they saw the deltas.
-              opts.onTextDelta?.(text);
-              setTabs((prev) =>
-                prev.map((tab) =>
-                  tab.id === docId ? { ...tab, streamingText: text } : tab,
-                ),
-              );
-            },
-            onRecordUpdate: () => watchdog.bump(),
-          },
-        });
+              continue;
+            }
+            throw err;
+          }
+        }
 
         // Finalize — invalidate the cache then read the authoritative row.
         // Even when the stream returned inline `clean_content`, we still
@@ -852,11 +905,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         }
       } catch (err) {
-        const msg = watchdog.timedOut
-          ? "No response from the server for 90s — the cleanup may still finish in the background. Refetch in a moment or retry."
-          : err instanceof Error
-            ? err.message
-            : "AI cleanup failed";
+        const msg = err instanceof Error ? err.message : "AI cleanup failed";
         setTabs((prev) =>
           prev.map((tab) =>
             tab.id === docId
@@ -871,8 +920,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           ),
         );
         throw err instanceof Error ? new Error(msg) : err;
-      } finally {
-        watchdog.dispose();
       }
     },
     [backendUrl, getAuthHeaders, fetchDocument],

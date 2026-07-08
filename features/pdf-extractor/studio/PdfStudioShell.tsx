@@ -748,6 +748,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             onRunAiClean={handleRunAiClean}
             aiCleanRunning={aiCleanRunning}
             streamingCleanText={streamingCleanText}
+            streamingStatus={liveStatus}
             onOpenUpload={() => setUploadOpen(true)}
             editMode={pdfPaneEditMode}
             cropPagesInput={cropPagesInput}

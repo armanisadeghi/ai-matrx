@@ -1187,9 +1187,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { agentId: null },
     ephemeral: true,
     mobilePresentation: "fullscreen",
-    deprecated: {
-      note: "Stub — not yet implemented. Will be removed if no implementation lands.",
-    },
   },
   {
     slug: "agent-convert-system-window",
@@ -1217,9 +1214,6 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: { agentId: null },
     ephemeral: true,
     mobilePresentation: "fullscreen",
-    deprecated: {
-      note: "Stub — not yet implemented. Will be removed if no implementation lands.",
-    },
   },
 
   // ── Tool Call Window ──────────────────────────────────────────────────────

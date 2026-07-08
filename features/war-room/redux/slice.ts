@@ -280,6 +280,26 @@ const warRoomSlice = createSlice({
         delete state.autoApproveByThread[threadId];
     },
 
+    // ── Room-level recording ownership (D14 fence) ─────────────────────────
+    // Written ONLY by the RoomRecordingController / its completion callbacks —
+    // the tile's CleanupPad is a VIEW over this state, never a writer.
+    roomRecordingStarted(
+      state,
+      action: PayloadAction<{ threadId: string; sessionId: string }>,
+    ) {
+      state.audioRecording = {
+        threadId: action.payload.threadId,
+        sessionId: action.payload.sessionId,
+        status: "recording",
+      };
+    },
+    roomRecordingFinalizing(state) {
+      if (state.audioRecording) state.audioRecording.status = "finalizing";
+    },
+    roomRecordingCleared(state) {
+      state.audioRecording = null;
+    },
+
     clearRoomThreads(state, action: PayloadAction<string>) {
       const roomId = action.payload;
       const ids = state.threadIdsByRoom[roomId] ?? [];
@@ -321,6 +341,9 @@ export const {
   agentConversationsLoaded,
   setThreadAutoApprove,
   clearThreadAutoApprove,
+  roomRecordingStarted,
+  roomRecordingFinalizing,
+  roomRecordingCleared,
   clearRoomThreads,
 } = warRoomSlice.actions;
 

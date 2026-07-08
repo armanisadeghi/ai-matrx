@@ -14,6 +14,21 @@ export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
 export type AutoApproveScope = "task" | "note" | "thread";
 
+/**
+ * The room-level audio recording in flight (at most one, app-wide — the
+ * GlobalRecordingProvider enforces a single recorder). Owned by the
+ * RoomRecordingController mounted at the room shell, NOT by the tile's
+ * CleanupPad view — so switching a tile's tab (which unmounts the pad) never
+ * tears the recording session down. `status` moves recording → finalizing on
+ * stop; the entry clears when the transcript finalizes (or errors).
+ */
+export interface WarRoomAudioRecording {
+  threadId: string;
+  /** The tile's `studio_sessions` row being recorded into. */
+  sessionId: string;
+  status: "recording" | "finalizing";
+}
+
 export interface WarRoomState {
   sessionsById: Record<string, WarRoomSession>;
   sessionIds: string[];
@@ -51,6 +66,9 @@ export interface WarRoomState {
   agentConversationByThread: Record<string, string | null>;
 
   autoApproveByThread: Record<string, Record<string, boolean>>;
+
+  /** Room-level recording ownership — see WarRoomAudioRecording. */
+  audioRecording: WarRoomAudioRecording | null;
 }
 
 export const initialWarRoomState: WarRoomState = {
@@ -68,6 +86,7 @@ export const initialWarRoomState: WarRoomState = {
   assignmentsLoadedKeys: {},
   agentConversationByThread: {},
   autoApproveByThread: {},
+  audioRecording: null,
 };
 
 export type { ThreadTab };

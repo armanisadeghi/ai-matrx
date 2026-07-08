@@ -379,6 +379,16 @@ export const selectActiveAudioSessionId =
       ? activeEntityId(bucket(state, "thread", threadId), "studio_session")
       : null;
 
+/** The room-level recording in flight (recording or finalizing), if any. */
+export const selectRoomAudioRecording = (state: RootState) =>
+  state.warRoom.audioRecording;
+
+/** True iff the room controller is recording INTO this studio session. */
+export const selectRoomRecordingForSession =
+  (sessionId: string | null) =>
+  (state: RootState): boolean =>
+    !!sessionId && state.warRoom.audioRecording?.sessionId === sessionId;
+
 export const selectNoteIdsForThread = (threadId: string | null) =>
   threadId ? selectThreadEntityIds(threadId, "note") : () => EMPTY_IDS;
 

@@ -175,6 +175,13 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "RoomRecordingController + roomRecordingBridge (room-level recording ownership)",
+      filePath: "features/war-room/components/room/RoomRecordingController.tsx",
+      description:
+        "D14 fence 1. Invisible controller mounted once in WarRoomShell that OWNS the active recording session for the room's tiles: starts the app-root recorder (GlobalRecordingProvider) with the SESSION-KEYED context {kind:'studio', sessionId} and holds the finalize/persistence callbacks at room scope — so switching a tile's tab (which unmounts the embedded CleanupPad) never tears the recording down, and a remounted pad re-attaches via the recordings slice. service/roomRecordingBridge.ts is the module registry (controller API + per-session pad-view registry + stop-mode latch); state = warRoom.audioRecording (roomRecordingStarted/Finalizing/Cleared; selectRoomAudioRecording / selectRoomRecordingForSession). Finalize routes to the mounted pad's full commit pipeline (CleanupPad's externalRecording prop, adapted by ThreadAudioTab), or to the controller's fallback commit (raw segment + voicePad draft via features/transcription-cleanup/constants.ts keys) when no pad is mounted. The recorder engine's IndexedDB safety net is untouched.",
+      tier: "internal",
+    },
+    {
       name: "Tile flavors + project association",
       filePath: "features/war-room/components/shared/WarRoomProjectPicker.tsx",
       description:

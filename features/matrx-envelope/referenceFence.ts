@@ -8,10 +8,11 @@
  * (round-trip + display) — used by the picklist variable path today, by table /
  * secret authoring later. Never hand-assemble a fence string elsewhere.
  *
- * `readPicklistSelection` is the dual-read bridge for the migration: it accepts
- * BOTH the new ```matrx fence string AND the legacy `picklist_ref` envelope
- * (object or array) so already-saved values keep rendering until the backend
- * drops the parallel-encoding allowlist.
+ * `readPicklistSelection` normalizes a stored picklist value (fence string, or a
+ * multi-select array of fence strings + "Other" free text) into `{refs, otherText,
+ * labels}`. The fence is the ONLY encoding — the legacy `picklist_ref` envelope and
+ * its `legacyTranslate.ts` dual-read seam were retired 2026-07-08 after every stored
+ * value was backfilled to fences.
  */
 
 import {
@@ -21,11 +22,6 @@ import {
   type ReferenceItem,
   type ReferenceType,
 } from "@/features/matrx-envelope/envelope";
-import {
-  isLegacyPicklistRef,
-  translateLegacyPicklistRef,
-  translateLegacyReferenceItem,
-} from "@/features/matrx-envelope/legacyTranslate";
 
 const FENCE_OPEN = "```matrx";
 const FENCE_CLOSE = "```";
@@ -134,7 +130,7 @@ export interface PicklistRefRead {
 }
 
 export interface PicklistSelectionRead {
-  /** Ordered picklist-item refs (from a fence OR a legacy `picklist_ref`). */
+  /** Ordered picklist-item refs read from the ```matrx fence(s). */
   refs: PicklistRefRead[];
   /** Ordered free-text ("Other") entries that are not picklist items. */
   otherText: string[];
@@ -145,11 +141,8 @@ export interface PicklistSelectionRead {
 function refsFromItems(items: unknown, into: PicklistRefRead[]): void {
   if (!Array.isArray(items)) return;
   for (const raw of items) {
-    // Route every item through the loud translation layer — a flat canonical
-    // item passes through, a legacy nested item is flattened + screamed once.
-    const flat = translateLegacyReferenceItem(raw, "picklist_item");
-    if (!flat) continue;
-    const o = flat as unknown as Record<string, unknown>;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    const o = raw as Record<string, unknown>;
     const itemId = typeof o.item_id === "string" ? o.item_id : undefined;
     if (!itemId) continue;
     const listId = typeof o.list_id === "string" ? o.list_id : undefined;
@@ -166,30 +159,19 @@ function finalize(
 }
 
 /**
- * Normalize a stored picklist value into `{ refs, otherText, labels }`, reading
- * BOTH the new ```matrx reference fence string AND the legacy `picklist_ref`
- * envelope (single object or multi array). The single bridge every picklist
- * display / round-trip read-site calls during the migration.
+ * Normalize a stored picklist value into `{ refs, otherText, labels }` — a
+ * ```matrx reference fence string, or a multi-select array of fence strings +
+ * "Other" free-text entries. The single read-site every picklist display /
+ * round-trip caller uses.
  */
 export function readPicklistSelection(value: unknown): PicklistSelectionRead {
   const refs: PicklistRefRead[] = [];
   const otherText: string[] = [];
 
-  // Legacy single envelope (loud-translated to flat).
-  if (isLegacyPicklistRef(value)) {
-    const flat = translateLegacyPicklistRef(value);
-    refs.push({ list_id: flat.list_id, item_id: flat.item_id, label: flat.label ?? "" });
-    return finalize(refs, otherText);
-  }
-
-  // Legacy multi array: envelopes + "Other" free-text strings (tolerate a fence
-  // string element too, for any half-migrated value).
+  // Multi array: fence-string elements + "Other" free-text strings.
   if (Array.isArray(value)) {
     for (const entry of value) {
-      if (isLegacyPicklistRef(entry)) {
-        const flat = translateLegacyPicklistRef(entry);
-        refs.push({ list_id: flat.list_id, item_id: flat.item_id, label: flat.label ?? "" });
-      } else if (typeof entry === "string" && entry.trim()) {
+      if (typeof entry === "string" && entry.trim()) {
         const sub = readPicklistSelection(entry);
         if (sub.refs.length) {
           refs.push(...sub.refs);

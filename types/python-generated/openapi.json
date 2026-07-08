@@ -10704,6 +10704,30 @@
         }
       }
     },
+    "/admin/runtime/worker-health": {
+      "get": {
+        "tags": [
+          "Admin / Runtime Spine"
+        ],
+        "summary": "Worker Health",
+        "description": "Is the ``workflow_worker`` (queue + cron) process alive? Reports LIVE when\na heartbeat (``workflow.worker_heartbeat``, wf_007) is fresh. An empty result\nmeans no worker has ever run — the definitive answer that 0 jobs / 0 triggers\ncan't give. See docs/agent_plans/WORKFLOW_WORKER_DEPLOY.md.",
+        "operationId": "worker_health_admin_runtime_worker_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Worker Health Admin Runtime Worker Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/runtime/conversations/{conversation_id}": {
       "get": {
         "tags": [
@@ -11985,66 +12009,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -20209,7 +20173,7 @@
           "RAG"
         ],
         "summary": "Stage Embed",
-        "description": "Embed every chunk that doesn't already have a vector for this model.",
+        "description": "Embed every chunk that doesn't already have a vector for this model.\n\n``embedding_model`` omitted → run_embed resolves the configured prose\ndefault (voyage-4-large). Never default to the legacy oai model here.",
         "operationId": "stage_embed_rag_library__processed_document_id__embed_post",
         "parameters": [
           {
@@ -20226,8 +20190,14 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "default": "openai:text-embedding-3-small",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
               "title": "Embedding Model"
             }
           }
@@ -31524,6 +31494,73 @@
         }
       }
     },
+    "/media-heal/drain": {
+      "post": {
+        "tags": [
+          "Media Heal"
+        ],
+        "summary": "Drain Media Heal Queue",
+        "description": "Drain pending ``mtx_media_heal_queue`` rows (flip public + rewrite column).",
+        "operationId": "drain_media_heal_queue_media_heal_drain_post",
+        "parameters": [
+          {
+            "name": "X-Cloud-Files-Bypass",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Cloud-Files-Bypass"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DrainRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrainResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/podcast/generate": {
       "post": {
         "tags": [
@@ -36735,6 +36772,70 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redact/escrow/wrapping-key": {
+      "get": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Escrow Wrapping Key",
+        "description": "Public half of the escrow KMS key, for CLIENT-side wrapping.\n\nThe browser wraps the session key itself (RSA-OAEP SHA-256) and writes\nthe ciphertext straight to ``pdf.pdf_redaction_key_escrow`` via\nsupabase-js — the raw key never transits this server. 503 (loudly) when\n``MATRX_REDACTION_KMS_KEY_ID`` is unset.",
+        "operationId": "escrow_wrapping_key_redact_escrow_wrapping_key_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscrowWrappingKeyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/redact/escrow/recover": {
+      "post": {
+        "tags": [
+          "File Analysis"
+        ],
+        "summary": "Escrow Recover",
+        "description": "Recover a reversible-redaction session key from org escrow.\n\nTHE sensitive door of the escrow system. Authorization: the caller must\nbe the escrow row's owner, OR an owner/admin (active ``iam.memberships``\nrow) of the row's organization. Every successful unwrap is audit-logged\nto ``platform.activity_log`` (action ``redaction_key.recovered``).",
+        "operationId": "escrow_recover_redact_escrow_recover_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EscrowRecoverBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscrowRecoverResponse"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -52529,6 +52630,14 @@
             "title": "Entry Nodes",
             "description": "Optional. If set, the scheduler starts from these node ids. If empty, the compiler derives entry nodes (nodes with no incoming edges)."
           },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/VariableSpec"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "Declared run variables. Node static inputs reference them with {'$var': name}; run-time initial_variables supply the values. A reference to an UNDECLARED variable fails compile/validate loudly (see matrx_graph.types.variables)."
+          },
           "metadata": {
             "additionalProperties": true,
             "type": "object",
@@ -53193,61 +53302,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -54452,6 +54506,116 @@
         ],
         "title": "DomainUpsertRequest"
       },
+      "DrainRequest": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "maximum": 500,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 50
+          }
+        },
+        "type": "object",
+        "title": "DrainRequest"
+      },
+      "DrainResponse": {
+        "properties": {
+          "claimed": {
+            "type": "integer",
+            "title": "Claimed"
+          },
+          "healed": {
+            "type": "integer",
+            "title": "Healed"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/DrainRowResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "claimed",
+          "healed",
+          "failed",
+          "results"
+        ],
+        "title": "DrainResponse"
+      },
+      "DrainRowResult": {
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "title": "Queue Id"
+          },
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "column": {
+            "type": "string",
+            "title": "Column"
+          },
+          "row_id": {
+            "type": "string",
+            "title": "Row Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "rewrote_column": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rewrote Column"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queue_id",
+          "table",
+          "column",
+          "row_id",
+          "status"
+        ],
+        "title": "DrainRowResult"
+      },
       "DuplicatePagesRequest": {
         "properties": {
           "output_mode": {
@@ -55139,6 +55303,76 @@
         },
         "type": "object",
         "title": "EntityUpdateBody"
+      },
+      "EscrowRecoverBody": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id"
+        ],
+        "title": "EscrowRecoverBody"
+      },
+      "EscrowRecoverResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "session_key_b64": {
+            "type": "string",
+            "title": "Session Key B64"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "session_key_b64"
+        ],
+        "title": "EscrowRecoverResponse"
+      },
+      "EscrowWrappingKeyResponse": {
+        "properties": {
+          "kms_key_id": {
+            "type": "string",
+            "title": "Kms Key Id"
+          },
+          "wrap_alg": {
+            "type": "string",
+            "title": "Wrap Alg"
+          },
+          "public_key_spki_b64": {
+            "type": "string",
+            "title": "Public Key Spki B64"
+          },
+          "key_spec": {
+            "type": "string",
+            "title": "Key Spec"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kms_key_id",
+          "wrap_alg",
+          "public_key_spki_b64",
+          "key_spec"
+        ],
+        "title": "EscrowWrappingKeyResponse"
       },
       "ExcludePageBody": {
         "properties": {
@@ -66777,11 +67011,6 @@
             "title": "Provider",
             "default": ""
           },
-          "api_class": {
-            "type": "string",
-            "title": "Api Class",
-            "default": ""
-          },
           "context_window": {
             "anyOf": [
               {
@@ -70696,8 +70925,7 @@
           },
           "embedding_model": {
             "type": "string",
-            "title": "Embedding Model",
-            "default": "openai:text-embedding-3-small"
+            "title": "Embedding Model"
           },
           "clean_concurrency": {
             "type": "integer",
@@ -84581,6 +84809,30 @@
         "title": "VariableComponentSpec",
         "description": "The input component a variable renders as (customComponent)."
       },
+      "VariableSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "default": {
+            "title": "Default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "VariableSpec",
+        "description": "One declared run variable on a Definition.\n\n``default=None`` means \"no default\" — a reference to this variable with\nno per-reference default MUST be supplied at run time or the run fails\nloudly at that node. (A literal None default would be useless anyway:\nnode input schemas want real values.)"
+      },
       "VerdictRequest": {
         "properties": {
           "verdict": {
@@ -86618,6 +86870,12 @@
             ],
             "title": "Scope Ids",
             "description": "Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query."
+          },
+          "expand_entity_clusters": {
+            "type": "boolean",
+            "title": "Expand Entity Clusters",
+            "description": "Recall-broadening: also surface chunks about same-kind entities that share a KG cluster with the query's matched entities (canonical concept expansion). Off by default — enabling it for a corpus is an eval decision. Cross-spelling (alias) matches work regardless.",
+            "default": false
           }
         },
         "type": "object",

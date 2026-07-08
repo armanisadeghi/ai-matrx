@@ -125,6 +125,17 @@ export const selectRawSegmentsLoaded =
     !!sessionId &&
     state.transcriptStudio.rawIdsBySession[sessionId] !== undefined;
 
+/**
+ * Has this session's CLEANED segments been fetched at all? Same
+ * loaded-vs-empty distinction as `selectRawSegmentsLoaded` — gate a fetch on
+ * this, never on `count === 0`.
+ */
+export const selectCleanedSegmentsLoaded =
+  (sessionId: string | null) =>
+  (state: RootState): boolean =>
+    !!sessionId &&
+    state.transcriptStudio.cleanedIdsBySession[sessionId] !== undefined;
+
 // ── Cleaned segments ────────────────────────────────────────────────
 
 const EMPTY_CLEANED: CleanedSegment[] = [];

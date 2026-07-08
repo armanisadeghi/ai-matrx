@@ -18,6 +18,7 @@
 
 import { useMemo } from "react";
 import {
+  BookOpenText,
   FileCog,
   FileSearch,
   FileText,
@@ -30,7 +31,7 @@ import {
   ShieldAlert,
   Zap,
   Table2,
-  Tag
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
@@ -44,6 +45,7 @@ import { ImagesContent } from "@/features/file-analysis/content/ImagesContent";
 import { RepeatedRegionsContent } from "@/features/file-analysis/content/RepeatedRegionsContent";
 import { DuplicatesContent } from "@/features/file-analysis/content/DuplicatesContent";
 import { ClassificationContent } from "@/features/file-analysis/content/ClassificationContent";
+import { ReadingOrderContent } from "@/features/file-analysis/content/ReadingOrderContent";
 import { MetadataContent } from "@/features/file-analysis/content/MetadataContent";
 import { RawView } from "@/features/file-analysis/content/RawView";
 import { allResults, findResult } from "@/features/file-analysis/content/utils";
@@ -65,6 +67,7 @@ export type StudioInspectorTab =
   | "regions"
   | "duplicates"
   | "classification"
+  | "reading-order"
   | "metadata"
   | "annotations"
   | "findings"
@@ -108,6 +111,7 @@ const TABS: Array<{
   { id: "regions", label: "Regions", icon: Layers, group: "content" },
   { id: "duplicates", label: "Dupes", icon: Layers, group: "content" },
   { id: "classification", label: "Classify", icon: Tag, group: "content" },
+  { id: "reading-order", label: "Order", icon: BookOpenText, group: "content" },
   { id: "metadata", label: "Info", icon: Info, group: "content" },
   // ── Tools (act on the document) ──
   { id: "pages", label: "Pages", icon: Files, group: "tools" },
@@ -269,6 +273,10 @@ export function InspectorRail({
               />
             </ScrollPanel>
           </RawView>
+        ) : activeTab === "reading-order" ? (
+          <ScrollPanel>
+            <ReadingOrderContent fileId={fileId} onJumpToPage={jumpPage} />
+          </ScrollPanel>
         ) : activeTab === "metadata" ? (
           <RawView
             label="File metadata"

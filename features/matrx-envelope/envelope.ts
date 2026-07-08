@@ -131,13 +131,9 @@ export function isDirectiveProposed(
 // map key is the slot), never a field on the item. (See
 // docs/protocol/MATRX_REFERENCES.md — "The item shape" + "Where purpose went".)
 
-/**
- * @deprecated The legacy intent field. It no longer lives on a canonical item —
- * resolution is decided by position. Kept ONLY so the loud legacy-translation
- * layer (`legacyTranslate.ts`) can type the old nested input it migrates away.
- * Do NOT add this to a new item.
- */
-export type ReferencePurpose = "substitute" | "expand" | "inline" | "context";
+// (The legacy `purpose` intent field and the `legacyTranslate.ts` translation layer were
+// deleted 2026-07-08 — no stored value carries the old nested/`picklist_ref` shapes anymore;
+// resolution intent is decided by POSITION only.)
 
 /**
  * UDT + record reference taxonomy. `dataset_cell` is a legacy alias of `table_cell`.

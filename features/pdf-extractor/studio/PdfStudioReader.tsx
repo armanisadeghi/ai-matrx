@@ -34,6 +34,7 @@ import React, {
   useState,
 } from "react";
 import dynamic from "next/dynamic";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   FileText,
   MousePointerClick,
@@ -187,6 +188,13 @@ export interface PdfStudioReaderProps {
    * `aiCleanRunning` is true.
    */
   streamingCleanText?: string | null;
+  /**
+   * Live status line for the active clean/pipeline run (e.g. per-page
+   * progress from the resumable large-doc clean, which emits progress
+   * messages instead of text deltas). Shown in the streaming block when
+   * there is no accumulated text yet.
+   */
+  streamingStatus?: string | null;
   /** Called when the user wants to open the upload drawer (e.g. to refresh a missing source). */
   onOpenUpload: () => void;
   /** Visual edit mode — 'crop' overlays a selection rect, 'reorder' shows a page-tile grid. */
@@ -220,6 +228,7 @@ export function PdfStudioReader({
   onRunAiClean,
   aiCleanRunning = false,
   streamingCleanText = null,
+  streamingStatus = null,
   onOpenUpload,
   editMode,
   cropPagesInput,
@@ -332,6 +341,7 @@ export function PdfStudioReader({
           onRefreshPages={onRefreshPages}
           streaming={aiCleanRunning}
           streamingText={streamingCleanText}
+          streamingStatus={streamingStatus}
         />
       )}
       {visiblePanes.has("chunks") && (
@@ -1095,6 +1105,7 @@ function TextPane({
   onRefreshPages,
   streaming = false,
   streamingText = null,
+  streamingStatus = null,
 }: {
   paneKey: PaneKey;
   title: string;
@@ -1131,13 +1142,14 @@ function TextPane({
    * run finalizes). Null otherwise.
    */
   streamingText?: string | null;
+  /** Live status line while `streaming` and no text has accumulated yet. */
+  streamingStatus?: string | null;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const anchorMap = useRef<Map<number, HTMLElement>>(new Map());
-  // True while a code-driven scroll is in flight — blocks the IntersectionObserver
+  // True while a code-driven scroll is in flight — blocks the scroll handler
   // from feeding stale page numbers back into activePage mid-animation.
   const isProgrammaticRef = useRef(false);
-  // The last page number emitted by THIS pane's own IntersectionObserver.
+  // The last page number emitted by THIS pane's own scroll handler.
   // Used to avoid reacting to activePage changes that we ourselves caused.
   const selfEmittedPageRef = useRef<number | null>(null);
 
@@ -1145,57 +1157,99 @@ function TextPane({
   // Map<pageId, editedText> — cleared only on full page refresh or doc change.
   const [overrides, setOverrides] = useState<Map<string, string>>(new Map());
 
-  // Clear overrides when the doc changes.
+  // In-flight edit buffers, keyed by pageId. Lifted OUT of PageBlock because
+  // the list is virtualized: a block that scrolls out of the overscan window
+  // unmounts, and an unsaved edit living in block-local state would be lost.
+  // Absence means "not editing"; presence means "editing with this text".
+  const [drafts, setDrafts] = useState<Map<string, string>>(new Map());
+
+  // Clear overrides + edit drafts when the doc changes.
   useEffect(() => {
     setOverrides(new Map());
+    setDrafts(new Map());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.id]);
 
-  // Track when this pane is the active scroller — so the IntersectionObserver
-  // only emits while the user is actually interacting with it.
+  const handleDraftChange = useCallback(
+    (pageId: string, text: string | null) => {
+      setDrafts((prev) => {
+        const next = new Map(prev);
+        if (text === null) next.delete(pageId);
+        else next.set(pageId, text);
+        return next;
+      });
+    },
+    [],
+  );
+
+  // ── Virtualization ──────────────────────────────────────────────────────
+  //
+  // 500-page docs used to mount 500 PageBlocks (each a full <pre> of page
+  // text) — the D32 scale defect. @tanstack/react-virtual (the repo-standard
+  // windowing primitive, same as ChunksPane / FileTree) mounts only the
+  // visible window + overscan. Sizes are estimated from char counts and
+  // corrected by `measureElement` once a block renders.
+  const virtualizer = useVirtualizer({
+    count: pages.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: (i) => {
+      const p = pages[i];
+      const chars =
+        (field === "cleaned" ? p?.cleanedCharCount : p?.rawCharCount) ?? 0;
+      // header ~28px + ~17px per wrapped line (~75 chars/line) + padding.
+      return Math.min(1400, 44 + Math.ceil(chars / 75) * 17);
+    },
+    overscan: 6,
+    getItemKey: (i) => pages[i]?.id ?? i,
+  });
+
+  // Track when this pane is the active scroller — the driver of pane sync.
   const onScrollStart = useCallback(() => {
     if (isProgrammaticRef.current) return; // programmatic scroll — don't steal the wheel
     lastScrolledPaneRef.current = paneKey;
   }, [paneKey, lastScrolledPaneRef]);
 
-  // IntersectionObserver — emit the most-visible page only when the user is
-  // actively scrolling this pane (not during a code-driven animation).
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return undefined;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Only fire when the user is scrolling THIS pane.
-        if (lastScrolledPaneRef.current !== paneKey) return;
-        // Suppress during programmatic scrolls — otherwise smooth-scroll
-        // animations emit stale page numbers that cause the "off by one" drift.
-        if (isProgrammaticRef.current) return;
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        const page = Number(visible.target.getAttribute("data-page") ?? 0);
-        if (page) {
-          selfEmittedPageRef.current = page;
-          onActivePage(page);
-        }
-      },
-      { root, threshold: [0.1, 0.25, 0.5] },
-    );
-    anchorMap.current.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [pages.length, paneKey, lastScrolledPaneRef, onActivePage]);
+  // Derive the active page from the scroll position (replaces the old
+  // IntersectionObserver — unmounted virtual rows can't be observed).
+  // The page whose block covers the "reading line" (25% down the pane) wins.
+  const emitActiveFromScroll = useCallback(() => {
+    if (isProgrammaticRef.current) return;
+    if (lastScrolledPaneRef.current !== paneKey) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const probe = container.scrollTop + container.clientHeight * 0.25;
+    const items = virtualizer.getVirtualItems();
+    if (items.length === 0) return;
+    let best = items[0].index;
+    for (const vi of items) {
+      if (vi.start <= probe && vi.end > probe) {
+        best = vi.index;
+        break;
+      }
+      if (vi.start <= probe) best = vi.index;
+    }
+    const page = pages[best]?.pageNumber;
+    if (page && page !== selfEmittedPageRef.current) {
+      selfEmittedPageRef.current = page;
+      onActivePage(page);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paneKey, lastScrolledPaneRef, onActivePage, pages, virtualizer]);
 
   // Pin the top of `pageNumber` to the top of this pane's scroll container.
-  function pinPageToTop(pageNumber: number) {
-    const container = containerRef.current;
-    const el = anchorMap.current.get(pageNumber);
-    if (!container || !el) return;
-    const target =
-      container.scrollTop +
-      (el.getBoundingClientRect().top - container.getBoundingClientRect().top);
-    container.scrollTo({ top: target, behavior: "smooth" });
-  }
+  // Runs twice (immediate + next frame) because with dynamic measurement the
+  // first jump lands on estimated offsets that shift once rows measure.
+  const pinPageToTop = useCallback(
+    (pageNumber: number) => {
+      const idx = pages.findIndex((p) => p.pageNumber === pageNumber);
+      if (idx < 0) return;
+      virtualizer.scrollToIndex(idx, { align: "start" });
+      requestAnimationFrame(() => {
+        virtualizer.scrollToIndex(idx, { align: "start" });
+      });
+    },
+    [pages, virtualizer],
+  );
 
   // Follow an activePage change from any external source (PDF, sibling pane,
   // sidebar nav). Only skip when WE emitted this exact page number ourselves —
@@ -1280,8 +1334,11 @@ function TextPane({
 
       <div
         ref={containerRef}
-        className="flex-1 min-h-0 overflow-y-auto px-2 py-2 space-y-2"
-        onScroll={onScrollStart}
+        className="flex-1 min-h-0 overflow-y-auto px-2 py-2"
+        onScroll={() => {
+          onScrollStart();
+          emitActiveFromScroll();
+        }}
         onWheel={onScrollStart}
         onTouchMove={onScrollStart}
       >
@@ -1308,7 +1365,7 @@ function TextPane({
               <PdfAiContent content={streamingText} isStreaming />
             ) : (
               <span className="italic text-[11px] text-muted-foreground">
-                Waiting for the model…
+                {streamingStatus || "Waiting for the model…"}
               </span>
             )}
           </div>
@@ -1341,42 +1398,57 @@ function TextPane({
           </div>
         )}
 
-        {pages.map((p) => {
-          // Skip per-page rows when streaming (the live preview takes
-          // over) or when the whole field is empty (we already rendered
-          // the aggregate fallback above).
-          if (streaming || allPagesEmpty) return null;
-          const baseText = field === "cleaned" ? p.cleanedText : p.rawText;
-          const text = overrides.get(p.id) ?? baseText;
-          const isActive = activePage === p.pageNumber;
-          return (
-            <PageBlock
-              key={p.id}
-              page={p}
-              text={text}
-              field={field}
-              isActive={isActive}
-              highlightSection={highlightSection}
-              findQuery={findQuery}
-              onClick={() => onActivePage(p.pageNumber)}
-              registerAnchor={(el) => {
-                if (el) anchorMap.current.set(p.pageNumber, el);
-                else anchorMap.current.delete(p.pageNumber);
-              }}
-              onSaved={(pageId, savedText) => {
-                setOverrides((prev) => {
-                  const next = new Map(prev);
-                  next.set(pageId, savedText);
-                  return next;
-                });
-              }}
-              onReClean={async () => {
-                await onRunPipeline();
-                onRefreshPages();
-              }}
-            />
-          );
-        })}
+        {/* Per-page rows — virtualized. Hidden while streaming (the live
+            preview takes over) or when the whole field is empty (the
+            aggregate fallback above rendered instead). */}
+        {!streaming && !allPagesEmpty && (
+          <div
+            style={{
+              height: virtualizer.getTotalSize(),
+              position: "relative",
+            }}
+          >
+            {virtualizer.getVirtualItems().map((vi) => {
+              const p = pages[vi.index];
+              if (!p) return null;
+              const baseText = field === "cleaned" ? p.cleanedText : p.rawText;
+              const text = overrides.get(p.id) ?? baseText;
+              const isActive = activePage === p.pageNumber;
+              return (
+                <div
+                  key={p.id}
+                  data-index={vi.index}
+                  ref={virtualizer.measureElement}
+                  className="absolute left-0 right-0 pb-2"
+                  style={{ transform: `translateY(${vi.start}px)` }}
+                >
+                  <PageBlock
+                    page={p}
+                    text={text}
+                    field={field}
+                    isActive={isActive}
+                    highlightSection={highlightSection}
+                    findQuery={findQuery}
+                    onClick={() => onActivePage(p.pageNumber)}
+                    draft={drafts.get(p.id) ?? null}
+                    onDraftChange={handleDraftChange}
+                    onSaved={(pageId, savedText) => {
+                      setOverrides((prev) => {
+                        const next = new Map(prev);
+                        next.set(pageId, savedText);
+                        return next;
+                      });
+                    }}
+                    onReClean={async () => {
+                      await onRunPipeline();
+                      onRefreshPages();
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -1473,7 +1545,8 @@ function PageBlock({
   highlightSection,
   findQuery,
   onClick,
-  registerAnchor,
+  draft,
+  onDraftChange,
   onSaved,
   onReClean,
 }: {
@@ -1484,20 +1557,21 @@ function PageBlock({
   highlightSection?: boolean;
   findQuery: string;
   onClick: () => void;
-  registerAnchor: (el: HTMLDivElement | null) => void;
+  /**
+   * In-flight edit buffer, owned by the parent pane (virtualized rows
+   * unmount when scrolled away — block-local edit state would be lost).
+   * `null` = not editing; a string = editing with that text.
+   */
+  draft: string | null;
+  onDraftChange: (pageId: string, text: string | null) => void;
   onSaved: (pageId: string, savedText: string) => void;
   onReClean: () => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState(text);
+  const editing = draft !== null;
+  const editText = draft ?? text;
   const [saving, setSaving] = useState(false);
   const [reCleaning, setReCleaning] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  // Keep edit buffer in sync when text prop changes externally (e.g. after re-clean refresh).
-  useEffect(() => {
-    if (!editing) setEditText(text);
-  }, [text, editing]);
 
   const isDirty = editing && editText !== text;
 
@@ -1516,14 +1590,13 @@ function PageBlock({
     if (error) {
       setSaveError(error.message);
     } else {
-      setEditing(false);
+      onDraftChange(page.id, null);
       onSaved(page.id, editText);
     }
   }
 
   function handleCancel() {
-    setEditing(false);
-    setEditText(text);
+    onDraftChange(page.id, null);
     setSaveError(null);
   }
 
@@ -1544,8 +1617,6 @@ function PageBlock({
 
   return (
     <div
-      data-page={page.pageNumber}
-      ref={registerAnchor}
       className={cn(
         "group border rounded-md text-[11px] leading-relaxed transition-colors",
         isActive
@@ -1639,7 +1710,7 @@ function PageBlock({
                 title="Edit this page's text"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setEditing(true);
+                  onDraftChange(page.id, text);
                 }}
                 className="p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-all"
               >
@@ -1659,7 +1730,7 @@ function PageBlock({
         <textarea
           autoFocus
           value={editText}
-          onChange={(e) => setEditText(e.target.value)}
+          onChange={(e) => onDraftChange(page.id, e.target.value)}
           onClick={(e) => e.stopPropagation()}
           spellCheck={false}
           className="w-full px-2 pb-2 font-mono text-[11px] leading-relaxed resize-y bg-transparent text-foreground/85 outline-none border-0 min-h-[6rem]"
