@@ -517,7 +517,14 @@ export async function processStream({
         const text = event.data.text;
 
         if (isInTextRun) {
+          // A reasoning run opening mid-text is a structural boundary exactly
+          // like a tool call: flush, then BREAK the accumulator's current
+          // block so post-thinking text opens a fresh render block. Without
+          // the break, both text runs collapse into one block and the live
+          // view renders the thinking AFTER the merged text — while the
+          // persisted turn keeps the true order (live/DB divergence).
           dispatchBatch();
+          blockAccumulator.breakTextBlock(dispatch);
           isInTextRun = false;
         }
 
@@ -543,7 +550,9 @@ export async function processStream({
       if (isReasoningEvent(event)) {
         if (event.data.state === "started") {
           if (isInTextRun) {
+            // Same structural break as the reasoning_chunk branch above.
             dispatchBatch();
+            blockAccumulator.breakTextBlock(dispatch);
             isInTextRun = false;
           }
           if (!isInReasoningRun) {
