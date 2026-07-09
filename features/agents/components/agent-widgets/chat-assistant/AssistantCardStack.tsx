@@ -30,6 +30,7 @@ import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execu
 import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { AgentUserMessage } from "../../messages-display/user/AgentUserMessage";
+import { collapseByRequestId } from "../../messages-display/assistant/collapse-by-request-id";
 import { AgentPlanningIndicator } from "../../shared/AgentPlanningIndicator";
 import { ChatAssistantVariableInputs } from "./ChatAssistantVariableInputs";
 
@@ -133,7 +134,11 @@ export function AssistantCardStack({
       });
     }
 
-    return msgs;
+    // One stream-anchored render per requestId — multi-iteration turns
+    // otherwise repaint the whole request once per persisted row (the
+    // duplicate-content-after-stream bug). Same collapse as the main
+    // transcript's AssistantTurnGroup.
+    return collapseByRequestId(msgs);
   }, [messages, isActive, latestRequestId]);
 
   // The "thinking…" indicator is a transient pre-token signal — distinct

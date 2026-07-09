@@ -38,6 +38,7 @@ import { useCallback, useEffect } from "react";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import { AssistantActionBar } from "./AssistantActionBar";
+import { collapseByRequestId } from "./collapse-by-request-id";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
@@ -60,32 +61,6 @@ interface AssistantTurnGroupProps {
   compact?: boolean;
   /** Every assistant member of this logical turn, in transcript order. */
   members: AssistantTurnGroupMember[];
-}
-
-/**
- * Collapse members that share a live stream source into ONE render each.
- *
- * A multi-iteration agentic turn persists one assistant row per iteration,
- * and process-stream stamps the SAME `_streamRequestId` on every one of them.
- * The stream-anchored renderer (`EnhancedChatMarkdown`'s unified-slot path)
- * renders the ENTIRE request's timeline — so letting each row render with the
- * shared requestId shows the whole turn once PER ROW: the
- * duplicate/triplicate-content-after-stream bug. One render per requestId is
- * the correct cardinality; the LAST row of the run wins so the action-bar
- * anchor and edit target stay on the final answer row. Rows without a
- * requestId (DB-hydrated history) are untouched.
- */
-function collapseByRequestId(
-  members: AssistantTurnGroupMember[],
-): AssistantTurnGroupMember[] {
-  const lastIndexByRequestId = new Map<string, number>();
-  members.forEach((m, i) => {
-    if (m.requestId) lastIndexByRequestId.set(m.requestId, i);
-  });
-  if (lastIndexByRequestId.size === 0) return members;
-  return members.filter(
-    (m, i) => !m.requestId || lastIndexByRequestId.get(m.requestId) === i,
-  );
 }
 
 export function AssistantTurnGroup({
