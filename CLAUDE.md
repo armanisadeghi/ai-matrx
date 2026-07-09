@@ -223,6 +223,8 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 
 **Editing this file, any `FEATURE.md`, `PRINCIPLES.md`, or a `SKILL.md`?** Invoke the `context-docs` skill first — every doc edit is a full-document review (place it right, merge don't stack, lose no rule, max punch per word).
 
+**Cross-repo truth lives in `/Users/armanisadeghi/code/common-docs/` (its own repo) — ONE doc, pointer lines in each touched repo, NEVER a per-repo copy.** Documenting anything that spans repos (e.g. `common-docs/cms-system/FEATURE.md` for the CMS platform)? **Invoke the `cross-repo-docs` skill.**
+
 ### Feature entry pages are LIST views, not forced workspaces
 
 `/[feature]` is the user's first stop — a list of everything they can do (create / open / fork), like `/agents` (the gold standard): list → click an item → pick a UI (view / build / run / versions) → back out or jump UIs via the header row. **Never trap the user in a single record's detail UI as if it were the home page** (`/transcripts` shows all my/shared transcripts, recent-first, filters, New button, per-row UI choices — not a forced detail page). If a feature does this today, the fix is the missing list "savior" page demoting the detail page — cheap, high value, not a redesign.
