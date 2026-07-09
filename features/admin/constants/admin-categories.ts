@@ -777,7 +777,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Relationship Manager",
         description:
-          "Reachability & containment registry — which relationships convey access (sharing cascade), unregistered pairs, closure inspector, cache rebuild, and write-time enforcement.",
+          "Reachability & containment registry — define/edit/delete which relationship shapes exist and which convey access (sharing cascade), a unified drift report, closure inspector, cache rebuild, and write-time enforcement.",
         iconName: "Network",
         link: "/administration/relationships",
         isNew: true,
