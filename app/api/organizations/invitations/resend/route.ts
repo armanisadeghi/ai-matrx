@@ -1,24 +1,21 @@
 /**
- * Resend Organization Invitation API Route
+ * Resend Organization Invitation Email Route (email-only)
  *
- * Handles resending invitation emails with extended expiry
- * This must run on the server to access EMAIL_FROM and RESEND_API_KEY
- *
- * Environment variables needed:
- * - RESEND_API_KEY=re_xxxxxxxxxxxx
- * - EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
+ * The invitation row is refreshed (new expiry + fresh token) on the client via
+ * the canonical `inv_resend` RPC (`invitationsService.resend`). This route
+ * exists ONLY to re-send the reminder email — it receives the fresh token +
+ * recipient email + organizationId and renders/sends the message. It NEVER
+ * touches any invitation table.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
-import { metadataAsObject } from "@/utils/json/metadataObject";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Verify authentication
     const {
       data: { user },
       error: userError,
@@ -31,31 +28,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse request body
     const body = await request.json();
-    const { invitationId } = body;
+    const { token, organizationId, email } = body;
 
-    // Validate input
-    if (!invitationId) {
+    if (!token || !organizationId || !email) {
       return NextResponse.json(
-        { success: false, error: "Missing required field: invitationId" },
+        {
+          success: false,
+          error: "Missing required fields: token, organizationId, email",
+        },
         { status: 400 },
-      );
-    }
-
-    // Fetch the invitation to resend
-    const { data: invitation, error: fetchError } = await supabase
-      .schema("iam")
-      .from("invitations")
-      .select("*")
-      .eq("id", invitationId)
-      .single();
-
-    if (fetchError || !invitation) {
-      console.error("Error fetching invitation:", fetchError);
-      return NextResponse.json(
-        { success: false, error: "Invitation not found" },
-        { status: 404 },
       );
     }
 
@@ -63,40 +45,20 @@ export async function POST(request: NextRequest) {
       .schema("iam")
       .from("organizations")
       .select("name")
-      .eq("id", invitation.organization_id)
+      .eq("id", organizationId)
       .maybeSingle();
 
-    // Update expiry date (7 days from now)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    const { error: updateError } = await supabase
-      .schema("iam")
-      .from("invitations")
-      .update({ expires_at: expiresAt.toISOString() })
-      .eq("id", invitationId);
-
-    if (updateError) {
-      console.error("Error updating invitation expiry:", updateError);
-      return NextResponse.json(
-        { success: false, error: "Failed to update invitation" },
-        { status: 500 },
-      );
-    }
-
-    // Get inviter details
     const inviterName =
       user.user_metadata?.full_name ||
       user.user_metadata?.name ||
       user.email ||
       "Someone";
 
-    // Generate invitation URL
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitation.token}`;
+    const invitationUrl = `${siteUrl}/invitations/organization/accept/${token}`;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    // Prepare email template (using reminder template for resend)
     const orgName = orgData?.name || "the organization";
     const emailTemplate = emailTemplates.organizationInvitationReminder(
       orgName,
@@ -105,36 +67,14 @@ export async function POST(request: NextRequest) {
       expiresAt,
     );
 
-    if (!invitation.email) {
-      return NextResponse.json(
-        { success: false, error: "Invitation has no email address" },
-        { status: 400 },
-      );
-    }
-
-    // Send invitation email
     const emailResult = await sendEmail({
-      to: invitation.email,
+      to: email,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });
 
-    // Update invitation record with email status
-    if (emailResult.success) {
-      await supabase
-        .schema("iam")
-        .from("invitations")
-        .update({
-          metadata: {
-            ...metadataAsObject(invitation.metadata),
-            email_sent: true,
-            email_sent_at: new Date().toISOString(),
-          },
-        })
-        .eq("id", invitationId);
-    } else {
+    if (!emailResult.success) {
       console.warn("Failed to resend invitation email:", emailResult.error);
-      // Return error if email fails
       return NextResponse.json(
         { success: false, error: "Failed to send email" },
         { status: 500 },
@@ -144,14 +84,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Invitation resent successfully",
-      emailSent: emailResult.success,
+      emailSent: true,
     });
   } catch (error: unknown) {
     console.error(
       "Error in POST /api/organizations/invitations/resend:",
       error,
     );
-    const message = error instanceof Error ? error.message : "Failed to resend invitation";
+    const message =
+      error instanceof Error ? error.message : "Failed to resend invitation";
     const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
       {

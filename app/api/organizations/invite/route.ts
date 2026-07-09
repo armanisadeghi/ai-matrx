@@ -1,24 +1,21 @@
 /**
- * Organization Invitation API Route
+ * Organization Invitation Email Route (email-only)
  *
- * Handles creating organization invitations and sending invitation emails
- * This must run on the server to access EMAIL_FROM and RESEND_API_KEY
- *
- * Environment variables needed:
- * - RESEND_API_KEY=re_xxxxxxxxxxxx
- * - EMAIL_FROM=AI Matrx <noreply@aimatrx.com>
+ * The invitation ROW is created on the client via the canonical `inv_create`
+ * RPC (`invitationsService.create`, client → Supabase per repo doctrine). This
+ * route exists ONLY to send the invitation email — it receives the
+ * already-created token + email + organizationId and renders/sends the message.
+ * It NEVER touches any invitation table.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendEmail, emailTemplates } from "@/lib/email/client";
-import { metadataAsObject } from "@/utils/json/metadataObject";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Verify authentication
     const {
       data: { user },
       error: userError,
@@ -31,69 +28,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse request body
     const body = await request.json();
-    const { email, role, organizationId } = body;
+    const { email, organizationId, token, expiresAt } = body;
 
-    // Validate input
-    if (!email || !role || !organizationId) {
+    if (!email || !organizationId || !token) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields: email, role, organizationId",
+          error: "Missing required fields: email, organizationId, token",
         },
         { status: 400 },
       );
     }
 
-    // Display expiry for the email (RPC sets the authoritative 7-day expiry).
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    // Create the invitation via the canonical SECURITY DEFINER RPC: validates
-    // admin permission + non-membership, dedups by (org,email), generates the
-    // token, resolves invited_user_id, and writes to iam.invitations.
-    const { data: invitationId, error: rpcError } = await supabase.rpc(
-      "invite_to_organization",
-      {
-        org_id: organizationId,
-        email_address: email.toLowerCase().trim(),
-        member_role: role,
-        invited_by_user_id: user.id,
-      },
-    );
-
-    if (rpcError || !invitationId) {
-      const msg = rpcError?.message || "Failed to create invitation";
-      const status = msg.includes("already a member")
-        ? 409
-        : msg.includes("permission")
-          ? 403
-          : 500;
-      console.error("Error creating invitation:", rpcError);
-      return NextResponse.json({ success: false, error: msg }, { status });
-    }
-
-    // Read back the row (inviter is an org admin → RLS std_select allows it) so we
-    // have the generated token for the email link.
-    const { data: invitation } = await supabase
-      .schema("iam")
-      .from("invitations")
-      .select("*")
-      .eq("id", invitationId)
-      .single();
-
-    if (!invitation) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invitation created but could not be loaded",
-        },
-        { status: 500 },
-      );
-    }
-
-    // Fetch organization details for the email
     const { data: orgData } = await supabase
       .schema("iam")
       .from("organizations")
@@ -108,59 +55,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get inviter details from current authenticated user
     const inviterName =
       user.user_metadata?.full_name ||
       user.user_metadata?.name ||
       user.email ||
       "Someone";
 
-    // Generate invitation URL
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
-    const invitationUrl = `${siteUrl}/invitations/organization/accept/${invitation.token}`;
+    const invitationUrl = `${siteUrl}/invitations/organization/accept/${token}`;
+    const expiry = expiresAt
+      ? new Date(expiresAt)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    // Prepare email template
     const emailTemplate = emailTemplates.organizationInvitation(
       orgData.name,
       inviterName,
       invitationUrl,
-      expiresAt,
+      expiry,
     );
 
-    // Send invitation email
     const emailResult = await sendEmail({
       to: email,
       subject: emailTemplate.subject,
       html: emailTemplate.html,
     });
 
-    // Update invitation record with email status
-    if (emailResult.success) {
-      await supabase
-        .schema("iam")
-        .from("invitations")
-        .update({
-          metadata: {
-            ...metadataAsObject(invitation.metadata),
-            email_sent: true,
-            email_sent_at: new Date().toISOString(),
-          },
-        })
-        .eq("id", invitation.id);
-    } else {
+    if (!emailResult.success) {
       console.warn("Failed to send invitation email:", emailResult.error);
-      // Don't fail the request if email fails - invitation is still created
+      // Don't fail the request if email fails — invitation row already exists
     }
 
     return NextResponse.json({
       success: true,
-      data: invitation,
       emailSent: emailResult.success,
     });
   } catch (error: unknown) {
     console.error("Error in POST /api/organizations/invite:", error);
-    const message = error instanceof Error ? error.message : "Failed to process invitation";
+    const message =
+      error instanceof Error ? error.message : "Failed to process invitation";
     const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
       {
@@ -173,7 +106,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
 export async function GET() {
   return NextResponse.json({
     status: "ok",

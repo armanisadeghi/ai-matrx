@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
           sourceMessageId,
           sourceConversationId,
           contextMetadata,
+          // Explicit CMS "New Page" must always insert, even if blank HTML
+          // matches an existing row (content idempotency would otherwise reuse).
+          forceNew = false,
         } = params;
 
         if (!htmlContent || !metaTitle) {
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
         // Best-effort: ANY lookup/update failure (e.g. the source_message_id
         // column is absent) falls through to the insert below, so publishing can
         // never break.
-        if (sourceMessageId) {
+        if (sourceMessageId && !forceNew) {
           try {
             const { data: existing } = await htmlDb
               .from("html_pages")
@@ -162,35 +165,37 @@ export async function POST(request: NextRequest) {
         // already has a page with byte-identical html_content, reuse it. This
         // is the safety net that makes auto-publishing duplication-proof on
         // every surface, not just chat. Best-effort: any failure falls through
-        // to the insert.
-        try {
-          const { data: existingByContent } = await htmlDb
-            .from("html_pages")
-            .select(
-              "id, meta_title, meta_description, is_indexable, created_at",
-            )
-            .eq("user_id", user.id)
-            .eq("html_content", htmlContent)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (existingByContent?.id) {
-            return NextResponse.json({
-              success: true,
-              pageId: existingByContent.id,
-              url: `${HTML_SITE_URL}/p/${existingByContent.id}`,
-              metaTitle: existingByContent.meta_title,
-              metaDescription: existingByContent.meta_description,
-              isIndexable: existingByContent.is_indexable,
-              createdAt: existingByContent.created_at,
-              reused: true,
-            });
+        // to the insert. Skipped when forceNew (explicit CMS create).
+        if (!forceNew) {
+          try {
+            const { data: existingByContent } = await htmlDb
+              .from("html_pages")
+              .select(
+                "id, meta_title, meta_description, is_indexable, created_at",
+              )
+              .eq("user_id", user.id)
+              .eq("html_content", htmlContent)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (existingByContent?.id) {
+              return NextResponse.json({
+                success: true,
+                pageId: existingByContent.id,
+                url: `${HTML_SITE_URL}/p/${existingByContent.id}`,
+                metaTitle: existingByContent.meta_title,
+                metaDescription: existingByContent.meta_description,
+                isIndexable: existingByContent.is_indexable,
+                createdAt: existingByContent.created_at,
+                reused: true,
+              });
+            }
+          } catch (contentLookupErr) {
+            console.warn(
+              "[html-pages API] content idempotency pre-check skipped (falling through to insert):",
+              contentLookupErr,
+            );
           }
-        } catch (contentLookupErr) {
-          console.warn(
-            "[html-pages API] content idempotency pre-check skipped (falling through to insert):",
-            contentLookupErr,
-          );
         }
 
         const { data, error } = await htmlDb
@@ -260,31 +265,57 @@ export async function POST(request: NextRequest) {
           pageId,
           htmlContent,
           metaTitle,
-          metaDescription = "",
+          metaDescription,
           metaFields = {},
         } = params;
 
-        if (!pageId || !htmlContent || !metaTitle) {
+        if (!pageId) {
           return NextResponse.json(
-            { error: "pageId, htmlContent and metaTitle are required" },
+            { error: "pageId is required" },
+            { status: 400 },
+          );
+        }
+
+        // Partial update: only write fields the caller actually sent.
+        // Metadata-only saves (CMS editor) omit htmlContent; full republish
+        // from chat/preview still sends the complete document.
+        const updateData: Record<string, unknown> = {};
+        if (htmlContent !== undefined) updateData.html_content = htmlContent;
+        if (metaTitle !== undefined) {
+          if (!metaTitle || typeof metaTitle !== "string") {
+            return NextResponse.json(
+              { error: "metaTitle cannot be empty" },
+              { status: 400 },
+            );
+          }
+          updateData.meta_title = metaTitle;
+        }
+        if (metaDescription !== undefined) {
+          updateData.meta_description = metaDescription;
+        }
+        if (metaFields.metaKeywords !== undefined) {
+          updateData.meta_keywords = metaFields.metaKeywords || null;
+        }
+        if (metaFields.ogImage !== undefined) {
+          updateData.og_image = metaFields.ogImage || null;
+        }
+        if (metaFields.canonicalUrl !== undefined) {
+          updateData.canonical_url = metaFields.canonicalUrl || null;
+        }
+        if (metaFields.isIndexable !== undefined) {
+          updateData.is_indexable = Boolean(metaFields.isIndexable);
+        }
+
+        if (Object.keys(updateData).length === 0) {
+          return NextResponse.json(
+            { error: "No fields to update" },
             { status: 400 },
           );
         }
 
         const { data, error } = await htmlDb
           .from("html_pages")
-          .update({
-            html_content: htmlContent,
-            meta_title: metaTitle,
-            meta_description: metaDescription,
-            meta_keywords: metaFields.metaKeywords || null,
-            og_image: metaFields.ogImage || null,
-            canonical_url: metaFields.canonicalUrl || null,
-            is_indexable:
-              metaFields.isIndexable !== undefined
-                ? metaFields.isIndexable
-                : false,
-          })
+          .update(updateData)
           .eq("id", pageId)
           .eq("user_id", user.id)
           .select()
@@ -322,15 +353,24 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { error } = await htmlDb
+        const { data: deleted, error } = await htmlDb
           .from("html_pages")
           .delete()
           .eq("id", pageId)
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .select("id")
+          .maybeSingle();
 
         if (error) {
           console.error("[html-pages API] delete error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        if (!deleted) {
+          return NextResponse.json(
+            { error: "Page not found or access denied" },
+            { status: 404 },
+          );
         }
 
         return NextResponse.json({ success: true });
@@ -340,21 +380,21 @@ export async function POST(request: NextRequest) {
         const { data, error } = await htmlDb
           .from("html_pages")
           .select(
-            "id, meta_title, meta_description, is_indexable, created_at, artifact_id, source_message_id",
+            "id, meta_title, meta_description, meta_keywords, og_image, canonical_url, is_indexable, created_at, updated_at, artifact_id, source_message_id, source_conv_id",
           )
           .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+          .order("updated_at", { ascending: false });
 
         if (error) {
-          // Fallback: select without new columns if migration hasn't run
+          // Fallback: select without newer columns if migration hasn't run
           if (error.code === "42703") {
             const { data: fallback, error: fallbackError } = await htmlDb
               .from("html_pages")
               .select(
-                "id, meta_title, meta_description, is_indexable, created_at",
+                "id, meta_title, meta_description, is_indexable, created_at, updated_at",
               )
               .eq("user_id", user.id)
-              .order("created_at", { ascending: false });
+              .order("updated_at", { ascending: false });
 
             if (fallbackError) {
               console.error(
@@ -370,8 +410,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
               pages: (fallback || []).map((page) => ({
                 ...page,
+                meta_keywords: null,
+                og_image: null,
+                canonical_url: null,
                 artifact_id: null,
                 source_message_id: null,
+                source_conv_id: null,
                 url: `${HTML_SITE_URL}/p/${page.id}`,
               })),
             });

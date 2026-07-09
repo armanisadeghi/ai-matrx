@@ -57,7 +57,7 @@ export class HTMLPageService {
         metaFields = {},
         sourceTracking = {},
     ) {
-        const { sourceMessageId, sourceConversationId, contextMetadata } = sourceTracking;
+        const { sourceMessageId, sourceConversationId, contextMetadata, forceNew } = sourceTracking;
         return HTMLPageService.#call('create', {
             htmlContent,
             metaTitle,
@@ -66,11 +66,12 @@ export class HTMLPageService {
             ...(sourceMessageId ? { sourceMessageId } : {}),
             ...(sourceConversationId ? { sourceConversationId } : {}),
             ...(contextMetadata ? { contextMetadata } : {}),
+            ...(forceNew ? { forceNew: true } : {}),
         });
     }
 
     /**
-     * Get user's HTML pages
+     * Get user's HTML pages (summary rows — no html_content blob).
      */
     static async getUserPages(userId) {
         const data = await HTMLPageService.#call('list');
@@ -78,16 +79,17 @@ export class HTMLPageService {
     }
 
     /**
-     * Update an existing HTML page
+     * Update an existing HTML page.
+     *
+     * Partial updates are supported: omit `htmlContent` for metadata-only
+     * saves. Pass `undefined` for any field you do not want to change.
      */
-    static async updatePage(pageId, htmlContent, metaTitle, metaDescription = '', userId, metaFields = {}) {
-        return HTMLPageService.#call('update', {
-            pageId,
-            htmlContent,
-            metaTitle,
-            metaDescription,
-            metaFields,
-        });
+    static async updatePage(pageId, htmlContent, metaTitle, metaDescription, userId, metaFields = {}) {
+        const payload = { pageId, metaFields };
+        if (htmlContent !== undefined) payload.htmlContent = htmlContent;
+        if (metaTitle !== undefined) payload.metaTitle = metaTitle;
+        if (metaDescription !== undefined) payload.metaDescription = metaDescription;
+        return HTMLPageService.#call('update', payload);
     }
 
     /**
@@ -99,7 +101,7 @@ export class HTMLPageService {
     }
 
     /**
-     * Get a single HTML page (for viewing)
+     * Get a single HTML page (for viewing / editing)
      */
     static async getPage(pageId) {
         return HTMLPageService.#call('get', { pageId });

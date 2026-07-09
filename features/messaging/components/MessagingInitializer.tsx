@@ -12,6 +12,7 @@ import {
   setLoading,
 } from "../redux/messagingSlice";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import type { Database } from "@/types/database.types";
 import type {
   ConversationType,
@@ -356,7 +357,7 @@ export function MessagingInitializer() {
   useEffect(() => {
     if (!userId) return undefined;
 
-    const channel = supabase.channel(`dm_global:${userId}`);
+    const channel = supabase.channel(uniqueChannelTopic(`dm_global:${userId}`));
 
     // 1. Listen for NEW messages - update conversation's last_message and unread count
     channel.on(

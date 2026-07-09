@@ -22,9 +22,7 @@ import {
   Loader2,
   AlertCircle,
   PanelTop,
-  ExternalLink,
-  FileText,
-  Settings,
+  FileCode,
   ArrowRight,
 } from "lucide-react";
 
@@ -131,78 +129,88 @@ export default function SitesListPage() {
             </h1>
           </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-1.5 text-sm">
-                <Plus className="h-4 w-4" />
-                New Site
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create New Site</DialogTitle>
-                <DialogDescription>
-                  Set up a new site to manage its pages, components, and
-                  content.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Site Name
-                  </label>
-                  <Input
-                    value={newName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="My Website"
-                    className="text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Slug
-                  </label>
-                  <Input
-                    value={newSlug}
-                    onChange={(e) => setNewSlug(e.target.value)}
-                    placeholder="my-website"
-                    className="text-sm font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    URL identifier — lowercase letters, numbers, and hyphens
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium block mb-1.5">
-                    Domain (optional)
-                  </label>
-                  <Input
-                    value={newDomain}
-                    onChange={(e) => setNewDomain(e.target.value)}
-                    placeholder="www.example.com"
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                  disabled={isCreating}
-                >
-                  Cancel
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-1.5 text-sm"
+              onClick={() => router.push("/cms/html-pages")}
+            >
+              <FileCode className="h-4 w-4" />
+              Published Pages
+            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-1.5 text-sm">
+                  <Plus className="h-4 w-4" />
+                  New Site
                 </Button>
-                <Button
-                  onClick={handleCreate}
-                  disabled={isCreating || !newName || !newSlug}
-                  className="gap-1.5"
-                >
-                  {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Create Site
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create New Site</DialogTitle>
+                  <DialogDescription>
+                    Set up a new site to manage its pages, components, and
+                    content.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Site Name
+                    </label>
+                    <Input
+                      value={newName}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      placeholder="My Website"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Slug
+                    </label>
+                    <Input
+                      value={newSlug}
+                      onChange={(e) => setNewSlug(e.target.value)}
+                      placeholder="my-website"
+                      className="text-sm font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      URL identifier — lowercase letters, numbers, and hyphens
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1.5">
+                      Domain (optional)
+                    </label>
+                    <Input
+                      value={newDomain}
+                      onChange={(e) => setNewDomain(e.target.value)}
+                      placeholder="www.example.com"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                    disabled={isCreating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    disabled={isCreating || !newName || !newSlug}
+                    className="gap-1.5"
+                  >
+                    {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Create Site
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
@@ -229,6 +237,26 @@ export default function SitesListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+            {/* Standalone published HTML pages (html_pages table) */}
+            <button
+              type="button"
+              onClick={() => router.push("/cms/html-pages")}
+              className="group text-left rounded-xl border border-border bg-card p-5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200 cursor-pointer active:scale-[0.97] active:transition-none"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <FileCode className="h-5 w-5 text-primary" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">
+                Published Pages
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Standalone HTML pages from chat, code, and presentations
+              </p>
+            </button>
+
             {sites.map((site) => (
               <button
                 key={site.id}

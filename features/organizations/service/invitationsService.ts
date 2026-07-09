@@ -44,6 +44,8 @@ export interface Invitation {
   acceptedAt: string | null;
   createdAt: string;
   createdBy: string | null;
+  /** Display name of the target (org/project), when returned by inv_get_by_token. */
+  targetName?: string | null;
 }
 
 /** Accept result — what the invitee just joined. */
@@ -70,6 +72,7 @@ interface InvListRow {
   accepted_at: string | null;
   created_at: string;
   created_by: string | null;
+  target_name?: string | null;
 }
 
 // inv_create returns the FULL iam.invitations row (not the trimmed InvListRow
@@ -86,7 +89,8 @@ interface InvCreateRow extends InvListRow {
   updated_by: string | null;
   version: number;
 }
-type _InvCreateCheck = InvCreateRow extends DbRpcRow<"inv_create"> ? true : false;
+type _InvCreateCheck =
+  InvCreateRow extends DbRpcRow<"inv_create"> ? true : false;
 declare const _invCreateCheck: _InvCreateCheck;
 true satisfies typeof _invCreateCheck;
 
@@ -129,6 +133,7 @@ function toInvitation(row: InvPartialRow): Invitation {
     acceptedAt: row.accepted_at ?? null,
     createdAt: row.created_at,
     createdBy: row.created_by ?? null,
+    targetName: row.target_name ?? null,
   };
 }
 

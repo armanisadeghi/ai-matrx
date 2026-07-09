@@ -652,5 +652,16 @@ If you're using the old `HtmlPreviewModal`, no changes are needed—it's preserv
 
 ---
 
-**Last Updated:** 2025-10-06  
-**Version:** 2.0 (Source Files Architecture)
+---
+
+## Management UI (2026-07-08)
+
+Standalone `html_pages` (not CMS `client_pages`) can be managed at:
+
+- `/cms/html-pages` — list / create / delete
+- `/cms/html-pages/[pageId]` — edit metadata + HTML + preview
+
+Also listed in the `/code` Library panel under **HTML Pages** (adapter proxies `/api/html-pages`).
+
+**Last Updated:** 2026-07-08  
+**Version:** 2.1 (Management UI + /code library source)

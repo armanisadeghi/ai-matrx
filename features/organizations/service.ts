@@ -12,8 +12,12 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
-import { requireUserId, getUserEmail } from "@/utils/auth/getUserId";
+import { requireUserId } from "@/utils/auth/getUserId";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
+import {
+  invitationsService,
+  type Invitation,
+} from "@/features/organizations/service/invitationsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
@@ -76,7 +80,8 @@ export async function createOrganization(
 
     // Create organization
     const { data: org, error: orgError } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .insert({
         name,
         slug,
@@ -184,7 +189,8 @@ export async function updateOrganization(
     if (updates.settings !== undefined) updateData.settings = updates.settings;
 
     const { data, error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .update(updateData)
       .eq("id", orgId)
       .select()
@@ -218,7 +224,8 @@ export async function deleteOrganization(
   try {
     // Check if personal org
     const { data: org } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .select("is_personal")
       .eq("id", orgId)
       .single();
@@ -228,7 +235,8 @@ export async function deleteOrganization(
     }
 
     const { error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .delete()
       .eq("id", orgId);
 
@@ -258,7 +266,8 @@ export async function getOrganization(
 ): Promise<Organization | null> {
   try {
     const { data, error } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .select("*")
       .eq("id", orgId)
       .single();
@@ -280,7 +289,8 @@ export async function getOrganizationBySlug(
   slug: string,
 ): Promise<Organization | null> {
   const { data, error } = await supabase
-    .schema("iam").from("organizations")
+    .schema("iam")
+    .from("organizations")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
@@ -341,7 +351,8 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
 
     // Resolve the org rows (public table — direct read, RLS-scoped).
     const { data: orgRows, error: orgsError } = await supabase
-      .schema("iam").from("organizations")
+      .schema("iam")
+      .from("organizations")
       .select("*")
       .in("id", orgIds);
     if (orgsError) {
@@ -636,13 +647,16 @@ export async function getUserRole(orgId: string): Promise<OrgRole | null> {
 
 // ============================================================================
 // Invitation System
+//
+// Canonical path only: every read/write goes through `invitationsService`
+// (`inv_*` SECURITY DEFINER RPCs). The client has NO direct grant on
+// `iam.invitations`. API routes below are email-only — they never touch the
+// invitation table. Mirrors `features/projects/service.ts`.
 // ============================================================================
 
 /**
- * Invite a user to an organization
- * Calls the API route to handle invitation creation and email sending on the server
- * @param options Invitation options
- * @returns Invitation result
+ * Invite a user to an organization.
+ * Client creates/refreshes the row via `inv_create`; the API route only sends email.
  */
 export async function inviteToOrganization(
   options: InviteMemberOptions,
@@ -650,39 +664,50 @@ export async function inviteToOrganization(
   try {
     const { organizationId, email, role = "member" } = options;
 
-    // Validate email
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
       return { success: false, error: emailValidation.error };
     }
 
-    // Call the API route to create invitation and send email
-    // This runs on the server where EMAIL_FROM and RESEND_API_KEY are accessible
-    const response = await fetch("/api/organizations/invite", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        organizationId,
-        email: email.toLowerCase().trim(),
-        role,
-      }),
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const createResult = await invitationsService.create({
+      targetType: "organization",
+      targetId: organizationId,
+      email: normalizedEmail,
+      role,
+      orgId: organizationId,
     });
 
-    const result = await response.json();
+    if (isScopesRpcErr(createResult)) {
+      return { success: false, error: createResult.error.message };
+    }
 
-    if (!response.ok || !result.success) {
-      return {
-        success: false,
-        error: result.error || "Failed to send invitation",
-      };
+    const invitation = createResult.data.invitation;
+
+    // Fire the email-only route. A delivery failure does NOT fail the invite —
+    // the row exists and is acceptable via its token / the user's invites list.
+    try {
+      await fetch("/api/organizations/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invitationId: invitation.id,
+          organizationId,
+          email: normalizedEmail,
+          role,
+          token: invitation.token,
+          expiresAt: invitation.expiresAt,
+        }),
+      });
+    } catch (emailError) {
+      console.warn("Organization invitation email send failed:", emailError);
     }
 
     return {
       success: true,
       message: "Invitation sent successfully",
-      invitation: transformInvitationFromDb(result.data),
+      invitation: invitationToOrganizationInvitation(invitation),
     };
   } catch (error: unknown) {
     const err = pgErrorToError(error);
@@ -696,79 +721,57 @@ export async function inviteToOrganization(
 
 /**
  * Get all invitations for an organization (including expired)
- * @param orgId Organization ID
- * @returns Array of invitations
  */
 export async function getOrganizationInvitations(
   orgId: string,
 ): Promise<OrganizationInvitation[]> {
-  try {
-    const { data, error } = await supabase
-      .schema("iam").from("invitations")
-      .select("*")
-      .eq("organization_id", orgId)
-      .eq("target_type", "organization")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    if (error) throw pgErrorToError(error);
-
-    return data.map(transformInvitationFromDb);
-  } catch (error) {
-    console.error("Error fetching organization invitations:", error);
+  const result = await invitationsService.listForTarget("organization", orgId);
+  if (isScopesRpcErr(result)) {
+    console.error(
+      "Error fetching organization invitations:",
+      result.error.message,
+    );
     return [];
   }
+  return result.data.invitations.map(invitationToOrganizationInvitation);
 }
 
 /**
  * Cancel an invitation
- * @param invitationId Invitation ID
- * @returns Operation result
  */
 export async function cancelInvitation(
   invitationId: string,
 ): Promise<OperationResult> {
-  try {
-    const { error } = await supabase
-      .schema("iam").from("invitations")
-      .delete()
-      .eq("id", invitationId);
-
-    if (error) throw pgErrorToError(error);
-
-    return {
-      success: true,
-      message: "Invitation cancelled successfully",
-    };
-  } catch (error: unknown) {
-    const err = pgErrorToError(error);
-    console.error("Error cancelling invitation:", err);
-    return {
-      success: false,
-      error: err.message || "Failed to cancel invitation",
-    };
+  const result = await invitationsService.revoke(invitationId);
+  if (isScopesRpcErr(result)) {
+    console.error("Error cancelling invitation:", result.error.message);
+    return { success: false, error: result.error.message };
   }
+  return { success: true, message: "Invitation cancelled successfully" };
 }
 
 /**
- * Resend an invitation (updates expiry and sends email)
- * Calls the API route to handle email sending on the server
- * @param invitationId Invitation ID
- * @returns Operation result
+ * Resend an invitation. Row refresh (new expiry + fresh token) via `inv_resend`;
+ * the email-only route rebuilds + sends the accept link. Pass `organizationId` +
+ * `email` so the route never has to read `iam.invitations`.
  */
 export async function resendInvitation(
   invitationId: string,
+  context?: { organizationId: string; email: string },
 ): Promise<OperationResult> {
   try {
-    // Call the API route to resend invitation and email
-    // This runs on the server where EMAIL_FROM and RESEND_API_KEY are accessible
+    const resendResult = await invitationsService.resend(invitationId);
+    if (isScopesRpcErr(resendResult)) {
+      return { success: false, error: resendResult.error.message };
+    }
+
     const response = await fetch("/api/organizations/invitations/resend", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        invitationId,
+        token: resendResult.data.token,
+        organizationId: context?.organizationId,
+        email: context?.email,
       }),
     });
 
@@ -781,10 +784,7 @@ export async function resendInvitation(
       };
     }
 
-    return {
-      success: true,
-      message: "Invitation resent successfully",
-    };
+    return { success: true, message: "Invitation resent successfully" };
   } catch (error: unknown) {
     const err = pgErrorToError(error);
     console.error("Error resending invitation:", err);
@@ -796,56 +796,38 @@ export async function resendInvitation(
 }
 
 /**
- * Accept an invitation
- * @param token Invitation token
- * @returns Organization result
+ * Accept an invitation. Atomic `inv_accept` creates the membership AND marks
+ * the invite accepted — no separate membership write.
  */
 export async function acceptInvitation(
   token: string,
 ): Promise<OrganizationResult> {
   try {
-    const currentUserId = requireUserId();
+    requireUserId();
 
-    // One atomic RPC: validates token + expiry + email match, upserts the
-    // member row, and deletes the invitation in a single transaction.
-    // (Replaced a client-side select → insert → unchecked delete sequence
-    // that could strand a member row with a live, re-acceptable invite.)
-    const { data: orgId, error: rpcError } = await supabase.rpc(
-      "accept_organization_invitation",
-      {
-        invitation_token: token,
-        accepting_user_id: currentUserId,
-      },
-    );
-
-    if (rpcError || !orgId) {
-      console.error("Error accepting invitation:", rpcError);
-      const message = rpcError?.message ?? "";
-      const friendly = message.includes("Invalid or expired")
-        ? "Invalid or expired invitation"
-        : message.includes("does not match")
-          ? "This invitation was sent to a different email address"
-          : message || "Failed to accept invitation";
-      return { success: false, error: friendly };
+    const acceptResult = await invitationsService.accept(token);
+    if (isScopesRpcErr(acceptResult)) {
+      return {
+        success: false,
+        error:
+          acceptResult.error.code === "not_found"
+            ? "Invalid or expired invitation"
+            : acceptResult.error.message,
+      };
     }
 
-    // Fetch the joined org for the success payload (membership now exists,
-    // so RLS allows the read).
-    const { data: org, error: orgError } = await supabase
-      .schema("iam").from("organizations")
-      .select("*")
-      .eq("id", orgId as string)
-      .single();
-    if (orgError) {
-      // Membership landed; only the display fetch failed. Still a success.
-      console.error("Joined org but failed to load it:", orgError);
+    const orgId =
+      acceptResult.data.accepted.organizationId ??
+      acceptResult.data.accepted.targetId;
+    const organization = await getOrganization(orgId);
+    if (!organization) {
       return { success: true, message: "Successfully joined organization" };
     }
 
     return {
       success: true,
       message: "Successfully joined organization",
-      organization: transformOrganizationFromDb(org),
+      organization,
     };
   } catch (error: unknown) {
     const err = pgErrorToError(error);
@@ -858,33 +840,30 @@ export async function acceptInvitation(
 }
 
 /**
- * Get invitations for current user
- * @returns Array of invitations with organization details
+ * Get invitations for current user (org targets only)
  */
 export async function getUserInvitations(): Promise<
   OrganizationInvitationWithOrg[]
 > {
   try {
-    const currentUserId = requireUserId();
+    requireUserId();
 
-    const { data, error } = await supabase
-      .schema("iam").from("invitations")
-      .select("*, organizations(*)")
-      .eq("invited_user_id", currentUserId)
-      .eq("target_type", "organization")
-      .eq("status", "pending")
-      .is("deleted_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false });
+    const result = await invitationsService.forMe();
+    if (isScopesRpcErr(result)) {
+      console.error("Error fetching user invitations:", result.error.message);
+      return [];
+    }
 
-    if (error) throw pgErrorToError(error);
+    const invitations = result.data.invitations.filter(
+      (inv) => inv.targetType === "organization",
+    );
 
-    return data.map((item) => ({
-      ...transformInvitationFromDb(item),
-      organization: item.organizations
-        ? transformOrganizationFromDb(item.organizations)
-        : undefined,
-    }));
+    return await Promise.all(
+      invitations.map(async (inv) => ({
+        ...invitationToOrganizationInvitation(inv),
+        organization: (await getOrganization(inv.targetId)) ?? undefined,
+      })),
+    );
   } catch (error) {
     console.error("Error fetching user invitations:", error);
     return [];
@@ -896,7 +875,6 @@ export async function getUserInvitations(): Promise<
 // ============================================================================
 
 type OrganizationRow = Database["iam"]["Tables"]["organizations"]["Row"];
-type InvitationRow = Database["iam"]["Tables"]["invitations"]["Row"];
 
 /**
  * Transform database organization record to application format
@@ -918,21 +896,18 @@ function transformOrganizationFromDb(dbRecord: OrganizationRow): Organization {
   };
 }
 
-/**
- * Transform database invitation record to application format.
- * iam.invitations columns: created_at (was invited_at), created_by (was invited_by).
- * email_sent / email_sent_at live in metadata, not top-level columns.
- */
-function transformInvitationFromDb(dbRecord: InvitationRow): OrganizationInvitation {
+function invitationToOrganizationInvitation(
+  inv: Invitation,
+): OrganizationInvitation {
   return {
-    id: dbRecord.id,
-    organizationId: dbRecord.organization_id,
-    email: dbRecord.email ?? "",
-    token: dbRecord.token ?? "",
-    role: toOrgRole(dbRecord.role),
-    invitedAt: dbRecord.created_at,
-    invitedBy: dbRecord.created_by,
-    expiresAt: dbRecord.expires_at ?? "",
+    id: inv.id,
+    organizationId: inv.organizationId ?? inv.targetId,
+    email: inv.email,
+    token: inv.token ?? "",
+    role: toOrgRole(inv.role),
+    invitedAt: inv.createdAt,
+    invitedBy: inv.createdBy,
+    expiresAt: inv.expiresAt,
   };
 }
 

@@ -17,6 +17,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
+import { uniqueChannelTopic } from "@/utils/supabase/realtime";
 import type {
   Message,
   MessageWithSender,
@@ -92,7 +93,8 @@ export function useMessages(
       try {
         // Fetch the most recent messages (descending to get newest first, then reverse for display)
         const { data: rawData, error: fetchError } = await supabase
-          .schema("communication").from("dm_messages")
+          .schema("communication")
+          .from("dm_messages")
           .select("*")
           .eq("conversation_id", conversationId)
           .is("deleted_at", null)
@@ -332,7 +334,8 @@ export function useMessages(
 
     try {
       const { data, error: fetchError } = await supabase
-        .schema("communication").from("dm_messages")
+        .schema("communication")
+        .from("dm_messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
@@ -591,10 +594,12 @@ export function useConversations(
         data.map(async (conv: DmConversationRpcRow) => {
           const conversationId = conv.conversation_id;
 
-          const { data: participants, error: participantsError } = await supabase
-            .schema("communication").from("dm_conversation_participants")
-            .select("*")
-            .eq("conversation_id", conversationId);
+          const { data: participants, error: participantsError } =
+            await supabase
+              .schema("communication")
+              .from("dm_conversation_participants")
+              .select("*")
+              .eq("conversation_id", conversationId);
 
           if (participantsError) {
             console.error(
@@ -712,7 +717,9 @@ export function useConversations(
   useEffect(() => {
     if (!userId) return undefined;
 
-    const channel = supabase.channel(`dm_conversations:${userId}`);
+    const channel = supabase.channel(
+      uniqueChannelTopic(`dm_conversations:${userId}`),
+    );
 
     // 1. Listen for NEW messages - updates last_message and unread_count
     channel.on(

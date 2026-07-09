@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-05-13`
+**Last updated:** `2026-07-08`
 
 > Combined doc for `features/organizations/` and `features/invitations/`. Orgs are the multi-tenant primitive; invitations are the flow that admits users to orgs (and, in mirrored form, to projects). Architecture mirrors `features/projects/`.
 
@@ -69,10 +69,10 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `utils/permissions/orgModeration.ts` — `listOrgShareGrants`, `listOrgSharedIdsForTable`, `reviewOrgShare` (see `features/sharing/FEATURE.md` for the DB side).
 
 **API endpoints**
-- `POST /api/organizations/invite` — creates an `organization_invitations` row, generates token (crypto.randomUUID), sets 7-day expiry, sends email via Resend
-- `POST /api/organizations/invitations/resend` — regenerates expiry and resends email
-- `POST /api/projects/invite` — mirror for project-level invitations; writes to `ctx_project_invitations`
-- `POST /api/projects/invitations/resend` — mirror for project resend
+- `POST /api/organizations/invite` — **email-only**. Row is created client-side via `invitationsService.create` (`inv_create`). Route receives `token` + `email` + `organizationId` and sends via Resend. Never touches `iam.invitations`.
+- `POST /api/organizations/invitations/resend` — **email-only**. Row refresh via `invitationsService.resend` (`inv_resend`) on the client; route receives fresh `token` + `email` + `organizationId`.
+- `POST /api/projects/invite` — same email-only pattern for projects
+- `POST /api/projects/invitations/resend` — same email-only pattern for projects
 - `GET/PATCH /api/admin/invitation-requests[/id]` — admin triage of signup-access requests (separate "request an invite" flow, not org-member invites)
 
 **Redux**
@@ -86,13 +86,11 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 ## Data model
 
 **Database tables** (Supabase)
-- `organizations` — `id, name, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
-- `organization_members` — `id, organization_id, user_id, role, joined_at, invited_by`. Composite unique on `(organization_id, user_id)`.
-- `organization_invitations` — `id, organization_id, email, token, role, invited_by, invited_at, expires_at, email_sent, email_sent_at`. Unique on `(organization_id, email)` — code `23505` maps to "already invited".
-- `ctx_projects` — project rows, scoped by `organization_id`
-- `ctx_project_members` — project membership
-- `ctx_project_invitations` — project invitation tokens (same shape as `organization_invitations`, different FK)
-- `admin.invitation_requests` — signup-access requests, admin-approved, triggers `features/invitations/emailService.ts`
+- `iam.organizations` — `id, name, slug (unique), description, logo_url, website, created_by, is_personal, settings, created_at, updated_at`. RLS: members can SELECT; owners/admins can UPDATE; only owners DELETE.
+- `iam.memberships` — canonical membership for orgs + projects (`container_type` / `container_id`). Sole chokepoint: `membershipsService` → `mbr_*` RPCs. **No direct client grant.**
+- `iam.invitations` — canonical invitations for orgs + projects (`target_type` / `target_id`). Sole chokepoint: `invitationsService` → `inv_*` RPCs. **No direct client grant** — every read/write goes through `inv_list` / `inv_create` / `inv_accept` / `inv_revoke` / `inv_resend` / `inv_for_me` / `inv_get_by_token`.
+- `workspace.projects` — project rows, scoped by `organization_id`
+- `admin.invitation_requests` — signup-access requests, admin-approved, triggers `features/invitations/emailService.ts` (separate from org/project member invites)
 
 **Key types** (`features/organizations/types.ts`)
 - `OrgRole = 'owner' | 'admin' | 'member'` — three roles, no `viewer`
@@ -124,19 +122,13 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 ### (b) Invite a user by email
 
 1. UI: `InvitationManager` → `useInvitationOperations(orgId).invite({ email, role })`.
-2. Client `inviteToOrganization()` POSTs `/api/organizations/invite` (cannot call Resend from client — `RESEND_API_KEY` and `EMAIL_FROM` are server-only).
-3. Server route (`app/api/organizations/invite/route.ts`):
-   - Auth-checks the inviter.
-   - `crypto.randomUUID()` → token.
-   - `expires_at = now + 7 days`.
-   - INSERTs `organization_invitations` (unique on `(org, email)` → `23505` = already invited).
-   - Looks up org name + inviter display name.
-   - `sendEmail()` with `emailTemplates.organizationInvitation(orgName, inviterName, url, expiresAt)` where url = `${SITE_URL}/invitations/organization/accept/${token}`.
-   - On email success, updates `email_sent = true, email_sent_at = now`.
+2. Client `inviteToOrganization()` → `invitationsService.create({ targetType: "organization", … })` (`inv_create` RPC). Dedups/refreshes pending invites for the same target+email.
+3. Client then POSTs `/api/organizations/invite` with `{ token, email, organizationId, expiresAt }` — **email-only**; route never touches `iam.invitations`.
 4. Recipient opens email → `/invitations/organization/accept/[token]`:
-   - Fetches invitation by token, checks expiry client-side, verifies `invitation.email === user.email`, checks no existing membership.
-   - On Accept → `acceptInvitation(token)` in `service.ts`: INSERTs `organization_members` with invitation's role + `invited_by`, then DELETEs the invitation row.
+   - Loads invite via `invitationsService.getByToken` (`inv_get_by_token`).
+   - On Accept → `acceptInvitation(token)` → `invitationsService.accept` (`inv_accept`) — **atomic**: creates membership AND marks invite accepted.
    - Redirects to `/organizations/{id}/settings`.
+5. List/cancel/resend all go through `invitationsService` (`inv_list` / `inv_revoke` / `inv_resend`). Resend refreshes the token client-side, then hits the email-only resend route.
 
 ### (c) Invite to a specific project (distinct from org invitation)
 
@@ -185,13 +177,14 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 - **Slug is globally unique, URL-safe, and lowercase.** `isSlugAvailable()` runs before insert; DB also has a unique constraint. Slug is not in `UpdateOrganizationOptions` — treat as immutable.
 - **Every org must have at least one owner.** `updateMemberRole` and `removeMember` block the last-owner case explicitly (pre-check + select-count of `role = 'owner'`). `leaveOrganization` just calls `removeMember(self)` so the same guard applies — a sole owner cannot leave their own org.
 - **Personal orgs (`is_personal = true`) cannot be deleted.** `deleteOrganization` pre-checks and returns `error: 'Cannot delete personal organization'`. Every user gets a personal org at signup via the `on_auth_user_created` trigger on `auth.users`, which calls `public.create_personal_organization()`, which delegates to the idempotent `public.ensure_personal_organization(uuid)` RPC. The trigger does NOT block user creation on failure — failures land in `public.system_personal_org_failures` (super-admin readable) for detection + repair. The `ensure_personal_organization(uuid)` RPC is callable by `authenticated` and `service_role`; the frontend may call it defensively if a missing personal org is ever detected.
-- **Invitation tokens are UUIDs, expire in 7 days.** Generated server-side via `crypto.randomUUID()`. Expiry is checked in the accept page (client-side date comparison) AND by a `.gt('expires_at', now)` filter in `getUserInvitations` / `acceptInvitation`.
-- **Invitation uniqueness is per `(organization_id, email)`.** Re-inviting the same email returns `23505` → "User already invited". Use `resendInvitation` to bump the expiry instead.
-- **Invitation email must match the authenticated user's email on accept.** `acceptInvitation` filters `.eq('email', getUserEmail())`. Case-insensitive compare in the accept page as well. A user signed in with a different email sees "This invitation is for X".
-- **`/api/organizations/invite` and `/api/projects/invite` MUST run server-side.** `RESEND_API_KEY` and `EMAIL_FROM` are server env only. Do not try to send invitation emails from the client.
-- **Accepting a project invitation does NOT add the user to the parent org.** Orgs and projects have independent membership tables. If the user is not in the org, they may or may not be able to use the project depending on RLS — verify with `features/scopes/FEATURE.md` before assuming access.
+- **Invitation tokens expire in 7 days.** Minted by `inv_create` / refreshed by `inv_resend`. Expiry is enforced in the accept RPC and checked client-side on the accept page.
+- **`iam.invitations` has NO direct client grant.** Every read/write goes through `invitationsService` → `inv_*` RPCs. Direct `.from("invitations")` is a bug (42501). Same rule for API routes — invite/resend routes are email-only.
+- **Invitation uniqueness is per target + email.** `inv_create` refreshes an existing pending invite rather than duplicating. Use `resendInvitation` to bump expiry + token.
+- **Invitation email must match the authenticated user's email on accept.** Enforced inside `inv_accept`. A user signed in with a different email sees a mismatch error.
+- **`/api/organizations/invite` and `/api/projects/invite` MUST run server-side and are email-only.** `RESEND_API_KEY` and `EMAIL_FROM` are server env only. Row create/resend happens on the client via `invitationsService`.
+- **Accepting a project invitation does NOT add the user to the parent org.** Orgs and projects have independent memberships in `iam.memberships`. If the user is not in the org, they may or may not be able to use the project depending on RLS — verify with `features/scopes/FEATURE.md` before assuming access.
 - **`features/invitations/emailService.ts` is a different flow.** It handles the "request access to sign up" admin approval/rejection emails (see `/api/admin/invitation-requests`), not org-member invitations. Do not wire it into org flows.
-- **`organization_members` updates/deletes silently succeed with 0 rows when RLS blocks.** Service layer compensates by requiring `.select()` + row-count check. Any new mutation against `organization_members` must follow this pattern or it will report false success.
+- **`iam.memberships` mutations go through `membershipsService` only.** Never direct table writes; last-owner guards live in the service layer.
 - **No Redux cache for org data.** Each hook refetches from Supabase. `refresh()` is exposed on every list hook — call it after any mutation (the operation hooks in `hooks.ts` already do this internally; external callers of `service.ts` directly must do it themselves).
 - **`lookup_user_by_email` is an RPC, not a table read.** Never query `profiles.email` directly — email lives in `auth.users` which is not directly selectable from the client.
 
@@ -211,7 +204,7 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 
 ## Current work / migration state
 
-Stable. No active migration. If org or project invitation flows evolve, keep `/api/organizations/invite` and `/api/projects/invite` in lockstep — they are deliberately parallel and diverging them will create surprising behavior.
+Org + project invitations share one canonical system: `invitationsService` → `inv_*` RPCs over `iam.invitations`. Invite/resend API routes are email-only on both sides — keep them in lockstep.
 
 ### Module-rule enforcement — status & remaining wiring
 
@@ -233,6 +226,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-07-08` — **Org invitations cut over to canonical `invitationsService`.** Org settings was still hitting `iam.invitations` directly (42501 — no client grant). `getOrganizationInvitations` / `cancel` / `invite` / `resend` / `accept` / `getUserInvitations` now go through `inv_*` RPCs; invite/resend API routes are email-only (mirror projects). Org accept page load switched from legacy `get_org_invitation_by_token` to `invitationsService.getByToken`. Extended `inv_get_by_token` with `target_name` so invitees can render the accept page without RLS on `iam.organizations`. Also fixed messaging realtime remount crash (`uniqueChannelTopic` on `dm_conversations` / `dm_global`).
 - `2026-07-06` — **Fixed header user-menu org switcher Redux wiring.** New `useActiveOrganizationPicker` hook consolidates reads (`selectOrganizationId` / `selectShouldPromptForOrganization`) and writes (`chooseActiveOrganization`) with org list data from the canonical scope tree (`useScopeTree` + `ensureScopeTree`) instead of the standalone `useUserOrganizations` fetch. `UserMenuOrgSection` and `OrganizationPickerPanel` share this hook; the menu list stays expanded with a check + accent highlight on the active row (no org name in the accordion header). `useUserOrganizations` now waits for `authReady` before fetching so early-mount callers don't permanently cache an empty list.
 - `2026-06-30` — **Active org is now a first-class sync-engine citizen + `ensureOrgId` is the single write-time resolver.** Hydration moved off the `ActiveOrgBootstrap` island (deleted) onto a `warm-cache` `appContextPolicy` (`appContextSlice.ts` + `lib/sync/registry.ts`): the org identity fields persist to IDB→LS keyed by identity and rehydrate **before first paint**, with `remote.fetch` → the new pure resolver `lib/organizations/resolveActiveOrgContext.ts` reconciling on cold-boot/stale and cross-tab broadcast on switch. `bootstrapActiveOrganization()` is now a thin back-compat wrapper over that resolver; `AppShell` no longer renders the retired island. `ensureOrgId` (`personalOrg.ts`) now resolves **explicit → active org (`getActiveOrgId`) → LOUD personal-org fallback**: the last resort emits `console.error` + `captureError({ source: "org-resolution" })` (new source in `errorCaptureStore.ts`) into the Error Inspector, because reaching it means the sync engine failed to keep the org present before a write. Swept the codebase for org-scoped writes that re-derived the org ad-hoc and switched the real gaps to `ensureOrgId(undefined)`: `files/virtual-sources/adapters/notes.ts` (notes + folders were homeless — NO org at all), `flashcards/data/fcService.ts` (sync Redux-only `getOrgId` → async `ensureOrgId`), `data-tables/document-service.ts`, `page-extraction/services/run-from-draft.ts`, `skills/redux/skillsThunks.ts` (category create), `code/redux/codeEditHistoryFlush.ts`, `agents/.../instance-working-document.thunks.ts` (conversation org → active fallback), `messaging/*` + `useSupabaseMessaging.ts`, `podcasts/studio/runs/service.ts`. **Kept personal-pinned by contract:** `assignHomelessNotesToPersonalOrg`, `projectService.createProject`. No DB migration (the extended `get_ssr_shell_data` org payload is retained as the canonical whole-shell payload; the live active-org path is the sync policy). tsc + eslint clean.
 - `2026-06-27` — **Memberships RPC bridge reconciled onto the canonical Part-0a surface (`migrations/mbr_public_rpcs.sql`, ledgered).** The pre-existing `mbr_*` family was extended ADDITIVELY (no consumer breakage): `mbr_list` now returns a SUPERSET (adds `updated_at`, `metadata`; keeps `created_by`); NEW `mbr_list_for_user(p_user_id uuid, p_container_type text default null)` (explicit user, distinct from auth.uid()-only `mbr_for_user`); `mbr_add` upgraded to the canonical signature `(p_container_type, p_container_id, p_user_id, p_organization_id, p_role default 'member', p_status default 'active', p_metadata default '{}')` — `organization_id` (not `org_id`) required + verified via `iam.has_org_access`, idempotent on the existing `UNIQUE (container_type, container_id, user_id)` constraint (on-conflict undeletes + updates role/status/metadata); `mbr_set_role` renamed to canonical **`mbr_update_role`**; `mbr_remove` soft-deletes. `mbr_for_user`/`mbr_count`/`mbr_list_with_users` preserved untouched. All PUBLIC SECURITY-DEFINER, org-gated, `revoke from public` + `grant to authenticated`. `membershipsService.ts` gained `listForUser` + `updateRole` (with `setRole` now a thin alias) and the richer `add({ organizationId, metadata })`; `Membership` type gained `updatedAt` + `metadata`. Sole `add` consumer (`projects/service.ts`) updated `orgId` → `organizationId`. Applied via MCP + verified live in `pg_proc`; `pnpm db-types` regenerated; tsc + eslint clean.

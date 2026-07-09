@@ -15,15 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { acceptInvitation } from "@/features/organizations/service";
+import {
+  acceptInvitation,
+  getOrganization,
+} from "@/features/organizations/service";
+import { invitationsService } from "@/features/organizations/service/invitationsService";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type {
+  Organization,
   OrganizationInvitationWithOrg,
   OrgRole,
 } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef } from "@/features/files";
-import { isJsonObject } from "@/types/json";
 
 /**
  * Accept Invitation Page
@@ -59,92 +64,49 @@ export default function AcceptInvitationPage() {
     setError(null);
 
     try {
-      console.log(
-        "[Invitation] Starting to load invitation with token:",
-        token,
-      );
-
       const {
         data: { user },
-        error: authError,
       } = await supabase.auth.getUser();
 
-      console.log("[Invitation] Auth check:", {
-        userId: user?.id,
-        userEmail: user?.email,
-        authError: authError?.message,
-      });
-
       if (!user) {
-        // Not logged in - redirect to login with return URL
-        console.log("[Invitation] No user, redirecting to login");
         router.push(
           `/login?redirectTo=${encodeURIComponent(`/invitations/organization/accept/${token}`)}`,
         );
         return;
       }
 
-      // Read the invitation by token via the SECURITY DEFINER RPC — RLS on
-      // iam.invitations blocks a not-yet-member invitee from reading it (and the
-      // org) directly. The RPC returns the org name alongside the invitation.
-      const { data: inviteRows, error: inviteOnlyError } = await supabase.rpc(
-        "get_org_invitation_by_token",
-        { p_token: token },
-      );
-      const invitationOnly = Array.isArray(inviteRows)
-        ? inviteRows[0]
-        : inviteRows;
-
-      if (inviteOnlyError) {
-        console.error("[Invitation] Failed to fetch invitation:", inviteOnlyError);
-        setError(`Failed to fetch invitation: ${inviteOnlyError.message}`);
+      // Canonical chokepoint — `inv_get_by_token` is gated to the invited party,
+      // so it returns the invite even before a membership exists.
+      const inviteResult = await invitationsService.getByToken(token);
+      if (isScopesRpcErr(inviteResult)) {
+        setError("Invitation not found or has already been used");
         return;
       }
 
-      if (!invitationOnly) {
-        setError("Invitation not found");
+      const invitationData = inviteResult.data.invitation;
+      if (!invitationData || invitationData.targetType !== "organization") {
+        setError("Invitation not found or has already been used");
         return;
       }
 
-      // Check expiry
-      if (new Date(invitationOnly.expires_at) <= new Date()) {
+      if (new Date(invitationData.expiresAt) <= new Date()) {
         setError("This invitation has expired");
         return;
       }
 
-      const data = {
-        ...invitationOnly,
-        organizations: {
-          id: invitationOnly.organization_id,
-          name: invitationOnly.org_name,
-          slug: invitationOnly.org_slug,
-          description: invitationOnly.org_description,
-          logo_url: invitationOnly.org_logo_url,
-          logo_file_id: invitationOnly.org_logo_file_id,
-          website: invitationOnly.org_website,
-          is_personal: invitationOnly.org_is_personal,
-          settings: invitationOnly.org_settings,
-          created_at: invitationOnly.org_created_at,
-          updated_at: invitationOnly.org_updated_at,
-          created_by: invitationOnly.org_created_by,
-        },
-      };
-
-      // Check if invitation is for current user's email
-      if (data.email.toLowerCase() !== user.email?.toLowerCase()) {
+      if (invitationData.email.toLowerCase() !== user.email?.toLowerCase()) {
         setError(
-          `This invitation is for ${data.email}. Please sign in with that email address.`,
+          `This invitation is for ${invitationData.email}. Please sign in with that email address.`,
         );
         return;
       }
 
       // Check if user is already a member — canonical membership read
-      // (iam.memberships via the mbr_* RPCs).
       const myOrgsResult = await membershipsService.forUser("organization");
       const alreadyMember = !myOrgsResult.ok
         ? false
         : myOrgsResult.data.memberships.some(
-            (m) => m.containerId === data.organization_id,
+            (m) => m.containerId === invitationData.targetId,
           );
 
       if (alreadyMember) {
@@ -152,31 +114,32 @@ export default function AcceptInvitationPage() {
         return;
       }
 
-      // Transform invitation data
+      // Org row is RLS-hidden to a not-yet-member invitee. Prefer the
+      // target_name from inv_get_by_token; fall back to getOrganization when
+      // readable (e.g. already a member of a sibling path).
+      const orgFromRpc: Organization | undefined = invitationData.targetName
+        ? {
+            id: invitationData.targetId,
+            name: invitationData.targetName,
+            slug: "",
+            createdAt: "",
+            updatedAt: "",
+            isPersonal: false,
+          }
+        : undefined;
+      const organization =
+        (await getOrganization(invitationData.targetId)) ?? orgFromRpc;
+
       const transformedInvitation: OrganizationInvitationWithOrg = {
-        id: data.id,
-        organizationId: data.organization_id,
-        email: data.email,
-        token: data.token,
-        role: data.role as OrgRole,
-        invitedAt: data.created_at,
-        invitedBy: data.created_by,
-        expiresAt: data.expires_at,
-        organization: {
-          id: data.organizations.id,
-          name: data.organizations.name,
-          slug: data.organizations.slug,
-          description: data.organizations.description,
-          logoUrl: data.organizations.logo_url,
-          website: data.organizations.website,
-          createdAt: data.organizations.created_at,
-          updatedAt: data.organizations.updated_at,
-          createdBy: data.organizations.created_by,
-          isPersonal: data.organizations.is_personal,
-          settings: isJsonObject(data.organizations.settings)
-            ? data.organizations.settings
-            : undefined,
-        },
+        id: invitationData.id,
+        organizationId: invitationData.targetId,
+        email: invitationData.email,
+        token,
+        role: invitationData.role as OrgRole,
+        invitedAt: invitationData.createdAt,
+        invitedBy: invitationData.createdBy,
+        expiresAt: invitationData.expiresAt,
+        organization,
       };
 
       setInvitation(transformedInvitation);
@@ -227,8 +190,10 @@ export default function AcceptInvitationPage() {
     return (
       <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-          <p className="text-lg text-muted-foreground">Loading invitation...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading invitation...
+          </p>
         </div>
       </div>
     );
@@ -238,58 +203,23 @@ export default function AcceptInvitationPage() {
   if (error || !invitation) {
     return (
       <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
-        <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
-              <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
+        <Card className="max-w-md w-full p-6">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">
-              Invalid Invitation
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Unable to Accept Invitation
             </h2>
-            <p className="text-red-700 dark:text-red-300">{error}</p>
-            <div className="flex gap-3 justify-center pt-4">
-              <Button
-                onClick={() => router.push("/settings/organizations")}
-                variant="outline"
-              >
-                Go to Organizations
-              </Button>
-              <Button onClick={() => router.push("/dashboard")}>
-                Go to Dashboard
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  const organization = invitation.organization;
-  if (!organization) {
-    return (
-      <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
-        <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-          <div className="text-center space-y-4">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
-              <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
-            </div>
-            <h2 className="text-2xl font-bold text-red-900 dark:text-red-100">
-              Invalid Invitation
-            </h2>
-            <p className="text-red-700 dark:text-red-300">
-              Organization details are unavailable for this invitation.
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {error || "Invitation not found"}
             </p>
-            <div className="flex gap-3 justify-center pt-4">
-              <Button
-                onClick={() => router.push("/settings/organizations")}
-                variant="outline"
-              >
-                Go to Organizations
-              </Button>
-              <Button onClick={() => router.push("/dashboard")}>
-                Go to Dashboard
-              </Button>
-            </div>
+            <Button
+              onClick={() => router.push("/settings/organizations")}
+              variant="outline"
+            >
+              Go to Organizations
+            </Button>
           </div>
         </Card>
       </div>
@@ -299,132 +229,111 @@ export default function AcceptInvitationPage() {
   // Success state - show invitation details
   return (
     <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
-      <Card className="max-w-2xl w-full p-8">
-        <div className="text-center space-y-6">
-          {/* Success Icon */}
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4">
-            <Mail className="h-10 w-10 text-white" />
+      <Card className="max-w-lg w-full p-6">
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+            {invitation.organization?.logoUrl ||
+            invitation.organization?.logoFileId ? (
+              <InlineMediaRef
+                fileId={invitation.organization.logoFileId}
+                src={invitation.organization.logoUrl}
+                alt={invitation.organization.name}
+                className="w-16 h-16 rounded-full object-cover"
+              />
+            ) : (
+              <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            )}
           </div>
-
-          {/* Title */}
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              You're Invited!
-            </h1>
-            <p className="text-muted-foreground">
-              You've been invited to join an organization
-            </p>
-          </div>
-
-          {/* Organization Details */}
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-800">
-            <div className="flex items-start gap-4">
-              {/* Logo */}
-              <div className="flex-shrink-0">
-                <InlineMediaRef
-                  ref={organization.logoUrl ?? null}
-                  size={{ width: 64, height: 64 }}
-                  fit="cover"
-                  rounded="lg"
-                  border="subtle"
-                  fallbackIcon={
-                    <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-300" />
-                  }
-                  className="bg-blue-100 dark:bg-blue-900"
-                  alt={organization.name}
-                />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 text-left">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {organization.name}
-                </h3>
-                {organization.description && (
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {organization.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                    <UserPlus className="h-3 w-3" />
-                    Join as {invitation.role}
-                  </Badge>
-                  {organization.website && (
-                    <a
-                      href={organization.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                    >
-                      Visit website
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Invitation Details */}
-          <div className="text-left space-y-2 text-sm text-muted-foreground">
-            <p>
-              <strong>Invited to:</strong> {invitation.email}
-            </p>
-            <p>
-              <strong>Role:</strong> {invitation.role}
-            </p>
-            <p>
-              <strong>Expires:</strong>{" "}
-              {new Date(invitation.expiresAt).toLocaleDateString()}
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Button
-              onClick={handleDecline}
-              variant="outline"
-              size="lg"
-              disabled={accepting || declining}
-              className="sm:order-1"
-            >
-              {declining ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Declining...
-                </>
-              ) : (
-                <>
-                  <X className="h-4 w-4 mr-2" />
-                  Decline
-                </>
-              )}
-            </Button>
-            <Button
-              onClick={handleAccept}
-              size="lg"
-              disabled={accepting || declining}
-              className="bg-blue-500 hover:bg-blue-600 sm:order-2"
-            >
-              {accepting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Accepting...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Accept Invitation
-                </>
-              )}
-            </Button>
-          </div>
-
-          {/* Note */}
-          <p className="text-xs text-muted-foreground pt-4">
-            By accepting, you agree to join {organization.name} and will gain
-            access to shared resources.
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            You&apos;re Invited!
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Join{" "}
+            <span className="font-semibold text-gray-900 dark:text-gray-100">
+              {invitation.organization?.name ?? "the organization"}
+            </span>
           </p>
+        </div>
+
+        {/* Invitation Details */}
+        <div className="space-y-4 mb-6">
+          {invitation.organization?.description && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {invitation.organization.description}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <Mail className="h-5 w-5 text-gray-400" />
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Invited as
+              </p>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {invitation.email}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <UserPlus className="h-5 w-5 text-gray-400" />
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400">Role</p>
+              <Badge variant="secondary" className="mt-1 capitalize">
+                {invitation.role}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="text-xs text-center text-gray-500 dark:text-gray-400">
+            Expires{" "}
+            {new Date(invitation.expiresAt).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Button
+            onClick={handleDecline}
+            variant="outline"
+            className="flex-1"
+            disabled={accepting || declining}
+          >
+            {declining ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Declining...
+              </>
+            ) : (
+              <>
+                <X className="h-4 w-4 mr-2" />
+                Decline
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleAccept}
+            className="flex-1"
+            disabled={accepting || declining}
+          >
+            {accepting ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Accepting...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                Accept Invitation
+              </>
+            )}
+          </Button>
         </div>
       </Card>
     </div>

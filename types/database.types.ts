@@ -28179,6 +28179,7 @@ export type Database = {
           role: string
           status: string
           target_id: string
+          target_name: string
           target_type: string
         }[]
       }
@@ -40180,7 +40181,7 @@ export type Database = {
           metadata: Json
           next_invocations: Json
           parent_checkpoint_id: string | null
-          pending_writes: Json
+          pending_bindings: Json
           run_id: string
           step: number
           thread_id: string
@@ -40193,7 +40194,7 @@ export type Database = {
           metadata?: Json
           next_invocations?: Json
           parent_checkpoint_id?: string | null
-          pending_writes?: Json
+          pending_bindings?: Json
           run_id: string
           step: number
           thread_id: string
@@ -40206,7 +40207,7 @@ export type Database = {
           metadata?: Json
           next_invocations?: Json
           parent_checkpoint_id?: string | null
-          pending_writes?: Json
+          pending_bindings?: Json
           run_id?: string
           step?: number
           thread_id?: string
@@ -40502,6 +40503,56 @@ export type Database = {
           },
         ]
       }
+      node_data_slot: {
+        Row: {
+          captured_at: string
+          captured_by: string | null
+          definition_id: string
+          emissions: Json
+          id: string
+          node_id: string
+          output_kind: string | null
+          slot: string
+          source: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          captured_at: string
+          captured_by?: string | null
+          definition_id: string
+          emissions?: Json
+          id?: string
+          node_id: string
+          output_kind?: string | null
+          slot: string
+          source: string
+          user_id: string
+          value: Json
+        }
+        Update: {
+          captured_at?: string
+          captured_by?: string | null
+          definition_id?: string
+          emissions?: Json
+          id?: string
+          node_id?: string
+          output_kind?: string | null
+          slot?: string
+          source?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "node_data_slot_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       node_events: {
         Row: {
           attempt: number | null
@@ -40576,9 +40627,12 @@ export type Database = {
           attempt: number
           channel_writes: Json
           completed_at: string
+          dispatch_id: string
           duration_ms: number
+          emissions: Json
           error: Json | null
           id: string
+          item_index: number
           node_id: string
           output: Json
           output_kind: string | null
@@ -40591,9 +40645,12 @@ export type Database = {
           attempt?: number
           channel_writes?: Json
           completed_at?: string
+          dispatch_id?: string
           duration_ms?: number
+          emissions?: Json
           error?: Json | null
           id?: string
+          item_index?: number
           node_id: string
           output?: Json
           output_kind?: string | null
@@ -40606,9 +40663,12 @@ export type Database = {
           attempt?: number
           channel_writes?: Json
           completed_at?: string
+          dispatch_id?: string
           duration_ms?: number
+          emissions?: Json
           error?: Json | null
           id?: string
+          item_index?: number
           node_id?: string
           output?: Json
           output_kind?: string | null

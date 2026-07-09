@@ -508,12 +508,15 @@ export function useInvitationOperations(orgId: string) {
   );
 
   const resend = useCallback(
-    async (invitationId: string) => {
+    async (invitationId: string, context?: { email: string }) => {
       setLoading(true);
       setError(null);
 
       try {
-        const result = await resendInvitation(invitationId);
+        const result = await resendInvitation(invitationId, {
+          organizationId: orgId,
+          email: context?.email ?? "",
+        });
 
         if (!result.success) {
           setError(result.error || "Failed to resend invitation");
@@ -531,7 +534,7 @@ export function useInvitationOperations(orgId: string) {
         setLoading(false);
       }
     },
-    [refreshInvitations],
+    [orgId, refreshInvitations],
   );
 
   return {

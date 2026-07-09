@@ -79,7 +79,7 @@ export function InvitationManager({
   };
 
   const handleResend = async (invitation: PanelInvitation) => {
-    const result = await resend(invitation.id);
+    const result = await resend(invitation.id, { email: invitation.email });
     if (result.success) {
       toast.success(`Resent invitation to ${invitation.email}`);
       refresh();
