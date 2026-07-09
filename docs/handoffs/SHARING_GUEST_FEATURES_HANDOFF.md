@@ -9,8 +9,12 @@ repos: [matrx-frontend, aidream]
 ## Vision — Arman's words
 
 - On shareability: "**nearly everything should be shareable** — the gate is per-type safety, not restriction."
-- On agent sharing: the "secret sauce stays hidden" model — a shared agent must be runnable without exposing `messages`/`settings`/`tools`/`mcp_servers`/`model_id`.
-- On agent-run-as-guest: "it's essentially already there because the chat route handles it just fine. We just need to make sure we didn't accidentally leave something out. But there is more to this." → the guest run is not a standalone toy; it plugs into the existing guest-identity + guest→user promotion funnel (guest runs it, signs up, keeps the work).
+- **The run/share/fork rule for agents (verbatim — this is the load-bearing model):**
+  - *Public (no share needed):* "The non-secret parts of all agents is public so it doesn't require sharing (id, name, description, variables, context slots, and the other things that don't include model, settings and messages or other secret stuff) — these are public so sharing is not required and that means you can 'use them' but you can never actually see them so you **CANNOT fork/duplicate** them."
+  - *Shared:* "when I share my agent with you, I'm not sharing the ability to run it, I'm sharing all of the secrets with you so you can see it in the agent builder and **YES, you can fork it**. If you can see the secret stuff, you can copy them too."
+  - *Edit access* → also forkable (superset of a view-share: see secrets + modify the original + fork).
+  - **Corollary:** running is a PUBLIC capability of every agent (guests included) and never needs a share; a share/permission is the ONLY thing that reveals secrets (builder visibility) and thereby unlocks fork. `/s/[token]` for an agent is a **builder view + Fork**, NOT a run form.
+- On agent-run-as-guest: guest run plugs into the existing guest-identity + guest→user promotion funnel (guest runs it, signs up, keeps the work). Arman: "essentially already there... make sure we didn't accidentally leave something out." Verified: partly — see Remaining §1.
 - On agent-app SEO indexing (his stated traffic priority): index **published + verified only**, "as long as you also build a simple admin page where we can review them and easily verify them."
 
 ## Resources
@@ -38,12 +42,18 @@ repos: [matrx-frontend, aidream]
 
 ## Remaining work
 
-1. **Agent run-as-guest** (highest-leverage; Arman's "make sure nothing was left out"). Verified reality: the claim is only half-true — the safe pieces exist but three gaps block it.
-   - **a. No `agent` case in `/s/[token]`.** `SharedResourceView.tsx#renderBody` falls a shared agent through to `GenericRenderer` (metadata card + auth-gated `/agents/{id}` deep link). Add an `agent` case: variable form from the allowlisted `variable_definitions` + a Run button that streams — reuse `ChatContainer` / the `/p/chat/a/[id]` shell, not a new stack.
-   - **b. Run must NOT reuse the leaky launcher.** Do not call `agx_get_execution_full` on the guest path (fails for anon, or leaks `settings/model_id/tools`). Follow the `baseSettings: {}` pattern (`create-instance.thunk.ts:456-464`): send empty `config_overrides`, let Python resolve prompt/model/tools from the agent id. Ensure `X-Fingerprint-ID` is populated before the call.
-   - **c. Token-authorized backend run (aidream).** The wire endpoint `/ai/agents/{id}` authorizes by JWT/fingerprint; a guest has no RLS permission on a privately-shared agent. Needs a token-authorized entry — either Python accepts a share token that proves run rights, or a `run_shared_agent`-style server entry that validates the token and runs the agent server-side. (aidream side — inferred; confirm whether `is_public` agents already run anon before building a new endpoint.)
-   - **d. Verify table identity.** Confirm `utils/permissions/registry.ts` `agent` → `agent.definition` is the same physical table the run path reads as `agx_agent`. If they diverge, the allowlist doesn't protect the run path.
-   - **e. Funnel tie-in.** A guest run writes to `guest_executions`; on signup the promotion RPCs carry it over. Confirm a guest agent run lands there so the conversation survives signup (the acquisition payoff).
+1. **Guest run (public capability) + fork-on-share** (highest-leverage). Two separable pieces, per the run/share/fork rule above.
+
+   **1A — Public run of ANY agent (no share).**
+   - **Verify/build the public non-secret read surface.** The rule says id/name/description/`variable_definitions`/`context_slots`/type/category/tags are public for *every* agent. The run path currently reads them via `agx_get_execution_full` — `LANGUAGE sql STABLE`, RLS-gated, and it also returns `model_id/settings/tools/custom_tools` (`migrations/agx_config_normalization_matrx_actions_ui_gates.sql:186-197`). That's fine for a share-holder but WRONG for public/guest. Need a public read that returns ONLY the non-secret columns (SECURITY DEFINER RPC or a column-scoped RLS policy). **Confirm current anon state first** (does anon get the public fields today? almost certainly not).
+   - **Guest run must NEVER call `agx_get_execution_full`.** Use the `baseSettings: {}` shortcut (`create-instance.thunk.ts:456-464`): empty `config_overrides`, Python resolves prompt/model/tools from the agent id server-side. Ensure `X-Fingerprint-ID` is populated (`useApiAuth`).
+   - **Backend run-by-id for anon (aidream).** `/ai/agents/{id}` authorizes by JWT/fingerprint. Since running is public, Python must run any agent by id for an anon fingerprint (subject to guest quota, `guest-limit-service.ts`) — no token needed. Confirm this works today or add it.
+   - **Funnel tie-in:** a guest run writes `guest_executions`; promotion RPCs carry it to the account on signup. Confirm the run lands there so the conversation survives signup (the acquisition payoff).
+
+   **1B — `/s/[token]` agent = builder view + Fork (secrets), NOT a run form.**
+   - Add an `agent` case to `SharedResourceView.tsx#renderBody` (today it falls to `GenericRenderer`). It should open the agent in the **builder** (read-only for a view-share, editable for an edit-share) using the share/permission to authorize secret delivery, plus a **Fork** button.
+   - Build `fork_shared_agent` (mirror the other fork RPCs — applied directly in Supabase per owner instruction), gated on the caller holding a share/permission that conveys secrets (view or edit). Add `agent` to `isForkable` + `forkSharedResource` (`utils/permissions/shareLinks.ts`) once it exists. Public-only users must NOT be able to fork.
+   - Table identity: confirm `utils/permissions/registry.ts` `agent` → `agent.definition` is the same physical table the run path reads as `agx_agent`.
 
 2. **Agent-app SEO — published + verified** (decision made). 
    - Set `robots: { index: true }` in `generateMetadata` ONLY when `status='published' AND is_verified=true`; `robots: { index: false }` otherwise. `/s/[token]` stays `noindex`.
@@ -63,7 +73,4 @@ repos: [matrx-frontend, aidream]
 
 - Canonical no-login link sharing + policy admin + DM-on-share + fork RPCs — see `features/sharing/FEATURE.md` 2026-07-07.
 - Notes shared-with-me (desktop + mobile) + real read-only enforcement + loud lost-write protection (4 adversarial-review holes closed) — see `features/notes/FEATURE.md` 2026-07-07/08.
-
-## Decisions needed (Arman)
-
-1. **Is a shared agent forkable, or run-only?** Situation: today conversations, flashcard sets, and quizzes can be "saved as my own copy" (forked); a shared agent cannot. Running a shared agent keeps the prompt/settings hidden server-side. Forking it would mean copying the agent into the guest's account — which either exposes the secret prompt (violating "secret sauce stays hidden") or copies only the public-safe shell. Decide: shared agents are run-only (never forkable), OR forkable but the fork is a server-side clone that never sends internals to the client.
+- Run/share/fork model for agents decided by Arman — encoded in Vision above (run = public, no fork; share = secrets + fork).
