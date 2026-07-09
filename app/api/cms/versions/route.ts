@@ -1,53 +1,14 @@
 /**
- * CMS Versions API Route — v2 (ownership-secured)
+ * CMS Versions API Route — v3 (ownership-secured)
  *
- * Verifies page→site→owner chain before returning version data.
+ * Verifies page→site→owner chain before returning version data. Read-only —
+ * no activity-log writes (versions are created as a side effect of `pages`
+ * `publish`, which already logs).
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-// API keys: ONLY sb_secret_* on the HTML CMS Supabase project.
-// Legacy JWT keys (SUPABASE_HTML_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY)
-// are DEPRECATED and BANNED. Generate the secret key at:
-// https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
-const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
-const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
-
-function getCmsClient() {
-  if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SECRET_KEY) {
-    throw new Error(
-      "Missing CMS Supabase env vars (NEXT_PUBLIC_SUPABASE_HTML_URL, SUPABASE_HTML_SECRET_KEY). " +
-        "See https://supabase.com/docs/guides/getting-started/api-keys",
-    );
-  }
-  return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
-async function verifyPageOwnership(
-  db: SupabaseClient,
-  pageId: string,
-  userId: string,
-): Promise<boolean> {
-  const { data: page } = await db
-    .from("client_pages")
-    .select("client_id")
-    .eq("id", pageId)
-    .single();
-  if (!page) return false;
-
-  const { data: site } = await db
-    .from("client_sites")
-    .select("id")
-    .eq("id", page.client_id)
-    .eq("owner_user_id", userId)
-    .single();
-  return !!site;
-}
+import { getCmsClient, verifyPageOwnership } from "../_lib/cmsDb";
 
 export async function POST(request: NextRequest) {
   try {

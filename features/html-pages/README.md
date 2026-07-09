@@ -548,7 +548,9 @@ function CustomEditor() {
 
 ### Schema
 
-The `html_pages` table in Supabase:
+The `html_pages` table lives in a **separate Supabase project** (`viyklljfdhtidwecakwx` — "My Matrx"),
+not the main AI Matrx project. See `common-docs/cms-system/FEATURE.md` for the full cross-repo picture
+(this table + the full `client_*` CMS live in the same project).
 
 ```sql
 CREATE TABLE html_pages (
@@ -581,13 +583,17 @@ CREATE INDEX idx_html_pages_created_at ON html_pages(created_at DESC);
 - `is_indexable` defaults to `FALSE` to prevent duplicate content issues with search engines
 - Pages are **noindex by default** - only set `is_indexable: true` for pages you want indexed
 
-### Row Level Security (RLS)
+### Authorization — server-verified, not RLS
 
-Users can only:
-- **View** their own pages
-- **Create** pages for themselves
-- **Update** their own pages
-- **Delete** their own pages
+RLS is enabled on `html_pages`, but **every write in this repo goes through the secret key**
+(`SUPABASE_HTML_SECRET_KEY`), which bypasses it entirely — ownership is enforced in **app code**,
+not by Postgres. The only write path: browser → `HTMLPageService` (`services/htmlPageService.js`) →
+`POST /api/html-pages` → the route verifies the caller's session against the **main** app's
+Supabase Auth (`txzxabzwovsujtloxrus`), then reads/writes `html_pages` with the secret key, filtering
+every query by `user_id = session.user.id`. There is no browser-side Supabase client for this
+project in this repo — a direct anon-key client would need its own RLS policies and its own
+auth session against a project this repo's users never sign into, which is exactly the dead
+architecture `lib/supabase-html.ts` implemented and was removed 2026-07-09 (zero callers).
 
 ### URL Format
 
@@ -600,16 +606,13 @@ https://mymatrx.com/p/{page-uuid}
 
 ## Environment Variables
 
-Add to your `.env.local`:
-
 ```bash
-# Supabase credentials for the HTML pages database.
-# Use ONLY the new sb_publishable_* / sb_secret_* keys.
-# Legacy JWT keys (anon / service_role) are DEPRECATED and BANNED in this repo.
-# Docs: https://supabase.com/docs/guides/getting-started/api-keys
+# Supabase credentials for the html_pages / client_* project (viyklljfdhtidwecakwx).
+# Use ONLY the sb_publishable_* / sb_secret_* keys. Legacy JWT keys (anon / service_role)
+# are DEPRECATED and BANNED in this repo. Docs: https://supabase.com/docs/guides/getting-started/api-keys
 NEXT_PUBLIC_SUPABASE_HTML_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_HTML_PUBLISHABLE_KEY=sb_publishable_...
-SUPABASE_HTML_SECRET_KEY=sb_secret_...
+NEXT_PUBLIC_SUPABASE_HTML_PUBLISHABLE_KEY=sb_publishable_...   # unused by this feature today — no browser client
+SUPABASE_HTML_SECRET_KEY=sb_secret_...                          # SERVER-ONLY — read by app/api/html-pages and app/api/cms/* routes, never sent to the browser
 
 # Public URL for published pages
 NEXT_PUBLIC_HTML_SITE_URL=https://mymatrx.com

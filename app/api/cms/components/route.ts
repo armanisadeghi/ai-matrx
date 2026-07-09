@@ -1,46 +1,15 @@
 /**
- * CMS Components API Route — v2 (ownership-secured)
+ * CMS Components API Route — v3 (ownership-secured, delete fixed)
  *
  * All actions verify the component's site is owned by the authenticated user.
+ * `delete` previously had no case here while the FE service called it anyway,
+ * producing a live 400 ("Unknown action") — see master plan §3 known defects.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-// API keys: ONLY sb_secret_* on the HTML CMS Supabase project.
-// Legacy JWT keys (SUPABASE_HTML_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY)
-// are DEPRECATED and BANNED. Generate the secret key at:
-// https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
-const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
-const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
-
-function getCmsClient() {
-  if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SECRET_KEY) {
-    throw new Error(
-      "Missing CMS Supabase env vars (NEXT_PUBLIC_SUPABASE_HTML_URL, SUPABASE_HTML_SECRET_KEY). " +
-        "See https://supabase.com/docs/guides/getting-started/api-keys",
-    );
-  }
-  return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
-async function verifySiteOwnership(
-  db: SupabaseClient,
-  siteId: string,
-  userId: string,
-): Promise<boolean> {
-  const { data } = await db
-    .from("client_sites")
-    .select("id")
-    .eq("id", siteId)
-    .eq("owner_user_id", userId)
-    .single();
-  return !!data;
-}
+import { getCmsClient, verifySiteOwnership, verifyComponentOwnership } from "../_lib/cmsDb";
+import { logCmsActivity } from "../_lib/activityLog";
 
 export async function POST(request: NextRequest) {
   try {
@@ -152,6 +121,16 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "component.create",
+          entityType: "component",
+          entityId: data.id,
+          description: `Created ${data.component_type} component "${data.name}"`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+
         return NextResponse.json({ success: true, component: data });
       }
 
@@ -164,21 +143,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data: comp } = await db
-          .from("client_components")
-          .select("client_id")
-          .eq("id", componentId)
-          .single();
-
-        if (!comp) {
-          return NextResponse.json(
-            { error: "Component not found" },
-            { status: 404 },
-          );
-        }
-
-        if (!(await verifySiteOwnership(db, comp.client_id, user.id))) {
-          return NextResponse.json({ error: "Access denied" }, { status: 403 });
+        const { ok, clientId } = await verifyComponentOwnership(db, componentId, user.id);
+        if (!ok) {
+          return NextResponse.json({ error: "Component not found or access denied" }, { status: 403 });
         }
 
         const fieldMap: Record<string, string> = {
@@ -211,7 +178,65 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId: clientId,
+          activityType: "component.update",
+          entityType: "component",
+          entityId: componentId,
+          description: `Updated component "${data.name}" (${Object.keys(updateData).join(", ")})`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { fields: Object.keys(updateData) },
+        });
+
         return NextResponse.json({ success: true, component: data });
+      }
+
+      // ── Delete component (was missing — live 400 bug) ─────────────
+      case "delete": {
+        const { componentId } = params;
+        if (!componentId) {
+          return NextResponse.json(
+            { error: "componentId is required" },
+            { status: 400 },
+          );
+        }
+
+        const { data: comp } = await db
+          .from("client_components")
+          .select("client_id, name, component_type")
+          .eq("id", componentId)
+          .single();
+
+        if (!comp) {
+          return NextResponse.json({ error: "Component not found" }, { status: 404 });
+        }
+
+        if (!(await verifySiteOwnership(db, comp.client_id, user.id))) {
+          return NextResponse.json({ error: "Access denied" }, { status: 403 });
+        }
+
+        const { error } = await db
+          .from("client_components")
+          .delete()
+          .eq("id", componentId);
+
+        if (error) {
+          console.error("[cms/components] delete error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        await logCmsActivity(db, {
+          siteId: comp.client_id,
+          activityType: "component.delete",
+          entityType: "component",
+          entityId: componentId,
+          description: `Deleted ${comp.component_type} component "${comp.name}"`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+
+        return NextResponse.json({ success: true });
       }
 
       default:

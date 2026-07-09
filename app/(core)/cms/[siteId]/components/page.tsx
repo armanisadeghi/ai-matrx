@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Loader2, AlertCircle, Puzzle, Pencil, Save } from "lucide-react";
+import { Plus, Loader2, AlertCircle, Puzzle, Pencil, Save, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ComponentsPage() {
   const { siteId } = useParams() as { siteId: string };
@@ -36,6 +38,10 @@ export default function ComponentsPage() {
   const [editHtml, setEditHtml] = useState("");
   const [editCss, setEditCss] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<ClientComponent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchComponents = useCallback(async () => {
     setIsLoading(true);
@@ -81,6 +87,22 @@ export default function ComponentsPage() {
     setEditingId(comp.id);
     setEditHtml(comp.html_content_draft ?? comp.html_content);
     setEditCss(comp.css_content_draft ?? comp.css_content ?? "");
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await CmsComponentService.deleteComponent(deleteTarget.id);
+      setComponents((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      if (editingId === deleteTarget.id) setEditingId(null);
+      toast.success(`Deleted "${deleteTarget.name}"`);
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete component");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -245,6 +267,15 @@ export default function ComponentsPage() {
                         Edit
                       </Button>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteTarget(comp)}
+                      className="gap-1.5 text-xs text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
                 {editingId === comp.id && (
@@ -284,6 +315,17 @@ export default function ComponentsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !isDeleting && !open && setDeleteTarget(null)}
+        title={`Delete "${deleteTarget?.name}"?`}
+        description="This removes the component from the site immediately. Any page still referencing it as a header/footer will render without it."
+        confirmLabel="Delete"
+        variant="destructive"
+        busy={isDeleting}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

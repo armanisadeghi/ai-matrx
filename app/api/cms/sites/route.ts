@@ -1,34 +1,27 @@
 /**
- * CMS Sites API Route — v2 (ownership-secured)
+ * CMS Sites API Route — v3 (ownership-secured + admin fleet visibility)
  *
- * All queries filter by owner_user_id = authenticated user.
- * "First-claim": if a site has null owner_user_id, the first authenticated
- * user who lists/gets it claims ownership automatically.
+ * Owner-scoped actions (`list`, `get`, `create`, `update`, `delete`) filter by
+ * `owner_user_id = authenticated user` — mirrors P1's service-layer semantics so the
+ * UI and agent tools behave identically (master plan §6.1).
+ *
+ * `admin_*` actions bypass per-user ownership and are gated by `requireSuperAdmin`
+ * instead — they back the fleet-wide agent-activity visibility surface at
+ * `/administration/cms-agents`, which needs to see every site regardless of which
+ * user account owns it.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
-import { createClient } from "@supabase/supabase-js";
+import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import {
+  getCmsClient,
+  verifySiteOwnership,
+} from "../_lib/cmsDb";
+import { logCmsActivity } from "../_lib/activityLog";
 
-// API keys: ONLY sb_secret_* on the HTML CMS Supabase project.
-// Legacy JWT keys (SUPABASE_HTML_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY)
-// are DEPRECATED and BANNED. Generate the secret key at:
-// https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
-const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
-const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
-
-function getCmsClient() {
-  if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SECRET_KEY) {
-    throw new Error(
-      "Missing CMS Supabase env vars (NEXT_PUBLIC_SUPABASE_HTML_URL, SUPABASE_HTML_SECRET_KEY). " +
-        "See https://supabase.com/docs/guides/getting-started/api-keys",
-    );
-  }
-  return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
+const AGENT_WRITE_POLICIES = ["blocked", "draft_only", "full"] as const;
+type AgentWritePolicy = (typeof AGENT_WRITE_POLICIES)[number];
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,17 +41,25 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case "list": {
-        // First-claim: auto-assign any unclaimed sites to this user
-        await db
+        // Owner-scoped only. No first-claim: an unowned site (owner_user_id is
+        // null) simply does not appear here — silently claiming it for whoever
+        // lists first was a live bug (master plan §3 "Known defects", F2). If one
+        // ever surfaces, log it loudly instead of mutating data on a read.
+        const { data: unclaimed } = await db
           .from("client_sites")
-          .update({ owner_user_id: user.id })
+          .select("id, slug")
           .is("owner_user_id", null);
+        if (unclaimed && unclaimed.length > 0) {
+          console.warn(
+            `[cms/sites] ${unclaimed.length} unowned site(s) found on list — NOT auto-claiming (F2). ` +
+              `Assign an owner explicitly: ${unclaimed.map((s) => s.slug).join(", ")}`,
+          );
+        }
 
-        // Only return sites owned by this user
         const { data, error } = await db
           .from("client_sites")
           .select(
-            "id, slug, name, domain, is_active, owner_user_id, favicon, created_at, updated_at",
+            "id, slug, name, domain, is_active, owner_user_id, favicon, settings, created_at, updated_at",
           )
           .eq("owner_user_id", user.id)
           .order("name");
@@ -147,6 +148,16 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId: data.id,
+          activityType: "site.create",
+          entityType: "site",
+          entityId: data.id,
+          description: `Created site "${data.name}" (${data.slug})`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+
         return NextResponse.json({ success: true, site: data });
       }
 
@@ -210,7 +221,192 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "site.update",
+          entityType: "site",
+          entityId: siteId,
+          description: `Updated site "${data.name}" (${Object.keys(updateData).join(", ")})`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { fields: Object.keys(updateData) },
+        });
+
         return NextResponse.json({ success: true, site: data });
+      }
+
+      // ── Delete site (guarded) ──────────────────────────────────────
+      case "delete": {
+        const { siteId, force } = params;
+        if (!siteId) {
+          return NextResponse.json(
+            { error: "siteId is required" },
+            { status: 400 },
+          );
+        }
+
+        const { data: site } = await db
+          .from("client_sites")
+          .select("id, slug, name")
+          .eq("id", siteId)
+          .eq("owner_user_id", user.id)
+          .single();
+
+        if (!site) {
+          return NextResponse.json(
+            { error: "Site not found or access denied" },
+            { status: 403 },
+          );
+        }
+
+        const { count: pageCount } = await db
+          .from("client_pages")
+          .select("id", { count: "exact", head: true })
+          .eq("client_id", siteId);
+
+        if ((pageCount ?? 0) > 0 && !force) {
+          return NextResponse.json(
+            {
+              error: `Site "${site.name}" has ${pageCount} page(s). Pass force=true to delete anyway.`,
+              pageCount,
+            },
+            { status: 409 },
+          );
+        }
+
+        // FK chain (client_pages, client_components, client_assets,
+        // client_activity_log, client_page_versions) is ON DELETE CASCADE —
+        // verified live against viyklljfdhtidwecakwx (2026-07-09).
+        const { error } = await db.from("client_sites").delete().eq("id", siteId);
+
+        if (error) {
+          console.error("[cms/sites] delete error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        // Logged after delete with client_id null — the FK cascade already
+        // removed any rows scoped to this site, and the row must survive the
+        // site it describes so the deletion itself stays visible in the feed.
+        await logCmsActivity(db, {
+          siteId: null,
+          activityType: "site.delete",
+          entityType: "site",
+          entityId: siteId,
+          description: `Deleted site "${site.name}" (${site.slug})${force && (pageCount ?? 0) > 0 ? ` — forced, ${pageCount} page(s)` : ""}`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { slug: site.slug, forced: !!force, pageCount: pageCount ?? 0 },
+        });
+
+        return NextResponse.json({ success: true });
+      }
+
+      // ── Admin: fleet-wide reads/writes, requireSuperAdmin ────────────
+      case "admin_list_sites": {
+        await requireSuperAdmin();
+
+        const { data, error } = await db
+          .from("client_sites")
+          .select(
+            "id, slug, name, domain, is_active, owner_user_id, settings, created_at, updated_at",
+          )
+          .order("name");
+
+        if (error) {
+          console.error("[cms/sites] admin_list_sites error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ sites: data ?? [] });
+      }
+
+      case "admin_update_policy": {
+        await requireSuperAdmin();
+        const { siteId, agentWritePolicy, policyOverrides } = params;
+        if (!siteId) {
+          return NextResponse.json(
+            { error: "siteId is required" },
+            { status: 400 },
+          );
+        }
+        if (
+          agentWritePolicy !== undefined &&
+          !AGENT_WRITE_POLICIES.includes(agentWritePolicy as AgentWritePolicy)
+        ) {
+          return NextResponse.json(
+            { error: `agentWritePolicy must be one of: ${AGENT_WRITE_POLICIES.join(", ")}` },
+            { status: 400 },
+          );
+        }
+
+        const { data: existing, error: fetchError } = await db
+          .from("client_sites")
+          .select("id, name, settings")
+          .eq("id", siteId)
+          .single();
+
+        if (fetchError || !existing) {
+          return NextResponse.json({ error: "Site not found" }, { status: 404 });
+        }
+
+        const nextSettings = {
+          ...(existing.settings ?? {}),
+          ...(agentWritePolicy !== undefined ? { agent_write_policy: agentWritePolicy } : {}),
+          ...(policyOverrides !== undefined ? { policy_overrides: policyOverrides } : {}),
+        };
+
+        const { data, error } = await db
+          .from("client_sites")
+          .update({ settings: nextSettings })
+          .eq("id", siteId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("[cms/sites] admin_update_policy error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "site.policy_update",
+          entityType: "site",
+          entityId: siteId,
+          description: `Set agent_write_policy=${agentWritePolicy ?? "(unchanged)"} on "${existing.name}"`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { agentWritePolicy, policyOverrides },
+        });
+
+        return NextResponse.json({ success: true, site: data });
+      }
+
+      case "admin_list_activity": {
+        await requireSuperAdmin();
+        const { siteId, entityType, actor, limit } = params;
+
+        let query = db
+          .from("client_activity_log")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(typeof limit === "number" ? Math.min(limit, 500) : 200);
+
+        if (siteId) query = query.eq("client_id", siteId);
+        if (entityType) query = query.eq("entity_type", entityType);
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("[cms/sites] admin_list_activity error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        // `actor` lives inside the `changes` jsonb (C6) — filter in app code.
+        const rows = actor
+          ? (data ?? []).filter((row) => (row.changes as { actor?: string } | null)?.actor === actor)
+          : (data ?? []);
+
+        return NextResponse.json({ activity: rows });
       }
 
       default:
@@ -222,9 +418,10 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     console.error("[cms/sites] Unexpected error:", err);
     const message = err instanceof Error ? err.message : "Internal server error";
+    const status = message.startsWith("Forbidden") ? 403 : message.startsWith("Unauthorized") ? 401 : 500;
     return NextResponse.json(
       { error: message },
-      { status: 500 },
+      { status },
     );
   }
 }

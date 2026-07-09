@@ -1,6 +1,19 @@
 // features/cms/types.ts
 // Types matching the client_* tables in the My Matrx Supabase project
 
+// ─── Agent access policy (F4) ────────────────────────────────────────────
+// Lives in `client_sites.settings.agent_write_policy` — no dedicated column.
+// blocked: agents cannot write at all. draft_only: agents may save drafts but
+// never publish (publish requires a human). full: agents may publish directly.
+// Default is `blocked` for existing sites, `full` for `dev-website` (F4).
+export type AgentWritePolicy = 'blocked' | 'draft_only' | 'full';
+
+export interface ClientSiteSettings {
+  agent_write_policy?: AgentWritePolicy;
+  policy_overrides?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 // ─── Site ──────────────────────────────────────────────────────────────
 export interface ClientSite {
   id: string;
@@ -13,7 +26,7 @@ export interface ClientSite {
   meta_defaults: Record<string, unknown>;
   contact_info: Record<string, unknown>;
   social_links: Record<string, unknown>;
-  settings: Record<string, unknown>;
+  settings: ClientSiteSettings;
   is_active: boolean;
   owner_user_id: string | null;
   global_css: string | null;
@@ -129,6 +142,33 @@ export interface ClientComponent {
   updated_at: string;
 }
 
+// ─── Validation exceptions (F3 escape hatch — C3, owned by P3/P1) ────────
+// Mirrors `matrx_content_guard.models.Violation` + `ContentException`
+// (aidream `packages/matrx-content-guard`). The store (`client_content_exceptions`)
+// had not been created by P1 as of 2026-07-09 — `/api/cms/approvals` degrades
+// gracefully (returns `available: false`) until it exists.
+export type ContentExceptionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface ContentException {
+  id: string;
+  rule_id: string;
+  scope_site_id: string | null;
+  scope_page_id: string | null;
+  match_node_path_prefix: string | null;
+  match_excerpt_contains: string | null;
+  status: ContentExceptionStatus;
+  note: string | null;
+  // Review context — the Violation that triggered this request, if carried.
+  node_path?: string | null;
+  excerpt?: string | null;
+  fix_hint?: string | null;
+  severity?: 'warning' | 'block' | null;
+  created_by?: string | null;
+  created_at: string;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+}
+
 // ─── Asset ─────────────────────────────────────────────────────────────
 export interface ClientAsset {
   id: string;
@@ -150,14 +190,27 @@ export interface ClientAsset {
   updated_at: string;
 }
 
-// ─── Activity ──────────────────────────────────────────────────────────
+// ─── Activity (C6 — master plan §5) ─────────────────────────────────────
+// `changes` always carries `actor` (set by the writer: P1's aidream services
+// write "agent"/"system", the matrx-frontend `/api/cms/*` routes write
+// "human") plus an optional `metadata` bag — e.g. P4 writes
+// `metadata.capture_media_refs[]` for verification screenshots.
+export interface ClientActivityChanges {
+  actor: 'agent' | 'human' | 'system';
+  metadata?: {
+    capture_media_refs?: string[];
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 export interface ClientActivityLog {
   id: string;
   client_id: string | null;
   activity_type: string;
   entity_type: string | null;
   entity_id: string | null;
-  changes: Record<string, unknown> | null;
+  changes: ClientActivityChanges | null;
   description: string | null;
   user_id: string | null;
   user_email: string | null;

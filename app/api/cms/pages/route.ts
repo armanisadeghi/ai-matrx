@@ -1,63 +1,17 @@
 /**
- * CMS Pages API Route — v2 (ownership-secured)
+ * CMS Pages API Route — v3 (ownership-secured + admin page-tree read)
  *
- * All actions verify the page's site is owned by the authenticated user
- * via a site ownership check before proceeding.
+ * All owner-scoped actions verify the page's site is owned by the authenticated
+ * user via a site ownership check before proceeding. `admin_list` bypasses
+ * ownership (requireSuperAdmin) — it backs the fleet-wide page-tree view on the
+ * agent-activity visibility surface, which needs to see every site's pages.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-// API keys: ONLY sb_secret_* on the HTML CMS Supabase project.
-// Legacy JWT keys (SUPABASE_HTML_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_HTML_ANON_KEY)
-// are DEPRECATED and BANNED. Generate the secret key at:
-// https://supabase.com/dashboard/project/viyklljfdhtidwecakwx/settings/api-keys
-// Docs: https://supabase.com/docs/guides/getting-started/api-keys
-const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
-const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
-
-function getCmsClient() {
-  if (!HTML_SUPABASE_URL || !HTML_SUPABASE_SECRET_KEY) {
-    throw new Error(
-      "Missing CMS Supabase env vars (NEXT_PUBLIC_SUPABASE_HTML_URL, SUPABASE_HTML_SECRET_KEY). " +
-        "See https://supabase.com/docs/guides/getting-started/api-keys",
-    );
-  }
-  return createClient(HTML_SUPABASE_URL, HTML_SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false },
-  });
-}
-
-/** Verify the user owns the given site. Returns true if authorized. */
-async function verifySiteOwnership(
-  db: SupabaseClient,
-  siteId: string,
-  userId: string,
-): Promise<boolean> {
-  const { data } = await db
-    .from("client_sites")
-    .select("id")
-    .eq("id", siteId)
-    .eq("owner_user_id", userId)
-    .single();
-  return !!data;
-}
-
-/** Verify the user owns the site that a page belongs to. Returns true if authorized. */
-async function verifyPageOwnership(
-  db: SupabaseClient,
-  pageId: string,
-  userId: string,
-): Promise<boolean> {
-  const { data: page } = await db
-    .from("client_pages")
-    .select("client_id")
-    .eq("id", pageId)
-    .single();
-  if (!page) return false;
-  return verifySiteOwnership(db, page.client_id, userId);
-}
+import { requireSuperAdmin } from "@/utils/auth/adminUtils";
+import { getCmsClient, verifySiteOwnership, verifyPageOwnership } from "../_lib/cmsDb";
+import { logCmsActivity } from "../_lib/activityLog";
 
 /** Summary columns for list view (no HTML content blobs) */
 const LIST_COLUMNS = `
@@ -242,6 +196,16 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId,
+          activityType: "page.create",
+          entityType: "page",
+          entityId: data.id,
+          description: `Created page "${data.title}" (${data.slug})`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+
         return NextResponse.json({ success: true, page: data });
       }
 
@@ -315,6 +279,17 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId: data.client_id,
+          activityType: "page.update",
+          entityType: "page",
+          entityId: pageId,
+          description: `Updated page "${data.title}" (${Object.keys(updateData).join(", ")})`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { fields: Object.keys(updateData) },
+        });
+
         return NextResponse.json({ success: true, page: data });
       }
 
@@ -371,6 +346,17 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId: data.client_id,
+          activityType: "page.save_draft",
+          entityType: "page",
+          entityId: pageId,
+          description: `Saved draft for "${data.title}"`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { fields: Object.keys(draftData) },
+        });
+
         return NextResponse.json({ success: true, page: data });
       }
 
@@ -407,6 +393,16 @@ export async function POST(request: NextRequest) {
           .eq("id", pageId)
           .single();
 
+        await logCmsActivity(db, {
+          siteId: page?.client_id ?? null,
+          activityType: "page.publish",
+          entityType: "page",
+          entityId: pageId,
+          description: `Published "${page?.title ?? pageId}"`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+
         return NextResponse.json({ success: true, published: data, page });
       }
 
@@ -435,6 +431,22 @@ export async function POST(request: NextRequest) {
           console.error("[cms/pages] discard-draft error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
+
+        const { data: discardedPage } = await db
+          .from("client_pages")
+          .select("client_id, title")
+          .eq("id", pageId)
+          .single();
+
+        await logCmsActivity(db, {
+          siteId: discardedPage?.client_id ?? null,
+          activityType: "page.discard_draft",
+          entityType: "page",
+          entityId: pageId,
+          description: `Discarded draft for "${discardedPage?.title ?? pageId}"`,
+          userId: user.id,
+          userEmail: user.email,
+        });
 
         return NextResponse.json({ success: true, discarded: data });
       }
@@ -472,6 +484,17 @@ export async function POST(request: NextRequest) {
           .eq("id", pageId)
           .single();
 
+        await logCmsActivity(db, {
+          siteId: page?.client_id ?? null,
+          activityType: "page.rollback",
+          entityType: "page",
+          entityId: pageId,
+          description: `Rolled back "${page?.title ?? pageId}" to version ${versionNumber}`,
+          userId: user.id,
+          userEmail: user.email,
+          changes: { versionNumber },
+        });
+
         return NextResponse.json({ success: true, rolledBack: data, page });
       }
 
@@ -492,6 +515,12 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        const { data: pageToDelete } = await db
+          .from("client_pages")
+          .select("client_id, title, slug")
+          .eq("id", pageId)
+          .single();
+
         const { error } = await db
           .from("client_pages")
           .delete()
@@ -502,7 +531,36 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await logCmsActivity(db, {
+          siteId: pageToDelete?.client_id ?? null,
+          activityType: "page.delete",
+          entityType: "page",
+          entityId: pageId,
+          description: `Deleted page "${pageToDelete?.title ?? pageId}" (${pageToDelete?.slug ?? ""})`,
+          userId: user.id,
+          userEmail: user.email,
+        });
+
         return NextResponse.json({ success: true });
+      }
+
+      // ── Admin: fleet-wide page-tree read, requireSuperAdmin ────────
+      case "admin_list": {
+        await requireSuperAdmin();
+        const { siteId } = params;
+
+        let query = db.from("client_pages").select(LIST_COLUMNS);
+        if (siteId) query = query.eq("client_id", siteId);
+        query = query.order("client_id").order("sort_order");
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error("[cms/pages] admin_list error:", error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json({ pages: data ?? [] });
       }
 
       default:
@@ -514,9 +572,10 @@ export async function POST(request: NextRequest) {
   } catch (err: unknown) {
     console.error("[cms/pages] Unexpected error:", err);
     const message = err instanceof Error ? err.message : "Internal server error";
+    const status = message.startsWith("Forbidden") ? 403 : message.startsWith("Unauthorized") ? 401 : 500;
     return NextResponse.json(
       { error: message },
-      { status: 500 },
+      { status },
     );
   }
 }

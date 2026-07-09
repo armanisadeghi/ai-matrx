@@ -7,7 +7,26 @@
  * Mirrors the HTMLPageService pattern.
  */
 
-import type { ClientSite, ClientPage, ClientPageSummary, ClientPageVersion, ClientComponent } from '../types';
+import type {
+    ClientSite,
+    ClientPage,
+    ClientPageSummary,
+    ClientPageVersion,
+    ClientComponent,
+    ClientActivityLog,
+    AgentWritePolicy,
+    ContentException,
+    ContentExceptionStatus,
+} from '../types';
+
+export class SiteNotEmptyError extends Error {
+    pageCount: number;
+    constructor(message: string, pageCount: number) {
+        super(message);
+        this.name = 'SiteNotEmptyError';
+        this.pageCount = pageCount;
+    }
+}
 
 async function callApi<T = unknown>(endpoint: string, action: string, params: Record<string, unknown> = {}): Promise<T> {
     const response = await fetch(`/api/cms/${endpoint}`, {
@@ -66,6 +85,50 @@ export const CmsSiteService = {
     }>): Promise<ClientSite> {
         const res = await callApi<{ site: ClientSite }>('sites', 'update', { siteId, ...updates });
         return res.site;
+    },
+
+    /**
+     * Refuses (HTTP 409) if the site has pages unless `force` is set. On refusal
+     * throws `SiteNotEmptyError` carrying `pageCount` so the caller can re-prompt.
+     */
+    async deleteSite(siteId: string, force = false): Promise<void> {
+        const response = await fetch('/api/cms/sites', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', siteId, force }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            if (response.status === 409 && typeof data.pageCount === 'number') {
+                throw new SiteNotEmptyError(data.error, data.pageCount);
+            }
+            throw new Error(data.error || `CMS API error: ${response.status}`);
+        }
+    },
+
+    // ── Admin (requireSuperAdmin, fleet-wide, bypasses ownership) ─────────
+
+    async adminListSites(): Promise<ClientSite[]> {
+        const res = await callApi<{ sites: ClientSite[] }>('sites', 'admin_list_sites');
+        return res.sites;
+    },
+
+    async adminUpdatePolicy(
+        siteId: string,
+        params: { agentWritePolicy?: AgentWritePolicy; policyOverrides?: Record<string, unknown> },
+    ): Promise<ClientSite> {
+        const res = await callApi<{ site: ClientSite }>('sites', 'admin_update_policy', { siteId, ...params });
+        return res.site;
+    },
+
+    async adminListActivity(params: {
+        siteId?: string;
+        entityType?: string;
+        actor?: 'agent' | 'human' | 'system';
+        limit?: number;
+    } = {}): Promise<ClientActivityLog[]> {
+        const res = await callApi<{ activity: ClientActivityLog[] }>('sites', 'admin_list_activity', params);
+        return res.activity;
     },
 };
 
@@ -145,6 +208,16 @@ export const CmsPageService = {
         const res = await callApi<{ page: ClientPage }>('pages', 'rollback', { pageId, versionNumber });
         return res.page;
     },
+
+    /** Admin (requireSuperAdmin): every page across every site, or scoped to one site. */
+    async adminListPages(siteId?: string): Promise<(ClientPageSummary & { client_id: string })[]> {
+        const res = await callApi<{ pages: (ClientPageSummary & { client_id: string })[] }>(
+            'pages',
+            'admin_list',
+            { siteId },
+        );
+        return res.pages;
+    },
 };
 
 // ── Versions ─────────────────────────────────────────────────────────────────
@@ -192,5 +265,27 @@ export const CmsComponentService = {
 
     async deleteComponent(componentId: string): Promise<void> {
         await callApi('components', 'delete', { componentId });
+    },
+};
+
+// ── Validation approvals (F3, admin — degrades gracefully pre-P1) ─────────────
+
+export const CmsApprovalsService = {
+    async list(params: { status?: ContentExceptionStatus; siteId?: string } = {}): Promise<{
+        violations: ContentException[];
+        available: boolean;
+        message?: string;
+    }> {
+        return callApi('approvals', 'list', params);
+    },
+
+    async approve(exceptionId: string, note?: string): Promise<ContentException> {
+        const res = await callApi<{ exception: ContentException }>('approvals', 'approve', { exceptionId, note });
+        return res.exception;
+    },
+
+    async reject(exceptionId: string, note?: string): Promise<ContentException> {
+        const res = await callApi<{ exception: ContentException }>('approvals', 'reject', { exceptionId, note });
+        return res.exception;
     },
 };
