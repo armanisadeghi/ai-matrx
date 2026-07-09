@@ -18377,6 +18377,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      apply_scraper_rls: {
+        Args: { p_mode: string; p_schema: string; p_table: string }
+        Returns: undefined
+      }
       backfill_org_from_owner: {
         Args: { p_execute?: boolean }
         Returns: {
@@ -18434,6 +18438,10 @@ export type Database = {
           variable_definitions: Json
           version_number: number
         }[]
+      }
+      scraper_visible: {
+        Args: { p_id: string; p_schema: string; p_table: string }
+        Returns: boolean
       }
       shared_by_me: {
         Args: never
@@ -40256,6 +40264,7 @@ export type Database = {
           task_id: string | null
           updated_at: string
           updated_by: string | null
+          variables: Json
           version: number
           viewport: Json
           visibility: Database["platform"]["Enums"]["visibility"]
@@ -40286,6 +40295,7 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          variables?: Json
           version?: number
           viewport?: Json
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -40316,6 +40326,7 @@ export type Database = {
           task_id?: string | null
           updated_at?: string
           updated_by?: string | null
+          variables?: Json
           version?: number
           viewport?: Json
           visibility?: Database["platform"]["Enums"]["visibility"]
@@ -40340,6 +40351,7 @@ export type Database = {
           nodes: Json | null
           strict_channels: boolean | null
           tags: string[] | null
+          variables: Json
           version_number: number
           viewport: Json | null
         }
@@ -40360,6 +40372,7 @@ export type Database = {
           nodes?: Json | null
           strict_channels?: boolean | null
           tags?: string[] | null
+          variables?: Json
           version_number: number
           viewport?: Json | null
         }
@@ -40380,6 +40393,7 @@ export type Database = {
           nodes?: Json | null
           strict_channels?: boolean | null
           tags?: string[] | null
+          variables?: Json
           version_number?: number
           viewport?: Json | null
         }

@@ -6892,6 +6892,41 @@
     "title": "PdfExtractCompleteData",
     "type": "object"
   },
+  "PdfCleanStartedData": {
+    "additionalProperties": false,
+    "description": "Content-clean run began. ``mode='per_page'`` marks the run as\nresumable — a dropped client can re-invoke the endpoint and only the\nunfinished pages are re-paid.",
+    "properties": {
+      "type": {
+        "const": "pdf_clean_started",
+        "default": "pdf_clean_started",
+        "title": "Type",
+        "type": "string"
+      },
+      "mode": {
+        "default": "per_page",
+        "enum": [
+          "per_page",
+          "aggregate"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "doc_id": {
+        "title": "Doc Id",
+        "type": "string"
+      },
+      "total_pages": {
+        "default": 0,
+        "title": "Total Pages",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "doc_id"
+    ],
+    "title": "PdfCleanStartedData",
+    "type": "object"
+  },
   "PdfTablesStartedData": {
     "additionalProperties": false,
     "description": "Table detection began — the document is open, page count known.",

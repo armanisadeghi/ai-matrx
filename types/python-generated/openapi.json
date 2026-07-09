@@ -1600,7 +1600,7 @@
           "AI"
         ],
         "summary": "Fork And Run",
-        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched.",
+        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched. See\n``prepare_fork_and_run`` for the full pipeline.",
         "operationId": "fork_and_run_ai_conversation__conversation_id__fork_and_run_post",
         "parameters": [
           {
@@ -1651,7 +1651,7 @@
           "AI"
         ],
         "summary": "Fork And Run",
-        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched.",
+        "description": "Fork a conversation and immediately run a new turn on the fork.\n\nEquivalent to calling ``POST /conversations/{id}/fork`` followed by\n``POST /conversations/{new_id}`` — but in one request, on one\nstreaming response. The first event on the stream is a\n``conversation.forked`` payload carrying the new ``conversation_id``\nso the client can switch context before any agent output arrives.\n\nUse this for \"regenerate from here\" / \"edit this message and\nre-ask\" flows. The source conversation is left untouched. See\n``prepare_fork_and_run`` for the full pipeline.",
         "operationId": "fork_and_run_ai_conversations__conversation_id__fork_and_run_post",
         "parameters": [
           {
@@ -1702,7 +1702,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nProtocol (suspend-on-delegate — see ``_execute_delegated`` /\n``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the\nloop after durably committing the assistant message and the\nstatus='delegated' cx_tool_call row. This endpoint flips the row to\n'completed'/'error' (resolution_source='client_post'); when the last\noutstanding delegated row for the user_request resolves,\n``continuation_needed=true`` tells the caller to open POST /resume,\nwhich reconstructs the conversation (tool results included) and\ncontinues the loop.\n\nThe old in-memory ``ClientToolWaiter`` \"live fast path\" is GONE — no\ncode creates waiter futures anymore (it was the source of the runaway\ntool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row\nis guaranteed to be on disk before the client ever sees the\n``tool_delegated`` event (pre-suspend finalize), so the durable path is\nthe only path.\n\nNOTE: ``continuation_needed`` is intentionally best-effort — concurrent\nPOSTs for parallel tool calls can BOTH observe \"no remaining delegated\nrows\" and both return true. That is safe: /resume takes an atomic\nper-user_request run claim and the losing resume gets a 409.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop. See\n``resolve_client_tool_results`` (aidream/services/ai_execution/tool_results.py)\nfor the full protocol contract.",
         "operationId": "submit_tool_results_ai_conversation__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -1755,7 +1755,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nProtocol (suspend-on-delegate — see ``_execute_delegated`` /\n``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the\nloop after durably committing the assistant message and the\nstatus='delegated' cx_tool_call row. This endpoint flips the row to\n'completed'/'error' (resolution_source='client_post'); when the last\noutstanding delegated row for the user_request resolves,\n``continuation_needed=true`` tells the caller to open POST /resume,\nwhich reconstructs the conversation (tool results included) and\ncontinues the loop.\n\nThe old in-memory ``ClientToolWaiter`` \"live fast path\" is GONE — no\ncode creates waiter futures anymore (it was the source of the runaway\ntool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row\nis guaranteed to be on disk before the client ever sees the\n``tool_delegated`` event (pre-suspend finalize), so the durable path is\nthe only path.\n\nNOTE: ``continuation_needed`` is intentionally best-effort — concurrent\nPOSTs for parallel tool calls can BOTH observe \"no remaining delegated\nrows\" and both return true. That is safe: /resume takes an atomic\nper-user_request run claim and the losing resume gets a 409.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop. See\n``resolve_client_tool_results`` (aidream/services/ai_execution/tool_results.py)\nfor the full protocol contract.",
         "operationId": "submit_tool_results_ai_conversations__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -2368,7 +2368,7 @@
           "AI"
         ],
         "summary": "Resume Conversation",
-        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone (server restart, browser\nclosed, etc.).\n\nPreconditions:\n- The conversation must exist and belong to this user.\n- No cx_tool_call rows can still be in ``status='delegated'`` for this\n  user_request_id. If any remain, 409 CONFLICT is returned with the list —\n  the client should continue prompting the user for the remaining answers.\n\nBehavior:\n- The original ``user_request_id`` is reused (ensure_user_request_exists is\n  idempotent) so tokens/cost continue to aggregate under the same row.\n- ``ConversationResolver.from_conversation_id`` reconstructs the full\n  history from cx_message + cx_tool_call rows (tool results are\n  automatically reassembled).\n- ``run_ai_task`` streams the continued loop like any other turn.",
+        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone. See\n``prepare_resume_conversation`` for the full precondition + claim + prep\npipeline.",
         "operationId": "resume_conversation_ai_conversation__conversation_id__resume_post",
         "parameters": [
           {
@@ -2419,7 +2419,7 @@
           "AI"
         ],
         "summary": "Resume Conversation",
-        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone (server restart, browser\nclosed, etc.).\n\nPreconditions:\n- The conversation must exist and belong to this user.\n- No cx_tool_call rows can still be in ``status='delegated'`` for this\n  user_request_id. If any remain, 409 CONFLICT is returned with the list —\n  the client should continue prompting the user for the remaining answers.\n\nBehavior:\n- The original ``user_request_id`` is reused (ensure_user_request_exists is\n  idempotent) so tokens/cost continue to aggregate under the same row.\n- ``ConversationResolver.from_conversation_id`` reconstructs the full\n  history from cx_message + cx_tool_call rows (tool results are\n  automatically reassembled).\n- ``run_ai_task`` streams the continued loop like any other turn.",
+        "description": "Resume an AI loop after client-delegated tool calls were answered via\nPOST /tool_results while the original SSE was gone. See\n``prepare_resume_conversation`` for the full precondition + claim + prep\npipeline.",
         "operationId": "resume_conversation_ai_conversations__conversation_id__resume_post",
         "parameters": [
           {
@@ -3036,9 +3036,9 @@
         "tags": [
           "AI"
         ],
-        "summary": "Execute Realtime Tool",
-        "description": "Execute ONE tool for a realtime session, reusing the turn-based executor.\n\nHTTP 200 even when the tool fails (``ok=false``) so the model can recover and\nexplain; only infra/auth failures raise. The cx_tool_call row written here is\nidentical to a turn-based one except a ``tool_origin`` provenance marker.",
-        "operationId": "execute_realtime_tool_ai_tools_execute_post",
+        "summary": "Execute Realtime Tool Route",
+        "description": "Execute ONE tool for a realtime session — thin hand-off.\n\nHTTP 200 even when the tool fails (``ok=false``) so the model can recover and\nexplain; only infra/auth failures raise. All logic lives in\n``aidream.services.ai_execution.realtime_tools.execute_realtime_tool``.",
+        "operationId": "execute_realtime_tool_route_ai_tools_execute_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -10244,6 +10244,18 @@
               "title": "Tool Name"
             },
             "description": "Optional tool name filter."
+          },
+          {
+            "name": "verbose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Full rows (default); False = compact.",
+              "default": true,
+              "title": "Verbose"
+            },
+            "description": "Full rows (default); False = compact."
           }
         ],
         "responses": {
@@ -10276,7 +10288,7 @@
           "Admin / Debug Traces"
         ],
         "summary": "Failures Since",
-        "description": "Convenience wrapper — all FAIL events since ``iso_ts``.\n\nUseful as the input to the scheduled triage agent (Phase 5).\nEquivalent to ``/recent?since={iso_ts}&event=FAIL&limit=1000``.",
+        "description": "Convenience wrapper — all FAIL events since ``iso_ts``.\n\nUseful as the input to the scheduled triage agent (Phase 5).\nEquivalent to ``/recent?since={iso_ts}&event=FAIL&limit={limit}``.",
         "operationId": "failures_since_admin_debug_traces_failures_since__iso_ts__get",
         "parameters": [
           {
@@ -10287,6 +10299,30 @@
               "type": "string",
               "title": "Iso Ts"
             }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 1000,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "verbose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Full rows (default); False = compact.",
+              "default": true,
+              "title": "Verbose"
+            },
+            "description": "Full rows (default); False = compact."
           }
         ],
         "responses": {
@@ -10319,7 +10355,7 @@
           "Admin / Debug Traces"
         ],
         "summary": "By Conversation",
-        "description": "Full event timeline for one conversation, oldest-first.\n\nOldest-first because reading a conversation forensically follows\nits causal order — different from ``/recent`` which is reverse-\nchronological for \"what just happened\" queries.",
+        "description": "Full event timeline for one conversation, displayed oldest-first.\n\nDisplayed oldest-first because reading a conversation forensically\nfollows its causal order. When the conversation has more events than\n``limit``, the NEWEST rows are kept (failure-hunting cares about the\nend of the timeline) — fetched descending, then re-sorted ascending\nfor display.",
         "operationId": "by_conversation_admin_debug_traces_by_conv__conversation_id__get",
         "parameters": [
           {
@@ -10337,11 +10373,23 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 5000,
+              "maximum": 2000,
               "minimum": 1,
               "default": 500,
               "title": "Limit"
             }
+          },
+          {
+            "name": "verbose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Full rows (default); False = compact.",
+              "default": true,
+              "title": "Verbose"
+            },
+            "description": "Full rows (default); False = compact."
           }
         ],
         "responses": {
@@ -15074,7 +15122,7 @@
           "Research"
         ],
         "summary": "Upload File Source",
-        "description": "Persist a binary research artifact + create its rs_media row.\n\nThe file goes through the canonical cloud-file pipeline (sniffed MIME, a\n`cld_files` row via the SyncEngine — never a parallel storage path) and an\n`rs_media` row ties it to the source so it appears in the topic gallery.\n`rs_media.source_id` is NOT NULL, so `source_id` is required here.",
+        "description": "Persist a binary research artifact + create its rs_media row.\n\nThe file goes through the canonical cloud-file pipeline (sniffed MIME, a\n`cld_files` row via the SyncEngine — never a parallel storage path) and an\n`rs_media` row ties it to the source so it appears in the topic gallery.\n`rs_media.source_id` is NOT NULL, so `source_id` is required here.\n\nAll pipeline behaviour lives in\n`aidream.services.research.media.run_upload_file_source` — this endpoint\nvalidates the multipart form and hands off.",
         "operationId": "upload_file_source_research_topics__topic_id__sources_upload_post",
         "parameters": [
           {
@@ -15976,7 +16024,7 @@
           "Legal Admin"
         ],
         "summary": "Diagnose",
-        "description": "Synchronous self-test — bypasses streaming entirely.\n\nVerifies, in order:\n  1. matrx-legal package configured (settings + db_models registered)\n  2. CourtListener API token resolvable\n  3. legal.* tables exist + reachable (counts succeed)\n  4. CourtListener API reachable (one tiny call to /courts/?in_use=true&limit=1)\n  5. Local insert path works (upsert + delete a sentinel ingest_run row)\n\nReturns a structured report so the dashboard can render which step is\nbroken instead of staring at a hung streaming connection.",
+        "description": "Synchronous self-test — bypasses streaming entirely.\n\nSee ``admin_service.diagnose`` for the checks it runs; this route just\nvalidates admin access and forwards the caller's user id.",
         "operationId": "diagnose_legal_admin_diagnose_get",
         "responses": {
           "200": {
@@ -18578,7 +18626,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/aidream__api__routers__rag__IngestRequest"
+                "$ref": "#/components/schemas/aidream__services__rag__library_streams__IngestRequest"
               }
             }
           },
@@ -18672,7 +18720,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/aidream__api__routers__rag__IngestRequest"
+                "$ref": "#/components/schemas/aidream__services__rag__library_streams__IngestRequest"
               }
             }
           },
@@ -19365,7 +19413,6 @@
           "RAG"
         ],
         "summary": "List Library Documents",
-        "description": "List the caller's processed documents with derived counts + status.\n\nThis is the canonical \"show me everything I've ingested\" endpoint.\nOwner-scoped. Counts are computed in a single pass per row using\ncorrelated subqueries — fine at the per-user volume we have today\n(tens to hundreds of docs); revisit with a denormalized counter\ntable if any single user crosses ~10k docs.",
         "operationId": "list_library_documents_rag_library_get",
         "parameters": [
           {
@@ -19467,7 +19514,6 @@
           "RAG"
         ],
         "summary": "Get Library Document",
-        "description": "Detail view for one processed document.\n\nReturns up to ``pages_limit`` page previews (cleaned + raw text\ntruncated to ~400 chars each — the full text lives in the DB and\ncan be fetched via the page-level endpoint when the viewer needs\nit). Plus up to ``chunks_limit`` sample chunks with embedding\npresence flags. Plus all data-store bindings touching this doc's\nunderlying source row.",
         "operationId": "get_library_document_rag_library__processed_document_id__get",
         "parameters": [
           {
@@ -19876,7 +19922,7 @@
           "RAG"
         ],
         "summary": "Test Search Library Document",
-        "description": "Run a quick lexical search against just THIS document's chunks.\n\nLightweight — uses Postgres full-text search (the existing ``content_tsv``\ncolumn on ``rag.kg_chunks``). Surfaces what an agent WOULD retrieve\nif scoped to this single doc, so the user can validate ingestion\nquality without setting up a data store.\n\nWhy lexical-only? Vector retrieval requires picking an embedder, hitting\nOpenAI, and is overkill for a \"does this work?\" smoke test. Uses the\nsame ``websearch_to_tsquery('simple', ...)`` path as production lexical\nrecall (must match ``content_tsv``'s ``to_tsvector('simple', ...)``).",
+        "description": "Run a quick lexical search against just THIS document's chunks.",
         "operationId": "test_search_library_document_rag_library__processed_document_id__test_search_post",
         "parameters": [
           {
@@ -20455,7 +20501,7 @@
           "RAG"
         ],
         "summary": "Estimate Derivations Endpoint",
-        "description": "The cost/run REALITY of each derivation for THIS doc, so the UI can show\n'Summaries: 25 sections → 25 runs (~$0.05)' before the user spends. One DB\nread + one PDF scan (a few seconds on a large doc).",
+        "description": "The cost/run REALITY of each derivation for THIS doc, so the UI can show\n'Summaries: 25 sections → 25 runs (~$0.05)' before the user spends.",
         "operationId": "estimate_derivations_endpoint_rag_library__processed_document_id__estimate_get",
         "parameters": [
           {
@@ -21467,7 +21513,7 @@
           "RAG Admin"
         ],
         "summary": "Admin Batch Remove Data Store Members",
-        "description": "Remove many members from one store in a single call. Composite\n(source_kind, source_id) keys are matched via unnest so it's one DELETE.",
+        "description": "Remove many members from one store in a single call.",
         "operationId": "admin_batch_remove_data_store_members_rag_admin_data_stores__store_id__members_batch_remove_post",
         "parameters": [
           {
@@ -22499,6 +22545,28 @@
                   },
                   "type": "array",
                   "title": "Response List Node Types Workflow Node Types Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow/contracts/audit": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Contract Audit",
+        "description": "Type-Contract Coverage audit — every registered node's input/output/\nconfig schema walked recursively; reports exactly where typing stops\n(Any / bare containers / extra=\"allow\" / unknown leaf types).\n\nAdmin-only diagnostic; computed live from the model classes on every\ncall so it can never drift. Consumed by the dashboard /node-contracts page.",
+        "operationId": "contract_audit_workflow_contracts_audit_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractAuditReport"
                 }
               }
             }
@@ -24720,7 +24788,7 @@
           "Workflow"
         ],
         "summary": "Fork From Node",
-        "description": "Iterate on a FINISHED run by forking a NEW run from one of its steps.\n\nThe terminal twin of ``rerun-from``. ``rerun-from`` mutates a PARKED run\nin place (cheap, same run_id) but refuses a finished run, because\noverwriting a completed run's status would corrupt its cost / summary\nrecords. The dominant real case — \"my workflow finished, I want to re-run\nfrom step 3 to tweak something\" — is served HERE: we create a brand-new\nrun seeded from the checkpoint that scheduled ``node_id``, so the source\nrun stays immutable and the new run re-runs the chosen step + everything\ndownstream.\n\nMoney-safety (the invariant this whole endpoint exists to protect):\n  * The source (terminal) run is never written — we only READ its\n    checkpoints.\n  * The seed checkpoint copies the source checkpoint's ``channel_values``,\n    which already bake in every upstream node's output. Its\n    ``next_invocations`` is ONLY the target node.\n  * On resume the scheduler builds its pending set EXCLUSIVELY from\n    ``next_invocations`` (``Scheduler.resume``); upstream nodes are never\n    invoked, so the expensive upstream LLM steps are NOT re-charged.\n  * The new run has zero ``wf_node_outcome`` rows, so the idempotency\n    lookup misses for the target and every downstream node — they execute\n    FRESH (the intended re-charge), never replay.\n\nReturns the streamed NEW run; the frontend adopts the new run_id from the\n``workflow_run_resumed`` event and the canvas animates the fork.",
+        "description": "Iterate on a FINISHED run by forking a NEW run from one of its steps.\nSee ``fork_run_from_node`` (aidream/services/runtime/definition_run.py)\nfor the full contract and money-safety invariants.",
         "operationId": "fork_from_node_runs__run_id__nodes__node_id__fork_from_post",
         "parameters": [
           {
@@ -24787,7 +24855,7 @@
           "Workflow"
         ],
         "summary": "Stream Run Events",
-        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\n\nPowers the canvas's push-based delivery path. On connect we replay any\nevents newer than ``Last-Event-ID``, then subscribe to the\nLISTEN/NOTIFY fan-out and forward each notification as a fresh SSE\nevent.\n\nThe SSE ``id`` is the per-run ``seq`` (audit P1-5) — an integer\ncursor that can never skip a row (seq assignment serializes on the\nwf_run row lock). A legacy ISO-8601 ``Last-Event-ID`` from an old\nclient is still honored as a timestamp cursor for one release.\n\nCloses the stream when the run reaches a terminal status so the FE\ncleanly stops the EventSource without retrying.",
+        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\nSee ``build_run_events_stream`` (aidream/services/runtime/definition_run.py)\nfor the full contract (replay + LISTEN/NOTIFY live subscribe).",
         "operationId": "stream_run_events_runs__run_id__events_stream_get",
         "parameters": [
           {
@@ -25040,7 +25108,7 @@
           "Workflow"
         ],
         "summary": "Get Run Cost",
-        "description": "Per-run cost summary — the real spend, including per-node conversations.\n\nAggregates chat.request rows across EVERY conversation the run touched\n(the run's own conversation_id plus each AI node's — every\nai.agent.start opens its OWN conversation), falling back to the run's\ndurable node_cost events when the join finds nothing. Returns zeros\nonly for a genuinely LLM-free run. Costs are already USD; straight\nsums, never re-priced. Computation lives in\n``aidream/api/workflow_cost.py`` — shared with the terminal\nrun-completion callback so both surfaces report identical numbers.",
+        "description": "Per-run cost summary — the real spend, including per-node conversations.\n\nAggregates chat.request rows across EVERY conversation the run touched\n(the run's own conversation_id plus each AI node's — every\nai.agent.start opens its OWN conversation), falling back to the run's\ndurable node_cost events when the join finds nothing. Returns zeros\nonly for a genuinely LLM-free run. Costs are already USD; straight\nsums, never re-priced. Computation lives in\n``aidream/services/runtime/workflow_cost.py`` — shared with the terminal\nrun-completion callback so both surfaces report identical numbers.",
         "operationId": "get_run_cost_runs__run_id__cost_get",
         "parameters": [
           {
@@ -25427,7 +25495,7 @@
           "Workflow Triggers"
         ],
         "summary": "Fire Trigger",
-        "description": "Fire a trigger on demand. Accepts webhook + manual kinds.\n\nAuth model:\n  - ``kind=\"webhook\"`` (must have a ``webhook_secret`` per the create\n    guard): caller provides the secret in ``X-Matrx-Trigger-Secret``.\n    No JWT required — webhook callers are usually machines that don't\n    have user identities.\n  - ``kind=\"manual\"``: requires a JWT and the caller must own the\n    trigger. There is no anonymous manual fire — that would let any\n    attacker who guessed a trigger UUID run the workflow on the\n    owner's account.\n  - ``kind=\"cron\"``: fires automatically; the /fire endpoint refuses.",
+        "description": "Fire a trigger on demand. Accepts webhook + manual kinds.\n\nAuth model:\n  - ``kind=\"webhook\"`` (must have a ``webhook_secret`` per the create\n    guard): caller provides the secret in ``X-Matrx-Trigger-Secret``.\n    No JWT required — webhook callers are usually machines that don't\n    have user identities.\n  - ``kind=\"manual\"``: requires a JWT and the caller must own the\n    trigger. There is no anonymous manual fire — that would let any\n    attacker who guessed a trigger UUID run the workflow on the\n    owner's account.\n  - ``kind=\"cron\"``: fires automatically; the /fire endpoint refuses.\n\nBusiness logic lives in ``aidream.services.runtime.triggers.run_fire_trigger``\n(router-thinness sweep, 2026-07-09); this handler just wires context +\nthe run-creation callback through.",
         "operationId": "fire_trigger_triggers__trigger_id__fire_post",
         "parameters": [
           {
@@ -25622,9 +25690,9 @@
         "tags": [
           "Workflow Recovery"
         ],
-        "summary": "Mark Recovery Applied",
+        "summary": "Mark Recovery Applied Endpoint",
         "description": "Flag the audit row as applied / overridden so analytics on agent\nacceptance can run later. Caller-owned via auth.uid() RLS.",
-        "operationId": "mark_recovery_applied_api_recovery_audit__audit_id__applied_post",
+        "operationId": "mark_recovery_applied_endpoint_api_recovery_audit__audit_id__applied_post",
         "parameters": [
           {
             "name": "audit_id",
@@ -26417,7 +26485,7 @@
           "Conversations"
         ],
         "summary": "Replace Messages",
-        "description": "User-initiated compaction: soft-delete a range and insert a summary.\n\nStashes the selected rows (moves their position to a negative slot,\nsets ``deleted_at`` / ``status=\"compacted_hidden\"`` / both visibility\nflags false) and inserts a new ``assistant`` message at the original\nfirst-replaced position carrying the caller-supplied summary\ncontent. Reversible via ``POST /messages/restore`` using the\n``compaction_group_id`` from the response.\n\nThe summary row's metadata carries a ``compaction_summary`` block\nlisting every replaced message and its original position so the UI\ncan render an \"N messages compacted — view originals\" affordance.",
+        "description": "User-initiated compaction: soft-delete a range and insert a summary.\n\nSee ``replace_messages_core`` for the full contract. Reversible via\n``POST /messages/restore`` using the ``compaction_group_id`` from the\nresponse.",
         "operationId": "replace_messages_cx_conversations__conversation_id__messages_replace_post",
         "parameters": [
           {
@@ -26470,7 +26538,7 @@
           "Conversations"
         ],
         "summary": "Hide Messages From Model",
-        "description": "System-initiated compaction: hide messages from the model only.\n\nFlips ``is_visible_to_model=False`` on the selected rows. The user\nstill sees them in the UI (``is_visible_to_user`` unchanged), the\nrows stay at their original positions, and nothing is soft-deleted.\nThe original visibility flags are stashed in\n``metadata.compaction_archive`` so ``POST /messages/restore`` can\nreverse the operation.\n\nUse this when an automated system (background memory, context\noptimizer) wants to shrink what the model reads without disrupting\nthe user's view of the conversation. Pair it with an\nout-of-band summary injection (system prompt, recent-context note)\nif the model needs to know what it can no longer see.",
+        "description": "System-initiated compaction: hide messages from the model only.\n\nSee ``hide_messages_core`` for the full contract. Reversible via\n``POST /messages/restore``.",
         "operationId": "hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post",
         "parameters": [
           {
@@ -26523,7 +26591,7 @@
           "Conversations"
         ],
         "summary": "Restore Compaction",
-        "description": "Reverse a previous /messages/replace or /messages/hide call.\n\nIdentify the operation via ``compaction_group_id`` OR\n``summary_message_id`` (replace operations only; hide operations\nhave no summary row). Restores every archived row's original\nposition, status, deleted_at, and visibility from its\n``metadata.compaction_archive`` snapshot, then hard-deletes the\nsummary row (if any, and ``delete_summary=True``).",
+        "description": "Reverse a previous /messages/replace or /messages/hide call.\n\nSee ``restore_compaction_core`` for the full contract.",
         "operationId": "restore_compaction_cx_conversations__conversation_id__messages_restore_post",
         "parameters": [
           {
@@ -26552,7 +26620,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/aidream__api__routers__cx_data__RestoreResponse"
+                  "$ref": "#/components/schemas/aidream__services__conversation_context__compaction__RestoreResponse"
                 }
               }
             }
@@ -26576,7 +26644,7 @@
           "Conversations"
         ],
         "summary": "Compact Turns",
-        "description": "Compact one or more whole turns.\n\nA turn = ``role=\"user\"`` message → next ``role=\"user\"`` message\n(exclusive). The endpoint resolves the turn boundary from the live\nconversation, then delegates to /messages/replace (``mode=\"user\"``)\nor /messages/hide (``mode=\"system\"``) under the hood. The caller\nsupplies the summary content; this endpoint does not run an LLM —\nuse whatever summarization agent you like upstream, or invoke the\nchat endpoints separately and pass the result here.",
+        "description": "Compact one or more whole turns.\n\nA turn = ``role=\"user\"`` message → next ``role=\"user\"`` message\n(exclusive). See ``compact_turns_core`` for the full contract.",
         "operationId": "compact_turns_cx_conversations__conversation_id__turns_compact_post",
         "parameters": [
           {
@@ -27142,7 +27210,7 @@
           "Media"
         ],
         "summary": "Upload an image as a vision master + optional eager variants",
-        "description": "Store a full-resolution master and eagerly render any requested variants.\n\nThe body is a standard multipart form:\n\n- ``file`` — required. The image bytes. ``Content-Type`` must be one\n  of ``SUPPORTED_IMAGE_TYPES``.\n- ``vision_class`` — optional. A single class to eagerly render.\n- ``vision_classes`` — optional. Comma-separated list of additional\n  classes to eagerly render alongside ``vision_class``.\n- ``folder`` — optional. Defaults to ``vision-uploads``. The master is\n  stored at ``u/{user_id}/{folder}/{uuid}/master.{ext}``.\n\nVariants that fail to render don't fail the request; their errors land\nin ``variant_errors``. Master upload failure is fatal.",
+        "description": "Store a full-resolution master and eagerly render any requested variants.\n\nSee ``aidream.services.media.service.upload_vision_master`` for the\nfull contract.",
         "operationId": "upload_vision_master_media_upload_post",
         "requestBody": {
           "content": {
@@ -33366,7 +33434,7 @@
           "Admin Persistence"
         ],
         "summary": "Get Watchdog Status",
-        "description": "Health snapshot of every registered watched-lifecycle table.\n\nRuns the same SELECT the sweeper would but doesn't transition anything\n— it's a read-only view. The dashboard polls this on a short interval\nso operators see the live state.",
+        "description": "Health snapshot of every registered watched-lifecycle table.",
         "operationId": "get_watchdog_status_admin_persistence_watchdog_get",
         "responses": {
           "200": {
@@ -33823,7 +33891,7 @@
           "Admin Persistence"
         ],
         "summary": "Dismiss Batch",
-        "description": "Mark every unrecovered failure matching the filter ``recovered_at = now()``\nwithout replaying. The \"dismiss all\" companion to ``replay-batch`` — use when\na whole class of failures is stale / no longer relevant.\n\nEmpty body dismisses every unrecovered row (capped by ``limit``).",
+        "description": "Mark every unrecovered failure matching the filter ``recovered_at = now()``\nwithout replaying. Empty body dismisses every unrecovered row (capped by\n``limit``).",
         "operationId": "dismiss_batch_admin_persistence_failures_dismiss_batch_post",
         "requestBody": {
           "content": {
@@ -34062,7 +34130,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/aidream__api__routers__admin_persistence__SystemErrorListResponse"
+                  "$ref": "#/components/schemas/aidream__services__admin_persistence__wire__SystemErrorListResponse"
                 }
               }
             }
@@ -34175,7 +34243,7 @@
           "Admin Persistence"
         ],
         "summary": "Resolve Batch",
-        "description": "Mark every unresolved system_error matching the filter resolved.\n\nThe \"resolve all\" bulk action — use when a whole class of errors\n(one kind, one error substring, an age window) has been acknowledged.\nEmpty body resolves every unresolved row (capped by ``limit``).",
+        "description": "Mark every unresolved system_error matching the filter resolved.\n\nEmpty body resolves every unresolved row (capped by ``limit``).",
         "operationId": "resolve_batch_admin_persistence_errors_resolve_batch_post",
         "requestBody": {
           "content": {
@@ -43646,6 +43714,47 @@
         ],
         "title": "AuditRow"
       },
+      "AuditTotals": {
+        "properties": {
+          "nodes": {
+            "type": "integer",
+            "title": "Nodes"
+          },
+          "full": {
+            "type": "integer",
+            "title": "Full"
+          },
+          "partial": {
+            "type": "integer",
+            "title": "Partial"
+          },
+          "non_conformant": {
+            "type": "integer",
+            "title": "Non Conformant"
+          },
+          "percent_full": {
+            "type": "number",
+            "title": "Percent Full"
+          },
+          "leaks_by_rule": {
+            "items": {
+              "$ref": "#/components/schemas/RuleCount"
+            },
+            "type": "array",
+            "title": "Leaks By Rule"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "full",
+          "partial",
+          "non_conformant",
+          "percent_full",
+          "leaks_by_rule"
+        ],
+        "title": "AuditTotals"
+      },
       "AuthorityRankRequest": {
         "properties": {
           "source_ids": {
@@ -50041,6 +50150,15 @@
         "title": "ComputeTargetRef",
         "description": "Compact reference posted by clients when they bind a target to a\nconversation. The full binding (base_url / access_token / root_path) is\nresolved server-side from this ref."
       },
+      "ConformanceState": {
+        "type": "string",
+        "enum": [
+          "full",
+          "partial",
+          "non_conformant"
+        ],
+        "title": "ConformanceState"
+      },
       "ContentEditRequest": {
         "properties": {
           "content": {
@@ -50236,6 +50354,38 @@
         ],
         "title": "ContextStateResponse",
         "description": "Same shape as the CONTEXT_STATE stream event payload.\n\nThe FE Model Context tab hydrates from this endpoint on conversation\nopen, then receives live updates from the CONTEXT_STATE stream events\nafter each turn — no polling needed once the stream is connected."
+      },
+      "ContractAuditReport": {
+        "properties": {
+          "ruleset": {
+            "$ref": "#/components/schemas/Ruleset"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AuditTotals"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/NodeContractReport"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelReport"
+            },
+            "type": "array",
+            "title": "Models"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ruleset",
+          "totals",
+          "nodes",
+          "models"
+        ],
+        "title": "ContractAuditReport"
       },
       "ConversationContinueRequest": {
         "properties": {
@@ -64503,6 +64653,19 @@
         "type": "object",
         "title": "LabelRequest"
       },
+      "LeakRule": {
+        "type": "string",
+        "enum": [
+          "any",
+          "object",
+          "bare_container",
+          "extra_allow",
+          "unbound_typevar",
+          "unknown_type"
+        ],
+        "title": "LeakRule",
+        "description": "Why a branch of a contract is considered untyped."
+      },
       "LegalSearchRequest": {
         "properties": {
           "query": {
@@ -67613,6 +67776,42 @@
         "title": "ModelInfo",
         "description": "An AI model an agent can be assigned. Agents stop hallucinating 'gpt-4'."
       },
+      "ModelReport": {
+        "properties": {
+          "schema_name": {
+            "type": "string",
+            "title": "Schema Name"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ConformanceState"
+          },
+          "own_leak_count": {
+            "type": "integer",
+            "title": "Own Leak Count"
+          },
+          "referenced_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Referenced By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schema_name",
+          "module",
+          "state",
+          "own_leak_count",
+          "referenced_by"
+        ],
+        "title": "ModelReport",
+        "description": "A distinct model class and every node that (transitively) uses it —\nfixing one shared model shows its blast radius here."
+      },
       "MoveArgs": {
         "properties": {
           "new_parent_id": {
@@ -67754,6 +67953,45 @@
         ],
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
+      },
+      "NodeContractReport": {
+        "properties": {
+          "node_type": {
+            "type": "string",
+            "title": "Node Type"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ConformanceState"
+          },
+          "input": {
+            "$ref": "#/components/schemas/SchemaReport"
+          },
+          "output": {
+            "$ref": "#/components/schemas/SchemaReport"
+          },
+          "config": {
+            "$ref": "#/components/schemas/SchemaReport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_type",
+          "category",
+          "display_name",
+          "state",
+          "input",
+          "output",
+          "config"
+        ],
+        "title": "NodeContractReport"
       },
       "NodeDataSlotPayload": {
         "properties": {
@@ -75354,6 +75592,53 @@
         ],
         "title": "RowUpdate"
       },
+      "RuleCount": {
+        "properties": {
+          "rule": {
+            "$ref": "#/components/schemas/LeakRule"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "count"
+        ],
+        "title": "RuleCount"
+      },
+      "Ruleset": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "enabled_rules": {
+            "items": {
+              "$ref": "#/components/schemas/LeakRule"
+            },
+            "type": "array",
+            "title": "Enabled Rules"
+          },
+          "allowed_scalars": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Scalars"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "enabled_rules",
+          "allowed_scalars"
+        ],
+        "title": "Ruleset",
+        "description": "The conformance rules in force. Versioned, additive-only."
+      },
       "RunBatchDeleteRequest": {
         "properties": {
           "run_ids": {
@@ -75706,6 +75991,14 @@
             },
             "type": "array",
             "title": "Sections"
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/RunFormVariable"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "Declared run variables (Definition.variables). The studio renders one field per variable; values come back as RunWorkflowRequest.initial_variables."
           }
         },
         "additionalProperties": true,
@@ -75716,6 +76009,33 @@
         ],
         "title": "RunFormSchema",
         "description": "The form a non-technical user fills to start a run — generated, never\nhardcoded. Empty ``sections`` ⇒ the workflow needs no inputs (one-click\nRun)."
+      },
+      "RunFormVariable": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "default": {
+            "title": "Default"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RunFormVariable",
+        "description": "One declared run variable (Definition.variables) surfaced on the run\nform. ``required`` is True when the declaration has no default — the run\nwould otherwise park loudly on the first node referencing it."
       },
       "RunListResponse": {
         "properties": {
@@ -76821,6 +77141,47 @@
         ],
         "title": "SchemaGateReport",
         "description": "Outcome of validating an output schema (+ optional sample). ``ok`` is\nFalse when there is any error finding; warnings never flip it."
+      },
+      "SchemaReport": {
+        "properties": {
+          "schema_name": {
+            "type": "string",
+            "title": "Schema Name"
+          },
+          "module": {
+            "type": "string",
+            "title": "Module"
+          },
+          "state": {
+            "$ref": "#/components/schemas/ConformanceState"
+          },
+          "leaks": {
+            "items": {
+              "$ref": "#/components/schemas/TypeLeak"
+            },
+            "type": "array",
+            "title": "Leaks"
+          },
+          "field_count": {
+            "type": "integer",
+            "title": "Field Count"
+          },
+          "cyclic": {
+            "type": "boolean",
+            "title": "Cyclic",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "schema_name",
+          "module",
+          "state",
+          "leaks",
+          "field_count"
+        ],
+        "title": "SchemaReport",
+        "description": "Audit of one schema class (an input/output/config root, or a shared model)."
       },
       "SchemaTypesResponse": {
         "properties": {
@@ -83103,6 +83464,22 @@
           "filter_summary": {
             "type": "string",
             "title": "Filter Summary"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "total_available": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Available"
           }
         },
         "additionalProperties": false,
@@ -84141,6 +84518,39 @@
         ],
         "title": "TurnRange",
         "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
+      },
+      "TypeLeak": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "rule": {
+            "$ref": "#/components/schemas/LeakRule"
+          },
+          "annotation": {
+            "type": "string",
+            "title": "Annotation"
+          },
+          "owner_model": {
+            "type": "string",
+            "title": "Owner Model"
+          },
+          "depth": {
+            "type": "integer",
+            "title": "Depth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "rule",
+          "annotation",
+          "owner_model",
+          "depth"
+        ],
+        "title": "TypeLeak",
+        "description": "One exact point where typing stops."
       },
       "UpdateAgentInput": {
         "properties": {
@@ -87465,38 +87875,6 @@
         ],
         "title": "DeletedResponse"
       },
-      "aidream__api__routers__admin_persistence__SystemErrorListResponse": {
-        "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/SystemErrorSummary"
-            },
-            "type": "array",
-            "title": "Rows"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "rows",
-          "total",
-          "limit",
-          "offset"
-        ],
-        "title": "SystemErrorListResponse"
-      },
       "aidream__api__routers__admin_system_errors__SystemErrorListResponse": {
         "properties": {
           "errors": {
@@ -87550,39 +87928,6 @@
         },
         "type": "object",
         "title": "WarmRequest"
-      },
-      "aidream__api__routers__cx_data__RestoreResponse": {
-        "properties": {
-          "restored_message_ids": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Restored Message Ids"
-          },
-          "deleted_summary_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Deleted Summary Id"
-          },
-          "compaction_group_id": {
-            "type": "string",
-            "title": "Compaction Group Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "restored_message_ids",
-          "deleted_summary_id",
-          "compaction_group_id"
-        ],
-        "title": "RestoreResponse"
       },
       "aidream__api__routers__dictionary__PublishRequest": {
         "properties": {
@@ -87663,58 +88008,6 @@
           "query"
         ],
         "title": "SearchRequest"
-      },
-      "aidream__api__routers__rag__IngestRequest": {
-        "properties": {
-          "source_kind": {
-            "type": "string",
-            "enum": [
-              "note",
-              "code_file",
-              "cld_file",
-              "transcript",
-              "scraped",
-              "repository",
-              "library_doc",
-              "task",
-              "project",
-              "cx_message",
-              "research"
-            ],
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "field_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field Id"
-          },
-          "force": {
-            "type": "boolean",
-            "title": "Force",
-            "default": false
-          },
-          "run_enrich": {
-            "type": "boolean",
-            "title": "Run Enrich",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "source_kind",
-          "source_id"
-        ],
-        "title": "IngestRequest"
       },
       "aidream__api__routers__rag__SearchRequest": {
         "properties": {
@@ -87964,6 +88257,123 @@
         },
         "type": "object",
         "title": "PublishRequest"
+      },
+      "aidream__services__admin_persistence__wire__SystemErrorListResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SystemErrorSummary"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SystemErrorListResponse"
+      },
+      "aidream__services__conversation_context__compaction__RestoreResponse": {
+        "properties": {
+          "restored_message_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Restored Message Ids"
+          },
+          "deleted_summary_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted Summary Id"
+          },
+          "compaction_group_id": {
+            "type": "string",
+            "title": "Compaction Group Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "restored_message_ids",
+          "deleted_summary_id",
+          "compaction_group_id"
+        ],
+        "title": "RestoreResponse"
+      },
+      "aidream__services__rag__library_streams__IngestRequest": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "note",
+              "code_file",
+              "cld_file",
+              "transcript",
+              "scraped",
+              "repository",
+              "library_doc",
+              "task",
+              "project",
+              "cx_message",
+              "research"
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Id"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "run_enrich": {
+            "type": "boolean",
+            "title": "Run Enrich",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id"
+        ],
+        "title": "IngestRequest"
       },
       "matrx_scheduler__api__schemas__DeletedResponse": {
         "properties": {

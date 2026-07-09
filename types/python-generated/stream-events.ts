@@ -963,6 +963,13 @@ export interface PdfClassifyCompleteData {
   classifier_version?: string;
 }
 
+export interface PdfCleanStartedData {
+  type?: "pdf_clean_started";
+  mode?: "per_page" | "aggregate";
+  doc_id: string;
+  total_pages?: number;
+}
+
 export interface PdfExtractCompleteData {
   type?: "pdf_extract_complete";
   filename?: string | null;
@@ -1373,6 +1380,7 @@ export type TypedDataPayload =
   | MemoryReflectorCompletedData
   | PartialImageData
   | PdfClassifyCompleteData
+  | PdfCleanStartedData
   | PdfExtractCompleteData
   | PdfExtractStartedData
   | PdfPageClassifiedData

@@ -838,7 +838,8 @@ export interface paths {
          *     so the client can switch context before any agent output arrives.
          *
          *     Use this for "regenerate from here" / "edit this message and
-         *     re-ask" flows. The source conversation is left untouched.
+         *     re-ask" flows. The source conversation is left untouched. See
+         *     ``prepare_fork_and_run`` for the full pipeline.
          */
         post: operations["fork_and_run_ai_conversation__conversation_id__fork_and_run_post"];
         delete?: never;
@@ -867,7 +868,8 @@ export interface paths {
          *     so the client can switch context before any agent output arrives.
          *
          *     Use this for "regenerate from here" / "edit this message and
-         *     re-ask" flows. The source conversation is left untouched.
+         *     re-ask" flows. The source conversation is left untouched. See
+         *     ``prepare_fork_and_run`` for the full pipeline.
          */
         post: operations["fork_and_run_ai_conversations__conversation_id__fork_and_run_post"];
         delete?: never;
@@ -887,32 +889,9 @@ export interface paths {
         put?: never;
         /**
          * Submit Tool Results
-         * @description Submit client-side tool execution results back to the AI loop — durable.
-         *
-         *     Protocol (suspend-on-delegate — see ``_execute_delegated`` /
-         *     ``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the
-         *     loop after durably committing the assistant message and the
-         *     status='delegated' cx_tool_call row. This endpoint flips the row to
-         *     'completed'/'error' (resolution_source='client_post'); when the last
-         *     outstanding delegated row for the user_request resolves,
-         *     ``continuation_needed=true`` tells the caller to open POST /resume,
-         *     which reconstructs the conversation (tool results included) and
-         *     continues the loop.
-         *
-         *     The old in-memory ``ClientToolWaiter`` "live fast path" is GONE — no
-         *     code creates waiter futures anymore (it was the source of the runaway
-         *     tool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row
-         *     is guaranteed to be on disk before the client ever sees the
-         *     ``tool_delegated`` event (pre-suspend finalize), so the durable path is
-         *     the only path.
-         *
-         *     NOTE: ``continuation_needed`` is intentionally best-effort — concurrent
-         *     POSTs for parallel tool calls can BOTH observe "no remaining delegated
-         *     rows" and both return true. That is safe: /resume takes an atomic
-         *     per-user_request run claim and the losing resume gets a 409.
-         *
-         *     Idempotent: duplicate POSTs for an already-resolved call return 200 with
-         *     the call_id in ``already_resolved`` and no side effects.
+         * @description Submit client-side tool execution results back to the AI loop. See
+         *     ``resolve_client_tool_results`` (aidream/services/ai_execution/tool_results.py)
+         *     for the full protocol contract.
          */
         post: operations["submit_tool_results_ai_conversation__conversation_id__tool_results_post"];
         delete?: never;
@@ -932,32 +911,9 @@ export interface paths {
         put?: never;
         /**
          * Submit Tool Results
-         * @description Submit client-side tool execution results back to the AI loop — durable.
-         *
-         *     Protocol (suspend-on-delegate — see ``_execute_delegated`` /
-         *     ``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the
-         *     loop after durably committing the assistant message and the
-         *     status='delegated' cx_tool_call row. This endpoint flips the row to
-         *     'completed'/'error' (resolution_source='client_post'); when the last
-         *     outstanding delegated row for the user_request resolves,
-         *     ``continuation_needed=true`` tells the caller to open POST /resume,
-         *     which reconstructs the conversation (tool results included) and
-         *     continues the loop.
-         *
-         *     The old in-memory ``ClientToolWaiter`` "live fast path" is GONE — no
-         *     code creates waiter futures anymore (it was the source of the runaway
-         *     tool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row
-         *     is guaranteed to be on disk before the client ever sees the
-         *     ``tool_delegated`` event (pre-suspend finalize), so the durable path is
-         *     the only path.
-         *
-         *     NOTE: ``continuation_needed`` is intentionally best-effort — concurrent
-         *     POSTs for parallel tool calls can BOTH observe "no remaining delegated
-         *     rows" and both return true. That is safe: /resume takes an atomic
-         *     per-user_request run claim and the losing resume gets a 409.
-         *
-         *     Idempotent: duplicate POSTs for an already-resolved call return 200 with
-         *     the call_id in ``already_resolved`` and no side effects.
+         * @description Submit client-side tool execution results back to the AI loop. See
+         *     ``resolve_client_tool_results`` (aidream/services/ai_execution/tool_results.py)
+         *     for the full protocol contract.
          */
         post: operations["submit_tool_results_ai_conversations__conversation_id__tool_results_post"];
         delete?: never;
@@ -1156,22 +1112,9 @@ export interface paths {
         /**
          * Resume Conversation
          * @description Resume an AI loop after client-delegated tool calls were answered via
-         *     POST /tool_results while the original SSE was gone (server restart, browser
-         *     closed, etc.).
-         *
-         *     Preconditions:
-         *     - The conversation must exist and belong to this user.
-         *     - No cx_tool_call rows can still be in ``status='delegated'`` for this
-         *       user_request_id. If any remain, 409 CONFLICT is returned with the list —
-         *       the client should continue prompting the user for the remaining answers.
-         *
-         *     Behavior:
-         *     - The original ``user_request_id`` is reused (ensure_user_request_exists is
-         *       idempotent) so tokens/cost continue to aggregate under the same row.
-         *     - ``ConversationResolver.from_conversation_id`` reconstructs the full
-         *       history from cx_message + cx_tool_call rows (tool results are
-         *       automatically reassembled).
-         *     - ``run_ai_task`` streams the continued loop like any other turn.
+         *     POST /tool_results while the original SSE was gone. See
+         *     ``prepare_resume_conversation`` for the full precondition + claim + prep
+         *     pipeline.
          */
         post: operations["resume_conversation_ai_conversation__conversation_id__resume_post"];
         delete?: never;
@@ -1192,22 +1135,9 @@ export interface paths {
         /**
          * Resume Conversation
          * @description Resume an AI loop after client-delegated tool calls were answered via
-         *     POST /tool_results while the original SSE was gone (server restart, browser
-         *     closed, etc.).
-         *
-         *     Preconditions:
-         *     - The conversation must exist and belong to this user.
-         *     - No cx_tool_call rows can still be in ``status='delegated'`` for this
-         *       user_request_id. If any remain, 409 CONFLICT is returned with the list —
-         *       the client should continue prompting the user for the remaining answers.
-         *
-         *     Behavior:
-         *     - The original ``user_request_id`` is reused (ensure_user_request_exists is
-         *       idempotent) so tokens/cost continue to aggregate under the same row.
-         *     - ``ConversationResolver.from_conversation_id`` reconstructs the full
-         *       history from cx_message + cx_tool_call rows (tool results are
-         *       automatically reassembled).
-         *     - ``run_ai_task`` streams the continued loop like any other turn.
+         *     POST /tool_results while the original SSE was gone. See
+         *     ``prepare_resume_conversation`` for the full precondition + claim + prep
+         *     pipeline.
          */
         post: operations["resume_conversation_ai_conversations__conversation_id__resume_post"];
         delete?: never;
@@ -1437,14 +1367,14 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Execute Realtime Tool
-         * @description Execute ONE tool for a realtime session, reusing the turn-based executor.
+         * Execute Realtime Tool Route
+         * @description Execute ONE tool for a realtime session — thin hand-off.
          *
          *     HTTP 200 even when the tool fails (``ok=false``) so the model can recover and
-         *     explain; only infra/auth failures raise. The cx_tool_call row written here is
-         *     identical to a turn-based one except a ``tool_origin`` provenance marker.
+         *     explain; only infra/auth failures raise. All logic lives in
+         *     ``aidream.services.ai_execution.realtime_tools.execute_realtime_tool``.
          */
-        post: operations["execute_realtime_tool_ai_tools_execute_post"];
+        post: operations["execute_realtime_tool_route_ai_tools_execute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4094,7 +4024,7 @@ export interface paths {
          * @description Convenience wrapper — all FAIL events since ``iso_ts``.
          *
          *     Useful as the input to the scheduled triage agent (Phase 5).
-         *     Equivalent to ``/recent?since={iso_ts}&event=FAIL&limit=1000``.
+         *     Equivalent to ``/recent?since={iso_ts}&event=FAIL&limit={limit}``.
          */
         get: operations["failures_since_admin_debug_traces_failures_since__iso_ts__get"];
         put?: never;
@@ -4114,11 +4044,13 @@ export interface paths {
         };
         /**
          * By Conversation
-         * @description Full event timeline for one conversation, oldest-first.
+         * @description Full event timeline for one conversation, displayed oldest-first.
          *
-         *     Oldest-first because reading a conversation forensically follows
-         *     its causal order — different from ``/recent`` which is reverse-
-         *     chronological for "what just happened" queries.
+         *     Displayed oldest-first because reading a conversation forensically
+         *     follows its causal order. When the conversation has more events than
+         *     ``limit``, the NEWEST rows are kept (failure-hunting cares about the
+         *     end of the timeline) — fetched descending, then re-sorted ascending
+         *     for display.
          */
         get: operations["by_conversation_admin_debug_traces_by_conv__conversation_id__get"];
         put?: never;
@@ -5731,6 +5663,10 @@ export interface paths {
          *     `cld_files` row via the SyncEngine — never a parallel storage path) and an
          *     `rs_media` row ties it to the source so it appears in the topic gallery.
          *     `rs_media.source_id` is NOT NULL, so `source_id` is required here.
+         *
+         *     All pipeline behaviour lives in
+         *     `aidream.services.research.media.run_upload_file_source` — this endpoint
+         *     validates the multipart form and hands off.
          */
         post: operations["upload_file_source_research_topics__topic_id__sources_upload_post"];
         delete?: never;
@@ -6140,15 +6076,8 @@ export interface paths {
          * Diagnose
          * @description Synchronous self-test — bypasses streaming entirely.
          *
-         *     Verifies, in order:
-         *       1. matrx-legal package configured (settings + db_models registered)
-         *       2. CourtListener API token resolvable
-         *       3. legal.* tables exist + reachable (counts succeed)
-         *       4. CourtListener API reachable (one tiny call to /courts/?in_use=true&limit=1)
-         *       5. Local insert path works (upsert + delete a sentinel ingest_run row)
-         *
-         *     Returns a structured report so the dashboard can render which step is
-         *     broken instead of staring at a hung streaming connection.
+         *     See ``admin_service.diagnose`` for the checks it runs; this route just
+         *     validates admin access and forwards the caller's user id.
          */
         get: operations["diagnose_legal_admin_diagnose_get"];
         put?: never;
@@ -7259,16 +7188,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * List Library Documents
-         * @description List the caller's processed documents with derived counts + status.
-         *
-         *     This is the canonical "show me everything I've ingested" endpoint.
-         *     Owner-scoped. Counts are computed in a single pass per row using
-         *     correlated subqueries — fine at the per-user volume we have today
-         *     (tens to hundreds of docs); revisit with a denormalized counter
-         *     table if any single user crosses ~10k docs.
-         */
+        /** List Library Documents */
         get: operations["list_library_documents_rag_library_get"];
         put?: never;
         post?: never;
@@ -7285,17 +7205,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Library Document
-         * @description Detail view for one processed document.
-         *
-         *     Returns up to ``pages_limit`` page previews (cleaned + raw text
-         *     truncated to ~400 chars each — the full text lives in the DB and
-         *     can be fetched via the page-level endpoint when the viewer needs
-         *     it). Plus up to ``chunks_limit`` sample chunks with embedding
-         *     presence flags. Plus all data-store bindings touching this doc's
-         *     underlying source row.
-         */
+        /** Get Library Document */
         get: operations["get_library_document_rag_library__processed_document_id__get"];
         put?: never;
         post?: never;
@@ -7433,16 +7343,6 @@ export interface paths {
         /**
          * Test Search Library Document
          * @description Run a quick lexical search against just THIS document's chunks.
-         *
-         *     Lightweight — uses Postgres full-text search (the existing ``content_tsv``
-         *     column on ``rag.kg_chunks``). Surfaces what an agent WOULD retrieve
-         *     if scoped to this single doc, so the user can validate ingestion
-         *     quality without setting up a data store.
-         *
-         *     Why lexical-only? Vector retrieval requires picking an embedder, hitting
-         *     OpenAI, and is overkill for a "does this work?" smoke test. Uses the
-         *     same ``websearch_to_tsquery('simple', ...)`` path as production lexical
-         *     recall (must match ``content_tsv``'s ``to_tsvector('simple', ...)``).
          */
         post: operations["test_search_library_document_rag_library__processed_document_id__test_search_post"];
         delete?: never;
@@ -7727,8 +7627,7 @@ export interface paths {
         /**
          * Estimate Derivations Endpoint
          * @description The cost/run REALITY of each derivation for THIS doc, so the UI can show
-         *     'Summaries: 25 sections → 25 runs (~$0.05)' before the user spends. One DB
-         *     read + one PDF scan (a few seconds on a large doc).
+         *     'Summaries: 25 sections → 25 runs (~$0.05)' before the user spends.
          */
         get: operations["estimate_derivations_endpoint_rag_library__processed_document_id__estimate_get"];
         put?: never;
@@ -7980,8 +7879,7 @@ export interface paths {
         put?: never;
         /**
          * Admin Batch Remove Data Store Members
-         * @description Remove many members from one store in a single call. Composite
-         *     (source_kind, source_id) keys are matched via unnest so it's one DELETE.
+         * @description Remove many members from one store in a single call.
          */
         post: operations["admin_batch_remove_data_store_members_rag_admin_data_stores__store_id__members_batch_remove_post"];
         delete?: never;
@@ -8359,6 +8257,31 @@ export interface paths {
          *     surfaced by an empty palette rather than a 500.
          */
         get: operations["list_node_types_workflow_node_types_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflow/contracts/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contract Audit
+         * @description Type-Contract Coverage audit — every registered node's input/output/
+         *     config schema walked recursively; reports exactly where typing stops
+         *     (Any / bare containers / extra="allow" / unknown leaf types).
+         *
+         *     Admin-only diagnostic; computed live from the model classes on every
+         *     call so it can never drift. Consumed by the dashboard /node-contracts page.
+         */
+        get: operations["contract_audit_workflow_contracts_audit_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9285,31 +9208,8 @@ export interface paths {
         /**
          * Fork From Node
          * @description Iterate on a FINISHED run by forking a NEW run from one of its steps.
-         *
-         *     The terminal twin of ``rerun-from``. ``rerun-from`` mutates a PARKED run
-         *     in place (cheap, same run_id) but refuses a finished run, because
-         *     overwriting a completed run's status would corrupt its cost / summary
-         *     records. The dominant real case — "my workflow finished, I want to re-run
-         *     from step 3 to tweak something" — is served HERE: we create a brand-new
-         *     run seeded from the checkpoint that scheduled ``node_id``, so the source
-         *     run stays immutable and the new run re-runs the chosen step + everything
-         *     downstream.
-         *
-         *     Money-safety (the invariant this whole endpoint exists to protect):
-         *       * The source (terminal) run is never written — we only READ its
-         *         checkpoints.
-         *       * The seed checkpoint copies the source checkpoint's ``channel_values``,
-         *         which already bake in every upstream node's output. Its
-         *         ``next_invocations`` is ONLY the target node.
-         *       * On resume the scheduler builds its pending set EXCLUSIVELY from
-         *         ``next_invocations`` (``Scheduler.resume``); upstream nodes are never
-         *         invoked, so the expensive upstream LLM steps are NOT re-charged.
-         *       * The new run has zero ``wf_node_outcome`` rows, so the idempotency
-         *         lookup misses for the target and every downstream node — they execute
-         *         FRESH (the intended re-charge), never replay.
-         *
-         *     Returns the streamed NEW run; the frontend adopts the new run_id from the
-         *     ``workflow_run_resumed`` event and the canvas animates the fork.
+         *     See ``fork_run_from_node`` (aidream/services/runtime/definition_run.py)
+         *     for the full contract and money-safety invariants.
          */
         post: operations["fork_from_node_runs__run_id__nodes__node_id__fork_from_post"];
         delete?: never;
@@ -9328,19 +9228,8 @@ export interface paths {
         /**
          * Stream Run Events
          * @description Server-Sent Events feed of wf_node_events for one run (Phase 4.3).
-         *
-         *     Powers the canvas's push-based delivery path. On connect we replay any
-         *     events newer than ``Last-Event-ID``, then subscribe to the
-         *     LISTEN/NOTIFY fan-out and forward each notification as a fresh SSE
-         *     event.
-         *
-         *     The SSE ``id`` is the per-run ``seq`` (audit P1-5) — an integer
-         *     cursor that can never skip a row (seq assignment serializes on the
-         *     wf_run row lock). A legacy ISO-8601 ``Last-Event-ID`` from an old
-         *     client is still honored as a timestamp cursor for one release.
-         *
-         *     Closes the stream when the run reaches a terminal status so the FE
-         *     cleanly stops the EventSource without retrying.
+         *     See ``build_run_events_stream`` (aidream/services/runtime/definition_run.py)
+         *     for the full contract (replay + LISTEN/NOTIFY live subscribe).
          */
         get: operations["stream_run_events_runs__run_id__events_stream_get"];
         put?: never;
@@ -9424,7 +9313,7 @@ export interface paths {
          *     durable node_cost events when the join finds nothing. Returns zeros
          *     only for a genuinely LLM-free run. Costs are already USD; straight
          *     sums, never re-priced. Computation lives in
-         *     ``aidream/api/workflow_cost.py`` — shared with the terminal
+         *     ``aidream/services/runtime/workflow_cost.py`` — shared with the terminal
          *     run-completion callback so both surfaces report identical numbers.
          */
         get: operations["get_run_cost_runs__run_id__cost_get"];
@@ -9563,6 +9452,10 @@ export interface paths {
          *         attacker who guessed a trigger UUID run the workflow on the
          *         owner's account.
          *       - ``kind="cron"``: fires automatically; the /fire endpoint refuses.
+         *
+         *     Business logic lives in ``aidream.services.runtime.triggers.run_fire_trigger``
+         *     (router-thinness sweep, 2026-07-09); this handler just wires context +
+         *     the run-creation callback through.
          */
         post: operations["fire_trigger_triggers__trigger_id__fire_post"];
         delete?: never;
@@ -9629,11 +9522,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Mark Recovery Applied
+         * Mark Recovery Applied Endpoint
          * @description Flag the audit row as applied / overridden so analytics on agent
          *     acceptance can run later. Caller-owned via auth.uid() RLS.
          */
-        post: operations["mark_recovery_applied_api_recovery_audit__audit_id__applied_post"];
+        post: operations["mark_recovery_applied_endpoint_api_recovery_audit__audit_id__applied_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9988,16 +9881,9 @@ export interface paths {
          * Replace Messages
          * @description User-initiated compaction: soft-delete a range and insert a summary.
          *
-         *     Stashes the selected rows (moves their position to a negative slot,
-         *     sets ``deleted_at`` / ``status="compacted_hidden"`` / both visibility
-         *     flags false) and inserts a new ``assistant`` message at the original
-         *     first-replaced position carrying the caller-supplied summary
-         *     content. Reversible via ``POST /messages/restore`` using the
-         *     ``compaction_group_id`` from the response.
-         *
-         *     The summary row's metadata carries a ``compaction_summary`` block
-         *     listing every replaced message and its original position so the UI
-         *     can render an "N messages compacted — view originals" affordance.
+         *     See ``replace_messages_core`` for the full contract. Reversible via
+         *     ``POST /messages/restore`` using the ``compaction_group_id`` from the
+         *     response.
          */
         post: operations["replace_messages_cx_conversations__conversation_id__messages_replace_post"];
         delete?: never;
@@ -10019,18 +9905,8 @@ export interface paths {
          * Hide Messages From Model
          * @description System-initiated compaction: hide messages from the model only.
          *
-         *     Flips ``is_visible_to_model=False`` on the selected rows. The user
-         *     still sees them in the UI (``is_visible_to_user`` unchanged), the
-         *     rows stay at their original positions, and nothing is soft-deleted.
-         *     The original visibility flags are stashed in
-         *     ``metadata.compaction_archive`` so ``POST /messages/restore`` can
-         *     reverse the operation.
-         *
-         *     Use this when an automated system (background memory, context
-         *     optimizer) wants to shrink what the model reads without disrupting
-         *     the user's view of the conversation. Pair it with an
-         *     out-of-band summary injection (system prompt, recent-context note)
-         *     if the model needs to know what it can no longer see.
+         *     See ``hide_messages_core`` for the full contract. Reversible via
+         *     ``POST /messages/restore``.
          */
         post: operations["hide_messages_from_model_cx_conversations__conversation_id__messages_hide_post"];
         delete?: never;
@@ -10052,12 +9928,7 @@ export interface paths {
          * Restore Compaction
          * @description Reverse a previous /messages/replace or /messages/hide call.
          *
-         *     Identify the operation via ``compaction_group_id`` OR
-         *     ``summary_message_id`` (replace operations only; hide operations
-         *     have no summary row). Restores every archived row's original
-         *     position, status, deleted_at, and visibility from its
-         *     ``metadata.compaction_archive`` snapshot, then hard-deletes the
-         *     summary row (if any, and ``delete_summary=True``).
+         *     See ``restore_compaction_core`` for the full contract.
          */
         post: operations["restore_compaction_cx_conversations__conversation_id__messages_restore_post"];
         delete?: never;
@@ -10080,12 +9951,7 @@ export interface paths {
          * @description Compact one or more whole turns.
          *
          *     A turn = ``role="user"`` message → next ``role="user"`` message
-         *     (exclusive). The endpoint resolves the turn boundary from the live
-         *     conversation, then delegates to /messages/replace (``mode="user"``)
-         *     or /messages/hide (``mode="system"``) under the hood. The caller
-         *     supplies the summary content; this endpoint does not run an LLM —
-         *     use whatever summarization agent you like upstream, or invoke the
-         *     chat endpoints separately and pass the result here.
+         *     (exclusive). See ``compact_turns_core`` for the full contract.
          */
         post: operations["compact_turns_cx_conversations__conversation_id__turns_compact_post"];
         delete?: never;
@@ -10332,18 +10198,8 @@ export interface paths {
          * Upload an image as a vision master + optional eager variants
          * @description Store a full-resolution master and eagerly render any requested variants.
          *
-         *     The body is a standard multipart form:
-         *
-         *     - ``file`` — required. The image bytes. ``Content-Type`` must be one
-         *       of ``SUPPORTED_IMAGE_TYPES``.
-         *     - ``vision_class`` — optional. A single class to eagerly render.
-         *     - ``vision_classes`` — optional. Comma-separated list of additional
-         *       classes to eagerly render alongside ``vision_class``.
-         *     - ``folder`` — optional. Defaults to ``vision-uploads``. The master is
-         *       stored at ``u/{user_id}/{folder}/{uuid}/master.{ext}``.
-         *
-         *     Variants that fail to render don't fail the request; their errors land
-         *     in ``variant_errors``. Master upload failure is fatal.
+         *     See ``aidream.services.media.service.upload_vision_master`` for the
+         *     full contract.
          */
         post: operations["upload_vision_master_media_upload_post"];
         delete?: never;
@@ -12347,10 +12203,6 @@ export interface paths {
         /**
          * Get Watchdog Status
          * @description Health snapshot of every registered watched-lifecycle table.
-         *
-         *     Runs the same SELECT the sweeper would but doesn't transition anything
-         *     — it's a read-only view. The dashboard polls this on a short interval
-         *     so operators see the live state.
          */
         get: operations["get_watchdog_status_admin_persistence_watchdog_get"];
         put?: never;
@@ -12497,10 +12349,8 @@ export interface paths {
         /**
          * Dismiss Batch
          * @description Mark every unrecovered failure matching the filter ``recovered_at = now()``
-         *     without replaying. The "dismiss all" companion to ``replay-batch`` — use when
-         *     a whole class of failures is stale / no longer relevant.
-         *
-         *     Empty body dismisses every unrecovered row (capped by ``limit``).
+         *     without replaying. Empty body dismisses every unrecovered row (capped by
+         *     ``limit``).
          */
         post: operations["dismiss_batch_admin_persistence_failures_dismiss_batch_post"];
         delete?: never;
@@ -12602,8 +12452,6 @@ export interface paths {
          * Resolve Batch
          * @description Mark every unresolved system_error matching the filter resolved.
          *
-         *     The "resolve all" bulk action — use when a whole class of errors
-         *     (one kind, one error substring, an age window) has been acknowledged.
          *     Empty body resolves every unresolved row (capped by ``limit``).
          */
         post: operations["resolve_batch_admin_persistence_errors_resolve_batch_post"];
@@ -15961,6 +15809,21 @@ export interface components {
             /** Created At */
             created_at: string;
         };
+        /** AuditTotals */
+        AuditTotals: {
+            /** Nodes */
+            nodes: number;
+            /** Full */
+            full: number;
+            /** Partial */
+            partial: number;
+            /** Non Conformant */
+            non_conformant: number;
+            /** Percent Full */
+            percent_full: number;
+            /** Leaks By Rule */
+            leaks_by_rule: components["schemas"]["RuleCount"][];
+        };
         /**
          * AuthorityRankRequest
          * @description Trigger AI authoritativeness ranking over a topic's sources.
@@ -18072,6 +17935,11 @@ export interface components {
             /** Id */
             id: string;
         };
+        /**
+         * ConformanceState
+         * @enum {string}
+         */
+        ConformanceState: "full" | "partial" | "non_conformant";
         /** ContentEditRequest */
         ContentEditRequest: {
             /** Content */
@@ -18194,6 +18062,15 @@ export interface components {
             } | null;
             /** Measured At */
             measured_at: string;
+        };
+        /** ContractAuditReport */
+        ContractAuditReport: {
+            ruleset: components["schemas"]["Ruleset"];
+            totals: components["schemas"]["AuditTotals"];
+            /** Nodes */
+            nodes: components["schemas"]["NodeContractReport"][];
+            /** Models */
+            models: components["schemas"]["ModelReport"][];
         };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
@@ -23297,6 +23174,12 @@ export interface components {
              */
             debug: boolean;
         };
+        /**
+         * LeakRule
+         * @description Why a branch of a contract is considered untyped.
+         * @enum {string}
+         */
+        LeakRule: "any" | "object" | "bare_container" | "extra_allow" | "unbound_typevar" | "unknown_type";
         /** LegalSearchRequest */
         LegalSearchRequest: {
             /** Query */
@@ -24457,6 +24340,22 @@ export interface components {
             output_type: "text" | "image" | "video" | "audio" | "realtime" | "extraction";
             capabilities?: components["schemas"]["ModelCapabilitySummary"] | null;
         };
+        /**
+         * ModelReport
+         * @description A distinct model class and every node that (transitively) uses it —
+         *     fixing one shared model shows its blast radius here.
+         */
+        ModelReport: {
+            /** Schema Name */
+            schema_name: string;
+            /** Module */
+            module: string;
+            state: components["schemas"]["ConformanceState"];
+            /** Own Leak Count */
+            own_leak_count: number;
+            /** Referenced By */
+            referenced_by: string[];
+        };
         /** MoveArgs */
         MoveArgs: {
             /** New Parent Id */
@@ -24502,6 +24401,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** NodeContractReport */
+        NodeContractReport: {
+            /** Node Type */
+            node_type: string;
+            /** Category */
+            category: string;
+            /** Display Name */
+            display_name: string;
+            state: components["schemas"]["ConformanceState"];
+            input: components["schemas"]["SchemaReport"];
+            output: components["schemas"]["SchemaReport"];
+            config: components["schemas"]["SchemaReport"];
         };
         /**
          * NodeDataSlotPayload
@@ -27467,6 +27379,24 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** RuleCount */
+        RuleCount: {
+            rule: components["schemas"]["LeakRule"];
+            /** Count */
+            count: number;
+        };
+        /**
+         * Ruleset
+         * @description The conformance rules in force. Versioned, additive-only.
+         */
+        Ruleset: {
+            /** Version */
+            version: number;
+            /** Enabled Rules */
+            enabled_rules: components["schemas"]["LeakRule"][];
+            /** Allowed Scalars */
+            allowed_scalars: string[];
+        };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
             /** Run Ids */
@@ -27622,8 +27552,35 @@ export interface components {
             version: number;
             /** Sections */
             sections?: components["schemas"]["RunFormField"][];
+            /**
+             * Variables
+             * @description Declared run variables (Definition.variables). The studio renders one field per variable; values come back as RunWorkflowRequest.initial_variables.
+             */
+            variables?: components["schemas"]["RunFormVariable"][];
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * RunFormVariable
+         * @description One declared run variable (Definition.variables) surfaced on the run
+         *     form. ``required`` is True when the declaration has no default — the run
+         *     would otherwise park loudly on the first node referencing it.
+         */
+        RunFormVariable: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Default */
+            default?: unknown;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
         };
         /** RunListResponse */
         RunListResponse: {
@@ -28026,6 +27983,26 @@ export interface components {
             portable_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /**
+         * SchemaReport
+         * @description Audit of one schema class (an input/output/config root, or a shared model).
+         */
+        SchemaReport: {
+            /** Schema Name */
+            schema_name: string;
+            /** Module */
+            module: string;
+            state: components["schemas"]["ConformanceState"];
+            /** Leaks */
+            leaks: components["schemas"]["TypeLeak"][];
+            /** Field Count */
+            field_count: number;
+            /**
+             * Cyclic
+             * @default false
+             */
+            cyclic: boolean;
         };
         /**
          * SchemaTypesResponse
@@ -30395,6 +30372,13 @@ export interface components {
             count: number;
             /** Filter Summary */
             filter_summary: string;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated: boolean;
+            /** Total Available */
+            total_available?: number | null;
         };
         /**
          * TraceEventRecord
@@ -30728,6 +30712,21 @@ export interface components {
             from_user_message_id: string;
             /** To User Message Id */
             to_user_message_id?: string | null;
+        };
+        /**
+         * TypeLeak
+         * @description One exact point where typing stops.
+         */
+        TypeLeak: {
+            /** Path */
+            path: string;
+            rule: components["schemas"]["LeakRule"];
+            /** Annotation */
+            annotation: string;
+            /** Owner Model */
+            owner_model: string;
+            /** Depth */
+            depth: number;
         };
         /**
          * UpdateAgentInput
@@ -31869,17 +31868,6 @@ export interface components {
             deleted: boolean;
         };
         /** SystemErrorListResponse */
-        aidream__api__routers__admin_persistence__SystemErrorListResponse: {
-            /** Rows */
-            rows: components["schemas"]["SystemErrorSummary"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
-        };
-        /** SystemErrorListResponse */
         aidream__api__routers__admin_system_errors__SystemErrorListResponse: {
             /** Errors */
             errors: components["schemas"]["SystemErrorRecord"][];
@@ -31900,15 +31888,6 @@ export interface components {
         aidream__api__routers__agents_blocks__WarmRequest: {
             /** Source */
             source?: string | null;
-        };
-        /** RestoreResponse */
-        aidream__api__routers__cx_data__RestoreResponse: {
-            /** Restored Message Ids */
-            restored_message_ids: string[];
-            /** Deleted Summary Id */
-            deleted_summary_id: string | null;
-            /** Compaction Group Id */
-            compaction_group_id: string;
         };
         /** PublishRequest */
         aidream__api__routers__dictionary__PublishRequest: {
@@ -31954,28 +31933,6 @@ export interface components {
              * @default false
              */
             include_excluded_pages: boolean;
-        };
-        /** IngestRequest */
-        aidream__api__routers__rag__IngestRequest: {
-            /**
-             * Source Kind
-             * @enum {string}
-             */
-            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message" | "research";
-            /** Source Id */
-            source_id: string;
-            /** Field Id */
-            field_id?: string | null;
-            /**
-             * Force
-             * @default false
-             */
-            force: boolean;
-            /**
-             * Run Enrich
-             * @default false
-             */
-            run_enrich: boolean;
         };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
@@ -32099,6 +32056,48 @@ export interface components {
         aidream__api__routers__workflow__PublishRequest: {
             /** Change Note */
             change_note?: string | null;
+        };
+        /** SystemErrorListResponse */
+        aidream__services__admin_persistence__wire__SystemErrorListResponse: {
+            /** Rows */
+            rows: components["schemas"]["SystemErrorSummary"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** RestoreResponse */
+        aidream__services__conversation_context__compaction__RestoreResponse: {
+            /** Restored Message Ids */
+            restored_message_ids: string[];
+            /** Deleted Summary Id */
+            deleted_summary_id: string | null;
+            /** Compaction Group Id */
+            compaction_group_id: string;
+        };
+        /** IngestRequest */
+        aidream__services__rag__library_streams__IngestRequest: {
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message" | "research";
+            /** Source Id */
+            source_id: string;
+            /** Field Id */
+            field_id?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+            /**
+             * Run Enrich
+             * @default false
+             */
+            run_enrich: boolean;
         };
         /** DeletedResponse */
         matrx_scheduler__api__schemas__DeletedResponse: {
@@ -34310,7 +34309,7 @@ export interface operations {
             };
         };
     };
-    execute_realtime_tool_ai_tools_execute_post: {
+    execute_realtime_tool_route_ai_tools_execute_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -39184,6 +39183,8 @@ export interface operations {
                 event?: string | null;
                 /** @description Optional tool name filter. */
                 tool_name?: string | null;
+                /** @description Full rows (default); False = compact. */
+                verbose?: boolean;
             };
             header?: never;
             path?: never;
@@ -39213,7 +39214,11 @@ export interface operations {
     };
     failures_since_admin_debug_traces_failures_since__iso_ts__get: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+                /** @description Full rows (default); False = compact. */
+                verbose?: boolean;
+            };
             header?: never;
             path: {
                 iso_ts: string;
@@ -39246,6 +39251,8 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                /** @description Full rows (default); False = compact. */
+                verbose?: boolean;
             };
             header?: never;
             path: {
@@ -44706,7 +44713,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["aidream__api__routers__rag__IngestRequest"];
+                "application/json": components["schemas"]["aidream__services__rag__library_streams__IngestRequest"];
             };
         };
         responses: {
@@ -44774,7 +44781,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["aidream__api__routers__rag__IngestRequest"];
+                "application/json": components["schemas"]["aidream__services__rag__library_streams__IngestRequest"];
             };
         };
         responses: {
@@ -47185,6 +47192,26 @@ export interface operations {
             };
         };
     };
+    contract_audit_workflow_contracts_audit_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractAuditReport"];
+                };
+            };
+        };
+    };
     refresh_node_types_workflow_node_types_refresh_post: {
         parameters: {
             query?: never;
@@ -49049,7 +49076,7 @@ export interface operations {
             };
         };
     };
-    mark_recovery_applied_api_recovery_audit__audit_id__applied_post: {
+    mark_recovery_applied_endpoint_api_recovery_audit__audit_id__applied_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -49673,7 +49700,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["aidream__api__routers__cx_data__RestoreResponse"];
+                    "application/json": components["schemas"]["aidream__services__conversation_context__compaction__RestoreResponse"];
                 };
             };
             /** @description Validation Error */
@@ -54340,7 +54367,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["aidream__api__routers__admin_persistence__SystemErrorListResponse"];
+                    "application/json": components["schemas"]["aidream__services__admin_persistence__wire__SystemErrorListResponse"];
                 };
             };
             /** @description Validation Error */
