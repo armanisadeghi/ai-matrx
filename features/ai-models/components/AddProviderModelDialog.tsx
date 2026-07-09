@@ -79,10 +79,7 @@ export default function AddProviderModelDialog({
   // Sort templates: same-provider first (by id match or by name match), then everything else.
   const templateOptions = useMemo(() => {
     const sameProvider = localModels.filter(
-      (m) =>
-        m.model_provider === providerId ||
-        (providerName &&
-          m.provider?.toLowerCase() === providerName.toLowerCase()),
+      (m) => m.model_provider === providerId,
     );
     const otherProvider = localModels.filter((m) => !sameProvider.includes(m));
     const sortByName = (a: AiModel, b: AiModel) =>
@@ -130,14 +127,26 @@ export default function AddProviderModelDialog({
     setSubmitting(true);
     setError(null);
     try {
-      // Spread template (without id), then override with provider-synced fields.
-      const { id: _id, ...templateRest } = template;
+      // Spread template (without id / the resolved maker), then override with
+      // provider-synced fields. Strip the dropping columns (provider/endpoints/
+      // pricing/api_class/capabilities_pre_canonical) — they are not real insert
+      // targets and the maker is derived, never written.
+      const { id: _id, maker: _maker, ...templateRest } = template;
+      const cleanTemplate = { ...templateRest } as Record<string, unknown>;
+      for (const dead of [
+        "provider",
+        "endpoints",
+        "pricing",
+        "api_class",
+        "capabilities_pre_canonical",
+      ]) {
+        delete cleanTemplate[dead];
+      }
       const payload: AiModelInsert = {
-        ...templateRest,
+        ...cleanTemplate,
         name: nameOverride.trim(),
         common_name: commonNameOverride.trim() || null,
         model_class: modelClassOverride.trim(),
-        provider: providerName ?? template.provider,
         model_provider: providerId,
         context_window: ctxFromProvider ?? template.context_window ?? null,
         max_tokens: maxOutFromProvider ?? template.max_tokens ?? null,
@@ -304,7 +313,7 @@ export default function AddProviderModelDialog({
                               {m.common_name ?? m.name}
                             </span>
                             <span className="text-muted-foreground ml-2">
-                              ({m.provider ?? "—"} · {m.model_class})
+                              ({m.maker ?? "—"} · {m.model_class})
                             </span>
                           </SelectItem>
                         ))}
@@ -341,20 +350,8 @@ export default function AddProviderModelDialog({
                         value={String(template.is_premium ?? false)}
                       />
                       <InheritedField
-                        label="endpoints"
-                        value={
-                          template.endpoints
-                            ? `${template.endpoints.length} item(s)`
-                            : "—"
-                        }
-                      />
-                      <InheritedField
-                        label="pricing"
-                        value={
-                          template.pricing
-                            ? `${template.pricing.length} tier(s)`
-                            : "—"
-                        }
+                        label="maker"
+                        value={template.maker ?? "—"}
                       />
                       <InheritedField
                         label="controls"

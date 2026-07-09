@@ -139,7 +139,7 @@ export default function DeprecatedModelsAudit({
         ...new Set(
           allModels
             .filter((m) => m.is_deprecated)
-            .map((m) => m.provider)
+            .map((m) => m.maker)
             .filter((p): p is string => p != null),
         ),
       ].sort(),
@@ -214,13 +214,13 @@ export default function DeprecatedModelsAudit({
           e.model.id.toLowerCase().includes(lq) ||
           (e.model.common_name ?? "").toLowerCase().includes(lq) ||
           e.model.name.toLowerCase().includes(lq) ||
-          (e.model.provider ?? "").toLowerCase().includes(lq) ||
+          (e.model.maker ?? "").toLowerCase().includes(lq) ||
           (e.model.model_class ?? "").toLowerCase().includes(lq),
       );
     }
 
     if (filterProvider !== "__all__") {
-      result = result.filter((e) => e.model.provider === filterProvider);
+      result = result.filter((e) => e.model.maker === filterProvider);
     }
 
     if (filterModelClass !== "__all__") {
@@ -253,7 +253,7 @@ export default function DeprecatedModelsAudit({
           );
           break;
         case "provider":
-          cmp = (a.model.provider ?? "").localeCompare(b.model.provider ?? "");
+          cmp = (a.model.maker ?? "").localeCompare(b.model.maker ?? "");
           break;
         case "model_class":
           cmp = (a.model.model_class ?? "").localeCompare(
@@ -691,9 +691,9 @@ export default function DeprecatedModelsAudit({
                       </span>
                     </td>
 
-                    {/* Provider */}
+                    {/* Maker */}
                     <td className="px-3 py-1.5 text-muted-foreground text-xs">
-                      {model.provider ?? "—"}
+                      {model.maker ?? "—"}
                     </td>
 
                     {/* Model class */}

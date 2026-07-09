@@ -277,9 +277,9 @@ export default function OfferingsContainer() {
     },
     {
       key: "provider",
-      label: "Provider",
+      label: "Maker",
       type: "enum",
-      getValue: (m) => m.provider ?? "",
+      getValue: (m) => m.maker ?? "",
       width: "160px",
     },
   ];

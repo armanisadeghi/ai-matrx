@@ -33,11 +33,10 @@ export function buildProviderSyncComparisons(
   if (!cache) return [];
 
   const providerIds = new Set(cache.models.map((m) => m.id));
+  // Match strictly on the model_provider FK — the free-text provider column is
+  // dropped, so the name-based fallback is gone.
   const localForProvider = localModels.filter(
-    (m) =>
-      m.model_provider === summary.id ||
-      (summary.name &&
-        m.provider?.toLowerCase() === summary.name.toLowerCase()),
+    (m) => m.model_provider === summary.id,
   );
 
   const result: ProviderSyncComparison[] = [];

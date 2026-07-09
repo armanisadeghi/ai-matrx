@@ -36,7 +36,7 @@ const AiModelsPreferences = () => {
   const providers = useMemo(
     () =>
       [
-        ...new Set(models.map((m) => m.provider).filter(Boolean) as string[]),
+        ...new Set(models.map((m) => m.maker).filter(Boolean) as string[]),
       ].sort(),
     [models],
   );
@@ -95,7 +95,7 @@ const AiModelsPreferences = () => {
     }
 
     if (filterProvider) {
-      result = result.filter((m) => m.provider === filterProvider);
+      result = result.filter((m) => m.maker === filterProvider);
     }
 
     if (filterClass) {
@@ -108,7 +108,7 @@ const AiModelsPreferences = () => {
         (m) =>
           m.common_name?.toLowerCase().includes(q) ||
           m.name.toLowerCase().includes(q) ||
-          m.provider?.toLowerCase().includes(q) ||
+          m.maker?.toLowerCase().includes(q) ||
           idMatchesQuery(m, q),
       );
     }
@@ -289,9 +289,9 @@ const AiModelsPreferences = () => {
                         {model.model_class}
                       </Badge>
                     )}
-                    {model.provider && (
+                    {model.maker && (
                       <span className="text-[10px] text-muted-foreground/70 w-16 text-right truncate">
-                        {model.provider}
+                        {model.maker}
                       </span>
                     )}
                     {isActive && (

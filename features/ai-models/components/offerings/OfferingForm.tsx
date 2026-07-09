@@ -60,12 +60,12 @@ export default function OfferingForm({
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange({ ...data, [key]: e.target.value });
 
-  // Models grouped by provider text — same pattern as AiModelForm's fallback groups.
+  // Models grouped by maker — same pattern as AiModelForm's fallback groups.
   const modelGroups = React.useMemo(() => {
     const groups: Record<string, AiModel[]> = {};
     for (const m of models) {
       if (m.is_deprecated) continue;
-      const key = m.provider || "Other";
+      const key = m.maker || "Other";
       if (!groups[key]) groups[key] = [];
       groups[key].push(m);
     }
