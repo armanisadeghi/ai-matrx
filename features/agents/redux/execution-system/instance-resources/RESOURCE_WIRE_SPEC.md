@@ -88,6 +88,52 @@ editor pills.
 > `label`/`description` are non-authoritative display hints (re-fetched live). See
 > [`features/matrx-envelope/FEATURE.md`](../../../matrx-envelope/FEATURE.md).
 
+---
+
+## Context-channel resources (NOT a content[] block)
+
+One block type does **not** emit a `content[]` block: `processed_document`. A
+processed document (an OCR'd → AI-cleaned file the user attached by reference)
+rides the **context channel** — it emits a lazy pointer into `request.context`
+so the backend materializes the chosen representation on demand instead of the
+FE shipping the body every turn.
+
+- **Builder:** `features/agents/utils/processedDocumentContext.ts` →
+  `buildProcessedDocumentContextValue`.
+- **Selector:** `instance-resources.selectors.ts` → `selectResourceContextPayload`
+  emits one entry per ready `processed_document` resource. It is merged into
+  `request.context` by `instance-context.selectors.ts` →
+  `selectRequestContextPayload` (used by all three execution thunks).
+- **Excluded from `content[]`** in `selectResourcePayloads` (alongside editor
+  pills) so the binary and reference paths never cross.
+
+Wire shape (one key per attached document, keyed `attached_document_<id8>`):
+
+```jsonc
+{
+  "attached_document_1a2b3c4d": {
+    "source": {
+      "kind": "processed_document",
+      "id": "<processed_document_id>",
+      "representation": "clean"        // or "raw" — the chosen PRIMARY
+    },
+    "type": "json",
+    "label": "<display label>",
+    "description": "<agent-facing note>"
+    // NB: NO `content` key — the backend treats a source-only rich value as the
+    // LAZY form and resolves the body via context_sources.py on demand.
+  }
+}
+```
+
+**Backend contract (aidream, BUILT):** `aidream/services/conversation_context/context_sources.py`
++ `aidream/services/documents/context_source_resolver.py` resolve `source.kind
+== "processed_document"` into a cheap descriptor (section ToC + alternate
+formats) and materialize clean/raw on demand. The agent reaches the other
+formats (raw / pages / knowledge_assets / pdf page images) via the
+`document_content` tool, auto-injected whenever a processed document is attached.
+`DocumentRepresentation` values today: `clean` | `raw`.
+
 ### Pending backend support (FE emits these now)
 
 | `type` | Payload field | Entity |
