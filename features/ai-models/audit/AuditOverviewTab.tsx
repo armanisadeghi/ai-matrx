@@ -29,14 +29,12 @@ import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 
 const CATEGORY_LABELS: Record<AuditCategory, string> = {
   core_fields: "Core",
-  pricing: "Pricing",
   capabilities: "Capabilities",
   configurations: "Config",
 };
 
 const CATEGORY_ORDER: AuditCategory[] = [
   "core_fields",
-  "pricing",
   "capabilities",
   "configurations",
 ];
@@ -75,7 +73,7 @@ export default function AuditOverviewTab({
       [
         ...new Set(
           allModels
-            .map((m) => m.provider)
+            .map((m) => m.maker)
             .filter((p): p is string => p != null),
         ),
       ].sort(),
@@ -85,14 +83,14 @@ export default function AuditOverviewTab({
   const filtered = results.filter((r) => {
     if (filterStatus === "pass" && !r.pass) return false;
     if (filterStatus === "fail" && r.pass) return false;
-    if (filterProvider !== "__all__" && r.model.provider !== filterProvider)
+    if (filterProvider !== "__all__" && r.model.maker !== filterProvider)
       return false;
     if (q) {
       const lq = q.toLowerCase();
       if (
         !r.model.name.toLowerCase().includes(lq) &&
         !(r.model.common_name ?? "").toLowerCase().includes(lq) &&
-        !(r.model.provider ?? "").toLowerCase().includes(lq) &&
+        !(r.model.maker ?? "").toLowerCase().includes(lq) &&
         !idMatchesQuery(r.model, lq)
       )
         return false;
@@ -260,7 +258,7 @@ export default function AuditOverviewTab({
                       />
                     </td>
                     <td className="px-3 py-1.5">
-                      <ProviderBadge provider={r.model.provider} />
+                      <ProviderBadge provider={r.model.maker} />
                     </td>
                     <td className="px-3 py-1.5 whitespace-nowrap">
                       {r.pass ? (

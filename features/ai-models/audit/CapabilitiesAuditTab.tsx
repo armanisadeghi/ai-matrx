@@ -324,7 +324,7 @@ export default function CapabilitiesAuditTab({
                     />
                   </td>
                   <td className="px-3 py-1.5">
-                    <ProviderBadge provider={model.provider} />
+                    <ProviderBadge provider={model.maker} />
                   </td>
                   <td className="px-3 py-1.5">
                     {wasSaved ? (

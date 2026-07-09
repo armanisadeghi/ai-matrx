@@ -7,7 +7,13 @@ import { Save, Loader2, CheckCircle2, SaveAll } from "lucide-react";
 import { aiModelService } from "../service";
 import type { AiModel } from "../types";
 import type { ModelAuditResult } from "./auditTypes";
-import { AuditTableShell, Th, StatusBadge, IssueList } from "./AuditTableShell";
+import {
+  AuditTableShell,
+  Th,
+  StatusBadge,
+  IssueList,
+  ProviderBadge,
+} from "./AuditTableShell";
 import ModelDetailSheet, { OpenDetailButton } from "./ModelDetailSheet";
 
 interface CoreFieldsAuditTabProps {
@@ -62,8 +68,6 @@ export default function CoreFieldsAuditTab({
     const patch: Partial<Omit<AiModel, "id">> = {};
     if (edits.common_name !== undefined)
       patch.common_name = (edits.common_name as string).trim() || null;
-    if (edits.provider !== undefined)
-      patch.provider = (edits.provider as string).trim() || null;
     if (edits.model_class !== undefined)
       patch.model_class = (edits.model_class as string).trim();
     if (edits.context_window !== undefined) {
@@ -178,7 +182,7 @@ export default function CoreFieldsAuditTab({
               <Th className="w-6" />
               <Th>Model (API name)</Th>
               <Th className="w-36">Common Name</Th>
-              <Th className="w-28">Provider</Th>
+              <Th className="w-28">Maker</Th>
               <Th className="w-24">Class</Th>
               <Th className="w-24">Context</Th>
               <Th className="w-24">Max Tokens</Th>
@@ -222,14 +226,10 @@ export default function CoreFieldsAuditTab({
                   />
                 </td>
                 <td className="px-3 py-1">
-                  <Input
-                    value={getVal(model, "provider")}
-                    onChange={(e) =>
-                      setVal(model.id, "provider", e.target.value)
-                    }
-                    className={`h-7 text-xs ${!model.provider && !editValues[model.id]?.provider ? "border-destructive/50" : ""}`}
-                    placeholder="Provider…"
-                  />
+                  {/* Maker is derived from the model_provider FK (the free-text
+                      provider column is dropped) — read-only here; set the FK in
+                      the model detail form. */}
+                  <ProviderBadge provider={model.maker} />
                 </td>
                 <td className="px-3 py-1">
                   <Input

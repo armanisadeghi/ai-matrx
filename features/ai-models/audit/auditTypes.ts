@@ -103,19 +103,15 @@ export const CAPABILITY_GROUPS: Record<string, CapabilityKey[]> = {
 
 // ── Audit rule configuration ──────────────────────────────────────────────
 
+// NOTE: model-level pricing was removed — pricing lives on `ai.offering` now
+// (managed in the Offerings page + validated server-side by
+// `validate_model_pricing`). There is no model-pricing audit category.
 export type AuditCategory =
-  | "pricing"
   | "capabilities"
   | "configurations"
   | "core_fields";
 
 export interface AuditRuleConfig {
-  /** Pricing audit: require at least one valid pricing tier */
-  pricing_required: boolean;
-  /** Pricing audit: require all tiers to have positive input_price */
-  pricing_require_input_price: boolean;
-  /** Pricing audit: require all tiers to have positive output_price */
-  pricing_require_output_price: boolean;
   /** Capabilities audit: minimum number of capabilities that must be set to true */
   capabilities_min_true: number;
   /** Capabilities audit: these specific capabilities must be present (set to true) */
@@ -128,16 +124,13 @@ export interface AuditRuleConfig {
   require_context_window: boolean;
   /** Core fields: require max_tokens */
   require_max_tokens: boolean;
-  /** Core fields: require provider */
+  /** Core fields: require a maker (the model_provider FK) */
   require_provider: boolean;
   /** Core fields: require model_class */
   require_model_class: boolean;
 }
 
 export const DEFAULT_AUDIT_RULES: AuditRuleConfig = {
-  pricing_required: true,
-  pricing_require_input_price: true,
-  pricing_require_output_price: true,
   capabilities_min_true: 1,
   capabilities_required_keys: ["text_input", "text_output"],
   capabilities_object_required: true,
@@ -223,11 +216,11 @@ export function auditModel(
       severity: "warning",
     });
   }
-  if (rules.require_provider && !model.provider?.trim()) {
+  if (rules.require_provider && !model.model_provider) {
     issues.push({
       category: "core_fields",
       field: "provider",
-      message: "Missing provider",
+      message: "Missing maker (model_provider FK)",
       severity: "error",
     });
   }
@@ -237,46 +230,6 @@ export function auditModel(
       field: "model_class",
       message: "Missing model class",
       severity: "error",
-    });
-  }
-
-  // ── Pricing ────────────────────────────────────────────────────────────
-  const pricing = model.pricing;
-  if (rules.pricing_required && (!pricing || pricing.length === 0)) {
-    issues.push({
-      category: "pricing",
-      field: "pricing",
-      message: "No pricing tiers defined",
-      severity: "error",
-    });
-  } else if (pricing && pricing.length > 0) {
-    pricing.forEach((tier, i) => {
-      if (
-        rules.pricing_require_input_price &&
-        (tier.input_price === null ||
-          tier.input_price === undefined ||
-          tier.input_price < 0)
-      ) {
-        issues.push({
-          category: "pricing",
-          field: `pricing[${i}].input_price`,
-          message: `Tier ${i + 1}: invalid input price`,
-          severity: "error",
-        });
-      }
-      if (
-        rules.pricing_require_output_price &&
-        (tier.output_price === null ||
-          tier.output_price === undefined ||
-          tier.output_price < 0)
-      ) {
-        issues.push({
-          category: "pricing",
-          field: `pricing[${i}].output_price`,
-          message: `Tier ${i + 1}: invalid output price`,
-          severity: "error",
-        });
-      }
     });
   }
 
@@ -316,9 +269,6 @@ export function auditModel(
 
   // ── Category pass/fail ─────────────────────────────────────────────────
   const categoryPass: Record<AuditCategory, boolean> = {
-    pricing: !issues.some(
-      (i) => i.category === "pricing" && i.severity === "error",
-    ),
     capabilities: !issues.some(
       (i) => i.category === "capabilities" && i.severity === "error",
     ),

@@ -20,7 +20,6 @@ import type {
 import { DEFAULT_AUDIT_RULES, runAudit } from "./auditTypes";
 import AuditSummaryBar from "./AuditSummaryBar";
 import AuditOverviewTab from "./AuditOverviewTab";
-import PricingAuditTab from "./PricingAuditTab";
 import CapabilitiesAuditTab from "./CapabilitiesAuditTab";
 import CoreFieldsAuditTab from "./CoreFieldsAuditTab";
 import AuditRulesConfig from "./AuditRulesConfig";
@@ -30,7 +29,6 @@ type TabId = AuditCategory | "overview" | "settings";
 const TAB_LABELS: Record<TabId, string> = {
   overview: "Overview",
   core_fields: "Core Fields",
-  pricing: "Pricing",
   capabilities: "Capabilities",
   configurations: "Configurations",
   settings: "Audit Rules",
@@ -39,7 +37,6 @@ const TAB_LABELS: Record<TabId, string> = {
 const TAB_ORDER: TabId[] = [
   "overview",
   "core_fields",
-  "pricing",
   "capabilities",
   "configurations",
   "settings",
@@ -227,14 +224,6 @@ export default function ModelAuditDashboard() {
             {activeTab === "core_fields" && (
               <CoreFieldsAuditTab
                 results={auditResults}
-                allModels={auditModels}
-                onModelUpdated={handleModelUpdated}
-              />
-            )}
-            {activeTab === "pricing" && (
-              <PricingAuditTab
-                results={auditResults}
-                rules={rules}
                 allModels={auditModels}
                 onModelUpdated={handleModelUpdated}
               />

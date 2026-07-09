@@ -9,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import {
   RotateCcw,
   Settings2,
-  DollarSign,
   Zap,
   FileText,
 } from "lucide-react";
@@ -146,8 +145,8 @@ export default function AuditRulesConfig({
               onChange={(v) => set("require_common_name", v)}
             />
             <RuleSwitch
-              label="Require provider"
-              description="Model must have a provider string"
+              label="Require maker"
+              description="Model must have a maker (model_provider FK)"
               checked={rules.require_provider}
               onChange={(v) => set("require_provider", v)}
             />
@@ -168,34 +167,6 @@ export default function AuditRulesConfig({
               description="Model must have a max output tokens value"
               checked={rules.require_max_tokens}
               onChange={(v) => set("require_max_tokens", v)}
-            />
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section>
-          <SectionHeader
-            icon={<DollarSign className="h-4 w-4" />}
-            title="Pricing"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <RuleSwitch
-              label="Require at least one pricing tier"
-              description="Model must have pricing data defined"
-              checked={rules.pricing_required}
-              onChange={(v) => set("pricing_required", v)}
-            />
-            <RuleSwitch
-              label="Require valid input price"
-              description="Each tier must have a non-negative input price"
-              checked={rules.pricing_require_input_price}
-              onChange={(v) => set("pricing_require_input_price", v)}
-            />
-            <RuleSwitch
-              label="Require valid output price"
-              description="Each tier must have a non-negative output price"
-              checked={rules.pricing_require_output_price}
-              onChange={(v) => set("pricing_require_output_price", v)}
             />
           </div>
         </section>
