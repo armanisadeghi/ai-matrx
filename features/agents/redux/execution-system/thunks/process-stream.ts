@@ -552,7 +552,12 @@ export async function processStream({
           }
         } else {
           // "stopped" — close the run so the phase flips off "Reasoning…".
+          // Flush first: any buffered reasoning tokens must land inside the
+          // run's chunk range, or the tail of the thinking text falls outside
+          // `reasoning_end.chunkEndIndex` and is dropped from the persisted
+          // thinking part.
           if (isInReasoningRun) {
+            dispatchBatch();
             isInReasoningRun = false;
             dispatch(closeReasoningRun({ requestId, timestamp: now }));
           }
@@ -575,12 +580,34 @@ export async function processStream({
         }),
       );
 
+      // Local run flags reset on every non-chunk event. This is safe even
+      // when the slice deliberately keeps the run open across a PASSIVE event
+      // (heartbeat, reservation, …): markTextStreamStart /
+      // markReasoningStreamStart are idempotent, so the re-dispatch on the
+      // next chunk is a no-op that leaves the open run untouched.
       if (isInTextRun) {
         isInTextRun = false;
       }
       if (isInReasoningRun) {
         isInReasoningRun = false;
-        dispatch(closeReasoningRun({ requestId, timestamp: now }));
+        // Only STRUCTURAL (content-bearing / terminal) events end a reasoning
+        // run. Passive status traffic — heartbeat, phase, info, warnings,
+        // record reservations — must NOT: for token-less thinking models the
+        // run is what keeps "Reasoning…" alive until the explicit reasoning
+        // "stopped" event, and the first heartbeat used to kill it. Mirrors
+        // REASONING_RUN_PRESERVING_KINDS in active-requests.slice.ts.
+        const closesReasoningRun =
+          isToolEventEvent(event) ||
+          isRenderBlockEvent(event) ||
+          isTypedDataEvent(event) ||
+          isErrorEvent(event) ||
+          isEndEvent(event) ||
+          isCompletionEvent(event) ||
+          isInitEvent(event) ||
+          isProviderRetryEvent(event);
+        if (closesReasoningRun) {
+          dispatch(closeReasoningRun({ requestId, timestamp: now }));
+        }
       }
 
       if (isPhaseEvent(event)) {
@@ -1894,12 +1921,14 @@ export async function processStream({
   dispatchBatch();
   blockAccumulator.finalize(dispatch);
 
-  if (isInTextRun) {
-    dispatch(closeTextRun({ requestId, timestamp: performance.now() }));
-  }
-  if (isInReasoningRun) {
-    dispatch(closeReasoningRun({ requestId, timestamp: performance.now() }));
-  }
+  // Unconditional: the local isInTextRun/isInReasoningRun flags can be stale
+  // (a passive event resets them while the slice keeps the run open). Both
+  // reducers are no-ops when the run is already closed, so this is always
+  // safe — and it guarantees a run left open by a dying stream still gets its
+  // text_end/reasoning_end (without one, the run's blocks fall outside every
+  // range and the persist path sweeps them out of chronological order).
+  dispatch(closeTextRun({ requestId, timestamp: performance.now() }));
+  dispatch(closeReasoningRun({ requestId, timestamp: performance.now() }));
 
   StreamProfiler.getInstance().stopAndReport("Stream Performance Result", {
     tokens: tokenUsage,

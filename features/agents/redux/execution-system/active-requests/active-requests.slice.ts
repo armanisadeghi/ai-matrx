@@ -56,6 +56,80 @@ import { generateRequestId } from "../utils/ids";
 import { destroyInstance } from "../conversations/conversations.slice";
 
 // =============================================================================
+// Run bookkeeping — the load-bearing ordering machinery
+// =============================================================================
+//
+// A "run" is a contiguous stretch of text or reasoning tokens. Runs close at
+// STRUCTURAL boundaries (tool calls, server render blocks, media, errors,
+// stream end) — NOT at passive status traffic. Closing a run on a heartbeat
+// shreds one flowing paragraph into N fragments (each with its own text_end),
+// and closing a token-less reasoning run on a heartbeat kills the
+// "Reasoning…" indicator the explicit reasoning started/stopped bracketing
+// exists to provide.
+
+/** Timeline kinds that must NOT close an open TEXT run. */
+const TEXT_RUN_PRESERVING_KINDS: ReadonlySet<TimelineEntry["kind"]> = new Set([
+  "heartbeat",
+  "warning",
+  "record_reserved",
+  "record_update",
+  "resource_changed",
+  "broker",
+  "structured_output",
+  "unknown",
+] satisfies TimelineEntry["kind"][]);
+
+/**
+ * Timeline kinds that must NOT close an open REASONING run. Superset of the
+ * text set: `phase` / `info` are status chatter the server emits WHILE a
+ * token-less model is still thinking — only real content (tool_event,
+ * render_block, data, error, completion, end) or the explicit reasoning
+ * "stopped" event (→ closeReasoningRun) may end the run.
+ */
+const REASONING_RUN_PRESERVING_KINDS: ReadonlySet<TimelineEntry["kind"]> =
+  new Set([
+    ...TEXT_RUN_PRESERVING_KINDS,
+    "phase",
+    "info",
+  ] satisfies TimelineEntry["kind"][]);
+
+/** Close an open text run: emit its `text_end` with the block range + raw text. */
+function closeOpenTextRun(request: ActiveRequest, timestamp: number): void {
+  if (!request.isTextStreaming) return;
+  request.timeline.push({
+    kind: "text_end",
+    seq: request.timeline.length,
+    timestamp,
+    blockStartIndex: request.textRunBlockStart,
+    blockEndIndex: request.renderBlockOrder.length,
+    blockCount: request.renderBlockOrder.length - request.textRunBlockStart,
+    rawText: request.currentTextRunRaw,
+  });
+  request.isTextStreaming = false;
+  request.currentTextRunRaw = "";
+}
+
+/**
+ * Close an open reasoning run: emit its `reasoning_end` with the chunk range
+ * AND the render-block snapshot (`blockEndIndex`) — the snapshot is what lets
+ * `selectUnifiedSlots` bound its sweep instead of hoovering every later block
+ * up to the reasoning position.
+ */
+function closeOpenReasoningRun(request: ActiveRequest, timestamp: number): void {
+  if (!request.isReasoningStreaming) return;
+  request.timeline.push({
+    kind: "reasoning_end",
+    seq: request.timeline.length,
+    timestamp,
+    chunkStartIndex: request.reasoningRunChunkStart,
+    chunkEndIndex: request.reasoningChunks.length,
+    chunkCount: request.reasoningChunks.length - request.reasoningRunChunkStart,
+    blockEndIndex: request.renderBlockOrder.length,
+  });
+  request.isReasoningStreaming = false;
+}
+
+// =============================================================================
 // State
 // =============================================================================
 
@@ -313,12 +387,22 @@ const activeRequestsSlice = createSlice({
       // accumulatedReasoning is already up-to-date from appendReasoningChunk
     },
 
+    /**
+     * Open a reasoning run. Idempotent — a second call while a run is already
+     * open is a no-op, so a stale local flag in process-stream can never
+     * fork a duplicate `reasoning_start` or reset the chunk-range anchor.
+     * Auto-closes any open TEXT run first (a reasoning run starting mid-text
+     * is a structural boundary; without the close, the text run's `text_end`
+     * never fires and the next `markTextStreamStart` wipes its raw text).
+     */
     markReasoningStreamStart(
       state,
       action: PayloadAction<{ requestId: string; timestamp: number }>,
     ) {
       const request = state.byRequestId[action.payload.requestId];
-      if (!request) return;
+      if (!request || request.isReasoningStreaming) return;
+
+      closeOpenTextRun(request, action.payload.timestamp);
 
       request.isReasoningStreaming = true;
       request.reasoningRunChunkStart = request.reasoningChunks.length;
@@ -336,18 +420,8 @@ const activeRequestsSlice = createSlice({
       action: PayloadAction<{ requestId: string; timestamp: number }>,
     ) {
       const request = state.byRequestId[action.payload.requestId];
-      if (!request || !request.isReasoningStreaming) return;
-
-      request.timeline.push({
-        kind: "reasoning_end",
-        seq: request.timeline.length,
-        timestamp: action.payload.timestamp,
-        chunkStartIndex: request.reasoningRunChunkStart,
-        chunkEndIndex: request.reasoningChunks.length,
-        chunkCount:
-          request.reasoningChunks.length - request.reasoningRunChunkStart,
-      });
-      request.isReasoningStreaming = false;
+      if (!request) return;
+      closeOpenReasoningRun(request, action.payload.timestamp);
     },
 
     // ── Phase (replaces status_update) ──────────────────────────
@@ -780,7 +854,9 @@ const activeRequestsSlice = createSlice({
 
     /**
      * Append a non-chunk event to the timeline.
-     * If text is currently streaming, automatically closes the text run first.
+     * Content-bearing entries automatically close any open text/reasoning run
+     * first; PASSIVE entries (heartbeats, reservations, warnings, …) leave
+     * runs open — see `TEXT_RUN_PRESERVING_KINDS` / `REASONING_RUN_PRESERVING_KINDS`.
      */
     appendTimeline(
       state,
@@ -792,32 +868,12 @@ const activeRequestsSlice = createSlice({
       const request = state.byRequestId[action.payload.requestId];
       if (!request) return;
 
-      if (request.isTextStreaming) {
-        request.timeline.push({
-          kind: "text_end",
-          seq: request.timeline.length,
-          timestamp: action.payload.entry.timestamp,
-          blockStartIndex: request.textRunBlockStart,
-          blockEndIndex: request.renderBlockOrder.length,
-          blockCount:
-            request.renderBlockOrder.length - request.textRunBlockStart,
-          rawText: request.currentTextRunRaw,
-        });
-        request.isTextStreaming = false;
-        request.currentTextRunRaw = "";
+      const kind = action.payload.entry.kind;
+      if (!TEXT_RUN_PRESERVING_KINDS.has(kind)) {
+        closeOpenTextRun(request, action.payload.entry.timestamp);
       }
-
-      if (request.isReasoningStreaming) {
-        request.timeline.push({
-          kind: "reasoning_end",
-          seq: request.timeline.length,
-          timestamp: action.payload.entry.timestamp,
-          chunkStartIndex: request.reasoningRunChunkStart,
-          chunkEndIndex: request.reasoningChunks.length,
-          chunkCount:
-            request.reasoningChunks.length - request.reasoningRunChunkStart,
-        });
-        request.isReasoningStreaming = false;
+      if (!REASONING_RUN_PRESERVING_KINDS.has(kind)) {
+        closeOpenReasoningRun(request, action.payload.entry.timestamp);
       }
 
       const entry = { ...action.payload.entry, seq: request.timeline.length };
@@ -852,7 +908,16 @@ const activeRequestsSlice = createSlice({
       }>,
     ) {
       const request = state.byRequestId[action.payload.requestId];
-      if (!request) return;
+      // Idempotent: a run that a passive event (heartbeat, reservation, …)
+      // deliberately did NOT close is still open — re-marking it must not
+      // push a duplicate `text_start`, and above all must not wipe
+      // `currentTextRunRaw` (the raw wire text the persist path depends on).
+      if (!request || request.isTextStreaming) return;
+
+      // Text starting while a reasoning run is open is a structural boundary
+      // (the model moved from thinking to answering) — close reasoning first
+      // so its chunk range + block snapshot are pinned at the right spot.
+      closeOpenReasoningRun(request, action.payload.timestamp);
 
       request.isTextStreaming = true;
       request.textRunBlockStart = request.renderBlockOrder.length;
@@ -878,19 +943,8 @@ const activeRequestsSlice = createSlice({
       }>,
     ) {
       const request = state.byRequestId[action.payload.requestId];
-      if (!request || !request.isTextStreaming) return;
-
-      request.timeline.push({
-        kind: "text_end",
-        seq: request.timeline.length,
-        timestamp: action.payload.timestamp,
-        blockStartIndex: request.textRunBlockStart,
-        blockEndIndex: request.renderBlockOrder.length,
-        blockCount: request.renderBlockOrder.length - request.textRunBlockStart,
-        rawText: request.currentTextRunRaw,
-      });
-      request.isTextStreaming = false;
-      request.currentTextRunRaw = "";
+      if (!request) return;
+      closeOpenTextRun(request, action.payload.timestamp);
     },
 
     // ── Client Metrics ─────────────────────────────────────────

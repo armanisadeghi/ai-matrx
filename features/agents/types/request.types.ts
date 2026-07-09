@@ -508,6 +508,15 @@ export interface TimelineReasoningEnd extends TimelineBase {
   chunkStartIndex: number;
   chunkEndIndex: number;
   chunkCount: number;
+  /**
+   * Snapshot of `renderBlockOrder.length` at the moment the run closed.
+   * `selectUnifiedSlots` sweeps un-emitted blocks only up to this index —
+   * without the snapshot it swept to the CURRENT end of `renderBlockOrder`,
+   * which hoisted every later text block above subsequent tool calls (tool
+   * cards sank to the bottom of any turn that began with thinking).
+   * Optional for back-compat with in-flight requests that predate it.
+   */
+  blockEndIndex?: number;
 }
 
 export interface TimelineUnknown extends TimelineBase {
