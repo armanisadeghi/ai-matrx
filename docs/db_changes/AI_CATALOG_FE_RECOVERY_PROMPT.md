@@ -34,9 +34,16 @@ Each dropped fact now lives elsewhere:
   max_tokens, is_primary, is_premium, mid_fallback_id, guest_fallback_id, release_date, description,
   maker, service_name, usage_basis, token_billed, points_per_million_input,
   points_per_million_output`.
-- **`ai.model_admin`** (admins only — **NOT granted to `authenticated`**; reach via a super-admin
-  server route / `service_role`) — adds `offering_id, provider_model_id, pricing (raw $), vendor,
+- **`ai.model_admin`** (admins only) — adds `offering_id, provider_model_id, pricing (raw $), vendor,
   wire_format, service_internal_name, service_display_name, service_has_base_url, is_deprecated`.
+  > ⚠️ **GRANT GAP (found 2026-07-09):** the `sb_secret_*` role that `createAdminClient()` uses
+  > **cannot** read `model_admin`/`model_public`/`model_offering`/`offering`/`service`
+  > (`42501 permission denied`) — it only has `model_definition` + `provider` in the `ai` schema.
+  > The views are granted to `authenticated`/`anon` (the app reads `model_public` fine), NOT to the
+  > secret role. So the documented "reach `model_admin` via `service_role`" path is currently broken.
+  > Fix = `GRANT SELECT ON ai.model_admin TO service_role;` (needs an MCP-authed session — the MCP was
+  > unauthenticated when this was found). Until then, admin reads must go through the authenticated
+  > client (super-admin RLS), and `model_admin`'s grant to `authenticated` is unverified.
 
 ### Routability is the invisible trap
 A bare `model_definition` row is **not callable** — it needs ≥1 available `ai.offering`. `ai.model_offering`
@@ -93,6 +100,22 @@ are needed), NOT the consumer registry slice. Two paths, one for each audience, 
 read/write service (current state — recommended, since admin needs raw/secret fields the public
 view masks), or (b) fold admin reads into a `modelAdminRegistry` variant slice. Default = (a); do not
 change without direction.
+
+### Temporary: the model-picker Lab (data-validation, pre-bakeoff)
+Built 2026-07-09 to prove the *data* for a rich picker before the ui-bakeoff. **Temporary — remove
+when the bakeoff winner replaces `SmartModelSelect`.**
+- `features/ai-models/hooks/useModelCatalog.ts` — self-contained hook (NOT the registry slice);
+  `variant: "user"` reads `ai.model_public` (routable-filtered), `variant: "admin"` reads
+  `ai.model_admin`. Loud on error (no silent fallback).
+- `features/ai-models/components/lab/ModelPickerLab.tsx` — searchable, sortable picker with
+  capability badges (input→output content types + feature flags), context window, pricing
+  (points for user / vendor·wire_format + raw pricing for admin), and primary/premium/deprecated
+  flags.
+- Wired into `AgentModelConfiguration.tsx` behind a `Picker lab: off | user | admin` toggle.
+- **Known live-test caveat:** the `user` variant is proven sound (the app already reads
+  `model_public`). The `admin` variant depends on `ai.model_admin` being readable by the
+  authenticated super-admin — unverified, and blocked for `service_role` (see the GRANT GAP above). If
+  the admin toggle shows a `42501` permission error, that grant is the fix.
 
 ---
 
