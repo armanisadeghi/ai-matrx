@@ -827,17 +827,18 @@ export const selectUnifiedSlots = (requestId: string) =>
         } else if (entry.kind === "reasoning_end") {
           pendingStatus = null;
           // The run's thinking tokens, pinned to their chronological spot.
-          // Empty runs (token-less "reasoning started/stopped" bracketing
-          // that produced no chunks) emit nothing once closed.
-          if (entry.chunkEndIndex > entry.chunkStartIndex) {
-            flushPendingError();
-            slots.push({
-              kind: "thinking",
-              chunkStartIndex: entry.chunkStartIndex,
-              chunkEndIndex: entry.chunkEndIndex,
-              seq: nextSeq++,
-            });
-          }
+          // Emitted even for EMPTY closed runs (token-less bracketing that
+          // produced no chunks): the renderer shows nothing for them, but
+          // dropping the slot flips `hasUnifiedSpecial` back off and remounts
+          // the whole message tree (unified path → plain path) the moment a
+          // token-less reasoning phase ends.
+          flushPendingError();
+          slots.push({
+            kind: "thinking",
+            chunkStartIndex: entry.chunkStartIndex,
+            chunkEndIndex: entry.chunkEndIndex,
+            seq: nextSeq++,
+          });
           // Reasoning render blocks (server `type:"reasoning"` blocks) land in
           // renderBlockOrder outside any text_end range — emit the ones that
           // accumulated during this run. The sweep is BOUNDED by the entry's
