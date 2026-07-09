@@ -40,14 +40,13 @@ import ControlsEditor from "./ControlsEditor";
 import ConstraintsEditor from "./ConstraintsEditor";
 import ModelUsageAudit from "./ModelUsageAudit";
 import { aiModelService } from "../service";
-import ModelPricingEditor from "@/features/ai-models/components/ModelPricingEditor";
 import type {
   AiModel,
   AiModelFormData,
+  AiOffering,
   AiProvider,
   ControlsSchema,
   ModelConstraint,
-  PricingTier,
   ProviderModelEntry,
 } from "../types";
 
@@ -66,7 +65,6 @@ function rowToFormData(row: AiModel): AiModelFormData {
     name: row.name ?? "",
     common_name: row.common_name ?? "",
     model_class: row.model_class ?? "",
-    provider: row.provider ?? "",
     context_window:
       row.context_window != null ? String(row.context_window) : "",
     max_tokens: row.max_tokens != null ? String(row.max_tokens) : "",
@@ -74,7 +72,6 @@ function rowToFormData(row: AiModel): AiModelFormData {
     is_deprecated: row.is_deprecated ?? false,
     is_primary: row.is_primary ?? false,
     is_premium: row.is_premium ?? false,
-    pricing: row.pricing ?? [],
     mid_fallback_id: row.mid_fallback_id ?? "",
     guest_fallback_id: row.guest_fallback_id ?? "",
   };
@@ -84,17 +81,108 @@ const EMPTY_FORM: AiModelFormData = {
   name: "",
   common_name: "",
   model_class: "",
-  provider: "",
   context_window: "",
   max_tokens: "",
   model_provider: "",
   is_deprecated: false,
   is_primary: false,
   is_premium: false,
-  pricing: [],
   mid_fallback_id: "",
   guest_fallback_id: "",
 };
+
+// ─── Pricing (read-only, sourced from ai.offering) ────────────────────────
+
+/** Model-level pricing was removed — pricing lives on `ai.offering` (per model ×
+ *  service) and is edited in the Offerings page. This tab shows those tiers
+ *  read-only so an admin sees a model's real prices without a second editor. */
+function OfferingPricingReadOnly({
+  offerings,
+  error,
+}: {
+  offerings: AiOffering[];
+  error: string | null;
+}) {
+  const fmt = (p: number | null | undefined) =>
+    p === null || p === undefined
+      ? "—"
+      : `$${p.toFixed(p < 0.01 ? 4 : p < 1 ? 3 : 2)}`;
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Pricing is managed per offering (model × service) on the{" "}
+        <span className="font-medium text-foreground">Offerings</span> page. This
+        view is read-only.
+      </p>
+      {error && (
+        <p className="text-xs text-destructive">
+          Could not load this model&apos;s offerings ({error}).
+        </p>
+      )}
+      {!error && offerings.length === 0 && (
+        <p className="text-xs text-muted-foreground/60">
+          No offerings for this model yet — a model is not callable until it has
+          one.
+        </p>
+      )}
+      {offerings.map((o) => {
+        const tiers = o.pricing ?? [];
+        return (
+          <div key={o.id} className="rounded-md border p-2.5 space-y-1.5">
+            <div className="flex items-center gap-2 text-xs">
+              <Badge variant="outline" className="font-mono">
+                {o.provider_model_id ?? o.id.slice(0, 8)}
+              </Badge>
+              {o.usage_basis && (
+                <span className="text-muted-foreground">{o.usage_basis}</span>
+              )}
+              {o.token_billed && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1">
+                  token-billed
+                </Badge>
+              )}
+              {!o.is_available && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] h-4 px-1 text-muted-foreground"
+                >
+                  unavailable
+                </Badge>
+              )}
+            </div>
+            {tiers.length === 0 ? (
+              <span className="text-xs text-muted-foreground/50">
+                No pricing tiers
+              </span>
+            ) : (
+              <div className="space-y-0.5">
+                {tiers.map((t, i) => (
+                  <div
+                    key={i}
+                    className="text-xs font-mono flex items-center gap-2"
+                  >
+                    <span className="text-muted-foreground w-24">
+                      {t.max_tokens != null
+                        ? `≤ ${t.max_tokens.toLocaleString()}`
+                        : "flat"}
+                    </span>
+                    <span className="text-foreground">
+                      in {fmt(t.input_price)}
+                    </span>
+                    <span className="text-muted-foreground">/</span>
+                    <span className="text-foreground">
+                      out {fmt(t.output_price)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Provider Data tab components ─────────────────────────────────────────
 
@@ -207,13 +295,8 @@ function ProviderDataTab({
     "structured",
   );
 
-  // Find the provider and the matching entry in its cache
-  const matchedProvider = providers.find(
-    (p) =>
-      p.id === model.model_provider ||
-      (model.provider &&
-        p.name?.toLowerCase() === model.provider.toLowerCase()),
-  );
+  // Find the provider (by the model_provider FK) and the matching cache entry
+  const matchedProvider = providers.find((p) => p.id === model.model_provider);
   const providerEntry: ProviderModelEntry | undefined =
     matchedProvider?.provider_models_cache?.models.find(
       (m) => m.id === model.name,
@@ -433,15 +516,12 @@ const AI_MODEL_COLUMNS = new Set([
   "name",
   "common_name",
   "model_class",
-  "provider",
   "context_window",
   "max_tokens",
   "model_provider",
   "is_deprecated",
   "is_primary",
   "is_premium",
-  "pricing",
-  "endpoints",
   "capabilities",
   "controls",
   "constraints",
@@ -824,25 +904,22 @@ export default function AiModelDetailPanel({
     [],
   );
 
-  // `token_billed` is a per-OFFERING fact (ai.offering.token_billed) — it is the
-  // only thing that makes a media model's NULL usage_basis intentional. This
-  // panel edits the MODEL-level default pricing, so it must read the fact from
-  // the model's offerings. Unknown ⇒ false ⇒ the validator screams (fail-closed).
-  const [offeringsTokenBilled, setOfferingsTokenBilled] = useState(false);
+  // Pricing lives on ai.offering now (per model × service). This panel shows it
+  // READ-ONLY — editing happens in the Offerings page. Load the model's
+  // offerings so the Pricing tab can display their tiers.
+  const [offerings, setOfferings] = useState<AiOffering[]>([]);
   const [offeringsError, setOfferingsError] = useState<string | null>(null);
 
   useEffect(() => {
     const modelId = model?.id;
-    setOfferingsTokenBilled(false);
+    setOfferings([]);
     setOfferingsError(null);
     if (!modelId) return;
     let cancelled = false;
     aiModelService
       .fetchOfferingsForModel(modelId)
-      .then((offerings) => {
-        if (!cancelled) {
-          setOfferingsTokenBilled(offerings.some((o) => o.token_billed));
-        }
+      .then((rows) => {
+        if (!cancelled) setOfferings(rows);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -916,7 +993,6 @@ export default function AiModelDetailPanel({
           name: formData.name.trim(),
           common_name: formData.common_name.trim() || null,
           model_class: formData.model_class.trim(),
-          provider: formData.provider.trim() || null,
           context_window: formData.context_window
             ? parseInt(formData.context_window)
             : null,
@@ -927,8 +1003,6 @@ export default function AiModelDetailPanel({
           is_deprecated: formData.is_deprecated,
           is_primary: formData.is_primary,
           is_premium: formData.is_premium,
-          pricing: formData.pricing.length > 0 ? formData.pricing : null,
-          endpoints: model?.endpoints ?? null,
           capabilities: model?.capabilities ?? null,
           controls: pendingControls ?? model?.controls ?? null,
           constraints: pendingConstraints ?? model?.constraints ?? null,
@@ -994,7 +1068,7 @@ export default function AiModelDetailPanel({
 
   // JsonFieldEditor still needs its own direct save (it uses EnhancedEditableJsonViewer internally)
   const handleJsonSave =
-    (field: "endpoints" | "capabilities" | "controls" | "constraints") =>
+    (field: "capabilities" | "controls" | "constraints") =>
     async (data: object) => {
       if (!model) return;
       const updated = await aiModelService.update(model.id, { [field]: data });
@@ -1140,8 +1214,6 @@ export default function AiModelDetailPanel({
                       partial.common_name = cleaned.common_name;
                     if (typeof cleaned.model_class === "string")
                       partial.model_class = cleaned.model_class;
-                    if (typeof cleaned.provider === "string")
-                      partial.provider = cleaned.provider;
                     if (typeof cleaned.model_provider === "string")
                       partial.model_provider = cleaned.model_provider;
                     if (typeof cleaned.context_window === "number")
@@ -1154,8 +1226,6 @@ export default function AiModelDetailPanel({
                       partial.is_primary = cleaned.is_primary;
                     if (typeof cleaned.is_premium === "boolean")
                       partial.is_premium = cleaned.is_premium;
-                    if (Array.isArray(cleaned.pricing))
-                      partial.pricing = cleaned.pricing as PricingTier[];
                     if (Object.keys(partial).length > 0)
                       setFormData((prev) => ({ ...prev, ...partial }));
                   } catch {
@@ -1225,16 +1295,13 @@ export default function AiModelDetailPanel({
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Pricing
-                  {formData.pricing.length > 0 && (
+                  {offerings.length > 0 && (
                     <Badge
                       variant="outline"
                       className="ml-1.5 text-xs h-4 px-1"
                     >
-                      {formData.pricing.length}
+                      {offerings.length}
                     </Badge>
-                  )}
-                  {isDirty && activeTab === "pricing" && (
-                    <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-orange-400 inline-block" />
                   )}
                 </TabsTrigger>
                 <TabsTrigger
@@ -1251,13 +1318,8 @@ export default function AiModelDetailPanel({
                   className="h-9 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs px-3"
                 >
                   Provider Data
-                  {providers.find(
-                    (p) =>
-                      p.id === model?.model_provider ||
-                      (model?.provider &&
-                        p.name?.toLowerCase() ===
-                          model?.provider?.toLowerCase()),
-                  )?.provider_models_cache && (
+                  {providers.find((p) => p.id === model?.model_provider)
+                    ?.provider_models_cache && (
                     <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
                   )}
                 </TabsTrigger>
@@ -1291,17 +1353,11 @@ export default function AiModelDetailPanel({
               className="flex-1 m-0 overflow-auto p-3 space-y-3 min-h-0"
             >
               <JsonFieldEditor
-                title="Endpoints"
-                data={model?.endpoints}
-                onSave={handleJsonSave("endpoints")}
-                description="Array of endpoint identifiers"
-                defaultExpanded
-              />
-              <JsonFieldEditor
                 title="Capabilities"
                 data={model?.capabilities}
                 onSave={handleJsonSave("capabilities")}
                 description="Supported features (array or object)"
+                defaultExpanded
               />
               <JsonFieldEditor
                 title="Constraints"
@@ -1349,22 +1405,9 @@ export default function AiModelDetailPanel({
               value="pricing"
               className="flex-1 m-0 overflow-auto p-3 min-h-0"
             >
-              {offeringsError && (
-                <p className="text-xs text-destructive mb-2">
-                  Could not load this model&apos;s offerings ({offeringsError}) —
-                  the token-billed fact is unknown, so pricing validation is
-                  running fail-closed.
-                </p>
-              )}
-              <ModelPricingEditor
-                tiers={formData.pricing}
-                model={{
-                  capabilities: model?.capabilities ?? null,
-                  tokenBilled: offeringsTokenBilled,
-                }}
-                onChange={(tiers: PricingTier[]) =>
-                  setFormData({ ...formData, pricing: tiers })
-                }
+              <OfferingPricingReadOnly
+                offerings={offerings}
+                error={offeringsError}
               />
             </TabsContent>
 

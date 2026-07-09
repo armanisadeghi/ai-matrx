@@ -15,13 +15,13 @@ export function applyFiltersForCount(
                 m.id.toLowerCase().includes(lq) ||
                 (m.name ?? '').toLowerCase().includes(lq) ||
                 (m.common_name ?? '').toLowerCase().includes(lq) ||
-                (m.provider ?? '').toLowerCase().includes(lq) ||
+                (m.maker ?? '').toLowerCase().includes(lq) ||
                 (m.model_class ?? '').toLowerCase().includes(lq),
         );
     }
 
     if (filters.provider) {
-        result = result.filter((m) => m.provider === filters.provider);
+        result = result.filter((m) => m.maker === filters.provider);
     }
     if (filters.is_deprecated !== undefined) {
         result = result.filter((m) => (m.is_deprecated ?? false) === filters.is_deprecated);

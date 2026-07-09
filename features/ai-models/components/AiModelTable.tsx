@@ -140,29 +140,6 @@ function JsonSummaryBadge({ data, label }: { data: unknown; label?: string }) {
   return <span className="text-xs font-mono">{String(data)}</span>;
 }
 
-function EndpointsList({ data }: { data: unknown }) {
-  if (!Array.isArray(data) || data.length === 0)
-    return <span className="text-muted-foreground text-xs">—</span>;
-  return (
-    <div className="flex flex-wrap gap-1">
-      {(data as string[]).slice(0, 2).map((ep) => (
-        <Badge
-          key={ep}
-          variant="outline"
-          className="text-xs font-mono px-1 py-0"
-        >
-          {ep}
-        </Badge>
-      ))}
-      {data.length > 2 && (
-        <Badge variant="outline" className="text-xs">
-          +{data.length - 2}
-        </Badge>
-      )}
-    </div>
-  );
-}
-
 function UuidCell({ value }: { value: string }) {
   const [copied, setCopied] = React.useState(false);
   const copy = (e: React.MouseEvent) => {
@@ -272,9 +249,9 @@ const COLUMNS: ColDef[] = [
     render: (item) => (
       <Badge
         variant="outline"
-        className={`text-xs ${providerColor(item.provider)}`}
+        className={`text-xs ${providerColor(item.maker)}`}
       >
-        {item.provider ?? "—"}
+        {item.maker ?? "—"}
       </Badge>
     ),
   },
@@ -332,13 +309,6 @@ const COLUMNS: ColDef[] = [
         {formatNumber(item.max_tokens)}
       </span>
     ),
-  },
-  {
-    key: "endpoints",
-    header: "Endpoints",
-    width: "w-[180px] min-w-[140px]",
-    sortable: false,
-    render: (item) => <EndpointsList data={item.endpoints} />,
   },
   {
     key: "capabilities",
@@ -407,32 +377,8 @@ const COLUMNS: ColDef[] = [
       />
     ),
   },
-  {
-    key: "pricing",
-    header: "Pricing",
-    width: "w-[130px] min-w-[110px]",
-    sortable: false,
-    render: (item) => {
-      if (!item.pricing || item.pricing.length === 0) {
-        return <span className="text-xs text-muted-foreground/40">—</span>;
-      }
-      const tier = item.pricing[item.pricing.length - 1];
-      const fmt = (v: number | null) =>
-        v == null ? "—" : `$${v.toFixed(v < 0.1 ? 3 : 2)}`;
-      return (
-        <div className="text-xs font-mono leading-tight">
-          <span className="text-foreground">{fmt(tier.input_price)}</span>
-          <span className="text-muted-foreground mx-0.5">/</span>
-          <span className="text-foreground">{fmt(tier.output_price)}</span>
-          {item.pricing.length > 1 && (
-            <span className="ml-1 text-muted-foreground/60">
-              ({item.pricing.length}T)
-            </span>
-          )}
-        </div>
-      );
-    },
-  },
+  // Pricing is no longer a model_definition column — it lives on ai.offering
+  // (managed in the Offerings page). No model-level pricing column here.
 ];
 
 // ─── Filtering & Sorting helpers ─────────────────────────────────────────────
@@ -451,13 +397,13 @@ function applyFilters(
         m.id.toLowerCase().includes(lq) ||
         (m.name ?? "").toLowerCase().includes(lq) ||
         (m.common_name ?? "").toLowerCase().includes(lq) ||
-        (m.provider ?? "").toLowerCase().includes(lq) ||
+        (m.maker ?? "").toLowerCase().includes(lq) ||
         (m.model_class ?? "").toLowerCase().includes(lq),
     );
   }
 
   if (filters.provider) {
-    result = result.filter((m) => m.provider === filters.provider);
+    result = result.filter((m) => m.maker === filters.provider);
   }
   if (filters.is_deprecated !== undefined) {
     result = result.filter(
@@ -506,9 +452,12 @@ function applySort(
   sort: string,
   dir: "asc" | "desc",
 ): AiModel[] {
+  // The "provider" column now displays the resolved maker (the free-text
+  // provider column is dropped) — sort by maker for that key.
+  const field = (sort === "provider" ? "maker" : sort) as keyof AiModel;
   return [...models].sort((a, b) => {
-    const aVal = String(a[sort as keyof AiModel] ?? "");
-    const bVal = String(b[sort as keyof AiModel] ?? "");
+    const aVal = String(a[field] ?? "");
+    const bVal = String(b[field] ?? "");
     const cmp = aVal.localeCompare(bVal, undefined, { numeric: true });
     return dir === "asc" ? cmp : -cmp;
   });
@@ -585,7 +534,7 @@ function RowActions({
               summary: aiModelSummary(item),
               attributes: {
                 id: item.id,
-                provider: item.model_provider ?? item.provider ?? "",
+                provider: item.maker ?? item.model_provider ?? "",
               },
             })}
           />
@@ -1060,7 +1009,7 @@ export default function AiModelTable({
   const filterOptions = useMemo<FilterOptions>(
     () => ({
       providers: [
-        ...new Set(models.map((m) => m.provider).filter(Boolean)),
+        ...new Set(models.map((m) => m.maker).filter(Boolean)),
       ].sort() as string[],
       modelClasses: [
         ...new Set(models.map((m) => m.model_class).filter(Boolean)),

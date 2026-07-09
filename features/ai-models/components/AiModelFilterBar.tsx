@@ -130,7 +130,7 @@ export default function AiModelFilterBar({
       [
         ...new Set(
           models
-            .map((m) => m.provider)
+            .map((m) => m.maker)
             .filter((p): p is string => p != null && p !== ""),
         ),
       ].sort(),

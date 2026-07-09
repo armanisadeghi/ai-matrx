@@ -110,7 +110,7 @@ export default function AiModelForm({
             // Exclude self (no point pointing a row at itself) + deprecated rows
             if (m.name === data.name) continue;
             if (m.is_deprecated) continue;
-            const key = m.provider || "Other";
+            const key = m.maker || "Other";
             if (!groups[key]) groups[key] = [];
             groups[key].push(m);
         }
@@ -217,16 +217,11 @@ export default function AiModelForm({
                 </div>
             </div>
 
-            <FormField label="Provider" description="ai.provider record — the free-text provider column is derived automatically, never edited directly">
+            <FormField label="Provider" description="ai.provider record (model_provider FK) — the model's maker. The old free-text provider column is dropped and derived, never edited.">
                 <Select
                     value={data.model_provider || undefined}
                     onValueChange={(v) => {
-                        if (v === '__none__') {
-                            onChange({ ...data, model_provider: '', provider: '' });
-                            return;
-                        }
-                        const picked = providers.find((p) => p.id === v);
-                        onChange({ ...data, model_provider: v, provider: picked?.name ?? data.provider });
+                        onChange({ ...data, model_provider: v === '__none__' ? '' : v });
                     }}
                 >
                     <SelectTrigger className="h-8 text-sm">

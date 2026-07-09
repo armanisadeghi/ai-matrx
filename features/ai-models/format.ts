@@ -7,7 +7,7 @@ export const AI_MODELS_LOCATION =
 export function aiModelSummary(m: AiModel): string {
   return [
     `Model: ${m.common_name || m.name}`,
-    `Provider: ${m.model_provider ?? m.provider ?? "—"}`,
+    `Provider: ${m.maker ?? "—"}`,
     `Class: ${m.model_class ?? "—"}`,
     `ID: ${m.id}`,
     `Context window: ${m.context_window ?? "—"}`,
