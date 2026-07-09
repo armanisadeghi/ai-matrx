@@ -30,6 +30,7 @@ import {
   ContextAssignmentField,
   type ContextAssignmentSaveResult,
 } from "@/features/scopes/components/context-assignment/ContextAssignmentField";
+import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import type { AppDispatch } from "@/lib/redux/store";
@@ -50,15 +51,19 @@ export function NoteContextSection({ noteId }: { noteId: string }) {
   const onSaved = useMemo(() => noteSaveAdapter(dispatch, noteId), [dispatch, noteId]);
   if (!note) return null;
   return (
-    <ContextAssignmentField
-      mode="assignment"
-      writeMode="live"
-      subject={{ entityType: "note", entityId: noteId, title: note.label || "Untitled note", icon: StickyNote }}
-      defaultOrganizationId={note.organization_id ?? undefined}
-      sectionHeight={260}
-      className="my-2"
-      onSaved={onSaved}
-    />
+    <div className="my-2">
+      <ContextAssignmentField
+        mode="assignment"
+        writeMode="live"
+        subject={{ entityType: "note", entityId: noteId, title: note.label || "Untitled note", icon: StickyNote }}
+        defaultOrganizationId={note.organization_id ?? undefined}
+        sectionHeight={260}
+        onSaved={onSaved}
+      />
+      {/* Pending KG → scope-item fill suggestions for this note — the visible
+          NER payoff. Renders nothing at count 0 (the chip self-hides). */}
+      <KgSuggestionsChip filter={{ sourceKind: "note", sourceId: noteId }} className="mt-1.5" />
+    </div>
   );
 }
 
