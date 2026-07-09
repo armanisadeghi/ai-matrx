@@ -152,28 +152,29 @@ export type AiModel = Omit<
   AiModelRow,
   | "controls"
   | "constraints"
-  | "pricing"
-  | "endpoints"
   | "capabilities"
-  // `api_class` is being dropped from ai.model_definition. Nothing in the app
-  // may read it — routing is decided by ai.service.wire_format on the server.
+  // The following four columns are being DROPPED from ai.model_definition —
+  // their fact now lives elsewhere and nothing in the app may read them:
+  //   - `provider` (free text)    → resolved `maker` (ai.provider via model_provider FK)
+  //   - `endpoints` (jsonb)       → ai.offering → ai.service.wire_format
+  //   - `pricing`   (jsonb)       → ai.offering.pricing (managed per-offering)
+  //   - `api_class` (text)        → ai.offering → ai.service.wire_format + vendor
+  | "provider"
+  | "endpoints"
+  | "pricing"
   | "api_class"
+  // One-release capabilities-canonicalization revert snapshot — canonicalization
+  // is long done (all rows canonical); the column has no readers and is dropping.
+  | "capabilities_pre_canonical"
 > & {
   controls: ControlsSchema | null;
   constraints: ModelConstraint[] | null;
-  pricing: PricingTier[] | null;
-  endpoints: string[] | null;
   capabilities: Record<string, unknown> | string[] | null;
-  // Tier-fallback FKs (added in migration 0045 — guest_mode_and_model_tiers).
-  // When set, the aidream backend substitutes this model for the current one
-  // when the caller is at the matching tier:
-  //   - `mid_fallback_id`: paying user past soft limit (e.g., Opus → Sonnet)
-  //   - `guest_fallback_id`: anonymous guest user (e.g., Opus → Haiku)
-  // NULL = no swap; the agent's declared model is used as-is.
-  // Optional because database.types.ts hasn't been regenerated yet — these
-  // become required-but-nullable once `pnpm db:generate` runs.
-  mid_fallback_id?: string | null;
-  guest_fallback_id?: string | null;
+  /** Resolved brand/maker display name (`ai.provider.name` via the
+   *  `model_provider` FK). NOT a stored column on the model row — the service /
+   *  fetch layer attaches it. This replaced the dropped free-text `provider`
+   *  column for all display, filtering, and grouping. */
+  maker: string | null;
 };
 
 export type AiProvider = Omit<AiProviderRow, "provider_models_cache"> & {
@@ -222,19 +223,22 @@ export type AiModelFormData = {
   name: string;
   common_name: string;
   model_class: string;
-  provider: string;
   context_window: string;
   max_tokens: string;
+  // The model's maker/brand is set via this FK (ai.provider). The old free-text
+  // `provider` column is dropped and derived — never edited here.
   model_provider: string;
   is_deprecated: boolean;
   is_primary: boolean;
   is_premium: boolean;
-  pricing: PricingTier[];
   // Empty string = no swap (NULL in DB); otherwise the ai_model.id of the
   // model to substitute when the caller is at that tier.
   mid_fallback_id: string;
   guest_fallback_id: string;
 };
+// NOTE: model-level `pricing` editing was removed — pricing lives on
+// `ai.offering` now (managed via OfferingForm/OfferingsContainer). Do not
+// re-add a `pricing` field here.
 
 export type AiOfferingFormData = {
   model_id: string;

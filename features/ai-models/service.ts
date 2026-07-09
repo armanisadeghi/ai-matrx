@@ -82,13 +82,28 @@ type AgentBuiltinSettingsRow = {
 
 export const aiModelService = {
   async fetchAll(): Promise<AiModel[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("model_definition")
-      .select("*")
-      .order("common_name", { ascending: true, nullsFirst: false });
-    if (error) throw error;
-    return data as AiModel[];
+    // Resolve `maker` from the model_provider FK (ai.provider.name). The old
+    // free-text `provider` column is dropping — never read it. Fetch providers
+    // alongside models and map by id so every row carries a display brand.
+    const [modelsRes, providers] = await Promise.all([
+      supabase
+        .schema("ai")
+        .from("model_definition")
+        .select("*")
+        .order("common_name", { ascending: true, nullsFirst: false }),
+      this.fetchProviders(),
+    ]);
+    if (modelsRes.error) throw modelsRes.error;
+    const makerById = new Map(providers.map((p) => [p.id, p.name ?? null]));
+    return (modelsRes.data ?? []).map(
+      (row): AiModel =>
+        ({
+          ...row,
+          maker: row.model_provider
+            ? (makerById.get(row.model_provider) ?? null)
+            : null,
+        }) as unknown as AiModel,
+    );
   },
 
   async fetchProviders(): Promise<AiProvider[]> {
@@ -359,7 +374,7 @@ export const aiModelService = {
       .select()
       .single();
     if (error) throw error;
-    return data as unknown as AiModel;
+    return this.withMaker(data as Record<string, unknown>);
   },
 
   async update(id: string, payload: AiModelUpdate): Promise<AiModel> {
@@ -371,7 +386,21 @@ export const aiModelService = {
       .select()
       .single();
     if (error) throw error;
-    return data as unknown as AiModel;
+    return this.withMaker(data as Record<string, unknown>);
+  },
+
+  /** Attach the resolved `maker` (ai.provider.name via model_provider FK) to a
+   *  freshly written model row so the caller can splice it into a list without a
+   *  full refetch. The dropped free-text `provider` column is never read. */
+  async withMaker(row: Record<string, unknown>): Promise<AiModel> {
+    const providerId =
+      typeof row.model_provider === "string" ? row.model_provider : null;
+    let maker: string | null = null;
+    if (providerId) {
+      const providers = await this.fetchProviders();
+      maker = providers.find((p) => p.id === providerId)?.name ?? null;
+    }
+    return { ...row, maker } as unknown as AiModel;
   },
 
   async remove(id: string): Promise<void> {

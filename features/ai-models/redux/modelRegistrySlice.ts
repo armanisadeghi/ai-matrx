@@ -34,9 +34,22 @@ export type ModelRecordFetchType = "options" | "full";
  */
 export type AIModelRecord = {
   _fetchType: ModelRecordFetchType;
-  // `api_class` is being dropped from ai.model_definition — routing is decided
-  // server-side by ai.service.wire_format. The registry must never surface it.
-} & Omit<AIModelRow, "api_class">;
+  /** Resolved brand/maker name (`ai.provider.name` via the `model_provider` FK).
+   *  Not a stored column — attached by the fetch/hydrate layer. Replaced the
+   *  dropped free-text `provider` column for all display. */
+  maker: string | null;
+  // These columns are DROPPING from ai.model_definition — the registry must
+  // never surface them: `provider` (→ maker), `endpoints`/`api_class` (routing is
+  // decided server-side by ai.service.wire_format), `pricing` (→ ai.offering),
+  // `capabilities_pre_canonical` (dead canonicalization snapshot).
+} & Omit<
+  AIModelRow,
+  | "provider"
+  | "endpoints"
+  | "pricing"
+  | "api_class"
+  | "capabilities_pre_canonical"
+>;
 
 /** Convenience alias — the full normalized model (fetchType === 'full'). */
 export type AIModel = AIModelRecord;
@@ -85,10 +98,16 @@ const initialState: ModelRegistryState = {
 // Minimal options shape returned by the options query
 // ---------------------------------------------------------------------------
 
-type ModelOptionRow = Pick<
-  AIModelRow,
-  "id" | "name" | "common_name" | "provider" | "model_class" | "is_deprecated"
->;
+// Sourced from the ai.model_public view, which resolves the maker name from the
+// model_provider FK (the dropped free-text `provider` column is never read).
+// The view's columns are all nullable; the thunk normalizes id/name before use.
+type ModelOptionRow = {
+  id: string;
+  name: string;
+  common_name: string | null;
+  maker: string | null;
+  model_class: string | null;
+};
 
 // ---------------------------------------------------------------------------
 // Thunks
@@ -131,15 +150,29 @@ export const fetchModelOptions = createAsyncThunk(
       if (routableIds.length === 0) {
         return [] as ModelOptionRow[];
       }
+      // ai.model_public already excludes deprecated/deleted models and resolves
+      // the maker name from the model_provider FK. Constrain to routable IDs.
       const { data, error } = await supabase
         .schema("ai")
-        .from("model_definition")
-        .select("id, name, common_name, provider, model_class, is_deprecated")
-        .eq("is_deprecated", false)
+        .from("model_public")
+        .select("id, name, common_name, maker, model_class")
         .in("id", routableIds)
         .order("common_name", { ascending: true, nullsFirst: false });
       if (error) throw error;
-      return data as ModelOptionRow[];
+      return (data ?? [])
+        .filter(
+          (r): r is typeof r & { id: string; name: string } =>
+            typeof r.id === "string" && typeof r.name === "string",
+        )
+        .map(
+          (r): ModelOptionRow => ({
+            id: r.id,
+            name: r.name,
+            common_name: r.common_name,
+            maker: r.maker,
+            model_class: r.model_class,
+          }),
+        );
     } catch (err: unknown) {
       return rejectWithValue(
         err instanceof Error ? err.message : "Unknown error",
@@ -307,7 +340,16 @@ const modelRegistrySlice = createSlice({
         state.isLoading = false;
         state.error = null;
         const record = action.payload;
-        state.entities[record.id] = { ...record, _fetchType: "full" };
+        const existing = state.entities[record.id];
+        // The full row comes from model_definition (no resolved `maker`);
+        // preserve the maker already attached by the options fetch, if any.
+        state.entities[record.id] = {
+          ...emptyModelRecord(),
+          ...existing,
+          ...record,
+          maker: existing?.maker ?? null,
+          _fetchType: "full",
+        };
         // Ensure the id appears in the right list
         rebuildIdLists(state);
       })
@@ -328,20 +370,17 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     id: "",
     name: "",
     common_name: null,
+    maker: null,
     capabilities: null,
-    capabilities_pre_canonical: null,
     constraints: [],
     context_window: null,
     controls: null,
-    endpoints: null,
     is_deprecated: null,
     is_premium: null,
     is_primary: null,
     max_tokens: null,
     model_class: "",
     model_provider: null,
-    provider: null,
-    pricing: null,
     guest_fallback_id: null,
     mid_fallback_id: null,
     organization_id: "",
@@ -443,7 +482,7 @@ export const selectAllModels = createSelector(
 );
 
 /**
- * Active models as dropdown options — { value, label, provider }.
+ * Active models as dropdown options — { value, label, maker }.
  * Only requires fetchType:'options' data — works immediately after fetchModelOptions.
  */
 export const selectModelOptions = createSelector(
@@ -452,7 +491,7 @@ export const selectModelOptions = createSelector(
     models.map((m) => ({
       value: m.id,
       label: m.common_name || m.name || m.id,
-      provider: m.provider,
+      maker: m.maker,
     })),
 );
 
@@ -465,7 +504,7 @@ export const selectAllModelOptions = createSelector(
     Object.values(entities).map((m) => ({
       value: m.id,
       label: m.common_name || m.name || m.id,
-      provider: m.provider,
+      maker: m.maker,
       isDeprecated: m.is_deprecated ?? false,
     })),
 );

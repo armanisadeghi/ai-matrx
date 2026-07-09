@@ -25,20 +25,35 @@ async function _fetchAIModelsFromDB() {
     return [];
   }
 
-  const { data: models, error } = await supabase
-    .schema("ai")
-    .from("model_definition")
-    .select("*")
-    .eq("is_deprecated", false)
-    .in("id", routableIds)
-    .order("common_name", { ascending: true });
+  const [modelsRes, providersRes] = await Promise.all([
+    supabase
+      .schema("ai")
+      .from("model_definition")
+      .select("*")
+      .eq("is_deprecated", false)
+      .in("id", routableIds)
+      .order("common_name", { ascending: true }),
+    // Resolve `maker` from the model_provider FK — the free-text `provider`
+    // column is dropping and must never be read.
+    supabase.schema("ai").from("provider").select("id, name"),
+  ]);
 
-  if (error) {
-    console.error("Error fetching AI models from database:", error);
-    throw error;
+  if (modelsRes.error) {
+    console.error("Error fetching AI models from database:", modelsRes.error);
+    throw modelsRes.error;
+  }
+  if (providersRes.error) {
+    console.error("Error fetching AI providers:", providersRes.error);
+    throw providersRes.error;
   }
 
-  return models || [];
+  const makerById = new Map(
+    (providersRes.data ?? []).map((p) => [p.id, p.name ?? null]),
+  );
+  return (modelsRes.data ?? []).map((m) => ({
+    ...m,
+    maker: m.model_provider ? (makerById.get(m.model_provider) ?? null) : null,
+  }));
 }
 
 /**

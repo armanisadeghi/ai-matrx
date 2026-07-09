@@ -1411,7 +1411,28 @@ export type Database = {
             foreignKeyName: "ai_model_guest_fallback_id_fkey"
             columns: ["guest_fallback_id"]
             isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
             referencedColumns: ["id"]
           },
           {
@@ -1419,6 +1440,13 @@ export type Database = {
             columns: ["mid_fallback_id"]
             isOneToOne: false
             referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
           {
@@ -1508,7 +1536,21 @@ export type Database = {
             foreignKeyName: "offering_model_id_fkey"
             columns: ["model_id"]
             isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
           {
@@ -1831,6 +1873,79 @@ export type Database = {
       }
     }
     Views: {
+      model_admin: {
+        Row: {
+          capabilities: Json | null
+          common_name: string | null
+          context_window: number | null
+          description: string | null
+          guest_fallback_id: string | null
+          id: string | null
+          is_deprecated: boolean | null
+          is_premium: boolean | null
+          is_primary: boolean | null
+          maker: string | null
+          max_tokens: number | null
+          mid_fallback_id: string | null
+          model_class: string | null
+          name: string | null
+          offering_id: string | null
+          pricing: Json | null
+          provider_model_id: string | null
+          release_date: string | null
+          service_display_name: string | null
+          service_has_base_url: boolean | null
+          service_internal_name: string | null
+          token_billed: boolean | null
+          usage_basis: string | null
+          vendor: string | null
+          wire_format: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       model_offering: {
         Row: {
           effective_capabilities: Json | null
@@ -1853,7 +1968,88 @@ export type Database = {
             foreignKeyName: "offering_model_id_fkey"
             columns: ["model_id"]
             isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
             referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offering_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_public: {
+        Row: {
+          capabilities: Json | null
+          common_name: string | null
+          context_window: number | null
+          description: string | null
+          guest_fallback_id: string | null
+          id: string | null
+          is_premium: boolean | null
+          is_primary: boolean | null
+          maker: string | null
+          max_tokens: number | null
+          mid_fallback_id: string | null
+          model_class: string | null
+          name: string | null
+          points_per_million_input: number | null
+          points_per_million_output: number | null
+          release_date: string | null
+          service_name: string | null
+          token_billed: boolean | null
+          usage_basis: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_guest_fallback_id_fkey"
+            columns: ["guest_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_admin"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_model_mid_fallback_id_fkey"
+            columns: ["mid_fallback_id"]
+            isOneToOne: false
+            referencedRelation: "model_public"
             referencedColumns: ["id"]
           },
         ]
