@@ -1307,7 +1307,6 @@ export type Database = {
         Row: {
           api_class: string | null
           capabilities: Json | null
-          capabilities_pre_canonical: Json | null
           common_name: string | null
           constraints: Json | null
           context_window: number | null
@@ -1316,7 +1315,6 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           description: string | null
-          endpoints: Json | null
           guest_fallback_id: string | null
           id: string
           is_deprecated: boolean | null
@@ -1330,8 +1328,6 @@ export type Database = {
           model_provider: string | null
           name: string
           organization_id: string
-          pricing: Json | null
-          provider: string | null
           release_date: string | null
           updated_at: string
           updated_by: string | null
@@ -1341,7 +1337,6 @@ export type Database = {
         Insert: {
           api_class?: string | null
           capabilities?: Json | null
-          capabilities_pre_canonical?: Json | null
           common_name?: string | null
           constraints?: Json | null
           context_window?: number | null
@@ -1350,7 +1345,6 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
-          endpoints?: Json | null
           guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
@@ -1364,8 +1358,6 @@ export type Database = {
           model_provider?: string | null
           name: string
           organization_id: string
-          pricing?: Json | null
-          provider?: string | null
           release_date?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -1375,7 +1367,6 @@ export type Database = {
         Update: {
           api_class?: string | null
           capabilities?: Json | null
-          capabilities_pre_canonical?: Json | null
           common_name?: string | null
           constraints?: Json | null
           context_window?: number | null
@@ -1384,7 +1375,6 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
-          endpoints?: Json | null
           guest_fallback_id?: string | null
           id?: string
           is_deprecated?: boolean | null
@@ -1398,8 +1388,6 @@ export type Database = {
           model_provider?: string | null
           name?: string
           organization_id?: string
-          pricing?: Json | null
-          provider?: string | null
           release_date?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -40846,6 +40834,8 @@ export type Database = {
           node_id: string
           output: Json
           output_kind: string | null
+          output_kind_errors: Json | null
+          output_kind_ok: boolean | null
           run_id: string
           sends: Json
           source: string
@@ -40864,6 +40854,8 @@ export type Database = {
           node_id: string
           output?: Json
           output_kind?: string | null
+          output_kind_errors?: Json | null
+          output_kind_ok?: boolean | null
           run_id: string
           sends?: Json
           source?: string
@@ -40882,6 +40874,8 @@ export type Database = {
           node_id?: string
           output?: Json
           output_kind?: string | null
+          output_kind_errors?: Json | null
+          output_kind_ok?: boolean | null
           run_id?: string
           sends?: Json
           source?: string

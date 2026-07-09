@@ -54,13 +54,39 @@ async function resolveAiModels(
 ): Promise<Map<string, { common_name: string | null; provider: string | null; name: string | null }>> {
   const ids = [...new Set(modelIds.filter((id): id is string => !!id))];
   if (ids.length === 0) return new Map();
-  const { data } = await supabase
+  // `provider` (free-text) was dropped from ai.model_definition — the maker is the
+  // model_provider FK → ai.provider.name. Resolve it in a second query (same pattern as
+  // app/api/ai-models/route.ts). Don't swallow the error.
+  const { data, error } = await supabase
     .schema("ai")
     .from("model_definition")
-    .select("id, common_name, provider, name")
+    .select("id, common_name, name, model_provider")
     .in("id", ids);
+  if (error) {
+    console.error("[cx-dashboard] resolveAiModels: model_definition fetch failed", error);
+  }
+  const rows = data || [];
+  const providerIds = [...new Set(rows.map((m) => m.model_provider).filter((v): v is string => !!v))];
+  const providerNames = new Map<string, string | null>();
+  if (providerIds.length > 0) {
+    const { data: provs, error: provErr } = await supabase
+      .schema("ai")
+      .from("provider")
+      .select("id, name")
+      .in("id", providerIds);
+    if (provErr) {
+      console.error("[cx-dashboard] resolveAiModels: provider fetch failed", provErr);
+    }
+    for (const p of provs || []) providerNames.set(p.id, p.name ?? null);
+  }
   const map = new Map<string, { common_name: string | null; provider: string | null; name: string | null }>();
-  for (const m of data || []) map.set(m.id, { common_name: m.common_name ?? null, provider: m.provider ?? null, name: (m as any).name ?? null });
+  for (const m of rows) {
+    map.set(m.id, {
+      common_name: m.common_name ?? null,
+      provider: m.model_provider ? (providerNames.get(m.model_provider) ?? null) : null,
+      name: m.name ?? null,
+    });
+  }
   return map;
 }
 
