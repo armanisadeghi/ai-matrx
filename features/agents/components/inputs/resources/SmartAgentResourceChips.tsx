@@ -32,7 +32,7 @@ import {
   Notebook,
 } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
@@ -376,6 +376,7 @@ export function SmartAgentResourceChips({
   conversationId,
 }: SmartAgentResourceChipsProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const resources = useAppSelector(selectInstanceResources(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
@@ -432,6 +433,14 @@ export function SmartAgentResourceChips({
   const handleAttachAsFile = useCallback(
     (resource: ManagedResource) => {
       if (!isProcessedDocumentSource(resource.source)) return;
+      // Guard a double-click: if the chip was already switched/removed, bail so
+      // we don't remove-nothing then add a SECOND binary copy.
+      const stillPresent = Boolean(
+        store.getState().instanceResources.byConversationId[conversationId]?.[
+          resource.resourceId
+        ],
+      );
+      if (!stillPresent) return;
       switchAttachedDocumentToBinary(
         dispatch,
         conversationId,
@@ -440,7 +449,7 @@ export function SmartAgentResourceChips({
         getResourceLabel(resource),
       );
     },
-    [conversationId, dispatch],
+    [conversationId, dispatch, store],
   );
 
   if (!showAttachments) return null;

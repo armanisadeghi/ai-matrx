@@ -130,9 +130,14 @@ export function representationLabel(rep: DocumentRepresentation): string {
   return REPRESENTATION_LABEL[rep];
 }
 
-/** The `request.context` key an attached document publishes under. */
+/**
+ * The `request.context` key an attached document publishes under. Uses the FULL
+ * processed_document_id (not a prefix) so two documents can never collide and
+ * silently overwrite each other's pointer; attaching the SAME document twice
+ * intentionally maps to one key (dedup is also enforced at attach time).
+ */
 export function attachedDocumentContextKey(processedDocumentId: string): string {
-  return `attached_document_${processedDocumentId.slice(0, 8)}`;
+  return `attached_document_${processedDocumentId}`;
 }
 
 const DESCRIPTION_BASE =

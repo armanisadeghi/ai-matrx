@@ -128,6 +128,17 @@ export async function lookupFileDocument(
   return promise;
 }
 
+/**
+ * Synchronous cache peek — returns the memoised answer if this file was already
+ * probed (the RAG badge / preview surfaces prime it), else `undefined`. Lets a
+ * synchronous caller (the attach handler) decide the attach shape in the same
+ * tick when the answer is already known — avoiding an async round-trip that
+ * would let a fast submit race the attach.
+ */
+export function peekFileDocument(fileId: string): FileDocumentState | undefined {
+  return cache.get(fileId);
+}
+
 /** Drop the cached answer — call after kicking off `/rag/ingest`. */
 export function clearFileDocumentCache(fileId?: string): void {
   if (fileId) {

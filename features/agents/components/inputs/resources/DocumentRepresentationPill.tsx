@@ -99,19 +99,25 @@ export function DocumentRepresentationPill({
             </span>
           </button>
         ))}
-        <div className="my-1 border-t border-border" />
-        <button
-          type="button"
-          onClick={(e) => {
-            stop(e);
-            onAttachAsFile();
-            setOpen(false);
-          }}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
-        >
-          <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span>Attach as file instead</span>
-        </button>
+        {/* Only offer the binary escape when there's an origin file to fall back
+            to — otherwise the switch would remove the chip and add nothing. */}
+        {source.file_id ? (
+          <>
+            <div className="my-1 border-t border-border" />
+            <button
+              type="button"
+              onClick={(e) => {
+                stop(e);
+                onAttachAsFile();
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-foreground hover:bg-accent"
+            >
+              <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>Attach as file instead</span>
+            </button>
+          </>
+        ) : null}
       </PopoverContent>
     </Popover>
   );

@@ -9,7 +9,8 @@
  */
 
 import type { Dispatch } from "@reduxjs/toolkit";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
 import {
   addResource,
   removeResource,
@@ -21,10 +22,15 @@ import {
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
 import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
-import { lookupFileDocument } from "@/features/files/api/document-lookup";
+import {
+  lookupFileDocument,
+  peekFileDocument,
+  type FileDocumentLookup,
+} from "@/features/files/api/document-lookup";
 import {
   buildProcessedDocumentSource,
   defaultRepresentation,
+  isProcessedDocumentSource,
   type ProcessedDocumentSource,
 } from "@/features/agents/utils/processedDocumentContext";
 import type { Resource } from "@/features/agents/resources/types";
@@ -113,7 +119,8 @@ function extractFileId(data: unknown): string | null {
 
 /**
  * Attach a picked file as today's BINARY block (document / image / audio /
- * video). The resource-resolution pipeline transitions it to `ready`.
+ * video). `setResourcePreview` flips it to `ready` in the same tick (its reducer
+ * sets status="ready"), so the chip is instantly sendable.
  */
 function attachBinary(
   dispatch: Dispatch,
@@ -188,57 +195,156 @@ export function switchAttachedDocumentToBinary(
   }
 }
 
+function attachedProcessedDocIds(
+  getState: () => RootState,
+  conversationId: string,
+): Set<string> {
+  const map = getState().instanceResources.byConversationId[conversationId];
+  const ids = new Set<string>();
+  if (map) {
+    for (const r of Object.values(map)) {
+      if (
+        r.blockType === "processed_document" &&
+        isProcessedDocumentSource(r.source)
+      ) {
+        ids.add(r.source.processed_document_id);
+      }
+    }
+  }
+  return ids;
+}
+
+function resourceStillExists(
+  getState: () => RootState,
+  conversationId: string,
+  resourceId: string,
+): boolean {
+  return Boolean(
+    getState().instanceResources.byConversationId[conversationId]?.[resourceId],
+  );
+}
+
+/** Attach a processed document, deduped: skip if the same doc is already on. */
+function attachProcessedDocumentDeduped(
+  dispatch: Dispatch,
+  getState: () => RootState,
+  conversationId: string,
+  doc: FileDocumentLookup,
+  fileId: string,
+  label: string,
+): void {
+  if (attachedProcessedDocIds(getState, conversationId).has(doc.processed_document_id)) {
+    return;
+  }
+  attachProcessedDocument(
+    dispatch,
+    conversationId,
+    buildProcessedDocumentSource(doc, fileId),
+    label,
+  );
+}
+
 /**
  * Returns a handler that attaches a picked Resource to the instance.
  *
- * For a stored file (or file_url) that refines to a `document`, it PROBES
- * whether the file has a processed document (OCR'd → AI-cleaned). If so, it
- * attaches it by reference with the default representation (clean when ready,
- * else raw) — the chip then offers the quick representation choice + an
- * "Attach as file instead" escape. Otherwise it falls back to today's binary
- * attach. Images/audio/video and non-file resources always take the binary /
- * reference path unchanged. Closing the hosting popover is the CALLER's job.
+ * A stored file (or file_url) that refines to a `document` is checked for a
+ * processed document (OCR'd → AI-cleaned). To avoid a fast-submit race (the send
+ * path never waits for pending attaches), a chip ALWAYS appears synchronously:
+ *  - cache hit "found"   → attach by reference immediately (default clean/raw);
+ *  - cache hit "absent"  → binary attach immediately;
+ *  - cache cold          → binary attach immediately (safe on fast submit — the
+ *    file still sends), then upgrade to the reference form when the probe
+ *    resolves, IF the chip is still present and not already attached.
+ * The chip then offers the quick representation choice + an "Attach as file
+ * instead" escape. Non-file / media resources take the binary path unchanged.
+ * Closing the hosting popover is the CALLER's job.
  */
 export function useAttachResource(
   conversationId: string,
 ): (resource: Resource) => void {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
 
   return (resource: Resource) => {
-    void attachResourceAsync(dispatch, conversationId, resource);
-  };
-}
+    const getState = () => store.getState() as RootState;
+    const baseBlockType = resourceTypeToBlockType(resource.type);
+    const blockType = refineBlockType(baseBlockType, resource.data);
+    const label = resourceLabel(resource);
 
-async function attachResourceAsync(
-  dispatch: Dispatch,
-  conversationId: string,
-  resource: Resource,
-): Promise<void> {
-  const baseBlockType = resourceTypeToBlockType(resource.type);
-  const blockType = refineBlockType(baseBlockType, resource.data);
-  const label = resourceLabel(resource);
-
-  // Only a real (non-media) file document qualifies for representation-attach.
-  if (blockType === "document") {
-    const fileId = extractFileId(resource.data);
-    if (fileId) {
-      try {
-        const state = await lookupFileDocument(fileId);
-        if (state.kind === "found") {
-          attachProcessedDocument(
+    // Only a real (non-media) file document qualifies for representation-attach.
+    if (blockType === "document") {
+      const fileId = extractFileId(resource.data);
+      if (fileId) {
+        const cached = peekFileDocument(fileId);
+        if (cached?.kind === "found") {
+          attachProcessedDocumentDeduped(
             dispatch,
+            getState,
             conversationId,
-            buildProcessedDocumentSource(state.doc, fileId),
+            cached.doc,
+            fileId,
             label,
           );
           return;
         }
-      } catch {
-        // Probe failed transiently — fall through to the binary path so the
-        // attach never silently drops.
+        if (cached?.kind === "absent" || cached?.kind === "unavailable") {
+          attachBinary(dispatch, conversationId, "document", resource.data, label);
+          return;
+        }
+        // Cold cache — attach binary now (instant, ready, safe on fast submit),
+        // then upgrade if it turns out to qualify and the chip is still there.
+        const resourceId = attachBinary(
+          dispatch,
+          conversationId,
+          "document",
+          resource.data,
+          label,
+        );
+        void upgradeToProcessedDocument(
+          dispatch,
+          getState,
+          conversationId,
+          fileId,
+          resourceId,
+          label,
+        );
+        return;
       }
     }
-  }
 
-  attachBinary(dispatch, conversationId, blockType, resource.data, label);
+    attachBinary(dispatch, conversationId, blockType, resource.data, label);
+  };
+}
+
+async function upgradeToProcessedDocument(
+  dispatch: Dispatch,
+  getState: () => RootState,
+  conversationId: string,
+  fileId: string,
+  binaryResourceId: string,
+  label: string,
+): Promise<void> {
+  let state;
+  try {
+    state = await lookupFileDocument(fileId);
+  } catch {
+    return; // transient probe failure — leave the binary chip as-is
+  }
+  if (state.kind !== "found") return;
+  // The chip may have been sent/removed while the probe was in flight — never
+  // resurrect it onto the next turn.
+  if (!resourceStillExists(getState, conversationId, binaryResourceId)) return;
+  // Already attached as a processed doc (e.g. a second rapid attach) → just drop
+  // the redundant binary rather than add a duplicate.
+  const already = attachedProcessedDocIds(getState, conversationId).has(
+    state.doc.processed_document_id,
+  );
+  dispatch(removeResource({ conversationId, resourceId: binaryResourceId }));
+  if (already) return;
+  attachProcessedDocument(
+    dispatch,
+    conversationId,
+    buildProcessedDocumentSource(state.doc, fileId),
+    label,
+  );
 }
