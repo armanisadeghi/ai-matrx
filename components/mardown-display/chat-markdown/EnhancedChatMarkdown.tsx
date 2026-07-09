@@ -21,6 +21,7 @@ import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton"
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import FullScreenMarkdownEditor from "./FullScreenMarkdownEditor";
 import { InlineStatusIndicator } from "./internal-handlers/InlineStatusIndicator";
+import { InlineThinkingSlot } from "./internal-handlers/InlineThinkingSlot";
 import {
   selectAccumulatedText,
   selectIsReasoningStreaming,
@@ -258,6 +259,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
       s.kind === "tool" ||
       s.kind === "status" ||
       s.kind === "error" ||
+      s.kind === "thinking" ||
       (s.kind === "render_block" &&
         s.blockType !== undefined &&
         SPECIAL_RENDER_BLOCK_TYPES.has(s.blockType)),
@@ -725,6 +727,30 @@ export const EnhancedChatMarkdownInternal: React.FC<
                     <InlineStatusIndicator
                       key={`status-${slot.seq}`}
                       label={slot.label}
+                    />
+                  );
+                }
+                if (slot.kind === "thinking") {
+                  // Live thinking, pinned to its chronological slot. Rendered
+                  // through the SAME `renderBlock({type:"reasoning"})` path
+                  // the persisted branch uses, so live and reloaded turns
+                  // produce an identical ThinkingTrace.
+                  return (
+                    <InlineThinkingSlot
+                      key={`thinking-${slot.seq}`}
+                      requestId={requestId}
+                      chunkStartIndex={slot.chunkStartIndex}
+                      chunkEndIndex={slot.chunkEndIndex}
+                      renderReasoning={(content, isStreaming) =>
+                        renderBlock(
+                          {
+                            type: "reasoning",
+                            content,
+                            isStreamingBlock: isStreaming,
+                          } as RenderBlock,
+                          i,
+                        )
+                      }
                     />
                   );
                 }

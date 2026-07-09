@@ -647,6 +647,20 @@ export type UnifiedSlot =
       statusKind: "phase" | "info";
       seq: number;
     }
+  // A reasoning (thinking) run, pinned to its chronological position in the
+  // turn. `chunkStartIndex`/`chunkEndIndex` are indices into the request's
+  // `reasoningChunks` array; `chunkEndIndex === undefined` means the run is
+  // still OPEN (tokens may still be arriving — or none ever will, for
+  // token-less "reasoning started" models, in which case the renderer shows
+  // the "Reasoning…" indicator). Before this slot existed, native reasoning
+  // tokens were never rendered live at all (only after a reload, from the
+  // persisted thinking part) — the single biggest live/DB render divergence.
+  | {
+      kind: "thinking";
+      chunkStartIndex: number;
+      chunkEndIndex?: number;
+      seq: number;
+    }
   // A stream `error` event that occurred MID-TURN (content follows it in the
   // timeline). It is interleaved here so it holds its chronological position
   // instead of floating to the bottom of the message. The error payload is
@@ -731,12 +745,15 @@ export const selectUnifiedSlots = (requestId: string) =>
       state.activeRequests.byRequestId[requestId]?.isTextStreaming,
     (state: RootState) =>
       state.activeRequests.byRequestId[requestId]?.isReasoningStreaming,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.reasoningRunChunkStart,
     (
       timeline,
       renderBlockOrder,
       renderBlocks,
       isTextStreaming,
       isReasoningStreaming,
+      reasoningRunChunkStart,
     ): UnifiedSlot[] => {
       const blockOrder = renderBlockOrder ?? [];
       const blocksMap = renderBlocks ?? {};
@@ -808,16 +825,35 @@ export const selectUnifiedSlots = (requestId: string) =>
         } else if (entry.kind === "reasoning_start") {
           pendingStatus = null;
         } else if (entry.kind === "reasoning_end") {
-          // Reasoning blocks arrive as render_block events and land in renderBlockOrder.
-          // They are NOT covered by text_end block ranges because they aren't part of
-          // a text run. Emit any blocks accumulated in renderBlockOrder since the last
-          // emission — these are the reasoning block(s) for this reasoning run.
           pendingStatus = null;
-          const end = blockOrder.length;
+          // The run's thinking tokens, pinned to their chronological spot.
+          // Empty runs (token-less "reasoning started/stopped" bracketing
+          // that produced no chunks) emit nothing once closed.
+          if (entry.chunkEndIndex > entry.chunkStartIndex) {
+            flushPendingError();
+            slots.push({
+              kind: "thinking",
+              chunkStartIndex: entry.chunkStartIndex,
+              chunkEndIndex: entry.chunkEndIndex,
+              seq: nextSeq++,
+            });
+          }
+          // Reasoning render blocks (server `type:"reasoning"` blocks) land in
+          // renderBlockOrder outside any text_end range — emit the ones that
+          // accumulated during this run. The sweep is BOUNDED by the entry's
+          // blockEndIndex snapshot: sweeping to the CURRENT end of
+          // renderBlockOrder hoisted every later text block above subsequent
+          // tool calls (tool cards sank to the bottom of any thinking-first
+          // turn). Entries that predate the snapshot fall back to the old
+          // behavior.
+          const end = Math.min(
+            entry.blockEndIndex ?? blockOrder.length,
+            blockOrder.length,
+          );
           for (let i = lastEmittedBlockIndex; i < end; i++) {
             pushBlock(blockOrder[i]);
           }
-          lastEmittedBlockIndex = end;
+          lastEmittedBlockIndex = Math.max(lastEmittedBlockIndex, end);
         } else if (entry.kind === "render_block") {
           // Server-driven render_block (content-ir Phase 5 / py-block-detector):
           // process-stream pushes the block into renderBlockOrder AND records a
@@ -881,7 +917,13 @@ export const selectUnifiedSlots = (requestId: string) =>
           const dataType = entry.data.type;
           if (dataType && MEDIA_DATA_TYPES.has(dataType)) {
             pendingStatus = null;
-            for (let i = blockOrder.length - 1; i >= 0; i--) {
+            // FORWARD scan: the oldest un-emitted media block belongs to the
+            // oldest un-satisfied media data event, so consecutive media
+            // events keep arrival order. (A backward scan paired event 1 with
+            // the NEWEST pending block — two media of different kinds
+            // rendered swapped. Partials/finals share a blockId, so the
+            // in-place upsert still collapses them regardless of direction.)
+            for (let i = 0; i < blockOrder.length; i++) {
               const candidateId = blockOrder[i];
               if (emittedBlockIds.has(candidateId)) continue;
               const candidate = blocksMap[candidateId];
@@ -912,9 +954,18 @@ export const selectUnifiedSlots = (requestId: string) =>
       }
 
       // Trailing active reasoning run — reasoning_start fired but reasoning_end has not
-      // yet. Any render_block events that arrived since the last emission belong to this
-      // reasoning run (e.g. type: "reasoning", blockId: "client_reasoning_1").
+      // yet. The OPEN thinking slot renders the tokens streamed so far (or the
+      // "Reasoning…" indicator when the model exposes none), and any
+      // render_block events that arrived since the last emission belong to
+      // this run (e.g. type: "reasoning", blockId: "client_reasoning_1").
       if (isReasoningStreaming) {
+        slots.push({
+          kind: "thinking",
+          chunkStartIndex: reasoningRunChunkStart ?? 0,
+          // chunkEndIndex deliberately absent — the run is open; the renderer
+          // reads reasoningChunks from the start index to the live end.
+          seq: nextSeq++,
+        });
         for (let i = lastEmittedBlockIndex; i < blockOrder.length; i++) {
           pushBlock(blockOrder[i]);
         }
@@ -938,6 +989,26 @@ export const selectUnifiedSlots = (requestId: string) =>
       return slots;
     },
   );
+
+/**
+ * The reasoning text for ONE run — the `reasoningChunks` slice referenced by
+ * a `thinking` unified slot. `chunkEndIndex === undefined` means the run is
+ * still open: read to the live end of the array so tokens stream into the
+ * trace as they arrive. Returns a plain string (value-equal across identical
+ * recomputes), so `useAppSelector` consumers don't re-render on unrelated
+ * store changes.
+ */
+export const selectReasoningRunText =
+  (requestId: string, chunkStartIndex: number, chunkEndIndex?: number) =>
+  (state: RootState): string => {
+    const chunks = state.activeRequests.byRequestId[requestId]?.reasoningChunks;
+    if (!chunks || chunks.length === 0) return "";
+    const end = Math.min(chunkEndIndex ?? chunks.length, chunks.length);
+    if (end <= chunkStartIndex) return "";
+    let text = "";
+    for (let i = chunkStartIndex; i < end; i++) text += chunks[i];
+    return text;
+  };
 
 /**
  * True when the request's unified slots contain an inline `error` slot — i.e.
