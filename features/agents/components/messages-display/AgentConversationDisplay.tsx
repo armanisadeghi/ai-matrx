@@ -288,8 +288,16 @@ export function AgentConversationDisplay({
     for (const entry of displayEntries) {
       if (entry.role === "assistant") {
         if (entry.isFailed) {
-          // Failed turn → its own group. Close any open run first so the
+          // Failed turn → its own group. A failed row that shares its stream
+          // source with buffered members must own the run's ONLY
+          // stream-anchored render: its `requestId` render already shows the
+          // whole request's slots (with the error trailing), so any buffered
+          // sibling with the same requestId would paint the same content a
+          // second time. Drop those siblings, then close any open run so the
           // failed bubble sits between (not inside) the surrounding turns.
+          if (entry.requestId) {
+            buffer = buffer.filter((m) => m.requestId !== entry.requestId);
+          }
           flush();
           groups.push({
             kind: "assistant-failed",

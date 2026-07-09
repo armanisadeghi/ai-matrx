@@ -2108,6 +2108,12 @@ export async function processStream({
         messageId: tempId,
         role: "assistant",
         position,
+        // Anchor to the live stream like every server-reserved row: the
+        // turn group collapses all rows sharing a requestId into ONE
+        // stream-driven render — without the anchor, this client-temp row
+        // would render its committed slice ON TOP of that render
+        // (duplicate content after an under-announced multi-iteration run).
+        requestId,
       }),
     );
     dispatch(
@@ -2298,6 +2304,10 @@ export async function processStream({
         messageId: tempId,
         role: "assistant",
         position: maxPos + 1,
+        // Same stream anchor every reserved row gets — keeps this rescue
+        // record on the unified-slot render path (and inside the turn
+        // group's one-render-per-requestId collapse).
+        requestId,
       }),
     );
     dispatch(

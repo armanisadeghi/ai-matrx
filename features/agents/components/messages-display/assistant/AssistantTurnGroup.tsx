@@ -62,13 +62,41 @@ interface AssistantTurnGroupProps {
   members: AssistantTurnGroupMember[];
 }
 
+/**
+ * Collapse members that share a live stream source into ONE render each.
+ *
+ * A multi-iteration agentic turn persists one assistant row per iteration,
+ * and process-stream stamps the SAME `_streamRequestId` on every one of them.
+ * The stream-anchored renderer (`EnhancedChatMarkdown`'s unified-slot path)
+ * renders the ENTIRE request's timeline — so letting each row render with the
+ * shared requestId shows the whole turn once PER ROW: the
+ * duplicate/triplicate-content-after-stream bug. One render per requestId is
+ * the correct cardinality; the LAST row of the run wins so the action-bar
+ * anchor and edit target stay on the final answer row. Rows without a
+ * requestId (DB-hydrated history) are untouched.
+ */
+function collapseByRequestId(
+  members: AssistantTurnGroupMember[],
+): AssistantTurnGroupMember[] {
+  const lastIndexByRequestId = new Map<string, number>();
+  members.forEach((m, i) => {
+    if (m.requestId) lastIndexByRequestId.set(m.requestId, i);
+  });
+  if (lastIndexByRequestId.size === 0) return members;
+  return members.filter(
+    (m, i) => !m.requestId || lastIndexByRequestId.get(m.requestId) === i,
+  );
+}
+
 export function AssistantTurnGroup({
   conversationId,
   surfaceKey,
   compact = false,
-  members,
+  members: rawMembers,
 }: AssistantTurnGroupProps) {
   const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
+
+  const members = collapseByRequestId(rawMembers);
 
   // The "answer anchor" for this group: the latest assistant member with
   // a real messageId. The trailing action bar binds Edit / Like / Delete
@@ -83,7 +111,10 @@ export function AssistantTurnGroup({
     return null;
   })();
 
-  const groupMessageIds: string[] = members
+  // Aggregation (Copy / Speak across the turn) reads the RAW member list:
+  // the collapse above is a render-cardinality fix, but every committed row
+  // still holds its own slice of the turn's content.
+  const groupMessageIds: string[] = rawMembers
     .map((m) => m.messageId)
     .filter((id): id is string => typeof id === "string");
 
