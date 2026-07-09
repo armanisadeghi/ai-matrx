@@ -21,6 +21,17 @@ export type ReachabilityContent =
 export type ReachabilityContainer =
   Database["public"]["Functions"]["admin_reachability_containers"]["Returns"][number];
 
+export type RelationshipProblem =
+  Database["public"]["Functions"]["admin_relationship_problems"]["Returns"][number];
+
+/** The drift categories emitted by admin_relationship_problems().kind. */
+export type ProblemKind =
+  | "unregistered_pair"
+  | "wrong_way_edges"
+  | "conveying_container_not_shareable"
+  | "conveying_rule_no_edges"
+  | "inactive_rule_with_edges";
+
 export type PermissionLevel = Database["public"]["Enums"]["permission_level"];
 
 export type ContainerSide = "none" | "source" | "target";
