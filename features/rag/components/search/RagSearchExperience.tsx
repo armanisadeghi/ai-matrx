@@ -76,11 +76,9 @@ import {
 } from "@/features/rag/api/search-lab";
 import { useDataStores } from "@/features/rag/hooks/useDataStores";
 import { useRagSearchContext } from "@/features/rag/hooks/useRagSearchContext";
-import {
-  useOpenCitation,
-  shouldOpenInNewTab,
-  citationOpensInWindow,
-} from "@/features/rag/components/source-inspector/useOpenCitation";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
+import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { AnimatedKpiCard } from "@/features/rag/components/library/AnimatedKpiCard";
 import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
@@ -183,77 +181,16 @@ function useScopeControls(initialStoreId: string | null = null) {
 type Scope = ReturnType<typeof useScopeControls>;
 
 // ---------------------------------------------------------------------------
-// Score bar — small visual indicator
+// Rich hit card — the canonical RagHitCard (expanded), shared between the
+// Search tab and the Agent Simulation / Diagnostics tabs.
 // ---------------------------------------------------------------------------
-
-function ScoreBar({
-  label,
-  value,
-  max,
-  tone = "default",
-}: {
-  label: string;
-  value: number | null | undefined;
-  max: number;
-  tone?: "default" | "primary" | "amber";
-}) {
-  const pct =
-    value === null || value === undefined || max <= 0
-      ? 0
-      : Math.min(100, Math.max(0, (value / max) * 100));
-  const fillCls =
-    tone === "primary"
-      ? "bg-primary"
-      : tone === "amber"
-        ? "bg-amber-500"
-        : "bg-muted-foreground";
-  return (
-    <div className="flex items-center gap-2 text-[11px]">
-      <span className="w-20 text-muted-foreground">{label}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className={cn("h-full transition-all", fillCls)}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="tabular-nums w-16 text-right text-muted-foreground">
-        {value === null || value === undefined ? "—" : value.toFixed(3)}
-      </span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Rich hit card — shared between Search tab and Agent Simulation tab
-// ---------------------------------------------------------------------------
-
-function fileNameOf(meta: Record<string, unknown>): string | null {
-  const src = (meta?.source ?? {}) as Record<string, unknown>;
-  return (
-    (src.file_name as string | undefined) ??
-    (src.title as string | undefined) ??
-    (src.path as string | undefined) ??
-    null
-  );
-}
-
-function pageNumberOf(meta: Record<string, unknown>): number | null {
-  const pn = (meta?.page_number ?? meta?.first_page) as
-    number | string | undefined;
-  if (typeof pn === "number") return pn;
-  if (typeof pn === "string") {
-    const n = Number.parseInt(pn, 10);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
 
 function citationHrefFor(
   source_kind: string,
   source_id: string,
   page: number | null,
   chunk_id: string,
-): string | null {
+): string {
   // Mirrors the module-level citationHrefFor in features/rag/api/search.ts —
   // keep the two in sync. Every kind gets a destination (no dead nulls),
   // library_doc carries the page so a result opens on the hit's page (the
@@ -283,203 +220,46 @@ function citationHrefFor(
 function RichHitCard({
   rank,
   hit,
-  showFullText = false,
-  showBreakdown = false,
+  topScore,
 }: {
   rank: number;
   hit: RagSearchHit | DiagnoseHit;
+  topScore?: number;
+  /** Retained for call-site compatibility; the expanded canonical card always
+   *  shows the full chunk + breakdown. */
   showFullText?: boolean;
   showBreakdown?: boolean;
 }) {
-  const meta = (hit.metadata ?? {}) as Record<string, unknown>;
-  const src = (meta?.source ?? {}) as Record<string, unknown>;
-  const libraryShortCode = src.library_short_code as string | undefined;
-  const fileName =
-    "file_name" in hit && hit.file_name ? hit.file_name : fileNameOf(meta);
-  const pageNumber =
-    "page_number" in hit && hit.page_number != null
-      ? hit.page_number
-      : pageNumberOf(meta);
-  const snippet = "snippet" in hit ? hit.snippet : (hit as DiagnoseHit).snippet;
+  const view = hitViewFromSearchHit(hit);
   const href = citationHrefFor(
     hit.source_kind,
     hit.source_id,
-    pageNumber,
+    view.pageNumber,
     hit.chunk_id,
   );
   const openCitation = useOpenCitation();
 
-  // Lane provenance — why did this hit surface? A hit with no vector/lexical
-  // rank that arrived purely via KG entity co-occurrence is the classic
-  // "a 3-word title outranks real content" failure; flag it so the user can
-  // judge the hit instead of trusting an opaque score.
-  const vectorRank =
-    "vector_rank" in hit && hit.vector_rank != null ? hit.vector_rank : null;
-  const lexicalRank =
-    "lexical_rank" in hit && hit.lexical_rank != null ? hit.lexical_rank : null;
-  const entityRank =
-    "entity_rank" in hit && hit.entity_rank != null ? hit.entity_rank : null;
-  const entityNames =
-    "entities" in hit && Array.isArray(hit.entities) ? hit.entities : [];
-  const entityOnly =
-    vectorRank === null && lexicalRank === null && entityRank !== null;
-
   return (
-    <div className="rounded-md border bg-card overflow-hidden">
-      {/* Header — wraps on phones so chips never overflow horizontally */}
-      <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs flex-wrap">
-        <span className="tabular-nums font-mono w-7 text-right text-muted-foreground">
-          #{rank}
-        </span>
-        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        <span className="font-mono uppercase tracking-wide text-muted-foreground">
-          {hit.source_kind}
-        </span>
-        {libraryShortCode && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-            library · {libraryShortCode}
-          </Badge>
-        )}
-        <span className="truncate font-medium text-foreground min-w-0 flex-1">
-          {fileName ?? `(${hit.source_kind})`}
-        </span>
-        {pageNumber !== null && (
-          <Badge
-            variant="secondary"
-            className="text-[10px] px-1.5 py-0 ml-auto"
-          >
-            page {pageNumber}
-          </Badge>
-        )}
-        <Badge
-          variant="outline"
-          className={cn(
-            "tabular-nums text-[10px]",
-            pageNumber === null && "ml-auto",
-          )}
-        >
-          score {typeof hit.score === "number" ? hit.score.toFixed(3) : "—"}
-        </Badge>
-        {entityOnly && (
-          <Badge
-            variant="warning"
-            className="text-[10px] px-1.5 py-0"
-            title="Surfaced only because its source mentions a matched entity — no semantic (vector) or keyword (lexical) match. Treat with care."
-          >
-            entity match only
-          </Badge>
-        )}
-        {href && (
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => {
-              if (shouldOpenInNewTab(e)) return;
-              e.preventDefault();
-              openCitation({
-                sourceKind: hit.source_kind,
-                sourceId: hit.source_id,
-                href,
-                chunkId: hit.chunk_id,
-                pageNumber,
-                pageNumbers: pageNumber != null ? [pageNumber] : null,
-                snippet,
-                fileName: fileName ?? null,
-                score: typeof hit.score === "number" ? hit.score : null,
-              });
-            }}
-            className="text-primary hover:underline text-[11px] whitespace-nowrap"
-          >
-            {citationOpensInWindow(hit.source_kind) ? "open" : "open ↗"}
-          </a>
-        )}
-      </div>
-
-      {/* Snippet */}
-      <div className="px-3 py-2">
-        <div
-          className={cn(
-            "text-sm whitespace-pre-wrap text-foreground",
-            !showFullText && "line-clamp-6",
-          )}
-        >
-          {snippet}
-        </div>
-      </div>
-
-      {/* Optional score breakdown */}
-      {showBreakdown && (
-        <div className="px-3 py-2 border-t bg-muted/20 space-y-1">
-          <ScoreBar
-            label="Vector rank"
-            value={
-              "vector_rank" in hit && hit.vector_rank != null
-                ? hit.vector_rank
-                : null
-            }
-            max={100}
-            tone="primary"
-          />
-          <ScoreBar
-            label="Lexical rank"
-            value={
-              "lexical_rank" in hit && hit.lexical_rank != null
-                ? hit.lexical_rank
-                : null
-            }
-            max={100}
-            tone="default"
-          />
-          <ScoreBar
-            label="Entity rank"
-            value={entityRank}
-            max={20}
-            tone="amber"
-          />
-          <ScoreBar
-            label="Rerank score"
-            value={
-              "rerank_score" in hit && hit.rerank_score != null
-                ? hit.rerank_score
-                : null
-            }
-            max={1}
-            tone="amber"
-          />
-          {entityNames.length > 0 && (
-            <div className="flex items-center gap-1 pt-1 flex-wrap">
-              <span className="text-[10px] text-muted-foreground mr-0.5">
-                entities
-              </span>
-              {entityNames.slice(0, 6).map((name) => (
-                <Badge
-                  key={name}
-                  variant="secondary"
-                  className="text-[10px] px-1.5 py-0"
-                >
-                  {name}
-                </Badge>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-2 pt-1 text-[10px] text-muted-foreground">
-            <code className="font-mono">chunk_id</code>
-            <code className="font-mono truncate flex-1">{hit.chunk_id}</code>
-            <button
-              type="button"
-              className="hover:text-foreground p-0.5"
-              onClick={() => {
-                navigator.clipboard.writeText(hit.chunk_id);
-                toast.success("chunk_id copied");
-              }}
-            >
-              <Copy className="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    <RagHitCard
+      view={view}
+      variant="expanded"
+      rank={rank}
+      topScore={topScore}
+      href={href}
+      onOpen={() =>
+        openCitation({
+          sourceKind: hit.source_kind,
+          sourceId: hit.source_id,
+          href,
+          chunkId: hit.chunk_id,
+          pageNumber: view.pageNumber,
+          pageNumbers: view.pageNumbers,
+          snippet: view.snippet,
+          fileName: view.title,
+          score: view.score,
+        })
+      }
+    />
   );
 }
 
@@ -1198,8 +978,7 @@ function SearchTab({ scope }: { scope: Scope }) {
                     <RichHitCard
                       rank={i + 1}
                       hit={h}
-                      showFullText
-                      showBreakdown
+                      topScore={response.hits[0]?.score}
                     />
                   </motion.div>
                 ))
@@ -2030,8 +1809,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                         <RichHitCard
                           rank={i + 1}
                           hit={h}
-                          showFullText
-                          showBreakdown
+                          topScore={diag.hits[0]?.score}
                         />
                       </motion.div>
                     ))}

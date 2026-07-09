@@ -1,16 +1,6 @@
-import type { LucideIcon } from "lucide-react";
-import {
-  FileText,
-  NotebookText,
-  Code2,
-  BookOpen,
-  Mic,
-  Globe,
-} from "lucide-react";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
-import type { ToolAccent } from "../../types";
 
 /**
  * Parse + normalize the `rag_search` tool result, and map a source_kind to its
@@ -155,26 +145,7 @@ export function parseRag(entry: ToolLifecycleEntry): ParsedRagSearch {
   };
 }
 
-// ─── Source-kind glyph + deep link ──────────────────────────────────────────
-
-interface KindGlyph {
-  icon: LucideIcon;
-  accent: ToolAccent;
-  label: string;
-}
-
-const KIND: Record<string, KindGlyph> = {
-  cld_file: { icon: FileText, accent: "slate", label: "File" },
-  note: { icon: NotebookText, accent: "amber", label: "Note" },
-  code_file: { icon: Code2, accent: "blue", label: "Code" },
-  library_doc: { icon: BookOpen, accent: "violet", label: "Library" },
-  transcript: { icon: Mic, accent: "rose", label: "Transcript" },
-  scraped: { icon: Globe, accent: "cyan", label: "Web page" },
-};
-
-export function kindGlyph(kind: string): KindGlyph {
-  return KIND[kind] ?? { icon: FileText, accent: "slate", label: kind };
-}
+// ─── Deep link ───────────────────────────────────────────────────────────────
 
 /** Deep link for a hit via the canonical citation router. */
 export function hrefForNormalized(hit: NormalizedHit): string {

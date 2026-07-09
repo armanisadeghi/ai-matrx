@@ -1,12 +1,12 @@
 /**
- * Map a RAG relevance score to a color tier. The score field is a fused
- * hybrid score (vector + lexical, optionally re-ranked) — for cosine /
- * cross-encoder rerankers it usually lives in the 0–1 band and rarely clears
- * 0.6, so the thresholds are tuned LOW on purpose: a "strong" RAG hit is ~0.45+,
- * not the ~0.8 you'd expect from a normalized probability.
+ * Map a RAG relevance score to a color tier. The score is a fused hybrid score
+ * (vector + lexical, optionally re-ranked) — for cosine / cross-encoder
+ * rerankers it usually lives in the 0–1 band and rarely clears 0.6, so the
+ * thresholds are tuned LOW on purpose: a "strong" RAG hit is ~0.45+, not the
+ * ~0.8 you'd expect from a normalized probability.
  *
  * One source of truth for the score → color language so every RAG surface
- * (tool-call card, popover, the /rag/search list) speaks it identically.
+ * (rag_search tool card, /rag/search, the omnibox) speaks it identically.
  * Returns Tailwind class fragments that are light/dark safe.
  */
 
@@ -14,7 +14,6 @@ export type RelevanceLevel = "strong" | "moderate" | "weak";
 
 export interface RelevanceTier {
   level: RelevanceLevel;
-  /** Human label for the popover. */
   label: string;
   /** Soft tinted badge (rounded-md chip) — bg + text, NOT a full pill. */
   badge: string;
@@ -35,8 +34,7 @@ const STRONG: RelevanceTier = {
 const MODERATE: RelevanceTier = {
   level: "moderate",
   label: "Moderate match",
-  badge:
-    "bg-amber-500/12 text-amber-700 ring-amber-500/20 dark:text-amber-300",
+  badge: "bg-amber-500/12 text-amber-700 ring-amber-500/20 dark:text-amber-300",
   bar: "bg-amber-500",
   text: "text-amber-700 dark:text-amber-300",
 };
@@ -57,10 +55,9 @@ export function scoreTier(score: number): RelevanceTier {
 
 /**
  * Relative strength of a hit within its result set (0–1), for a relevance bar.
- * Normalized against the TOP score so the best hit reads full and the rest
- * fall in proportion — a within-set ranking aid, not an absolute-quality claim
- * (that's the color, from {@link scoreTier}). Floored at 8% so even a near-zero
- * hit shows a sliver.
+ * Normalized against the TOP score so the best hit reads full and the rest fall
+ * in proportion — a within-set ranking aid, not an absolute-quality claim (that
+ * is the color). Floored at 8% so even a near-zero hit shows a sliver.
  */
 export function relativeStrength(score: number, topScore: number): number {
   if (!Number.isFinite(score) || score <= 0) return 0.08;

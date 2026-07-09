@@ -21,16 +21,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { ExternalLink, PanelRight, FileText, NotebookText, Code2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFilesMap } from "@/features/files/redux/selectors";
 import { cn } from "@/lib/utils";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
-import {
-  useOpenCitation,
-  shouldOpenInNewTab,
-  citationOpensInWindow,
-} from "@/features/rag/components/source-inspector/useOpenCitation";
+import { useOpenCitation } from "@/features/rag/components/source-inspector/useOpenCitation";
+import { RagHitCard } from "@/features/rag/components/hit-card/RagHitCard";
+import { hitViewFromSearchHit } from "@/features/rag/components/hit-card/adapters";
 
 export interface RagSearchHitsProps {
   hits: RagSearchHit[];
@@ -108,6 +105,7 @@ export function RagSearchHits({
             origin={origin}
             label={resolveSourceLabel(hit, filesById)}
             query={query}
+            topScore={hits[0]?.score}
             onClick={onHitClick}
           />
         ))}
@@ -130,111 +128,47 @@ function RagSearchHitRow({
   origin,
   label,
   query,
+  topScore,
   onClick,
 }: {
   hit: RagSearchHit;
   origin: "files" | "chat" | "admin";
   label: string;
   query?: string;
+  topScore?: number;
   onClick?: (hit: RagSearchHit) => void;
 }) {
-  const Icon = iconForSourceKind(hit.source_kind);
+  const view = hitViewFromSearchHit(hit, { name: label });
   const href = citationHrefFor(hit);
-  const pageRaw = hit.metadata?.["page_number"];
-  const pageNumber =
-    typeof pageRaw === "number"
-      ? pageRaw
-      : typeof pageRaw === "string"
-        ? Number.parseInt(pageRaw, 10)
-        : null;
-
   const openCitation = useOpenCitation();
-  const opensInWindow = citationOpensInWindow(hit.source_kind);
-  const openInWindow = () =>
-    openCitation({
-      sourceKind: hit.source_kind,
-      sourceId: hit.source_id,
-      href,
-      chunkId: hit.chunk_id,
-      pageNumber,
-      pageNumbers: pageNumber != null ? [pageNumber] : null,
-      snippet: hit.snippet,
-      fileName: label,
-      score: hit.score,
-      query: query ?? null,
-    });
 
-  const body = (
-    <div className="flex items-start gap-3 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:bg-accent/40">
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-xs font-medium truncate">{label}</span>
-          <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
-            {hit.source_kind}
-            {hit.parent_chunk_id ? " · child" : " · parent"}
-            {pageNumber ? ` · p${pageNumber}` : ""}
-          </span>
-        </div>
-        <p className="text-xs text-foreground line-clamp-3 leading-snug whitespace-pre-wrap break-words">
-          {hit.snippet}
-        </p>
-        <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span title="Hybrid score (vector + lexical, optionally re-ranked)">
-            score {hit.score.toFixed(3)}
-          </span>
-          {hit.vector_rank != null ? (
-            <span>· vec #{hit.vector_rank}</span>
-          ) : null}
-          {hit.lexical_rank != null ? (
-            <span>· lex #{hit.lexical_rank}</span>
-          ) : null}
-          {hit.rerank_score != null ? (
-            <span>· rerank {hit.rerank_score.toFixed(3)}</span>
-          ) : null}
-        </div>
-      </div>
-      {opensInWindow ? (
-        <PanelRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-      ) : (
-        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-      )}
-    </div>
-  );
+  // An explicit onClick handler (a caller wiring a custom side-panel) wins;
+  // otherwise the card's open control routes to the source's in-app window.
+  const onOpen = onClick
+    ? () => onClick(hit)
+    : () =>
+        openCitation({
+          sourceKind: hit.source_kind,
+          sourceId: hit.source_id,
+          href,
+          chunkId: hit.chunk_id,
+          pageNumber: view.pageNumber,
+          pageNumbers: view.pageNumbers,
+          snippet: view.snippet,
+          fileName: view.title,
+          score: view.score,
+          query: query ?? null,
+        });
 
-  // An explicit onClick handler (a caller wiring a custom side-panel, etc.)
-  // always wins — we don't override it.
-  if (onClick) {
-    return (
-      <li>
-        <button
-          type="button"
-          onClick={() => onClick(hit)}
-          className="block w-full text-left"
-          data-rag-origin={origin}
-        >
-          {body}
-        </button>
-      </li>
-    );
-  }
-
-  // Default: plain click opens the source in its in-app window; keep the href
-  // so modifier / middle click still opens the canonical viewer in a new tab.
   return (
-    <li>
-      <a
+    <li data-rag-origin={origin}>
+      <RagHitCard
+        view={view}
+        variant="compact"
+        topScore={topScore}
         href={href}
-        onClick={(e) => {
-          if (shouldOpenInNewTab(e)) return;
-          e.preventDefault();
-          openInWindow();
-        }}
-        className="block"
-        data-rag-origin={origin}
-      >
-        {body}
-      </a>
+        onOpen={onOpen}
+      />
     </li>
   );
 }
@@ -242,19 +176,6 @@ function RagSearchHitRow({
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function iconForSourceKind(kind: string) {
-  switch (kind) {
-    case "cld_file":
-      return FileText;
-    case "note":
-      return NotebookText;
-    case "code_file":
-      return Code2;
-    default:
-      return FileText;
-  }
-}
 
 /**
  * Friendly label for a hit. Cloud-files reads from the Redux map (the
