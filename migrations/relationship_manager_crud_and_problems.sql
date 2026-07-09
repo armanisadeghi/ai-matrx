@@ -81,8 +81,9 @@ RETURNS TABLE (
   WHERE public.is_super_admin() AND r.is_active AND r.container_side <> 'none'
     AND NOT EXISTS (
       SELECT 1 FROM platform.shareable_resource_registry s
-      WHERE s.resource_type =
-        CASE WHEN r.container_side = 'target' THEN r.target_type ELSE r.source_type END)
+      WHERE s.is_active
+        AND s.resource_type =
+          CASE WHEN r.container_side = 'target' THEN r.target_type ELSE r.source_type END)
 
   UNION ALL
   -- 4. Active conveying rule with zero edges — speculative or drifted; harmless

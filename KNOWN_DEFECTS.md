@@ -12,6 +12,10 @@ The ledger of known bugs and gaps on the frontend. Twin of aidream's `KNOWN_DEFE
 
 ## OPEN
 
+### D35 — `platform.association_types` 2-col PK forbids label+generic rule coexistence (2026-07-09)
+**Decides: Arman (cross-repo, DB shape).** The reachability doc (`docs/db_changes/REACHABILITY-ROLLOUT.md` §1.1, §3.1) designs for a generic rule (`label IS NULL` = any label) AND label-specific rules coexisting for the same `(source_type, target_type)` pair, with the label rule taking precedence. But the live table has **PRIMARY KEY `(source_type, target_type)`** (added by aidream `db/migrations/platform_association_types_pk.sql` because matrx-orm crashes importing a PK-less model). That PK allows **only one rule per pair**, so the coexistence + precedence design is unreachable, and `admin_upsert_relationship_rule`'s `ON CONFLICT (source_type, target_type, COALESCE(label,''))` throws an **uncaught `unique_violation`** the moment anyone adds a label-specific rule beside a generic one for the same pair. Reachable now: the Relationship Manager's "New rule" form (`features/admin/relationships/`) exposes a label field. Currently latent — 0 of 29 rows use a label — and the failure is loud (a toast, not data loss).
+**Options:** (1) accept "one rule per pair," drop the label field from the create UI + amend the doc; (2) surrogate `id uuid` PK + keep the 3-col unique index `association_types_pair_label_uq` (satisfies matrx-orm's PK requirement AND restores coexistence — **recommended**, but requires regenerating aidream ORM models + a cross-repo commit); (3) `label NOT NULL DEFAULT ''` + 3-col PK (breaks the `label IS NULL = generic` semantics used across both repos — avoid).
+
 ### D34 — `api_class` tear-out left three truth-vs-code gaps (2026-07-07)
 Filed during the `api_class` removal (`b8a0cbb94`, `9fcffb97d`, `ecc66217d`). The feedback MCP rejected the placeholder agent id (FK wall), so they live here. All verified against live Supabase `txzxabzwovsujtloxrus`.
 

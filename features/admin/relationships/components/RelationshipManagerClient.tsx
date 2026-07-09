@@ -80,7 +80,6 @@ import type {
   RelationshipProblem,
   RelationshipRule,
   RelationshipSystemStatus,
-  UnregisteredPair,
 } from "../types";
 
 // ---------------------------------------------------------------------------
@@ -145,14 +144,12 @@ const EMPTY_EDITOR: EditorState = {
 interface Props {
   status: RelationshipSystemStatus | null;
   rules: RelationshipRule[];
-  unregistered: UnregisteredPair[];
   problems: RelationshipProblem[];
 }
 
 export default function RelationshipManagerClient({
   status,
   rules,
-  unregistered,
   problems,
 }: Props) {
   const router = useRouter();
@@ -164,7 +161,9 @@ export default function RelationshipManagerClient({
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmSave, setConfirmSave] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  /** The rule targeted for deletion — independent of the editor so a row-level
+   *  delete doesn't also pop the editor sheet. */
+  const [deleteTarget, setDeleteTarget] = useState<RelationshipRule | null>(null);
   const [confirmRebuild, setConfirmRebuild] = useState(false);
   const [confirmEnforce, setConfirmEnforce] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
@@ -184,7 +183,7 @@ export default function RelationshipManagerClient({
       if (!q) return true;
       const hay =
         `${r.source_type} ${r.target_type} ${r.label ?? ""} ` +
-        `${label(r.source_type)} ${label(r.target_type)}`.toLowerCase();
+        `${label(r.source_type)} ${label(r.target_type)}`;
       return hay.toLowerCase().includes(q);
     });
   }, [rules, filter, query]);
@@ -192,15 +191,26 @@ export default function RelationshipManagerClient({
   const errorCount = problems.filter((p) => p.severity === "error").length;
   const warningCount = problems.filter((p) => p.severity === "warning").length;
   const problemCount = problems.length;
+  const unregisteredCount = problems.filter(
+    (p) => p.kind === "unregistered_pair",
+  ).length;
 
   const editorConveys = editor !== null && editor.containerSide !== "none";
-  const editorFlipsToConveying =
+  /** True when saving will change how (or whether) access cascades — a fresh
+   *  conveyance, or a side/ceiling change on an already-conveying rule. */
+  const editorChangesConveyance =
     editor !== null &&
     editorConveys &&
     (editor.original === null ||
       editor.original.container_side === "none" ||
       editor.original.container_side !== editor.containerSide ||
       editor.original.conveys_max !== editor.conveysMax);
+  /** Specifically a none/inactive → conveying flip (new access being granted). */
+  const editorNewlyConveys =
+    editorChangesConveyance &&
+    (editor?.original === null ||
+      editor?.original.container_side === "none" ||
+      !editor?.original.is_active);
 
   const editorValid =
     editor !== null &&
@@ -259,17 +269,27 @@ export default function RelationshipManagerClient({
   }
 
   async function deleteRule() {
-    if (!editor || editor.mode !== "edit") return;
+    const target = deleteTarget;
+    if (!target) return;
     setSaving(true);
     try {
       const { error } = await supabase.rpc("admin_delete_relationship_rule", {
-        p_source_type: editor.sourceType,
-        p_target_type: editor.targetType,
-        p_label: editor.label || undefined,
+        p_source_type: target.source_type,
+        p_target_type: target.target_type,
+        p_label: target.label ?? undefined,
       });
       if (error) throw error;
       toast.success("Rule deleted — closure cache rebuilt");
-      setEditor(null);
+      setDeleteTarget(null);
+      // Close the editor too if it was open on the same rule.
+      setEditor((cur) =>
+        cur &&
+        cur.sourceType === target.source_type &&
+        cur.targetType === target.target_type &&
+        (cur.label || null) === target.label
+          ? null
+          : cur,
+      );
       refresh();
     } catch (e) {
       toast.error(
@@ -277,7 +297,6 @@ export default function RelationshipManagerClient({
       );
     } finally {
       setSaving(false);
-      setConfirmDelete(false);
     }
   }
 
@@ -352,7 +371,6 @@ export default function RelationshipManagerClient({
   // -- render ------------------------------------------------------------------
 
   const enforcementOn = status?.enforcement_enabled ?? false;
-  const unregisteredCount = unregistered.length;
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -596,10 +614,7 @@ export default function RelationshipManagerClient({
                         variant="ghost"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
                         title="Delete rule"
-                        onClick={() => {
-                          openEdit(rule);
-                          setConfirmDelete(true);
-                        }}
+                        onClick={() => setDeleteTarget(rule)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -813,12 +828,12 @@ export default function RelationshipManagerClient({
               </div>
 
               <div className="mt-auto flex items-center justify-between gap-2 pb-4">
-                {editor.mode === "edit" ? (
+                {editor.mode === "edit" && editor.original ? (
                   <Button
                     variant="ghost"
                     className="text-destructive hover:text-destructive"
                     disabled={saving}
-                    onClick={() => setConfirmDelete(true)}
+                    onClick={() => setDeleteTarget(editor.original)}
                   >
                     <Trash2 className="mr-1.5 h-4 w-4" />
                     Delete
@@ -833,7 +848,7 @@ export default function RelationshipManagerClient({
                   <Button
                     disabled={saving || !editorValid}
                     onClick={() => {
-                      if (editorFlipsToConveying) setConfirmSave(true);
+                      if (editorChangesConveyance) setConfirmSave(true);
                       else void saveRule();
                     }}
                   >
@@ -850,10 +865,18 @@ export default function RelationshipManagerClient({
       <ConfirmDialog
         open={confirmSave}
         onOpenChange={setConfirmSave}
-        title="Make this relationship convey access?"
+        title={
+          editorNewlyConveys
+            ? "Make this relationship convey access?"
+            : "Change how this relationship conveys access?"
+        }
         description={
           editor
-            ? `This will immediately make ${editor.original?.edge_count ?? "any"} existing association(s) of this shape convey access, and the reachability cache will rebuild. Continue?`
+            ? `${
+                editorNewlyConveys
+                  ? `This will immediately make ${editor.original?.edge_count ?? "any"} existing association(s) of this shape convey access`
+                  : `This changes the cascade (side/ceiling) on ${editor.original?.edge_count ?? "any"} existing association(s) of this shape`
+              }, and the reachability cache will rebuild. Continue?`
             : undefined
         }
         confirmLabel="Apply"
@@ -861,14 +884,14 @@ export default function RelationshipManagerClient({
         onConfirm={saveRule}
       />
       <ConfirmDialog
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
+        open={deleteTarget !== null}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
         title="Delete this relationship rule?"
         description={
-          editor
-            ? `${label(editor.sourceType)} → ${label(editor.targetType)} will be removed from the registry. ${
-                (editor.original?.edge_count ?? 0) > 0
-                  ? `Its ${editor.original?.edge_count} existing association(s) become UNREGISTERED (they convey nothing, and would be rejected under enforcement). `
+          deleteTarget
+            ? `${label(deleteTarget.source_type)} → ${label(deleteTarget.target_type)} will be removed from the registry. ${
+                deleteTarget.edge_count > 0
+                  ? `Its ${deleteTarget.edge_count} existing association(s) become UNREGISTERED (they convey nothing, and would be rejected under enforcement). `
                   : ""
               }The closure cache rebuilds. You can recreate the rule at any time.`
             : undefined

@@ -21,15 +21,13 @@ export const metadata = {
 export default async function RelationshipsAdminPage() {
   const supabase = await createClient();
 
-  const [statusRes, rulesRes, unregisteredRes, problemsRes] = await Promise.all([
+  const [statusRes, rulesRes, problemsRes] = await Promise.all([
     supabase.rpc("admin_relationship_system_status"),
     supabase.rpc("admin_relationship_rules"),
-    supabase.rpc("admin_unregistered_pairs"),
     supabase.rpc("admin_relationship_problems"),
   ]);
 
-  const firstError =
-    statusRes.error ?? rulesRes.error ?? unregisteredRes.error ?? problemsRes.error;
+  const firstError = statusRes.error ?? rulesRes.error ?? problemsRes.error;
   if (firstError) {
     // Loud, not swallowed — a failed load here means the RPC family or the
     // admin guard is broken, which is a defect to surface immediately.
@@ -51,7 +49,6 @@ export default async function RelationshipsAdminPage() {
       <RelationshipManagerClient
         status={statusRes.data?.[0] ?? null}
         rules={rulesRes.data ?? []}
-        unregistered={unregisteredRes.data ?? []}
         problems={problemsRes.data ?? []}
       />
     </div>
