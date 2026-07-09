@@ -516,19 +516,19 @@ export async function processStream({
         reasoningChunkEvents++;
         const text = event.data.text;
 
-        if (isInTextRun) {
-          // A reasoning run opening mid-text is a structural boundary exactly
-          // like a tool call: flush, then BREAK the accumulator's current
-          // block so post-thinking text opens a fresh render block. Without
-          // the break, both text runs collapse into one block and the live
-          // view renders the thinking AFTER the merged text — while the
-          // persisted turn keeps the true order (live/DB divergence).
+        if (!isInReasoningRun) {
+          // ENTERING a reasoning run is a structural boundary exactly like a
+          // tool call: flush, then BREAK the accumulator's current block so
+          // post-thinking text opens a fresh render block. Keyed on run ENTRY
+          // — never on the local isInTextRun flag, which any passive event
+          // (heartbeat, reservation) resets while the accumulator still holds
+          // the open text block. Gating on that stale flag skipped the break,
+          // merged text across the thinking boundary, and rendered the
+          // post-thinking text ABOVE the trace (live-only; reload was right).
+          // Both calls are no-ops when nothing is open/buffered.
           dispatchBatch();
           blockAccumulator.breakTextBlock(dispatch);
           isInTextRun = false;
-        }
-
-        if (!isInReasoningRun) {
           isInReasoningRun = true;
           dispatch(markReasoningStreamStart({ requestId, timestamp: now }));
         }
@@ -549,13 +549,12 @@ export async function processStream({
       // explicit "stopped".
       if (isReasoningEvent(event)) {
         if (event.data.state === "started") {
-          if (isInTextRun) {
-            // Same structural break as the reasoning_chunk branch above.
+          if (!isInReasoningRun) {
+            // Same structural break as the reasoning_chunk branch above —
+            // keyed on run entry, never on the stale local text flag.
             dispatchBatch();
             blockAccumulator.breakTextBlock(dispatch);
             isInTextRun = false;
-          }
-          if (!isInReasoningRun) {
             isInReasoningRun = true;
             dispatch(markReasoningStreamStart({ requestId, timestamp: now }));
           }
@@ -703,6 +702,13 @@ export async function processStream({
         dataEvents++;
         const d = event.data;
         const dataType = d.type ?? "unknown";
+
+        // When this data event produced a render block (media paths below),
+        // its blockId is stamped onto the timeline entry so the unified-slot
+        // walker pairs the event with EXACTLY its block — index-scanning
+        // heuristics mis-paired an already-emitted block's event with a LATER
+        // media block, hoisting it above intervening tools/text.
+        let dataRenderBlockId: string | undefined;
 
         dispatch(appendDataPayload({ requestId, data: d }));
 
@@ -936,6 +942,7 @@ export async function processStream({
             unified.kind === "image"
               ? "image_block_current"
               : `media_block_${unified.kind}_current`;
+          dataRenderBlockId = stableKey;
 
           dispatch(
             upsertRenderBlock({
@@ -1027,6 +1034,7 @@ export async function processStream({
               ? "image_block_current"
               : undefined;
           const blockId = partialKey ?? `data_${dataType}_${totalEvents}`;
+          dataRenderBlockId = blockId;
           const finalBlockType =
             dataType === "partial_image" ? "image_output" : blockType;
 
@@ -1059,6 +1067,7 @@ export async function processStream({
               seq: 0,
               timestamp: now,
               data: d,
+              ...(dataRenderBlockId ? { blockId: dataRenderBlockId } : {}),
             },
           }),
         );

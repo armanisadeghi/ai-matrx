@@ -351,6 +351,13 @@ export class StreamBlockAccumulator {
   private xmlClosedCleanly = false;
   /** Every session identity opened during this stream (disposed at finalize). */
   private irIdentities: string[] = [];
+  /**
+   * True only for the closeCurrentBlock call that closes the FIRST HALF of a
+   * region split by a tool boundary (breakTextBlock keeps the region open in
+   * a fresh block). Metadata built during that close must not report
+   * `isComplete: true` — the region genuinely continues.
+   */
+  private regionContinuesAfterClose = false;
   private upsertAction: (payload: {
     requestId: string;
     block: RenderBlockPayload;
@@ -499,7 +506,12 @@ export class StreamBlockAccumulator {
         ? this.subState
         : null;
 
+    // The first half of a split region is NOT a completed region: its emit
+    // must not carry `isComplete: true` (a truncated `<decision>` would
+    // otherwise render as a finished card with half its options).
+    if (openRegion) this.regionContinuesAfterClose = true;
     this.closeCurrentBlock(dispatch);
+    this.regionContinuesAfterClose = false;
 
     if (openRegion) {
       this.openBlock(
@@ -1353,7 +1365,7 @@ export class StreamBlockAccumulator {
     if (this.subState.kind !== "xml_tag") return undefined;
 
     const { tagName, attributes, isAttrXml } = this.subState;
-    const isComplete = status === "complete";
+    const isComplete = status === "complete" && !this.regionContinuesAfterClose;
     // For streaming emits we use the visible content (which includes the
     // pending line fragment), so partial `<option>` text is reflected in
     // rawXml the moment it arrives.

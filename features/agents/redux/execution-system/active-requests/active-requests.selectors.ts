@@ -917,19 +917,25 @@ export const selectUnifiedSlots = (requestId: string) =>
           const dataType = entry.data.type;
           if (dataType && MEDIA_DATA_TYPES.has(dataType)) {
             pendingStatus = null;
-            // FORWARD scan: the oldest un-emitted media block belongs to the
-            // oldest un-satisfied media data event, so consecutive media
-            // events keep arrival order. (A backward scan paired event 1 with
-            // the NEWEST pending block — two media of different kinds
-            // rendered swapped. Partials/finals share a blockId, so the
-            // in-place upsert still collapses them regardless of direction.)
-            for (let i = 0; i < blockOrder.length; i++) {
-              const candidateId = blockOrder[i];
-              if (emittedBlockIds.has(candidateId)) continue;
-              const candidate = blocksMap[candidateId];
-              if (candidate && MEDIA_BLOCK_TYPES.has(candidate.type)) {
-                pushBlock(candidateId);
-                break;
+            if (entry.blockId !== undefined) {
+              // Exact pairing: process-stream stamps the produced block's id
+              // on the entry. pushBlock dedupes, so a block already emitted
+              // inline by its text_end range (media arriving mid text run)
+              // is a no-op here — the old index-scan grabbed a LATER media
+              // block in that case, hoisting it above intervening content.
+              pushBlock(entry.blockId);
+            } else {
+              // Legacy entries (pre-blockId sessions): FORWARD scan — the
+              // oldest un-emitted media block belongs to the oldest
+              // un-satisfied media data event, keeping arrival order.
+              for (let i = 0; i < blockOrder.length; i++) {
+                const candidateId = blockOrder[i];
+                if (emittedBlockIds.has(candidateId)) continue;
+                const candidate = blocksMap[candidateId];
+                if (candidate && MEDIA_BLOCK_TYPES.has(candidate.type)) {
+                  pushBlock(candidateId);
+                  break;
+                }
               }
             }
           }

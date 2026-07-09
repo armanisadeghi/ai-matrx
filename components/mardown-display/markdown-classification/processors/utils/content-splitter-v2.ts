@@ -1963,10 +1963,36 @@ export const splitContentIntoBlocksV2 = (
     // the literal tag must never leak to the user as text.
     const orphanClose = detectOrphanThinkingClose(trimmedLine);
     if (orphanClose) {
-      const body = [currentText.trimEnd(), orphanClose.before]
+      // Mid-line opener rescue: `Some prose <thinking>` never matches the
+      // line-start detector (3b), so the region's OPENER may be sitting
+      // inside the accumulated text. Split there — prose before the opener
+      // stays visible text; only the region body folds into the block.
+      const openers =
+        orphanClose.type === "thinking"
+          ? ["<thinking>", "<think>"]
+          : ["<reasoning>"];
+      let openerIdx = -1;
+      let openerLen = 0;
+      for (const opener of openers) {
+        const idx = currentText.lastIndexOf(opener);
+        if (idx > openerIdx) {
+          openerIdx = idx;
+          openerLen = opener.length;
+        }
+      }
+      let regionText = currentText;
+      if (openerIdx >= 0) {
+        const proseBefore = currentText.slice(0, openerIdx);
+        regionText = currentText.slice(openerIdx + openerLen);
+        if (proseBefore.trim()) {
+          blocks.push({ type: "text", content: proseBefore.trimEnd() });
+        }
+      }
+      currentText = "";
+
+      const body = [regionText.trim(), orphanClose.before]
         .filter(Boolean)
         .join("\n");
-      currentText = "";
       if (body) {
         blocks.push({
           type: orphanClose.type,

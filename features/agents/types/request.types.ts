@@ -572,6 +572,15 @@ export interface TimelineRenderBlock extends TimelineBase {
 export interface TimelineDataEvent extends TimelineBase {
   kind: "data";
   data: TypedDataPayload | UntypedDataPayload;
+  /**
+   * CLIENT-DERIVED (not on the wire — `data` above stays verbatim): the
+   * renderBlocks id this data event produced, when it produced one (media
+   * paths). Lets the unified-slot walker pair the event with EXACTLY its
+   * block instead of index-scanning `renderBlockOrder` — the scan mis-paired
+   * an already-emitted block's event with a LATER media block, hoisting it
+   * above intervening tools/text.
+   */
+  blockId?: string;
 }
 
 export interface TimelineError extends TimelineBase {

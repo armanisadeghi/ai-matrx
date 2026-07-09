@@ -55,11 +55,12 @@ function reasoningRun(
   acc: StreamBlockAccumulator,
   dispatch: (a: unknown) => unknown,
   text: string,
-  opts: { breakText?: boolean } = {},
 ) {
-  // process-stream (reasoning_chunk branch): dispatchBatch (flush), then
-  // breakTextBlock when a text run is open, then markReasoningStreamStart.
-  if (opts.breakText) acc.breakTextBlock(dispatch);
+  // process-stream (reasoning_chunk branch): on run ENTRY it always flushes
+  // and breaks the accumulator's open block (no-ops when nothing is open),
+  // then marks the run. Keyed on entry — NOT on the local text flag, which
+  // passive events reset while the accumulator still holds the open block.
+  acc.breakTextBlock(dispatch);
   dispatch(
     markReasoningStreamStart({ requestId: REQ, timestamp: 1 }) as never,
   );
@@ -152,7 +153,7 @@ test("mid-turn thinking between two text runs keeps order and raw text", () => {
   const acc = new StreamBlockAccumulator(REQ, (p) => upsertRenderBlock(p));
 
   textRun(acc, dispatch, "Before the thought.\n");
-  reasoningRun(acc, dispatch, "Reconsidering.", { breakText: true });
+  reasoningRun(acc, dispatch, "Reconsidering.");
   textRun(acc, dispatch, "After the thought.\n");
   dispatch(closeTextRun({ requestId: REQ, timestamp: 1 }) as never);
   acc.finalize(dispatch);
@@ -292,6 +293,100 @@ test("splitter: orphan </thinking> becomes a thinking block, never leaked text (
     { type: "thinking", content: "carried-over thought" },
     { type: "text", content: "The answer." },
   ]);
+});
+
+test("heartbeat before a reasoning transition still splits the text (stale-flag guard)", () => {
+  const store = makeStore();
+  const dispatch = (a: unknown) => store.dispatch(a as never);
+  dispatch(createRequest({ requestId: REQ, conversationId: CONV }));
+  const acc = new StreamBlockAccumulator(REQ, (p) => upsertRenderBlock(p));
+
+  textRun(acc, dispatch, "Before the thought.\n");
+  // Passive event: resets process-stream's LOCAL text flag while the slice
+  // (and the accumulator) keep the run open. The old entry gate on that
+  // stale flag skipped breakTextBlock here — post-thinking text merged into
+  // the pre-thinking block and rendered ABOVE the trace.
+  dispatch(
+    appendTimeline({
+      requestId: REQ,
+      entry: { kind: "heartbeat", seq: 0, timestamp: 2, data: {} },
+    }) as never,
+  );
+  reasoningRun(acc, dispatch, "Reconsidering.");
+  textRun(acc, dispatch, "After the thought.\n");
+  dispatch(closeTextRun({ requestId: REQ, timestamp: 3 }) as never);
+  acc.finalize(dispatch);
+
+  expect(slotKinds(store)).toEqual([
+    "render_block",
+    "thinking",
+    "render_block",
+  ]);
+  const request = getRequest(store);
+  const contents = selectUnifiedSlots(REQ)(store.getState() as AnyState)
+    .filter((s) => s.kind === "render_block")
+    .map(
+      (s) => request.renderBlocks[(s as { blockId: string }).blockId]?.content,
+    );
+  expect(contents).toEqual(["Before the thought.", "After the thought."]);
+});
+
+test("media mid-text-run + later media stay in position (exact blockId pairing)", () => {
+  const store = makeStore();
+  const dispatch = (a: unknown) => store.dispatch(a as never);
+  dispatch(createRequest({ requestId: REQ, conversationId: CONV }));
+  const acc = new StreamBlockAccumulator(REQ, (p) => upsertRenderBlock(p));
+
+  const mediaEvent = (blockId: string) => {
+    dispatch(
+      upsertRenderBlock({
+        requestId: REQ,
+        block: {
+          blockId,
+          blockIndex: 0,
+          type: "image_output",
+          status: "complete" as const,
+          content: null,
+          data: { url: `https://x/${blockId}` },
+        },
+      }) as never,
+    );
+    dispatch(
+      appendTimeline({
+        requestId: REQ,
+        entry: {
+          kind: "data",
+          seq: 0,
+          timestamp: 1,
+          data: { type: "image_output" },
+          blockId,
+        },
+      }) as never,
+    );
+  };
+
+  // img_1 arrives mid text run → covered by that run's text_end range and
+  // emitted inline. Its data entry must then be a NO-OP: the old index scan
+  // grabbed the NEXT unemitted media block (img_2) and hoisted it above the
+  // tool.
+  textRun(acc, dispatch, "Look at this:\n");
+  mediaEvent("img_1");
+  toolEvent(acc, dispatch, "call_1", "web_search");
+  textRun(acc, dispatch, "And this:\n");
+  mediaEvent("img_2");
+  acc.finalize(dispatch);
+
+  const slots = selectUnifiedSlots(REQ)(store.getState() as AnyState);
+  const shape = slots.map((s) =>
+    s.kind === "render_block"
+      ? `rb:${(s as { blockId: string }).blockId}`
+      : s.kind === "tool"
+        ? `tool:${s.callId}`
+        : s.kind,
+  );
+  const toolIdx = shape.indexOf("tool:call_1");
+  expect(shape.indexOf("rb:img_1")).toBeLessThan(toolIdx);
+  expect(shape.indexOf("rb:img_2")).toBeGreaterThan(toolIdx);
 });
 
 test("two media data events keep arrival order (forward scan)", () => {

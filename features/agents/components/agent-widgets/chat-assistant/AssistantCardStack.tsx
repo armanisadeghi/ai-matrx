@@ -127,9 +127,16 @@ export function AssistantCardStack({
         key: record.id,
         role: record.role,
         messageId: record.id,
-        requestId: isStreamingMessage
-          ? (latestRequestId ?? null)
-          : (record._streamRequestId ?? null),
+        // ASSISTANT rows only: user cx_message reservations can also carry
+        // _streamRequestId (variable-only submits with no optimistic bubble),
+        // and a requestId on a user row would let the collapse below swallow
+        // the user's own message.
+        requestId:
+          record.role === "assistant"
+            ? isStreamingMessage
+              ? (latestRequestId ?? null)
+              : (record._streamRequestId ?? null)
+            : null,
         isStreamActive: isStreamingMessage,
       });
     }

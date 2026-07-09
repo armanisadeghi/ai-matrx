@@ -39,6 +39,7 @@ import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCaptureP
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import { AssistantActionBar } from "./AssistantActionBar";
 import { collapseByRequestId } from "./collapse-by-request-id";
+import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
@@ -156,6 +157,21 @@ export function AssistantTurnGroup({
           hideActionBar={true}
         />
       ))}
+
+      {/* File strips for rows the requestId collapse dropped: AI-edit
+          snapshots keyed to an intermediate iteration's messageId must keep
+          their strip/revert affordance even though the row's body renders
+          via the collapsed stream-anchored member. Renders nothing when the
+          row has no snapshots. */}
+      {rawMembers
+        .filter((m) => m.messageId && !members.includes(m))
+        .map((m) => (
+          <MessageFilesStrip
+            key={`files-${m.key}`}
+            conversationId={conversationId}
+            messageId={m.messageId as string}
+          />
+        ))}
 
       {showBar && anchorMessageId && (
         <AssistantActionBar
