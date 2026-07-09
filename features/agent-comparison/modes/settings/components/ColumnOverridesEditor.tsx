@@ -92,7 +92,7 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
     .map((m) => ({
       value: m.id,
       label: m.common_name ?? m.name ?? m.id,
-      provider: m.provider ?? "",
+      provider: m.maker ?? "",
     }));
 
   return (

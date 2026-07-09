@@ -106,7 +106,9 @@ type ModelOptionRow = {
   name: string;
   common_name: string | null;
   maker: string | null;
-  model_class: string | null;
+  // model_class is non-null on model_definition; the view types it nullable, so
+  // the thunk coalesces to "" when normalizing.
+  model_class: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -170,7 +172,7 @@ export const fetchModelOptions = createAsyncThunk(
             name: r.name,
             common_name: r.common_name,
             maker: r.maker,
-            model_class: r.model_class,
+            model_class: r.model_class ?? "",
           }),
         );
     } catch (err: unknown) {
@@ -270,7 +272,9 @@ const modelRegistrySlice = createSlice({
       state,
       action: {
         payload: {
-          models: (AIModelRow | AIModelRecord)[];
+          // The SSR shell attaches the resolved `maker` (ai.provider.name); the
+          // dropping columns may still be present at runtime but are never read.
+          models: AIModelRecord[];
           fetchType: ModelRecordFetchType;
           fetchScope: ModelFetchScope;
           lastFetched: number;
@@ -285,7 +289,8 @@ const modelRegistrySlice = createSlice({
         if (existing?._fetchType === "full" && fetchType === "options")
           continue;
         state.entities[id] = {
-          ...normalizeModel(raw as AIModelRow),
+          ...emptyModelRecord(),
+          ...normalizeModel(raw),
           _fetchType: fetchType,
         };
       }

@@ -542,7 +542,7 @@ function ProviderEntryDetail({
                     ["name", le.name],
                     ["common_name", le.common_name ?? "—"],
                     ["model_class", le.model_class],
-                    ["provider", le.provider ?? "—"],
+                    ["maker", le.maker ?? "—"],
                     [
                       "context_window",
                       le.context_window?.toLocaleString() ?? "—",

@@ -241,7 +241,7 @@ const COLUMNS: ColDef[] = [
     ),
   },
   {
-    key: "provider",
+    key: "maker",
     header: "Provider",
     width: "w-[120px] min-w-[100px]",
     sortable: true,
