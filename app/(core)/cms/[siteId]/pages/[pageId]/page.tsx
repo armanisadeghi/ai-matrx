@@ -93,6 +93,19 @@ export default function EditPageRoute() {
     }
   };
 
+  const handleRollback = async (id: string, versionNumber: number) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const updated = await CmsPageService.rollbackToVersion(id, versionNumber);
+      setPage(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rollback page");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleClose = () => {
     router.push(`/cms/${siteId}`);
   };
@@ -138,6 +151,7 @@ export default function EditPageRoute() {
       onSaveDraft={handleSaveDraft}
       onPublish={handlePublish}
       onDiscardDraft={handleDiscardDraft}
+      onRollback={handleRollback}
       onCreate={async () => {
         throw new Error("Use /pages/new to create");
       }}

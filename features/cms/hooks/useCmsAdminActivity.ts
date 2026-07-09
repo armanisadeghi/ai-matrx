@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CmsSiteService } from '../services/cmsService';
 import type { ClientActivityLog } from '../types';
 
@@ -18,16 +18,14 @@ export interface CmsActivityFilters {
  * subscribe against (master plan P5 brief, "Data path decision"). Polling is
  * the documented, deliberate choice, not a placeholder.
  */
-export function useCmsAdminActivity(filters: CmsActivityFilters) {
+export function useCmsAdminActivity({ siteId, entityType, actor }: CmsActivityFilters) {
     const [activity, setActivity] = useState<ClientActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const filtersRef = useRef(filters);
-    filtersRef.current = filters;
 
     const fetchActivity = useCallback(async () => {
         try {
-            const data = await CmsSiteService.adminListActivity(filtersRef.current);
+            const data = await CmsSiteService.adminListActivity({ siteId, entityType, actor });
             setActivity(data);
             setError(null);
         } catch (err) {
@@ -35,15 +33,14 @@ export function useCmsAdminActivity(filters: CmsActivityFilters) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [siteId, entityType, actor]);
 
     useEffect(() => {
         setIsLoading(true);
         fetchActivity();
         const interval = setInterval(fetchActivity, POLL_INTERVAL_MS);
         return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filters.siteId, filters.entityType, filters.actor, fetchActivity]);
+    }, [fetchActivity]);
 
     return { activity, isLoading, error, refresh: fetchActivity };
 }

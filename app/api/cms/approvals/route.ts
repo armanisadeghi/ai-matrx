@@ -19,8 +19,14 @@ import { getCmsClient } from "../_lib/cmsDb";
 import { logCmsActivity } from "../_lib/activityLog";
 
 const EXCEPTIONS_TABLE = "client_content_exceptions";
-/** Postgres: undefined_table */
-const UNDEFINED_TABLE = "42P01";
+/**
+ * "Table doesn't exist" arrives as one of two codes depending on path: raw
+ * Postgres reports `42P01` (undefined_table); going through PostgREST (what
+ * supabase-js uses) it's `PGRST205` ("Could not find the table ... in the
+ * schema cache") instead — verified live against viyklljfdhtidwecakwx
+ * 2026-07-09. Check both so this degrades gracefully either way.
+ */
+const UNDEFINED_TABLE_CODES = new Set(["42P01", "PGRST205"]);
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +60,7 @@ export async function POST(request: NextRequest) {
         const { data, error } = await query;
 
         if (error) {
-          if (error.code === UNDEFINED_TABLE) {
+          if (UNDEFINED_TABLE_CODES.has(error.code)) {
             return NextResponse.json({
               violations: [],
               available: false,
@@ -93,7 +99,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (error) {
-          if (error.code === UNDEFINED_TABLE) {
+          if (UNDEFINED_TABLE_CODES.has(error.code)) {
             return NextResponse.json(
               {
                 error:

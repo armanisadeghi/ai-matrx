@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Save,
   Upload,
@@ -43,6 +44,8 @@ interface PageEditorProps {
   ) => Promise<ClientPage>;
   onPublish: (pageId: string) => Promise<ClientPage>;
   onDiscardDraft: (pageId: string) => Promise<void>;
+  /** Optional: no-op until the page has been created (see /pages/new). */
+  onRollback?: (pageId: string, versionNumber: number) => Promise<void>;
   onCreate: (params: Record<string, unknown>) => Promise<ClientPage>;
   onClose: () => void;
 }
@@ -75,12 +78,16 @@ export default function PageEditor({
   onSaveDraft,
   onPublish,
   onDiscardDraft,
+  onRollback,
   onCreate,
   onClose,
 }: PageEditorProps) {
   const isNew = !page;
   const [activeTab, setActiveTab] = useState<EditorTab>("html");
   const versions = useCmsVersions();
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const [rollbackTarget, setRollbackTarget] = useState<number | null>(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
 
   // ── Local editor state ───────────────────────────────────────────────
   const [title, setTitle] = useState("");
@@ -233,22 +240,30 @@ export default function PageEditor({
     await onPublish(page.id);
   };
 
-  const handleDiscard = async () => {
+  const handleDiscard = () => {
     if (!page) return;
-    if (confirm("Discard all draft changes? This cannot be undone.")) {
-      await onDiscardDraft(page.id);
-    }
+    setDiscardConfirmOpen(true);
   };
 
-  const handleRollback = async (versionNumber: number) => {
+  const confirmDiscard = async () => {
     if (!page) return;
-    if (
-      confirm(
-        `Rollback to version ${versionNumber}? Current content will be replaced.`,
-      )
-    ) {
-      // The rollback is handled by the parent via useCmsPages
-      // and the page will be re-fetched
+    await onDiscardDraft(page.id);
+    setDiscardConfirmOpen(false);
+  };
+
+  const handleRollback = (versionNumber: number) => {
+    if (!page) return;
+    setRollbackTarget(versionNumber);
+  };
+
+  const confirmRollback = async () => {
+    if (!page || rollbackTarget === null || !onRollback) return;
+    setIsRollingBack(true);
+    try {
+      await onRollback(page.id, rollbackTarget);
+    } finally {
+      setIsRollingBack(false);
+      setRollbackTarget(null);
     }
   };
 
@@ -696,6 +711,8 @@ export default function PageEditor({
                         variant="ghost"
                         size="sm"
                         className="gap-1.5 text-xs"
+                        disabled={!onRollback}
+                        title={onRollback ? undefined : "Save the page before rolling back"}
                         onClick={() => handleRollback(v.version_number)}
                       >
                         <RotateCcw className="h-3 w-3" />
@@ -709,6 +726,28 @@ export default function PageEditor({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={discardConfirmOpen}
+        onOpenChange={setDiscardConfirmOpen}
+        title="Discard draft changes?"
+        description="This cannot be undone. The published version is unaffected."
+        confirmLabel="Discard Draft"
+        variant="destructive"
+        busy={isSaving}
+        onConfirm={confirmDiscard}
+      />
+
+      <ConfirmDialog
+        open={rollbackTarget !== null}
+        onOpenChange={(open) => !isRollingBack && !open && setRollbackTarget(null)}
+        title={`Rollback to version ${rollbackTarget}?`}
+        description="Current content will be replaced with this version."
+        confirmLabel="Rollback"
+        variant="destructive"
+        busy={isRollingBack}
+        onConfirm={confirmRollback}
+      />
     </div>
   );
 }

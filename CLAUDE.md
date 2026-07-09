@@ -279,6 +279,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Audio pipeline (TTS, audio, podcasts) | `features/audio/FEATURE.md` |
 | Image Manager hub | `features/image-manager/FEATURE.md` |
 | Custom Dictionary (terminology + pronunciation; user/org/scope-type/scope) | `features/dictionary/FEATURE.md` |
+| CMS (client sites + standalone HTML pages, separate Supabase project `viyklljfdhtidwecakwx`; agent-activity visibility surface at `/administration/cms-agents`) | `features/cms/FEATURE.md` |
 
 ---
 

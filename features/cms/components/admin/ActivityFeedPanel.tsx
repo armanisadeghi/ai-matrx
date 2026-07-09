@@ -14,10 +14,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bot, User, Cog, RefreshCw, Loader2, AlertCircle, Activity } from 'lucide-react';
+import { Workflow, User, Cog, RefreshCw, Loader2, AlertCircle, Activity } from 'lucide-react';
 
 const ACTOR_META = {
-    agent: { label: 'Agent', icon: Bot, className: 'bg-primary/15 text-primary border-primary/30' },
+    agent: { label: 'Agent', icon: Workflow, className: 'bg-primary/15 text-primary border-primary/30' },
     human: { label: 'Human', icon: User, className: 'bg-muted text-muted-foreground border-border' },
     system: { label: 'System', icon: Cog, className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' },
 } as const;

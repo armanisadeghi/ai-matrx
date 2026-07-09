@@ -95,16 +95,18 @@ features/html-pages/
 ├── hooks/
 │   ├── useHTMLPages.js                    # Database operations hook
 │   └── useHtmlPreviewState.ts             # State management hook
-├── lib/
-│   └── supabase-html.js                   # Supabase client
 ├── services/
 │   └── htmlPageService.js                 # Database service (CRUD + metadata)
+├── code-preview/
+│   ├── HtmlPageRenderPreview.tsx          # /code render-preview iframe
+│   └── registerHtmlPageRenderPreview.ts   # registerRenderPreviewer("html-page:")
 ├── utils/
 │   ├── html-preview-utils.ts              # Preview utilities
 │   ├── html-source-files-utils.ts         # Source files management
 │   └── markdown-wordpress-utils.ts        # Markdown → HTML conversion
 └── README.md                              # This file
 ```
+
 
 ---
 
@@ -666,5 +668,15 @@ Standalone `html_pages` (not CMS `client_pages`) can be managed at:
 
 Also listed in the `/code` Library panel under **HTML Pages** (adapter proxies `/api/html-pages`).
 
-**Last Updated:** 2026-07-08  
-**Version:** 2.1 (Management UI + /code library source)
+### `/code` live preview
+
+`html-page:` tabs get an **Open live preview** eye icon (render-preview registry). Implementation:
+
+- [`code-preview/HtmlPageRenderPreview.tsx`](./code-preview/HtmlPageRenderPreview.tsx) — dirty → `srcDoc` of Monaco buffer; clean → published `url?preview=1` (same semantics as `HtmlPageEditor`)
+- [`code-preview/registerHtmlPageRenderPreview.ts`](./code-preview/registerHtmlPageRenderPreview.ts) — `registerRenderPreviewer("html-page:", …)`
+- Side-effect imported from [`features/code/CodeWorkspace.tsx`](../code/CodeWorkspace.tsx)
+
+Only `html_content` / the live buffer drives the iframe. SEO metadata columns are not injected.
+
+**Last Updated:** 2026-07-09  
+**Version:** 2.2 (Management UI + /code library source + render preview)
