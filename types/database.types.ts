@@ -24639,6 +24639,10 @@ export type Database = {
           ourput_params: Json
         }[]
       }
+      admin_delete_relationship_rule: {
+        Args: { p_label?: string; p_source_type: string; p_target_type: string }
+        Returns: undefined
+      }
       admin_find_user_by_email: {
         Args: { p_email: string }
         Returns: {
@@ -24764,6 +24768,19 @@ export type Database = {
           metadata: Json
           occurred_at: string
           organization_id: string
+        }[]
+      }
+      admin_relationship_problems: {
+        Args: never
+        Returns: {
+          container_side: string
+          detail: string
+          edge_count: number
+          kind: string
+          label: string
+          severity: string
+          source_type: string
+          target_type: string
         }[]
       }
       admin_relationship_rules: {
