@@ -47,7 +47,7 @@ export function useModels() {
 }
 
 /**
- * Active models as { value, label, provider } for dropdown components.
+ * Active models as { value, label, maker } for dropdown components.
  * Triggers fetchModelOptions if not yet loaded.
  */
 export function useModelOptions() {

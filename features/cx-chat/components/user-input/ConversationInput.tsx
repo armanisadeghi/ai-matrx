@@ -66,9 +66,9 @@ import { selectCurrentSettings } from "@/features/agents/redux/execution-system/
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import {
-  selectAvailableModels,
+  selectActiveModels,
   selectModelOptions,
-  fetchAvailableModels,
+  fetchModelOptions,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -295,7 +295,7 @@ export function ConversationInput({
 
   // ── Model registry ─────────────────────────────────────────────────────────
   const modelOptions = useAppSelector(selectModelOptions);
-  const availableModels = useAppSelector(selectAvailableModels);
+  const availableModels = useAppSelector(selectActiveModels);
 
   const currentModelId = (settingsForDialog as Record<string, unknown>)
     ?.model as string | undefined;
@@ -307,7 +307,7 @@ export function ConversationInput({
   // Ensure models are loaded when model picker or settings are shown
   useEffect(() => {
     if ((showModelPicker || showSettings) && availableModels.length === 0) {
-      dispatch(fetchAvailableModels());
+      dispatch(fetchModelOptions());
     }
   }, [showModelPicker, showSettings, availableModels.length, dispatch]);
 

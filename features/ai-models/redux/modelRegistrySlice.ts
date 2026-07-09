@@ -21,7 +21,7 @@ export type AIModelRow = Database["ai"]["Tables"]["model_definition"]["Row"];
 /**
  * What data this record currently holds.
  *
- * - 'options' → only id, name, common_name, provider, model_class, is_deprecated loaded
+ * - 'options' → only id, name, common_name, maker, model_class loaded
  * - 'full'    → all columns loaded
  *
  * Status only upgrades — never downgrades. A 'full' record never becomes 'options'.
@@ -116,7 +116,7 @@ type ModelOptionRow = {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch lightweight options (id, name, common_name, provider, model_class, is_deprecated) for
+ * Fetch lightweight options (id, name, common_name, maker, model_class) for
  * all active, ROUTABLE models. Used to populate dropdowns without pulling the full schema.
  *
  * CRITICAL: only models with ≥1 available ai.offering are returned. A bare
@@ -247,13 +247,6 @@ export const fetchModelById = createAsyncThunk(
     },
   },
 );
-
-/**
- * @deprecated Use fetchModelOptions for dropdowns, fetchModelById for full records.
- * Kept as an alias during migration.
- */
-export const fetchActiveModels = fetchModelOptions;
-export const fetchAvailableModels = fetchModelOptions;
 
 // ---------------------------------------------------------------------------
 // Slice
@@ -644,11 +637,3 @@ export const selectModelFullyLoaded = createSelector(
   },
 );
 
-// ---------------------------------------------------------------------------
-// Deprecated aliases — remove once all consumers updated
-// ---------------------------------------------------------------------------
-
-/** @deprecated Use selectActiveModels */
-export const selectAvailableModels = selectActiveModels;
-/** @deprecated Use selectActiveModelsReady */
-export const selectModelRegistryReady = selectActiveModelsReady;

@@ -66,9 +66,9 @@ import {
   selectShowDebugInfo,
 } from "./_legacy-stubs";
 import {
-  selectAvailableModels,
+  selectActiveModels,
   selectModelOptions,
-  fetchAvailableModels,
+  fetchModelOptions,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectActiveChatAgent } from "./_legacy-stubs";
@@ -293,12 +293,12 @@ export function ConversationInput({
 
   // ── Model registry ─────────────────────────────────────────────────────────
   const modelOptions = useAppSelector(selectModelOptions);
-  const availableModels = useAppSelector(selectAvailableModels);
+  const availableModels = useAppSelector(selectActiveModels);
 
   // Ensure models are loaded when model picker or settings are shown
   useEffect(() => {
     if ((showModelPicker || showSettings) && availableModels.length === 0) {
-      dispatch(fetchAvailableModels());
+      dispatch(fetchModelOptions());
     }
   }, [showModelPicker, showSettings, availableModels.length, dispatch]);
 

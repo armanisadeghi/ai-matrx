@@ -3,9 +3,9 @@
 /**
  * AgentModelConfiguration
  *
- * Model selector row with inline controls (Variables, Tools, Settings).
- * Uses AiModelSelect — data fetching (options + full record) is fully internal.
- * All writes go through Redux.
+ * Model selector row with inline controls (Settings, Variables, Tools, Skills).
+ * Uses the canonical SmartModelSelect — data fetching (options + full record) is
+ * fully internal to the picker (modelRegistry slice). All writes go through Redux.
  */
 
 import { useCallback } from "react";

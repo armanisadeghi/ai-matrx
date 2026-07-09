@@ -23,6 +23,7 @@ import {
   fetchModelById,
   fetchModelOptions,
   selectModelOptions,
+  selectModelLabelById,
   selectModelRegistryLoading,
 } from "@/features/ai-models/redux/modelRegistrySlice";
 import {
@@ -67,8 +68,14 @@ export function SmartModelSelect({
 }: SmartModelSelectProps) {
   const dispatch = useAppDispatch();
   const options = useAppSelector(selectModelOptions);
-  const orderedOptions = orderOptionsWithPriority(options, priorityValues);
   const isLoading = useAppSelector(selectModelRegistryLoading);
+  // Resolved name for the CURRENT value even when it isn't in the routable
+  // options list (deprecated model, or one that lost its offering). Populated by
+  // the fetchModelById dispatch below — without this the trigger would show a
+  // raw UUID and the value couldn't be re-selected.
+  const currentLabel = useAppSelector((state) =>
+    selectModelLabelById(state, value ?? undefined),
+  );
 
   useEffect(() => {
     dispatch(fetchModelOptions());
@@ -80,9 +87,18 @@ export function SmartModelSelect({
     }
   }, [dispatch, value]);
 
+  // Ensure the current value is always a selectable item so Radix can render it
+  // as selected (a non-routable saved model isn't in `options`).
+  const inOptions = value ? options.some((o) => o.value === value) : true;
+  const withCurrent =
+    value && !inOptions
+      ? [{ value, label: currentLabel ?? value, maker: null }, ...options]
+      : options;
+  const orderedOptions = orderOptionsWithPriority(withCurrent, priorityValues);
+
   const selectedLabel =
-    options.find((o) => o.value === value)?.label ??
-    (isLoading ? "Loading..." : (value ?? placeholder));
+    withCurrent.find((o) => o.value === value)?.label ??
+    (isLoading ? "Loading..." : placeholder);
 
   return (
     <Select
