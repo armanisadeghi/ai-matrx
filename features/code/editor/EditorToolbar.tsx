@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Brain, MessageSquare, PanelBottom, Save } from "lucide-react";
+import {
+  AlignLeft,
+  Brain,
+  MessageSquare,
+  PanelBottom,
+  Save,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectRightOpen, setRightOpen } from "../redux/codeWorkspaceSlice";
@@ -22,6 +28,8 @@ interface EditorToolbarProps {
   /** ISO string of the active tab's last successful save during this
    *  session, surfaced as a "Saved 12s ago" indicator. */
   lastSavedAt?: string;
+  /** Run Monaco's Format Document on the active buffer. */
+  onFormatDocument?: () => void;
   /** Capture the current Monaco selection and ship it to the agent's
    *  instanceContext as a one-off `editor.selection.<id>` entry. */
   onSendSelectionAsContext?: () => void;
@@ -48,6 +56,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   hasDirtyActiveTab = false,
   hasActiveTab = false,
   lastSavedAt,
+  onFormatDocument,
   onSendSelectionAsContext,
   canSendSelectionAsContext = false,
   activeCloudFileId,
@@ -77,6 +86,17 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
                 : "No file open"
           }
           onClick={onSaveActiveTab}
+        />
+      )}
+      {onFormatDocument && (
+        <ToolbarButton
+          icon={AlignLeft}
+          active={false}
+          disabled={!hasActiveTab}
+          label={
+            hasActiveTab ? "Format Document (\u21E7\u2325F)" : "No file open"
+          }
+          onClick={onFormatDocument}
         />
       )}
       {hasActiveTab && lastSavedAt ? (

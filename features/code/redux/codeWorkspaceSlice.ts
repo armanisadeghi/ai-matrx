@@ -81,6 +81,7 @@ const slice = createSlice({
   reducers: {
     setActiveView(state, action: PayloadAction<ActivityViewId>) {
       // Toggle behavior: clicking the active icon collapses the side panel.
+      // Used by the in-workspace ActivityBar and the shell CodeSidebarMenu.
       if (state.activeView === action.payload && state.sideOpen) {
         state.sideOpen = false;
       } else {

@@ -2,8 +2,10 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-// Side effect: register builtin library-source adapters (prompt_apps, aga_apps, tool_ui).
+// Side effect: register builtin library-source adapters (prompt_apps, aga_apps, tool_ui, html_pages).
 import "./library-sources/registerBuiltinLibrarySources";
+// Side effect: HTML Pages live preview tab (eye icon on `html-page:` tabs).
+import "@/features/html-pages/code-preview/registerHtmlPageRenderPreview";
 import type { FilesystemAdapter } from "./adapters/FilesystemAdapter";
 import type { ProcessAdapter } from "./adapters/ProcessAdapter";
 import { CodeWorkspaceProvider } from "./CodeWorkspaceProvider";
@@ -31,6 +33,12 @@ export interface CodeWorkspaceProps {
    *  de-emphasise the file tree on focused-edit surfaces (the agent-app
    *  editor uses ~12% instead of the canonical 18%). */
   defaultSideSize?: number;
+  /**
+   * When false, omit the 48px ActivityBar icon rail. On `/code` the shell
+   * Large-Route menu owns those icons; the resizable side panel still
+   * renders. Defaults to true.
+   */
+  showActivityBar?: boolean;
   /** When set, the Library panel auto-expands this source-folder
    *  (e.g. `"aga_apps"`) on first mount and keeps the others collapsed.
    *  Use on focused-edit routes where the user is working inside one
@@ -52,6 +60,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   farRightSlot,
   showStatusBar = true,
   defaultSideSize,
+  showActivityBar = true,
   focusedLibrarySourceId,
   className,
 }) => {
@@ -71,6 +80,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           farRightSlot={farRightSlot}
           showStatusBar={showStatusBar}
           defaultSideSize={defaultSideSize}
+          showActivityBar={showActivityBar}
         />
       </div>
     </CodeWorkspaceProvider>

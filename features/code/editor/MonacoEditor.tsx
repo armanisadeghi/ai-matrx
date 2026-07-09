@@ -41,6 +41,10 @@ type StandaloneCodeEditor = {
     precondition?: string | null;
     run: (editor: StandaloneCodeEditor) => void | Promise<void>;
   }) => { dispose: () => void };
+  /** Look up a built-in or registered action by id (e.g. formatDocument). */
+  getAction: (
+    id: string,
+  ) => { id: string; run: () => void | Promise<void> } | null;
   getSelection: () => MonacoSelection | null;
   getModel: () => MonacoModel | null;
   /**
@@ -241,10 +245,9 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
             horizontalScrollbarSize: 10,
           },
           contextmenu: false,
-          // Right-click is handled by `CodeWorkspaceContextMenu` (Radix
-          // wrapper) so users get agent shortcuts on right-click. Monaco's
-          // IDE actions (Format Document, Go to Definition, etc.) remain
-          // accessible via the command palette (`F1`/`Cmd+Shift+P`).
+          // Right-click is owned by `CodeWorkspaceContextMenu` (Radix) so
+          // agent shortcuts show. Monaco IDE actions (Format, Find, …) are
+          // re-exposed there via `extraSections` + the editor toolbar.
         }}
       />
     </div>

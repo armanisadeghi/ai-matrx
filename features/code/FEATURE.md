@@ -18,8 +18,9 @@ A first-class in-app coding environment that runs against either a remote sandbo
 
 ## Entry points
 
-- **Route:** [`app/(a)/code/page.tsx`](../../app/(a)/code/page.tsx) → [`CodeWorkspaceRoute`](./host/CodeWorkspaceRoute.tsx) → [`CodeWorkspace`](./CodeWorkspace.tsx) → [`WorkspaceLayout`](./layout/WorkspaceLayout.tsx).
-- **Layout:** [`app/(a)/code/layout.tsx`](../../app/(a)/code/layout.tsx). **Loading skeleton:** [`app/(a)/code/loading.tsx`](../../app/(a)/code/loading.tsx).
+- **Route:** [`app/(core)/code/page.tsx`](../../app/(core)/code/page.tsx) → [`CodeWorkspaceRoute`](./host/CodeWorkspaceRoute.tsx) → [`CodeWorkspace`](./CodeWorkspace.tsx) → [`WorkspaceLayout`](./layout/WorkspaceLayout.tsx).
+- **Shell sidebar:** [`shell/CodeSidebarMenu.tsx`](./shell/CodeSidebarMenu.tsx) registered in [`route-menu-registry`](../shell/constants/route-menu-registry.ts) — activity-view icons inject into the main sidebar (same pattern as `/chat`). File trees stay in the workspace side panel. Lazy-loaded only on `/code`.
+- **Layout:** [`app/(core)/code/layout.tsx`](../../app/(core)/code/layout.tsx). **Loading skeleton:** [`app/(core)/code/loading.tsx`](../../app/(core)/code/loading.tsx).
 - **No sub-routes** — the workspace is a single SPA-style surface; deep state lives in URL params (`?agentId=…&conversationId=…`) and Redux.
 
 ---
@@ -28,12 +29,14 @@ A first-class in-app coding environment that runs against either a remote sandbo
 
 | Sub-system | Path | Responsibility |
 |---|---|---|
-| Activity bar | [`activity-bar/`](./activity-bar/) | Left rail icons; switches the side panel. |
-| Side panels | [`views/`](./views/) (`explorer`, `sandboxes`, `library`, `chat`, `history`, `source-control`) | Activity-bar-driven side views. |
+| Shell route menu | [`shell/CodeSidebarMenu.tsx`](./shell/CodeSidebarMenu.tsx) | `/code` Large-Route sidebar — activity-view switcher only. |
+| Activity bar | [`activity-bar/`](./activity-bar/) | Embedded left rail for windows / agent-app editor (`showActivityBar`). |
+| Side panels | [`views/`](./views/) (`explorer`, `sandboxes`, `library`, `source-control`, …) | Resizable workspace side panel (file trees stay here). |
 | Editor | [`editor/`](./editor/) | Monaco wrapper, tabs, toolbar, diff view (`TabDiffView`). |
 | Bottom panel | [`terminal/`](./terminal/) | xterm + ports panel; persistent mount. |
 | Adapters | [`adapters/`](./adapters/) | `FilesystemAdapter`, `ProcessAdapter`, `SandboxGitAdapter` — the seam between UI and runtime. |
-| Library sources | [`library-sources/`](./library-sources/) | Fuses `code_files` with external tables (`prompt_apps`, `aga_apps`, `tool_ui_components`) behind one tree. |
+| Library sources | [`library-sources/`](./library-sources/) | Fuses `code_files` with external tables (`prompt_apps`, `aga_apps`, `tool_ui_components`, `html_pages`) behind one tree. |
+| Render preview | [`preview/`](./preview/) | Paired live-preview tabs keyed by library `tabIdPrefix`. Eye icon on tabs with a registered previewer. |
 | Agent context bridge | [`agent-context/`](./agent-context/) | Pushes `editor.tabs`, `editor.tab.<id>`, `editor.selection.<id>`, `editor.diagnostics` into instance-context. |
 | Runtime | [`runtime/`](./runtime/) | Boot logic, session-report opener, sandbox heartbeat. |
 
@@ -99,7 +102,7 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 - **Two editor surfaces share the `vsc_*` contract; do not split it.** A Shortcut written for one editor must work in the other. Adding/renaming a `vsc_*` key updates both [`features/code-editor/FEATURE.md`](../code-editor/FEATURE.md) and this doc.
 - **The chat panel uses the new agent system — never legacy `cx-conversation`.** If you find yourself importing from `features/cx-conversation/` here, you are off-path.
 - **Patches are the integration model, not widgets.** Agent output that changes files goes through [`codePatchesSlice`](./redux/codePatchesSlice.ts), not `widget_text_*`. Widget tools belong in the embedded editor.
-- **The surface is fully wired to the agent-context system** (`matrx-user/code-editor`). The editable Monaco region is wrapped by [`CodeWorkspaceContextMenu`](./agent-context/CodeWorkspaceContextMenu.tsx) (`isEditable`, agent output applies via `executeEdits`); the read-only diff/preview regions (`TabDiffView` / `TripleDiffView` / `RenderPreviewView`) by [`CodeReadonlyContextMenu`](./agent-context/CodeReadonlyContextMenu.tsx) (`isEditable={false}`, acts on the user's DOM selection). Both assemble scope through the shared [`buildCodeWorkspaceContextData`](./agent-context/buildCodeWorkspaceContextData.ts), which emits the manifest's declared SurfaceValues + the generic baselines + the `vsc_*` contract in one bag. Monaco's native IDE actions (Format, Go to Definition) stay on the command palette; the three custom send-to-chat actions live in [`useEditorContextMenuActions`](./agent-context/useEditorContextMenuActions.ts).
+- **The surface is fully wired to the agent-context system** (`matrx-user/code-editor`). The editable Monaco region is wrapped by [`CodeWorkspaceContextMenu`](./agent-context/CodeWorkspaceContextMenu.tsx) (`isEditable`, agent output applies via `executeEdits`); the read-only diff/preview regions (`TabDiffView` / `TripleDiffView` / `RenderPreviewView`) by [`CodeReadonlyContextMenu`](./agent-context/CodeReadonlyContextMenu.tsx) (`isEditable={false}`, acts on the user's DOM selection). Both assemble scope through the shared [`buildCodeWorkspaceContextData`](./agent-context/buildCodeWorkspaceContextData.ts), which emits the manifest's declared SurfaceValues + the generic baselines + the `vsc_*` contract in one bag. Monaco IDE actions (Format Document / Selection, Find, Go to Line, Word Wrap, Command Palette) are re-exposed on the editable menu via [`createCodeEditorExtraSections`](./agent-context/codeEditorExtraSections.ts) because Monaco's native context menu is disabled in favor of the Radix wrapper; Format also lives on the editor toolbar. The three custom send-to-chat actions live in [`useEditorContextMenuActions`](./agent-context/useEditorContextMenuActions.ts).
 - **Instance-context entries persist across turns** — they are *not* the right place for ephemeral, per-message resources (errors, code snippets selected to attach). For that, use the new `editorResourcesSlice` introduced in Phase 21.
 - **The activity bar's bottom-panel toggle is independent of the side-panel state** — never collapse them through the same imperative call.
 - **Sandbox routes have a 300s `maxDuration` ceiling on Vercel Pro** — see the 2026-04-26 maxDuration correction in [`SYSTEM_STATE.md`](./SYSTEM_STATE.md). Long-running operations must talk to the orchestrator directly, bypassing the Vercel proxy.
@@ -116,12 +119,15 @@ Tier selection happens at `New sandbox` time and sticks per-user (`userPreferenc
 
 ## Change log
 
+- `2026-07-09` — `/code` activity-view icons inject into the app shell Large-Route menu (`CodeSidebarMenu`); the resizable/collapsible file panel stays in the workspace. Duplicate 48px ActivityBar rail is hidden on the route host (`showActivityBar={false}`); floating windows and agent-app editor keep the embedded rail.
+- `2026-07-09` — Library side-panel header: title shortened to **Code**, dropped "Your saved code" subtitle; `SidePanelHeader` truncates title/subtitle so narrow panels don't wrap. Editable Monaco right-click now includes Format Document/Selection, Find, Go to Line, Word Wrap, and Command Palette via `createCodeEditorExtraSections`; Format also on the editor toolbar.
+- `2026-07-09` — HTML Pages (`html-page:`) register a render-previewer (`features/html-pages/code-preview/`). Eye icon on those tabs opens a paired preview: dirty → `srcDoc` of live buffer; clean → published `page.url?preview=1`. Registration side-effect imported from `CodeWorkspace.tsx`.
 - `2026-07-07` — Align `/code` chat with `/chat`: fix `useAgentLauncher` to use minted id when `preferFresh` (not stale focus); rename focus key from `agent-runner:<agentId>` to `code-route:<agentId>`; gate launcher `ready` on fresh route when loading existing `?conversationId=`; add `retainOnUnmount` + fresh-start `clearFocus` guard like `ChatRoomClient`.
 - `2026-07-05` — Fix `/code` **+ (new chat)** stuck on failed first request: replicate chat-route fresh-session primitive (`beginFreshCodeChat` → `clearFocus` + `freshSessionNonce` bump + strip `?conversationId=`); `AgentRunnerPage` accepts `preferFresh` / `freshSessionKey` so the launcher remints instead of reviving stale surface focus.
 - `2026-07-05` — Fix `/code` chat sandbox binding: `ChatPanelSlot` now passes `sourceFeature="code-editor"` into `AgentRunnerPage` so `resolveAgentSandboxRef` attaches the connected sandbox to agent turns (previously `"agent-runner"` skipped editor-active binding while `useBindAgentToSandbox` still routed AI calls to the sandbox proxy → 404 "Conversation not found").
 - `2026-07-05` — Explorer file-tree context menu: inline metadata (size, modified, permissions, direct child count) on open; **Properties…** dialog with folder **Calculate** total size via sandbox `du -sb` (`FilesystemAdapter.computeSize`). `buildCodeWorkspaceContextData` now emits the manifest's declared SurfaceValues (`current_file_*`, `selection_range`, `open_file_paths`, …) + generic baselines (`text_before`/`text_after`/`context`) alongside the `vsc_*` contract; `CodeWorkspaceContextMenu` flipped to `isEditable` and wires `onTextReplace`/insert via Monaco `executeEdits`; added `CodeReadonlyContextMenu` on the diff/preview regions; commit-message box → `ProTextarea`.
 - `2026-06-22` — Extracted `buildCodeWorkspaceContextData` + `CODE_WORKSPACE_CONTEXT_MENU_PROPS` so `/code` and context-menu demo harnesses share one context shape.
-- `2026-05-06` — claude: added `"render-preview"` tab kind + render-preview registry (`features/code/preview/`). Library sources can register a previewer for their `tabIdPrefix`; tabs from those sources get an "Open preview" eye icon that pops a paired preview tab. Live buffer flows through `useDeferredValue`; Refresh button forces a remount. Source-tab close cascades to its preview tab. Used by the agent-apps editing route — see `features/agent-apps/code-preview/`.
+- `2026-05-06` — claude: added `"render-preview"` tab kind + render-preview registry (`features/code/preview/`). Library sources can register a previewer for their `tabIdPrefix`; tabs from those sources get an "Open preview" eye icon that pops a paired preview tab. Live buffer flows through `useDeferredValue`; Refresh button forces a remount. Source-tab close cascades to its preview tab. Registered previewers: `aga-app:` (`features/agent-apps/code-preview/`), `html-page:` (`features/html-pages/code-preview/`).
 - `2026-04-28` — claude: initial FEATURE.md (index pointing at `SYSTEM_STATE.md`); explicit chat-binding split vs `features/code-editor/`; documents the bridge context-key contract; flags Phase 21 (resource pills + unified context menu) as in-flight.
 
 ---

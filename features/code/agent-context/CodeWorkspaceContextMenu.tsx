@@ -12,10 +12,9 @@
  * applies in place (read-only diff/preview regions use `CodeReadonlyContextMenu`
  * instead).
  *
- * NOTE: this wrapper deliberately does NOT register Monaco's IDE actions
- * (Format Document, Go to Definition, etc.) inside the Radix menu — the
- * unified menu's internal layout doesn't expose an extension point yet.
- * Users access those via Monaco's command palette (`F1` / `Cmd+Shift+P`).
+ * Monaco IDE actions (Format Document, Find, Go to Line, Command Palette, …)
+ * are injected via `extraSections` (`createCodeEditorExtraSections`) so they
+ * sit next to Cut/Copy/Paste without forking the unified menu.
  */
 
 import React, { useEffect, useState, type MutableRefObject } from "react";
@@ -34,6 +33,7 @@ import {
   summarizeOpenTabs,
   type CodeSelectionRange,
 } from "./buildCodeWorkspaceContextData";
+import { createCodeEditorExtraSections } from "./codeEditorExtraSections";
 import type { ApplicationScope } from "@/features/agents/utils/scope-mapping";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrapper is the
@@ -221,12 +221,18 @@ export function CodeWorkspaceContextMenu({
   const getApplicationScope = (): ApplicationScope =>
     codeEditorLaunchScope(getContextData()) as ApplicationScope;
 
+  const editorExtraSections = createCodeEditorExtraSections({
+    getEditor: () => editorRef.current,
+    hasSelection: selectedText.length > 0,
+  });
+
   return (
     <div className={className}>
       <EditableContextMenu
         {...CODE_WORKSPACE_CONTEXT_MENU_PROPS}
         contextData={getContextData()}
         getApplicationScope={getApplicationScope}
+        extraSections={editorExtraSections}
         onTextReplace={handleTextReplace}
         onTextInsertBefore={handleTextInsertBefore}
         onTextInsertAfter={handleTextInsertAfter}

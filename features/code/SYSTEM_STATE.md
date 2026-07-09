@@ -1,7 +1,9 @@
 # `/code` Workspace — System State & Gap Audit
 
-**Last updated:** 2026‑04‑26 (post-completion sweep + EC2 incident note + terminal live-streaming fix + AI-context bridge fix + workspace-token git auth + sandbox UX truth pass + persistence Phase 4 frontend — see [`QA_CHECKLIST.md`](./QA_CHECKLIST.md))
+**Last updated:** 2026‑07‑09 (shell Large-Route sidebar for `/code` — see Change log in [`FEATURE.md`](./FEATURE.md))
 **Scope:** Everything under `features/code/`, plus its hooks, adapters, and the slices it consumes from elsewhere in the app.
+
+> **2026‑07‑09 — activity icons → app shell.** On `/code`, the 48px ActivityBar icon rail injects into the main shell sidebar via `CodeSidebarMenu` + `route-menu-registry` (same Large-Route pattern as `/chat`). The resizable/collapsible side panel (Library / Explorer / …) stays in `WorkspaceLayout`. Floating `CodeWorkspaceWindow` and `/agent-apps/[id]/code` keep `showActivityBar` (embedded rail).
 
 This doc is the single source of truth for the `/code` (VSCode‑style) workspace. It captures (1) what is shipped, (2) what is wired but incomplete, (3) what is intentionally deferred, and (4) the wire format / mechanics of the editor→agent context bridge and the Monaco type environment system.
 
@@ -153,7 +155,8 @@ features/code/library-sources/
     prompt-apps.ts         ← prompt_apps.component_code         (single field)
     aga-apps.ts            ← aga_apps.component_code            (single field)
     tool-ui-components.ts  ← tool_ui_components.* (multi‑field)
-  index.ts                 ← side‑effect register + barrel exports
+    html-pages.ts          ← html_pages.html_content (via /api/html-pages)
+  registerBuiltinLibrarySources.ts
 ```
 
 Tab id conventions:
@@ -164,7 +167,10 @@ Tab id conventions:
 | prompt_apps | `prompt-app:<rowId>` |
 | aga_apps | `aga-app:<rowId>` |
 | tool_ui_components | `tool-ui:<rowId>:<fieldId>` (e.g. `tool-ui:abc:inline_code`) |
+| html_pages | `html-page:<rowId>` |
 | Mock/Sandbox FS | `fs:<adapterId>:<absPath>` |
+
+**Render preview** (`features/code/preview/`): library sources may register a live previewer by `tabIdPrefix`. Eye icon on the tab opens a paired `kind: "render-preview"` tab. Registered today: `aga-app:` → `features/agent-apps/code-preview/`; `html-page:` → `features/html-pages/code-preview/` (imported from `CodeWorkspace.tsx`).
 
 `useSaveActiveTab` routes the save by inspecting the tab id prefix — code_files → thunks; library adapter → `adapter.save`; otherwise `filesystem.writeFile`.
 

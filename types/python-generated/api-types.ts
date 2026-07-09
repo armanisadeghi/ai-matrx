@@ -4662,6 +4662,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -8528,6 +8552,119 @@ export interface paths {
          *     Never writes to wf_run / wf_checkpoint / wf_node_outcome.
          */
         post: operations["test_single_node_workflows__definition_id__nodes__node_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/nodes/{node_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Node Data Slots
+         * @description All persisted data slots for one node (empty list when none exist),
+         *     plus the computed ``best`` pointer (live > test > declared).
+         */
+        get: operations["get_node_data_slots_workflows__definition_id__nodes__node_id__slots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Definition Data Slots
+         * @description Per-node slot map for the whole definition — the studio's bulk fetch
+         *     for design-time edge-Satisfied derivation (spec §7.3 consumer a).
+         */
+        get: operations["get_definition_data_slots_workflows__definition_id__slots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/nodes/{node_id}/slots/declared_sample": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Declared Sample
+         * @description Set/replace the node's user-declared sample output.
+         *
+         *     The value is validated against the node's output schema WARN-not-block
+         *     (spec §7.2): a mismatched sample is still stored — many specs are
+         *     ``extra="allow"`` and a partial sample is better than none — but the
+         *     warnings tell the author exactly what disagrees.
+         */
+        put: operations["put_declared_sample_workflows__definition_id__nodes__node_id__slots_declared_sample_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/nodes/{node_id}/slots/{slot}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Node Data Slot
+         * @description Delete ONE slot row (any of the three — clearing a stale live/test
+         *     capture is a legitimate authoring action).
+         */
+        delete: operations["delete_node_data_slot_workflows__definition_id__nodes__node_id__slots__slot__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/dry-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dry Run Workflow
+         * @description ENGINE_SPEC §8 — a formally distinct, synchronous, ZERO-side-effect
+         *     mode: compile the CURRENT draft (or a version snapshot), feed each node's
+         *     best §7 data slot as its design-time sample, and return the engine's
+         *     typed readiness/validation report. No wf_run row, no checkpoint, no
+         *     outcome, no event, no executor call — pure computation, the documented
+         *     exception to stream-everything.
+         */
+        post: operations["dry_run_workflow_workflows__definition_id__dry_run_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -17306,8 +17443,10 @@ export interface components {
             channel_values?: {
                 [key: string]: unknown;
             } | null;
-            /** Pending Writes */
-            pending_writes?: unknown[] | null;
+            /** Pending Bindings */
+            pending_bindings?: {
+                [key: string]: unknown;
+            } | null;
             /** Next Invocations */
             next_invocations?: {
                 [key: string]: unknown;
@@ -19080,8 +19219,22 @@ export interface components {
             task_id?: string | null;
             /** Updated At */
             updated_at?: string | null;
+            validation?: components["schemas"]["ValidationResult"] | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * DefinitionSlotsResponse
+         * @description Per-node slot map for a whole definition — the studio's bulk fetch
+         *     for design-time edge-Satisfied derivation.
+         */
+        DefinitionSlotsResponse: {
+            /** Definition Id */
+            definition_id: string;
+            /** Nodes */
+            nodes: {
+                [key: string]: components["schemas"]["NodeSlotsMapEntry"];
+            };
         };
         /** DeleteAllMessagesResponse */
         DeleteAllMessagesResponse: {
@@ -19142,6 +19295,20 @@ export interface components {
             chunks_deleted: number;
             /** Embeddings Deleted */
             embeddings_deleted: number;
+        };
+        /** DeleteSlotResponse */
+        DeleteSlotResponse: {
+            /** Deleted */
+            deleted: boolean;
+            /** Definition Id */
+            definition_id: string;
+            /** Node Id */
+            node_id: string;
+            /**
+             * Slot
+             * @enum {string}
+             */
+            slot: "declared_sample" | "last_test_output" | "last_live_output";
         };
         /** DeleteTriggerResponse */
         DeleteTriggerResponse: {
@@ -19231,6 +19398,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -19728,6 +19922,100 @@ export interface components {
             note?: string | null;
             /** Rewrote Column */
             rewrote_column?: boolean | null;
+        };
+        /** DryRunEdgeReport */
+        DryRunEdgeReport: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "satisfied" | "unsatisfied" | "pruned" | "unknowable";
+            /** Slot Used */
+            slot_used?: string | null;
+        };
+        /** DryRunNodeReport */
+        DryRunNodeReport: {
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "ready" | "blocked" | "unknowable";
+            /** Missing Required */
+            missing_required?: components["schemas"]["MissingBinding"][];
+            /** Mapping Issues */
+            mapping_issues?: components["schemas"]["MappingIssue"][];
+            /** Would Receive */
+            would_receive?: {
+                [key: string]: unknown;
+            } | null;
+            /** Diagnostics */
+            diagnostics?: string[];
+        };
+        /** DryRunReport */
+        DryRunReport: {
+            /**
+             * Ok
+             * @description True when no error-severity finding exists.
+             */
+            ok: boolean;
+            /** Nodes */
+            nodes: {
+                [key: string]: components["schemas"]["DryRunNodeReport"];
+            };
+            /** Edges */
+            edges: {
+                [key: string]: components["schemas"]["DryRunEdgeReport"];
+            };
+            /** Errors */
+            errors?: string[];
+            /** Warnings */
+            warnings?: string[];
+            /**
+             * Registry Complete
+             * @description False when ≥1 node type is not registered in the supplied registry — their input contracts were NOT checked, so a green report is hollow and cannot be fully trusted. A caller running against the bare default_registry (no builtins) gets ok=True only because validation was skipped; this flag exposes that.
+             * @default true
+             */
+            registry_complete: boolean;
+        };
+        /**
+         * DryRunRequest
+         * @description POST /workflows/{id}/dry-run body (ENGINE_SPEC §8) — mirrors the run
+         *     API's seeding surface so a dry run previews exactly what a live run
+         *     would receive.
+         */
+        DryRunRequest: {
+            /** Inputs */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /** Node Inputs */
+            node_inputs?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Variables */
+            variables?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Version Number
+             * @description Dry-run this published snapshot instead of the current draft.
+             */
+            version_number?: number | null;
+        };
+        /** DryRunResponse */
+        DryRunResponse: {
+            /** Definition Id */
+            definition_id: string;
+            report: components["schemas"]["DryRunReport"];
+            /**
+             * Samples Used
+             * @description Which §7 data slot fed each node's design-time sample (last_live_output > last_test_output > declared_sample).
+             */
+            samples_used?: {
+                [key: string]: "declared_sample" | "last_test_output" | "last_live_output";
+            };
         };
         /** DuplicatePagesRequest */
         DuplicatePagesRequest: {
@@ -23638,10 +23926,36 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
+             * Dispatch Id
+             * @description Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation the result is for. Required together with item_index when several items of this node are pending.
+             */
+            dispatch_id?: string | null;
+            /**
+             * Item Index
+             * @description Fan-out correlation (ENGINE_SPEC §4.5): item index within dispatch_id.
+             */
+            item_index?: number | null;
+            /**
              * Max Steps
              * @default 1000
              */
             max_steps: number;
+        };
+        /** MappingIssue */
+        MappingIssue: {
+            /** Edge Id */
+            edge_id: string;
+            /** Target Key */
+            target_key: string;
+            /** Source Key */
+            source_key: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+            /** Message */
+            message: string;
         };
         /** MaskRequestBody */
         MaskRequestBody: {
@@ -23941,6 +24255,24 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** MissingBinding */
+        MissingBinding: {
+            /**
+             * Edge Id
+             * @description Unresolved inbound edge id; '' for node-level var_missing.
+             */
+            edge_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "no_source_data" | "mapping_unresolvable" | "var_missing";
+            /**
+             * Message
+             * @default
+             */
+            message: string;
+        };
         /**
          * MissingInputField
          * @description One input a node needs before it can run — surfaced so the studio can
@@ -24172,6 +24504,31 @@ export interface components {
             created_at: string;
         };
         /**
+         * NodeDataSlotPayload
+         * @description Wire shape of one persisted data slot.
+         */
+        NodeDataSlotPayload: {
+            /**
+             * Slot
+             * @enum {string}
+             */
+            slot: "declared_sample" | "last_test_output" | "last_live_output";
+            /** Value */
+            value?: unknown;
+            /** Emissions */
+            emissions?: {
+                [key: string]: unknown;
+            };
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Source */
+            source: string;
+            /** Captured At */
+            captured_at?: string | null;
+            /** Captured By */
+            captured_by?: string | null;
+        };
+        /**
          * NodeDef
          * @description User-authored node in a ReactFlow-compatible definition.
          *
@@ -24303,6 +24660,27 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** NodeSlotsMapEntry */
+        NodeSlotsMapEntry: {
+            /** Slots */
+            slots: components["schemas"]["NodeDataSlotPayload"][];
+            /** Best */
+            best?: ("declared_sample" | "last_test_output" | "last_live_output") | null;
+        };
+        /** NodeSlotsResponse */
+        NodeSlotsResponse: {
+            /** Definition Id */
+            definition_id: string;
+            /** Node Id */
+            node_id: string;
+            /** Slots */
+            slots: components["schemas"]["NodeDataSlotPayload"][];
+            /**
+             * Best
+             * @description The best available sample among the present slots: last_live_output > last_test_output > declared_sample.
+             */
+            best?: ("declared_sample" | "last_test_output" | "last_live_output") | null;
+        };
         /**
          * NodeStateAtCheckpoint
          * @description The state of one node at a given checkpoint, derived from wf_node_outcome.
@@ -24333,6 +24711,12 @@ export interface components {
             error_type?: string | null;
             /** Error Message */
             error_message?: string | null;
+            /** Error Code */
+            error_code?: string | null;
+            /** Error Details */
+            error_details?: {
+                [key: string]: unknown;
+            } | null;
             /** Duration Ms */
             duration_ms?: number | null;
             /** Source */
@@ -25786,6 +26170,29 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** PutDeclaredSampleRequest */
+        PutDeclaredSampleRequest: {
+            /**
+             * Value
+             * @description The declared sample output for this node.
+             */
+            value: unknown;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Emissions */
+            emissions?: {
+                [key: string]: unknown;
+            };
+        };
+        /** PutDeclaredSampleResponse */
+        PutDeclaredSampleResponse: {
+            slot: components["schemas"]["NodeDataSlotPayload"];
+            /**
+             * Warnings
+             * @description Schema-mismatch warnings (warn-not-block, spec §7.2): the sample was stored, but these fields disagree with the node's output schema.
+             */
+            warnings?: string[];
+        };
         /** QuickScrapeRequest */
         QuickScrapeRequest: {
             /**
@@ -26945,6 +27352,16 @@ export interface components {
              * @default true
              */
             attempt_bump: boolean;
+            /**
+             * Dispatch Id
+             * @description Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation to retry. Omit for ordinary nodes; required together with item_index when several items of this node are pending (the endpoint never guesses — it 422s with the pending correlations).
+             */
+            dispatch_id?: string | null;
+            /**
+             * Item Index
+             * @description Fan-out correlation (ENGINE_SPEC §4.5): item index within dispatch_id. 'Retry item 3 alone' = item_index=3.
+             */
+            item_index?: number | null;
             /**
              * Max Steps
              * @default 1000
@@ -28324,6 +28741,16 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
+             * Dispatch Id
+             * @description Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation to skip. Required together with item_index when several items of this node are pending.
+             */
+            dispatch_id?: string | null;
+            /**
+             * Item Index
+             * @description Fan-out correlation (ENGINE_SPEC §4.5): item index within dispatch_id.
+             */
+            item_index?: number | null;
+            /**
              * Max Steps
              * @default 1000
              */
@@ -29452,6 +29879,13 @@ export interface components {
             config_override?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Variables
+             * @description Run-variable values for {'$var': name} references authored in the node's static inputs. The test path resolves them through the SAME merge the scheduler uses (resolve_invocation_inputs), so a node test exercises exactly what a live run would.
+             */
+            variables?: {
+                [key: string]: unknown;
+            };
         };
         /** ToolDetail */
         ToolDetail: {
@@ -31335,6 +31769,53 @@ export interface components {
             is_admin: boolean;
             /** Email */
             email: string | null;
+        };
+        /** WorkerHealthResponse */
+        WorkerHealthResponse: {
+            /** Live */
+            live: boolean;
+            /**
+             * Worker Count
+             * @default 0
+             */
+            worker_count: number;
+            /**
+             * Fresh Count
+             * @default 0
+             */
+            fresh_count: number;
+            /**
+             * Workers
+             * @default []
+             */
+            workers: components["schemas"]["WorkerHeartbeatRecord"][];
+            /** Checked At */
+            checked_at?: string | null;
+            /** Note */
+            note?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** WorkerHeartbeatRecord */
+        WorkerHeartbeatRecord: {
+            /** Worker Id */
+            worker_id?: string | null;
+            /** Role */
+            role?: string | null;
+            /** Hostname */
+            hostname?: string | null;
+            /** Pid */
+            pid?: number | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Staleness S */
+            staleness_s?: number | null;
+            /** Fresh */
+            fresh?: boolean | null;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * WorkflowCostRollup
@@ -36250,10 +36731,7 @@ export interface operations {
     get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -36266,15 +36744,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SandboxEnvResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -38959,9 +39428,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["WorkerHealthResponse"];
                 };
             };
         };
@@ -39293,6 +39760,14 @@ export interface operations {
                 output_types?: string[] | null;
                 /** @description keep only models with this capability — a feature (function_calling), native tool (web_search), or input flag (accepts_documents/accepts_video/accepts_youtube/supports_vision/supports_audio_input) */
                 capability?: string | null;
+                /** @description brand, case-insensitive */
+                provider?: string | null;
+                /** @description substring over name/common_name/provider */
+                query?: string | null;
+                /** @description only the recommended (is_primary) models */
+                primary_only?: boolean;
+                /** @description restrict to these exact ids */
+                model_ids?: string[] | null;
             };
             header?: never;
             path?: never;
@@ -39764,6 +40239,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -47017,6 +47527,173 @@ export interface operations {
             };
         };
     };
+    get_node_data_slots_workflows__definition_id__nodes__node_id__slots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NodeSlotsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_definition_data_slots_workflows__definition_id__slots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinitionSlotsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_declared_sample_workflows__definition_id__nodes__node_id__slots_declared_sample_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutDeclaredSampleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PutDeclaredSampleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_node_data_slot_workflows__definition_id__nodes__node_id__slots__slot__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+                node_id: string;
+                slot: "declared_sample" | "last_test_output" | "last_live_output";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteSlotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dry_run_workflow_workflows__definition_id__dry_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DryRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DryRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_node_input_form_workflows__definition_id__nodes__node_id__input_form_get: {
         parameters: {
             query?: never;
@@ -52112,10 +52789,7 @@ export interface operations {
                 prefix?: string;
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -52147,10 +52821,7 @@ export interface operations {
                 /** @description cld_files.file_path */
                 path: string;
             };
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -52179,10 +52850,7 @@ export interface operations {
     put_file_cloud_files_put_put: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -52218,10 +52886,7 @@ export interface operations {
                 /** @description cld_files.file_path */
                 path: string;
             };
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -52248,10 +52913,7 @@ export interface operations {
     get_quota_cloud_files_quota_get: {
         parameters: {
             query?: never;
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -52266,15 +52928,6 @@ export interface operations {
                     "application/json": components["schemas"]["BridgeQuotaResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
         };
     };
     list_changes_cloud_files_changes_get: {
@@ -52284,10 +52937,7 @@ export interface operations {
                 since: string;
                 limit?: number;
             };
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };
@@ -52336,9 +52986,7 @@ export interface operations {
     drain_media_heal_queue_media_heal_drain_post: {
         parameters: {
             query?: never;
-            header?: {
-                "X-Cloud-Files-Bypass"?: string | null;
-            };
+            header?: never;
             path?: never;
             cookie?: never;
         };

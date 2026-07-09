@@ -565,8 +565,9 @@ const FindReplaceOverlay = lazyOverlay(
   () => import("@/features/overlays/components/FindReplaceOverlay"),
   { ssr: false },
 );
-const SurfaceContextInspectorOverlay = lazyOverlay(
-  () => import("@/features/overlays/components/SurfaceContextInspectorOverlay"),
+const SurfaceContextInspectorWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/admin/SurfaceContextInspectorWindow"),
   { ssr: false },
 );
 const ContextAssignmentWindow = lazyOverlay(
@@ -1813,9 +1814,7 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.promptPreviewWindow;
         const data = dataById.promptPreviewWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         const conversationId =
           typeof data?.conversationId === "string" ? data.conversationId : "";
@@ -4510,7 +4509,7 @@ export default function OverlayController() {
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <SurfaceContextInspectorOverlay
+          <SurfaceContextInspectorWindow
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "surfaceContextInspector" }))

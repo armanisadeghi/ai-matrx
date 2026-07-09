@@ -28,7 +28,7 @@ import type {
   OrgRole,
 } from "@/features/organizations/types";
 import { supabase } from "@/utils/supabase/client";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef, fileIdToMediaRef } from "@/features/files";
 
 /**
  * Accept Invitation Page
@@ -235,10 +235,16 @@ export default function AcceptInvitationPage() {
             {invitation.organization?.logoUrl ||
             invitation.organization?.logoFileId ? (
               <InlineMediaRef
-                fileId={invitation.organization.logoFileId}
-                src={invitation.organization.logoUrl}
+                ref={
+                  invitation.organization.logoFileId
+                    ? fileIdToMediaRef(invitation.organization.logoFileId)
+                    : invitation.organization.logoUrl
+                }
+                size="md"
+                fit="cover"
+                rounded="full"
                 alt={invitation.organization.name}
-                className="w-16 h-16 rounded-full object-cover"
+                className="w-16 h-16"
               />
             ) : (
               <Building2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />

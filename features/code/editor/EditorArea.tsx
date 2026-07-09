@@ -184,6 +184,23 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
     [dispatch, activeTab],
   );
 
+  const handleFormatDocument = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      toast.error("Editor is not ready yet");
+      return;
+    }
+    const action = editor.getAction("editor.action.formatDocument");
+    if (!action) {
+      toast.error("Format is not available for this language");
+      return;
+    }
+    void Promise.resolve(action.run()).catch((err: unknown) => {
+      console.error("[EditorArea] formatDocument failed", err);
+      toast.error("Failed to format document");
+    });
+  }, []);
+
   const handleSave = useCallback(() => {
     void saveActiveTab().then((result) => {
       if (!result) return;
@@ -327,8 +344,13 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
           rightSlotAvailable={rightSlotAvailable}
           onSaveActiveTab={handleSave}
           hasDirtyActiveTab={Boolean(activeTab?.dirty)}
-          hasActiveTab={Boolean(activeTab)}
+          hasActiveTab={Boolean(activeTab) && !isPreviewTab(activeTab?.kind)}
           lastSavedAt={activeTab?.lastSavedAt}
+          onFormatDocument={
+            activeTab && !isPreviewTab(activeTab.kind) && !activeTabHasPending
+              ? handleFormatDocument
+              : undefined
+          }
           onSendSelectionAsContext={sendSelection}
           canSendSelectionAsContext={canSendSelection}
           activeCloudFileId={activeTab?.cloudFileId ?? null}

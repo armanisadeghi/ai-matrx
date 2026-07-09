@@ -41,6 +41,13 @@ export interface WorkspaceLayoutProps {
    *  Use to de-emphasise the file tree on focused-edit surfaces (e.g. the
    *  agent-app editor wants ~12% instead of the full /code 18%). */
   defaultSideSize?: number;
+  /**
+   * When false, omit the 48px ActivityBar icon rail. On `/code` the shell
+   * Large-Route menu owns those icons (`CodeSidebarMenu`); the resizable
+   * side panel (file tree) still renders here. Defaults to true so floating
+   * windows / agent-app editor keep the embedded rail.
+   */
+  showActivityBar?: boolean;
 }
 
 /** Preferred percentages each horizontal panel snaps to whenever it
@@ -91,6 +98,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   showStatusBar = true,
   className,
   defaultSideSize = DEFAULT_SIDE,
+  showActivityBar = true,
 }) => {
   const dispatch = useAppDispatch();
   const activeView = useAppSelector(selectActiveView);
@@ -217,7 +225,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       )}
     >
       <div className="flex min-h-0 flex-1">
-        <ActivityBar />
+        {showActivityBar && <ActivityBar />}
         <ResizablePanelGroup
           orientation="horizontal"
           groupRef={bodyGroupRef}

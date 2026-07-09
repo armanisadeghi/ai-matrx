@@ -4,12 +4,33 @@ import { createClient } from "@/utils/supabase/server";
 async function _fetchAIModelsFromDB() {
   const supabase = await createClient();
 
-  // Fetch all non-deprecated AI models
+  // Only routable models: a model_definition without an available ai.offering
+  // is selectable-looking but uncallable (resolve_call_profile raises).
+  const { data: offeringRows, error: offeringError } = await supabase
+    .schema("ai")
+    .from("model_offering")
+    .select("model_id");
+  if (offeringError) {
+    console.error("Error fetching model offerings:", offeringError);
+    throw offeringError;
+  }
+  const routableIds = [
+    ...new Set(
+      (offeringRows ?? [])
+        .map((r) => r.model_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+  if (routableIds.length === 0) {
+    return [];
+  }
+
   const { data: models, error } = await supabase
     .schema("ai")
     .from("model_definition")
     .select("*")
     .eq("is_deprecated", false)
+    .in("id", routableIds)
     .order("common_name", { ascending: true });
 
   if (error) {

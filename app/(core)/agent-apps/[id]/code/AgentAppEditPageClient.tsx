@@ -48,6 +48,7 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
 
   return (
     <CodeWorkspaceRoute
+      showActivityBar
       defaultSideSize={12}
       focusedLibrarySourceId={agaAppsAdapter.sourceId}
       rightSlot={

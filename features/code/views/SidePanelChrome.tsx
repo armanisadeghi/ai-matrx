@@ -20,21 +20,25 @@ export const SidePanelHeader: React.FC<SidePanelHeaderProps> = ({
 }) => (
   <div
     className={cn(
-      "flex shrink-0 items-center justify-between border-b px-3",
+      "flex shrink-0 items-center justify-between gap-2 border-b px-3",
       HEADER_HEIGHT,
       PANE_BORDER,
       className,
     )}
   >
-    <div className="flex min-w-0 items-baseline gap-2">
-      <span className={TEXT_HEADER}>{title}</span>
+    <div className="flex min-w-0 flex-1 items-baseline gap-2 overflow-hidden">
+      <span className={cn(TEXT_HEADER, "truncate")} title={title}>
+        {title}
+      </span>
       {subtitle && (
-        <span className="truncate text-[11px] text-neutral-500">
+        <span className="min-w-0 truncate text-[11px] text-neutral-500">
           {subtitle}
         </span>
       )}
     </div>
-    {actions && <div className="flex items-center gap-0.5">{actions}</div>}
+    {actions && (
+      <div className="flex shrink-0 items-center gap-0.5">{actions}</div>
+    )}
   </div>
 );
 

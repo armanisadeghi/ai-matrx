@@ -39,14 +39,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <SidePanelHeader
-        title="Code Library"
-        subtitle={
-          listStatus === "loading"
-            ? "Loading…"
-            : listStatus === "loaded"
-              ? "Your saved code"
-              : undefined
-        }
+        title="Code"
         actions={
           <>
             <SidePanelAction
@@ -56,7 +49,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
             />
             <SidePanelAction
               icon={RefreshCw}
-              label="Refresh Library"
+              label={listStatus === "loading" ? "Refreshing…" : "Refresh"}
               onClick={refresh}
             />
           </>

@@ -17,12 +17,18 @@ export interface CodeWorkspaceRouteProps extends CodeWorkspaceProps {
  * columns are wired up using the URL-driven `?agentId=` / `?conversationId=`
  * pattern. Pass `hideChat` / `hideHistory` to suppress either column, or
  * override `rightSlot` / `farRightSlot` explicitly to inject your own.
+ *
+ * Activity-view icons live in the app shell via `CodeSidebarMenu` +
+ * `route-menu-registry` (same Large-Route pattern as `/chat`). The
+ * resizable/collapsible file panel stays in the workspace. This host
+ * therefore hides only the duplicate 48px ActivityBar rail.
  */
 export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
   hideChat,
   hideHistory,
   rightSlot,
   farRightSlot,
+  showActivityBar = false,
   ...props
 }) => {
   const resolvedRight =
@@ -34,6 +40,7 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
     <div className="h-[calc(100dvh-var(--shell-offset,0px))] w-full">
       <CodeWorkspace
         {...props}
+        showActivityBar={showActivityBar}
         rightSlot={resolvedRight}
         farRightSlot={resolvedFarRight}
       />

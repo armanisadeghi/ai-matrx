@@ -553,6 +553,21 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── Surface Context Values (admin inspector) ──────────────────────────────
+  // Live declared-vs-supplied scope inspector from the context menu. Scope
+  // snapshot is caller-owned and not restorable → ephemeral.
+  {
+    slug: "surface-context-inspector-window",
+    overlayId: "surfaceContextInspector",
+    kind: "window",
+    label: "Surface Context Values",
+    defaultData: { surfaceName: null, scope: {}, isEditable: false },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+    mobileSidebarAs: "drawer",
+    instanceMode: "singleton",
+  },
+
   // ── Error Inspector (admin) ───────────────────────────────────────────────
   {
     slug: "error-inspector-window",

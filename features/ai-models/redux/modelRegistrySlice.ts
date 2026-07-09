@@ -96,7 +96,11 @@ type ModelOptionRow = Pick<
 
 /**
  * Fetch lightweight options (id, name, common_name, provider, model_class, is_deprecated) for
- * all active models. Used to populate dropdowns without pulling the full schema.
+ * all active, ROUTABLE models. Used to populate dropdowns without pulling the full schema.
+ *
+ * CRITICAL: only models with ≥1 available ai.offering are returned. A bare
+ * model_definition row is NOT callable — resolve_call_profile raises. Listing
+ * orphans here is how grok-4.5 looked "set up fine" while every call failed.
  *
  * Each fetched record is stored with _fetchType:'options'.
  * Records already marked 'full' are not downgraded.
@@ -106,16 +110,33 @@ type ModelOptionRow = Pick<
 export const fetchModelOptions = createAsyncThunk(
   "modelRegistry/fetchModelOptions",
   async (_, { rejectWithValue }) => {
-    // console.log(
-    //   "[modelRegistry] fetchModelOptions — fetching from Supabase client",
-    // );
     try {
       const supabase = createClient();
+      // model_offering is the user-facing join of available offerings × active
+      // services × non-deprecated models — if a model isn't here, it cannot route.
+      const { data: offeringRows, error: offeringError } = await supabase
+        .schema("ai")
+        .from("model_offering")
+        .select("model_id");
+      if (offeringError) throw offeringError;
+      const routableIds = [
+        ...new Set(
+          (offeringRows ?? [])
+            .map((r) => r.model_id)
+            .filter(
+              (id): id is string => typeof id === "string" && id.length > 0,
+            ),
+        ),
+      ];
+      if (routableIds.length === 0) {
+        return [] as ModelOptionRow[];
+      }
       const { data, error } = await supabase
         .schema("ai")
         .from("model_definition")
         .select("id, name, common_name, provider, model_class, is_deprecated")
         .eq("is_deprecated", false)
+        .in("id", routableIds)
         .order("common_name", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as ModelOptionRow[];

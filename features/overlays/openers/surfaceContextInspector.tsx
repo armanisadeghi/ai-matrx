@@ -4,9 +4,9 @@
  * Opener for the `surfaceContextInspector` overlay — the live surface
  * value-contract inspector (declared SurfaceValues vs the resolved scope).
  *
+ * Renders as a non-blocking WindowPanel (sidebar of keys → closeable tabs).
  * Data-only: surfaceName + the resolved scope + isEditable are plain
  * serializable values, so they travel straight through `openOverlay` data.
- * Mirrors `contextAssignment` / `findReplace`.
  *
  * - `useOpenSurfaceContextInspector()` — imperative hook; returns a `close()` handle.
  * - `<SurfaceContextInspectorController />` — declarative wrapper.

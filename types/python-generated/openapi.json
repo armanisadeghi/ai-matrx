@@ -6587,40 +6587,6 @@
         "summary": "Get Sandbox Env For User",
         "description": "Return the decrypted sandbox env for `user_id`. Service-token-authed\nvia the existing sandbox-bridge auth path (X-Matrx-User-Id header is\nUUID-validated; Authorization: Bearer <AIDREAM_SANDBOX_SERVICE_TOKEN>\nis constant-time compared).\n\nCalled by the matrx-sandbox orchestrator at sandbox-create time so the\nuser's vaulted secrets land in `docker run -e KEY=value` regardless\nof how the sandbox was created (browser, Ship portal, agent tool,\nautomation). The browser-facing `/sandbox-env` above stays unchanged\nfor in-browser callers.",
         "operationId": "get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6628,16 +6594,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SandboxEnvResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -10718,9 +10674,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Worker Health Admin Runtime Worker Health Get"
+                  "$ref": "#/components/schemas/WorkerHealthResponse"
                 }
               }
             }
@@ -11271,6 +11225,75 @@
               "title": "Capability"
             },
             "description": "keep only models with this capability — a feature (function_calling), native tool (web_search), or input flag (accepts_documents/accepts_video/accepts_youtube/supports_vision/supports_audio_input)"
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "brand, case-insensitive",
+              "title": "Provider"
+            },
+            "description": "brand, case-insensitive"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "substring over name/common_name/provider",
+              "title": "Query"
+            },
+            "description": "substring over name/common_name/provider"
+          },
+          {
+            "name": "primary_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "only the recommended (is_primary) models",
+              "default": false,
+              "title": "Primary Only"
+            },
+            "description": "only the recommended (is_primary) models"
+          },
+          {
+            "name": "model_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "restrict to these exact ids",
+              "title": "Model Ids"
+            },
+            "description": "restrict to these exact ids"
           }
         ],
         "responses": {
@@ -12009,6 +12032,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -22955,6 +23038,282 @@
         }
       }
     },
+    "/workflows/{definition_id}/nodes/{node_id}/slots": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Node Data Slots",
+        "description": "All persisted data slots for one node (empty list when none exist),\nplus the computed ``best`` pointer (live > test > declared).",
+        "operationId": "get_node_data_slots_workflows__definition_id__nodes__node_id__slots_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NodeSlotsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/slots": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Definition Data Slots",
+        "description": "Per-node slot map for the whole definition — the studio's bulk fetch\nfor design-time edge-Satisfied derivation (spec §7.3 consumer a).",
+        "operationId": "get_definition_data_slots_workflows__definition_id__slots_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DefinitionSlotsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/nodes/{node_id}/slots/declared_sample": {
+      "put": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Put Declared Sample",
+        "description": "Set/replace the node's user-declared sample output.\n\nThe value is validated against the node's output schema WARN-not-block\n(spec §7.2): a mismatched sample is still stored — many specs are\n``extra=\"allow\"`` and a partial sample is better than none — but the\nwarnings tell the author exactly what disagrees.",
+        "operationId": "put_declared_sample_workflows__definition_id__nodes__node_id__slots_declared_sample_put",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutDeclaredSampleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PutDeclaredSampleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/nodes/{node_id}/slots/{slot}": {
+      "delete": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Delete Node Data Slot",
+        "description": "Delete ONE slot row (any of the three — clearing a stale live/test\ncapture is a legitimate authoring action).",
+        "operationId": "delete_node_data_slot_workflows__definition_id__nodes__node_id__slots__slot__delete",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "declared_sample",
+                "last_test_output",
+                "last_live_output"
+              ],
+              "type": "string",
+              "title": "Slot"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteSlotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/dry-run": {
+      "post": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Dry Run Workflow",
+        "description": "ENGINE_SPEC §8 — a formally distinct, synchronous, ZERO-side-effect\nmode: compile the CURRENT draft (or a version snapshot), feed each node's\nbest §7 data slot as its design-time sample, and return the engine's\ntyped readiness/validation report. No wf_run row, no checkpoint, no\noutcome, no event, no executor call — pure computation, the documented\nexception to stream-everything.",
+        "operationId": "dry_run_workflow_workflows__definition_id__dry_run_post",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DryRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DryRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/workflows/{definition_id}/nodes/{node_id}/input-form": {
       "get": {
         "tags": [
@@ -31043,38 +31402,6 @@
               "default": 1000,
               "title": "Limit"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
-            }
           }
         ],
         "responses": {
@@ -31119,38 +31446,6 @@
               "title": "Path"
             },
             "description": "cld_files.file_path"
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
-            }
           }
         ],
         "responses": {
@@ -31182,49 +31477,15 @@
         ],
         "summary": "Put File",
         "operationId": "put_file_cloud_files_put_put",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/Body_put_file_cloud_files_put_put"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -31268,38 +31529,6 @@
               "title": "Path"
             },
             "description": "cld_files.file_path"
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
-            }
           }
         ],
         "responses": {
@@ -31326,40 +31555,6 @@
         ],
         "summary": "Get Quota",
         "operationId": "get_quota_cloud_files_quota_get",
-        "parameters": [
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -31367,16 +31562,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BridgeQuotaResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -31414,38 +31599,6 @@
               "minimum": 1,
               "default": 1000,
               "title": "Limit"
-            }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "X-Matrx-User-Id",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Matrx-User-Id"
             }
           }
         ],
@@ -31502,24 +31655,6 @@
         "summary": "Drain Media Heal Queue",
         "description": "Drain pending ``mtx_media_heal_queue`` rows (flip public + rewrite column).",
         "operationId": "drain_media_heal_queue_media_heal_drain_post",
-        "parameters": [
-          {
-            "name": "X-Cloud-Files-Bypass",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Cloud-Files-Bypass"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -47942,17 +48077,17 @@
             ],
             "title": "Channel Values"
           },
-          "pending_writes": {
+          "pending_bindings": {
             "anyOf": [
               {
-                "items": {},
-                "type": "array"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Pending Writes"
+            "title": "Pending Bindings"
           },
           "next_invocations": {
             "anyOf": [
@@ -52830,12 +52965,44 @@
               }
             ],
             "title": "Updated At"
+          },
+          "validation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ValidationResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": true,
         "type": "object",
         "title": "DefinitionRecord",
         "description": "``wf_definition`` (or ``wf_definition_version``) row as returned by\nthe matrx-graph DefinitionStore. Open shape — Pydantic models in\n``matrx_graph.db.definition_store`` are the source of truth."
+      },
+      "DefinitionSlotsResponse": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "nodes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/NodeSlotsMapEntry"
+            },
+            "type": "object",
+            "title": "Nodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "definition_id",
+          "nodes"
+        ],
+        "title": "DefinitionSlotsResponse",
+        "description": "Per-node slot map for a whole definition — the studio's bulk fetch\nfor design-time edge-Satisfied derivation."
       },
       "DeleteAllMessagesResponse": {
         "properties": {
@@ -53037,6 +53204,39 @@
           "embeddings_deleted"
         ],
         "title": "DeleteResult"
+      },
+      "DeleteSlotResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          },
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "slot": {
+            "type": "string",
+            "enum": [
+              "declared_sample",
+              "last_test_output",
+              "last_live_output"
+            ],
+            "title": "Slot"
+          }
+        },
+        "type": "object",
+        "required": [
+          "deleted",
+          "definition_id",
+          "node_id",
+          "slot"
+        ],
+        "title": "DeleteSlotResponse"
       },
       "DeleteTriggerResponse": {
         "properties": {
@@ -53302,6 +53502,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -54615,6 +54870,204 @@
           "status"
         ],
         "title": "DrainRowResult"
+      },
+      "DryRunEdgeReport": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "satisfied",
+              "unsatisfied",
+              "pruned",
+              "unknowable"
+            ],
+            "title": "State"
+          },
+          "slot_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Used"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "DryRunEdgeReport"
+      },
+      "DryRunNodeReport": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "blocked",
+              "unknowable"
+            ],
+            "title": "State"
+          },
+          "missing_required": {
+            "items": {
+              "$ref": "#/components/schemas/MissingBinding"
+            },
+            "type": "array",
+            "title": "Missing Required"
+          },
+          "mapping_issues": {
+            "items": {
+              "$ref": "#/components/schemas/MappingIssue"
+            },
+            "type": "array",
+            "title": "Mapping Issues"
+          },
+          "would_receive": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Would Receive"
+          },
+          "diagnostics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Diagnostics"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "DryRunNodeReport"
+      },
+      "DryRunReport": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "description": "True when no error-severity finding exists."
+          },
+          "nodes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DryRunNodeReport"
+            },
+            "type": "object",
+            "title": "Nodes"
+          },
+          "edges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DryRunEdgeReport"
+            },
+            "type": "object",
+            "title": "Edges"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "registry_complete": {
+            "type": "boolean",
+            "title": "Registry Complete",
+            "description": "False when ≥1 node type is not registered in the supplied registry — their input contracts were NOT checked, so a green report is hollow and cannot be fully trusted. A caller running against the bare default_registry (no builtins) gets ok=True only because validation was skipped; this flag exposes that.",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "nodes",
+          "edges"
+        ],
+        "title": "DryRunReport"
+      },
+      "DryRunRequest": {
+        "properties": {
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs"
+          },
+          "node_inputs": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Node Inputs"
+          },
+          "variables": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Variables"
+          },
+          "version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Number",
+            "description": "Dry-run this published snapshot instead of the current draft."
+          }
+        },
+        "type": "object",
+        "title": "DryRunRequest",
+        "description": "POST /workflows/{id}/dry-run body (ENGINE_SPEC §8) — mirrors the run\nAPI's seeding surface so a dry run previews exactly what a live run\nwould receive."
+      },
+      "DryRunResponse": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "report": {
+            "$ref": "#/components/schemas/DryRunReport"
+          },
+          "samples_used": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "declared_sample",
+                "last_test_output",
+                "last_live_output"
+              ]
+            },
+            "type": "object",
+            "title": "Samples Used",
+            "description": "Which §7 data slot fed each node's design-time sample (last_live_output > last_test_output > declared_sample)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "definition_id",
+          "report"
+        ],
+        "title": "DryRunResponse"
       },
       "DuplicatePagesRequest": {
         "properties": {
@@ -65947,6 +66400,31 @@
             "title": "Output",
             "description": "User-supplied output to record for the failed node. Should validate against the node's output_schema — downstream nodes consume this exactly as if the executor produced it."
           },
+          "dispatch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Id",
+            "description": "Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation the result is for. Required together with item_index when several items of this node are pending."
+          },
+          "item_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Index",
+            "description": "Fan-out correlation (ENGINE_SPEC §4.5): item index within dispatch_id."
+          },
           "max_steps": {
             "type": "integer",
             "maximum": 100000,
@@ -65960,6 +66438,43 @@
           "output"
         ],
         "title": "ManualResultRequest"
+      },
+      "MappingIssue": {
+        "properties": {
+          "edge_id": {
+            "type": "string",
+            "title": "Edge Id"
+          },
+          "target_key": {
+            "type": "string",
+            "title": "Target Key"
+          },
+          "source_key": {
+            "type": "string",
+            "title": "Source Key"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "edge_id",
+          "target_key",
+          "source_key",
+          "severity",
+          "message"
+        ],
+        "title": "MappingIssue"
       },
       "MaskRequestBody": {
         "properties": {
@@ -66774,6 +67289,35 @@
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
       },
+      "MissingBinding": {
+        "properties": {
+          "edge_id": {
+            "type": "string",
+            "title": "Edge Id",
+            "description": "Unresolved inbound edge id; '' for node-level var_missing."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "no_source_data",
+              "mapping_unresolvable",
+              "var_missing"
+            ],
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "edge_id",
+          "reason"
+        ],
+        "title": "MissingBinding"
+      },
       "MissingInputField": {
         "properties": {
           "key": {
@@ -67211,6 +67755,72 @@
         "title": "MutedPattern",
         "description": "An admin UI-muted signature (app_log_muted_pattern row)."
       },
+      "NodeDataSlotPayload": {
+        "properties": {
+          "slot": {
+            "type": "string",
+            "enum": [
+              "declared_sample",
+              "last_test_output",
+              "last_live_output"
+            ],
+            "title": "Slot"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "emissions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Emissions"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "captured_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured At"
+          },
+          "captured_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot",
+          "source"
+        ],
+        "title": "NodeDataSlotPayload",
+        "description": "Wire shape of one persisted data slot."
+      },
       "NodeDef": {
         "properties": {
           "id": {
@@ -67450,6 +68060,81 @@
         "title": "NodeInputStatusResponse",
         "description": "Whether a node can run yet, field-by-field — GET\n/runs/{id}/nodes/{nid}/input-status (and the definition-level variant)."
       },
+      "NodeSlotsMapEntry": {
+        "properties": {
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/NodeDataSlotPayload"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
+          "best": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "declared_sample",
+                  "last_test_output",
+                  "last_live_output"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slots"
+        ],
+        "title": "NodeSlotsMapEntry"
+      },
+      "NodeSlotsResponse": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/NodeDataSlotPayload"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
+          "best": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "declared_sample",
+                  "last_test_output",
+                  "last_live_output"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Best",
+            "description": "The best available sample among the present slots: last_live_output > last_test_output > declared_sample."
+          }
+        },
+        "type": "object",
+        "required": [
+          "definition_id",
+          "node_id",
+          "slots"
+        ],
+        "title": "NodeSlotsResponse"
+      },
       "NodeStateAtCheckpoint": {
         "properties": {
           "node_id": {
@@ -67504,6 +68189,29 @@
               }
             ],
             "title": "Error Message"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          },
+          "error_details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Details"
           },
           "duration_ms": {
             "anyOf": [
@@ -71423,6 +72131,55 @@
         ],
         "title": "PublicationStatus"
       },
+      "PutDeclaredSampleRequest": {
+        "properties": {
+          "value": {
+            "title": "Value",
+            "description": "The declared sample output for this node."
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "emissions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Emissions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "PutDeclaredSampleRequest"
+      },
+      "PutDeclaredSampleResponse": {
+        "properties": {
+          "slot": {
+            "$ref": "#/components/schemas/NodeDataSlotPayload"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "description": "Schema-mismatch warnings (warn-not-block, spec §7.2): the sample was stored, but these fields disagree with the node's output schema."
+          }
+        },
+        "type": "object",
+        "required": [
+          "slot"
+        ],
+        "title": "PutDeclaredSampleResponse"
+      },
       "QuickScrapeRequest": {
         "properties": {
           "get_organized_data": {
@@ -74249,6 +75006,31 @@
             "title": "Attempt Bump",
             "description": "If True (default), the retried invocation runs at attempt+1 so the prior failure outcome stays as a forensic record. If False, the original outcome is overwritten by the new attempt. Leave True unless you have a specific reason to discard history.",
             "default": true
+          },
+          "dispatch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Id",
+            "description": "Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation to retry. Omit for ordinary nodes; required together with item_index when several items of this node are pending (the endpoint never guesses — it 422s with the pending correlations)."
+          },
+          "item_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Index",
+            "description": "Fan-out correlation (ENGINE_SPEC §4.5): item index within dispatch_id. 'Retry item 3 alone' = item_index=3."
           },
           "max_steps": {
             "type": "integer",
@@ -77784,6 +78566,31 @@
             "title": "Output",
             "description": "Output to record for the skipped node. Defaults to {} — downstream nodes see an empty payload. The scheduler's idempotency replay treats this exactly like a successful executor run."
           },
+          "dispatch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dispatch Id",
+            "description": "Fan-out correlation (ENGINE_SPEC §4.5): dispatch id of the specific fanned invocation to skip. Required together with item_index when several items of this node are pending."
+          },
+          "item_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Index",
+            "description": "Fan-out correlation (ENGINE_SPEC §4.5): item index within dispatch_id."
+          },
           "max_steps": {
             "type": "integer",
             "maximum": 100000,
@@ -80885,6 +81692,12 @@
             ],
             "title": "Config Override",
             "description": "Optional override for the node's saved config. Useful for tweaking a model / temperature / system prompt without editing and saving the workflow. None = use the saved config."
+          },
+          "variables": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Variables",
+            "description": "Run-variable values for {'$var': name} references authored in the node's static inputs. The test path resolves them through the SAME merge the scheduler uses (resolve_invocation_inputs), so a node test exercises exactly what a live run would."
           }
         },
         "type": "object",
@@ -86400,6 +87213,155 @@
           "email"
         ],
         "title": "WhoamiResponse"
+      },
+      "WorkerHealthResponse": {
+        "properties": {
+          "live": {
+            "type": "boolean",
+            "title": "Live"
+          },
+          "worker_count": {
+            "type": "integer",
+            "title": "Worker Count",
+            "default": 0
+          },
+          "fresh_count": {
+            "type": "integer",
+            "title": "Fresh Count",
+            "default": 0
+          },
+          "workers": {
+            "items": {
+              "$ref": "#/components/schemas/WorkerHeartbeatRecord"
+            },
+            "type": "array",
+            "title": "Workers",
+            "default": []
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "live"
+        ],
+        "title": "WorkerHealthResponse"
+      },
+      "WorkerHeartbeatRecord": {
+        "properties": {
+          "worker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Id"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "hostname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostname"
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "staleness_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staleness S"
+          },
+          "fresh": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fresh"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "WorkerHeartbeatRecord"
       },
       "WorkflowCostRollup": {
         "properties": {

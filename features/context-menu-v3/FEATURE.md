@@ -51,15 +51,11 @@ Declared SurfaceValues live in `features/surfaces/manifests/` (one manifest per 
 ## Inspecting the contract (admin) — the values inspector
 
 Right-click → Admin Tools → **Context Values** opens the `surfaceContextInspector`
-overlay (`features/overlays/components/SurfaceContextInspectorOverlay.tsx`): the
-surface's full declared contract (`getManifest().values`, each with its
-Always/Sometimes flag) laid against the LIVE resolved scope. Every declared key
-always shows; a value shows when the surface supplied one. A value the surface
-declared **Always** but failed to supply renders RED — the fastest way to catch a
-surface breaking its own manifest. Undeclared scope keys (present but not in the
-manifest, so not bindable by name) get their own section. This is the canonical
-way to verify a surface honors its value contract — available to any admin (no
-debug-mode toggle required).
+**WindowPanel** (`features/window-panels/windows/admin/SurfaceContextInspectorWindow.tsx`):
+non-blocking (surface stays interactive). Sidebar lists every declared key (+ undeclared
+scope keys); click opens a closeable tab in the body. Declared **Always** with no
+supplied value renders RED. Canonical way to verify a surface honors its value
+contract — any admin, no debug-mode toggle.
 
 ## Public API — two wrappers, one shell
 
@@ -88,7 +84,7 @@ The menu is a thin consumer of existing platform systems. **Do not recreate any 
 - **Compare** → `useOpenDiffViewerWindow` + `diffCompareSlice`.
 - **Quick Actions** → `useQuickActions` (existing overlays).
 - **Find/Replace** → `findReplace` overlay (callback-aware opener carries the target element + `onReplace`). **AI result display is the launcher's job** (`launchShortcut` `displayMode`) — there is no separate result overlay.
-- **Context Values (admin)** → the `surfaceContextInspector` overlay (below). The raw Redux state analyzer (`adminStateAnalyzer`) is a separate debug-mode item. Delete confirms via `confirm()` (`ConfirmDialogHost`), never a browser dialog.
+- **Context Values (admin)** → the `surfaceContextInspector` WindowPanel (sidebar + tabs). The raw Redux state analyzer (`adminStateAnalyzer`) is a separate debug-mode item. Delete confirms via `confirm()` (`ConfirmDialogHost`), never a browser dialog.
 
 ---
 
@@ -165,6 +161,7 @@ For a rollout, **invoke the `context-menu-v3` skill** — the per-surface recipe
 
 ## Change Log
 
+- `2026-07-09` — **Context Values inspector → WindowPanel.** Replaced the blocking Dialog (`SurfaceContextInspectorOverlay`) with `SurfaceContextInspectorWindow` (sidebar of keys → closeable tabs, like Instance UI State). Fixed header/close collision and right-edge clipping of badges + long values.
 - `2026-07-07` — **D25 residual closed — the 4 prompt-menu surfaces confirmed live on v3.** `ContentTemplateManager`, `SaveTemplateModal`, `MarkdownTester`, and `ContentEditor` (plain mode) all wrap their textareas in `EditableContextMenu` with `getTextarea`, restoring right-click content-block insert (`handleContentBlockInsert` → `insertTextAtTextareaCursor`; data via `/api/agent-context-menu` → `agent.context_menu_view`, live `content-block` placement group confirmed). Also killed the dead SSR preload: `DeferredShellData` no longer writes `contextMenuCacheSlice` / `agentContextMenuCacheSlice` (no readers — the menu fetches on open via `fetchUnifiedMenu`), and the orphaned `getSSRAgentShellData` helper was deleted. Both slices remain per the D25 disposition.
 - `2026-07-03` — **Killed the hardcoded auto-run.** Both renderers'
   `handleBoundAgentExecute` hardcoded `autoRun: true`, forcing every mapped agent

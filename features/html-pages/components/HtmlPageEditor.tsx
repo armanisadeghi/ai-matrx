@@ -17,7 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Code2, Search as SearchIcon, Eye, AlertCircle } from "lucide-react";
+import {
+  Code2,
+  Search as SearchIcon,
+  Eye,
+  AlertCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   getAdjacentHtmlPageIds,
@@ -31,7 +37,7 @@ import { useMeasure } from "@uidotdev/usehooks";
 
 type EditorTab = "meta" | "html" | "preview";
 
-const TABS: { id: EditorTab; label: string; icon: React.ElementType }[] = [
+const TABS: { id: EditorTab; label: string; icon: LucideIcon }[] = [
   { id: "meta", label: "Metadata", icon: SearchIcon },
   { id: "html", label: "HTML", icon: Code2 },
   { id: "preview", label: "Preview", icon: Eye },
